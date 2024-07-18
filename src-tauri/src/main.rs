@@ -3,7 +3,10 @@
 
 
 mod cpu_miner;
+mod xmrig_adapter;
+mod xmrig;
 
+use std::{panic, process};
 use tari_shutdown::Shutdown;
 use tokio::sync::Mutex;
 use crate::cpu_miner::CpuMiner;
@@ -32,6 +35,12 @@ struct UniverseAppState {
 }
 
 fn main() {
+    let default_hook = panic::take_hook();
+    panic::set_hook(Box::new(move |info| {
+        default_hook(info);
+        process::exit(1);
+    }));
+
     let mut shutdown = Shutdown::new();
     let app_state = UniverseAppState {
         shutdown: shutdown.clone(),
