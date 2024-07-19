@@ -13,7 +13,7 @@ pub enum CpuMinerEvent{
 }
 
 pub(crate) struct CpuMiner {
-    watcher_task : Option<JoinHandle<()>>,
+    watcher_task : Option<JoinHandle<Result<(), anyhow::Error>>>,
     miner_shutdown: Shutdown
 }
 
@@ -80,26 +80,31 @@ impl CpuMiner {
                     // }
               //         },
     //
-    //             _ = inner_shutdown.wait() => {
-    //                 xmrig_child.kill().expect("Failed to kill child process");
-    //                 break;
-    //             },
-    //             _ = app_shutdown.wait() => {
-    // xmrig_child.kill().expect("Failed to kill child process");
-    //                 break;
-    //             }
+                _ = inner_shutdown.wait() => {
+                    xmrig_child.stop().await?;
+                    break;
+                },
+                _ = app_shutdown.wait() => {
+                    xmrig_child.stop().await?;
+                    break;
+                }
             }
 
 
-        }}));
+        }
+        Ok(())
+        }));
             Ok(())
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
+        println!("Triggering shutdown");
         self.miner_shutdown.trigger();
         if let Some(task) = self.watcher_task.take() {
             task.await?;
+            println!("Task finished");
         }
+
         Ok(())
     }
 }

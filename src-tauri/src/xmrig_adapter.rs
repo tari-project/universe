@@ -12,7 +12,9 @@ use crate::xmrig::latest_release::fetch_latest_release;
 use futures_util::{FutureExt, StreamExt};
 use flate2::read::GzDecoder;
 use tar::Archive;
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
+use tari_shutdown::Shutdown;
+use tokio::runtime::Handle;
 
 
 pub struct XmrigAdapter {
@@ -21,58 +23,79 @@ pub struct XmrigAdapter {
 }
 
 pub struct XmrigInstance {
+    shutdown: Shutdown,
     handle: Option<JoinHandle<Result<(), anyhow::Error>>>
 }
 
  impl XmrigAdapter {
 
      pub fn new() -> Self {
-         Self { force_download: true }
+         Self { force_download: false }
      }
      pub fn spawn(&self) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance), anyhow::Error> {
             let (tx, rx) = tokio::sync::mpsc::channel(100);
          let cache_dir = tauri::api::path::cache_dir().ok_or(anyhow::anyhow!("Failed to get cache dir"))?.join("tari-universe");
          let force_download = self.force_download;
-         Ok((rx, XmrigInstance{ handle: Some(tokio::spawn(async move {
-             let latest_release = fetch_latest_release().await?;
-             let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
-             if force_download {
-                 println!("Cleaning up xmrig dir");
-                 let _ = fs::remove_dir_all(&xmrig_dir).await;
-             }
-             if !xmrig_dir.exists() {
-                 println!("Latest version of xmrig doesn't exist");
-                 println!("latest version is {}", latest_release.version);
-                 let in_progress_dir = cache_dir.join("xmrig").join("in_progress");
-                 if in_progress_dir.exists() {
-                     println!("Trying to delete dir {:?}", in_progress_dir);
-                     match fs::remove_dir(&in_progress_dir).await {
-                         Ok(_) => {}
-                         Err(e) => {
-                             println!("Failed to delete dir {:?}", e);
-                             // return Err(e.into());
-                         }
-                     }
-                 }
+         let xmrig_shutdown = Shutdown::new();
+         let mut shutdown_signal = xmrig_shutdown.to_signal();
+         Ok((rx, XmrigInstance{ shutdown: xmrig_shutdown,  handle: Some(tokio::spawn(async move {
+             // TODO: Ensure version string is not malicious
+            let version = Self::ensure_latest(cache_dir.clone(), force_download).await?;
+        let xmrig_dir = cache_dir.join("xmrig").join(&version).join(format!("xmrig-{}", version));
+            let xmrig_bin = xmrig_dir.join("xmrig");
+            // let mut xmrig = tokio::process::Command::new(xmrig_bin)
+            //     .stdout(std::process::Stdio::piped())
+            //     .stderr(std::process::Stdio::piped()).kill_on_drop(true)
+            //     .spawn()?;
 
+             let (receiver, xmrig) = tauri::api::process::Command::new(xmrig_bin.to_str().unwrap().to_string()).current_dir(xmrig_dir)
+                 .spawn()?;
+             shutdown_signal.wait().await;
+             println!("Stopping xmrig");
 
-                 let platform = latest_release.get_asset(&get_os_string()).ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
-                 println!("Downloading file");
-                 println!("Downloading file from {}", &platform.url);
+             xmrig.kill()?;
 
-                 let in_progress_file = in_progress_dir.join(&platform.name);
-                 download_file(&platform.url, &in_progress_file).await?;
-
-                 println!("Renaming file");
-                 println!("Extracting file");
-                 extract(&in_progress_file, &xmrig_dir).await?;
-                 fs::remove_dir_all(in_progress_dir).await?;
-             }
              Ok(())
          }))}))
      }
 
+     async fn ensure_latest(cache_dir: PathBuf, force_download: bool) -> Result<String, Error> {
+         let latest_release = fetch_latest_release().await?;
+         let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
+         if force_download {
+             println!("Cleaning up xmrig dir");
+             let _ = fs::remove_dir_all(&xmrig_dir).await;
+         }
+         if !xmrig_dir.exists() {
+             println!("Latest version of xmrig doesn't exist");
+             println!("latest version is {}", latest_release.version);
+             let in_progress_dir = cache_dir.join("xmrig").join("in_progress");
+             if in_progress_dir.exists() {
+                 println!("Trying to delete dir {:?}", in_progress_dir);
+                 match fs::remove_dir(&in_progress_dir).await {
+                     Ok(_) => {}
+                     Err(e) => {
+                         println!("Failed to delete dir {:?}", e);
+                         // return Err(e.into());
+                     }
+                 }
+             }
 
+
+             let platform = latest_release.get_asset(&get_os_string()).ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
+             println!("Downloading file");
+             println!("Downloading file from {}", &platform.url);
+
+             let in_progress_file = in_progress_dir.join(&platform.name);
+             download_file(&platform.url, &in_progress_file).await?;
+
+             println!("Renaming file");
+             println!("Extracting file");
+             extract(&in_progress_file, &xmrig_dir).await?;
+             fs::remove_dir_all(in_progress_dir).await?;
+         }
+         Ok(latest_release.version)
+     }
  }
 
 impl XmrigInstance {
@@ -83,6 +106,7 @@ impl XmrigInstance {
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
+        self.shutdown.trigger();
         let handle = self.handle.take();
         handle.unwrap().await?
     }
@@ -91,6 +115,18 @@ impl XmrigInstance {
         // Ok(())
     }
 
+}
+
+impl Drop for XmrigInstance {
+    fn drop(&mut self) {
+        println!("Drop being called");
+        self.shutdown.trigger();
+        if let Some(handle) = self.handle.take() {
+            Handle::current().block_on(async move {
+                handle.await.unwrap();
+            });
+        }
+    }
 }
 
 

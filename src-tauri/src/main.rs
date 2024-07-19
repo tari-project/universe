@@ -1,12 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-
 mod cpu_miner;
 mod xmrig_adapter;
 mod xmrig;
 
 use std::{panic, process};
+use std::thread::sleep;
 use tari_shutdown::Shutdown;
 use tokio::sync::Mutex;
 use crate::cpu_miner::CpuMiner;
@@ -41,15 +41,29 @@ fn main() {
         process::exit(1);
     }));
 
+
+
     let mut shutdown = Shutdown::new();
     let app_state = UniverseAppState {
         shutdown: shutdown.clone(),
         cpu_miner: CpuMiner::new().into()
     };
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![greet, start_mining, stop_mining])
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .expect("error while running tauri application");
+
+
+    app.run(move |_app_handle, event| match event {
+        tauri::RunEvent::ExitRequested { api, .. } => {
+            // api.prevent_exit();
+            println!("App shutdown caught");
+            shutdown.trigger();
+            // TODO: Find a better way of knowing that all miners have stopped
+            sleep(std::time::Duration::from_secs(3));
+        }
+        _ => {}
+    });
 }
