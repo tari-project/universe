@@ -1,108 +1,143 @@
-use tokio::fs::OpenOptions;
-use tokio::io::BufReader;
-use std::path::{Path, PathBuf};
-use async_zip::base::read::seek::ZipFileReader;
-use tokio::fs;
-use tokio::fs::{copy, File};
-use tokio::io::AsyncWriteExt;
-use tokio::sync::mpsc::Receiver;
-use tokio::task::JoinHandle;
 use crate::cpu_miner::CpuMinerEvent;
 use crate::xmrig::latest_release::fetch_latest_release;
-use futures_util::{FutureExt, StreamExt};
-use flate2::read::GzDecoder;
-use tar::Archive;
 use anyhow::{anyhow, Error};
+use async_zip::base::read::seek::ZipFileReader;
+use flate2::read::GzDecoder;
+use futures_util::{FutureExt, StreamExt};
+use std::path::{Path, PathBuf};
+use tar::Archive;
 use tari_shutdown::Shutdown;
+use tokio::fs;
+use tokio::fs::OpenOptions;
+use tokio::fs::{copy, File};
+use tokio::io::AsyncWriteExt;
+use tokio::io::BufReader;
 use tokio::runtime::Handle;
+use tokio::sync::mpsc::Receiver;
+use tokio::task::JoinHandle;
 
+
+pub enum XmrigNodeConnection {
+    LocalMmproxy{ host_name: String, port: u16 },
+}
+
+impl XmrigNodeConnection {
+    pub fn generate_args(&self) -> Vec<String> {
+        match self {
+            XmrigNodeConnection::LocalMmproxy{ host_name, port} => {
+                vec![
+                    "--daemon".to_string(), "--user".to_string(), format!("{}:{}", host_name, port), "--coin".to_string(), "monero".to_string() ]},
+        }
+    }
+}
 
 pub struct XmrigAdapter {
-    force_download: bool
-
+    force_download: bool,
+    node_connection: XmrigNodeConnection,
 }
 
 pub struct XmrigInstance {
     shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>
+    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
 }
 
- impl XmrigAdapter {
+impl XmrigAdapter {
+    pub fn new(xmrig_node_connection: XmrigNodeConnection) -> Self {
+        Self {
+            force_download: false,
+            node_connection: xmrig_node_connection,
+        }
+    }
+    pub fn spawn(&self) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance), anyhow::Error> {
+        let (tx, rx) = tokio::sync::mpsc::channel(100);
+        let cache_dir = tauri::api::path::cache_dir()
+            .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
+            .join("tari-universe");
+        let force_download = self.force_download;
+        let xmrig_shutdown = Shutdown::new();
+        let mut shutdown_signal = xmrig_shutdown.to_signal();
+        let args = self.node_connection.generate_args();
+        Ok((
+            rx,
+            XmrigInstance {
+                shutdown: xmrig_shutdown,
+                handle: Some(tokio::spawn(async move {
+                    // TODO: Ensure version string is not malicious
+                    let version = Self::ensure_latest(cache_dir.clone(), force_download).await?;
+                    let xmrig_dir = cache_dir
+                        .join("xmrig")
+                        .join(&version)
+                        .join(format!("xmrig-{}", version));
+                    let xmrig_bin = xmrig_dir.join("xmrig");
+                    let mut xmrig = tokio::process::Command::new(xmrig_bin)
+                        .args(args)
+                        .stdout(std::process::Stdio::piped())
+                        .stderr(std::process::Stdio::piped())
+                        .kill_on_drop(true)
+                        .spawn()?;
 
-     pub fn new() -> Self {
-         Self { force_download: false }
-     }
-     pub fn spawn(&self) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance), anyhow::Error> {
-            let (tx, rx) = tokio::sync::mpsc::channel(100);
-         let cache_dir = tauri::api::path::cache_dir().ok_or(anyhow::anyhow!("Failed to get cache dir"))?.join("tari-universe");
-         let force_download = self.force_download;
-         let xmrig_shutdown = Shutdown::new();
-         let mut shutdown_signal = xmrig_shutdown.to_signal();
-         Ok((rx, XmrigInstance{ shutdown: xmrig_shutdown,  handle: Some(tokio::spawn(async move {
-             // TODO: Ensure version string is not malicious
-            let version = Self::ensure_latest(cache_dir.clone(), force_download).await?;
-        let xmrig_dir = cache_dir.join("xmrig").join(&version).join(format!("xmrig-{}", version));
-            let xmrig_bin = xmrig_dir.join("xmrig");
-            // let mut xmrig = tokio::process::Command::new(xmrig_bin)
-            //     .stdout(std::process::Stdio::piped())
-            //     .stderr(std::process::Stdio::piped()).kill_on_drop(true)
-            //     .spawn()?;
+                    // let (receiver, xmrig) =
+                    //     tauri::api::process::Command::new(xmrig_bin.to_str().unwrap().to_string())
+                    //         .current_dir(xmrig_dir)
+                    //         .spawn()?;
+                    shutdown_signal.wait().await;
+                    println!("Stopping xmrig");
 
-             let (receiver, xmrig) = tauri::api::process::Command::new(xmrig_bin.to_str().unwrap().to_string()).current_dir(xmrig_dir)
-                 .spawn()?;
-             shutdown_signal.wait().await;
-             println!("Stopping xmrig");
+                    xmrig.kill().await?;
 
-             xmrig.kill()?;
+                    Ok(())
+                })),
+            },
+        ))
+    }
 
-             Ok(())
-         }))}))
-     }
+    async fn ensure_latest(cache_dir: PathBuf, force_download: bool) -> Result<String, Error> {
+        let latest_release = fetch_latest_release().await?;
+        let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
+        if force_download {
+            println!("Cleaning up xmrig dir");
+            let _ = fs::remove_dir_all(&xmrig_dir).await;
+        }
+        if !xmrig_dir.exists() {
+            println!("Latest version of xmrig doesn't exist");
+            println!("latest version is {}", latest_release.version);
+            let in_progress_dir = cache_dir.join("xmrig").join("in_progress");
+            if in_progress_dir.exists() {
+                println!("Trying to delete dir {:?}", in_progress_dir);
+                match fs::remove_dir(&in_progress_dir).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("Failed to delete dir {:?}", e);
+                        // return Err(e.into());
+                    }
+                }
+            }
 
-     async fn ensure_latest(cache_dir: PathBuf, force_download: bool) -> Result<String, Error> {
-         let latest_release = fetch_latest_release().await?;
-         let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
-         if force_download {
-             println!("Cleaning up xmrig dir");
-             let _ = fs::remove_dir_all(&xmrig_dir).await;
-         }
-         if !xmrig_dir.exists() {
-             println!("Latest version of xmrig doesn't exist");
-             println!("latest version is {}", latest_release.version);
-             let in_progress_dir = cache_dir.join("xmrig").join("in_progress");
-             if in_progress_dir.exists() {
-                 println!("Trying to delete dir {:?}", in_progress_dir);
-                 match fs::remove_dir(&in_progress_dir).await {
-                     Ok(_) => {}
-                     Err(e) => {
-                         println!("Failed to delete dir {:?}", e);
-                         // return Err(e.into());
-                     }
-                 }
-             }
+            let platform = latest_release
+                .get_asset(&get_os_string())
+                .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
+            println!("Downloading file");
+            println!("Downloading file from {}", &platform.url);
 
+            let in_progress_file = in_progress_dir.join(&platform.name);
+            download_file(&platform.url, &in_progress_file).await?;
 
-             let platform = latest_release.get_asset(&get_os_string()).ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
-             println!("Downloading file");
-             println!("Downloading file from {}", &platform.url);
-
-             let in_progress_file = in_progress_dir.join(&platform.name);
-             download_file(&platform.url, &in_progress_file).await?;
-
-             println!("Renaming file");
-             println!("Extracting file");
-             extract(&in_progress_file, &xmrig_dir).await?;
-             fs::remove_dir_all(in_progress_dir).await?;
-         }
-         Ok(latest_release.version)
-     }
- }
+            println!("Renaming file");
+            println!("Extracting file");
+            extract(&in_progress_file, &xmrig_dir).await?;
+            fs::remove_dir_all(in_progress_dir).await?;
+        }
+        Ok(latest_release.version)
+    }
+}
 
 impl XmrigInstance {
-
     pub fn ping(&self) -> Result<bool, anyhow::Error> {
-        Ok(self.handle.as_ref().map(|m| !m.is_finished()).unwrap_or_else(|| false))
-
+        Ok(self
+            .handle
+            .as_ref()
+            .map(|m| !m.is_finished())
+            .unwrap_or_else(|| false))
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
@@ -114,7 +149,6 @@ impl XmrigInstance {
         todo!()
         // Ok(())
     }
-
 }
 
 impl Drop for XmrigInstance {
@@ -128,7 +162,6 @@ impl Drop for XmrigInstance {
         }
     }
 }
-
 
 fn get_os_string() -> String {
     #[cfg(target_os = "windows")]
@@ -180,26 +213,23 @@ async fn download_file(url: &str, destination: &Path) -> Result<(), anyhow::Erro
 
 pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Error> {
     match file_path.extension() {
-        Some(ext) => {
-            match ext.to_str() {
-                Some("gz") => {
-                    extract_gz(file_path, dest_dir).await?;
-                }
-                Some("zip") => {
-                    extract_zip(file_path, dest_dir).await?;
-                }
-                _ => {
-                    return Err(anyhow::anyhow!("Unsupported file extension"));
-                }
+        Some(ext) => match ext.to_str() {
+            Some("gz") => {
+                extract_gz(file_path, dest_dir).await?;
             }
-        }
+            Some("zip") => {
+                extract_zip(file_path, dest_dir).await?;
+            }
+            _ => {
+                return Err(anyhow::anyhow!("Unsupported file extension"));
+            }
+        },
         None => {
             return Err(anyhow::anyhow!("File has no extension"));
         }
     }
     Ok(())
 }
-
 
 pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
     let gz_file = std::fs::File::open(gz_path)?;
@@ -211,7 +241,6 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
     Ok(())
 }
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
-
 
 // Taken from async_zip example
 
@@ -253,16 +282,11 @@ async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::Error
                 .write(true)
                 .create_new(true)
                 .open(&path)
-                .await
-                ?;
-            futures_lite::io::copy(&mut entry_reader, &mut writer.compat_write())
-                .await
-                ?;
+                .await?;
+            futures_lite::io::copy(&mut entry_reader, &mut writer.compat_write()).await?;
 
             // Closes the file and manipulates its metadata here if you wish to preserve its metadata from the archive.
         }
-
     }
     Ok(())
 }
-

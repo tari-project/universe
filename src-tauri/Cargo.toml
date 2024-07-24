@@ -27,6 +27,7 @@ async_zip = {  version ="0.0.17", features = ["full"] }
 futures-lite = "2.3.0"
 tokio-util = { version = "0.7.11", features = ["compat"] }
 sanitize-filename = "0.5"
+async-trait = "0.1.81"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
