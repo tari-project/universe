@@ -26,7 +26,7 @@ impl XmrigNodeConnection {
         match self {
             XmrigNodeConnection::LocalMmproxy{ host_name, port} => {
                 vec![
-                    "--daemon".to_string(), "--user".to_string(), format!("{}:{}", host_name, port), "--coin".to_string(), "monero".to_string() ]},
+                    "--daemon".to_string(), "--user=44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(), format!("--url={}:{}", host_name, 18143), "--coin=monero".to_string() ]},
         }
     }
 }
@@ -56,7 +56,12 @@ impl XmrigAdapter {
         let force_download = self.force_download;
         let xmrig_shutdown = Shutdown::new();
         let mut shutdown_signal = xmrig_shutdown.to_signal();
-        let args = self.node_connection.generate_args();
+        let mut args = self.node_connection.generate_args();
+        let xmrig_log_file = cache_dir.join("log").join("xmrig.log");
+        std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
+        args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
+        dbg!(&args);
+
         Ok((
             rx,
             XmrigInstance {
