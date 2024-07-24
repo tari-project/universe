@@ -43,11 +43,13 @@ impl CpuMiner {
                 local_mm_proxy.wait_ready().await?;
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
-                    port: local_mm_proxy.try_get_listening_port().await?
-                }
+                      // port: local_mm_proxy.try_get_listening_port().await?
+                    // TODO: Replace with actual port
+                    port: 18143,
+                                 }
             }
         };
-        let xmrig = XmrigAdapter::new(xmrig_node_connection);
+        let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
         let (mut rx, mut xmrig_child) = xmrig.spawn()?;
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
