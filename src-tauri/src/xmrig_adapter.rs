@@ -18,7 +18,7 @@ use tokio::task::JoinHandle;
 
 
 pub enum XmrigNodeConnection {
-    LocalMmproxy{ host_name: String, port: u16 },
+    LocalMmproxy{ host_name: String, port: u16},
 }
 
 impl XmrigNodeConnection {
@@ -26,7 +26,9 @@ impl XmrigNodeConnection {
         match self {
             XmrigNodeConnection::LocalMmproxy{ host_name, port} => {
                 vec![
-                    "--daemon".to_string(), "--user=44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(), format!("--url={}:{}", host_name, 18143), "--coin=monero".to_string() ]},
+                    "--daemon".to_string(),  format!("--url={}:{}", host_name, port), "--coin=monero".to_string(),
+                    // TODO: Generate password
+                "--http-port".to_string(), "9090".to_string(), "--http-access-token=pass".to_string()]},
         }
     }
 }
@@ -34,18 +36,28 @@ impl XmrigNodeConnection {
 pub struct XmrigAdapter {
     force_download: bool,
     node_connection: XmrigNodeConnection,
+    monero_address: String,
+    // TODO: secure
+    http_api_token: String,
+    http_api_port: u16
 }
 
 pub struct XmrigInstance {
     shutdown: Shutdown,
     handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
+    http_client: XmrigHttpApiClient,
 }
 
 impl XmrigAdapter {
-    pub fn new(xmrig_node_connection: XmrigNodeConnection) -> Self {
+    pub fn new(xmrig_node_connection: XmrigNodeConnection, monero_address: String) -> Self {
         Self {
             force_download: false,
             node_connection: xmrig_node_connection,
+            monero_address,
+            http_api_token: "pass".to_string(),
+            http_api_port: 9090
+
+
         }
     }
     pub fn spawn(&self) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance), anyhow::Error> {
@@ -60,12 +72,17 @@ impl XmrigAdapter {
         let xmrig_log_file = cache_dir.join("log").join("xmrig.log");
         std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
         args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
+        args.push(format!("--http-port={}", self.http_api_port));
+        args.push(format!("--http-access-token={}", self.http_api_token));
+        args.push(format!("--donate-level=1"));
+        args.push(format!("--user={}", self.monero_address));
         dbg!(&args);
 
         Ok((
             rx,
             XmrigInstance {
                 shutdown: xmrig_shutdown,
+                http_client: XmrigHttpApiClient::new(format!("http://127.0.0.1:{}", self.http_api_port), self.http_api_token.clone()),
                 handle: Some(tokio::spawn(async move {
                     // TODO: Ensure version string is not malicious
                     let version = Self::ensure_latest(cache_dir.clone(), force_download).await?;
@@ -246,6 +263,7 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
     Ok(())
 }
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
+use crate::xmrig::http_api::XmrigHttpApiClient;
 
 // Taken from async_zip example
 
