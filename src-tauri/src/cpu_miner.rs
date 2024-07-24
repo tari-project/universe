@@ -38,6 +38,8 @@ impl CpuMiner {
 
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
+
+                local_mm_proxy.start(app_shutdown.clone()).await?;
                 local_mm_proxy.wait_ready().await?;
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),

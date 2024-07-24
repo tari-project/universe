@@ -42,7 +42,8 @@ impl<TAdapter: ProcessAdapter<TInstance>, TInstance: ProcessInstance> ProcessWat
 
         let poll_time  =self.poll_time;
 
-        let (mut rx, mut child) = self.adapter.spawn()?;
+        // let (mut rx, mut child) = self.adapter.spawn()?;
+        let mut child = self.adapter.spawn()?;
 
         let mut app_shutdown = app_shutdown.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
@@ -97,6 +98,11 @@ impl<TAdapter: ProcessAdapter<TInstance>, TInstance: ProcessInstance> ProcessWat
             }
             Ok(())
         }));
+        Ok(())
+    }
+
+    pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
+        //TODO
         Ok(())
     }
 }
