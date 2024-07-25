@@ -14,6 +14,18 @@ const unlisten = await listen('message', (event) => {
     console.log("some kind of event", event.event, event.payload);
 })
 
+
+setInterval(() => {
+    // unlisten to the event
+    invoke("status", {}).then((status) => {
+        console.log("Status", status);
+        document.getElementById("log-area").innerText = JSON.stringify(status, null, 2);
+
+    }).catch((e) => {
+        console.error("Could not get status", e)
+    });
+}, 1000);
+
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
@@ -47,21 +59,11 @@ function App() {
 
   return (
     <div className="container">
-      <h1>Welcome to Tauri!</h1>
+      <h1>Tari Universe V1</h1>
+      <pre id="log-area">
 
-      <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
+      </pre>
 
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
 
       <form
         className="row"

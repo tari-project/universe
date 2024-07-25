@@ -15,6 +15,7 @@ use crate::cpu_miner::CpuMiner;
 use std::thread::sleep;
 use std::{panic, process};
 use std::sync::Arc;
+use serde::Serialize;
 use tari_shutdown::Shutdown;
 use tokio::sync::{Mutex, RwLock};
 use crate::mm_proxy_manager::MmProxyManager;
@@ -24,11 +25,11 @@ async fn start_mining<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
 ) -> Result<(), String> {
-    let config = state.cpu_miner_config.lock().await;
+    let config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.read().await;
     state
         .cpu_miner
-        .lock()
+        .write()
         .await
         .start(state.shutdown.to_signal(),  &config, &mm_proxy_manager).await
         .map_err(|e| e.to_string())?;
@@ -39,7 +40,7 @@ async fn start_mining<'r>(
 async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<(), String> {
     state
         .cpu_miner
-        .lock()
+        .write()
         .await
         .stop()
         .await
@@ -49,8 +50,32 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
+async fn status(
+state: tauri::State<'_, UniverseAppState>
+
+) -> Result<AppStatus, String> {
+    let cpu_miner = state.cpu_miner.read().await;
+    let cpu = cpu_miner.status().await.map_err(|e| e.to_string())?;
+    Ok(AppStatus {cpu})
+}
+
+
+#[derive(Debug, Serialize)]
+pub struct AppStatus {
+    cpu: CpuMinerStatus
+}
+
+#[derive(Debug, Serialize)]
+pub struct CpuMinerStatus {
+    pub is_mining: bool,
+    pub connection: CpuMinerConnectionStatus
+}
+
+
+#[derive(Debug, Serialize)]
+pub struct CpuMinerConnectionStatus {
+    pub is_connected: bool,
+    pub error: Option<String>
 }
 
 pub enum CpuMinerConnection {
@@ -63,8 +88,8 @@ struct CpuMinerConfig {
 
 struct UniverseAppState {
     shutdown: Shutdown,
-    cpu_miner: Mutex<CpuMiner>,
-    cpu_miner_config: Mutex<CpuMinerConfig>,
+    cpu_miner: RwLock<CpuMiner>,
+    cpu_miner_config: RwLock<CpuMinerConfig>,
     mm_proxy_manager: Arc<RwLock<MmProxyManager>>
 }
 
@@ -80,7 +105,7 @@ fn main() {
     let app_state = UniverseAppState {
         shutdown: shutdown.clone(),
         cpu_miner: CpuMiner::new().into(),
-        cpu_miner_config: Mutex::new(CpuMinerConfig {
+        cpu_miner_config: RwLock::new(CpuMinerConfig {
             node_connection: CpuMinerConnection::BuiltInProxy
         }),
         mm_proxy_manager: mm_proxy_manager.clone()
@@ -88,7 +113,7 @@ fn main() {
 
     let app = tauri::Builder::default()
         .manage(app_state)
-        .invoke_handler(tauri::generate_handler![greet, start_mining, stop_mining])
+        .invoke_handler(tauri::generate_handler![status, start_mining, stop_mining])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 

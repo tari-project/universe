@@ -4,8 +4,9 @@ use tauri::api::process::Command;
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
-use crate::{CpuMinerConfig, CpuMinerConnection};
+use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::mm_proxy_manager::MmProxyManager;
+use crate::xmrig::http_api::XmrigHttpApiClient;
 
 pub enum CpuMinerEvent {
     Stdout(String),
@@ -18,6 +19,7 @@ pub enum CpuMinerEvent {
 pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     miner_shutdown: Shutdown,
+    api_client: Option<XmrigHttpApiClient>
 }
 
 impl CpuMiner {
@@ -25,6 +27,7 @@ impl CpuMiner {
         Self {
             watcher_task: None,
             miner_shutdown: Shutdown::new(),
+            api_client: None
         }
     }
 
@@ -50,7 +53,8 @@ impl CpuMiner {
             }
         };
         let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
-        let (mut rx, mut xmrig_child) = xmrig.spawn()?;
+        let (mut rx, mut xmrig_child, client) = xmrig.spawn()?;
+        self.api_client = Some(client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             println!("Starting process");
@@ -114,7 +118,34 @@ impl CpuMiner {
             task.await?;
             println!("Task finished");
         }
+        self.api_client = None;
 
         Ok(())
+    }
+
+    pub async fn status(&self) -> Result<CpuMinerStatus, anyhow::Error> {
+        match &self.api_client {
+            Some(client) => {
+                let xmrig_status =client.summary().await?;
+                dbg!(&xmrig_status);
+                Ok(CpuMinerStatus {
+                    is_mining: xmrig_status.hashrate.total.len() > 0 && xmrig_status.hashrate.total[0].is_some()  && xmrig_status.hashrate.total[0].unwrap() > 0,
+                    connection: CpuMinerConnectionStatus {
+                        is_connected: xmrig_status.connection.uptime > 0,
+                        error: if xmrig_status.connection.error_log.is_empty() { None } else {Some(xmrig_status.connection.error_log.join(";"))},
+                    }
+                })
+
+            },
+            None => {
+                Ok(CpuMinerStatus {
+                    is_mining: false,
+                    connection: CpuMinerConnectionStatus {
+                        is_connected: false,
+                        error: None,
+                    }
+                })
+            }
+        }
     }
 }
