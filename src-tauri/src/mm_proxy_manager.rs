@@ -1,10 +1,6 @@
 use std::sync::{Arc};
 use tari_shutdown::ShutdownSignal;
-use tauri::api::process::{Command, CommandEvent};
-use tokio::select;
-use tokio::sync::mpsc::Receiver;
 use tokio::sync::RwLock;
-use tokio::time::MissedTickBehavior;
 use crate::process_watcher::ProcessWatcher;
 use crate::sidecar_adapter::{MergeMiningProxyInstance, SidecarAdapter};
 

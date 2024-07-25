@@ -1,4 +1,3 @@
-use tokio::sync::mpsc::Receiver;
 use async_trait::async_trait;
 
 pub trait ProcessAdapter<TInstance: ProcessInstance> {

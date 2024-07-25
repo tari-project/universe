@@ -1,12 +1,9 @@
 use std::marker::PhantomData;
-use async_trait::async_trait;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::select;
 use tauri::async_runtime::JoinHandle;
 use tokio::time::MissedTickBehavior;
-use crate::CpuMinerConnection;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance};
-use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 
 pub struct ProcessWatcher<TAdapter, TInstance> {
     adapter: TAdapter,

@@ -17,7 +17,7 @@ use std::{panic, process};
 use std::sync::Arc;
 use serde::Serialize;
 use tari_shutdown::Shutdown;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use crate::mm_proxy_manager::MmProxyManager;
 
 #[tauri::command]

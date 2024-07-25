@@ -1,9 +1,7 @@
 use std::marker::PhantomData;
-use std::mem::offset_of;
 use anyhow::Error;
 use async_trait::async_trait;
-use tauri::api::process::{Command, CommandChild, CommandEvent};
-use tokio::sync::mpsc::Receiver;
+use tauri::api::process::{Command, CommandChild};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance};
 
 pub struct SidecarAdapter<TSidecarInstance: ProcessInstance> {
