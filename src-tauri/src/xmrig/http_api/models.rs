@@ -10,7 +10,7 @@ pub(crate) struct Summary {
     features: Vec<String>,
     results: Results,
     algo: Option<String>,
-    connection: Connection,
+    pub(crate) connection: Connection,
     version: String,
     kind: String,
     ua: String,
@@ -18,26 +18,26 @@ pub(crate) struct Summary {
     donate_level: u8,
     paused: bool,
     algorithms: Vec<String>,
-    hashrate: Hashrate,
+    pub(crate) hashrate: Hashrate,
     hugepages: bool,
 }
 
 #[derive(Deserialize, Debug)]
-struct Resources {
+pub struct Resources {
     memory: Memory,
     load_average: Vec<f64>,
     hardware_concurrency: u8,
 }
 
 #[derive(Deserialize, Debug)]
-struct Memory {
+pub struct Memory {
     free: u64,
     total: u64,
     resident_set_memory: u64,
 }
 
 #[derive(Deserialize, Debug)]
-struct Results {
+pub struct Results {
     diff_current: u64,
     shares_good: u64,
     shares_total: u64,
@@ -49,10 +49,10 @@ struct Results {
 }
 
 #[derive(Deserialize, Debug)]
-struct Connection {
+pub struct Connection {
     pool: String,
     ip: Option<String>,
-    uptime: u64,
+    pub(crate) uptime: u64,
     uptime_ms: u64,
     ping: u64,
     failures: u64,
@@ -66,11 +66,11 @@ struct Connection {
     avg_time: u64,
     avg_time_ms: u64,
     hashes_total: u64,
-    error_log: Vec<String>,
+    pub(crate) error_log: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
-struct Cpu {
+pub struct Cpu {
     brand: String,
     family: u64,
     model: u64,
@@ -95,8 +95,8 @@ struct Cpu {
 }
 
 #[derive(Deserialize, Debug)]
-struct Hashrate {
-    total: Vec<Option<u64>>,
+pub struct Hashrate {
+    pub(crate) total: Vec<Option<u64>>,
     highest: Option<u64>,
     threads: Vec<String>,
 }

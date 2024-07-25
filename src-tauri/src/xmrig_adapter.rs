@@ -45,7 +45,6 @@ pub struct XmrigAdapter {
 pub struct XmrigInstance {
     shutdown: Shutdown,
     handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
-    http_client: XmrigHttpApiClient,
 }
 
 impl XmrigAdapter {
@@ -60,7 +59,7 @@ impl XmrigAdapter {
 
         }
     }
-    pub fn spawn(&self) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance), anyhow::Error> {
+    pub fn spawn(&self) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
         let (tx, rx) = tokio::sync::mpsc::channel(100);
         let cache_dir = tauri::api::path::cache_dir()
             .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
@@ -77,12 +76,13 @@ impl XmrigAdapter {
         args.push(format!("--donate-level=1"));
         args.push(format!("--user={}", self.monero_address));
         dbg!(&args);
+        let client =
+            XmrigHttpApiClient::new(format!("http://127.0.0.1:{}", self.http_api_port), self.http_api_token.clone());
 
         Ok((
             rx,
             XmrigInstance {
                 shutdown: xmrig_shutdown,
-                http_client: XmrigHttpApiClient::new(format!("http://127.0.0.1:{}", self.http_api_port), self.http_api_token.clone()),
                 handle: Some(tokio::spawn(async move {
                     // TODO: Ensure version string is not malicious
                     let version = Self::ensure_latest(cache_dir.clone(), force_download).await?;
@@ -110,8 +110,11 @@ impl XmrigAdapter {
                     Ok(())
                 })),
             },
+            client
         ))
     }
+
+
 
     async fn ensure_latest(cache_dir: PathBuf, force_download: bool) -> Result<String, Error> {
         let latest_release = fetch_latest_release().await?;
