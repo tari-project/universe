@@ -9,7 +9,7 @@ use tar::Archive;
 use tari_shutdown::Shutdown;
 use tokio::fs;
 use tokio::fs::OpenOptions;
-use tokio::fs::{copy, File};
+use tokio::fs::{File};
 use tokio::io::AsyncWriteExt;
 use tokio::io::BufReader;
 use tokio::runtime::Handle;

@@ -1,6 +1,5 @@
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use tari_shutdown::{Shutdown, ShutdownSignal};
-use tauri::api::process::Command;
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
