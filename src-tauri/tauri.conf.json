@@ -47,8 +47,8 @@
         "icons/icon.ico"
       ],
       "externalBin": [
-        "../binaries/tari/esme/minotari_node",
-        "../binaries/tari/esme/minotari_merge_mining_proxy"
+        "../binaries/tari/esme/v1.0.0-pre.18/minotari_node",
+        "../binaries/tari/esme/v1.0.0-pre.18/minotari_merge_mining_proxy"
       ]
     }
   }
