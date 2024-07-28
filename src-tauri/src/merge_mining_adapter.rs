@@ -1,5 +1,6 @@
 use anyhow::Error;
 use async_trait::async_trait;
+use dirs_next::{cache_dir, data_dir, data_local_dir};
 use tari_shutdown::Shutdown;
 use tokio::task::JoinHandle;
 use crate::binary_resolver::{Binaries, BinaryResolver};
@@ -27,7 +28,11 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         let inner_shutdown = Shutdown::new();
         let mut shutdown_signal = inner_shutdown.to_signal();
 
-        let args : Vec::<String> = vec![];
+        let working_dir = data_local_dir().unwrap().join("tari-universe").join("mmproxy");
+        std::fs::create_dir_all(&working_dir)?;
+        let args : Vec::<String> = vec!["-b".to_string(), working_dir.to_str().unwrap().to_string(),
+        "--non-interactive-mode".to_string()];
+        dbg!(&args);
         Ok((
         MergeMiningProxyInstance {
             shutdown: inner_shutdown,
@@ -41,6 +46,13 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     .kill_on_drop(true)
                     .spawn()?;
 
+
+                shutdown_signal.wait().await;
+                println!("Stopping mmproxy");
+
+                child.kill().await?;
+                let out = child.wait_with_output().await?;
+                println!("stdout: {}", String::from_utf8_lossy(&out.stdout));
                 Ok(())
             }))
         }, MergeMiningProxyStatusMonitor {}))
@@ -74,7 +86,9 @@ impl ProcessInstance for MergeMiningProxyInstance {
     async fn stop(&mut self) -> Result<(), Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
-        handle.unwrap().await?
+        let res = handle.unwrap().await??;
+        Ok(res)
+
     }
 }
 

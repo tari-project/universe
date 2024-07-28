@@ -41,4 +41,10 @@ watcher: Arc::new(RwLock::new(process_watcher))
         // todo!()
         Ok(0)
     }
+
+    pub async fn stop(&self) -> Result<(), anyhow::Error> {
+        let mut process_watcher = self.watcher.write().await;
+        process_watcher.stop().await?;
+        Ok(())
+    }
 }

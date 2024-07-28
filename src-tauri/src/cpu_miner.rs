@@ -47,7 +47,7 @@ impl CpuMiner {
                     host_name: "127.0.0.1".to_string(),
                       // port: local_mm_proxy.try_get_listening_port().await?
                     // TODO: Replace with actual port
-                    port: 18143,
+                    port: 18081,
                                  }
             }
         };

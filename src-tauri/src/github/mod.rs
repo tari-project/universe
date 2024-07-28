@@ -50,7 +50,7 @@ pub async fn list_releases(
     println!("Releases for {}/{}:", repo_owner, repo_name);
     let mut res = vec! [];
     for release in releases {
-        println!("- {}", release.tag_name);
+        // println!("- {}", release.tag_name);
         // Remove any v prefix
         let tag_name = release.tag_name.trim_start_matches('v').to_string();
         // res.push(semver::Version::parse(&tag_name)?);

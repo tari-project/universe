@@ -100,5 +100,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         //TODO
         Ok(())
     }
+
+    pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
+        self.internal_shutdown.trigger();
+        if let Some(task) = self.watcher_task.take() {
+            task.await??;
+        }
+        Ok(())
+    }
 }
 

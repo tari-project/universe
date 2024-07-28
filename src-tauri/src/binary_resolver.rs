@@ -70,7 +70,7 @@ pub struct GithubReleasesAdapter  {
 impl LatestVersionApiAdapter for GithubReleasesAdapter {
     async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
         let releases = github::list_releases(&self.owner, &self.repo).await?;
-        dbg!(&releases);
+        // dbg!(&releases);
         let network = "pre";
         let version = releases.iter().filter_map(|v| if v.version.pre.starts_with(network) { Some(&v.version) } else { None }).max().ok_or_else(|| anyhow!("No pre release found"))?;
 

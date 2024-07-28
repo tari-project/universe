@@ -52,6 +52,9 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
         .stop()
         .await
         .map_err(|e| e.to_string())?;
+
+    // stop the mmproxy. TODO: change it so that the cpu miner stops this dependency.
+    state.mm_proxy_manager.write().await.stop().await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
