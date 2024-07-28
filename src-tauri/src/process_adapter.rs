@@ -23,5 +23,5 @@ pub trait StatusMonitor {
 #[async_trait]
 pub trait ProcessInstance : Send + Sync + 'static {
     fn ping(&self) -> bool;
-    async fn stop(&self) -> Result<(), anyhow::Error>;
+    async fn stop(&mut self) -> Result<(), anyhow::Error>;
 }

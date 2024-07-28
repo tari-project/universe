@@ -34,7 +34,11 @@ async fn start_mining<'r>(
         .write()
         .await
         .start(state.shutdown.to_signal(),  &config, &mm_proxy_manager).await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            dbg!(e.to_string());
+            e.to_string()
+        })?;
+    dbg!("command start finished");
     Ok(())
 }
 

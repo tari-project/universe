@@ -29,6 +29,7 @@ setInterval(() => {
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [ error, setError] = useState("");
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -44,7 +45,8 @@ function App() {
           console.log("Mining started")
 
       }).catch((e) => {
-            console.error("Could not start mining", e)
+          console.error("Could not start mining", e)
+          setError(e);
       });
   }
 
@@ -53,13 +55,15 @@ function App() {
             console.log("Mining stopped")
 
         }).catch((e) => {
-                console.error("Could not stop mining", e)
+            console.error("Could not stop mining", e)
+            setError(e);
         });
   }
 
   return (
     <div className="container">
       <h1>Tari Universe V1</h1>
+        <pre style={{ backgroundColor : "F00"}}>{error}</pre>
       <pre id="log-area">
 
       </pre>

@@ -64,13 +64,17 @@ pub struct MergeMiningProxyStatusMonitor {
 #[async_trait]
 impl ProcessInstance for MergeMiningProxyInstance {
     fn ping(&self) -> bool {
-        // todo!()
-        return false;
+        self
+            .handle
+            .as_ref()
+            .map(|m| !m.is_finished())
+            .unwrap_or_else(|| false)
     }
 
-    async fn stop(&self) -> Result<(), Error> {
-        // todo!()
-        Ok(())
+    async fn stop(&mut self) -> Result<(), Error> {
+        self.shutdown.trigger();
+        let handle = self.handle.take();
+        handle.unwrap().await?
     }
 }
 

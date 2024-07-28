@@ -43,7 +43,8 @@ pub async fn list_releases(
     if response.status() != 200 {
         return Err(anyhow!("Failed to fetch releases: {}", response.status()));
     }
-    let releases: Vec<Release> = response.json().await?;
+    let data = response.text().await ?;
+    let releases: Vec<Release> = serde_json::from_str(&data)?;
 
     println!("Releases for {}/{}:", repo_owner, repo_name);
     let mut res = vec! [];
