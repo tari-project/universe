@@ -5,9 +5,9 @@ use async_trait::async_trait;
 use semver::Version;
 use tauri::api::path::cache_dir;
 use tokio::fs;
+use crate::download_utils::{download_file, extract};
 use crate::github;
 use crate::xmrig::latest_release::fetch_latest_release;
-use crate::xmrig_adapter::extract;
 
 
 const TARI_SUITE_VERSION_URL : &str = "https://api.github.com/repos/tari-project/tari/releases/tags/v1.0.0-pre.18";
@@ -18,15 +18,26 @@ pub struct BinaryResolver {
 }
 
 
+#[derive(Debug, Clone)]
 pub struct VersionDownloadInfo {
-    version: Version
+    pub(crate) version: Version,
+    pub(crate) assets: Vec<VersionAsset>
 }
+
+#[derive(Debug, Clone)]
+pub struct VersionAsset {
+    pub(crate) url: String,
+    pub(crate) name: String
+}
+
 
 #[async_trait]
 pub trait LatestVersionApiAdapter : Send + Sync + 'static {
    async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error>;
 
     fn get_binary_folder(&self) -> PathBuf;
+
+    fn find_version_for_platform(&self, version: &VersionDownloadInfo) -> Result<VersionAsset, Error>;
 }
 
 
@@ -43,6 +54,10 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     fn get_binary_folder(&self) -> PathBuf {
         todo!()
     }
+
+    fn find_version_for_platform(&self, version: &VersionDownloadInfo) -> Result<VersionAsset, Error> {
+        todo!()
+    }
 }
 
 pub struct GithubReleasesAdapter  {
@@ -57,12 +72,26 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let releases = github::list_releases(&self.owner, &self.repo).await?;
         dbg!(&releases);
         let network = "pre";
-        let version = releases.iter().filter(|v| v.pre.contains(network)).max().ok_or_else(|| anyhow!("No pre release found"))?;
-        Ok(VersionDownloadInfo{ version : version.clone()} )
+        let version = releases.iter().filter_map(|v| if v.version.pre.starts_with(network) { Some(&v.version) } else { None }).max().ok_or_else(|| anyhow!("No pre release found"))?;
+
+        let info = releases.iter().find(|v| &v.version == version).ok_or_else(|| anyhow!("No version found"))?;
+
+        Ok(info.clone())
     }
 
     fn get_binary_folder(&self) -> PathBuf {
         cache_dir().unwrap().join("tari-universe").join(&self.repo)
+    }
+
+    fn find_version_for_platform(&self, version: &VersionDownloadInfo) -> Result<VersionAsset, Error> {
+        // TODO: add platform specific logic
+        let name_suffix = "windows-x64.exe.zip";
+        let platform = version
+            .assets
+            .iter()
+            .find(|a| a.name.ends_with(name_suffix))
+            .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
+        Ok(platform.clone())
     }
 }
 
@@ -131,20 +160,21 @@ let adapter=        self.adapters.get(&binary).ok_or_else(|| anyhow!("No latest 
             }
 
 
-            todo!()
+            let asset = adapter.find_version_for_platform(&latest_release)?;
             // let platform = latest_release
             //     .get_asset(&::get_os_string())
             //     .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
-            // println!("Downloading file");
-            // println!("Downloading file from {}", &platform.url);
+            println!("Downloading file");
+            println!("Downloading file from {}", &asset.url);
             //
-            // let in_progress_file = in_progress_dir.join(&platform.name);
-            // crate::xmrig_adapter::download_file(&platform.url, &in_progress_file).await?;
-            //
-            // println!("Renaming file");
-            // println!("Extracting file");
-            // extract(&in_progress_file, &xmrig_dir).await?;
-            // fs::remove_dir_all(in_progress_dir).await?;
+            let in_progress_file = in_progress_dir.join(&asset.name);
+            download_file(&asset.url, &in_progress_file).await?;
+            println!("Renaming file");
+            println!("Extracting file");
+            let bin_dir = adapter.get_binary_folder().join(&latest_release.version.to_string());
+            dbg!(&bin_dir);
+            extract(&in_progress_file, &bin_dir).await?;
+            fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
     }

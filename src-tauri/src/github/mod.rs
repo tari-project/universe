@@ -1,6 +1,7 @@
 use anyhow::anyhow;
 use reqwest::Client;
 use serde::Deserialize;
+use crate::binary_resolver::{VersionAsset, VersionDownloadInfo};
 
 #[derive(Deserialize)]
 struct Release {
@@ -27,7 +28,7 @@ pub async fn get_latest_release(repo_owner: &str, repo_name: &str, tag: &str) ->
 pub async fn list_releases(
     repo_owner: &str,
     repo_name: &str,
-) -> Result<Vec<semver::Version>, anyhow::Error> {
+) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
 
     let client = Client::new();
     let url = format!(
@@ -52,7 +53,18 @@ pub async fn list_releases(
         println!("- {}", release.tag_name);
         // Remove any v prefix
         let tag_name = release.tag_name.trim_start_matches('v').to_string();
-        res.push(semver::Version::parse(&tag_name)?);
+        // res.push(semver::Version::parse(&tag_name)?);
+        let mut assets = vec! [];
+        for asset in release.assets {
+            assets.push(VersionAsset {
+                url: asset.browser_download_url,
+                name: asset.name,
+            });
+        }
+        res.push(VersionDownloadInfo {
+            version: semver::Version::parse(&tag_name)?,
+            assets,
+        });
     }
 
     Ok(res)

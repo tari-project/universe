@@ -11,6 +11,7 @@ mod process_adapter;
 mod merge_mining_adapter;
 mod binary_resolver;
 mod github;
+mod download_utils;
 
 
 use crate::cpu_miner::CpuMiner;
