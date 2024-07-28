@@ -113,22 +113,25 @@ impl BinaryResolver {
     pub fn current() -> Self {
         Self::new()
     }
-    pub fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
-        todo!()
+    pub fn resolve_path(&self, binary: Binaries, version: &Version) -> Result<PathBuf, anyhow::Error> {
+        let adapter=        self.adapters.get(&binary).ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
+        let base_dir =
+            adapter.get_binary_folder().join(&version.to_string());
+        match binary {
+            Binaries::Xmrig => {
+                let xmrig_bin = base_dir.join("xmrig");
+                Ok(xmrig_bin)
+            }
+            Binaries::MergeMiningProxy => {
+                let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
+                Ok(mmproxy_bin)
+            }
+        }
     }
 
-    pub async fn ensure_latest(&self, binary: Binaries) -> Result<(), anyhow::Error> {
-
-        // TODO: Ensure version string is not malicious
+    pub async fn ensure_latest(&self, binary: Binaries) -> Result<Version, anyhow::Error> {
         let version = self.ensure_latest_inner(binary, false).await?;
-        // let adapter=        self.adapters.get(&binary).ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
-        // let mmproxy_dir =
-        //     adapter.get_binary_folder().join(&version)
-        //     .join();
-        // let mmproxy_bin = mmproxy_dir.join("mmproxy");
-
-        Ok(())
-        // todo!()
+        Ok(version)
     }
 
     async fn ensure_latest_inner(&self, binary: Binaries, force_download: bool) -> Result<Version, Error> {

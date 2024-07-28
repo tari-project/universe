@@ -32,9 +32,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         MergeMiningProxyInstance {
             shutdown: inner_shutdown,
             handle: Some(tokio::spawn(async move {
-                BinaryResolver::current().ensure_latest(Binaries::MergeMiningProxy).await?;
+                let version =  BinaryResolver::current().ensure_latest(Binaries::MergeMiningProxy).await?;
 
-                let mut child = tokio::process::Command::new(BinaryResolver::current().resolve_path(Binaries::MergeMiningProxy)?)
+                let mut child = tokio::process::Command::new(BinaryResolver::current().resolve_path(Binaries::MergeMiningProxy, &version)?)
                     .args(args)
                     .stdout(std::process::Stdio::piped())
                     .stderr(std::process::Stdio::piped())
