@@ -18,6 +18,7 @@ dirs-next = "2.0.0"
 reqwest = { version = "0.12.5", features = ["stream", "json"] }
 tauri = { version = "1", features = [ "isolation", "shell-open", "process-command-api"] }
 tokio = { version = "1", features = ["full"] }
+semver = "1.0.23"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 futures-util = "0.3.30"

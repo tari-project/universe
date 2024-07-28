@@ -1,16 +1,16 @@
 use std::sync::{Arc};
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
+use crate::merge_mining_adapter::MergeMiningProxyAdapter;
 use crate::process_watcher::ProcessWatcher;
-use crate::sidecar_adapter::{MergeMiningProxyInstance, SidecarAdapter};
 
 pub struct MmProxyManager {
-    watcher: Arc<RwLock<ProcessWatcher<SidecarAdapter<MergeMiningProxyInstance>, MergeMiningProxyInstance>>>
+    watcher: Arc<RwLock<ProcessWatcher<MergeMiningProxyAdapter>>>
 }
 
 impl MmProxyManager {
     pub fn new() -> Self {
-        let sidecar_adapter = SidecarAdapter::<MergeMiningProxyInstance>::new("minotari_merge_mining_proxy".to_string());
+        let sidecar_adapter = MergeMiningProxyAdapter::new();
         let process_watcher = ProcessWatcher::new(sidecar_adapter);
 
         Self {
@@ -22,6 +22,7 @@ watcher: Arc::new(RwLock::new(process_watcher))
 
     pub async fn start(&self, app_shutdown: ShutdownSignal) -> Result<(), anyhow::Error> {
 
+        dbg!("Starting merge mining proxy");
         // let (mut rx, mut child)  = Command::new_sidecar("minotari_merge_mining_proxy")?.spawn()?;
         // let sidecar_adapter = SidecarAdapter::<MergeMiningProxyInstance>::new("minotari_merge_mining_proxy".to_string());
         let mut process_watcher = self.watcher.write().await;

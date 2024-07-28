@@ -126,7 +126,6 @@ impl CpuMiner {
         match &self.api_client {
             Some(client) => {
                 let xmrig_status =client.summary().await?;
-                dbg!(&xmrig_status);
                 Ok(CpuMinerStatus {
                     is_mining: xmrig_status.hashrate.total.len() > 0 && xmrig_status.hashrate.total[0].is_some()  && xmrig_status.hashrate.total[0].unwrap() > 0,
                     connection: CpuMinerConnectionStatus {

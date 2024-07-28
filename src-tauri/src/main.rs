@@ -7,8 +7,10 @@ mod xmrig_adapter;
 mod mm_proxy_manager;
 mod process_watcher;
 
-mod sidecar_adapter;
 mod process_adapter;
+mod merge_mining_adapter;
+mod binary_resolver;
+mod github;
 
 
 use crate::cpu_miner::CpuMiner;
