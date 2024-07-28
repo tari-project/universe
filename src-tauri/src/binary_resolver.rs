@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use semver::Version;
 use tauri::api::path::cache_dir;
 use tokio::fs;
 use crate::github;
@@ -18,7 +19,7 @@ pub struct BinaryResolver {
 
 
 pub struct VersionDownloadInfo {
-    version: String
+    version: Version
 }
 
 #[async_trait]
@@ -46,18 +47,22 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 
 pub struct GithubReleasesAdapter  {
 
+    pub repo: String,
+    pub owner: String
 }
 
 #[async_trait]
 impl LatestVersionApiAdapter for GithubReleasesAdapter {
     async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
-        let releases = github::list_releases("tari-project", "tari").await?;
-        dbg!(releases);
-        todo!()
+        let releases = github::list_releases(&self.owner, &self.repo).await?;
+        dbg!(&releases);
+        let network = "pre";
+        let version = releases.iter().filter(|v| v.pre.contains(network)).max().ok_or_else(|| anyhow!("No pre release found"))?;
+        Ok(VersionDownloadInfo{ version : version.clone()} )
     }
 
     fn get_binary_folder(&self) -> PathBuf {
-        todo!()
+        cache_dir().unwrap().join("tari-universe").join(&self.repo)
     }
 }
 
@@ -66,7 +71,10 @@ impl BinaryResolver {
     pub fn new() -> Self {
         let mut adapters = HashMap::<Binaries, Box<dyn LatestVersionApiAdapter >>::new();
         adapters.insert(Binaries::Xmrig, Box::new(XmrigVersionApiAdapter{}));
-        adapters.insert(Binaries::MergeMiningProxy, Box::new(GithubReleasesAdapter {}));
+        adapters.insert(Binaries::MergeMiningProxy, Box::new(GithubReleasesAdapter {
+            repo: "tari".to_string(),
+            owner: "tari-project".to_string()
+        }));
         Self {
    adapters
         }
@@ -94,7 +102,7 @@ impl BinaryResolver {
         // todo!()
     }
 
-    async fn ensure_latest_inner(&self, binary: Binaries, force_download: bool) -> Result<String, Error> {
+    async fn ensure_latest_inner(&self, binary: Binaries, force_download: bool) -> Result<Version, Error> {
         let cache_dir = tauri::api::path::cache_dir()
             .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
             .join("tari-universe");
@@ -102,7 +110,7 @@ let adapter=        self.adapters.get(&binary).ok_or_else(|| anyhow!("No latest 
         let latest_release = adapter.fetch_latest_release().await?;
         // TODO: validate that version doesn't have any ".." or "/" in it
 
-        let bin_folder = adapter.get_binary_folder().join(&latest_release.version);
+        let bin_folder = adapter.get_binary_folder().join(&latest_release.version.to_string());
         if force_download {
             println!("Cleaning up existing dir");
             let _ = fs::remove_dir_all(&bin_folder).await;
