@@ -1,19 +1,18 @@
+use crate::process_adapter::{ProcessAdapter, ProcessInstance};
 use std::marker::PhantomData;
 use tari_shutdown::{Shutdown, ShutdownSignal};
-use tokio::select;
 use tauri::async_runtime::JoinHandle;
+use tokio::select;
 use tokio::time::MissedTickBehavior;
-use crate::process_adapter::{ProcessAdapter, ProcessInstance};
 
 pub struct ProcessWatcher<TAdapter> {
     adapter: TAdapter,
-    watcher_task:  Option<JoinHandle<Result<(), anyhow::Error>>>,
+    watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     internal_shutdown: Shutdown,
     poll_time: tokio::time::Duration,
-
 }
 
-impl <TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
+impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub fn new(adapter: TAdapter) -> Self {
         Self {
             adapter,
@@ -25,8 +24,6 @@ impl <TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
-
-
     pub async fn start(&mut self, app_shutdown: ShutdownSignal) -> Result<(), anyhow::Error> {
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
@@ -35,7 +32,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
         let mut inner_shutdown = self.internal_shutdown.to_signal();
 
-        let poll_time  =self.poll_time;
+        let poll_time = self.poll_time;
 
         // let (mut rx, mut child) = self.adapter.spawn()?;
         let mut child = self.adapter.spawn()?;
@@ -109,4 +106,3 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         Ok(())
     }
 }
-

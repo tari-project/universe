@@ -2,15 +2,12 @@ mod models;
 
 pub struct XmrigHttpApiClient {
     url: String,
-    access_token: String
+    access_token: String,
 }
 
 impl XmrigHttpApiClient {
     pub fn new(url: String, access_token: String) -> Self {
-        Self {
-            url,
-            access_token
-        }
+        Self { url, access_token }
     }
 
     async fn get(&self, path: &str) -> Result<reqwest::Response, reqwest::Error> {

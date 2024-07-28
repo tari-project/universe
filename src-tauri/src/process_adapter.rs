@@ -13,15 +13,12 @@ pub trait ProcessAdapter {
     }
 }
 
-
-
-
 pub trait StatusMonitor {
     fn status(&self) -> Result<(), anyhow::Error>;
 }
 
 #[async_trait]
-pub trait ProcessInstance : Send + Sync + 'static {
+pub trait ProcessInstance: Send + Sync + 'static {
     fn ping(&self) -> bool;
     async fn stop(&mut self) -> Result<(), anyhow::Error>;
 }

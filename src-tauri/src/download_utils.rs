@@ -1,4 +1,3 @@
-
 pub async fn download_file(url: &str, destination: &Path) -> Result<(), anyhow::Error> {
     println!("Downloading {} to {:?}", url, destination);
     let response = reqwest::get(url).await?;
@@ -53,17 +52,17 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
     Ok(())
 }
 
-use std::path::{Path, PathBuf};
+use crate::xmrig::http_api::XmrigHttpApiClient;
 use anyhow::anyhow;
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
+use std::path::{Path, PathBuf};
 use tar::Archive;
 use tokio::fs;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
-use crate::xmrig::http_api::XmrigHttpApiClient;
 
 // Taken from async_zip example
 

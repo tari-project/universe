@@ -1,4 +1,6 @@
 use crate::cpu_miner::CpuMinerEvent;
+use crate::download_utils::{download_file, extract};
+use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
@@ -8,29 +10,32 @@ use std::path::{Path, PathBuf};
 use tar::Archive;
 use tari_shutdown::Shutdown;
 use tokio::fs;
+use tokio::fs::File;
 use tokio::fs::OpenOptions;
-use tokio::fs::{File};
 use tokio::io::AsyncWriteExt;
 use tokio::io::BufReader;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
-use crate::download_utils::{download_file, extract};
-use crate::xmrig::http_api::XmrigHttpApiClient;
-
 
 pub enum XmrigNodeConnection {
-    LocalMmproxy{ host_name: String, port: u16},
+    LocalMmproxy { host_name: String, port: u16 },
 }
 
 impl XmrigNodeConnection {
     pub fn generate_args(&self) -> Vec<String> {
         match self {
-            XmrigNodeConnection::LocalMmproxy{ host_name, port} => {
+            XmrigNodeConnection::LocalMmproxy { host_name, port } => {
                 vec![
-                    "--daemon".to_string(),  format!("--url={}:{}", host_name, port), "--coin=monero".to_string(),
+                    "--daemon".to_string(),
+                    format!("--url={}:{}", host_name, port),
+                    "--coin=monero".to_string(),
                     // TODO: Generate password
-                "--http-port".to_string(), "9090".to_string(), "--http-access-token=pass".to_string()]},
+                    "--http-port".to_string(),
+                    "9090".to_string(),
+                    "--http-access-token=pass".to_string(),
+                ]
+            }
         }
     }
 }
@@ -41,7 +46,7 @@ pub struct XmrigAdapter {
     monero_address: String,
     // TODO: secure
     http_api_token: String,
-    http_api_port: u16
+    http_api_port: u16,
 }
 
 pub struct XmrigInstance {
@@ -56,12 +61,12 @@ impl XmrigAdapter {
             node_connection: xmrig_node_connection,
             monero_address,
             http_api_token: "pass".to_string(),
-            http_api_port: 9090
-
-
+            http_api_port: 9090,
         }
     }
-    pub fn spawn(&self) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
+    pub fn spawn(
+        &self,
+    ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
         let (tx, rx) = tokio::sync::mpsc::channel(100);
         let cache_dir = tauri::api::path::cache_dir()
             .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
@@ -78,8 +83,10 @@ impl XmrigAdapter {
         args.push(format!("--donate-level=1"));
         args.push(format!("--user={}", self.monero_address));
         dbg!(&args);
-        let client =
-            XmrigHttpApiClient::new(format!("http://127.0.0.1:{}", self.http_api_port), self.http_api_token.clone());
+        let client = XmrigHttpApiClient::new(
+            format!("http://127.0.0.1:{}", self.http_api_port),
+            self.http_api_token.clone(),
+        );
 
         Ok((
             rx,
@@ -95,8 +102,10 @@ impl XmrigAdapter {
                     let xmrig_bin = xmrig_dir.join("xmrig");
                     let mut xmrig = tokio::process::Command::new(xmrig_bin)
                         .args(args)
-                        .stdout(std::process::Stdio::piped())
-                        .stderr(std::process::Stdio::piped())
+                        // TODO: IF you uncomment these, then it will capture the output to mem. Not sure if that is better or worse
+                        // than outputing it immediately
+                        // .stdout(std::process::Stdio::piped())
+                        // .stderr(std::process::Stdio::piped())
                         .kill_on_drop(true)
                         .spawn()?;
 
@@ -104,6 +113,7 @@ impl XmrigAdapter {
                     //     tauri::api::process::Command::new(xmrig_bin.to_str().unwrap().to_string())
                     //         .current_dir(xmrig_dir)
                     //         .spawn()?;
+                    // TODO: Try use an either here
                     shutdown_signal.wait().await;
                     println!("Stopping xmrig");
 
@@ -112,11 +122,9 @@ impl XmrigAdapter {
                     Ok(())
                 })),
             },
-            client
+            client,
         ))
     }
-
-
 
     async fn ensure_latest(cache_dir: PathBuf, force_download: bool) -> Result<String, Error> {
         let latest_release = fetch_latest_release().await?;

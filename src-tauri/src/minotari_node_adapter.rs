@@ -8,11 +8,11 @@ use tari_shutdown::Shutdown;
 use tokio::select;
 use tokio::task::JoinHandle;
 
-pub struct MergeMiningProxyAdapter {
+pub struct MinotariNodeAdapter {
     force_download: bool,
 }
 
-impl MergeMiningProxyAdapter {
+impl MinotariNodeAdapter {
     pub fn new() -> Self {
         Self {
             force_download: false,
@@ -20,43 +20,34 @@ impl MergeMiningProxyAdapter {
     }
 }
 
-impl ProcessAdapter for MergeMiningProxyAdapter {
-    type Instance = MergeMiningProxyInstance;
-    type StatusMonitor = MergeMiningProxyStatusMonitor;
+impl ProcessAdapter for MinotariNodeAdapter {
+    type Instance = MinotariNodeInstance;
+    type StatusMonitor = MinotariNodeStatusMonitor;
 
     fn spawn_inner(&self) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let mut shutdown_signal = inner_shutdown.to_signal();
 
-        let working_dir = data_local_dir()
-            .unwrap()
-            .join("tari-universe")
-            .join("mmproxy");
+        dbg!("STarting node");
+        let working_dir = data_local_dir().unwrap().join("tari-universe").join("node");
         std::fs::create_dir_all(&working_dir)?;
         let args: Vec<String> = vec![
             "-b".to_string(),
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
-            "-p".to_string(),
-            // TODO: Test that this fails with an invalid value.Currently the process continues
-            "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/18142".to_string(),
-            "-p".to_string(),
-            // TODO: If you leave this out, it does not start. It just halts. Probably an error on the mmproxy noninteractive
-            "merge_mining_proxy.wallet_payment_address=f2FfTTPa4CJRwgWbR1aXnxYgrmj3qDPvnifAKdcuSStmGfjKzmt77LZQMKaE6qBhyckzcEG1gLLekSQRNye4ybdw5oA".to_string()
-
+            "--mining-enabled".to_string()
         ];
         dbg!(&args);
         Ok((
-            MergeMiningProxyInstance {
+            MinotariNodeInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::MergeMiningProxy)
+                        .ensure_latest(Binaries::MinotariNode)
                         .await?;
 
                     let mut child = tokio::process::Command::new(
-                        BinaryResolver::current()
-                            .resolve_path(Binaries::MergeMiningProxy, &version)?,
+                        BinaryResolver::current().resolve_path(Binaries::MinotariNode, &version)?,
                     )
                     .args(args)
                     // .stdout(std::process::Stdio::piped())
@@ -73,27 +64,32 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                             dbg!("Exited badly:", res2?);
                         },
                     };
+                    println!("Stopping minotari node");
+
+                    // child.kill().await?;
+                    // let out = child.wait_with_output().await?;
+                    // println!("stdout: {}", String::from_utf8_lossy(&out.stdout));
                     Ok(())
                 })),
             },
-            MergeMiningProxyStatusMonitor {},
+            MinotariNodeStatusMonitor {},
         ))
     }
 
     fn name(&self) -> &str {
-        "minotari_merge_mining_proxy"
+        "minotari_node"
     }
 }
 
-pub struct MergeMiningProxyInstance {
+pub struct MinotariNodeInstance {
     pub shutdown: Shutdown,
     handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
 }
 
-pub struct MergeMiningProxyStatusMonitor {}
+pub struct MinotariNodeStatusMonitor {}
 
 #[async_trait]
-impl ProcessInstance for MergeMiningProxyInstance {
+impl ProcessInstance for MinotariNodeInstance {
     fn ping(&self) -> bool {
         self.handle
             .as_ref()
@@ -109,7 +105,7 @@ impl ProcessInstance for MergeMiningProxyInstance {
     }
 }
 
-impl StatusMonitor for MergeMiningProxyStatusMonitor {
+impl StatusMonitor for MinotariNodeStatusMonitor {
     fn status(&self) -> Result<(), Error> {
         todo!()
     }

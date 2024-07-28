@@ -1,17 +1,17 @@
 use crate::merge_mining_adapter::MergeMiningProxyAdapter;
+use crate::minotari_node_adapter::MinotariNodeAdapter;
 use crate::process_watcher::ProcessWatcher;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
-use tokio::time::sleep;
 
-pub struct MmProxyManager {
-    watcher: Arc<RwLock<ProcessWatcher<MergeMiningProxyAdapter>>>,
+pub struct NodeManager {
+    watcher: Arc<RwLock<ProcessWatcher<MinotariNodeAdapter>>>,
 }
 
-impl MmProxyManager {
+impl NodeManager {
     pub fn new() -> Self {
-        let sidecar_adapter = MergeMiningProxyAdapter::new();
+        let sidecar_adapter = MinotariNodeAdapter::new();
         let process_watcher = ProcessWatcher::new(sidecar_adapter);
 
         Self {
@@ -19,10 +19,15 @@ impl MmProxyManager {
         }
     }
 
+    pub async fn ensure_started(&self, app_shutdown: ShutdownSignal) -> Result<(), anyhow::Error> {
+        let mut process_watcher = self.watcher.write().await;
+        process_watcher.start(app_shutdown).await?;
+        process_watcher.wait_ready().await?;
+        Ok(())
+    }
+
     pub async fn start(&self, app_shutdown: ShutdownSignal) -> Result<(), anyhow::Error> {
-        dbg!("Starting merge mining proxy");
-        // let (mut rx, mut child)  = Command::new_sidecar("minotari_merge_mining_proxy")?.spawn()?;
-        // let sidecar_adapter = SidecarAdapter::<MergeMiningProxyInstance>::new("minotari_merge_mining_proxy".to_string());
+        dbg!("Starting node");
         let mut process_watcher = self.watcher.write().await;
         process_watcher.start(app_shutdown).await?;
 
@@ -30,11 +35,8 @@ impl MmProxyManager {
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
-        // TODO: I'm ready when the http health service says so
+        // I'm ready when the http health service says so
         self.watcher.read().await.wait_ready().await?;
-        // TODO: Currently the mmproxy takes a long time to connect to all the monero daemons. This should be changed to waiting for the http or grpc service to
-        // say it is online
-        sleep(std::time::Duration::from_secs(20)).await;
         Ok(())
     }
 
