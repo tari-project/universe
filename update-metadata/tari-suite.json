@@ -1,0 +1,16 @@
+{
+  "url": "https://github.com/tari-project/tari/releases/tag/v1.0.0-pre.18",
+  "version": "1.0.0-pre.18",
+  "ts": 1598627267000,
+  "assets": [
+    {
+      "os": "windows-x64",
+      "id": "msvc-win64",
+      "name": "tari_suite-1.0.0-pre.18-80efbf2-windows-x64.exe.zip",
+      "url": "https://github.com/tari-project/tari/releases/download/v1.0.0-pre.18/tari_suite-1.0.0-pre.18-80efbf2-windows-x64.exe.zip",
+      "size": 1931716,
+      "ts": 1598627243000,
+      "hash": "98f370f87b75e9d2718837c91746a0e6e04d292f4a348bc3fc457c5abdbc94e5"
+    }
+  ]
+}

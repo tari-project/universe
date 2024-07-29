@@ -13,6 +13,12 @@ interface AppState {
     balance: number;
   };
   setWallet: (value: { balance: number }) => void;
+  isMining : boolean,
+  setIsMining: (value: boolean) => void;
+  cpuUsage: number;
+  setCpuUsage: (value: number) => void;
+  hashRate: number;
+  setHashRate: (value: number) => void;
   startMining: () => Promise<void>;
   stopMining: () => Promise<void>;
 }
@@ -28,6 +34,12 @@ const useAppStateStore = create<AppState>((set) => ({
     balance: 0,
   },
   setWallet: (value) => set({ wallet: value }),
+    isMining: false,
+    setIsMining: (value) => set({ isMining: value }),
+    cpuUsage: 0,
+    setCpuUsage: (value) => set({ cpuUsage: value }),
+    hashRate: 0,
+    setHashRate: (value) => set({ hashRate: value }),
   startMining: async () => {
     try {
       await invoke('start_mining', {});
