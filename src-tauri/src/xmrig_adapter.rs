@@ -1,4 +1,6 @@
 use crate::cpu_miner::CpuMinerEvent;
+use crate::download_utils::{download_file, extract};
+use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
@@ -8,27 +10,32 @@ use std::path::{Path, PathBuf};
 use tar::Archive;
 use tari_shutdown::Shutdown;
 use tokio::fs;
+use tokio::fs::File;
 use tokio::fs::OpenOptions;
-use tokio::fs::{File};
 use tokio::io::AsyncWriteExt;
 use tokio::io::BufReader;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
 
-
 pub enum XmrigNodeConnection {
-    LocalMmproxy{ host_name: String, port: u16},
+    LocalMmproxy { host_name: String, port: u16 },
 }
 
 impl XmrigNodeConnection {
     pub fn generate_args(&self) -> Vec<String> {
         match self {
-            XmrigNodeConnection::LocalMmproxy{ host_name, port} => {
+            XmrigNodeConnection::LocalMmproxy { host_name, port } => {
                 vec![
-                    "--daemon".to_string(),  format!("--url={}:{}", host_name, port), "--coin=monero".to_string(),
+                    "--daemon".to_string(),
+                    format!("--url={}:{}", host_name, port),
+                    "--coin=monero".to_string(),
                     // TODO: Generate password
-                "--http-port".to_string(), "9090".to_string(), "--http-access-token=pass".to_string()]},
+                    "--http-port".to_string(),
+                    "9090".to_string(),
+                    "--http-access-token=pass".to_string(),
+                ]
+            }
         }
     }
 }
@@ -39,7 +46,7 @@ pub struct XmrigAdapter {
     monero_address: String,
     // TODO: secure
     http_api_token: String,
-    http_api_port: u16
+    http_api_port: u16,
 }
 
 pub struct XmrigInstance {
@@ -54,12 +61,12 @@ impl XmrigAdapter {
             node_connection: xmrig_node_connection,
             monero_address,
             http_api_token: "pass".to_string(),
-            http_api_port: 9090
-
-
+            http_api_port: 9090,
         }
     }
-    pub fn spawn(&self) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
+    pub fn spawn(
+        &self,
+    ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
         let (tx, rx) = tokio::sync::mpsc::channel(100);
         let cache_dir = tauri::api::path::cache_dir()
             .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
@@ -75,9 +82,13 @@ impl XmrigAdapter {
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push(format!("--donate-level=1"));
         args.push(format!("--user={}", self.monero_address));
-        dbg!(&args);
-        let client =
-            XmrigHttpApiClient::new(format!("http://127.0.0.1:{}", self.http_api_port), self.http_api_token.clone());
+        args.push("--threads=6".to_string());
+
+
+        let client = XmrigHttpApiClient::new(
+            format!("http://127.0.0.1:{}", self.http_api_port),
+            self.http_api_token.clone(),
+        );
 
         Ok((
             rx,
@@ -93,8 +104,10 @@ impl XmrigAdapter {
                     let xmrig_bin = xmrig_dir.join("xmrig");
                     let mut xmrig = tokio::process::Command::new(xmrig_bin)
                         .args(args)
-                        .stdout(std::process::Stdio::piped())
-                        .stderr(std::process::Stdio::piped())
+                        // TODO: IF you uncomment these, then it will capture the output to mem. Not sure if that is better or worse
+                        // than outputing it immediately
+                        // .stdout(std::process::Stdio::piped())
+                        // .stderr(std::process::Stdio::piped())
                         .kill_on_drop(true)
                         .spawn()?;
 
@@ -102,6 +115,7 @@ impl XmrigAdapter {
                     //     tauri::api::process::Command::new(xmrig_bin.to_str().unwrap().to_string())
                     //         .current_dir(xmrig_dir)
                     //         .spawn()?;
+                    // TODO: Try use an either here
                     shutdown_signal.wait().await;
                     println!("Stopping xmrig");
 
@@ -110,11 +124,9 @@ impl XmrigAdapter {
                     Ok(())
                 })),
             },
-            client
+            client,
         ))
     }
-
-
 
     async fn ensure_latest(cache_dir: PathBuf, force_download: bool) -> Result<String, Error> {
         let latest_release = fetch_latest_release().await?;
@@ -210,109 +222,4 @@ fn get_os_string() -> String {
     }
 
     panic!("Unsupported OS");
-}
-
-async fn download_file(url: &str, destination: &Path) -> Result<(), anyhow::Error> {
-    println!("Downloading {} to {:?}", url, destination);
-    let response = reqwest::get(url).await?;
-
-    // Ensure the directory exists
-    if let Some(parent) = destination.parent() {
-        println!("Creating dir {:?}", parent);
-        fs::create_dir_all(parent).await?;
-    }
-
-    // Open a file for writing
-    let mut dest = File::create(destination).await?;
-
-    // Stream the response body directly to the file
-    let mut stream = response.bytes_stream();
-    while let Some(item) = stream.next().await {
-        println!("Writing bytes");
-        dest.write_all(&item?).await?;
-    }
-    println!("Done downloading");
-
-    Ok(())
-}
-
-pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Error> {
-    match file_path.extension() {
-        Some(ext) => match ext.to_str() {
-            Some("gz") => {
-                extract_gz(file_path, dest_dir).await?;
-            }
-            Some("zip") => {
-                extract_zip(file_path, dest_dir).await?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("Unsupported file extension"));
-            }
-        },
-        None => {
-            return Err(anyhow::anyhow!("File has no extension"));
-        }
-    }
-    Ok(())
-}
-
-pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> {
-    let gz_file = std::fs::File::open(gz_path)?;
-    println!("Extracting file at {:?}", gz_path);
-    let decoder = GzDecoder::new(std::io::BufReader::new(gz_file));
-    let mut archive = Archive::new(decoder);
-    println!("Unpacking to {:?}", dest_dir);
-    archive.unpack(dest_dir)?;
-    Ok(())
-}
-use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
-use crate::xmrig::http_api::XmrigHttpApiClient;
-
-// Taken from async_zip example
-
-fn sanitize_file_path(path: &str) -> PathBuf {
-    // Replaces backwards slashes
-    path.replace('\\', "/")
-        // Sanitizes each component
-        .split('/')
-        .map(sanitize_filename::sanitize)
-        .collect()
-}
-async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::Error> {
-    let archive = BufReader::new(fs::File::open(archive).await?).compat();
-    let mut reader = ZipFileReader::new(archive).await?;
-    for index in 0..reader.file().entries().len() {
-        let entry = reader.file().entries().get(index).unwrap();
-        let path = out_dir.join(sanitize_file_path(entry.filename().as_str().unwrap()));
-        // If the filename of the entry ends with '/', it is treated as a directory.
-        // This is implemented by previous versions of this crate and the Python Standard Library.
-        // https://docs.rs/async_zip/0.0.8/src/async_zip/read/mod.rs.html#63-65
-        // https://github.com/python/cpython/blob/820ef62833bd2d84a141adedd9a05998595d6b6d/Lib/zipfile.py#L528
-        let entry_is_dir = entry.dir().unwrap();
-
-        let mut entry_reader = reader.reader_without_entry(index).await?;
-
-        if entry_is_dir {
-            // The directory may have been created if iteration is out of order.
-            if !path.exists() {
-                fs::create_dir_all(&path).await?;
-            }
-        } else {
-            // Creates parent directories. They may not exist if iteration is out of order
-            // or the archive does not contain directory entries.
-            let parent = path.parent().ok_or_else(|| anyhow!("no parent"))?;
-            if !parent.is_dir() {
-                fs::create_dir_all(parent).await?;
-            }
-            let writer = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(&path)
-                .await?;
-            futures_lite::io::copy(&mut entry_reader, &mut writer.compat_write()).await?;
-
-            // Closes the file and manipulates its metadata here if you wish to preserve its metadata from the archive.
-        }
-    }
-    Ok(())
 }

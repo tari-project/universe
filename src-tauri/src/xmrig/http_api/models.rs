@@ -19,7 +19,7 @@ pub(crate) struct Summary {
     paused: bool,
     algorithms: Vec<String>,
     pub(crate) hashrate: Hashrate,
-    hugepages: bool,
+    // hugepages: bool,
 }
 
 #[derive(Deserialize, Debug)]
@@ -45,7 +45,8 @@ pub struct Results {
     avg_time_ms: u64,
     hashes_total: u64,
     best: Vec<u64>,
-    error_log: Vec<String>,
+    // Sometimes this is not present in v6.21.0
+    // error_log: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -66,7 +67,8 @@ pub struct Connection {
     avg_time: u64,
     avg_time_ms: u64,
     hashes_total: u64,
-    pub(crate) error_log: Vec<String>,
+    // Sometimes doesn't exist
+    // pub(crate) error_log: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -96,7 +98,7 @@ pub struct Cpu {
 
 #[derive(Deserialize, Debug)]
 pub struct Hashrate {
-    pub(crate) total: Vec<Option<u64>>,
-    highest: Option<u64>,
-    threads: Vec<String>,
+    pub(crate) total: Vec<Option<f64>>,
+    highest: Option<f64>,
+    threads: Option<Vec<Vec<Option<f64>>>>,
 }

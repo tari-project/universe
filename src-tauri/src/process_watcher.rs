@@ -1,34 +1,29 @@
+use crate::process_adapter::{ProcessAdapter, ProcessInstance};
 use std::marker::PhantomData;
 use tari_shutdown::{Shutdown, ShutdownSignal};
-use tokio::select;
 use tauri::async_runtime::JoinHandle;
+use tokio::select;
 use tokio::time::MissedTickBehavior;
-use crate::process_adapter::{ProcessAdapter, ProcessInstance};
 
-pub struct ProcessWatcher<TAdapter, TInstance> {
+pub struct ProcessWatcher<TAdapter> {
     adapter: TAdapter,
-    watcher_task:  Option<JoinHandle<Result<(), anyhow::Error>>>,
+    watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     internal_shutdown: Shutdown,
     poll_time: tokio::time::Duration,
-    marker: PhantomData<TInstance>
-
 }
 
-impl <TAdapter: ProcessAdapter<TInstance>, TInstance: ProcessInstance> ProcessWatcher<TAdapter, TInstance> {
+impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub fn new(adapter: TAdapter) -> Self {
         Self {
             adapter,
             watcher_task: None,
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(1),
-            marker: PhantomData::default()
         }
     }
 }
 
-impl<TAdapter: ProcessAdapter<TInstance>, TInstance: ProcessInstance> ProcessWatcher<TAdapter,TInstance> {
-
-
+impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub async fn start(&mut self, app_shutdown: ShutdownSignal) -> Result<(), anyhow::Error> {
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
@@ -37,7 +32,7 @@ impl<TAdapter: ProcessAdapter<TInstance>, TInstance: ProcessInstance> ProcessWat
         }
         let mut inner_shutdown = self.internal_shutdown.to_signal();
 
-        let poll_time  =self.poll_time;
+        let poll_time = self.poll_time;
 
         // let (mut rx, mut child) = self.adapter.spawn()?;
         let mut child = self.adapter.spawn()?;
@@ -102,5 +97,12 @@ impl<TAdapter: ProcessAdapter<TInstance>, TInstance: ProcessInstance> ProcessWat
         //TODO
         Ok(())
     }
-}
 
+    pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
+        self.internal_shutdown.trigger();
+        if let Some(task) = self.watcher_task.take() {
+            task.await??;
+        }
+        Ok(())
+    }
+}

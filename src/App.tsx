@@ -14,7 +14,8 @@ import { AppBackground } from './containers/AppBackground';
 import useAppStateStore from './store/appStateStore';
 
 function App() {
-  const { view, background } = useAppStateStore();
+
+  const { view, background, setHashRate, setCpuUsage } = useAppStateStore();
   useEffect(() => {
     const unlistenPromise = listen('message', (event) => {
       console.log('some kind of event', event.event, event.payload);
@@ -22,8 +23,11 @@ function App() {
 
     const intervalId = setInterval(() => {
       invoke('status', {})
-        .then((status) => {
+        .then((status : any) => {
           console.log('Status', status);
+
+          setCpuUsage(status.cpu?.cpu_usage);
+            setHashRate(status.cpu?.hash_rate);
           const logArea = document.getElementById('log-area');
           if (logArea) {
             logArea.innerText = JSON.stringify(status, null, 2);
@@ -33,7 +37,6 @@ function App() {
           console.error('Could not get status', e);
         });
     }, 1000);
-
     return () => {
       unlistenPromise.then((unlisten) => unlisten());
       clearInterval(intervalId);
