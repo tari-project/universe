@@ -97,14 +97,14 @@ pub struct AppStatus {
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
     pub is_mining: bool,
-    pub hash_rate: Option<u64>,
+    pub hash_rate: Option<f64>,
     pub connection: CpuMinerConnectionStatus,
 }
 
 #[derive(Debug, Serialize)]
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
-    pub error: Option<String>,
+    // pub error: Option<String>,
 }
 
 pub enum CpuMinerConnection {

@@ -114,11 +114,12 @@ impl CpuMiner {
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
         println!("Triggering shutdown");
         self.miner_shutdown.trigger();
+        self.api_client = None;
         if let Some(task) = self.watcher_task.take() {
             task.await?;
             println!("Task finished");
         }
-        self.api_client = None;
+        // TODO: This doesn't seem to be called
 
         Ok(())
     }
@@ -130,15 +131,15 @@ impl CpuMiner {
                 Ok(CpuMinerStatus {
                     is_mining: xmrig_status.hashrate.total.len() > 0
                         && xmrig_status.hashrate.total[0].is_some()
-                        && xmrig_status.hashrate.total[0].unwrap() > 0,
+                        && xmrig_status.hashrate.total[0].unwrap() > 0.0,
                     hash_rate: xmrig_status.hashrate.total[0],
                     connection: CpuMinerConnectionStatus {
                         is_connected: xmrig_status.connection.uptime > 0,
-                        error: if xmrig_status.connection.error_log.is_empty() {
-                            None
-                        } else {
-                            Some(xmrig_status.connection.error_log.join(";"))
-                        },
+                        // error: if xmrig_status.connection.error_log.is_empty() {
+                        //     None
+                        // } else {
+                        //     Some(xmrig_status.connection.error_log.join(";"))
+                        // },
                     },
                 })
             }
@@ -147,7 +148,7 @@ impl CpuMiner {
                 hash_rate: None,
                 connection: CpuMinerConnectionStatus {
                     is_connected: false,
-                    error: None,
+                    // error: None,
                 },
             }),
         }

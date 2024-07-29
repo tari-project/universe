@@ -19,8 +19,24 @@ impl XmrigHttpApiClient {
             .await
     }
 
-    pub async fn summary(&self) -> Result<models::Summary, reqwest::Error> {
-        let response = self.get("1/summary").await?;
-        response.json().await
+    pub async fn summary(&self) -> Result<models::Summary, anyhow::Error> {
+        for i in 0..3 {
+            let response = self.get("2/summary").await?;
+
+            let summary = response.text().await?;
+            let summary: models::Summary = match serde_json::from_str(&summary) {
+                Ok(summary) => summary,
+                Err(e) => {
+                    dbg!(summary);
+                    eprintln!("Failed to parse xmrig summary: {}", e);
+                    // Xmrig has a bug where it doesn't return valid json sometimes.
+                    // https://github.com/xmrig/xmrig/issues/3363
+                    continue;
+                }
+            };
+
+            return Ok(summary);
+        }
+        return Err(anyhow::anyhow!("Failed to get xmrig summary"));
     }
 }
