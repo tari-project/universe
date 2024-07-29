@@ -16,7 +16,18 @@
         "all": false,
         "open": true,
         "sidecar": false
-      }
+      },
+      "window": {
+          "all": false,
+          "close": true,
+          "hide": true,
+          "show": true,
+          "maximize": true,
+          "minimize": true,
+          "unmaximize": true,
+          "unminimize": true,
+          "startDragging": true
+        }
     },
 
     "pattern": {
@@ -28,8 +39,12 @@
     "windows": [
       {
         "title": "tari-universe",
-        "width": 800,
-        "height": 600
+        "width": 1200,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": true
       }
     ],
     "security": {
@@ -50,6 +65,7 @@
         "../binaries/tari/esme/v1.0.0-pre.18/minotari_node",
         "../binaries/tari/esme/v1.0.0-pre.18/minotari_merge_mining_proxy"
       ]
-    }
+    },
+    "macOSPrivateApi": true
   }
 }
