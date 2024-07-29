@@ -102,7 +102,11 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, Error> {
         // TODO: add platform specific logic
+        #[cfg(target_os = "windows")]
         let name_suffix = "windows-x64.exe.zip";
+
+        #[cfg(target_os = "macos")]
+        let name_suffix = "macos-arm64.zip";
         let platform = version
             .assets
             .iter()
@@ -220,10 +224,13 @@ impl BinaryResolver {
                 .join(&latest_release.version.to_string());
             dbg!(&bin_dir);
             extract(&in_progress_file, &bin_dir).await?;
+
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
     }
+
+
 
     fn get_os_string() -> String {
         #[cfg(target_os = "windows")]

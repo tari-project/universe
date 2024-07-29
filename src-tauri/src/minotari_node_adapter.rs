@@ -46,8 +46,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .ensure_latest(Binaries::MinotariNode)
                         .await?;
 
+                    let file_path = BinaryResolver::current()
+                        .resolve_path(Binaries::MinotariNode, &version)?;
+                    crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(
-                        BinaryResolver::current().resolve_path(Binaries::MinotariNode, &version)?,
+                       file_path
                     )
                     .args(args)
                     // .stdout(std::process::Stdio::piped())
