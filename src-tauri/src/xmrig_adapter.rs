@@ -82,6 +82,7 @@ impl XmrigAdapter {
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push(format!("--donate-level=1"));
         args.push(format!("--user={}", self.monero_address));
+        args.push("--threads=6".to_string());
 
 
         let client = XmrigHttpApiClient::new(

@@ -25,11 +25,12 @@ function TariMiner() {
       <TileContainer>
         <Tile title="Resources" stats="GPU" />
         <Tile title="Mode" stats="ECO" />
-        <Tile title="GPU Utilization" stats="23%" />
+        {/*<Tile title="GPU Utilization" stats="23%" />*/}
+          <Tile title="Hashrate (to remove)" stats={hashRate + " H/s"} />
         <Tile title="CPU Utilization" stats={cpuUsage + "%"} />
         <Tile title="CHIP/GPU" stats="RTX 4090" />
         <Tile title="Est Earnings" stats="6.25 XTM/24h" />
-        <Tile title="Hashrate (to remove)" stats={hashRate + " H/s"} />
+
       </TileContainer>
     </MinerContainer>
   );
