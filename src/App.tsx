@@ -15,27 +15,7 @@ import useAppStateStore from './store/appStateStore';
 
 function App() {
 
-  async function startMining() {
-      await invoke("start_mining", { }).then(() => {
-          console.log("Mining started")
-
-      }).catch((e) => {
-          console.error("Could not start mining", e)
-          setError(e);
-      });
-  }
-
-  async function stopMining() {
-        await invoke("stop_mining", { }).then(() => {
-            console.log("Mining stopped")
-
-        }).catch((e) => {
-            console.error("Could not stop mining", e)
-            setError(e);
-        });
-  }
-
-  const { view, background } = useAppStateStore();
+  const { view, background, setHashRate, setCpuUsage } = useAppStateStore();
   useEffect(() => {
     const unlistenPromise = listen('message', (event) => {
       console.log('some kind of event', event.event, event.payload);
@@ -43,8 +23,11 @@ function App() {
 
     const intervalId = setInterval(() => {
       invoke('status', {})
-        .then((status) => {
+        .then((status : any) => {
           console.log('Status', status);
+
+          setCpuUsage(status.cpu?.cpu_usage);
+            setHashRate(status.cpu?.hash_rate);
           const logArea = document.getElementById('log-area');
           if (logArea) {
             logArea.innerText = JSON.stringify(status, null, 2);

@@ -97,7 +97,8 @@ pub struct AppStatus {
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
     pub is_mining: bool,
-    pub hash_rate: Option<f64>,
+    pub hash_rate: f64,
+    pub cpu_usage : u32,
     pub connection: CpuMinerConnectionStatus,
 }
 

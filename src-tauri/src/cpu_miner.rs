@@ -1,3 +1,4 @@
+use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
@@ -125,6 +126,17 @@ impl CpuMiner {
     }
 
     pub async fn status(&self) -> Result<CpuMinerStatus, anyhow::Error> {
+        let mut s = System::new_with_specifics(
+            RefreshKind::new().with_cpu(CpuRefreshKind::everything()),
+        );
+
+// Wait a bit because CPU usage is based on diff.
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+// Refresh CPUs again.
+        s.refresh_cpu();
+
+        let mut cpu_usage = s.global_cpu_info().cpu_usage();
+
         match &self.api_client {
             Some(client) => {
                 let xmrig_status = client.summary().await?;
@@ -132,7 +144,8 @@ impl CpuMiner {
                     is_mining: xmrig_status.hashrate.total.len() > 0
                         && xmrig_status.hashrate.total[0].is_some()
                         && xmrig_status.hashrate.total[0].unwrap() > 0.0,
-                    hash_rate: xmrig_status.hashrate.total[0],
+                    hash_rate: xmrig_status.hashrate.total[0].unwrap_or_default(),
+                    cpu_usage: cpu_usage as u32,
                     connection: CpuMinerConnectionStatus {
                         is_connected: xmrig_status.connection.uptime > 0,
                         // error: if xmrig_status.connection.error_log.is_empty() {
@@ -145,7 +158,8 @@ impl CpuMiner {
             }
             None => Ok(CpuMinerStatus {
                 is_mining: false,
-                hash_rate: None,
+                hash_rate: 0.0,
+                cpu_usage: cpu_usage as u32,
                 connection: CpuMinerConnectionStatus {
                     is_connected: false,
                     // error: None,
