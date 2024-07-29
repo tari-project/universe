@@ -1,0 +1,64 @@
+@font-face {
+  src: url('./fonts/AvenirLTStd-Book.otf');
+  font-family: 'AvenirRegular';
+}
+
+@font-face {
+  src: url('./fonts/AvenirLTStd-Medium.otf');
+  font-family: 'AvenirMedium';
+}
+
+@font-face {
+  src: url('./fonts/AvenirLTStd-Heavy.otf');
+  font-family: 'AvenirHeavy';
+}
+
+@font-face {
+  src: url('./fonts/Poppins/Poppins-Medium.ttf');
+  font-family: 'PoppinsMedium';
+}
+
+@font-face {
+  src: url('./fonts/Poppins/Poppins-SemiBold.ttf');
+  font-family: 'PoppinsSemiBold';
+}
+
+@font-face {
+  src: url('./fonts/Poppins/Poppins-Light.ttf');
+  font-family: 'PoppinsLight';
+}
+
+@font-face {
+  src: url('./fonts/Poppins/Poppins-Regular.ttf');
+  font-family: 'PoppinsRegular';
+}
+
+@font-face {
+  src: url('./fonts/Poppins/Poppins-Bold.ttf');
+  font-family: 'PoppinsBold';
+}
+
+@font-face {
+  src: url('./fonts/Druk/DrukText-Bold.otf');
+  font-family: 'DrukBold';
+}
+
+@font-face {
+  src: url('./fonts/Druk/DrukText-Medium.otf');
+  font-family: 'DrukMedium';
+}
+
+@font-face {
+  src: url('./fonts/Druk/DrukText-Super.otf');
+  font-family: 'DrukSuper';
+}
+
+body,
+html {
+  margin: 0;
+  font-family: 'PoppinsMedium', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  border-radius: 12px;
+  overflow: hidden;
+}
