@@ -112,3 +112,15 @@ pub async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::E
     }
     Ok(())
 }
+
+pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(file_path).await?.permissions();
+        let current_mode = perms.mode();
+        perms.set_mode(current_mode | 0o111);
+        fs::set_permissions(file_path, perms).await?;
+    }
+    Ok(())
+}
