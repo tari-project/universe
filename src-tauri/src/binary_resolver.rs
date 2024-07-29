@@ -74,7 +74,9 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let version = releases
             .iter()
             .filter_map(|v| {
+
                 if v.version.pre.starts_with(network) {
+
                     Some(&v.version)
                 } else {
                     None

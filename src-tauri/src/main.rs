@@ -77,18 +77,27 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let cpu_miner = state.cpu_miner.read().await;
-    let cpu = cpu_miner.status().await.map_err(|e| e.to_string())?;
+    let cpu = match cpu_miner.status().await.map_err(|e| e.to_string()) {
+        Ok(cpu) => cpu,
+        Err(e) => {
+            eprintln!("Error getting cpu miner status: {:?}", e);
+            return Err(e);
+        }
+
+    };
     Ok(AppStatus { cpu })
 }
 
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
+    // TODO: add each application version.
     cpu: CpuMinerStatus,
 }
 
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
     pub is_mining: bool,
+    pub hash_rate: Option<u64>,
     pub connection: CpuMinerConnectionStatus,
 }
 

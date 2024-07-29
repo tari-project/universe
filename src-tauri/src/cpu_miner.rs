@@ -131,6 +131,7 @@ impl CpuMiner {
                     is_mining: xmrig_status.hashrate.total.len() > 0
                         && xmrig_status.hashrate.total[0].is_some()
                         && xmrig_status.hashrate.total[0].unwrap() > 0,
+                    hash_rate: xmrig_status.hashrate.total[0],
                     connection: CpuMinerConnectionStatus {
                         is_connected: xmrig_status.connection.uptime > 0,
                         error: if xmrig_status.connection.error_log.is_empty() {
@@ -143,6 +144,7 @@ impl CpuMiner {
             }
             None => Ok(CpuMinerStatus {
                 is_mining: false,
+                hash_rate: None,
                 connection: CpuMinerConnectionStatus {
                     is_connected: false,
                     error: None,

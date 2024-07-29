@@ -5,6 +5,8 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Release {
+    name: String,
+    draft: bool,
     tag_name: String,
     assets: Vec<Asset>,
 }
@@ -52,9 +54,15 @@ pub async fn list_releases(
     println!("Releases for {}/{}:", repo_owner, repo_name);
     let mut res = vec![];
     for release in releases {
-        // println!("- {}", release.tag_name);
+        if release.draft {
+            continue;
+        }
+
+        if release.name.contains(".old") {
+            continue;
+        }
         // Remove any v prefix
-        let tag_name = release.tag_name.trim_start_matches('v').to_string();
+        let name = release.name.trim_start_matches('v').to_string();
         // res.push(semver::Version::parse(&tag_name)?);
         let mut assets = vec![];
         for asset in release.assets {
@@ -64,7 +72,7 @@ pub async fn list_releases(
             });
         }
         res.push(VersionDownloadInfo {
-            version: semver::Version::parse(&tag_name)?,
+            version: semver::Version::parse(&name)?,
             assets,
         });
     }
