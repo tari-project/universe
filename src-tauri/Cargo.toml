@@ -16,7 +16,7 @@ tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "de
 anyhow = "1"
 dirs-next = "2.0.0"
 reqwest = { version = "0.12.5", features = ["stream", "json"] }
-tauri = { version = "1", features = [ "window-show", "window-unminimize", "window-minimize", "window-hide", "window-unmaximize", "window-start-dragging", "window-maximize", "window-close", "macos-private-api", "isolation", "shell-open", "process-command-api"] }
+tauri = { version = "1", features = [ "updater", "window-show", "window-unminimize", "window-minimize", "window-hide", "window-unmaximize", "window-start-dragging", "window-maximize", "window-close", "macos-private-api", "isolation", "shell-open", "process-command-api"] }
 tokio = { version = "1", features = ["full"] }
 semver = "1.0.23"
 serde = { version = "1", features = ["derive"] }
