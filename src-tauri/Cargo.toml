@@ -30,11 +30,7 @@ tauri = { version = "1", features = [
     "isolation",
     "shell-open",
     "process-command-api",
-    # these are the default features. They are present here to exclude compression
-    # which may or may not cause a dylib bug on mac for missing lzma
-    "wry",
-    "objc-exception"
-], default-features = false }
+] }
 tokio = { version = "1", features = ["full"] }
 semver = "1.0.23"
 serde = { version = "1", features = ["derive"] }
