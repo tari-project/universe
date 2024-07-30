@@ -53,7 +53,7 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
 }
 
 use crate::xmrig::http_api::XmrigHttpApiClient;
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
@@ -63,6 +63,9 @@ use tokio::fs;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
+use sha2::{Sha256, Digest};
+use regex::Regex;
+use tokio::io::AsyncReadExt;
 
 // Taken from async_zip example
 
@@ -113,14 +116,29 @@ pub async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::E
     Ok(())
 }
 
-pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(file_path).await?.permissions();
-        let current_mode = perms.mode();
-        perms.set_mode(current_mode | 0o111);
-        fs::set_permissions(file_path, perms).await?;
+pub async fn validate_checksum(file_path: PathBuf, file_sha256_path: PathBuf, asset_name: String) -> Result<bool, Error> {
+    let mut file_sha256 = File::open(file_sha256_path.clone()).await?;
+    let mut buffer_sha256 = Vec::new();
+    file_sha256.read_to_end(&mut buffer_sha256).await?;
+    let contents = String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+
+    // Extract the expected hash for the corresponding asset name
+    let mut expected_hash = "";
+    let re = Regex::new(&format!(r"([a-f0-9]+)\s+{}", asset_name)).unwrap();
+    for line in contents.lines() {
+        if let Some(caps) = re.captures(line) {
+            expected_hash = caps.get(1).unwrap().as_str();
+        }
     }
-    Ok(())
+
+    let mut file = File::open(file_path.clone()).await?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer).await?;
+
+    let mut hasher = Sha256::new();
+    hasher.update(&buffer);
+    let hash = hasher.finalize();
+    let hash_hex = format!("{:x}", hash);
+    
+    Ok(hash_hex == expected_hash)
 }

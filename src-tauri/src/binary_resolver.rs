@@ -1,6 +1,5 @@
-use crate::download_utils::{download_file, extract};
+use crate::download_utils::{download_file, extract, validate_checksum};
 use crate::github;
-use crate::xmrig::latest_release::fetch_latest_release;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use semver::Version;
@@ -101,12 +100,13 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         &self,
         version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, Error> {
-        // TODO: add platform specific logic
+        #[cfg(target_os = "macos")]
+        let url = "macos_aarch64.a";
         #[cfg(target_os = "windows")]
         let name_suffix = "windows-x64.exe.zip";
-
-        #[cfg(target_os = "macos")]
-        let name_suffix = "macos-arm64.zip";
+        #[cfg(target_os = "linux")]
+        let name_suffix = "linux-x86_64.zip";
+        
         let platform = version
             .assets
             .iter()
@@ -212,25 +212,36 @@ impl BinaryResolver {
             // let platform = latest_release
             //     .get_asset(&::get_os_string())
             //     .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
-            println!("Downloading file");
             println!("Downloading file from {}", &asset.url);
             //
-            let in_progress_file = in_progress_dir.join(&asset.name);
-            download_file(&asset.url, &in_progress_file).await?;
-            println!("Renaming file");
-            println!("Extracting file");
-            let bin_dir = adapter
-                .get_binary_folder()
-                .join(&latest_release.version.to_string());
-            dbg!(&bin_dir);
-            extract(&in_progress_file, &bin_dir).await?;
+            let in_progress_file_zip = in_progress_dir.join(&asset.name);
+            download_file(&asset.url, &in_progress_file_zip).await?;
 
+            let in_progress_file_sha256 = in_progress_dir.clone().join(format!("{}.sha256", asset.name));
+            let asset_sha256_url = format!("{}.sha256", asset.url.clone());
+            download_file(&asset_sha256_url, &in_progress_file_sha256).await?;
+
+            let is_sha_validated = validate_checksum(
+                in_progress_file_zip.clone(),
+                in_progress_file_sha256.clone(),
+                asset.name.clone()
+            ).await?;
+            if is_sha_validated {
+                println!("Renaming & Extracting file");
+                let bin_dir = adapter
+                    .get_binary_folder()
+                    .join(&latest_release.version.to_string());
+                dbg!(&bin_dir);
+
+                extract(&in_progress_file_zip, &bin_dir).await?;
+                println!("ZIP file integrity verified successfully!");
+            } else {
+                println!("ZIP file integrity verification failed!");
+            }
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
     }
-
-
 
     fn get_os_string() -> String {
         #[cfg(target_os = "windows")]
