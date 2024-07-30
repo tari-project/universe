@@ -116,6 +116,18 @@ pub async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::E
     Ok(())
 }
 
+pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut perms = fs::metadata(file_path).await?.permissions();
+        let current_mode = perms.mode();
+        perms.set_mode(current_mode | 0o111);
+        fs::set_permissions(file_path, perms).await?;
+    }
+    Ok(())
+}
+
 pub async fn validate_checksum(file_path: PathBuf, file_sha256_path: PathBuf, asset_name: String) -> Result<bool, Error> {
     let mut file_sha256 = File::open(file_sha256_path.clone()).await?;
     let mut buffer_sha256 = Vec::new();

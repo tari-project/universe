@@ -100,10 +100,10 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         &self,
         version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, Error> {
-        #[cfg(target_os = "macos")]
-        let url = "macos_aarch64.a";
         #[cfg(target_os = "windows")]
         let name_suffix = "windows-x64.exe.zip";
+        #[cfg(target_os = "macos")]
+        let name_suffix = "macos-arm64.zip";
         #[cfg(target_os = "linux")]
         let name_suffix = "linux-x86_64.zip";
         
@@ -236,7 +236,7 @@ impl BinaryResolver {
                 extract(&in_progress_file_zip, &bin_dir).await?;
                 println!("ZIP file integrity verified successfully!");
             } else {
-                println!("ZIP file integrity verification failed!");
+                return Err(anyhow!("ZIP file integrity verification failed!"));
             }
             fs::remove_dir_all(in_progress_dir).await?;
         }
