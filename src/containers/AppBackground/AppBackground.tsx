@@ -8,7 +8,7 @@ import determining from '../../assets/backgrounds/determining.jpg';
 import mining from '../../assets/backgrounds/mining.jpg';
 import loser from '../../assets/backgrounds/loser.jpg';
 import winner from '../../assets/backgrounds/winner.jpg';
-import { appStateType } from '../../store/types';
+import { backgroundType } from '../../store/types';
 
 const AppContainer = styled(Box)(
   ({ theme, status }: { theme: any; status: any }) => ({
@@ -44,7 +44,7 @@ function AppBackground({
   status,
 }: {
   children: React.ReactNode;
-  status: appStateType;
+  status: backgroundType;
 }) {
   const theme = useTheme();
 
