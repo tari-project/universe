@@ -2,15 +2,17 @@ import React from 'react';
 // import ExpandableBox from './ExpandableBox';
 import TariMiner from './TariMiner/TariMiner';
 import Wallet from './Wallet/Wallet';
-import { SideBarContainer } from './styles';
+import { SideBarContainer, SideBarInner } from './styles';
 import TestButtons from './TestButtons';
 
 const App: React.FC = () => {
   return (
     <SideBarContainer>
-      <TariMiner />
-      <Wallet />
-      <TestButtons />
+      <SideBarInner>
+        <TariMiner />
+        <Wallet />
+        <TestButtons />
+      </SideBarInner>
     </SideBarContainer>
   );
 };

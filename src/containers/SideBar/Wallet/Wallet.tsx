@@ -5,7 +5,9 @@ import { darkTheme } from '../../../theme/themes';
 import useAppStateStore from '../../../store/appStateStore';
 
 function Wallet() {
-  const { wallet } = useAppStateStore();
+  const { wallet } = useAppStateStore((state) => ({
+    wallet: state.wallet,
+  }));
   return (
     <ThemeProvider theme={darkTheme}>
       <WalletContainer>

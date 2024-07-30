@@ -3,7 +3,10 @@ import { VisualModeContainer } from '../styles';
 import useAppStateStore from '../../../store/appStateStore';
 
 function VisualMode() {
-  const { visualMode, setVisualMode } = useAppStateStore();
+  const { visualMode, setVisualMode } = useAppStateStore((state) => ({
+    visualMode: state.visualMode,
+    setVisualMode: state.setVisualMode,
+  }));
   return (
     <VisualModeContainer>
       <Typography variant="h6">Visual Mode</Typography>

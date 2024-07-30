@@ -30,8 +30,8 @@ import {
   error,
   brightGreen,
 } from './colors';
-// import gradients from '../styles/styles/gradients';
-// import typography from '../styles/styles/typography';
+
+export const appBorderRadius = '12px';
 
 export const componentSettings: ThemeOptions = {
   shape: {
@@ -51,84 +51,42 @@ export const componentSettings: ThemeOptions = {
     },
     h1: {
       fontSize: '30px',
-      lineHeight: '38px',
+      lineHeight: '42px',
       fontFamily: '"PoppinsSemiBold", sans-serif',
       letterSpacing: '-0.4px',
     },
     h2: {
       fontSize: '26px',
-      lineHeight: '30px',
+      lineHeight: '36px',
       fontFamily: '"PoppinsSemiBold", sans-serif',
       letterSpacing: '-0.4px',
     },
     h3: {
       fontSize: '24px',
-      lineHeight: '28px',
+      lineHeight: '32px',
       fontFamily: '"PoppinsSemiBold", sans-serif',
       letterSpacing: '-0.4px',
     },
     h4: {
       fontSize: '20px',
-      lineHeight: '24px',
+      lineHeight: '28px',
       fontFamily: '"PoppinsSemiBold", sans-serif',
       letterSpacing: '-0.4px',
     },
     h5: {
       fontSize: '16px',
-      lineHeight: '20px',
+      lineHeight: '26px',
       fontFamily: '"PoppinsSemiBold", sans-serif',
       letterSpacing: '-0.4px',
     },
     h6: {
       fontSize: '14px',
-      lineHeight: '18px',
+      lineHeight: '20px',
       fontFamily: '"PoppinsSemiBold", sans-serif',
       letterSpacing: '-0.4px',
     },
   },
-  transitions: {
-    duration: {
-      enteringScreen: 500,
-      leavingScreen: 500,
-    },
-  },
   components: {
-    MuiTab: {
-      defaultProps: {
-        disableRipple: true,
-        sx: {
-          textTransform: 'none',
-          fontSize: 14,
-          lineHeight: '15px',
-          border: 'none',
-          boxShadow: 'none',
-          borderRadius: '50px',
-          padding: '12px 20px',
-          minHeight: '40px',
-          color: (theme) => theme.palette.text.secondary,
-          '&.Mui-selected': {
-            color: (theme) => theme.palette.text.primary,
-            background: (theme) => theme.palette.divider,
-          },
-          '&:hover': {
-            color: (theme) => theme.palette.text.primary,
-          },
-          '&:focus': {
-            backgroundColor: (theme) => theme.palette.action.hover,
-          },
-        },
-      },
-    },
-    MuiTabs: {
-      defaultProps: {
-        TabIndicatorProps: {
-          style: {
-            borderRadius: 4,
-            display: 'none',
-          },
-        },
-      },
-    },
     MuiTypography: {
       defaultProps: {
         sx: {
@@ -151,57 +109,10 @@ export const componentSettings: ThemeOptions = {
         },
       },
     },
-    MuiTableCell: {
-      defaultProps: {
-        sx: {
-          borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-        },
-      },
-    },
     MuiDivider: {
       defaultProps: {
         sx: {
           borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-        },
-      },
-    },
-    MuiList: {
-      defaultProps: {
-        sx: {
-          listStyleType: 'disc',
-          pl: 2,
-          pt: 0,
-          '& .MuiListItem-root': {
-            display: 'list-item',
-            pb: 0.5,
-            pt: 0.5,
-          },
-        },
-      },
-    },
-    MuiFormControlLabel: {
-      defaultProps: {
-        sx: {
-          '& .MuiTypography-root': {
-            fontSize: '14px',
-            lineHeight: '1.8rem',
-            color: (theme) => theme.palette.text.primary,
-          },
-        },
-      },
-    },
-    MuiCircularProgress: {
-      defaultProps: {
-        thickness: 4,
-        sx: {
-          color: (theme) => theme.palette.primary.main,
-        },
-      },
-    },
-    MuiDialogActions: {
-      defaultProps: {
-        sx: {
-          padding: 2,
         },
       },
     },
@@ -228,44 +139,11 @@ export const componentSettings: ThemeOptions = {
         },
       },
     },
-    MuiTextField: {
-      defaultProps: {
-        variant: 'outlined',
-        fullWidth: true,
-        // margin: 'normal',
-        size: 'small',
-        sx: {
-          boxShadow: 'none',
-          '& .MuiOutlinedInput-root': {
-            '& fieldset': {
-              borderColor: (theme) => theme.palette.divider,
-            },
-            '&:hover fieldset': {
-              borderColor: (theme) => theme.palette.primary.main,
-            },
-          },
-          '&:hover fieldset': {
-            borderColor: (theme) => theme.palette.divider,
-          },
-        },
-
-        InputProps: {
-          style: {
-            color: grey[500],
-            fontSize: '14px',
-            padding: '4px',
-          },
-        },
-      },
-    },
     MuiDialog: {
       defaultProps: {
         sx: {
-          padding: 0,
-          '& .MuiDialogContent-root': { padding: 0 },
-          '& .MuiDialog-paper': {
-            border: (theme) => `1px solid ${theme.palette.divider}`,
-            boxShadow: '0 0 40px #00000011',
+          '& .MuiBackdrop-root': {
+            borderRadius: appBorderRadius,
           },
         },
       },
@@ -315,8 +193,7 @@ export const componentSettings: ThemeOptions = {
           },
           '& .MuiSwitch-track': {
             borderRadius: 20 / 2,
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'light' ? '#E9E9EA' : '#39393D',
+            backgroundColor: 'black',
             opacity: 1,
             transition: (theme) =>
               theme.transitions.create(['background-color'], {
@@ -325,72 +202,6 @@ export const componentSettings: ThemeOptions = {
           },
         },
       },
-    },
-    MuiChip: {
-      defaultProps: {
-        sx: {
-          fontSize: 12,
-          height: 26,
-          '& strong': {
-            fontFamily: '"PoppinsMedium", sans-serif',
-          },
-        },
-      },
-      variants: [
-        {
-          props: { color: 'success' },
-          style: ({ theme }) => ({
-            background:
-              theme.palette.mode === 'light'
-                ? theme.palette.success.light
-                : 'rgba(255,255,255, 0.08)',
-            color:
-              theme.palette.mode === 'light'
-                ? theme.palette.success.contrastText
-                : theme.palette.success.main,
-          }),
-        },
-        {
-          props: { color: 'warning' },
-          style: ({ theme }) => ({
-            background:
-              theme.palette.mode === 'light'
-                ? theme.palette.warning.light
-                : 'rgba(255,255,255, 0.08)',
-            color: theme.palette.warning.main,
-          }),
-        },
-        {
-          props: { color: 'error' },
-          style: ({ theme }) => ({
-            background:
-              theme.palette.mode === 'light'
-                ? theme.palette.error.light
-                : 'rgba(255,255,255, 0.08)',
-            color: theme.palette.error.main,
-          }),
-        },
-        {
-          props: { color: 'info' },
-          style: ({ theme }) => ({
-            background:
-              theme.palette.mode === 'light'
-                ? theme.palette.info.light
-                : 'rgba(255,255,255, 0.08)',
-            color: theme.palette.info.main,
-          }),
-        },
-        {
-          props: { color: 'primary' },
-          style: ({ theme }) => ({
-            background:
-              theme.palette.mode === 'light'
-                ? theme.palette.info.light
-                : 'rgba(255,255,255, 0.08)',
-            color: theme.palette.primary.main,
-          }),
-        },
-      ],
     },
   },
 };

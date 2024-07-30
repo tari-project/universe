@@ -4,7 +4,14 @@ import { viewType, backgroundType } from '../../store/types';
 import { useState } from 'react';
 
 function TestButtons() {
-  const { view, setView, background, setBackground } = useAppStateStore();
+  const { view, setView, background, setBackground } = useAppStateStore(
+    (state) => ({
+      view: state.view,
+      setView: state.setView,
+      background: state.background,
+      setBackground: state.setBackground,
+    })
+  );
   const [selectedView, setSelectedView] = useState<viewType>(view);
   const [selectedBg, setSelectedBg] = useState<backgroundType>(background);
 
