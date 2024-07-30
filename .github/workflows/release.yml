@@ -28,12 +28,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'ubuntu-20.04'
-            args: ''
+        #  - platform: 'ubuntu-20.04'
+         #   args: ''
           - platform: 'windows-2019'
             args: ''
-          - platform: 'macos-latest'
-            args: '--verbose --target universal-apple-darwin'
+         # - platform: 'macos-latest'
+         #   args: '--verbose --target universal-apple-darwin'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -101,5 +101,5 @@ jobs:
           prerelease: ${{ ( ! startsWith(github.ref, 'refs/tags/v') ) }}
           includeDebug: ${{ ( ! startsWith(github.ref, 'refs/tags/v') ) }}
           includeRelease: ${{ ( startsWith(github.ref, 'refs/tags/v') ) }}
-#          updaterJsonKeepUniversal: true
+          updaterJsonKeepUniversal: true
           args: ${{ matrix.args }}
