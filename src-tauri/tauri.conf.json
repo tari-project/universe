@@ -53,7 +53,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.dev",
+      "identifier": "com.tari.universe",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -62,8 +62,6 @@
         "icons/icon.ico"
       ],
       "externalBin": [
-        "../binaries/tari/esme/v1.0.0-pre.18/minotari_node",
-        "../binaries/tari/esme/v1.0.0-pre.18/minotari_merge_mining_proxy"
       ]
     },
     "macOSPrivateApi": true
