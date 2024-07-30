@@ -288,7 +288,7 @@ impl BinaryResolver {
                 extract(&in_progress_file_zip, &bin_dir).await?;
                 println!("ZIP file integrity verified successfully!");
             } else {
-                println!("ZIP file integrity verification failed!");
+                return Err(anyhow!("ZIP file integrity verification failed!"));
             }
             fs::remove_dir_all(in_progress_dir).await?;
         }
