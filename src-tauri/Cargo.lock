@@ -3548,6 +3548,7 @@ dependencies = [
  "flate2",
  "futures-lite",
  "futures-util",
+ "lzma-sys",
  "reqwest 0.12.5",
  "sanitize-filename",
  "semver",
