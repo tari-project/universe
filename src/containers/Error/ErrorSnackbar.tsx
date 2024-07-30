@@ -1,4 +1,4 @@
-import { Box, Alert, IconButton } from '@mui/material';
+import { Box, Alert, IconButton, Snackbar } from '@mui/material';
 import { IoClose } from 'react-icons/io5';
 import useAppStateStore from '../../store/appStateStore';
 
@@ -19,41 +19,40 @@ function ErrorSnackbar() {
     setError('');
   };
 
-  if (error === '') {
-    return null;
-  }
-
   return (
-    <Alert
+    <Snackbar
+      open={error !== ''}
+      autoHideDuration={20000}
       onClose={handleClose}
-      severity="error"
-      variant="filled"
-      sx={{
-        position: 'fixed',
-        bottom: '10px',
-        left: '10px',
-        width: 'calc(100% - 20px)',
-        zIndex: 9999,
-      }}
-      action={
-        <IconButton
-          aria-label="close"
-          color="inherit"
-          size="small"
-          onClick={handleClose}
-        >
-          <IoClose fontSize="inherit" style={{ color: 'white' }} />
-        </IconButton>
-      }
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
     >
-      <Box
-        style={{
-          minWidth: '238px',
+      <Alert
+        onClose={handleClose}
+        severity="error"
+        variant="filled"
+        sx={{
+          width: '100%',
         }}
+        action={
+          <IconButton
+            aria-label="close"
+            color="inherit"
+            size="small"
+            onClick={handleClose}
+          >
+            <IoClose fontSize="inherit" style={{ color: 'white' }} />
+          </IconButton>
+        }
       >
-        {error}
-      </Box>
-    </Alert>
+        <Box
+          style={{
+            minWidth: '238px',
+          }}
+        >
+          {error}
+        </Box>
+      </Alert>
+    </Snackbar>
   );
 }
 
