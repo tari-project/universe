@@ -68,15 +68,15 @@ use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use log::info;
+use regex::Regex;
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tar::Archive;
 use tokio::fs;
 use tokio::fs::{File, OpenOptions};
+use tokio::io::AsyncReadExt;
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
-use sha2::{Sha256, Digest};
-use regex::Regex;
-use tokio::io::AsyncReadExt;
 
 // Taken from async_zip example
 
