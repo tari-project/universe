@@ -41,7 +41,8 @@ async fn start_mining<'r>(
         .cpu_miner
         .write()
         .await
-        .start(state.shutdown.to_signal(),  &config, &mm_proxy_manager).await
+        .start(state.shutdown.to_signal(), &config, &mm_proxy_manager)
+        .await
         .map_err(|e| {
             dbg!(e.to_string());
             e.to_string()
@@ -83,7 +84,6 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             eprintln!("Error getting cpu miner status: {:?}", e);
             return Err(e);
         }
-
     };
     Ok(AppStatus { cpu })
 }
@@ -98,7 +98,7 @@ pub struct AppStatus {
 pub struct CpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: f64,
-    pub cpu_usage : u32,
+    pub cpu_usage: u32,
     pub connection: CpuMinerConnectionStatus,
 }
 

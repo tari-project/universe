@@ -1,8 +1,8 @@
-use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
@@ -126,13 +126,12 @@ impl CpuMiner {
     }
 
     pub async fn status(&self) -> Result<CpuMinerStatus, anyhow::Error> {
-        let mut s = System::new_with_specifics(
-            RefreshKind::new().with_cpu(CpuRefreshKind::everything()),
-        );
+        let mut s =
+            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
-// Wait a bit because CPU usage is based on diff.
+        // Wait a bit because CPU usage is based on diff.
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-// Refresh CPUs again.
+        // Refresh CPUs again.
         s.refresh_cpu();
 
         let mut cpu_usage = s.global_cpu_info().cpu_usage();

@@ -73,9 +73,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let version = releases
             .iter()
             .filter_map(|v| {
-
                 if v.version.pre.starts_with(network) {
-
                     Some(&v.version)
                 } else {
                     None
@@ -106,7 +104,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let name_suffix = "macos-arm64.zip";
         #[cfg(target_os = "linux")]
         let name_suffix = "linux-x86_64.zip";
-        
+
         let platform = version
             .assets
             .iter()
@@ -217,15 +215,18 @@ impl BinaryResolver {
             let in_progress_file_zip = in_progress_dir.join(&asset.name);
             download_file(&asset.url, &in_progress_file_zip).await?;
 
-            let in_progress_file_sha256 = in_progress_dir.clone().join(format!("{}.sha256", asset.name));
+            let in_progress_file_sha256 = in_progress_dir
+                .clone()
+                .join(format!("{}.sha256", asset.name));
             let asset_sha256_url = format!("{}.sha256", asset.url.clone());
             download_file(&asset_sha256_url, &in_progress_file_sha256).await?;
 
             let is_sha_validated = validate_checksum(
                 in_progress_file_zip.clone(),
                 in_progress_file_sha256.clone(),
-                asset.name.clone()
-            ).await?;
+                asset.name.clone(),
+            )
+            .await?;
             if is_sha_validated {
                 println!("Renaming & Extracting file");
                 let bin_dir = adapter

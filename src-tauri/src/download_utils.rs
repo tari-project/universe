@@ -57,15 +57,15 @@ use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
+use regex::Regex;
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tar::Archive;
 use tokio::fs;
 use tokio::fs::{File, OpenOptions};
+use tokio::io::AsyncReadExt;
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
-use sha2::{Sha256, Digest};
-use regex::Regex;
-use tokio::io::AsyncReadExt;
 
 // Taken from async_zip example
 
@@ -128,7 +128,11 @@ pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-pub async fn validate_checksum(file_path: PathBuf, file_sha256_path: PathBuf, asset_name: String) -> Result<bool, Error> {
+pub async fn validate_checksum(
+    file_path: PathBuf,
+    file_sha256_path: PathBuf,
+    asset_name: String,
+) -> Result<bool, Error> {
     let mut file_sha256 = File::open(file_sha256_path.clone()).await?;
     let mut buffer_sha256 = Vec::new();
     file_sha256.read_to_end(&mut buffer_sha256).await?;
@@ -151,6 +155,6 @@ pub async fn validate_checksum(file_path: PathBuf, file_sha256_path: PathBuf, as
     hasher.update(&buffer);
     let hash = hasher.finalize();
     let hash_hex = format!("{:x}", hash);
-    
+
     Ok(hash_hex == expected_hash)
 }
