@@ -7,9 +7,17 @@
   },
   "package": {
     "productName": "tari-universe",
-    "version": "0.1.0"
+    "version": "0.1.4"
   },
   "tauri": {
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://github.com/tari-project/universe/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhGMTIwMzNCMDI5OTI3MApSV1J3a2ltd015RHhDTlpQZzNydzdQSklsQkVmeXJ0OTE5Q2RBVFdIM0FCSUIyTlI4ZkR6WkVFVwo="
+    },
     "allowlist": {
       "all": false,
       "shell": {
@@ -53,7 +61,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.dev",
+      "identifier": "com.tari.universe",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -62,8 +70,6 @@
         "icons/icon.ico"
       ],
       "externalBin": [
-        "../binaries/tari/esme/v1.0.0-pre.18/minotari_node",
-        "../binaries/tari/esme/v1.0.0-pre.18/minotari_merge_mining_proxy"
       ]
     },
     "macOSPrivateApi": true
