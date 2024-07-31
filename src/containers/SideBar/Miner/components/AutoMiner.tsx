@@ -1,6 +1,5 @@
 import { FormGroup, Switch, Stack, Typography } from '@mui/material';
-import { AutoMinerContainer, ScheduleButton } from '../styles';
-import { IoCalendar } from 'react-icons/io5';
+import { AutoMinerContainer } from '../styles';
 
 function AutoMiner() {
   return (
@@ -8,7 +7,7 @@ function AutoMiner() {
       <AutoMinerContainer>
         <Stack direction="column" spacing={1}>
           <Typography variant="h5">Auto Miner</Typography>
-          <Typography variant="body1">
+          <Typography variant="body2">
             Auto miner will turn on your miner when your machine is idle
           </Typography>
         </Stack>
@@ -16,9 +15,6 @@ function AutoMiner() {
           <Switch focusVisibleClassName=".Mui-focusVisible" disableRipple />
         </FormGroup>
       </AutoMinerContainer>
-      <ScheduleButton variant="contained" startIcon={<IoCalendar size="16" />}>
-        Setup scheduler
-      </ScheduleButton>
     </Stack>
   );
 }

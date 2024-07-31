@@ -1,13 +1,11 @@
-import { Typography, Stack, IconButton } from '@mui/material';
-import Tile from './components/Tile';
-import { MinerContainer, TileContainer } from './styles';
-import { IoResize } from 'react-icons/io5';
-import AutoMiner from './components/AutoMiner';
+import Tile from './components/Tile.tsx';
+import { MinerContainer, TileContainer } from './styles.ts';
+import AutoMiner from './components/AutoMiner.tsx';
+import Scheduler from './components/Scheduler.tsx';
 import useAppStateStore from '../../../store/appStateStore.ts';
-import SettingsDialog from '../Settings/Settings.tsx';
 import ModeSelect from './components/ModeSelect.tsx';
 
-function TariMiner() {
+function Miner() {
   const { cpuUsage, hashRate } = useAppStateStore((state) => ({
     cpuUsage: state.cpuUsage,
     hashRate: state.hashRate,
@@ -15,16 +13,8 @@ function TariMiner() {
 
   return (
     <MinerContainer>
-      <Stack direction="row" justifyContent="space-between" alignItems="center">
-        <Typography variant="h3">Tari Miner</Typography>
-        <Stack direction="row" spacing={0.5}>
-          <SettingsDialog />
-          <IconButton onClick={() => console.log('Expand Sidebar')}>
-            <IoResize size={16} />
-          </IconButton>
-        </Stack>
-      </Stack>
       <AutoMiner />
+      <Scheduler />
       <TileContainer>
         <Tile title="Resources" stats="GPU" />
         <ModeSelect />
@@ -38,4 +28,4 @@ function TariMiner() {
   );
 }
 
-export default TariMiner;
+export default Miner;

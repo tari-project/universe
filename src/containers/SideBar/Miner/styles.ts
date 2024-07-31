@@ -39,4 +39,7 @@ export const AutoMinerContainer = styled(Box)(({ theme }) => ({
 export const ScheduleButton = styled(Button)(({ theme }) => ({
   backgroundColor: `${theme.palette.background.default} !important`,
   color: theme.palette.text.secondary,
+  '&:hover': {
+    backgroundColor: `${theme.palette.divider} !important`,
+  },
 }));

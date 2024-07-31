@@ -70,19 +70,19 @@ export const componentSettings: ThemeOptions = {
     h4: {
       fontSize: '20px',
       lineHeight: '28px',
-      fontFamily: '"PoppinsSemiBold", sans-serif',
+      fontFamily: '"PoppinsMedium", sans-serif',
       letterSpacing: '-0.4px',
     },
     h5: {
       fontSize: '16px',
       lineHeight: '26px',
-      fontFamily: '"PoppinsSemiBold", sans-serif',
+      fontFamily: '"PoppinsMedium", sans-serif',
       letterSpacing: '-0.4px',
     },
     h6: {
       fontSize: '14px',
       lineHeight: '20px',
-      fontFamily: '"PoppinsSemiBold", sans-serif',
+      fontFamily: '"PoppinsMedium", sans-serif',
       letterSpacing: '-0.4px',
     },
   },

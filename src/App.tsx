@@ -1,9 +1,8 @@
+import './theme/theme.css';
 import { useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { listen } from '@tauri-apps/api/event';
-
 import CssBaseline from '@mui/material/CssBaseline';
-import './theme/theme.css';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from './theme/themes';
 import { ContainerInner, DashboardContainer } from './theme/styles';
@@ -24,6 +23,7 @@ function App() {
       setAppState: state.setAppState,
       setError: state.setError,
     }));
+
   useEffect(() => {
     const unlistenPromise = listen('message', (event) => {
       console.log('some kind of event', event.event, event.payload);
