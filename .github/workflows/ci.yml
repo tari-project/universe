@@ -25,6 +25,15 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+      - name: install dependencies (linux)
+        if: startsWith(runner.os,'Linux')
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            libwebkit2gtk-4.0-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf
       - name: toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -70,15 +79,6 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
-      - name: toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-      - name: cache cargo files and outputs
-        if: ${{ ( startsWith(runner.environment,'github-hosted') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './src-tauri -> target'
       - name: install dependencies (linux)
         if: startsWith(runner.os,'Linux')
         run: |
@@ -88,6 +88,15 @@ jobs:
             libappindicator3-dev \
             librsvg2-dev \
             patchelf
+      - name: toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: cache cargo files and outputs
+        if: ${{ ( startsWith(runner.environment,'github-hosted') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
       - name: cargo check
         working-directory: ./src-tauri
         run: cargo check --release --all-targets --workspace --locked
