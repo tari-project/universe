@@ -151,6 +151,9 @@ fn main() {
         .expect("error while running tauri application");
 
     app.run(move |_app_handle, event| match event {
+        tauri::RunEvent::Updater(updater_event) => {
+            dbg!(updater_event);
+        },
         tauri::RunEvent::ExitRequested { api, .. } => {
             // api.prevent_exit();
             println!("App shutdown caught");
