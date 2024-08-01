@@ -7,3 +7,4 @@ export type backgroundType =
   | 'mining'
   | 'loser'
   | 'winner';
+export type modeType = 'eco' | 'ludicrous';

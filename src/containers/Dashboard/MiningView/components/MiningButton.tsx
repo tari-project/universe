@@ -21,7 +21,13 @@ const StopStyle = {
 };
 
 function MiningButton() {
-  const { startMining, stopMining, setBackground } = useAppStateStore();
+  const { startMining, stopMining, setBackground } = useAppStateStore(
+    (state) => ({
+      startMining: state.startMining,
+      stopMining: state.stopMining,
+      setBackground: state.setBackground,
+    })
+  );
   const [mining, setMining] = useState(false);
 
   const handleMining = () => {

@@ -1,12 +1,16 @@
-import { Button, ButtonGroup, Stack, Divider, Typography } from '@mui/material';
+import { Button, ButtonGroup, Stack, Typography } from '@mui/material';
 import useAppStateStore from '../../store/appStateStore';
-import { viewType, backgroundType } from '../../store/types';
+import { viewType } from '../../store/types';
 import { useState } from 'react';
 
 function TestButtons() {
-  const { view, setView, background, setBackground } = useAppStateStore();
+  const { view, setView, setBackground } = useAppStateStore((state) => ({
+    view: state.view,
+    setView: state.setView,
+    setBackground: state.setBackground,
+  }));
   const [selectedView, setSelectedView] = useState<viewType>(view);
-  const [selectedBg, setSelectedBg] = useState<backgroundType>(background);
+  // const [selectedBg, setSelectedBg] = useState<backgroundType>(background);
 
   const handleSetView = (value: viewType) => {
     setView(value);
@@ -19,10 +23,10 @@ function TestButtons() {
     }
   };
 
-  const handleSetStatus = (value: backgroundType) => {
-    setBackground(value);
-    setSelectedBg(value);
-  };
+  // const handleSetStatus = (value: backgroundType) => {
+  //   setBackground(value);
+  //   setSelectedBg(value);
+  // };
 
   return (
     <Stack direction="column" spacing={1}>
@@ -47,7 +51,7 @@ function TestButtons() {
           Mining
         </Button>
       </ButtonGroup>
-      <Divider />
+      {/* <Divider />
       <Typography variant="body2">Backgrounds:</Typography>
       <ButtonGroup variant="outlined" fullWidth>
         <Button
@@ -88,7 +92,7 @@ function TestButtons() {
         >
           Loser
         </Button>
-      </ButtonGroup>
+      </ButtonGroup> */}
     </Stack>
   );
 }

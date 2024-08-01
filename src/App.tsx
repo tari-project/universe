@@ -1,9 +1,8 @@
+import './theme/theme.css';
 import { useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { listen } from '@tauri-apps/api/event';
-
 import CssBaseline from '@mui/material/CssBaseline';
-import './theme/theme.css';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from './theme/themes';
 import { ContainerInner, DashboardContainer } from './theme/styles';
@@ -12,10 +11,19 @@ import { Dashboard } from './containers/Dashboard';
 import { TitleBar } from './containers/TitleBar';
 import { AppBackground } from './containers/AppBackground';
 import useAppStateStore from './store/appStateStore';
+import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 
 function App() {
+  const { view, background, setHashRate, setCpuUsage, setAppState, setError } =
+    useAppStateStore((state) => ({
+      view: state.view,
+      background: state.background,
+      setHashRate: state.setHashRate,
+      setCpuUsage: state.setCpuUsage,
+      setAppState: state.setAppState,
+      setError: state.setError,
+    }));
 
-  const { view, background, setHashRate, setCpuUsage } = useAppStateStore();
   useEffect(() => {
     const unlistenPromise = listen('message', (event) => {
       console.log('some kind of event', event.event, event.payload);
@@ -23,11 +31,11 @@ function App() {
 
     const intervalId = setInterval(() => {
       invoke('status', {})
-        .then((status : any) => {
+        .then((status: any) => {
           console.log('Status', status);
-
+          setAppState(status);
           setCpuUsage(status.cpu?.cpu_usage);
-            setHashRate(status.cpu?.hash_rate);
+          setHashRate(status.cpu?.hash_rate);
           const logArea = document.getElementById('log-area');
           if (logArea) {
             logArea.innerText = JSON.stringify(status, null, 2);
@@ -35,6 +43,7 @@ function App() {
         })
         .catch((e) => {
           console.error('Could not get status', e);
+          setError(e.toString());
         });
     }, 1000);
     return () => {
@@ -55,6 +64,7 @@ function App() {
           </ContainerInner>
         </DashboardContainer>
       </AppBackground>
+      <ErrorSnackbar />
     </ThemeProvider>
   );
 }

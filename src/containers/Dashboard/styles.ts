@@ -1,6 +1,6 @@
 import { styled } from '@mui/material/styles';
 import { LinearProgress, Box } from '@mui/material';
-import { headerHeight } from '../../theme/styles';
+import { headerHeight, sidebarWidth } from '../../theme/styles';
 
 export const DashboardContainer = styled(Box)(() => ({
   display: 'flex',
@@ -38,12 +38,13 @@ export const VisualModeContainer = styled(Box)(({ theme }) => ({
   right: theme.spacing(1),
 }));
 
-export const BlockInfoContainer = styled(Box)(({ theme }) => ({
+export const InfoContainer = styled(Box)(({ theme }) => ({
   position: 'absolute',
   top: `calc(${headerHeight} + ${theme.spacing(1)})`,
   right: theme.spacing(4),
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  width: `calc(100% - ${sidebarWidth} - ${theme.spacing(8)})`,
   gap: theme.spacing(2),
 }));
