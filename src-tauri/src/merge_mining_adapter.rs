@@ -57,14 +57,12 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     let file_path = BinaryResolver::current()
                         .resolve_path(Binaries::MergeMiningProxy, &version)?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(
-                        file_path
-                    )
-                    .args(args)
-                    // .stdout(std::process::Stdio::piped())
-                    // .stderr(std::process::Stdio::piped())
-                    .kill_on_drop(true)
-                    .spawn()?;
+                    let mut child = tokio::process::Command::new(file_path)
+                        .args(args)
+                        // .stdout(std::process::Stdio::piped())
+                        // .stderr(std::process::Stdio::piped())
+                        .kill_on_drop(true)
+                        .spawn()?;
 
                     select! {
                         res = shutdown_signal =>{

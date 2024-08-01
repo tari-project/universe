@@ -84,7 +84,6 @@ impl XmrigAdapter {
         args.push(format!("--user={}", self.monero_address));
         args.push("--threads=6".to_string());
 
-
         let client = XmrigHttpApiClient::new(
             format!("http://127.0.0.1:{}", self.http_api_port),
             self.http_api_token.clone(),

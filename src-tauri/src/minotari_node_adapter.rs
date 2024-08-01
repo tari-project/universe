@@ -35,7 +35,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "-b".to_string(),
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
-            "--mining-enabled".to_string()
+            "--mining-enabled".to_string(),
         ];
         dbg!(&args);
         Ok((
@@ -46,17 +46,15 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .ensure_latest(Binaries::MinotariNode)
                         .await?;
 
-                    let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MinotariNode, &version)?;
+                    let file_path =
+                        BinaryResolver::current().resolve_path(Binaries::MinotariNode, &version)?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(
-                       file_path
-                    )
-                    .args(args)
-                    // .stdout(std::process::Stdio::piped())
-                    // .stderr(std::process::Stdio::piped())
-                    .kill_on_drop(true)
-                    .spawn()?;
+                    let mut child = tokio::process::Command::new(file_path)
+                        .args(args)
+                        // .stdout(std::process::Stdio::piped())
+                        // .stderr(std::process::Stdio::piped())
+                        .kill_on_drop(true)
+                        .spawn()?;
 
                     select! {
                         res = shutdown_signal =>{
