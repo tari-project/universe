@@ -35,6 +35,10 @@ interface AppState {
   setMode: (value: modeType) => void;
   hashRate: number;
   setHashRate: (value: number) => void;
+  cpuBrand: string,
+  setCpuBrand: (value: string) => void;
+  estimatedEarnings: number,
+  setEstimatedEarnings: (value: number) => void;
 
   // functions
   startMining: () => Promise<void>;
@@ -74,6 +78,10 @@ const useAppStateStore = create<AppState>((set) => ({
   setMode: (value) => set({ mode: value }),
   hashRate: 0,
   setHashRate: (value) => set({ hashRate: value }),
+  cpuBrand: '',
+  setCpuBrand: (value) => set({ cpuBrand: value }),
+  estimatedEarnings: 0,
+  setEstimatedEarnings: (value) => set({ estimatedEarnings: value }),
 
   // functions
   startMining: async () => {

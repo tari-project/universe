@@ -102,6 +102,8 @@ pub struct CpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: f64,
     pub cpu_usage : u32,
+    pub cpu_brand: String,
+    pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
 }
 
