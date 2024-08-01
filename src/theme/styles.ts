@@ -8,14 +8,10 @@ export const ContainerInner = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'row',
   alignItems: 'stretch',
+  justifyContent: 'center',
   gap: theme.spacing(2),
   minHeight: `calc(100vh - ${headerHeight})`,
-  '& > :first-of-type': {
-    width: sidebarWidth,
-  },
-  '& > :nth-child(2)': {
-    flexGrow: 1,
-  },
+  paddingLeft: sidebarWidth,
 }));
 
 export const DashboardContainer = styled(Box)(() => ({

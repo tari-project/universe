@@ -1,28 +1,33 @@
-import React from 'react';
-// import ExpandableBox from './ExpandableBox';
-import TariMiner from './TariMiner/TariMiner';
-import Wallet from './Wallet/Wallet';
-import { SideBarContainer } from './styles';
+import Miner from './Miner/Miner';
+import Wallet from './components/Wallet';
+import Heading from './components/Heading';
+import {
+  SideBarContainer,
+  SideBarInner,
+  HeadingContainer,
+  BottomContainer,
+} from './styles';
 import TestButtons from './TestButtons';
+import { useTheme } from '@mui/material/styles';
+import useAppStateStore from '../../store/appStateStore';
 
-const App: React.FC = () => {
+function SideBar() {
+  const theme = useTheme();
+  const sidebarOpen = useAppStateStore((state) => state.sidebarOpen);
   return (
-    <SideBarContainer>
-      <TariMiner />
-      <Wallet />
-      <TestButtons />
+    <SideBarContainer theme={theme} sidebaropen={sidebarOpen}>
+      <HeadingContainer>
+        <Heading />
+      </HeadingContainer>
+      <SideBarInner>
+        <Miner />
+        <TestButtons />
+      </SideBarInner>
+      <BottomContainer>
+        <Wallet />
+      </BottomContainer>
     </SideBarContainer>
   );
-};
-
-export default App;
-
-{
-  /* <ExpandableBox initialWidth={'348px'} expandedWidth={'calc(100% - 40px)'}>
-        <Typography variant="h6">Expandable Box Content</Typography>
-        <Typography>
-          This content is inside the expandable box. When expanded, it overlays
-          the main content without affecting its layout.
-        </Typography>
-      </ExpandableBox> */
 }
+
+export default SideBar;

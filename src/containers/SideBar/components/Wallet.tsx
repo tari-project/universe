@@ -1,11 +1,11 @@
 import { Typography, Stack } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import { WalletContainer } from './styles';
+import { WalletContainer } from '../styles';
 import { darkTheme } from '../../../theme/themes';
 import useAppStateStore from '../../../store/appStateStore';
 
 function Wallet() {
-  const { wallet } = useAppStateStore();
+  const wallet = useAppStateStore((state) => state.wallet);
   return (
     <ThemeProvider theme={darkTheme}>
       <WalletContainer>

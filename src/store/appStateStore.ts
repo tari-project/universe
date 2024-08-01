@@ -1,8 +1,18 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/tauri';
-import { viewType, backgroundType } from './types';
+import { viewType, backgroundType, modeType } from './types';
 
 interface AppState {
+  appState: any;
+  setAppState: (value: any) => void;
+  error: string;
+  setError: (value: string) => void;
+  topStatus: string;
+  setTopStatus: (value: string) => void;
+  errorOpen: boolean;
+  setErrorOpen: (value: boolean) => void;
+
+  // gui
   background: backgroundType;
   setBackground: (value: backgroundType) => void;
   view: viewType;
@@ -13,17 +23,35 @@ interface AppState {
     balance: number;
   };
   setWallet: (value: { balance: number }) => void;
-  isMining : boolean,
+  isMining: boolean;
   setIsMining: (value: boolean) => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (value: boolean) => void;
+
+  // stats
   cpuUsage: number;
   setCpuUsage: (value: number) => void;
+  mode: modeType;
+  setMode: (value: modeType) => void;
   hashRate: number;
   setHashRate: (value: number) => void;
+
+  // functions
   startMining: () => Promise<void>;
   stopMining: () => Promise<void>;
 }
 
 const useAppStateStore = create<AppState>((set) => ({
+  appState: {},
+  setAppState: (value) => set({ appState: value }),
+  error: '',
+  setError: (value) => set({ error: value }),
+  topStatus: 'Not mining',
+  setTopStatus: (value) => set({ topStatus: value }),
+  errorOpen: false,
+  setErrorOpen: (value) => set({ errorOpen: value }),
+
+  // gui
   background: 'idle',
   setBackground: (value) => set({ background: value }),
   view: 'mining',
@@ -34,12 +62,20 @@ const useAppStateStore = create<AppState>((set) => ({
     balance: 0,
   },
   setWallet: (value) => set({ wallet: value }),
-    isMining: false,
-    setIsMining: (value) => set({ isMining: value }),
-    cpuUsage: 0,
-    setCpuUsage: (value) => set({ cpuUsage: value }),
-    hashRate: 0,
-    setHashRate: (value) => set({ hashRate: value }),
+  isMining: false,
+  setIsMining: (value) => set({ isMining: value }),
+  sidebarOpen: false,
+  setSidebarOpen: (value) => set({ sidebarOpen: value }),
+
+  // stats
+  cpuUsage: 0,
+  setCpuUsage: (value) => set({ cpuUsage: value }),
+  mode: 'eco',
+  setMode: (value) => set({ mode: value }),
+  hashRate: 0,
+  setHashRate: (value) => set({ hashRate: value }),
+
+  // functions
   startMining: async () => {
     try {
       await invoke('start_mining', {});
