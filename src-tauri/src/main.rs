@@ -24,16 +24,19 @@ use std::thread::sleep;
 use std::{panic, process};
 use tari_shutdown::Shutdown;
 use tokio::sync::RwLock;
+use log::{debug, error, info};
+use tauri::{api, RunEvent, UpdaterEvent};
 
 #[tauri::command]
 async fn start_mining<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.cpu_miner_config.read().await;
     state
         .node_manager
-        .ensure_started(state.shutdown.to_signal())
+        .ensure_started(state.shutdown.to_signal(), app.path_resolver().app_local_data_dir().unwrap())
         .await
         .map_err(|e| e.to_string())?;
     let mm_proxy_manager = state.mm_proxy_manager.read().await;
@@ -41,7 +44,7 @@ async fn start_mining<'r>(
         .cpu_miner
         .write()
         .await
-        .start(state.shutdown.to_signal(),  &config, &mm_proxy_manager).await
+        .start(state.shutdown.to_signal(),  &config, &mm_proxy_manager, app.path_resolver().app_local_data_dir().unwrap()).await
         .map_err(|e| {
             dbg!(e.to_string());
             e.to_string()
@@ -124,13 +127,14 @@ struct UniverseAppState {
     node_manager: NodeManager,
 }
 
+pub const LOG_TARGET : &str = "tari::universe::main";
+
 fn main() {
     let default_hook = panic::take_hook();
     panic::set_hook(Box::new(move |info| {
         default_hook(info);
         process::exit(1);
     }));
-
     let mut shutdown = Shutdown::new();
     let mm_proxy_manager = Arc::new(RwLock::new(MmProxyManager::new()));
     let node_manager = NodeManager::new();
@@ -150,17 +154,45 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
+
+    tari_common::initialize_logging(
+        &app.path_resolver().app_config_dir().unwrap().join("log4rs_config.yml"),
+        &app.path_resolver().app_log_dir().unwrap(),
+            include_str!("../log4rs_sample.yml"),
+    ).expect("Could not set up logging");
+    info!(
+        target: LOG_TARGET,
+        "Starting Tari Universe version: {}",
+        app.package_info().version
+    );
+
+
+    println!("Logs stored at {:?}", app.path_resolver().app_log_dir().unwrap());
+
     app.run(move |_app_handle, event| match event {
         tauri::RunEvent::Updater(updater_event) => {
-            dbg!(updater_event);
+            match updater_event {
+                UpdaterEvent::Error(e) => {
+                    error!(target: LOG_TARGET, "Updater error: {:?}", e);
+                },
+                _ => {
+                    info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
+                }
+            }
         },
-        tauri::RunEvent::ExitRequested { api, .. } => {
+        tauri::RunEvent::ExitRequested { api: _, .. } => {
             // api.prevent_exit();
-            println!("App shutdown caught");
+            info!(target: LOG_TARGET, "App shutdown caught");
             shutdown.trigger();
             // TODO: Find a better way of knowing that all miners have stopped
             sleep(std::time::Duration::from_secs(3));
+            info!(target: LOG_TARGET, "App shutdown complete");
         }
-        _ => {}
+        RunEvent::MainEventsCleared=> {
+            // no need to handle
+        }
+        _ => {
+            debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
+        }
     });
 }
