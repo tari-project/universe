@@ -44,7 +44,7 @@ futures-lite = "2.3.0"
 tokio-util = { version = "0.7.11", features = ["compat"] }
 sanitize-filename = "0.5"
 async-trait = "0.1.81"
-sysinfo = "0.30.13"
+sysinfo = "0.31.2"
 log4rs = "1.3.0"
 
 

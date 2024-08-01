@@ -139,9 +139,17 @@ impl CpuMiner {
 // Wait a bit because CPU usage is based on diff.
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
 // Refresh CPUs again.
-        s.refresh_cpu();
+        s.refresh_cpu_all();
 
-        let cpu_usage = s.global_cpu_info().cpu_usage();
+        // let cpu_brand = s.get_global_processor_info().unwrap().brand().to_string();
+        let mut cpu_brand = "Unknown";
+        for cpu in s.cpus() {
+            cpu_brand = cpu.brand();
+            println!("{}", cpu.brand());
+            println!("{}", cpu.name());
+        }
+
+        let cpu_usage = s.global_cpu_usage() as u32;
 
         match &self.api_client {
             Some(client) => {
@@ -152,6 +160,8 @@ impl CpuMiner {
                         && xmrig_status.hashrate.total[0].unwrap() > 0.0,
                     hash_rate: xmrig_status.hashrate.total[0].unwrap_or_default(),
                     cpu_usage: cpu_usage as u32,
+                    cpu_brand: cpu_brand.to_string(),
+                    estimated_earnings: 0,
                     connection: CpuMinerConnectionStatus {
                         is_connected: xmrig_status.connection.uptime > 0,
                         // error: if xmrig_status.connection.error_log.is_empty() {
@@ -166,6 +176,8 @@ impl CpuMiner {
                 is_mining: false,
                 hash_rate: 0.0,
                 cpu_usage: cpu_usage as u32,
+                cpu_brand: cpu_brand.to_string(),
+                estimated_earnings: 0,
                 connection: CpuMinerConnectionStatus {
                     is_connected: false,
                     // error: None,
