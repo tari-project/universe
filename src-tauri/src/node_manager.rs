@@ -11,7 +11,18 @@ pub struct NodeManager {
 
 impl NodeManager {
     pub fn new() -> Self {
-        let sidecar_adapter = MinotariNodeAdapter::new();
+        // TODO: wire up to front end
+        let mut use_tor = true;
+
+
+        // Unix systems have built in tor.
+        // TODO: Add tor service for windows.
+        #[cfg(target_os = "windows")]
+        {
+            use_tor = false;
+        }
+
+        let sidecar_adapter = MinotariNodeAdapter::new(use_tor);
         let process_watcher = ProcessWatcher::new(sidecar_adapter);
 
         Self {

@@ -10,12 +10,14 @@ use tokio::task::JoinHandle;
 
 pub struct MinotariNodeAdapter {
     force_download: bool,
+    use_tor: bool
 }
 
 impl MinotariNodeAdapter {
-    pub fn new() -> Self {
+    pub fn new(use_tor: bool) -> Self {
         Self {
             force_download: false,
+            use_tor
         }
     }
 }
@@ -31,12 +33,23 @@ impl ProcessAdapter for MinotariNodeAdapter {
         dbg!("STarting node");
         let working_dir = data_local_dir().unwrap().join("tari-universe").join("node");
         std::fs::create_dir_all(&working_dir)?;
-        let args: Vec<String> = vec![
+
+        let mut args: Vec<String> = vec![
             "-b".to_string(),
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
-            "--mining-enabled".to_string()
+            "--mining-enabled".to_string(),
+            // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
         ];
+        if !self.use_tor {
+            // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
+            // In future we should change the base node to not error if it is tcp and doesn't have a public address
+           args.push("-p".to_string());
+            args.push("base_node.p2p.transport.type=tcp".to_string());
+            args.push("-p".to_string());
+            args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
+            // args.push("-p\"base_node.p2p.transport.tcp.listener_address\"=\"/ip4/0.0.0.0/tcp/18189\"".to_string());
+        }
         dbg!(&args);
         Ok((
             MinotariNodeInstance {
