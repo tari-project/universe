@@ -176,9 +176,6 @@ impl BinaryResolver {
         binary: Binaries,
         force_download: bool,
     ) -> Result<Version, Error> {
-        let cache_dir = tauri::api::path::cache_dir()
-            .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
-            .join("tari-universe");
         let adapter = self
             .adapters
             .get(&binary)

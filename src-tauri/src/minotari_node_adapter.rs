@@ -1,12 +1,16 @@
+use std::path::PathBuf;
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::xmrig_adapter::XmrigInstance;
 use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::{cache_dir, data_dir, data_local_dir};
+use log::info;
 use tari_shutdown::Shutdown;
 use tokio::select;
 use tokio::task::JoinHandle;
+
+const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub struct MinotariNodeAdapter {
     force_download: bool,
@@ -26,11 +30,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
     type Instance = MinotariNodeInstance;
     type StatusMonitor = MinotariNodeStatusMonitor;
 
-    fn spawn_inner(&self) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    fn spawn_inner(&self, log_path: PathBuf) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let mut shutdown_signal = inner_shutdown.to_signal();
+        let shutdown_signal = inner_shutdown.to_signal();
 
-        dbg!("STarting node");
+        info!(target: LOG_TARGET, "Starting minotari node");
         let working_dir = data_local_dir().unwrap().join("tari-universe").join("node");
         std::fs::create_dir_all(&working_dir)?;
 

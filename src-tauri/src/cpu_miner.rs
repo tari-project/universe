@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+use log::warn;
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
@@ -5,9 +7,12 @@ use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
+use tauri::Manager;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
 
+
+const LOG_TARGET: &str = "tari::universe::cpu_miner";
 pub enum CpuMinerEvent {
     Stdout(String),
     Stderr(String),
@@ -34,16 +39,17 @@ impl CpuMiner {
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
         local_mm_proxy: &MmProxyManager,
+        base_path: PathBuf
     ) -> Result<(), anyhow::Error> {
         if self.watcher_task.is_some() {
-            println!("Tried to start mining twice");
+            warn!(target: LOG_TARGET, "Tried to start mining twice");
             return Ok(());
         }
         let mut inner_shutdown = self.miner_shutdown.to_signal();
 
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
-                local_mm_proxy.start(app_shutdown.clone()).await?;
+                local_mm_proxy.start(app_shutdown.clone(),base_path).await?;
                 local_mm_proxy.wait_ready().await?;
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
@@ -135,7 +141,7 @@ impl CpuMiner {
 // Refresh CPUs again.
         s.refresh_cpu();
 
-        let mut cpu_usage = s.global_cpu_info().cpu_usage();
+        let cpu_usage = s.global_cpu_info().cpu_usage();
 
         match &self.api_client {
             Some(client) => {

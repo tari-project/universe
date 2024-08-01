@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::xmrig_adapter::XmrigInstance;
@@ -24,7 +25,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     type Instance = MergeMiningProxyInstance;
     type StatusMonitor = MergeMiningProxyStatusMonitor;
 
-    fn spawn_inner(&self) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    fn spawn_inner(&self, log_folder: PathBuf) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let mut shutdown_signal = inner_shutdown.to_signal();
 
