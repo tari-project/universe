@@ -23,12 +23,10 @@ use serde::Serialize;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
-use tari_shutdown::Shutdown;
-use tauri::{RunEvent, UpdaterEvent};
-use tokio::sync::RwLock;
-use log::{debug, error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_shutdown::Shutdown;
 use tauri::{api, RunEvent, UpdaterEvent};
+use tokio::sync::RwLock;
 
 #[tauri::command]
 async fn start_mining<'r>(
@@ -92,13 +90,21 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let cpu_miner = state.cpu_miner.read().await;
-    let (sha_hash_rate, randomx_hash_rate, block_reward) = match state.node_manager.get_network_hash_rate_and_block_reward().await{
-        Ok((sha_hash_rate, randomx_hash_rate, block_reward)) => (sha_hash_rate, randomx_hash_rate, block_reward),
-        Err(e) => {
-            (0, 0, MicroMinotari(0))
+    let (sha_hash_rate, randomx_hash_rate, block_reward) = match state
+        .node_manager
+        .get_network_hash_rate_and_block_reward()
+        .await
+    {
+        Ok((sha_hash_rate, randomx_hash_rate, block_reward)) => {
+            (sha_hash_rate, randomx_hash_rate, block_reward)
         }
+        Err(e) => (0, 0, MicroMinotari(0)),
     };
-    let cpu = match cpu_miner.status(randomx_hash_rate, block_reward).await.map_err(|e| e.to_string()) {
+    let cpu = match cpu_miner
+        .status(randomx_hash_rate, block_reward)
+        .await
+        .map_err(|e| e.to_string())
+    {
         Ok(cpu) => cpu,
         Err(e) => {
             eprintln!("Error getting cpu miner status: {:?}", e);

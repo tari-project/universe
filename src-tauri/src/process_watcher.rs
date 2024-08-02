@@ -10,7 +10,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     internal_shutdown: Shutdown,
     poll_time: tokio::time::Duration,
-    pub(crate) status_monitor: Option<TAdapter::StatusMonitor>
+    pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -20,7 +20,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             watcher_task: None,
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(1),
-            status_monitor: None
+            status_monitor: None,
         }
     }
 }

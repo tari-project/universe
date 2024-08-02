@@ -5,11 +5,11 @@ use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMin
 use log::warn;
 use std::path::PathBuf;
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
-
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 350;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
@@ -134,7 +134,11 @@ impl CpuMiner {
         Ok(())
     }
 
-    pub async fn status(&self, network_hash_rate: u64, block_reward: MicroMinotari) -> Result<CpuMinerStatus, anyhow::Error> {
+    pub async fn status(
+        &self,
+        network_hash_rate: u64,
+        block_reward: MicroMinotari,
+    ) -> Result<CpuMinerStatus, anyhow::Error> {
         let mut s =
             System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
@@ -155,10 +159,15 @@ impl CpuMiner {
             Some(client) => {
                 let xmrig_status = client.summary().await?;
                 let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                dbg!(hash_rate, network_hash_rate,block_reward);
-                let estimated_earnings = (block_reward.as_u64() as f64 * (hash_rate / network_hash_rate as f64 * RANDOMX_BLOCKS_PER_DAY as f64)) as u64;
+                dbg!(hash_rate, network_hash_rate, block_reward);
+                let estimated_earnings = (block_reward.as_u64() as f64
+                    * (hash_rate / network_hash_rate as f64 * RANDOMX_BLOCKS_PER_DAY as f64))
+                    as u64;
                 // Can't be more than the max reward for a day
-                let estimated_earnings = std::cmp::min(estimated_earnings, block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY);
+                let estimated_earnings = std::cmp::min(
+                    estimated_earnings,
+                    block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
+                );
 
                 Ok(CpuMinerStatus {
                     is_mining: xmrig_status.hashrate.total.len() > 0
@@ -183,7 +192,7 @@ impl CpuMiner {
                 hash_rate: 0.0,
                 cpu_usage: cpu_usage as u32,
                 cpu_brand: cpu_brand.to_string(),
-                estimated_earnings:0,
+                estimated_earnings: 0,
                 connection: CpuMinerConnectionStatus {
                     is_connected: false,
                     // error: None,
