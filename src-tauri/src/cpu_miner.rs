@@ -1,14 +1,12 @@
-use std::path::PathBuf;
-use log::warn;
-use sysinfo::{CpuRefreshKind, RefreshKind, System};
-use tari_core::transactions::tari_amount::MicroMinotari;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use log::warn;
+use std::path::PathBuf;
+use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
-use tauri::Manager;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
 
@@ -41,17 +39,20 @@ impl CpuMiner {
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
         local_mm_proxy: &MmProxyManager,
-        base_path: PathBuf
+        base_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         if self.watcher_task.is_some() {
             warn!(target: LOG_TARGET, "Tried to start mining twice");
             return Ok(());
         }
+        self.miner_shutdown = Shutdown::new();
         let mut inner_shutdown = self.miner_shutdown.to_signal();
 
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
-                local_mm_proxy.start(app_shutdown.clone(),base_path).await?;
+                local_mm_proxy
+                    .start(app_shutdown.clone(), base_path)
+                    .await?;
                 local_mm_proxy.wait_ready().await?;
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
@@ -62,7 +63,7 @@ impl CpuMiner {
             }
         };
         let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
-        let (mut rx, mut xmrig_child, client) = xmrig.spawn()?;
+        let (mut _rx, mut xmrig_child, client) = xmrig.spawn()?;
         self.api_client = Some(client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
@@ -134,13 +135,12 @@ impl CpuMiner {
     }
 
     pub async fn status(&self, network_hash_rate: u64, block_reward: MicroMinotari) -> Result<CpuMinerStatus, anyhow::Error> {
-        let mut s = System::new_with_specifics(
-            RefreshKind::new().with_cpu(CpuRefreshKind::everything()),
-        );
+        let mut s =
+            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
-// Wait a bit because CPU usage is based on diff.
+        // Wait a bit because CPU usage is based on diff.
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-// Refresh CPUs again.
+        // Refresh CPUs again.
         s.refresh_cpu_all();
 
         let mut cpu_brand = "Unknown";

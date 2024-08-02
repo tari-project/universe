@@ -1,12 +1,10 @@
-use std::path::PathBuf;
-use crate::merge_mining_adapter::MergeMiningProxyAdapter;
 use crate::minotari_node_adapter::MinotariNodeAdapter;
 use crate::process_watcher::ProcessWatcher;
+use std::path::PathBuf;
 use std::sync::Arc;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
-
 
 const LOG_TARGET: &str = "tari::universe::node_manager";
 
@@ -18,7 +16,6 @@ impl NodeManager {
     pub fn new() -> Self {
         // TODO: wire up to front end
         let mut use_tor = true;
-
 
         // Unix systems have built in tor.
         // TODO: Add tor service for windows.
@@ -35,14 +32,22 @@ impl NodeManager {
         }
     }
 
-    pub async fn ensure_started(&self, app_shutdown: ShutdownSignal, base_path: PathBuf) -> Result<(), anyhow::Error> {
+    pub async fn ensure_started(
+        &self,
+        app_shutdown: ShutdownSignal,
+        base_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.start(app_shutdown, base_path).await?;
         process_watcher.wait_ready().await?;
         Ok(())
     }
 
-    pub async fn start(&self, app_shutdown: ShutdownSignal, base_path: PathBuf) -> Result<(), anyhow::Error> {
+    pub async fn start(
+        &self,
+        app_shutdown: ShutdownSignal,
+        base_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.start(app_shutdown, base_path).await?;
 

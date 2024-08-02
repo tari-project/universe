@@ -2,18 +2,10 @@ use crate::cpu_miner::CpuMinerEvent;
 use crate::download_utils::{download_file, extract};
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
-use anyhow::{anyhow, Error};
-use async_zip::base::read::seek::ZipFileReader;
-use flate2::read::GzDecoder;
-use futures_util::{FutureExt, StreamExt};
-use std::path::{Path, PathBuf};
-use tar::Archive;
+use anyhow::Error;
+use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
-use tokio::fs::File;
-use tokio::fs::OpenOptions;
-use tokio::io::AsyncWriteExt;
-use tokio::io::BufReader;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
@@ -67,7 +59,7 @@ impl XmrigAdapter {
     pub fn spawn(
         &self,
     ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
-        let (tx, rx) = tokio::sync::mpsc::channel(100);
+        let (_tx, rx) = tokio::sync::mpsc::channel(100);
         let cache_dir = tauri::api::path::cache_dir()
             .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
             .join("tari-universe");
@@ -83,7 +75,6 @@ impl XmrigAdapter {
         args.push(format!("--donate-level=1"));
         args.push(format!("--user={}", self.monero_address));
         args.push("--threads=6".to_string());
-
 
         let client = XmrigHttpApiClient::new(
             format!("http://127.0.0.1:{}", self.http_api_port),

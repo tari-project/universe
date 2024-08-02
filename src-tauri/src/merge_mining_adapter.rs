@@ -1,10 +1,9 @@
-use std::path::PathBuf;
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::xmrig_adapter::XmrigInstance;
 use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::{cache_dir, data_dir, data_local_dir};
+use dirs_next::data_local_dir;
+use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::select;
 use tokio::task::JoinHandle;
@@ -25,7 +24,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     type Instance = MergeMiningProxyInstance;
     type StatusMonitor = MergeMiningProxyStatusMonitor;
 
-    fn spawn_inner(&self, log_folder: PathBuf) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    fn spawn_inner(
+        &self,
+        log_folder: PathBuf,
+    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let mut shutdown_signal = inner_shutdown.to_signal();
 
@@ -58,14 +60,12 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     let file_path = BinaryResolver::current()
                         .resolve_path(Binaries::MergeMiningProxy, &version)?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(
-                        file_path
-                    )
-                    .args(args)
-                    // .stdout(std::process::Stdio::piped())
-                    // .stderr(std::process::Stdio::piped())
-                    .kill_on_drop(true)
-                    .spawn()?;
+                    let mut child = tokio::process::Command::new(file_path)
+                        .args(args)
+                        // .stdout(std::process::Stdio::piped())
+                        // .stderr(std::process::Stdio::piped())
+                        .kill_on_drop(true)
+                        .spawn()?;
 
                     select! {
                         res = shutdown_signal =>{

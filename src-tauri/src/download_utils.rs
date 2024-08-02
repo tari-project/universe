@@ -52,7 +52,6 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
     Ok(())
 }
 
-use crate::xmrig::http_api::XmrigHttpApiClient;
 use anyhow::anyhow;
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
