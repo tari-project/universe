@@ -65,6 +65,11 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Install dependencies (Macos)
+        if: startsWith(runner.os,'macOS')
+        run: |
+          brew install protobuf
+
       - name: Install dependencies (linux)
         if: startsWith(runner.os,'Linux')
         run: |
@@ -73,7 +78,8 @@ jobs:
             libwebkit2gtk-4.0-dev \
             libappindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            protobuf-compiler 
 
       - name: Install dependencies (node)
         run: |
