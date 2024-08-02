@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { Typography } from '@mui/material';
 import useAppStateStore from '../../../../store/appStateStore';
-
 function TopStatus() {
   const { topStatus, setTopStatus, appState } = useAppStateStore((state) => ({
     topStatus: state.topStatus,

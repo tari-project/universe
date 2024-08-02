@@ -15,7 +15,7 @@ import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 
 function App() {
   const { view, background, setHashRate, setCpuUsage, setAppState, setError,
-  setCpuBrand, setEstimatedEarnings} =
+  setCpuBrand, setEstimatedEarnings, setBlockHeight, setBlockTime, setIsSynced} =
     useAppStateStore((state) => ({
       view: state.view,
       background: state.background,
@@ -23,8 +23,11 @@ function App() {
       setCpuUsage: state.setCpuUsage,
       setAppState: state.setAppState,
       setError: state.setError,
-        setCpuBrand: state.setCpuBrand,
-        setEstimatedEarnings: state.setEstimatedEarnings,
+       setCpuBrand: state.setCpuBrand,
+       setEstimatedEarnings: state.setEstimatedEarnings,
+        setBlockHeight: state.setBlockHeight,
+        setBlockTime: state.setBlockTime,
+        setIsSynced: state.setIsSynced,
     }));
 
   useEffect(() => {
@@ -41,6 +44,9 @@ function App() {
           setHashRate(status.cpu?.hash_rate);
           setCpuBrand(status.cpu?.cpu_brand);
           setEstimatedEarnings(status.cpu?.estimated_earnings);
+          setBlockHeight(status.base_node?.block_height);
+          setBlockTime(status.base_node?.block_time);
+          setIsSynced(status.base_node?.is_synced);
           const logArea = document.getElementById('log-area');
           if (logArea) {
             logArea.innerText = JSON.stringify(status, null, 2);
