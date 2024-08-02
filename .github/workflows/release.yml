@@ -8,7 +8,7 @@ name: Release
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
     branches:
-      - 'main'
+      - 'release'
       - 'build-*'
   workflow_dispatch:
 
@@ -73,7 +73,20 @@ jobs:
             libwebkit2gtk-4.0-dev \
             libappindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            libprotobuf-dev \
+            protobuf-compiler
+
+      - name: Install dependencies (macOS)
+        if: startsWith(runner.os,'macOS')
+        run: |
+          # openssl, cmake and autoconf already installed
+          brew install zip coreutils automake protobuf libtool
+
+      - name: Install dependencies (Windows)
+        if: startsWith(runner.os,'Windows')
+        run: |
+          choco upgrade protoc -y
 
       - name: Install dependencies (node)
         run: |
