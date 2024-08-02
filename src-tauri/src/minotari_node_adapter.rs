@@ -4,7 +4,10 @@ use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::info;
+use minotari_node_grpc_client::grpc::{HeightRequest, NewBlockTemplateRequest, PowAlgo};
+use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::path::PathBuf;
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tokio::select;
 use tokio::task::JoinHandle;
@@ -106,8 +109,6 @@ pub struct MinotariNodeInstance {
     handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
 }
 
-pub struct MinotariNodeStatusMonitor {}
-
 #[async_trait]
 impl ProcessInstance for MinotariNodeInstance {
     fn ping(&self) -> bool {
@@ -124,9 +125,44 @@ impl ProcessInstance for MinotariNodeInstance {
         Ok(res)
     }
 }
+pub struct MinotariNodeStatusMonitor {}
 
 impl StatusMonitor for MinotariNodeStatusMonitor {
     fn status(&self) -> Result<(), Error> {
         todo!()
+    }
+}
+
+impl MinotariNodeStatusMonitor {
+    pub async fn get_network_hash_rate_and_block_reward(
+        &self,
+    ) -> Result<(u64, u64, MicroMinotari), Error> {
+        // TODO: use GRPC port returned from process
+        let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
+        let res = client
+            .get_new_block_template(NewBlockTemplateRequest {
+                algo: Some(PowAlgo { pow_algo: 1 }),
+                max_weight: 0,
+            })
+            .await?;
+        let mut res = res.into_inner();
+        let reward = res.miner_data.unwrap().reward;
+        let res = client
+            .get_network_difficulty(HeightRequest {
+                from_tip: 1,
+                start_height: 0,
+                end_height: 0,
+            })
+            .await?;
+        let mut res = res.into_inner();
+        while let Some(difficulty) = res.message().await? {
+            return Ok((
+                difficulty.sha3x_estimated_hash_rate,
+                difficulty.randomx_estimated_hash_rate,
+                MicroMinotari(reward),
+            ));
+        }
+        // Really unlikely to arrive here
+        Err(anyhow::anyhow!("No difficulty found"))
     }
 }

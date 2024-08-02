@@ -2,6 +2,7 @@ use crate::minotari_node_adapter::MinotariNodeAdapter;
 use crate::process_watcher::ProcessWatcher;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
@@ -23,8 +24,8 @@ impl NodeManager {
             use_tor = false;
         }
 
-        let sidecar_adapter = MinotariNodeAdapter::new(use_tor);
-        let process_watcher = ProcessWatcher::new(sidecar_adapter);
+        let adapter = MinotariNodeAdapter::new(use_tor);
+        let process_watcher = ProcessWatcher::new(adapter);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -62,6 +63,20 @@ impl NodeManager {
     pub async fn try_get_listening_port(&self) -> Result<u16, anyhow::Error> {
         // todo!()
         Ok(0)
+    }
+
+    /// Returns Sha hashrate, Rx hashrate and block reward
+    pub async fn get_network_hash_rate_and_block_reward(
+        &self,
+    ) -> Result<(u64, u64, MicroMinotari), anyhow::Error> {
+        let status_monitor_lock = self.watcher.read().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+        status_monitor
+            .get_network_hash_rate_and_block_reward()
+            .await
     }
 
     pub async fn stop(&self) -> Result<(), anyhow::Error> {
