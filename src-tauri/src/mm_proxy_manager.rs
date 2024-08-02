@@ -1,10 +1,9 @@
-use std::path::PathBuf;
 use crate::merge_mining_adapter::MergeMiningProxyAdapter;
 use crate::process_watcher::ProcessWatcher;
-use std::sync::Arc;
 use log::info;
+use std::path::PathBuf;
+use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
-use tauri::AppHandle;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
@@ -24,7 +23,11 @@ impl MmProxyManager {
         }
     }
 
-    pub async fn start(&self, app_shutdown: ShutdownSignal, base_path: PathBuf) -> Result<(), anyhow::Error> {
+    pub async fn start(
+        &self,
+        app_shutdown: ShutdownSignal,
+        base_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher.start(app_shutdown, base_path).await?;

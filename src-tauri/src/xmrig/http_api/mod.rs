@@ -20,7 +20,7 @@ impl XmrigHttpApiClient {
     }
 
     pub async fn summary(&self) -> Result<models::Summary, anyhow::Error> {
-        for i in 0..3 {
+        for _i in 0..3 {
             let response = self.get("2/summary").await?;
 
             let summary = response.text().await?;
