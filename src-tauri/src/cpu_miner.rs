@@ -45,6 +45,7 @@ impl CpuMiner {
             warn!(target: LOG_TARGET, "Tried to start mining twice");
             return Ok(());
         }
+        self.miner_shutdown = Shutdown::new();
         let mut inner_shutdown = self.miner_shutdown.to_signal();
 
         let xmrig_node_connection = match cpu_miner_config.node_connection {

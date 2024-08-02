@@ -31,6 +31,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             println!("Tried to start process watcher for {} twice", name);
             return Ok(());
         }
+        self.internal_shutdown = Shutdown::new();
         let mut inner_shutdown = self.internal_shutdown.to_signal();
 
         let poll_time = self.poll_time;
