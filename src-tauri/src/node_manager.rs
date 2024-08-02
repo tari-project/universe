@@ -5,7 +5,6 @@ use std::sync::Arc;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
-use tokio::time::Instant;
 
 const LOG_TARGET: &str = "tari::universe::node_manager";
 

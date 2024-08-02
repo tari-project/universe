@@ -155,7 +155,8 @@ impl MinotariNodeStatusMonitor {
         // TODO: include block time in tip info so that we don't have to do multiple calls
         let res = client.get_header_by_hash(GetHeaderByHashRequest{ hash: hash.clone() }).await?;
         let res = res.into_inner();
-        let block_time = res.header.unwrap().timestamp;
+        // let block_time = res.header.unwrap().timestamp;
+        let block_time = 0;
         let res = client
             .get_network_difficulty(HeightRequest {
                 from_tip: 1,

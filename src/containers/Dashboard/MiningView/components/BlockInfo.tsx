@@ -3,12 +3,12 @@ import useAppStateStore from "../../../../store/appStateStore.ts";
 import {useEffect, useState} from "react";
 
 function BlockInfo() {
-    let [blockHeight,  blockTime] =  useAppStateStore((state) => ({
-        blockHeight: state.blockHeight,
-        blockTime: state.blockTime,
-    }));
+    // let [blockHeight,  blockTime] =  useAppStateStore((state) => ({
+    //     blockHeight: state.blockHeight,
+    //     blockTime: state.blockTime,
+    // }));
 
-    const [timeSince, setTimeSince] = useState('');
+    // const [timeSince, setTimeSince] = useState('');
 
     // useEffect(() => {
     //     // Function to calculate the time difference
@@ -56,7 +56,7 @@ function BlockInfo() {
       </Stack>
       <Divider orientation="vertical" flexItem />
       <Stack>
-        <Typography variant="h6">{timeSince}</Typography>
+        <Typography variant="h6">0</Typography>
         <Typography variant="body2">Current floor build time</Typography>
       </Stack>
     </Stack>
