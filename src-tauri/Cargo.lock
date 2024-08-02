@@ -3815,7 +3815,6 @@ dependencies = [
  "futures-util",
  "log",
  "log4rs",
- "lzma-sys",
  "reqwest 0.12.5",
  "sanitize-filename",
  "semver",

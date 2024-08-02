@@ -1,6 +1,5 @@
 use crate::download_utils::{download_file, extract};
 use crate::github;
-use crate::xmrig::latest_release::fetch_latest_release;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use semver::Version;

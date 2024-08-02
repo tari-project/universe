@@ -1,5 +1,4 @@
 use crate::process_adapter::{ProcessAdapter, ProcessInstance};
-use std::marker::PhantomData;
 use std::path::PathBuf;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;

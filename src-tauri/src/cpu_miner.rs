@@ -61,7 +61,7 @@ impl CpuMiner {
             }
         };
         let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
-        let (mut rx, mut xmrig_child, client) = xmrig.spawn()?;
+        let (mut _rx, mut xmrig_child, client) = xmrig.spawn()?;
         self.api_client = Some(client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {

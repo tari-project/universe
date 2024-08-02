@@ -29,7 +29,7 @@ use tokio::sync::RwLock;
 
 #[tauri::command]
 async fn start_mining<'r>(
-    window: tauri::Window,
+    _window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
