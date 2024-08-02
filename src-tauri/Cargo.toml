@@ -13,6 +13,8 @@ tauri-build = { version = "1", features = ["isolation"] }
 [dependencies]
 tari_common = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
+minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", branch = "development" }
+tari_core = { git = "https://github.com/tari-project/tari.git", branch = "development", features = ["transactions"] }
 
 anyhow = "1"
 dirs-next = "2.0.0"

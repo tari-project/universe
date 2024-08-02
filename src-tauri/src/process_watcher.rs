@@ -6,11 +6,12 @@ use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
 
-pub struct ProcessWatcher<TAdapter> {
+pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     internal_shutdown: Shutdown,
     poll_time: tokio::time::Duration,
+    pub(crate) status_monitor: Option<TAdapter::StatusMonitor>
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -20,6 +21,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             watcher_task: None,
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(1),
+            status_monitor: None
         }
     }
 }
@@ -35,7 +37,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         let poll_time = self.poll_time;
 
-        let mut child = self.adapter.spawn(base_path)?;
+        let (mut child, status_monitor) = self.adapter.spawn(base_path)?;
+        self.status_monitor = Some(status_monitor);
 
         let mut app_shutdown = app_shutdown.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
