@@ -1,5 +1,4 @@
 use crate::process_adapter::{ProcessAdapter, ProcessInstance};
-use std::marker::PhantomData;
 use std::path::PathBuf;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
@@ -25,7 +24,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
-    pub async fn start(&mut self, app_shutdown: ShutdownSignal, base_path: PathBuf) -> Result<(), anyhow::Error> {
+    pub async fn start(
+        &mut self,
+        app_shutdown: ShutdownSignal,
+        base_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
             println!("Tried to start process watcher for {} twice", name);

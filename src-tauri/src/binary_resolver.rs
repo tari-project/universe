@@ -1,6 +1,5 @@
 use crate::download_utils::{download_file, extract};
 use crate::github;
-use crate::xmrig::latest_release::fetch_latest_release;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use semver::Version;
@@ -74,9 +73,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let version = releases
             .iter()
             .filter_map(|v| {
-
                 if v.version.pre.starts_with(network) {
-
                     Some(&v.version)
                 } else {
                     None
@@ -104,9 +101,11 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         // TODO: add platform specific logic
         #[cfg(target_os = "windows")]
         let name_suffix = "windows-x64.exe.zip";
-
         #[cfg(target_os = "macos")]
         let name_suffix = "macos-arm64.zip";
+        #[cfg(target_os = "linux")]
+        let name_suffix = "linux-x86_64.zip";
+
         let platform = version
             .assets
             .iter()
@@ -226,8 +225,6 @@ impl BinaryResolver {
         }
         Ok(latest_release.version)
     }
-
-
 
     fn get_os_string() -> String {
         #[cfg(target_os = "windows")]

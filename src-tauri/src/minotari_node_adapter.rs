@@ -1,11 +1,10 @@
-use std::path::PathBuf;
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::xmrig_adapter::XmrigInstance;
 use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::{cache_dir, data_dir, data_local_dir};
+use dirs_next::data_local_dir;
 use log::info;
+use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::select;
 use tokio::task::JoinHandle;
@@ -14,14 +13,14 @@ const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub struct MinotariNodeAdapter {
     force_download: bool,
-    use_tor: bool
+    use_tor: bool,
 }
 
 impl MinotariNodeAdapter {
     pub fn new(use_tor: bool) -> Self {
         Self {
             force_download: false,
-            use_tor
+            use_tor,
         }
     }
 }
@@ -30,7 +29,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
     type Instance = MinotariNodeInstance;
     type StatusMonitor = MinotariNodeStatusMonitor;
 
-    fn spawn_inner(&self, log_path: PathBuf) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    fn spawn_inner(
+        &self,
+        log_path: PathBuf,
+    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
@@ -48,7 +50,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
         if !self.use_tor {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
-           args.push("-p".to_string());
+            args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
             args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
@@ -63,17 +65,15 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .ensure_latest(Binaries::MinotariNode)
                         .await?;
 
-                    let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MinotariNode, &version)?;
+                    let file_path =
+                        BinaryResolver::current().resolve_path(Binaries::MinotariNode, &version)?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(
-                       file_path
-                    )
-                    .args(args)
-                    // .stdout(std::process::Stdio::piped())
-                    // .stderr(std::process::Stdio::piped())
-                    .kill_on_drop(true)
-                    .spawn()?;
+                    let mut child = tokio::process::Command::new(file_path)
+                        .args(args)
+                        // .stdout(std::process::Stdio::piped())
+                        // .stderr(std::process::Stdio::piped())
+                        .kill_on_drop(true)
+                        .spawn()?;
 
                     select! {
                         res = shutdown_signal =>{
