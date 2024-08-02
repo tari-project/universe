@@ -11,9 +11,11 @@ pub trait ProcessAdapter {
     ) -> Result<(Self::Instance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
-    fn spawn(&self, base_folder: PathBuf) -> Result<Self::Instance, anyhow::Error> {
-        let (instance, _) = self.spawn_inner(base_folder)?;
-        Ok(instance)
+    fn spawn(
+        &self,
+        base_folder: PathBuf,
+    ) -> Result<(Self::Instance, Self::StatusMonitor), anyhow::Error> {
+        self.spawn_inner(base_folder)
     }
 }
 
