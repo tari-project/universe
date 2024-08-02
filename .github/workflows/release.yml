@@ -65,6 +65,13 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+
+      - name: Install Windows dependencies
+        if: startsWith(runner.os,'Windows')
+        run: |
+#          vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
+          choco upgrade protoc -y
+
       - name: Install dependencies (Macos)
         if: startsWith(runner.os,'macOS')
         run: |
