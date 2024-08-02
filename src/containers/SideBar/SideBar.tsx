@@ -1,6 +1,7 @@
 import Miner from './Miner/Miner';
 import Wallet from './components/Wallet';
 import Heading from './components/Heading';
+import Milestones from './components/Milestone';
 import {
   SideBarContainer,
   SideBarInner,
@@ -21,6 +22,7 @@ function SideBar() {
       </HeadingContainer>
       <SideBarInner>
         <Miner />
+        <Milestones />
         <TestButtons />
       </SideBarInner>
       <BottomContainer>
