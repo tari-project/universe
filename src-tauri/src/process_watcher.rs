@@ -6,7 +6,7 @@ use tokio::select;
 use tokio::time::MissedTickBehavior;
 
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
-    adapter: TAdapter,
+    pub(crate) adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     internal_shutdown: Shutdown,
     poll_time: tokio::time::Duration,

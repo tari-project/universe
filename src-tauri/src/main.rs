@@ -10,12 +10,14 @@ mod xmrig_adapter;
 mod binary_resolver;
 mod download_utils;
 mod github;
+mod internal_wallet;
 mod merge_mining_adapter;
 mod minotari_node_adapter;
 mod node_manager;
 mod process_adapter;
 
 use crate::cpu_miner::CpuMiner;
+use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
 use log::{debug, error, info};
@@ -23,6 +25,7 @@ use serde::Serialize;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
+use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{api, RunEvent, UpdaterEvent};
@@ -157,13 +160,13 @@ pub enum CpuMinerConnection {
 
 struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
-    tari_address: TariAddress
+    tari_address: TariAddress,
 }
 
 struct UniverseAppState {
     shutdown: Shutdown,
     cpu_miner: RwLock<CpuMiner>,
-    cpu_miner_config: RwLock<CpuMinerConfig>,
+    cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: Arc<RwLock<MmProxyManager>>,
     node_manager: NodeManager,
 }
@@ -177,20 +180,59 @@ fn main() {
         process::exit(1);
     }));
     let mut shutdown = Shutdown::new();
+
     let mm_proxy_manager = Arc::new(RwLock::new(MmProxyManager::new()));
     let node_manager = NodeManager::new();
+
+    let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
+        node_connection: CpuMinerConnection::BuiltInProxy,
+        tari_address: TariAddress::default(),
+    }));
     let app_state = UniverseAppState {
         shutdown: shutdown.clone(),
         cpu_miner: CpuMiner::new().into(),
-        cpu_miner_config: RwLock::new(CpuMinerConfig {
-            node_connection: CpuMinerConnection::BuiltInProxy,
-        }),
+        cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
     };
 
     let app = tauri::Builder::default()
         .manage(app_state)
+        .setup(|app| {
+            tari_common::initialize_logging(
+                &app.path_resolver()
+                    .app_config_dir()
+                    .unwrap()
+                    .join("log4rs_config.yml"),
+                &app.path_resolver().app_log_dir().unwrap(),
+                include_str!("../log4rs_sample.yml"),
+            )
+            .expect("Could not set up logging");
+
+            let config_path = app.path_resolver().app_config_dir().unwrap();
+            let thread = tauri::async_runtime::spawn(async move {
+                let internal_wallet = match InternalWallet::load_or_create(config_path).await {
+                    Ok(wallet) => {
+                        cpu_config.write().await.tari_address = wallet.get_tari_address();
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+                        // TODO: If this errors, the application does not exit properly.
+                        // So temporarily we are going to kill it here
+
+                        return Err(e);
+                    }
+                };
+                Ok(())
+            });
+            match tauri::async_runtime::block_on(thread).unwrap() {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e);
+                    Err(e.into())
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             init,
             status,
@@ -200,15 +242,6 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
-    tari_common::initialize_logging(
-        &app.path_resolver()
-            .app_config_dir()
-            .unwrap()
-            .join("log4rs_config.yml"),
-        &app.path_resolver().app_log_dir().unwrap(),
-        include_str!("../log4rs_sample.yml"),
-    )
-    .expect("Could not set up logging");
     info!(
         target: LOG_TARGET,
         "Starting Tari Universe version: {}",

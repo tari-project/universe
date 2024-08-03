@@ -4,18 +4,21 @@ use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use std::path::PathBuf;
+use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::select;
 use tokio::task::JoinHandle;
 
 pub struct MergeMiningProxyAdapter {
     force_download: bool,
+    pub(crate) tari_address: TariAddress,
 }
 
 impl MergeMiningProxyAdapter {
     pub fn new() -> Self {
         Self {
             force_download: false,
+            tari_address: TariAddress::default(),
         }
     }
 }
@@ -45,8 +48,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/18142".to_string(),
             "-p".to_string(),
             // TODO: If you leave this out, it does not start. It just halts. Probably an error on the mmproxy noninteractive
-            "merge_mining_proxy.wallet_payment_address=f2FfTTPa4CJRwgWbR1aXnxYgrmj3qDPvnifAKdcuSStmGfjKzmt77LZQMKaE6qBhyckzcEG1gLLekSQRNye4ybdw5oA".to_string()
-
+            format!(
+                "merge_mining_proxy.wallet_payment_address={}",
+                self.tari_address.to_base58()
+            ),
         ];
         dbg!(&args);
         Ok((
