@@ -46,7 +46,7 @@ function BlockInfo() {
   return (
     <Stack direction="row" spacing={2}>
       <Stack>
-        <Typography variant="h6">#{blockHeight}</Typography>
+        <Typography variant="h6">#0</Typography>
         <Typography variant="body2">Floor</Typography>
       </Stack>
       <Divider orientation="vertical" flexItem />
