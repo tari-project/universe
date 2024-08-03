@@ -5035,6 +5035,7 @@ dependencies = [
  "futures-util",
  "log",
  "log4rs",
+ "lzma-sys",
  "minotari_node_grpc_client",
  "reqwest 0.12.5",
  "sanitize-filename",
