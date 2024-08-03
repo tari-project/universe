@@ -33,7 +33,7 @@ impl InternalWallet {
 
         if file.exists() {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
-            let config = fs::read_to_string(file).await?;
+            let config = fs::read_to_string(&file).await?;
             match serde_json::from_str::<WalletConfig>(&config) {
                 Ok(config) => {
                     return Ok(Self {
@@ -46,12 +46,10 @@ impl InternalWallet {
             }
         }
         info!(target: LOG_TARGET, "Wallet config does not exist or is corrupt. Creating new wallet");
-        //     let (wallet, config) = InternalWallet::create_new_wallet().await?;
-        //     let config = serde_json::to_string(&config)?;
-        //     fs::write(file, config).await?;
-        //     Ok(wallet)
-        // }
-        todo!()
+        let (wallet, config) = InternalWallet::create_new_wallet().await?;
+        let config = serde_json::to_string(&config)?;
+        fs::write(file, config).await?;
+        Ok(wallet)
     }
 
     pub fn get_tari_address(&self) -> TariAddress {
@@ -90,7 +88,6 @@ impl InternalWallet {
             .key;
         let comms_pub_key = RistrettoPublicKey::from_secret_key(&comms_key);
         let network = Network::default();
-        dbg!("here2");
 
         let tx_key_manager = create_memory_db_key_manager_from_seed(seed.clone(), 64)?;
         let view_key = tx_key_manager.get_view_key().await?;
