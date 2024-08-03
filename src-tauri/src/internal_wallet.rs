@@ -5,7 +5,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddress;
+use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_crypto::keys::PublicKey;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_key_manager::cipher_seed::CipherSeed;
@@ -20,6 +20,8 @@ use tari_core::transactions::key_manager::{
     create_memory_db_key_manager_from_seed, SecretTransactionKeyManagerInterface,
     TransactionKeyManagerInterface,
 };
+use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
+
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
 
@@ -77,6 +79,12 @@ impl InternalWallet {
         });
 
         let seed = CipherSeed::new();
+        // TODO: Don't print out the seed words lol
+        let seed_words = seed.to_mnemonic(MnemonicLanguage::English, None).unwrap();
+        for i in 0..seed_words.len() {
+            dbg!(seed_words.get_word(i).unwrap());
+            info!(target: LOG_TARGET, "Seed: {}:{}", i+1, seed_words.get_word(i).unwrap());
+        }
         let seed_file = seed.encipher(Some(passphrase))?;
         config.seed_words_encrypted_base58 = seed_file.to_base58();
 
@@ -96,10 +104,11 @@ impl InternalWallet {
         let view_key = tx_key_manager.get_view_key().await?;
         let view_key_private = tx_key_manager.get_private_key(&view_key.key_id).await?;
         let view_key_pub = view_key.pub_key;
-        let tari_address = TariAddress::new_dual_address_with_default_features(
+        let tari_address = TariAddress::new_dual_address(
             view_key_pub.clone(),
             comms_pub_key.clone(),
             network,
+            TariAddressFeatures::create_one_sided_only(),
         );
 
         config.tari_address_base58 = tari_address.to_base58();
