@@ -157,6 +157,7 @@ pub enum CpuMinerConnection {
 
 struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
+    tari_address: TariAddress
 }
 
 struct UniverseAppState {
