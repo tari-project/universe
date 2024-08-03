@@ -5,8 +5,8 @@ name: Release
   push:
     paths-ignore:
       - '**/*.md'
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+    # tags:
+    #   - 'v[0-9]+.[0-9]+.[0-9]+'
     branches:
       - 'release'
       - 'build-*'
@@ -29,7 +29,7 @@ jobs:
       matrix:
         include:
         #  - platform: 'ubuntu-20.04'
-         #   args: ''
+        #    args: ''
           - platform: 'windows-2019'
             args: ''
           - platform: 'macos-latest'
