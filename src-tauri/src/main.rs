@@ -28,6 +28,19 @@ use tari_shutdown::Shutdown;
 use tauri::{api, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 
+
+#[tauri::command]
+async fn init<'r>(state: tauri::State<'r, UniverseAppState>, app: tauri::AppHandle) -> Result<(), String> {
+    state
+        .node_manager
+        .ensure_started(
+            state.shutdown.to_signal(),
+            app.path_resolver().app_local_data_dir().unwrap(),
+        )
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn start_mining<'r>(
     _window: tauri::Window,
@@ -82,7 +95,7 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
         .await
         .map_err(|e| e.to_string())?;
 
-    state.node_manager.stop().await.map_err(|e| e.to_string())?;
+    // state.node_manager.stop().await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -177,7 +190,7 @@ fn main() {
 
     let app = tauri::Builder::default()
         .manage(app_state)
-        .invoke_handler(tauri::generate_handler![status, start_mining, stop_mining])
+        .invoke_handler(tauri::generate_handler![init, status, start_mining, stop_mining])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
