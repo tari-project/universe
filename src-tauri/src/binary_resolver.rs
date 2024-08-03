@@ -53,7 +53,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 
     fn find_version_for_platform(
         &self,
-        version: &VersionDownloadInfo,
+        _version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, Error> {
         todo!()
     }
@@ -133,6 +133,13 @@ impl BinaryResolver {
                 owner: "tari-project".to_string(),
             }),
         );
+        adapters.insert(
+            Binaries::Wallet,
+            Box::new(GithubReleasesAdapter {
+                repo: "tari".to_string(),
+                owner: "tari-project".to_string(),
+            }),
+        );
         Self { adapters }
     }
 
@@ -161,6 +168,10 @@ impl BinaryResolver {
             Binaries::MinotariNode => {
                 let minotari_node_bin = base_dir.join("minotari_node");
                 Ok(minotari_node_bin)
+            }
+            Binaries::Wallet => {
+                let wallet_bin = base_dir.join("minotari_console_wallet");
+                Ok(wallet_bin)
             }
         }
     }
@@ -247,6 +258,7 @@ impl BinaryResolver {
             return "freebsd-x64".to_string();
         }
 
+        #[allow(unreachable_patterns)]
         panic!("Unsupported OS");
     }
 }
@@ -256,6 +268,7 @@ pub enum Binaries {
     Xmrig,
     MergeMiningProxy,
     MinotariNode,
+    Wallet,
 }
 
 impl Binaries {
@@ -264,6 +277,7 @@ impl Binaries {
             Binaries::Xmrig => "xmrig",
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
+            Binaries::Wallet => "wallet",
         }
     }
 }

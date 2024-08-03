@@ -15,12 +15,16 @@ mod merge_mining_adapter;
 mod minotari_node_adapter;
 mod node_manager;
 mod process_adapter;
+mod wallet_manager;
+
+mod wallet_adapter;
 
 use crate::cpu_miner::CpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
-use log::{debug, error, info};
+use crate::wallet_manager::WalletManager;
+use log::{debug, error, info, warn};
 use serde::Serialize;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -43,7 +47,17 @@ async fn init<'r>(
             app.path_resolver().app_local_data_dir().unwrap(),
         )
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    state
+        .wallet_manager
+        .ensure_started(
+            state.shutdown.to_signal(),
+            app.path_resolver().app_local_data_dir().unwrap(),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -108,7 +122,7 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let cpu_miner = state.cpu_miner.read().await;
-    let (sha_hash_rate, randomx_hash_rate, block_reward) = match state
+    let (_sha_hash_rate, randomx_hash_rate, block_reward) = match state
         .node_manager
         .get_network_hash_rate_and_block_reward()
         .await
@@ -116,7 +130,10 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         Ok((sha_hash_rate, randomx_hash_rate, block_reward)) => {
             (sha_hash_rate, randomx_hash_rate, block_reward)
         }
-        Err(e) => (0, 0, MicroMinotari(0)),
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
+            (0, 0, MicroMinotari(0))
+        }
     };
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
@@ -169,6 +186,7 @@ struct UniverseAppState {
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: Arc<RwLock<MmProxyManager>>,
     node_manager: NodeManager,
+    wallet_manager: WalletManager,
 }
 
 pub const LOG_TARGET: &str = "tari::universe::main";
@@ -183,6 +201,8 @@ fn main() {
 
     let mm_proxy_manager = Arc::new(RwLock::new(MmProxyManager::new()));
     let node_manager = NodeManager::new();
+    let wallet_manager = WalletManager::new(node_manager.clone());
+    let wallet_manager2 = wallet_manager.clone();
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -194,6 +214,7 @@ fn main() {
         cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
+        wallet_manager,
     };
 
     let app = tauri::Builder::default()
@@ -211,9 +232,15 @@ fn main() {
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread = tauri::async_runtime::spawn(async move {
-                let internal_wallet = match InternalWallet::load_or_create(config_path).await {
+                match InternalWallet::load_or_create(config_path).await {
                     Ok(wallet) => {
                         cpu_config.write().await.tari_address = wallet.get_tari_address();
+                        wallet_manager2
+                            .set_view_private_key_and_spend_key(
+                                wallet.get_view_key(),
+                                wallet.get_spend_key(),
+                            )
+                            .await;
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);

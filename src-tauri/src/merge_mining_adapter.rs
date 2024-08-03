@@ -29,10 +29,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
     fn spawn_inner(
         &self,
-        log_folder: PathBuf,
+        _log_folder: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let mut shutdown_signal = inner_shutdown.to_signal();
+        let shutdown_signal = inner_shutdown.to_signal();
 
         let working_dir = data_local_dir()
             .unwrap()
@@ -73,7 +73,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                         .spawn()?;
 
                     select! {
-                        res = shutdown_signal =>{
+                        _res = shutdown_signal =>{
                             child.kill().await?;
                             // res
                         },

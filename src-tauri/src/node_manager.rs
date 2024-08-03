@@ -3,6 +3,7 @@ use crate::process_watcher::ProcessWatcher;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
@@ -10,6 +11,14 @@ const LOG_TARGET: &str = "tari::universe::node_manager";
 
 pub struct NodeManager {
     watcher: Arc<RwLock<ProcessWatcher<MinotariNodeAdapter>>>,
+}
+
+impl Clone for NodeManager {
+    fn clone(&self) -> Self {
+        Self {
+            watcher: self.watcher.clone(),
+        }
+    }
 }
 
 impl NodeManager {
@@ -79,9 +88,23 @@ impl NodeManager {
             .await
     }
 
+    pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
+        let status_monitor_lock = self.watcher.read().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+        status_monitor.get_identity().await
+    }
+
     pub async fn stop(&self) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.stop().await?;
         Ok(())
     }
+}
+
+pub struct NodeIdentity {
+    pub public_key: RistrettoPublicKey,
+    pub public_addresses: Vec<String>,
 }

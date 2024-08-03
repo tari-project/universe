@@ -1,5 +1,6 @@
 use crate::process_adapter::{ProcessAdapter, ProcessInstance};
 use std::path::PathBuf;
+use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
@@ -36,6 +37,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             println!("Tried to start process watcher for {} twice", name);
             return Ok(());
         }
+
         self.internal_shutdown = Shutdown::new();
         let mut inner_shutdown = self.internal_shutdown.to_signal();
 

@@ -25,6 +25,7 @@ const LOG_TARGET: &str = "tari::universe::internal_wallet";
 
 pub struct InternalWallet {
     tari_address: TariAddress,
+    config: WalletConfig,
 }
 
 impl InternalWallet {
@@ -38,6 +39,7 @@ impl InternalWallet {
                 Ok(config) => {
                     return Ok(Self {
                         tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
+                        config,
                     })
                 }
                 Err(e) => {
@@ -61,6 +63,7 @@ impl InternalWallet {
             tari_address_base58: "".to_string(),
             view_key_private_base58: "".to_string(),
             seed_words_encrypted_base58: "".to_string(),
+            spend_public_key_base58: "".to_string(),
         };
         let entry = Entry::new("com.tari.universe", "internal_wallet")?;
 
@@ -101,7 +104,21 @@ impl InternalWallet {
 
         config.tari_address_base58 = tari_address.to_base58();
         config.view_key_private_base58 = view_key_private.to_base58();
-        Ok((Self { tari_address }, config))
+        config.spend_public_key_base58 = comms_pub_key.to_base58();
+        Ok((
+            Self {
+                tari_address,
+                config: config.clone(),
+            },
+            config,
+        ))
+    }
+
+    pub fn get_view_key(&self) -> String {
+        self.config.view_key_private_base58.clone()
+    }
+    pub fn get_spend_key(&self) -> String {
+        self.config.spend_public_key_base58.clone()
     }
 }
 
@@ -125,5 +142,6 @@ fn generate_password(length: usize) -> String {
 pub struct WalletConfig {
     tari_address_base58: String,
     view_key_private_base58: String,
+    spend_public_key_base58: String,
     seed_words_encrypted_base58: String,
 }
