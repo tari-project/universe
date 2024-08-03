@@ -28,6 +28,7 @@ function App() {
     }));
 
   useEffect(() => {
+      invoke("init",{}).catch((e) => { console.error('Could not init', e); setError(e.toString()); });
     const unlistenPromise = listen('message', (event) => {
       console.log('some kind of event', event.event, event.payload);
     });
