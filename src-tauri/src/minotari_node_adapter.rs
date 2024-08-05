@@ -1,6 +1,7 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::xmrig_adapter::XmrigInstance;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
@@ -14,6 +15,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
+use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
 use tokio::time::Instant;
@@ -142,6 +144,18 @@ impl ProcessInstance for MinotariNodeInstance {
         let handle = self.handle.take();
         let res = handle.unwrap().await??;
         Ok(res)
+    }
+}
+
+impl Drop for MinotariNodeInstance {
+    fn drop(&mut self) {
+        println!("Drop being called");
+        self.shutdown.trigger();
+        if let Some(handle) = self.handle.take() {
+            Handle::current().block_on(async move {
+                handle.await.unwrap();
+            });
+        }
     }
 }
 pub struct MinotariNodeStatusMonitor {}
