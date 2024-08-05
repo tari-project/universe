@@ -2489,12 +2489,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "keyring"
-version = "3.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c163ef0b9da5ccf44ae4d7c9d24fb1a8750aa1969d484865fc1eedc44b26c09"
-
-[[package]]
 name = "kuchikiki"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2551,7 +2545,6 @@ version = "0.25.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29f835d03d717946d28b1d1ed632eb6f0e24a299388ee623d0c23118d3e8a7fa"
 dependencies = [
- "cc",
  "pkg-config",
  "vcpkg",
 ]
@@ -2819,17 +2812,6 @@ version = "0.1.0"
 source = "git+https://github.com/tari-project/tari.git?branch=development#2902c8d96105ef4243ac4bc4cdea64a4224dcfe2"
 dependencies = [
  "minotari_app_grpc",
-]
-
-[[package]]
-name = "minotari_wallet_grpc_client"
-version = "0.1.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#2902c8d96105ef4243ac4bc4cdea64a4224dcfe2"
-dependencies = [
- "minotari_app_grpc",
- "tari_common_types",
- "thiserror",
- "tonic",
 ]
 
 [[package]]
@@ -5046,13 +5028,10 @@ dependencies = [
  "flate2",
  "futures-lite",
  "futures-util",
- "keyring",
- "libsqlite3-sys",
  "log",
  "log4rs",
+ "lzma-sys",
  "minotari_node_grpc_client",
- "minotari_wallet_grpc_client",
- "rand 0.8.5",
  "reqwest 0.12.5",
  "sanitize-filename",
  "semver",
@@ -5061,17 +5040,12 @@ dependencies = [
  "sysinfo",
  "tar",
  "tari_common",
- "tari_common_types",
  "tari_core",
- "tari_crypto",
- "tari_key_manager",
  "tari_shutdown",
- "tari_utilities",
  "tauri",
  "tauri-build",
  "tokio",
  "tokio-util 0.7.11",
- "xz2",
 ]
 
 [[package]]
