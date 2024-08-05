@@ -25,6 +25,8 @@ interface AppState {
   setWallet: (value: { balance: number }) => void;
   isMining: boolean;
   setIsMining: (value: boolean) => void;
+  isAutoMining: boolean;
+  setIsAutoMining: (value: boolean) => void;
   sidebarOpen: boolean;
   setSidebarOpen: (value: boolean) => void;
 
@@ -74,6 +76,8 @@ const useAppStateStore = create<AppState>((set) => ({
   setWallet: (value) => set({ wallet: value }),
   isMining: false,
   setIsMining: (value) => set({ isMining: value }),
+  isAutoMining: false,
+  setIsAutoMining: (value) => set({ isAutoMining: value }),
   sidebarOpen: false,
   setSidebarOpen: (value) => set({ sidebarOpen: value }),
 
