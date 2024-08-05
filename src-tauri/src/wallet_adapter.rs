@@ -15,6 +15,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
+use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
 
@@ -162,6 +163,18 @@ impl ProcessInstance for WalletInstance {
         let handle = self.handle.take();
         let res = handle.unwrap().await??;
         Ok(res)
+    }
+}
+
+impl Drop for WalletInstance {
+    fn drop(&mut self) {
+        println!("Drop being called");
+        self.shutdown.trigger();
+        if let Some(handle) = self.handle.take() {
+            Handle::current().block_on(async move {
+                handle.await.unwrap();
+            });
+        }
     }
 }
 

@@ -6,6 +6,7 @@ use dirs_next::data_local_dir;
 use std::path::PathBuf;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
+use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
 
@@ -114,6 +115,17 @@ impl ProcessInstance for MergeMiningProxyInstance {
         let handle = self.handle.take();
         let res = handle.unwrap().await??;
         Ok(res)
+    }
+}
+impl Drop for MergeMiningProxyInstance {
+    fn drop(&mut self) {
+        println!("Drop being called");
+        self.shutdown.trigger();
+        if let Some(handle) = self.handle.take() {
+            Handle::current().block_on(async move {
+                handle.await.unwrap();
+            });
+        }
     }
 }
 

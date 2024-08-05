@@ -148,11 +148,18 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
-    let wallet_balance = state
-        .wallet_manager
-        .get_balance()
-        .await
-        .map_err(|e| e.to_string())?;
+    let wallet_balance = match state.wallet_manager.get_balance().await {
+        Ok(w) => w,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting wallet balance: {:?}", e);
+            WalletBalance {
+                available_balance: MicroMinotari(0),
+                pending_incoming_balance: MicroMinotari(0),
+                pending_outgoing_balance: MicroMinotari(0),
+                timelocked_balance: MicroMinotari(0),
+            }
+        }
+    };
 
     Ok(AppStatus {
         cpu,
@@ -319,7 +326,7 @@ fn main() {
             info!(target: LOG_TARGET, "App shutdown caught");
             shutdown.trigger();
             // TODO: Find a better way of knowing that all miners have stopped
-            sleep(std::time::Duration::from_secs(3));
+            sleep(std::time::Duration::from_secs(5));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         RunEvent::MainEventsCleared => {
