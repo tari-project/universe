@@ -55,7 +55,7 @@ function App() {
                     setBlockHeight(status.base_node?.block_height);
                     setBlockTime(status.base_node?.block_time);
                     setIsSynced(status.base_node?.is_synced);
-                    setWallet({balance: status.wallet_balance?.available_balance + status.wallet_balance?.timelocked_balance});
+                    setWallet({balance: status.wallet_balance?.available_balance + status.wallet_balance?.timelocked_balance + status.wallet_balance?.pending_incoming_balance});
                 })
                 .catch((e) => {
                     console.error('Could not get status', e);
