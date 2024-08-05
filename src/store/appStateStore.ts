@@ -25,7 +25,8 @@ interface AppState {
     setWallet: (value: { balance: number }) => void;
     isMining: boolean;
     setIsMining: (value: boolean) => void;
-    sidebarOpen: boolean;
+    isAutoMining: boolean;
+  setIsAutoMining: (value: boolean) => void;sidebarOpen: boolean;
     setSidebarOpen: (value: boolean) => void;
 
     // stats
@@ -40,7 +41,12 @@ interface AppState {
     estimatedEarnings: number,
     setEstimatedEarnings: (value: number) => void;
 
-    // functions
+    blockHeight: number,
+    setBlockHeight: (value: number) => void;
+  blockTime: number,
+    setBlockTime: (value: number) => void;
+  isSynced: boolean,
+    setIsSynced: (value: boolean) => void;// functions
     startMining: () => Promise<void>;
     stopMining: () => Promise<void>;
 }
@@ -68,7 +74,8 @@ const useAppStateStore = create<AppState>((set) => ({
     setWallet: (value) => set({wallet: value}),
     isMining: false,
     setIsMining: (value) => set({isMining: value}),
-    sidebarOpen: false,
+    isAutoMining: false,
+  setIsAutoMining: (value) => set({ isAutoMining: value }),sidebarOpen: false,
     setSidebarOpen: (value) => set({sidebarOpen: value}),
 
     // stats
@@ -83,7 +90,12 @@ const useAppStateStore = create<AppState>((set) => ({
     estimatedEarnings: 0,
     setEstimatedEarnings: (value) => set({estimatedEarnings: value}),
 
-    // functions
+    blockHeight: 0,
+    setBlockHeight: (value) => set({ blockHeight: value }),
+    blockTime: 0,
+    setBlockTime: (value) => set({ blockTime: value }),
+    isSynced: false,
+    setIsSynced: (value) => set({ isSynced: value }),// functions
     startMining: async () => {
         try {
             await invoke('start_mining', {});

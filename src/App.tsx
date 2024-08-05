@@ -14,21 +14,24 @@ import useAppStateStore from './store/appStateStore';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 
 function App() {
-    const {
-        view, background, setHashRate, setCpuUsage, setAppState, setError,
-        setCpuBrand, setEstimatedEarnings, setWallet
-    } =
-        useAppStateStore((state) => ({
-            view: state.view,
-            background: state.background,
-            setHashRate: state.setHashRate,
-            setCpuUsage: state.setCpuUsage,
-            setAppState: state.setAppState,
-            setError: state.setError,
-            setCpuBrand: state.setCpuBrand,
-            setEstimatedEarnings: state.setEstimatedEarnings,
-            setWallet: state.setWallet
-        }));
+  const { view, background, setHashRate, setCpuUsage, setAppState, setError,
+  setCpuBrand, setEstimatedEarnings,
+       setBlockHeight, setBlockTime, setIsSynced
+  } =
+    useAppStateStore((state) => ({
+      view: state.view,
+      background: state.background,
+      setHashRate: state.setHashRate,
+      setCpuUsage: state.setCpuUsage,
+      setAppState: state.setAppState,
+      setError: state.setError,
+       setCpuBrand: state.setCpuBrand,
+       setEstimatedEarnings: state.setEstimatedEarnings,
+         setBlockHeight: state.setBlockHeight,
+         setBlockTime: state.setBlockTime,
+         setIsSynced: state.setIsSynced,
+        setWallet: state.setWallet
+    }));
 
     useEffect(() => {
         invoke("init", {}).catch((e) => {
@@ -39,27 +42,30 @@ function App() {
             console.log('some kind of event', event.event, event.payload);
         });
 
-        const intervalId = setInterval(() => {
-            invoke('status', {})
-                .then((status: any) => {
-                    console.log('Status', status);
-                    setAppState(status);
-                    setCpuUsage(status.cpu?.cpu_usage);
-                    setHashRate(status.cpu?.hash_rate);
-                    setCpuBrand(status.cpu?.cpu_brand);
-                    setEstimatedEarnings(status.cpu?.estimated_earnings);
-                    setWallet({balance: status.wallet_balance?.available_balance + status.wallet_balance?.timelocked_balance});
-                })
-                .catch((e) => {
-                    console.error('Could not get status', e);
-                    setError(e.toString());
-                });
-        }, 1000);
-        return () => {
-            unlistenPromise.then((unlisten) => unlisten());
-            clearInterval(intervalId);
-        };
-    }, []);
+    const intervalId = setInterval(() => {
+      invoke('status', {})
+        .then((status: any) => {
+          console.log('Status', status);
+          setAppState(status);
+          setCpuUsage(status.cpu?.cpu_usage);
+          setHashRate(status.cpu?.hash_rate);
+          setCpuBrand(status.cpu?.cpu_brand);
+          setEstimatedEarnings(status.cpu?.estimated_earnings);
+          setBlockHeight(status.base_node?.block_height);
+           setBlockTime(status.base_node?.block_time);
+           setIsSynced(status.base_node?.is_synced);
+            setWallet({balance: status.wallet_balance?.available_balance + status.wallet_balance?.timelocked_balance});
+        })
+        .catch((e) => {
+          console.error('Could not get status', e);
+          setError(e.toString());
+        });
+    }, 1000);
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+      clearInterval(intervalId);
+    };
+  }, []);
 
     return (
         <ThemeProvider theme={lightTheme}>

@@ -5050,7 +5050,6 @@ dependencies = [
  "libsqlite3-sys",
  "log",
  "log4rs",
- "lzma-sys",
  "minotari_node_grpc_client",
  "minotari_wallet_grpc_client",
  "rand 0.8.5",
@@ -5072,6 +5071,7 @@ dependencies = [
  "tauri-build",
  "tokio",
  "tokio-util 0.7.11",
+ "xz2",
 ]
 
 [[package]]
