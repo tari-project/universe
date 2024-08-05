@@ -14,57 +14,66 @@ import useAppStateStore from './store/appStateStore';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 
 function App() {
-    const {
-        view, background, setHashRate, setCpuUsage, setAppState, setError,
-        setCpuBrand, setEstimatedEarnings,
-        setBlockHeight, setBlockTime, setIsSynced, setWallet
-    } =
-        useAppStateStore((state) => ({
-            view: state.view,
-            background: state.background,
-            setHashRate: state.setHashRate,
-            setCpuUsage: state.setCpuUsage,
-            setAppState: state.setAppState,
-            setError: state.setError,
-            setCpuBrand: state.setCpuBrand,
-            setEstimatedEarnings: state.setEstimatedEarnings,
-            setBlockHeight: state.setBlockHeight,
-            setBlockTime: state.setBlockTime,
-            setIsSynced: state.setIsSynced,
-            setWallet: state.setWallet
-        }));
+  const { view, background, setHashRate, setCpuUsage, setAppState, setError,
+  setCpuBrand, setEstimatedEarnings, setBlockHeight, setBlockTime, setIsSynced,
+    settingUpFinished, setSetupDetails, setWallet
+  } =
+    useAppStateStore((state) => ({
+      view: state.view,
+      background: state.background,
+      isSettingUp: state.isSettingUp,
+      setHashRate: state.setHashRate,
+      setCpuUsage: state.setCpuUsage,
+      setAppState: state.setAppState,
+      setError: state.setError,
+      setCpuBrand: state.setCpuBrand,
+      setEstimatedEarnings: state.setEstimatedEarnings,
+      settingUpFinished: state.settingUpFinished,
+      setSetupDetails: state.setSetupDetails,
+      setBlockHeight: state.setBlockHeight,
+      setBlockTime: state.setBlockTime,
+      setIsSynced: state.setIsSynced,
+      setWallet: state.setWallet,
+    }));
 
-    useEffect(() => {
-        invoke("init", {}).catch((e) => {
-            console.error('Could not init', e);
-            setError(e.toString());
-        });
-        const unlistenPromise = listen('message', (event) => {
-            console.log('some kind of event', event.event, event.payload);
-        });
+  useEffect(() => {
+    const unlistenPromise = listen('message', ({ event, payload }: TauriEvent) => {
+      console.log('some kind of event', event, payload);
 
-        const intervalId = setInterval(() => {
-            invoke('status', {})
-                .then((status: any) => {
-                    console.log('Status', status);
-                    setAppState(status);
-                    setCpuUsage(status.cpu?.cpu_usage);
-                    setHashRate(status.cpu?.hash_rate);
-                    setCpuBrand(status.cpu?.cpu_brand);
-                    setEstimatedEarnings(status.cpu?.estimated_earnings);
-                    setBlockHeight(status.base_node?.block_height);
-                    setBlockTime(status.base_node?.block_time);
-                    setIsSynced(status.base_node?.is_synced);
-                    setWallet({balance: status.wallet_balance?.available_balance + status.wallet_balance?.timelocked_balance + status.wallet_balance?.pending_incoming_balance});
-                })
-                .catch((e) => {
-                    console.error('Could not get status', e);
-                    setError(e.toString());
-                });
+      switch (payload.event_type) {
+        case "setup_status":
+          setSetupDetails(payload.title, payload.progress);
+          break;
+        default:
+          console.log("Unknown tauri event: ", { event, payload });
+          break;
+      }
+    });
+
+    invoke('setup_application').then(() => settingUpFinished());
+
+    const intervalId = setInterval(() => {
+      invoke('status', {})
+        .then((status: any) => {
+          console.log('Status', status);
+          setAppState(status);
+          setCpuUsage(status.cpu?.cpu_usage);
+          setHashRate(status.cpu?.hash_rate);
+          setCpuBrand(status.cpu?.cpu_brand);
+          setEstimatedEarnings(status.cpu?.estimated_earnings);
+          setBlockHeight(status.base_node?.block_height);
+          setBlockTime(status.base_node?.block_time);
+          setIsSynced(status.base_node?.is_synced);
+          setWallet({balance: status.wallet_balance?.available_balance + status.wallet_balance?.timelocked_balance + status.wallet_balance?.pending_incoming_balance});
+        })
+        .catch((e) => {
+          console.error('Could not get status', e);
+          setError(e.toString());
+        });
         }, 1000);
         return () => {
-            unlistenPromise.then((unlisten) => unlisten());
-            clearInterval(intervalId);
+          unlistenPromise.then((unlisten) => unlisten());
+          clearInterval(intervalId);
         };
     }, []);
 

@@ -28,7 +28,8 @@ use crate::wallet_manager::WalletManager;
 use dirs_next::data_dir;
 use futures_util::{FutureExt, TryFutureExt};
 use log::{debug, error, info, warn};
-use serde::Serialize;
+use binary_resolver::{Binaries, BinaryResolver};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
@@ -38,6 +39,45 @@ use tari_shutdown::Shutdown;
 use tauri::{api, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tokio::{join, try_join};
+
+use std::thread;
+use std::time::Duration;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct SetupStatusEvent {
+    event_type: String,
+    title: String,
+    progress: f64,
+}
+
+#[tauri::command]
+async fn setup_application<'r>(
+    window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    drop(window.emit("message", SetupStatusEvent {
+        event_type: "setup_status".to_string(),
+        title: "Downloading Applications".to_string(),
+        progress: 0.5,
+    }));
+    state
+        .node_manager
+        .ensure_started(
+            state.shutdown.to_signal(),
+            app.path_resolver().app_local_data_dir().unwrap(),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    drop(window.emit("message", SetupStatusEvent {
+        event_type: "setup_status".to_string(),
+        title: "Syncing Blockchain".to_string(),
+        progress: 1.0,
+    }));
+    // TODO: Sync blockchain when p2p mining finished
+    thread::sleep(Duration::from_secs(5));
+    Ok(())
+}
 
 #[tauri::command]
 async fn init<'r>(
@@ -292,12 +332,7 @@ fn main() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![
-            init,
-            status,
-            start_mining,
-            stop_mining
-        ])
+        .invoke_handler(tauri::generate_handler![setup_application, status, start_mining, stop_mining])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
