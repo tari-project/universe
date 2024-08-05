@@ -21,6 +21,7 @@ use tari_core::transactions::key_manager::{
     TransactionKeyManagerInterface,
 };
 use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_utilities::hex::Hex;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -63,9 +64,9 @@ impl InternalWallet {
     async fn create_new_wallet() -> Result<(Self, WalletConfig), anyhow::Error> {
         let mut config = WalletConfig {
             tari_address_base58: "".to_string(),
-            view_key_private_base58: "".to_string(),
+            view_key_private_hex: "".to_string(),
             seed_words_encrypted_base58: "".to_string(),
-            spend_public_key_base58: "".to_string(),
+            spend_public_key_hex: "".to_string(),
         };
         let entry = Entry::new("com.tari.universe", "internal_wallet")?;
 
@@ -112,8 +113,8 @@ impl InternalWallet {
         );
 
         config.tari_address_base58 = tari_address.to_base58();
-        config.view_key_private_base58 = view_key_private.to_base58();
-        config.spend_public_key_base58 = comms_pub_key.to_base58();
+        config.view_key_private_hex = view_key_private.to_hex();
+        config.spend_public_key_hex = comms_pub_key.to_hex();
         Ok((
             Self {
                 tari_address,
@@ -124,10 +125,10 @@ impl InternalWallet {
     }
 
     pub fn get_view_key(&self) -> String {
-        self.config.view_key_private_base58.clone()
+        self.config.view_key_private_hex.clone()
     }
     pub fn get_spend_key(&self) -> String {
-        self.config.spend_public_key_base58.clone()
+        self.config.spend_public_key_hex.clone()
     }
 }
 
@@ -150,7 +151,7 @@ fn generate_password(length: usize) -> String {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WalletConfig {
     tari_address_base58: String,
-    view_key_private_base58: String,
-    spend_public_key_base58: String,
+    view_key_private_hex: String,
+    spend_public_key_hex: String,
     seed_words_encrypted_base58: String,
 }

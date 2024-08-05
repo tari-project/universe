@@ -20,9 +20,9 @@ interface AppState {
     visualMode: boolean;
     setVisualMode: (value: boolean) => void;
     wallet: {
-        balance: bigint;
+        balance: number;
     };
-    setWallet: (value: { balance: bigint }) => void;
+    setWallet: (value: { balance: number }) => void;
     isMining: boolean;
     setIsMining: (value: boolean) => void;
     sidebarOpen: boolean;
@@ -63,7 +63,7 @@ const useAppStateStore = create<AppState>((set) => ({
     visualMode: true,
     setVisualMode: (value) => set({visualMode: value}),
     wallet: {
-        balance: BigInt("0"),
+        balance: 0
     },
     setWallet: (value) => set({wallet: value}),
     isMining: false,
