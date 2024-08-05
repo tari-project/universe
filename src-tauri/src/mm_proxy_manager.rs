@@ -3,6 +3,7 @@ use crate::process_watcher::ProcessWatcher;
 use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -27,8 +28,10 @@ impl MmProxyManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        tari_address: TariAddress,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
+        process_watcher.adapter.tari_address = tari_address;
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher.start(app_shutdown, base_path).await?;
 

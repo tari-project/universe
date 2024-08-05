@@ -18,15 +18,15 @@ struct Asset {
 }
 
 pub async fn get_latest_release(
-    repo_owner: &str,
-    repo_name: &str,
-    tag: &str,
+    _repo_owner: &str,
+    _repo_name: &str,
+    _tag: &str,
 ) -> Result<String, anyhow::Error> {
-    let client = Client::new();
-    let url = format!(
-        "https://api.github.com/repos/{}/{}/releases/tags/{}",
-        repo_owner, repo_name, tag
-    );
+    // let client = Client::new();
+    // let url = format!(
+    //     "https://api.github.com/repos/{}/{}/releases/tags/{}",
+    //     repo_owner, repo_name, tag
+    // );
     todo!("get_latest_release not implemented")
 }
 

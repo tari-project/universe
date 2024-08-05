@@ -10,19 +10,27 @@ mod xmrig_adapter;
 mod binary_resolver;
 mod download_utils;
 mod github;
+mod internal_wallet;
 mod merge_mining_adapter;
 mod minotari_node_adapter;
 mod node_manager;
 mod process_adapter;
+mod wallet_manager;
+
+mod wallet_adapter;
 
 use crate::cpu_miner::CpuMiner;
+use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
+use crate::wallet_adapter::WalletBalance;
+use crate::wallet_manager::WalletManager;
 use log::{debug, error, info, warn};
 use serde::Serialize;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
+use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{api, RunEvent, UpdaterEvent};
@@ -40,7 +48,17 @@ async fn init<'r>(
             app.path_resolver().app_local_data_dir().unwrap(),
         )
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+
+    state
+        .wallet_manager
+        .ensure_started(
+            state.shutdown.to_signal(),
+            app.path_resolver().app_local_data_dir().unwrap(),
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -105,7 +123,7 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let cpu_miner = state.cpu_miner.read().await;
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced ) = state
+    let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced ) = state
         .node_manager
         .get_network_hash_rate_and_block_reward()
         .await.unwrap_or_else(|e| {
@@ -124,6 +142,13 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             return Err(e);
         }
     };
+
+    let wallet_balance = state
+        .wallet_manager
+        .get_balance()
+        .await
+        .map_err(|e| e.to_string())?;
+
     Ok(AppStatus {
         cpu,
         base_node: BaseNodeStatus {
@@ -131,6 +156,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             block_time,
             is_synced,
         },
+        wallet_balance
     })
 }
 
@@ -139,6 +165,7 @@ pub struct AppStatus {
     // TODO: add each application version.
     cpu: CpuMinerStatus,
     base_node: BaseNodeStatus,
+    wallet_balance: WalletBalance,
 }
 
 #[derive(Debug, Serialize)]
@@ -170,14 +197,16 @@ pub enum CpuMinerConnection {
 
 struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
+    tari_address: TariAddress,
 }
 
 struct UniverseAppState {
     shutdown: Shutdown,
     cpu_miner: RwLock<CpuMiner>,
-    cpu_miner_config: RwLock<CpuMinerConfig>,
+    cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: Arc<RwLock<MmProxyManager>>,
     node_manager: NodeManager,
+    wallet_manager: WalletManager,
 }
 
 pub const LOG_TARGET: &str = "tari::universe::main";
@@ -189,20 +218,68 @@ fn main() {
         process::exit(1);
     }));
     let mut shutdown = Shutdown::new();
+
     let mm_proxy_manager = Arc::new(RwLock::new(MmProxyManager::new()));
     let node_manager = NodeManager::new();
+    let wallet_manager = WalletManager::new(node_manager.clone());
+    let wallet_manager2 = wallet_manager.clone();
+
+    let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
+        node_connection: CpuMinerConnection::BuiltInProxy,
+        tari_address: TariAddress::default(),
+    }));
     let app_state = UniverseAppState {
         shutdown: shutdown.clone(),
         cpu_miner: CpuMiner::new().into(),
-        cpu_miner_config: RwLock::new(CpuMinerConfig {
-            node_connection: CpuMinerConnection::BuiltInProxy,
-        }),
+        cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
+        wallet_manager,
     };
 
     let app = tauri::Builder::default()
         .manage(app_state)
+        .setup(|app| {
+            tari_common::initialize_logging(
+                &app.path_resolver()
+                    .app_config_dir()
+                    .unwrap()
+                    .join("log4rs_config.yml"),
+                &app.path_resolver().app_log_dir().unwrap(),
+                include_str!("../log4rs_sample.yml"),
+            )
+            .expect("Could not set up logging");
+
+            let config_path = app.path_resolver().app_config_dir().unwrap();
+            let thread = tauri::async_runtime::spawn(async move {
+                match InternalWallet::load_or_create(config_path).await {
+                    Ok(wallet) => {
+                        cpu_config.write().await.tari_address = wallet.get_tari_address();
+                        wallet_manager2
+                            .set_view_private_key_and_spend_key(
+                                wallet.get_view_key(),
+                                wallet.get_spend_key(),
+                            )
+                            .await;
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+                        // TODO: If this errors, the application does not exit properly.
+                        // So temporarily we are going to kill it here
+
+                        return Err(e);
+                    }
+                };
+                Ok(())
+            });
+            match tauri::async_runtime::block_on(thread).unwrap() {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e);
+                    Err(e.into())
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             init,
             status,
@@ -212,15 +289,6 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
-    tari_common::initialize_logging(
-        &app.path_resolver()
-            .app_config_dir()
-            .unwrap()
-            .join("log4rs_config.yml"),
-        &app.path_resolver().app_log_dir().unwrap(),
-        include_str!("../log4rs_sample.yml"),
-    )
-    .expect("Could not set up logging");
     info!(
         target: LOG_TARGET,
         "Starting Tari Universe version: {}",
