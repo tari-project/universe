@@ -153,19 +153,12 @@ impl MinotariNodeStatusMonitor {
 
         let res = client.get_tip_info(Empty {}).await?;
         let res = res.into_inner();
-        let (sync_achieved, block_height, hash) = (
+        let (sync_achieved, block_height, hash, block_time) = (
             res.initial_sync_achieved,
             res.metadata.as_ref().unwrap().best_block_height,
-            res.metadata.unwrap().best_block_hash,
+            res.metadata.as_ref().unwrap().best_block_hash.clone(),
+            res.metadata.unwrap().timestamp,
         );
-        // TODO: include block time in tip info so that we don't have to do multiple calls
-        // TODO: GetHeaderByHash is not allowed by default mining grpc
-        // let res = client
-        //     .get_header_by_hash(GetHeaderByHashRequest { hash: hash.clone() })
-        //     .await?;
-        // let res = res.into_inner();
-        // let block_time = res.header.unwrap().timestamp;
-        let block_time = 0;
         let res = client
             .get_network_difficulty(HeightRequest {
                 from_tip: 1,
