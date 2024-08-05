@@ -1,11 +1,17 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::minotari_node_adapter::{MinotariNodeInstance, MinotariNodeStatusMonitor};
+use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::info;
+use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
+use minotari_node_grpc_client::grpc::{Empty, GetBalanceRequest};
+use minotari_node_grpc_client::BaseNodeGrpcClient;
+use serde::Serialize;
 use std::path::PathBuf;
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
@@ -63,6 +69,8 @@ impl ProcessAdapter for WalletAdapter {
             self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
             "--grpc-enabled".to_string(),
+            "--grpc-address".to_string(),
+            "/ip4/127.0.0.1/tcp/18141".to_string(),
             "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
@@ -87,6 +95,9 @@ impl ProcessAdapter for WalletAdapter {
                 "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
             );
             // todo!()
+        } else {
+            args.push("-p".to_string());
+            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=false".to_string())
         }
         Ok((
             WalletInstance {
@@ -159,5 +170,28 @@ pub struct WalletStatusMonitor {}
 impl StatusMonitor for WalletStatusMonitor {
     fn status(&self) -> Result<(), Error> {
         todo!()
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct WalletBalance {
+    pub available_balance: MicroMinotari,
+    pub timelocked_balance: MicroMinotari,
+    pub pending_incoming_balance: MicroMinotari,
+    pub pending_outgoing_balance: MicroMinotari,
+}
+impl WalletStatusMonitor {
+    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
+        let mut client = WalletClient::connect("http://127.0.0.1:18141").await?;
+        let res = client.get_balance(GetBalanceRequest {}).await?;
+        let res = res.into_inner();
+        dbg!(&res);
+
+        Ok(WalletBalance {
+            available_balance: MicroMinotari(res.available_balance),
+            timelocked_balance: MicroMinotari(res.timelocked_balance),
+            pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
+            pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
+        })
     }
 }

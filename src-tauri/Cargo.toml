@@ -15,6 +15,7 @@ tari_common = { git = "https://github.com/tari-project/tari.git", branch = "deve
 tari_common_types = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", branch = "development" }
+minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_core = { git = "https://github.com/tari-project/tari.git", branch = "development", features = ["transactions"] }
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_utilities = "0.7.0"

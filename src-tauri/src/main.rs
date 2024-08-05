@@ -23,6 +23,7 @@ use crate::cpu_miner::CpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
+use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -146,13 +147,23 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             return Err(e);
         }
     };
-    Ok(AppStatus { cpu })
+
+    let wallet_balance = state
+        .wallet_manager
+        .get_balance()
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(AppStatus {
+        cpu,
+        wallet_balance,
+    })
 }
 
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
     // TODO: add each application version.
     cpu: CpuMinerStatus,
+    wallet_balance: WalletBalance,
 }
 
 #[derive(Debug, Serialize)]

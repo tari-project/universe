@@ -1,7 +1,7 @@
 use crate::minotari_node_adapter::MinotariNodeAdapter;
 use crate::node_manager::NodeManager;
 use crate::process_watcher::ProcessWatcher;
-use crate::wallet_adapter::WalletAdapter;
+use crate::wallet_adapter::{WalletAdapter, WalletBalance};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
@@ -67,5 +67,15 @@ impl WalletManager {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.view_private_key = view_private_key;
         process_watcher.adapter.spend_key = spend_key;
+    }
+
+    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Wallet not started"))?
+            .get_balance()
+            .await
     }
 }
