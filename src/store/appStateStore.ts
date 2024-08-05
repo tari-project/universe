@@ -40,6 +40,12 @@ interface AppState {
   estimatedEarnings: number,
   setEstimatedEarnings: (value: number) => void;
 
+  blockHeight: number,
+    setBlockHeight: (value: number) => void;
+  blockTime: number,
+    setBlockTime: (value: number) => void;
+  isSynced: boolean,
+    setIsSynced: (value: boolean) => void;
   // functions
   startMining: () => Promise<void>;
   stopMining: () => Promise<void>;
@@ -82,6 +88,13 @@ const useAppStateStore = create<AppState>((set) => ({
   setCpuBrand: (value) => set({ cpuBrand: value }),
   estimatedEarnings: 0,
   setEstimatedEarnings: (value) => set({ estimatedEarnings: value }),
+
+    blockHeight: 0,
+    setBlockHeight: (value) => set({ blockHeight: value }),
+    blockTime: 0,
+    setBlockTime: (value) => set({ blockTime: value }),
+    isSynced: false,
+    setIsSynced: (value) => set({ isSynced: value }),
 
   // functions
   startMining: async () => {

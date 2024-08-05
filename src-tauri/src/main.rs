@@ -18,7 +18,7 @@ mod process_adapter;
 use crate::cpu_miner::CpuMiner;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use serde::Serialize;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -105,16 +105,14 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let cpu_miner = state.cpu_miner.read().await;
-    let (sha_hash_rate, randomx_hash_rate, block_reward) = match state
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced ) = state
         .node_manager
         .get_network_hash_rate_and_block_reward()
-        .await
-    {
-        Ok((sha_hash_rate, randomx_hash_rate, block_reward)) => {
-            (sha_hash_rate, randomx_hash_rate, block_reward)
-        }
-        Err(e) => (0, 0, MicroMinotari(0)),
-    };
+        .await.unwrap_or_else(|e| {
+        warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
+        (0, 0, MicroMinotari(0), 0, 0, false)
+    }
+    );
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
@@ -126,13 +124,28 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             return Err(e);
         }
     };
-    Ok(AppStatus { cpu })
+    Ok(AppStatus {
+        cpu,
+        base_node: BaseNodeStatus {
+            block_height,
+            block_time,
+            is_synced,
+        },
+    })
 }
 
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
     // TODO: add each application version.
     cpu: CpuMinerStatus,
+    base_node: BaseNodeStatus,
+}
+
+#[derive(Debug, Serialize)]
+pub struct BaseNodeStatus {
+    block_height: u64,
+    block_time: u64,
+    is_synced: bool,
 }
 
 #[derive(Debug, Serialize)]
