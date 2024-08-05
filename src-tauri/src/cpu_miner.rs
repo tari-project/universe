@@ -51,7 +51,11 @@ impl CpuMiner {
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
                 local_mm_proxy
-                    .start(app_shutdown.clone(), base_path)
+                    .start(
+                        app_shutdown.clone(),
+                        base_path,
+                        cpu_miner_config.tari_address.clone(),
+                    )
                     .await?;
                 local_mm_proxy.wait_ready().await?;
                 XmrigNodeConnection::LocalMmproxy {

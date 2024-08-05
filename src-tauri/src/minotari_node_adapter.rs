@@ -1,6 +1,7 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::info;
@@ -10,7 +11,9 @@ use minotari_node_grpc_client::grpc::{
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
+use tari_utilities::ByteArray;
 use tokio::select;
 use tokio::task::JoinHandle;
 use tokio::time::Instant;
@@ -37,7 +40,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
     fn spawn_inner(
         &self,
-        log_path: PathBuf,
+        _log_path: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -60,7 +63,20 @@ impl ProcessAdapter for MinotariNodeAdapter {
             args.push("base_node.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
             args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
-            // args.push("-p\"base_node.p2p.transport.tcp.listener_address\"=\"/ip4/0.0.0.0/tcp/18189\"".to_string());
+            args.push("-p".to_string());
+            // args.push(
+            //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
+            // );
+            args.push("-p".to_string());
+            args.push(
+                "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
+            );
+        } else {
+            args.push("-p".to_string());
+            args.push(
+                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
+                    .to_string(),
+            );
         }
         dbg!(&args);
         Ok((
@@ -82,7 +98,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .spawn()?;
 
                     select! {
-                        res = shutdown_signal =>{
+                        _res = shutdown_signal =>{
                             child.kill().await?;
                             // res
                         },
@@ -148,7 +164,7 @@ impl MinotariNodeStatusMonitor {
                 max_weight: 0,
             })
             .await?;
-        let mut res = res.into_inner();
+        let res = res.into_inner();
         let reward = res.miner_data.unwrap().reward;
 
         let res = client.get_tip_info(Empty {}).await?;
@@ -186,5 +202,18 @@ impl MinotariNodeStatusMonitor {
         }
         // Really unlikely to arrive here
         Err(anyhow::anyhow!("No difficulty found"))
+    }
+
+    pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
+        let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
+        let id = client.identify(Empty {}).await?;
+        let res = id.into_inner();
+        dbg!(&res);
+
+        Ok(NodeIdentity {
+            public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
+                .map_err(|e| anyhow!(e.to_string()))?,
+            public_addresses: res.public_addresses,
+        })
     }
 }

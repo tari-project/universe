@@ -211,6 +211,6 @@ fn get_os_string() -> String {
     {
         return "freebsd-x64".to_string();
     }
-
+    #[allow(unreachable_code)]
     panic!("Unsupported OS");
 }
