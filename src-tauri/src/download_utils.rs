@@ -14,7 +14,6 @@ pub async fn download_file(url: &str, destination: &Path) -> Result<(), anyhow::
     // Stream the response body directly to the file
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
-        println!("Writing bytes");
         dest.write_all(&item?).await?;
     }
     println!("Done downloading");

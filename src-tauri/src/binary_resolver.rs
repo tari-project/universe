@@ -2,16 +2,17 @@ use crate::download_utils::{download_file, extract};
 use crate::github;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use log::{error, info, warn};
 use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tauri::api::path::cache_dir;
 use tokio::fs;
+use tokio::sync::Mutex;
 
-const TARI_SUITE_VERSION_URL: &str =
-    "https://api.github.com/repos/tari-project/tari/releases/tags/v1.0.0-pre.18";
-
+const LOG_TARGET: &str = "tari::universe::binary_resolver";
 pub struct BinaryResolver {
+    download_mutex: Mutex<()>,
     adapters: HashMap<Binaries, Box<dyn LatestVersionApiAdapter>>,
 }
 
@@ -74,6 +75,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .iter()
             .filter_map(|v| {
                 if v.version.pre.starts_with(network) {
+                    info!(target: LOG_TARGET, "Found candidate version: {}", v.version);
                     Some(&v.version)
                 } else {
                     None
@@ -82,6 +84,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .max()
             .ok_or_else(|| anyhow!("No pre release found"))?;
 
+        info!(target: LOG_TARGET, "Selected version: {}", version);
         let info = releases
             .iter()
             .find(|v| &v.version == version)
@@ -91,7 +94,10 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
     }
 
     fn get_binary_folder(&self) -> PathBuf {
-        cache_dir().unwrap().join("tari-universe").join(&self.repo)
+        cache_dir()
+            .unwrap()
+            .join("com.tari.universe")
+            .join(&self.repo)
     }
 
     fn find_version_for_platform(
@@ -140,7 +146,10 @@ impl BinaryResolver {
                 owner: "tari-project".to_string(),
             }),
         );
-        Self { adapters }
+        Self {
+            adapters,
+            download_mutex: Mutex::new(()),
+        }
     }
 
     pub fn current() -> Self {
@@ -196,21 +205,22 @@ impl BinaryResolver {
         let bin_folder = adapter
             .get_binary_folder()
             .join(&latest_release.version.to_string());
+        let lock = self.download_mutex.lock().await;
+
         if force_download {
             println!("Cleaning up existing dir");
             let _ = fs::remove_dir_all(&bin_folder).await;
         }
-        if !bin_folder.exists() {
-            println!("Creating {} dir", binary.name());
-            println!("latest version is {}", latest_release.version);
+        if !bin_folder.exists() || bin_folder.join("in_progress").exists() {
+            info!(target: LOG_TARGET, "Creating {} dir", binary.name());
+            info!("latest version is {}", latest_release.version);
             let in_progress_dir = bin_folder.join("in_progress");
             if in_progress_dir.exists() {
-                println!("Trying to delete dir {:?}", in_progress_dir);
+                info!(target: LOG_TARGET, "Trying to delete dir {:?}", in_progress_dir);
                 match fs::remove_dir(&in_progress_dir).await {
                     Ok(_) => {}
                     Err(e) => {
-                        println!("Failed to delete dir {:?}", e);
-                        // return Err(e.into());
+                        warn!(target: LOG_TARGET, "Failed to delete dir {:?}. Continuing", e);
                     }
                 }
             }
@@ -219,17 +229,16 @@ impl BinaryResolver {
             // let platform = latest_release
             //     .get_asset(&::get_os_string())
             //     .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
-            println!("Downloading file");
-            println!("Downloading file from {}", &asset.url);
+            info!(target: LOG_TARGET, "Downloading file");
+            info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
             let in_progress_file = in_progress_dir.join(&asset.name);
             download_file(&asset.url, &in_progress_file).await?;
-            println!("Renaming file");
-            println!("Extracting file");
+            info!(target: LOG_TARGET, "Renaming file");
+            info!(target: LOG_TARGET, "Extracting file");
             let bin_dir = adapter
                 .get_binary_folder()
                 .join(&latest_release.version.to_string());
-            dbg!(&bin_dir);
             extract(&in_progress_file, &bin_dir).await?;
 
             fs::remove_dir_all(in_progress_dir).await?;

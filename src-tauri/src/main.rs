@@ -25,6 +25,8 @@ use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
+use dirs_next::data_dir;
+use futures_util::{FutureExt, TryFutureExt};
 use log::{debug, error, info, warn};
 use serde::Serialize;
 use std::sync::Arc;
@@ -35,29 +37,31 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{api, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use tokio::{join, try_join};
 
 #[tauri::command]
 async fn init<'r>(
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    state
+    let data_dir = app.path_resolver().app_local_data_dir().unwrap();
+    let task1 = state
         .node_manager
-        .ensure_started(
-            state.shutdown.to_signal(),
-            app.path_resolver().app_local_data_dir().unwrap(),
-        )
-        .await
-        .map_err(|e| e.to_string())?;
+        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
+            e.to_string()
+        });
 
-    state
+    let task2 = state
         .wallet_manager
-        .ensure_started(
-            state.shutdown.to_signal(),
-            app.path_resolver().app_local_data_dir().unwrap(),
-        )
-        .await
-        .map_err(|e| e.to_string())?;
+        .ensure_started(state.shutdown.to_signal(), data_dir)
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
+            e.to_string()
+        });
+
+    try_join!(task1, task2)?;
     Ok(())
 }
 
@@ -123,14 +127,15 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let cpu_miner = state.cpu_miner.read().await;
-    let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced ) = state
-        .node_manager
-        .get_network_hash_rate_and_block_reward()
-        .await.unwrap_or_else(|e| {
-        warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
-        (0, 0, MicroMinotari(0), 0, 0, false)
-    }
-    );
+    let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
+        state
+            .node_manager
+            .get_network_hash_rate_and_block_reward()
+            .await
+            .unwrap_or_else(|e| {
+                //  warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
+                (0, 0, MicroMinotari(0), 0, 0, false)
+            });
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
@@ -156,7 +161,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             block_time,
             is_synced,
         },
-        wallet_balance
+        wallet_balance,
     })
 }
 

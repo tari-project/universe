@@ -49,6 +49,7 @@ impl WalletManager {
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
+        self.node_manager.wait_ready().await?;
         let node_identity = self.node_manager.get_identity().await?;
 
         let mut process_watcher = self.watcher.write().await;
