@@ -185,7 +185,6 @@ impl WalletStatusMonitor {
         let mut client = WalletClient::connect("http://127.0.0.1:18141").await?;
         let res = client.get_balance(GetBalanceRequest {}).await?;
         let res = res.into_inner();
-        dbg!(&res);
 
         Ok(WalletBalance {
             available_balance: MicroMinotari(res.available_balance),
