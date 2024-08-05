@@ -64,8 +64,12 @@ impl NodeManager {
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
-        // I'm ready when the http health service says so
-        self.watcher.read().await.wait_ready().await?;
+        while true {
+            match self.get_identity().await {
+                Ok(_) => break,
+                Err(_) => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
+            }
+        }
         Ok(())
     }
 
