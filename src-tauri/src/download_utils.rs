@@ -112,6 +112,7 @@ pub async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::E
     Ok(())
 }
 
+#[allow(unused_variables)]
 pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
     #[cfg(unix)]
     {
