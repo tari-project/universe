@@ -29,6 +29,7 @@ use dirs_next::data_dir;
 use futures_util::{FutureExt, TryFutureExt};
 use log::{debug, error, info, warn};
 use binary_resolver::{Binaries, BinaryResolver};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::thread::sleep;
