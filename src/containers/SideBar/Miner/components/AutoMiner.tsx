@@ -28,7 +28,7 @@ function AutoMiner() {
   };
 
 
-  const { start, pause } = useIdleTimer({ timeout: 1000 * 5,startManually: true, onIdle: enableAutoMining, onActive:disableAutoMining, events: ["mousemove"]});
+  const { start, pause } = useIdleTimer({ timeout: 1000 * 30,startManually: true, onIdle: enableAutoMining, onActive:disableAutoMining, events: ["mousemove"]});
 
 
   React.useEffect(() => {
