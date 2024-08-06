@@ -28,8 +28,7 @@ impl NodeManager {
 
         // Unix systems have built in tor.
         // TODO: Add tor service for windows.
-        #[cfg(target_os = "windows")]
-        {
+        if cfg!(target_os = "windows") {
             use_tor = false;
         }
 
@@ -45,9 +44,12 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.start(app_shutdown, base_path).await?;
+        process_watcher
+            .start(app_shutdown, base_path, window)
+            .await?;
         process_watcher.wait_ready().await?;
         Ok(())
     }
@@ -56,9 +58,12 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.start(app_shutdown, base_path).await?;
+        process_watcher
+            .start(app_shutdown, base_path, window)
+            .await?;
 
         Ok(())
     }
