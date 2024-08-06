@@ -11,7 +11,6 @@ use tokio::runtime::Handle;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
 
-
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
 pub enum XmrigNodeConnection {
