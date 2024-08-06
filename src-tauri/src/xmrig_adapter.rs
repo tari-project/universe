@@ -3,12 +3,15 @@ use crate::download_utils::{download_file, extract};
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use anyhow::Error;
+use log::info;
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
+
+const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
 pub enum XmrigNodeConnection {
     LocalMmproxy { host_name: String, port: u16 },
@@ -153,8 +156,10 @@ impl XmrigAdapter {
                 }
             }
 
+            let os_string = get_os_string();
+            info!(target: LOG_TARGET, "Downloading xmrig for {}", &os_string);
             let platform = latest_release
-                .get_asset(&get_os_string())
+                .get_asset(&os_string)
                 .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
             println!("Downloading file");
             println!("Downloading file from {}", &platform.url);
@@ -220,6 +225,8 @@ fn get_os_string() -> String {
         #[cfg(target_arch = "aarch64")]
         {
             return "macos-arm64".to_string();
+            // TODO: confirm whether to use the macos-x64 or macos-arm64
+            // return "macos-x64".to_string();
         }
     }
 
