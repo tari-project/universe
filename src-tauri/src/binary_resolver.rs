@@ -110,8 +110,8 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             name_suffix = "windows-x64.exe.zip";
         }
 
-        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            name_suffix = "macos-arm64.zip";
+        if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+            name_suffix = "macos-x86_64.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
@@ -126,6 +126,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .iter()
             .find(|a| a.name.ends_with(name_suffix))
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
+        info!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
     }
 }
@@ -267,31 +268,6 @@ impl BinaryResolver {
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
-    }
-
-    #[allow(unreachable_statement)]
-    fn get_os_string() -> String {
-        #[cfg(target_os = "windows")]
-        {
-            return "windows-x64".to_string();
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            return "macos-x64".to_string();
-        }
-
-        #[cfg(target_os = "linux")]
-        {
-            return "linux-x64".to_string();
-        }
-
-        #[cfg(target_os = "freebsd")]
-        {
-            return "freebsd-x64".to_string();
-        }
-
-        panic!("Unsupported OS");
     }
 }
 

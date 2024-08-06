@@ -54,8 +54,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                 "merge_mining_proxy.wallet_payment_address={}",
                 self.tari_address.to_base58()
             ),
+            "-p".to_string(),
+            "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
         ];
-        dbg!(&args);
         Ok((
             MergeMiningProxyInstance {
                 shutdown: inner_shutdown,

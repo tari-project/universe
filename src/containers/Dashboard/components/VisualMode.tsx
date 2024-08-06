@@ -1,24 +1,23 @@
 import { Switch, Typography } from '@mui/material';
 import { VisualModeContainer } from '../styles';
-import useAppStateStore from '../../../store/appStateStore';
+import { useUIStore } from '../../../store/useUIStore.ts';
 
 function VisualMode() {
-  const { visualMode, setVisualMode } = useAppStateStore((state) => ({
-    visualMode: state.visualMode,
-    setVisualMode: state.setVisualMode,
-  }));
-  return (
-    <VisualModeContainer>
-      <Typography variant="h6">Visual Mode</Typography>
-      <Switch
-        checked={visualMode}
-        onChange={() => setVisualMode(!visualMode)}
-        color="primary"
-        name="visualMode"
-        inputProps={{ 'aria-label': 'primary checkbox' }}
-      />
-    </VisualModeContainer>
-  );
+    const visualMode = useUIStore((s) => s.visualMode);
+    const setVisualMode = useUIStore((s) => s.setVisualMode);
+
+    return (
+        <VisualModeContainer>
+            <Typography variant="h6">Visual Mode</Typography>
+            <Switch
+                checked={visualMode}
+                onChange={() => setVisualMode(!visualMode)}
+                color="primary"
+                name="visualMode"
+                inputProps={{ 'aria-label': 'primary checkbox' }}
+            />
+        </VisualModeContainer>
+    );
 }
 
 export default VisualMode;
