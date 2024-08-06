@@ -43,6 +43,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
     fn spawn_inner(
         &self,
         _log_path: PathBuf,
+        window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -86,7 +87,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::MinotariNode)
+                        .ensure_latest(Binaries::MinotariNode, window)
                         .await?;
 
                     let file_path =
@@ -183,7 +184,7 @@ impl MinotariNodeStatusMonitor {
 
         let res = client.get_tip_info(Empty {}).await?;
         let res = res.into_inner();
-        let (sync_achieved, block_height, hash, block_time) = (
+        let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
             res.metadata.as_ref().unwrap().best_block_height,
             res.metadata.as_ref().unwrap().best_block_hash.clone(),

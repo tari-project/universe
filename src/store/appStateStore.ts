@@ -16,7 +16,7 @@ interface AppState {
     isSettingUp: boolean;
 
     // functions
-    settingUpFinished: () => Promise<void>;
+    settingUpFinished: () => void;
 }
 
 const useAppStateStore = create<AppState>((set) => ({
@@ -34,11 +34,7 @@ const useAppStateStore = create<AppState>((set) => ({
         set({ setupTitle, setupProgress }),
 
     // functions
-    settingUpFinished: async () => {
-        set({
-            isSettingUp: false,
-        });
-    },
+    settingUpFinished: () => set({ isSettingUp: false }),
 }));
 
 export default useAppStateStore;

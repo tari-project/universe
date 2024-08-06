@@ -9,33 +9,35 @@ import { useAppStatusStore } from '../store/useAppStatusStore.ts';
 
 const INTERVAL = 1000;
 
-export function useGetStatus({ disabled = false }: { disabled: boolean }) {
+export function useGetStatus() {
     const setBalance = useWalletStore((state) => state.setBalance);
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setError = useAppStateStore((s) => s.setError);
+    const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
 
     const unlistenPromise = listen(
         'message',
         ({ event, payload }: TauriEvent) => {
-            console.debug('some kind of event', event, payload);
+            console.log('some kind of event', event, payload);
 
             switch (payload.event_type) {
                 case 'setup_status':
                     setSetupDetails(payload.title, payload.progress);
+                    if (payload.progress >= 1.0) {
+                        settingUpFinished();
+                    }
                     break;
                 default:
-                    console.log('Unknown tauri event: ', {
-                        event,
-                        payload,
-                    });
+                    console.log('Unknown tauri event: ', { event, payload });
                     break;
             }
         }
     );
 
     useEffect(() => {
-        if (disabled) {
+        if (!isSettingUp) {
             const intervalId = setInterval(() => {
                 invoke<AppStatus>('status', {})
                     .then((status: AppStatus) => {
@@ -68,5 +70,5 @@ export function useGetStatus({ disabled = false }: { disabled: boolean }) {
                 clearInterval(intervalId);
             };
         }
-    }, [disabled]);
+    }, [isSettingUp]);
 }
