@@ -33,7 +33,7 @@ function Miner() {
     };
   }, []);
 
-  const resourceBrand = currResource === "CPU" ? gpuBrand : cpuBrand;
+  const resourceBrand = currResource === "CPU" ? cpuBrand : gpuBrand;
 
     return (
         <MinerWrapper>
