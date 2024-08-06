@@ -30,7 +30,9 @@ use futures_util::TryFutureExt;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use std::thread;
 use std::thread::sleep;
+use std::time::Duration;
 use std::{panic, process};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -55,13 +57,14 @@ async fn get_gpu_brand() -> Result<String, String> {
         ..Default::default()
     });
 
-    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
-        power_preference: wgpu::PowerPreference::default(),
-        force_fallback_adapter: false,
-        compatible_surface: None,
-    })
-    .await
-    .unwrap();
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::default(),
+            force_fallback_adapter: false,
+            compatible_surface: None,
+        })
+        .await
+        .unwrap();
 
     Ok(adapter.get_info().name)
 }
