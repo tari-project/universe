@@ -1,51 +1,55 @@
-import {Stack, Typography, Divider} from '@mui/material';
-import useAppStateStore from '../../../../store/appStateStore.ts';
-import {useEffect, useState} from 'react';
+import { Stack, Typography, Divider } from '@mui/material'
+import useAppStateStore from '../../../../store/appStateStore.ts'
+import { useEffect, useState } from 'react'
 
 function BlockInfo() {
-    let {blockHeight, blockTime} = useAppStateStore((state) => ({
+    const { blockHeight, blockTime } = useAppStateStore((state) => ({
         blockHeight: state.blockHeight,
         blockTime: state.blockTime,
-    }));
+    }))
 
-    const [timeSince, setTimeSince] = useState('');
+    const [timeSince, setTimeSince] = useState('')
 
     useEffect(() => {
         // Function to calculate the time difference
         const calculateTimeSince = () => {
-            const now: Date = new Date();
-            const past: Date = new Date(blockTime * 1000); // Convert seconds to milliseconds
-            const diff: number = now.getTime() - past.getTime();
+            const now: Date = new Date()
+            const past: Date = new Date(blockTime * 1000) // Convert seconds to milliseconds
+            const diff: number = now.getTime() - past.getTime()
 
             // Convert the difference to days, hours, minutes, and seconds
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24))
             const hours = Math.floor(
                 (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-            );
-            const hoursString = hours.toString().padStart(2, "0");
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, "0");
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, "0");
+            )
+            const hoursString = hours.toString().padStart(2, '0')
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                .toString()
+                .padStart(2, '0')
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+                .toString()
+                .padStart(2, '0')
 
             if (days > 0) {
                 setTimeSince(
                     `${days} day${days === 1 ? '' : 's'}, ${hoursString}:${minutes}:${seconds}`
-                );
+                )
             } else if (hours > 0) {
-                setTimeSince(`${hoursString}:${minutes}:${seconds}`);
+                setTimeSince(`${hoursString}:${minutes}:${seconds}`)
             } else {
-                setTimeSince(`${minutes}:${seconds}`);
+                setTimeSince(`${minutes}:${seconds}`)
             }
-        };
+        }
 
         // Initial calculation
-        calculateTimeSince();
+        calculateTimeSince()
 
         // Set interval to update the time since every second
-        const interval = setInterval(calculateTimeSince, 1000);
+        const interval = setInterval(calculateTimeSince, 1000)
 
         // Cleanup interval on component unmount
-        return () => clearInterval(interval);
-    }, [blockTime]);
+        return () => clearInterval(interval)
+    }, [blockTime])
 
     return (
         <Stack direction="row" spacing={2}>
@@ -53,18 +57,20 @@ function BlockInfo() {
                 <Typography variant="h6">#{blockHeight}</Typography>
                 <Typography variant="body2">Floor</Typography>
             </Stack>
-            <Divider orientation="vertical" flexItem/>
+            <Divider orientation="vertical" flexItem />
             <Stack>
                 <Typography variant="h6">Tiny Green Whales</Typography>
                 <Typography variant="body2">Last floor winner</Typography>
             </Stack>
-            <Divider orientation="vertical" flexItem/>
+            <Divider orientation="vertical" flexItem />
             <Stack>
                 <Typography variant="h6">{timeSince}</Typography>
-                <Typography variant="body2">Current floor build time</Typography>
+                <Typography variant="body2">
+                    Current floor build time
+                </Typography>
             </Stack>
         </Stack>
-    );
+    )
 }
 
-export default BlockInfo;
+export default BlockInfo
