@@ -37,18 +37,33 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
-use tokio::try_join;
 
 use crate::xmrig_adapter::XmrigAdapter;
-use dirs_next::cache_dir;
-use std::thread;
-use std::time::Duration;
+use tokio::try_join;
+use wgpu::{Instance, Backends, InstanceDescriptor};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
     event_type: String,
     title: String,
     progress: f64,
+}
+
+async fn get_gpu_brand() -> Result<String, String> {
+    let instance = Instance::new(InstanceDescriptor {
+        backends: Backends::all(),
+        ..Default::default()
+    });
+
+    let adapter = instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference: wgpu::PowerPreference::default(),
+        force_fallback_adapter: false,
+        compatible_surface: None,
+    })
+    .await
+    .unwrap();
+
+    Ok(adapter.get_info().name)
 }
 
 #[tauri::command]
@@ -207,8 +222,17 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
+    let gpu_brand = match get_gpu_brand().await {
+        Ok(b) => b,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting GPU brand: {:?}", e);
+            "Unknown".to_string()
+        }
+    };
+
     Ok(AppStatus {
         cpu,
+        gpu_brand,
         base_node: BaseNodeStatus {
             block_height,
             block_time,
@@ -222,6 +246,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 pub struct AppStatus {
     // TODO: add each application version.
     cpu: CpuMinerStatus,
+    gpu_brand: String,
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
 }

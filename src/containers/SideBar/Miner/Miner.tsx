@@ -1,9 +1,11 @@
 import Tile from './components/Tile.tsx';
-import { MinerContainer, TileContainer } from './styles.ts';
+import { MinerWrapper, TileWrapper } from './styles.ts';
 import AutoMiner from './components/AutoMiner.tsx';
 import Scheduler from './components/Scheduler.tsx';
 import ModeSelect from './components/ModeSelect.tsx';
 import { useAppStatusStore } from '../../../store/useAppStatusStore.ts';
+import { formatNumber } from '../../../utils';
+import { useEffect } from 'react';
 
 function Miner() {
     const cpu = useAppStatusStore((s) => s.cpu);
@@ -21,23 +23,23 @@ function Miner() {
         return str.slice(0, num) + '...';
     };
 
-    function formatNumber(value: number): string {
-        if (value < 0) {
-            return value.toPrecision(1);
-        } else if (value >= 1_000_000) {
-            return (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
-        } else if (value >= 1_000) {
-            return (value / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
-        } else {
-            return value.toString();
-        }
-    }
+  useEffect(() => {
+    const resourceSwitcher = setInterval(() => {
+      setCurrResource((prev) => (prev === "CPU" ? "GPU" : "CPU"));
+    }, 5_000);
+
+    return () => {
+      clearInterval(resourceSwitcher);
+    };
+  }, []);
+
+  const resourceBrand = currResource === "CPU" ? gpuBrand : cpuBrand;
 
     return (
-        <MinerContainer>
+        <MinerWrapper>
             <AutoMiner />
             <Scheduler />
-            <TileContainer>
+            <TileWrapper>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
                 {/*<Tile title="GPU Utilization" stats="23%" />*/}
@@ -50,9 +52,10 @@ function Miner() {
                         formatNumber(estimated_earnings / 1000000) + ' XTM/24h'
                     }
                 />
-            </TileContainer>
-        </MinerContainer>
+            </TileWrapper>
+        </MinerWrapper>
     );
 }
 
 export default Miner;
+
