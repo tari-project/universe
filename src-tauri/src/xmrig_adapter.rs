@@ -3,6 +3,7 @@ use crate::download_utils::{download_file, extract};
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use anyhow::Error;
+use log::info;
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
@@ -153,8 +154,10 @@ impl XmrigAdapter {
                 }
             }
 
+            let os_string = get_os_string();
+            info!(target: LOG_TARGET, "Downloading xmrig for {}", &os_string);
             let platform = latest_release
-                .get_asset(&get_os_string())
+                .get_asset(&os_string)
                 .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
             println!("Downloading file");
             println!("Downloading file from {}", &platform.url);
