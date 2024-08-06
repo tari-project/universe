@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "Tari Universe",
-    "version": "0.1.19"
+    "version": "0.1.20"
   },
   "tauri": {
     "updater": {
