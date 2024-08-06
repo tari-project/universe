@@ -1,5 +1,5 @@
 import './theme/theme.css';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
@@ -12,13 +12,48 @@ import { AppBackground } from './containers/AppBackground';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
+import { listen } from '@tauri-apps/api/event';
+import { TauriEvent } from './types.ts';
+import useAppStateStore from './store/appStateStore.ts';
 
 function App() {
     const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
+    const startupInitiated = useRef(false);
+    const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
+    const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
 
     useEffect(() => {
-        invoke('setup_application');
+        const unlistenPromise = listen(
+            'message',
+            ({ event, payload }: TauriEvent) => {
+                console.log('Event:', event, payload);
+                switch (payload.event_type) {
+                    case 'setup_status':
+                        setSetupDetails(payload.title, payload.progress);
+                        if (payload.progress >= 1.0) {
+                            settingUpFinished();
+                        }
+                        break;
+                    default:
+                        console.log('Unknown tauri event: ', {
+                            event,
+                            payload,
+                        });
+                        break;
+                }
+            }
+        );
+        if (!startupInitiated.current) {
+            invoke('setup_application').then((r) => {
+                console.log(r);
+                startupInitiated.current = true;
+            });
+        }
+
+        return () => {
+            unlistenPromise.then((unlisten) => unlisten());
+        };
     }, []);
 
     useGetStatus();
