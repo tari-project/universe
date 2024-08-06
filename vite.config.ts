@@ -4,7 +4,7 @@ import eslintPlugin from '@nabla/vite-plugin-eslint'
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-    plugins: [react(), eslintPlugin()],
+    plugins: [react(), eslintPlugin({ eslintOptions: { cache: false } })],
 
     // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
     //
