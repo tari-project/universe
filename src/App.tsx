@@ -12,22 +12,24 @@ import { TitleBar } from './containers/TitleBar';
 import { AppBackground } from './containers/AppBackground';
 import useAppStateStore from './store/appStateStore';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
+import useWalletStore from './store/walletStore';
 import { AppStatus } from './types/app-status.ts';
 import { useAppStatusStore } from './store/useAppStatusStore.ts';
 import { TauriEvent } from './types.ts';
 import { useUIStore } from './store/useUIStore.ts';
 
 function App() {
+    const setBalance = useWalletStore((state) => state.setBalance);
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
-    const { setError, settingUpFinished, setSetupDetails, setWallet } =
-        useAppStateStore((state) => ({
+    const { setError, settingUpFinished, setSetupDetails } = useAppStateStore(
+        (state) => ({
             setError: state.setError,
             settingUpFinished: state.settingUpFinished,
             setSetupDetails: state.setSetupDetails,
-            setWallet: state.setWallet,
-        }));
+        })
+    );
 
     useEffect(() => {
         const unlistenPromise = listen(
@@ -59,15 +61,13 @@ function App() {
                     if (status) {
                         setAppStatus(status);
 
-                        setWallet({
-                            balance:
-                                (status.wallet_balance?.available_balance ||
-                                    0) +
+                        setBalance(
+                            (status.wallet_balance?.available_balance || 0) +
                                 (status.wallet_balance?.timelocked_balance ||
                                     0) +
                                 (status.wallet_balance
-                                    ?.pending_incoming_balance || 0),
-                        });
+                                    ?.pending_incoming_balance || 0)
+                        );
                     }
                 })
                 .catch((e) => {
