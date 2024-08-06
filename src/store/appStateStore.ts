@@ -1,6 +1,6 @@
-import {create} from 'zustand';
-import {invoke} from '@tauri-apps/api/tauri';
-import {viewType, backgroundType, modeType} from './types';
+import { create } from 'zustand';
+import { invoke } from '@tauri-apps/api/tauri';
+import { viewType, backgroundType, modeType } from './types';
 
 interface AppState {
   appState: any;
@@ -22,10 +22,6 @@ interface AppState {
   setView: (value: viewType) => void;
   visualMode: boolean;
   setVisualMode: (value: boolean) => void;
-  wallet: {
-    balance: number;
-  };
-  setWallet: (value: { balance: number }) => void;
   isMining: boolean;
   setIsMining: (value: boolean) => void;
   isAutoMining: boolean;
@@ -41,16 +37,16 @@ interface AppState {
   setMode: (value: modeType) => void;
   hashRate: number;
   setHashRate: (value: number) => void;
-  cpuBrand: string,
+  cpuBrand: string;
   setCpuBrand: (value: string) => void;
-  estimatedEarnings: number,
+  estimatedEarnings: number;
   setEstimatedEarnings: (value: number) => void;
 
-  blockHeight: number,
+  blockHeight: number;
   setBlockHeight: (value: number) => void;
-  blockTime: number,
+  blockTime: number;
   setBlockTime: (value: number) => void;
-  isSynced: boolean,
+  isSynced: boolean;
   setIsSynced: (value: boolean) => void;
   // functions
   startMining: () => Promise<void>;
@@ -60,13 +56,13 @@ interface AppState {
 
 const useAppStateStore = create<AppState>((set) => ({
   appState: {},
-  setAppState: (value) => set({appState: value}),
+  setAppState: (value) => set({ appState: value }),
   error: '',
-  setError: (value) => set({error: value}),
+  setError: (value) => set({ error: value }),
   topStatus: 'Not mining',
-  setTopStatus: (value) => set({topStatus: value}),
+  setTopStatus: (value) => set({ topStatus: value }),
   errorOpen: false,
-  setErrorOpen: (value) => set({errorOpen: value}),
+  setErrorOpen: (value) => set({ errorOpen: value }),
 
   // gui
   background: 'loading',
@@ -75,10 +71,6 @@ const useAppStateStore = create<AppState>((set) => ({
   setView: (value) => set({ view: value }),
   visualMode: true,
   setVisualMode: (value) => set({ visualMode: value }),
-  wallet: {
-    balance: 0,
-  },
-  setWallet: (value) => set({ wallet: value }),
   isMining: false,
   setIsMining: (value) => set({ isMining: value }),
   isAutoMining: false,
@@ -86,21 +78,22 @@ const useAppStateStore = create<AppState>((set) => ({
   sidebarOpen: false,
   setSidebarOpen: (value) => set({ sidebarOpen: value }),
   isSettingUp: true,
-  setupTitle: "",
+  setupTitle: '',
   setupProgress: 0,
-  setSetupDetails: (setupTitle: string, setupProgress: number) => set({ setupTitle, setupProgress }),
+  setSetupDetails: (setupTitle: string, setupProgress: number) =>
+    set({ setupTitle, setupProgress }),
 
   // stats
   cpuUsage: 0,
-  setCpuUsage: (value) => set({cpuUsage: value}),
+  setCpuUsage: (value) => set({ cpuUsage: value }),
   mode: 'eco',
-  setMode: (value) => set({mode: value}),
+  setMode: (value) => set({ mode: value }),
   hashRate: 0,
-  setHashRate: (value) => set({hashRate: value}),
+  setHashRate: (value) => set({ hashRate: value }),
   cpuBrand: '',
-  setCpuBrand: (value) => set({cpuBrand: value}),
+  setCpuBrand: (value) => set({ cpuBrand: value }),
   estimatedEarnings: 0,
-  setEstimatedEarnings: (value) => set({estimatedEarnings: value}),
+  setEstimatedEarnings: (value) => set({ estimatedEarnings: value }),
 
   blockHeight: 0,
   setBlockHeight: (value) => set({ blockHeight: value }),
@@ -113,8 +106,8 @@ const useAppStateStore = create<AppState>((set) => ({
   settingUpFinished: async () => {
     set({
       isSettingUp: false,
-      view: "mining",
-      background: "idle"
+      view: 'mining',
+      background: 'idle',
     });
   },
 
