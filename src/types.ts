@@ -1,12 +1,11 @@
 // Use union type
-type TauriEventPayload =
-| {
-  event_type: "setup_status",
-  title: string,
-  progress: number,
-}
+type TauriEventPayload = {
+    event_type: 'setup_status';
+    title: string;
+    progress: number;
+};
 
-type TauriEvent = {
-  event: string;
-  payload: TauriEventPayload;
-}
+export type TauriEvent = {
+    event: string;
+    payload: TauriEventPayload;
+};
