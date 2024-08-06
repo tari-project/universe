@@ -151,11 +151,7 @@ impl CpuMiner {
         // Refresh CPUs again.
         s.refresh_cpu_all();
 
-        let mut cpu_brand = "Unknown";
-        for cpu in s.cpus() {
-            cpu_brand = cpu.brand();
-            break;
-        }
+        let cpu_brand = s.cpus().get(0).map(|cpu| cpu.brand()).unwrap_or("Unknown");
 
         let cpu_usage = s.global_cpu_usage() as u32;
 

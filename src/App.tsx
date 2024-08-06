@@ -11,8 +11,8 @@ import { Dashboard } from './containers/Dashboard';
 import { TitleBar } from './containers/TitleBar';
 import { AppBackground } from './containers/AppBackground';
 import useAppStateStore from './store/appStateStore';
-import useWalletStore from './store/walletStore';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
+import useWalletStore from './store/walletStore';
 
 function App() {
   const {
@@ -27,15 +27,20 @@ function App() {
     setBlockHeight,
     setBlockTime,
     setIsSynced,
+    settingUpFinished,
+    setSetupDetails,
   } = useAppStateStore((state) => ({
     view: state.view,
     background: state.background,
+    isSettingUp: state.isSettingUp,
     setHashRate: state.setHashRate,
     setCpuUsage: state.setCpuUsage,
     setAppState: state.setAppState,
     setError: state.setError,
     setCpuBrand: state.setCpuBrand,
     setEstimatedEarnings: state.setEstimatedEarnings,
+    settingUpFinished: state.settingUpFinished,
+    setSetupDetails: state.setSetupDetails,
     setBlockHeight: state.setBlockHeight,
     setBlockTime: state.setBlockTime,
     setIsSynced: state.setIsSynced,
@@ -44,13 +49,23 @@ function App() {
   const setBalance = useWalletStore((state) => state.setBalance);
 
   useEffect(() => {
-    invoke('init', {}).catch((e) => {
-      console.error('Could not init', e);
-      setError(e.toString());
-    });
-    const unlistenPromise = listen('message', (event) => {
-      console.log('some kind of event', event.event, event.payload);
-    });
+    const unlistenPromise = listen(
+      'message',
+      ({ event, payload }: TauriEvent) => {
+        console.log('some kind of event', event, payload);
+
+        switch (payload.event_type) {
+          case 'setup_status':
+            setSetupDetails(payload.title, payload.progress);
+            break;
+          default:
+            console.log('Unknown tauri event: ', { event, payload });
+            break;
+        }
+      }
+    );
+
+    invoke('setup_application').then(() => settingUpFinished());
 
     const intervalId = setInterval(() => {
       invoke('status', {})
