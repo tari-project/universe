@@ -40,6 +40,7 @@ impl CpuMiner {
         cpu_miner_config: &CpuMinerConfig,
         local_mm_proxy: &MmProxyManager,
         base_path: PathBuf,
+        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         if self.watcher_task.is_some() {
             warn!(target: LOG_TARGET, "Tried to start mining twice");
@@ -55,6 +56,7 @@ impl CpuMiner {
                         app_shutdown.clone(),
                         base_path,
                         cpu_miner_config.tari_address.clone(),
+                        window.clone(),
                     )
                     .await?;
                 local_mm_proxy.wait_ready().await?;
@@ -67,7 +69,7 @@ impl CpuMiner {
             }
         };
         let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
-        let (mut _rx, mut xmrig_child, client) = xmrig.spawn()?;
+        let (mut _rx, mut xmrig_child, client) = xmrig.spawn(window.clone())?;
         self.api_client = Some(client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
@@ -151,11 +153,7 @@ impl CpuMiner {
         // Refresh CPUs again.
         s.refresh_cpu_all();
 
-        let mut cpu_brand = "Unknown";
-        for cpu in s.cpus() {
-            cpu_brand = cpu.brand();
-            break;
-        }
+        let cpu_brand = s.cpus().get(0).map(|cpu| cpu.brand()).unwrap_or("Unknown");
 
         let cpu_usage = s.global_cpu_usage() as u32;
 
