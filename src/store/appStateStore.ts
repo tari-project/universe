@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/tauri';
-import { viewType, backgroundType, modeType } from './types';
+import { modeType } from './types';
 
 interface AppState {
     appState: any;
@@ -16,12 +16,6 @@ interface AppState {
     setSetupDetails: (setupTitle: string, setupProgress: number) => void;
 
     // gui
-    background: backgroundType;
-    setBackground: (value: backgroundType) => void;
-    view: viewType;
-    setView: (value: viewType) => void;
-    visualMode: boolean;
-    setVisualMode: (value: boolean) => void;
     wallet: {
         balance: number;
     };
@@ -30,8 +24,6 @@ interface AppState {
     setIsMining: (value: boolean) => void;
     isAutoMining: boolean;
     setIsAutoMining: (value: boolean) => void;
-    sidebarOpen: boolean;
-    setSidebarOpen: (value: boolean) => void;
     isSettingUp: boolean;
 
     // stats
@@ -68,13 +60,6 @@ const useAppStateStore = create<AppState>((set) => ({
     errorOpen: false,
     setErrorOpen: (value) => set({ errorOpen: value }),
 
-    // gui
-    background: 'loading',
-    setBackground: (value) => set({ background: value }),
-    view: 'setup',
-    setView: (value) => set({ view: value }),
-    visualMode: true,
-    setVisualMode: (value) => set({ visualMode: value }),
     wallet: {
         balance: 0,
     },
@@ -83,8 +68,6 @@ const useAppStateStore = create<AppState>((set) => ({
     setIsMining: (value) => set({ isMining: value }),
     isAutoMining: false,
     setIsAutoMining: (value) => set({ isAutoMining: value }),
-    sidebarOpen: false,
-    setSidebarOpen: (value) => set({ sidebarOpen: value }),
     isSettingUp: true,
     setupTitle: '',
     setupProgress: 0,
@@ -114,8 +97,6 @@ const useAppStateStore = create<AppState>((set) => ({
     settingUpFinished: async () => {
         set({
             isSettingUp: false,
-            view: 'mining',
-            background: 'idle',
         });
     },
 

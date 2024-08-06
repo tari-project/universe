@@ -14,24 +14,20 @@ import useAppStateStore from './store/appStateStore';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 import { AppStatus } from './types/app-status.ts';
 import { useAppStatusStore } from './store/useAppStatusStore.ts';
+import { TauriEvent } from './types.ts';
+import { useUIStore } from './store/useUIStore.ts';
 
 function App() {
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
-    const {
-        view,
-        background,
-        setError,
-        settingUpFinished,
-        setSetupDetails,
-        setWallet,
-    } = useAppStateStore((state) => ({
-        view: state.view,
-        background: state.background,
-        setError: state.setError,
-        settingUpFinished: state.settingUpFinished,
-        setSetupDetails: state.setSetupDetails,
-        setWallet: state.setWallet,
-    }));
+    const background = useUIStore((s) => s.background);
+    const view = useUIStore((s) => s.view);
+    const { setError, settingUpFinished, setSetupDetails, setWallet } =
+        useAppStateStore((state) => ({
+            setError: state.setError,
+            settingUpFinished: state.settingUpFinished,
+            setSetupDetails: state.setSetupDetails,
+            setWallet: state.setWallet,
+        }));
 
     useEffect(() => {
         const unlistenPromise = listen(
