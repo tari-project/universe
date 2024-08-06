@@ -25,25 +25,43 @@ use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
-use dirs_next::data_dir;
-use futures_util::{FutureExt, TryFutureExt};
+use futures_util::TryFutureExt;
 use log::{debug, error, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::{api, RunEvent, UpdaterEvent};
+use tauri::{RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
-use tokio::{join, try_join};
+use tokio::try_join;
+
+use std::thread;
+use std::time::Duration;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct SetupStatusEvent {
+    event_type: String,
+    title: String,
+    progress: f64,
+}
 
 #[tauri::command]
-async fn init<'r>(
+async fn setup_application<'r>(
+    window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let _ = window.emit(
+        "message",
+        SetupStatusEvent {
+            event_type: "setup_status".to_string(),
+            title: "Downloading Applications".to_string(),
+            progress: 0.5,
+        },
+    );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let task1 = state
         .node_manager
@@ -62,6 +80,16 @@ async fn init<'r>(
         });
 
     try_join!(task1, task2)?;
+    _ = window.emit(
+        "message",
+        SetupStatusEvent {
+            event_type: "setup_status".to_string(),
+            title: "Syncing Blockchain".to_string(),
+            progress: 1.0,
+        },
+    );
+    // TODO: Sync blockchain when p2p mining finished
+    thread::sleep(Duration::from_secs(5));
     Ok(())
 }
 
@@ -293,7 +321,7 @@ fn main() {
             }
         })
         .invoke_handler(tauri::generate_handler![
-            init,
+            setup_application,
             status,
             start_mining,
             stop_mining

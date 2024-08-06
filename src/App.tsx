@@ -17,23 +17,43 @@ import { useAppStatusStore } from './store/useAppStatusStore.ts';
 
 function App() {
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
-    const { view, background, setWallet, setError } = useAppStateStore(
-        (state) => ({
-            view: state.view,
-            background: state.background,
-            setWallet: state.setWallet,
-            setError: state.setError,
-        })
-    );
+    const {
+        view,
+        background,
+        setError,
+        settingUpFinished,
+        setSetupDetails,
+        setWallet,
+    } = useAppStateStore((state) => ({
+        view: state.view,
+        background: state.background,
+        setError: state.setError,
+        settingUpFinished: state.settingUpFinished,
+        setSetupDetails: state.setSetupDetails,
+        setWallet: state.setWallet,
+    }));
 
     useEffect(() => {
-        invoke('init', {}).catch((e) => {
-            console.error('Could not init', e);
-            setError(e.toString());
-        });
-        const unlistenPromise = listen('message', (event) => {
-            console.log('some kind of event', event.event, event.payload);
-        });
+        const unlistenPromise = listen(
+            'message',
+            ({ event, payload }: TauriEvent) => {
+                console.log('some kind of event', event, payload);
+
+                switch (payload.event_type) {
+                    case 'setup_status':
+                        setSetupDetails(payload.title, payload.progress);
+                        break;
+                    default:
+                        console.log('Unknown tauri event: ', {
+                            event,
+                            payload,
+                        });
+                        break;
+                }
+            }
+        );
+
+        invoke('setup_application').then(() => settingUpFinished());
 
         const intervalId = setInterval(() => {
             invoke<AppStatus>('status', {})

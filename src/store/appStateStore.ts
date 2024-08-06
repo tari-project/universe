@@ -11,6 +11,9 @@ interface AppState {
     setTopStatus: (value: string) => void;
     errorOpen: boolean;
     setErrorOpen: (value: boolean) => void;
+    setupTitle: string;
+    setupProgress: number;
+    setSetupDetails: (setupTitle: string, setupProgress: number) => void;
 
     // gui
     background: backgroundType;
@@ -29,6 +32,7 @@ interface AppState {
     setIsAutoMining: (value: boolean) => void;
     sidebarOpen: boolean;
     setSidebarOpen: (value: boolean) => void;
+    isSettingUp: boolean;
 
     // stats
     cpuUsage: number;
@@ -47,9 +51,11 @@ interface AppState {
     blockTime: number;
     setBlockTime: (value: number) => void;
     isSynced: boolean;
-    setIsSynced: (value: boolean) => void; // functions
+    setIsSynced: (value: boolean) => void;
+    // functions
     startMining: () => Promise<void>;
     stopMining: () => Promise<void>;
+    settingUpFinished: () => Promise<void>;
 }
 
 const useAppStateStore = create<AppState>((set) => ({
@@ -63,9 +69,9 @@ const useAppStateStore = create<AppState>((set) => ({
     setErrorOpen: (value) => set({ errorOpen: value }),
 
     // gui
-    background: 'idle',
+    background: 'loading',
     setBackground: (value) => set({ background: value }),
-    view: 'mining',
+    view: 'setup',
     setView: (value) => set({ view: value }),
     visualMode: true,
     setVisualMode: (value) => set({ visualMode: value }),
@@ -79,6 +85,11 @@ const useAppStateStore = create<AppState>((set) => ({
     setIsAutoMining: (value) => set({ isAutoMining: value }),
     sidebarOpen: false,
     setSidebarOpen: (value) => set({ sidebarOpen: value }),
+    isSettingUp: true,
+    setupTitle: '',
+    setupProgress: 0,
+    setSetupDetails: (setupTitle: string, setupProgress: number) =>
+        set({ setupTitle, setupProgress }),
 
     // stats
     cpuUsage: 0,
@@ -97,7 +108,17 @@ const useAppStateStore = create<AppState>((set) => ({
     blockTime: 0,
     setBlockTime: (value) => set({ blockTime: value }),
     isSynced: false,
-    setIsSynced: (value) => set({ isSynced: value }), // functions
+    setIsSynced: (value) => set({ isSynced: value }),
+
+    // functions
+    settingUpFinished: async () => {
+        set({
+            isSettingUp: false,
+            view: 'mining',
+            background: 'idle',
+        });
+    },
+
     startMining: async () => {
         try {
             await invoke('start_mining', {});
