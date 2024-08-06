@@ -197,7 +197,7 @@ impl MinotariNodeStatusMonitor {
             })
             .await?;
         let mut res = res.into_inner();
-        while let Some(difficulty) = res.message().await? {
+        if let Some(difficulty) = res.message().await? {
             return Ok((
                 difficulty.sha3x_estimated_hash_rate,
                 difficulty.randomx_estimated_hash_rate,
