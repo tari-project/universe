@@ -65,7 +65,7 @@ const useAppStateStore = create<AppState>((set) => ({
   setErrorOpen: (value) => set({ errorOpen: value }),
 
   // gui
-  background: 'loading',
+  background: 'onboarding',
   setBackground: (value) => set({ background: value }),
   view: 'setup',
   setView: (value) => set({ view: value }),
