@@ -27,8 +27,7 @@ function App() {
         const unlistenPromise = listen(
             'message',
             ({ event, payload }: TauriEvent) => {
-                console.log('Event', event, payload);
-                console.log(payload);
+                console.log('Event:', event, payload);
                 switch (payload.event_type) {
                     case 'setup_status':
                         setSetupDetails(payload.title, payload.progress);
