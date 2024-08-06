@@ -54,11 +54,14 @@ async fn setup_application<'r>(
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    drop(window.emit("message", SetupStatusEvent {
-        event_type: "setup_status".to_string(),
-        title: "Downloading Applications".to_string(),
-        progress: 0.5,
-    }));
+    drop(window.emit(
+        "message",
+        SetupStatusEvent {
+            event_type: "setup_status".to_string(),
+            title: "Downloading Applications".to_string(),
+            progress: 0.5,
+        },
+    ));
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let task1 = state
         .node_manager
@@ -77,11 +80,14 @@ async fn setup_application<'r>(
         });
 
     try_join!(task1, task2)?;
-    drop(window.emit("message", SetupStatusEvent {
-        event_type: "setup_status".to_string(),
-        title: "Syncing Blockchain".to_string(),
-        progress: 1.0,
-    }));
+    drop(window.emit(
+        "message",
+        SetupStatusEvent {
+            event_type: "setup_status".to_string(),
+            title: "Syncing Blockchain".to_string(),
+            progress: 1.0,
+        },
+    ));
     // TODO: Sync blockchain when p2p mining finished
     thread::sleep(Duration::from_secs(5));
     Ok(())
@@ -314,7 +320,12 @@ fn main() {
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![setup_application, status, start_mining, stop_mining])
+        .invoke_handler(tauri::generate_handler![
+            setup_application,
+            status,
+            start_mining,
+            stop_mining
+        ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
 
