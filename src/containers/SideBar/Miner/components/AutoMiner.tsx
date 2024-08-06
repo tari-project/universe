@@ -6,19 +6,13 @@ import React from 'react';
 import { useUIStore } from '../../../../store/useUIStore.ts';
 
 function AutoMiner() {
+    const isAutoMining = useUIStore((s) => s.isAutoMining);
     const setBackground = useUIStore((s) => s.setBackground);
-    const {
-        startMining,
-        stopMining,
-        setIsMining,
-        isAutoMining,
-        setIsAutoMining,
-    } = useAppStateStore((state) => ({
+    const setIsMining = useUIStore((s) => s.setIsMining);
+    const setIsAutoMining = useUIStore((s) => s.setIsAutoMining);
+    const { startMining, stopMining } = useAppStateStore((state) => ({
         startMining: state.startMining,
         stopMining: state.stopMining,
-        setIsMining: state.setIsMining,
-        setIsAutoMining: state.setIsAutoMining,
-        isAutoMining: state.isAutoMining,
     }));
 
     const enableAutoMining = () => {

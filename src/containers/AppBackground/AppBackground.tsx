@@ -44,8 +44,6 @@ function AppBackground({
             bg = winner;
             break;
         case 'idle':
-            bg = defaultbg;
-            break;
         default:
             bg = defaultbg;
             break;
