@@ -30,8 +30,7 @@ impl WalletManager {
 
         // Unix systems have built in tor.
         // TODO: Add tor service for windows.
-        #[cfg(target_os = "windows")]
-        {
+        if cfg!(target_os = "windows") {
             use_tor = false;
         }
 
@@ -48,6 +47,7 @@ impl WalletManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         self.node_manager.wait_ready().await?;
         let node_identity = self.node_manager.get_identity().await?;
@@ -55,7 +55,9 @@ impl WalletManager {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
         process_watcher.adapter.base_node_address = Some("/ip4/127.0.0.1/tcp/9998".to_string());
-        process_watcher.start(app_shutdown, base_path).await?;
+        process_watcher
+            .start(app_shutdown, base_path, window)
+            .await?;
         process_watcher.wait_ready().await?;
         Ok(())
     }

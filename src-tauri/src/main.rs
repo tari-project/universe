@@ -25,29 +25,49 @@ use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
-use dirs_next::data_dir;
-use futures_util::{FutureExt, TryFutureExt};
+use futures_util::TryFutureExt;
 use log::{debug, error, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::{api, RunEvent, UpdaterEvent};
+use tauri::{RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
-use tokio::{join, try_join};
+use tokio::try_join;
+
+use crate::xmrig_adapter::XmrigAdapter;
+use dirs_next::cache_dir;
+use std::thread;
+use std::time::Duration;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct SetupStatusEvent {
+    event_type: String,
+    title: String,
+    progress: f64,
+}
 
 #[tauri::command]
-async fn init<'r>(
+async fn setup_application<'r>(
+    window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let _ = window.emit(
+        "message",
+        SetupStatusEvent {
+            event_type: "setup_status".to_string(),
+            title: "Starting up".to_string(),
+            progress: 0.0,
+        },
+    );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let task1 = state
         .node_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+        .ensure_started(state.shutdown.to_signal(), data_dir.clone(), window.clone())
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
             e.to_string()
@@ -55,19 +75,41 @@ async fn init<'r>(
 
     let task2 = state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir)
+        .ensure_started(state.shutdown.to_signal(), data_dir, window.clone())
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
             e.to_string()
         });
 
-    try_join!(task1, task2)?;
+    let task3 =
+        XmrigAdapter::ensure_latest(cache_dir().unwrap(), false, window.clone()).map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
+            e.to_string()
+        });
+
+    match try_join!(task1, task2, task3) {
+        Ok(_) => {
+            debug!(target: LOG_TARGET, "Applications started");
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Error starting applications: {:?}", e);
+            // return Err(e.to_string());
+        }
+    }
+    _ = window.emit(
+        "message",
+        SetupStatusEvent {
+            event_type: "setup_status".to_string(),
+            title: "Applications started".to_string(),
+            progress: 1.0,
+        },
+    );
     Ok(())
 }
 
 #[tauri::command]
 async fn start_mining<'r>(
-    _window: tauri::Window,
+    window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -77,6 +119,7 @@ async fn start_mining<'r>(
         .ensure_started(
             state.shutdown.to_signal(),
             app.path_resolver().app_local_data_dir().unwrap(),
+            window.clone(),
         )
         .await
         .map_err(|e| e.to_string())?;
@@ -90,13 +133,13 @@ async fn start_mining<'r>(
             &config,
             &mm_proxy_manager,
             app.path_resolver().app_local_data_dir().unwrap(),
+            window.clone(),
         )
         .await
         .map_err(|e| {
             dbg!(e.to_string());
             e.to_string()
         })?;
-    dbg!("command start finished");
     Ok(())
 }
 
@@ -151,7 +194,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
         Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting wallet balance: {:?}", e);
+            warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
             WalletBalance {
                 available_balance: MicroMinotari(0),
                 pending_incoming_balance: MicroMinotari(0),
@@ -293,7 +336,7 @@ fn main() {
             }
         })
         .invoke_handler(tauri::generate_handler![
-            init,
+            setup_application,
             status,
             start_mining,
             stop_mining

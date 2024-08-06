@@ -1,5 +1,5 @@
 use crate::download_utils::{download_file, extract};
-use crate::github;
+use crate::{github, SetupStatusEvent};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{error, info, warn};
@@ -104,19 +104,28 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         &self,
         version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, Error> {
+        let mut name_suffix = "";
         // TODO: add platform specific logic
-        #[cfg(target_os = "windows")]
-        let name_suffix = "windows-x64.exe.zip";
-        #[cfg(target_os = "macos")]
-        let name_suffix = "macos-arm64.zip";
-        #[cfg(target_os = "linux")]
-        let name_suffix = "linux-x86_64.zip";
+        if cfg!(target_os = "windows") {
+            name_suffix = "windows-x64.exe.zip";
+        }
+
+        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+            name_suffix = "macos-arm64.zip";
+        }
+
+        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+            name_suffix = "macos-arm64.zip";
+        }
+        if cfg!(target_os = "linux") {
+            name_suffix = "linux-x86_64.zip";
+        }
 
         let platform = version
             .assets
             .iter()
             .find(|a| a.name.ends_with(name_suffix))
-            .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
+            .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
         Ok(platform.clone())
     }
 }
@@ -185,8 +194,12 @@ impl BinaryResolver {
         }
     }
 
-    pub async fn ensure_latest(&self, binary: Binaries) -> Result<Version, anyhow::Error> {
-        let version = self.ensure_latest_inner(binary, false).await?;
+    pub async fn ensure_latest(
+        &self,
+        binary: Binaries,
+        window: tauri::Window,
+    ) -> Result<Version, anyhow::Error> {
+        let version = self.ensure_latest_inner(binary, false, window).await?;
         Ok(version)
     }
 
@@ -194,18 +207,28 @@ impl BinaryResolver {
         &self,
         binary: Binaries,
         force_download: bool,
+        window: tauri::Window,
     ) -> Result<Version, Error> {
         let adapter = self
             .adapters
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
+        let name = binary.name();
+        let _ = window.emit(
+            "message",
+            SetupStatusEvent {
+                event_type: "setup_status".to_string(),
+                title: format!("Fetching latest version of {}", name),
+                progress: 0.2,
+            },
+        );
         let latest_release = adapter.fetch_latest_release().await?;
         // TODO: validate that version doesn't have any ".." or "/" in it
 
         let bin_folder = adapter
             .get_binary_folder()
             .join(&latest_release.version.to_string());
-        let lock = self.download_mutex.lock().await;
+        let _lock = self.download_mutex.lock().await;
 
         if force_download {
             println!("Cleaning up existing dir");
@@ -233,7 +256,7 @@ impl BinaryResolver {
             info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
             let in_progress_file = in_progress_dir.join(&asset.name);
-            download_file(&asset.url, &in_progress_file).await?;
+            download_file(&asset.url, &in_progress_file, window).await?;
             info!(target: LOG_TARGET, "Renaming file");
             info!(target: LOG_TARGET, "Extracting file");
             let bin_dir = adapter
@@ -246,6 +269,7 @@ impl BinaryResolver {
         Ok(latest_release.version)
     }
 
+    #[allow(unreachable_statement)]
     fn get_os_string() -> String {
         #[cfg(target_os = "windows")]
         {
@@ -267,7 +291,6 @@ impl BinaryResolver {
             return "freebsd-x64".to_string();
         }
 
-        #[allow(unreachable_patterns)]
         panic!("Unsupported OS");
     }
 }

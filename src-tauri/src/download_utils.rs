@@ -1,4 +1,8 @@
-pub async fn download_file(url: &str, destination: &Path) -> Result<(), anyhow::Error> {
+pub async fn download_file(
+    url: &str,
+    destination: &Path,
+    window: tauri::Window,
+) -> Result<(), anyhow::Error> {
     println!("Downloading {} to {:?}", url, destination);
     let response = reqwest::get(url).await?;
 
@@ -14,8 +18,25 @@ pub async fn download_file(url: &str, destination: &Path) -> Result<(), anyhow::
     // Stream the response body directly to the file
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
+        let _ = window.emit(
+            "message",
+            SetupStatusEvent {
+                event_type: "setup_status".to_string(),
+                title: "Downloading".to_string(),
+                progress: 0.4,
+            },
+        );
         dest.write_all(&item?).await?;
     }
+
+    let _ = window.emit(
+        "message",
+        SetupStatusEvent {
+            event_type: "setup_status".to_string(),
+            title: "Downloaded".to_string(),
+            progress: 0.4,
+        },
+    );
     println!("Done downloading");
 
     Ok(())
@@ -51,6 +72,7 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
     Ok(())
 }
 
+use crate::SetupStatusEvent;
 use anyhow::anyhow;
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;

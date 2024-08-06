@@ -70,4 +70,4 @@ rand = "0.8.5"
 custom-protocol = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = ["log4rs", "xz2"]
+ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]

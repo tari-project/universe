@@ -29,11 +29,14 @@ impl MmProxyManager {
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         tari_address: TariAddress,
+        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         info!(target: LOG_TARGET, "Starting mmproxy");
-        process_watcher.start(app_shutdown, base_path).await?;
+        process_watcher
+            .start(app_shutdown, base_path, window)
+            .await?;
 
         Ok(())
     }
