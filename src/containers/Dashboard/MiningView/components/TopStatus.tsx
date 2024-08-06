@@ -1,26 +1,28 @@
 import { useEffect } from 'react';
 import { Typography } from '@mui/material';
 import useAppStateStore from '../../../../store/appStateStore';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 function TopStatus() {
-  const { topStatus, setTopStatus, appState } = useAppStateStore((state) => ({
-    topStatus: state.topStatus,
-    setTopStatus: state.setTopStatus,
-    appState: state.appState,
-  }));
+    const { topStatus, setTopStatus } = useAppStateStore((state) => ({
+        topStatus: state.topStatus,
+        setTopStatus: state.setTopStatus,
+    }));
 
-  useEffect(() => {
-    if (appState?.cpu?.is_mining) {
-      setTopStatus('Mining');
-    } else {
-      setTopStatus('Not mining');
-    }
-  }, [appState?.cpu?.is_mining]);
+    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
 
-  return (
-    <Typography variant="h5" textTransform="uppercase">
-      {topStatus}
-    </Typography>
-  );
+    useEffect(() => {
+        if (isMining) {
+            setTopStatus('Mining');
+        } else {
+            setTopStatus('Not mining');
+        }
+    }, [isMining]);
+
+    return (
+        <Typography variant="h5" textTransform="uppercase">
+            {topStatus}
+        </Typography>
+    );
 }
 
 export default TopStatus;
