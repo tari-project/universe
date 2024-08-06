@@ -7,8 +7,9 @@ import { IoCode } from 'react-icons/io5';
 import { Typography } from '@mui/material';
 import { TileItem } from '../styles';
 import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
+import { useTheme } from '@mui/material/styles';
 
-const CustomSelect = styled(Select)(({ theme }) => ({
+const CustomSelect = styled(Select)(({ theme }: { theme: any }) => ({
     '& .MuiSelect-select': {
         padding: 0,
         textTransform: 'uppercase',
@@ -28,7 +29,7 @@ function ModeSelect() {
     const handleChange = (event: SelectChangeEvent<unknown>) => {
         setMode(event.target.value as modeType);
     };
-
+    const theme = useTheme();
     return (
         <TileItem>
             <Typography variant="body2">Mode</Typography>
@@ -36,6 +37,7 @@ function ModeSelect() {
                 <CustomSelect
                     labelId="select-mode-label"
                     id="select-mode"
+                    theme={theme}
                     value={mode}
                     onChange={handleChange}
                     IconComponent={IoCode}
