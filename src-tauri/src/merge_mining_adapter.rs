@@ -31,6 +31,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     fn spawn_inner(
         &self,
         _log_folder: PathBuf,
+        window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -60,7 +61,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::MergeMiningProxy)
+                        .ensure_latest(Binaries::MergeMiningProxy, window)
                         .await?;
 
                     let file_path = BinaryResolver::current()
