@@ -126,6 +126,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .iter()
             .find(|a| a.name.ends_with(name_suffix))
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
+        info!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
     }
 }
