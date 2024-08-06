@@ -11,6 +11,9 @@ use tokio::runtime::Handle;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
 
+
+const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
+
 pub enum XmrigNodeConnection {
     LocalMmproxy { host_name: String, port: u16 },
 }
@@ -223,6 +226,8 @@ fn get_os_string() -> String {
         #[cfg(target_arch = "aarch64")]
         {
             return "macos-arm64".to_string();
+            // TODO: confirm whether to use the macos-x64 or macos-arm64
+            // return "macos-x64".to_string();
         }
     }
 
