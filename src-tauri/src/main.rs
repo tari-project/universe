@@ -54,14 +54,14 @@ async fn setup_application<'r>(
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    drop(window.emit(
+    let _ = window.emit(
         "message",
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
             title: "Downloading Applications".to_string(),
             progress: 0.5,
         },
-    ));
+    );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let task1 = state
         .node_manager
@@ -80,14 +80,14 @@ async fn setup_application<'r>(
         });
 
     try_join!(task1, task2)?;
-    drop(window.emit(
+    _ = window.emit(
         "message",
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
             title: "Syncing Blockchain".to_string(),
             progress: 1.0,
         },
-    ));
+    );
     // TODO: Sync blockchain when p2p mining finished
     thread::sleep(Duration::from_secs(5));
     Ok(())
