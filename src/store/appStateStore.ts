@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/tauri';
 
 interface AppState {
     error: string;
@@ -17,8 +16,6 @@ interface AppState {
     isSettingUp: boolean;
 
     // functions
-    startMining: () => Promise<void>;
-    stopMining: () => Promise<void>;
     settingUpFinished: () => Promise<void>;
 }
 
@@ -41,23 +38,6 @@ const useAppStateStore = create<AppState>((set) => ({
         set({
             isSettingUp: false,
         });
-    },
-
-    startMining: async () => {
-        try {
-            await invoke('start_mining', {});
-            console.log('Mining started');
-        } catch (e) {
-            console.error('Could not start mining', e);
-        }
-    },
-    stopMining: async () => {
-        try {
-            await invoke('stop_mining', {});
-            console.log('Mining stopped');
-        } catch (e) {
-            console.error('Could not stop mining', e);
-        }
     },
 }));
 

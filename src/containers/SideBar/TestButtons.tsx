@@ -10,7 +10,6 @@ function TestButtons() {
         setBackground: state.setBackground,
     }));
     const [selectedView, setSelectedView] = useState<viewType>(view);
-    // const [selectedBg, setSelectedBg] = useState<backgroundType>(background);
 
     const handleSetView = (value: viewType) => {
         setView(value);
@@ -22,11 +21,6 @@ function TestButtons() {
             setBackground('idle');
         }
     };
-
-    // const handleSetStatus = (value: backgroundType) => {
-    //   setBackground(value);
-    //   setSelectedBg(value);
-    // };
 
     return (
         <Stack direction="column" spacing={1}>

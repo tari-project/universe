@@ -1,7 +1,6 @@
 import './theme/theme.css';
 import { useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { listen } from '@tauri-apps/api/event';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from './theme/themes';
@@ -12,74 +11,20 @@ import { TitleBar } from './containers/TitleBar';
 import { AppBackground } from './containers/AppBackground';
 import useAppStateStore from './store/appStateStore';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
-import useWalletStore from './store/walletStore';
-import { AppStatus } from './types/app-status.ts';
-import { useAppStatusStore } from './store/useAppStatusStore.ts';
-import { TauriEvent } from './types.ts';
 import { useUIStore } from './store/useUIStore.ts';
+import { useGetStatus } from './hooks/useGetStatus.ts';
 
 function App() {
-    const setBalance = useWalletStore((state) => state.setBalance);
-    const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
-    const { setError, settingUpFinished, setSetupDetails } = useAppStateStore(
-        (state) => ({
-            setError: state.setError,
-            settingUpFinished: state.settingUpFinished,
-            setSetupDetails: state.setSetupDetails,
-        })
-    );
+    const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
 
     useEffect(() => {
-        const unlistenPromise = listen(
-            'message',
-            ({ event, payload }: TauriEvent) => {
-                console.log('some kind of event', event, payload);
-
-                switch (payload.event_type) {
-                    case 'setup_status':
-                        setSetupDetails(payload.title, payload.progress);
-                        break;
-                    default:
-                        console.log('Unknown tauri event: ', {
-                            event,
-                            payload,
-                        });
-                        break;
-                }
-            }
-        );
-
         invoke('setup_application').then(() => settingUpFinished());
-
-        const intervalId = setInterval(() => {
-            invoke<AppStatus>('status', {})
-                .then((status: AppStatus) => {
-                    console.log('Status', status);
-
-                    if (status) {
-                        setAppStatus(status);
-
-                        setBalance(
-                            (status.wallet_balance?.available_balance || 0) +
-                                (status.wallet_balance?.timelocked_balance ||
-                                    0) +
-                                (status.wallet_balance
-                                    ?.pending_incoming_balance || 0)
-                        );
-                    }
-                })
-                .catch((e) => {
-                    console.error('Could not get status', e);
-                    setError(e.toString());
-                });
-        }, 10000);
-        return () => {
-            unlistenPromise.then((unlisten) => unlisten());
-            clearInterval(intervalId);
-        };
     }, []);
+
+    useGetStatus({ disabled: isSettingUp });
 
     return (
         <ThemeProvider theme={lightTheme}>

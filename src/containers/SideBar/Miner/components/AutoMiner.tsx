@@ -1,29 +1,25 @@
 import { FormGroup, Switch, Stack, Typography } from '@mui/material';
 import { AutoMinerContainer } from '../styles';
-import useAppStateStore from '../../../../store/appStateStore';
 import { useIdleTimer } from 'react-idle-timer';
 import React from 'react';
 import { useUIStore } from '../../../../store/useUIStore.ts';
+import { useMining } from '../../../../hooks/useMining.ts';
 
 function AutoMiner() {
     const isAutoMining = useUIStore((s) => s.isAutoMining);
     const setBackground = useUIStore((s) => s.setBackground);
-    const setIsMining = useUIStore((s) => s.setIsMining);
     const setIsAutoMining = useUIStore((s) => s.setIsAutoMining);
-    const { startMining, stopMining } = useAppStateStore((state) => ({
-        startMining: state.startMining,
-        stopMining: state.stopMining,
-    }));
+    const { startMining, stopMining } = useMining();
 
     const enableAutoMining = () => {
-        startMining();
-        setIsMining(true);
-        setBackground('mining');
+        startMining().then(() => {
+            setBackground('mining');
+        });
     };
     const disableAutoMining = () => {
-        stopMining();
-        setIsMining(false);
-        setBackground('idle');
+        stopMining().then(() => {
+            setBackground('idle');
+        });
     };
 
     const { start, pause } = useIdleTimer({

@@ -1,54 +1,78 @@
-import { useState } from 'react';
 import { Button } from '@mui/material';
 import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
-import useAppStateStore from '../../../../store/appStateStore';
+import { AiOutlineLoading } from 'react-icons/ai';
 import { useUIStore } from '../../../../store/useUIStore.ts';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
+import { useMining } from '../../../../hooks/useMining.ts';
+import { styled } from '@mui/material/styles';
+import { keyframes } from '@emotion/react';
 
 const StartStyle = {
-    borderRadius: '30px',
     background: '#06C983',
     border: '1px solid #06C983',
-    padding: '10px 18px',
     '&:hover': {
         background: '#ff0000',
     },
 };
 
 const StopStyle = {
-    borderRadius: '30px',
     background: '#000000',
     border: '1px solid #000000',
-    padding: '10px 18px',
 };
 
+const LoadingStyle = {
+    opacity: 0.7,
+    pointerEvents: 'none',
+};
+
+const StyledButton = styled(Button)(() => ({
+    padding: '10px 18px',
+    borderRadius: '30px',
+}));
+
+const spin = keyframes`
+  from {
+  transform:rotate(0deg)
+  }
+  to {
+  transform:rotate(360deg)
+  }
+`;
+const StyledIcon = styled(AiOutlineLoading)(() => ({
+    animation: `${spin} 1s infinite`,
+    animationTimingFunction: 'cubic-bezier(0.76, 0.89, 0.95, 0.85)',
+}));
+
 function MiningButton() {
-    const { startMining, stopMining } = useAppStateStore((state) => ({
-        startMining: state.startMining,
-        stopMining: state.stopMining,
-    }));
+    const mining = useAppStatusStore((s) => s.cpu?.is_mining);
     const setBackground = useUIStore((s) => s.setBackground);
-    const [mining, setMining] = useState(false);
+    const { startMining, stopMining, isLoading } = useMining();
 
     const handleMining = () => {
         if (mining) {
-            stopMining();
-            setMining(false);
-            setBackground('idle');
+            stopMining().then(() => {
+                setBackground('idle');
+            });
         } else {
-            startMining();
-            setMining(true);
-            setBackground('mining');
+            startMining().then(() => {
+                setBackground('mining');
+            });
         }
     };
 
+    const buttonStyle = mining ? StopStyle : StartStyle;
+    const buttonIcon = mining ? <IoPauseCircle /> : <IoChevronForwardCircle />;
+
     return (
-        <Button
+        <StyledButton
             variant="contained"
             color="primary"
             size="large"
-            style={mining ? StopStyle : StartStyle}
+            style={
+                isLoading ? { ...buttonStyle, ...LoadingStyle } : buttonStyle
+            }
             onClick={() => handleMining()}
-            endIcon={mining ? <IoPauseCircle /> : <IoChevronForwardCircle />}
+            endIcon={isLoading ? <StyledIcon /> : buttonIcon}
             sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -57,7 +81,7 @@ function MiningButton() {
             <span style={{ flexGrow: 1 }}>
                 {mining ? 'Stop Mining' : 'Start Mining'}
             </span>
-        </Button>
+        </StyledButton>
     );
 }
 

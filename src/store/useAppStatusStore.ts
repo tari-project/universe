@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
+import { persist } from 'zustand/middleware';
 
 interface State extends AppStatus {
     mode: modeType;
@@ -17,8 +18,13 @@ const initialState: State = {
     wallet_balance: undefined,
     mode: 'eco',
 };
-export const useAppStatusStore = create<AppStatusStoreState>()((set) => ({
-    ...initialState,
-    setAppStatus: (appStatus) => set({ ...appStatus }),
-    setMode: (mode) => set({ mode }),
-}));
+export const useAppStatusStore = create<AppStatusStoreState>()(
+    persist(
+        (set) => ({
+            ...initialState,
+            setAppStatus: (appStatus) => set({ ...appStatus }),
+            setMode: (mode) => set({ mode }),
+        }),
+        { name: 'status-store' }
+    )
+);
