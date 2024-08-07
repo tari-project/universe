@@ -6,8 +6,8 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "tari-universe",
-    "version": "0.1.17"
+    "productName": "Tari Universe",
+    "version": "0.1.20"
   },
   "tauri": {
     "updater": {

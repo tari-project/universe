@@ -47,6 +47,7 @@ impl ProcessAdapter for WalletAdapter {
     fn spawn_inner(
         &self,
         _log_path: PathBuf,
+        window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
@@ -105,7 +106,7 @@ impl ProcessAdapter for WalletAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::Wallet)
+                        .ensure_latest(Binaries::Wallet, window)
                         .await?;
 
                     let file_path =

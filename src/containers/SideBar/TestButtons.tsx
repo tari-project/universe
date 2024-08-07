@@ -1,60 +1,65 @@
 import { Button, ButtonGroup, Stack, Typography } from '@mui/material';
-import useAppStateStore from '../../store/appStateStore';
 import { viewType } from '../../store/types';
 import { useState } from 'react';
+import { useUIStore } from '../../store/useUIStore.ts';
 
 function TestButtons() {
-  const { view, setView, setBackground } = useAppStateStore((state) => ({
-    view: state.view,
-    setView: state.setView,
-    setBackground: state.setBackground,
-  }));
-  const [selectedView, setSelectedView] = useState<viewType>(view);
-  // const [selectedBg, setSelectedBg] = useState<backgroundType>(background);
+    const { view, setView, setBackground } = useUIStore((state) => ({
+        view: state.view,
+        setView: state.setView,
+        setBackground: state.setBackground,
+    }));
+    const [selectedView, setSelectedView] = useState<viewType>(view);
 
-  const handleSetView = (value: viewType) => {
-    setView(value);
-    setSelectedView(value);
-    if (value === 'setup') {
-      setBackground('onboarding');
-    }
-    if (value === 'tribes') {
-      setBackground('loading');
-    }
-    if (value === 'mining') {
-      setBackground('idle');
-    }
-  };
+    const handleSetView = (value: viewType) => {
+        setView(value);
+        setSelectedView(value);
+        if (value === 'setup') {
+            setBackground('onboarding');
+        }
+        if (value === 'tribes') {
+            setBackground('loading');
+        }
+        if (value === 'mining') {
+            setBackground('idle');
+        }
+    };
 
-  // const handleSetStatus = (value: backgroundType) => {
-  //   setBackground(value);
-  //   setSelectedBg(value);
-  // };
+    // const handleSetStatus = (value: backgroundType) => {
+    //   setBackground(value);
+    //   setSelectedBg(value);
+    // };
 
-  return (
-    <Stack direction="column" spacing={1}>
-      <Typography variant="body2">For testing:</Typography>
-      <ButtonGroup variant="outlined" fullWidth>
-        <Button
-          variant={selectedView === 'setup' ? 'contained' : 'outlined'}
-          onClick={() => handleSetView('setup')}
-        >
-          Setup
-        </Button>
-        <Button
-          variant={selectedView === 'tribes' ? 'contained' : 'outlined'}
-          onClick={() => handleSetView('tribes')}
-        >
-          Tribes
-        </Button>
-        <Button
-          variant={selectedView === 'mining' ? 'contained' : 'outlined'}
-          onClick={() => handleSetView('mining')}
-        >
-          Mining
-        </Button>
-      </ButtonGroup>
-      {/* <Divider />
+    return (
+        <Stack direction="column" spacing={1}>
+            <Typography variant="body2">For testing:</Typography>
+            <ButtonGroup variant="outlined" fullWidth>
+                <Button
+                    variant={
+                        selectedView === 'setup' ? 'contained' : 'outlined'
+                    }
+                    onClick={() => handleSetView('setup')}
+                >
+                    Setup
+                </Button>
+                <Button
+                    variant={
+                        selectedView === 'tribes' ? 'contained' : 'outlined'
+                    }
+                    onClick={() => handleSetView('tribes')}
+                >
+                    Tribes
+                </Button>
+                <Button
+                    variant={
+                        selectedView === 'mining' ? 'contained' : 'outlined'
+                    }
+                    onClick={() => handleSetView('mining')}
+                >
+                    Mining
+                </Button>
+            </ButtonGroup>
+            {/* <Divider />
       <Typography variant="body2">Backgrounds:</Typography>
       <ButtonGroup variant="outlined" fullWidth>
         <Button
@@ -96,8 +101,8 @@ function TestButtons() {
           Loser
         </Button>
       </ButtonGroup> */}
-    </Stack>
-  );
+        </Stack>
+    );
 }
 
 export default TestButtons;
