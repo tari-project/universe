@@ -42,14 +42,14 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
     fn spawn_inner(
         &self,
-        _log_path: PathBuf,
+        data_dir: PathBuf,
         window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting minotari node");
-        let working_dir = data_local_dir().unwrap().join("tari-universe").join("node");
+        let working_dir = data_dir.join("node");
         std::fs::create_dir_all(&working_dir)?;
 
         let mut args: Vec<String> = vec![
