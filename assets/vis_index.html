@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>TARI MINING VISUAL</title>
+		<style>
+			html,
+			body {
+				width: 100%;
+				height: 100%;
+				margin: 0;
+			}
+			body {
+				overflow: hidden;
+			}
+		</style>
+		<script type="module" crossorigin src="/assets/index-DXIc6E9e.js"></script>
+		<link rel="stylesheet" crossorigin href="/assets/index-DFDuEtdz.css">
+	</head>
+	<body>
+		<canvas id="canvas"></canvas>
+
+		<div id="board-wrapper">
+			<div id="board"></div>
+			<div>
+				<div>
+					<span>Current state: </span>
+					<span id="current-state"></span>
+				</div>
+				<div>
+					<span>Pending state: </span>
+					<span id="pending-state"></span>
+				</div>
+			</div>
+		</div>
+
+		<script src="assets/js/dat.gui.min.js"></script>
+		<script>
+			let time;
+
+			function preload() {
+				glApp.preload(
+					{
+						canvas: document.getElementById('canvas'),
+
+						orbitTarget: document.getElementById('canvas'),
+
+						ASSETS_PATH: '/assets/',
+					},
+					() => {
+						init();
+					},
+				);
+			}
+
+			function init() {
+				glApp.init();
+				addGui();
+				time = performance.now() / 1000;
+
+				window.addEventListener('resize', onResize);
+				onResize();
+				animate();
+			}
+
+			function onResize() {
+				glApp.setSize(window.innerWidth, window.innerHeight);
+			}
+
+			function animate() {
+				requestAnimationFrame(animate);
+
+				let newTime = performance.now() / 1000;
+				let dt = newTime - time;
+				time = newTime;
+
+				update(dt);
+			}
+
+			function update(dt) {
+				glApp.render(dt);
+			}
+
+			function setStart() {
+				properties.stateSignal.dispatch(STATUS.STARTED);
+			}
+
+			function setSuccess() {
+				properties.resultSignal.dispatch(RESULT.COMPLETED);
+			}
+
+			function setFailure() {
+				properties.resultSignal.dispatch(RESULT.FAILED);
+			}
+
+			function setPause() {
+				properties.resultSignal.dispatch(RESULT.PAUSE);
+			}
+
+			function onNewSpawn(callback) {
+				if (callback && typeof callback === 'function') {
+					properties.spawnSignal.add(callback);
+				}
+			}
+
+			function onGameEnd(callback) {
+				if (callback && typeof callback === 'function') {
+					properties.gameEndedSignal.add(callback);
+				}
+			}
+
+			function onCycleEnd(callback) {
+				if (callback && typeof callback === 'function') {
+					properties.endCycleSignal.add(callback);
+				}
+			}
+
+			function onStateChange(callback) {
+				if (callback && typeof callback === 'function') {
+					properties.stateSignal.add((newState) => callback(newState));
+				}
+			}
+
+			function addGui() {
+				const gui = new dat.GUI();
+				gui.addColor(properties, 'startColor');
+				gui.addColor(properties, 'endColor');
+				gui.addColor(properties, 'errorColor');
+				gui.addColor(properties, 'defaultColor');
+				gui.add(properties, 'freeAnimationSpeed', 1, 8, 0.0001);
+				gui.add(properties, 'resultAnimationSpeed', 1, 8, 0.0001);
+
+				const actions = {
+					start: setStart,
+					success: setSuccess,
+					failure: setFailure,
+					pause: setPause,
+				};
+
+				gui.add(actions, 'start').name('Start');
+				gui.add(actions, 'pause').name('Pause');
+				gui.add(actions, 'success').name('Success');
+				gui.add(actions, 'failure').name('Failure');
+			}
+
+			document.addEventListener('DOMContentLoaded', preload);
+		</script>
+	</body>
+</html>
