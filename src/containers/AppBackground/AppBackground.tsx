@@ -4,7 +4,6 @@ import clouds from '../../assets/backgrounds/clouds.png';
 import loading from '../../assets/backgrounds/loading.jpg';
 import defaultbg from '../../assets/backgrounds/defaultbg.jpg';
 import determining from '../../assets/backgrounds/determining.jpg';
-import mining from '../../assets/backgrounds/mining.jpg';
 import loser from '../../assets/backgrounds/loser.jpg';
 import winner from '../../assets/backgrounds/winner.jpg';
 import { backgroundType } from '../../store/types';
@@ -19,7 +18,6 @@ function AppBackground({
     status: backgroundType;
 }) {
     const theme = useTheme();
-
     let bg: string;
 
     switch (status) {
@@ -32,15 +30,16 @@ function AppBackground({
         case 'loading':
             bg = loading;
             break;
-        case 'mining':
-            bg = mining;
-            break;
+        // case 'mining':
+        //     bg = mining;
+        //     break;
         case 'loser':
             bg = loser;
             break;
         case 'winner':
             bg = winner;
             break;
+        case 'mining':
         case 'idle':
         default:
             bg = defaultbg;
@@ -48,7 +47,7 @@ function AppBackground({
     }
 
     return (
-        <AppContainer theme={theme} status={bg}>
+        <AppContainer theme={theme} status={bg || loading}>
             {children}
         </AppContainer>
     );

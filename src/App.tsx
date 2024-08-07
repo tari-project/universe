@@ -35,7 +35,6 @@ function App() {
                 console.debug('Event:', event, payload);
                 switch (payload.event_type) {
                     case 'setup_status':
-                        preload();
                         setSetupDetails(payload.title, payload.progress);
 
                         if (payload.progress >= 0.1) {
@@ -57,11 +56,10 @@ function App() {
         );
         if (!startupInitiated.current) {
             startupInitiated.current = true;
-            invoke('setup_application')
-                .then(() => console.log('hii'))
-                .catch((e) => {
-                    console.error('Failed to setup application:', e);
-                });
+            preload();
+            invoke('setup_application').catch((e) => {
+                console.error('Failed to setup application:', e);
+            });
         }
 
         return () => {
@@ -75,10 +73,7 @@ function App() {
 
     return (
         <>
-            <canvas
-                id="canvas"
-                className={hideCanvas ? 'hidden' : undefined}
-            ></canvas>
+            <canvas id="canvas" className={hideCanvas ? 'hidden' : undefined} />
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
                 <AppBackground status={background}>

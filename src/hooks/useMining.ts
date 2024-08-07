@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-
+import { setStart, setPause } from '../visuals';
 export function useMining() {
     const [isLoading, setIsLoading] = useState(false);
     const startMining = useCallback(async () => {
@@ -11,6 +11,7 @@ export function useMining() {
             console.error('Could not start mining', e);
         } finally {
             setIsLoading(false);
+            setStart();
         }
     }, []);
     const stopMining = useCallback(async () => {
@@ -21,6 +22,7 @@ export function useMining() {
             console.error('Could not stop mining', e);
         } finally {
             setIsLoading(false);
+            setPause();
         }
     }, []);
 

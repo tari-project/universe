@@ -5,7 +5,7 @@ import { viewType } from '../../store/types';
 import SetupViewContainer from './SetupView/SetupViewContainer';
 
 function Dashboard({ status }: { status: viewType }) {
-    let view = <MiningView />;
+    let view = <SetupViewContainer />;
 
     switch (status) {
         case 'setup':

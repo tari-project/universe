@@ -2,7 +2,6 @@ let time;
 
 export const preload = () => {
     const el = document.getElementById('canvas');
-    console.log(el);
     if (el) {
         glApp.preload(
             {
@@ -45,7 +44,7 @@ function update(dt) {
     glApp.render(dt);
 }
 
-function setStart() {
+export function setStart() {
     properties.stateSignal.dispatch(STATUS.STARTED);
 }
 
@@ -57,7 +56,7 @@ function setFailure() {
     properties.resultSignal.dispatch(RESULT.FAILED);
 }
 
-function setPause() {
+export function setPause() {
     properties.resultSignal.dispatch(RESULT.PAUSE);
 }
 
