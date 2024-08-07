@@ -236,9 +236,8 @@ fn get_os_string_id() -> String {
 
         #[cfg(target_arch = "aarch64")]
         {
-            return "macos-arm64".to_string();
-            // TODO: confirm whether to use the macos-x64 or macos-arm64
-            // return "macos-x64".to_string();
+            // the x64 seems to work better on the M1
+            return "macos-x64".to_string();
         }
     }
 
