@@ -19,8 +19,8 @@ interface Actions {
 type UIStoreState = State & Actions;
 
 const initialState: State = {
-    background: 'idle',
-    view: 'mining',
+    background: 'onboarding',
+    view: 'setup',
     visualMode: true,
     sidebarOpen: false,
     isAutoMining: false,

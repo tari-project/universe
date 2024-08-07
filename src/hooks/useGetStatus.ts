@@ -16,7 +16,7 @@ export function useGetStatus() {
         const intervalId = setInterval(() => {
             invoke<AppStatus>('status', {})
                 .then((status: AppStatus) => {
-                    console.debug('Status', status);
+                    // console.debug('Status', status); // do we need to log this
                     if (status) {
                         setAppStatus(status);
                         const wallet_balance = status.wallet_balance;
