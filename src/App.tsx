@@ -27,10 +27,10 @@ function App() {
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-             invoke('check_user_mouse_position')
+            invoke('check_user_mouse_position')
                 .then((response) => {
-                    if (response && typeof response === 'object' ) {
-                        setUserMousePosition(response as [number,number]);
+                    if (response && typeof response === 'object') {
+                        setUserMousePosition(response as [number, number]);
                     }
                 })
                 .catch((e) => {
@@ -42,7 +42,7 @@ function App() {
         return () => {
             clearInterval(intervalId);
         };
-    })
+    }, []);
 
     useEffect(() => {
         const unlistenPromise = listen(
