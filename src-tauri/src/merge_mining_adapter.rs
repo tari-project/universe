@@ -3,12 +3,16 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
+use log::warn;
+use std::fs;
 use std::path::PathBuf;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
+
+const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
 pub struct MergeMiningProxyAdapter {
     force_download: bool,
@@ -72,6 +76,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                         .kill_on_drop(true)
                         .spawn()?;
 
+                    if let Some(id) = child.id() {
+                        fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;
+                    }
+
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
@@ -81,6 +89,13 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                             dbg!("Exited badly:", res2?);
                         },
                     };
+
+                    match fs::remove_file(data_dir.join("mmproxy_pid")) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        }
+                    }
                     Ok(())
                 })),
             },
@@ -90,6 +105,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
     fn name(&self) -> &str {
         "minotari_merge_mining_proxy"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "mmproxy_pid"
     }
 }
 

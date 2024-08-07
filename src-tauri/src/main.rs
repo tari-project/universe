@@ -17,6 +17,7 @@ mod node_manager;
 mod process_adapter;
 mod wallet_manager;
 
+mod process_killer;
 mod wallet_adapter;
 
 use crate::cpu_miner::CpuMiner;

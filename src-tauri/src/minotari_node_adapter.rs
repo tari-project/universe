@@ -1,15 +1,17 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_killer::kill_process;
 use crate::xmrig_adapter::XmrigInstance;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
-use log::info;
+use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
     Empty, GetHeaderByHashRequest, HeightRequest, NewBlockTemplateRequest, PowAlgo,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
+use std::fs;
 use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -100,6 +102,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .kill_on_drop(true)
                         .spawn()?;
 
+                    if let Some(id) = child.id() {
+                        fs::write(data_dir.join("node_pid"), id.to_string())?;
+                    }
+
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
@@ -111,9 +117,12 @@ impl ProcessAdapter for MinotariNodeAdapter {
                     };
                     println!("Stopping minotari node");
 
-                    // child.kill().await?;
-                    // let out = child.wait_with_output().await?;
-                    // println!("stdout: {}", String::from_utf8_lossy(&out.stdout));
+                    match fs::remove_file(data_dir.join("node_pid")) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        }
+                    }
                     Ok(())
                 })),
             },
@@ -123,6 +132,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
     fn name(&self) -> &str {
         "minotari_node"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "node_pid"
     }
 }
 
