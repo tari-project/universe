@@ -121,6 +121,8 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             name_suffix = "linux-x86_64.zip";
         }
 
+        info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
+
         let platform = version
             .assets
             .iter()
