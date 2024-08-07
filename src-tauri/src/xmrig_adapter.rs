@@ -1,9 +1,10 @@
 use crate::cpu_miner::CpuMinerEvent;
 use crate::download_utils::{download_file, extract};
+use crate::process_killer::kill_process;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use anyhow::Error;
-use log::info;
+use log::{info, warn};
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
@@ -63,8 +64,11 @@ impl XmrigAdapter {
         &self,
         cache_dir: PathBuf,
         logs_dir: PathBuf,
+        data_dir: PathBuf,
         window: tauri::Window,
     ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
+        self.kill_previous_instances(data_dir.clone())?;
+
         let (_tx, rx) = tokio::sync::mpsc::channel(100);
         let force_download = self.force_download;
         let xmrig_shutdown = Shutdown::new();
@@ -99,22 +103,23 @@ impl XmrigAdapter {
                     let xmrig_bin = xmrig_dir.join("xmrig");
                     let mut xmrig = tokio::process::Command::new(xmrig_bin)
                         .args(args)
-                        // TODO: IF you uncomment these, then it will capture the output to mem. Not sure if that is better or worse
-                        // than outputing it immediately
-                        // .stdout(std::process::Stdio::piped())
-                        // .stderr(std::process::Stdio::piped())
                         .kill_on_drop(true)
                         .spawn()?;
 
-                    // let (receiver, xmrig) =
-                    //     tauri::api::process::Command::new(xmrig_bin.to_str().unwrap().to_string())
-                    //         .current_dir(xmrig_dir)
-                    //         .spawn()?;
-                    // TODO: Try use an either here
+                    if let Some(id) = xmrig.id() {
+                        std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
+                    }
                     shutdown_signal.wait().await;
                     println!("Stopping xmrig");
 
                     xmrig.kill().await?;
+
+                    match std::fs::remove_file(data_dir.join("xmrig_pid")) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file");
+                        }
+                    }
 
                     Ok(())
                 })),
@@ -167,6 +172,19 @@ impl XmrigAdapter {
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
+    }
+
+    fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
+        match std::fs::read_to_string(base_folder.join("xmrig_pid")) {
+            Ok(pid) => {
+                let pid = pid.trim().parse::<u32>()?;
+                kill_process(pid)?;
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Could not read xmrigs pid file: {}", e);
+            }
+        }
+        Ok(())
     }
 }
 
