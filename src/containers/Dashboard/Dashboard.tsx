@@ -5,20 +5,20 @@ import { viewType } from '../../store/types';
 import SetupViewContainer from './SetupView/SetupViewContainer';
 
 function Dashboard({ status }: { status: viewType }) {
-  let view = <MiningView />;
+    let view = <SetupViewContainer />;
 
-  switch (status) {
-    case 'setup':
-      view = <SetupViewContainer />;
-      break;
-    case 'tribes':
-      view = <TribesView />;
-      break;
-    default:
-      view = <MiningView />;
-  }
+    switch (status) {
+        case 'setup':
+            view = <SetupViewContainer />;
+            break;
+        case 'tribes':
+            view = <TribesView />;
+            break;
+        default:
+            view = <MiningView />;
+    }
 
-  return <DashboardContainer>{view}</DashboardContainer>;
+    return <DashboardContainer>{view}</DashboardContainer>;
 }
 
 export default Dashboard;
