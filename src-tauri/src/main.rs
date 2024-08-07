@@ -39,8 +39,8 @@ use tokio::sync::RwLock;
 use tokio::try_join;
 
 use crate::xmrig_adapter::XmrigAdapter;
+use device_query::{DeviceQuery, DeviceState};
 use dirs_next::cache_dir;
-use device_query::{ DeviceQuery, DeviceState};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -107,10 +107,7 @@ async fn setup_application<'r>(
 }
 
 #[tauri::command]
-async fn check_user_mouse_position<'r> (
-    _window: tauri::Window,
-) -> Result<(i32, i32), String> {
-
+async fn check_user_mouse_position<'r>(_window: tauri::Window) -> Result<(i32, i32), String> {
     let device_state = DeviceState::new();
     let mouse = device_state.get_mouse();
 
