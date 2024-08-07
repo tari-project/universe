@@ -54,7 +54,6 @@
                 "fullscreen": false,
                 "decorations": false,
                 "transparent": true,
-                "contentProtected": true,
                 "url": "index.html"
             }
         ],
@@ -71,7 +70,15 @@
                 "icons/128x128@2x.png",
                 "icons/icon.icns",
                 "icons/icon.ico"
-            ]
+            ],
+            "macOS": {
+                "minimumSystemVersion": "14.6"
+            },
+            "windows": {
+                "webviewInstallMode": {
+                    "type": "embedBootstrapper"
+                }
+            }
         },
         "macOSPrivateApi": true
     }

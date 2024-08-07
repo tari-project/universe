@@ -5,10 +5,14 @@ import { WebviewWindow } from '@tauri-apps/api/window';
 
 export default function ConnectButton() {
     const handleAuth = useCallback(() => {
-        return new WebviewWindow('window', {
-            label: 'airdrop-site',
+        const vw = new WebviewWindow('window', {
             title: 'tari-airdrop',
-            url: 'https://rwa-fe.yat.rip/',
+            url: 'http:/localhost:4000?minerId=hiiiiii',
+        });
+        vw.once('logged_in', (r) => {
+            console.log(r);
+        }).then((b) => {
+            console.log(b);
         });
     }, []);
 
