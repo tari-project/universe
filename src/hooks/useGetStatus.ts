@@ -5,7 +5,7 @@ import { AppStatus } from '../types/app-status.ts';
 import useWalletStore from '../store/walletStore.ts';
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
 
-const INTERVAL = 1000;
+const INTERVAL = 100000;
 
 export function useGetStatus() {
     const setBalance = useWalletStore((state) => state.setBalance);
