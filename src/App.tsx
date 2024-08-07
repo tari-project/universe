@@ -51,7 +51,7 @@ function App() {
         if (!startupInitiated.current) {
             startupInitiated.current = true;
             setView("setup");
-            setBackground("loading");
+            setBackground("onboarding");
             invoke('setup_application').catch((e) => {
                 console.error('Failed to setup application:', e);
 
