@@ -29,6 +29,14 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
+    pub async fn kill_previous_instances(
+        &mut self,
+        base_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
+        self.adapter.kill_previous_instances(base_path)?;
+        Ok(())
+    }
+
     pub async fn start(
         &mut self,
         app_shutdown: ShutdownSignal,
@@ -40,6 +48,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             println!("Tried to start process watcher for {} twice", name);
             return Ok(());
         }
+        info!(target: LOG_TARGET, "Starting process watcher for {}", name);
+        self.kill_previous_instances(base_path.clone()).await?;
 
         self.internal_shutdown = Shutdown::new();
         let mut inner_shutdown = self.internal_shutdown.to_signal();

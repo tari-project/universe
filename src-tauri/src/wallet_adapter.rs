@@ -5,11 +5,12 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
-use log::info;
+use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{Empty, GetBalanceRequest};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use serde::Serialize;
+use std::fs;
 use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -116,6 +117,10 @@ impl ProcessAdapter for WalletAdapter {
                         .kill_on_drop(true)
                         .spawn()?;
 
+                    if let Some(id) = child.id() {
+                        std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
+                    }
+
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
@@ -126,10 +131,12 @@ impl ProcessAdapter for WalletAdapter {
                         },
                     };
                     println!("Stopping minotari node");
-
-                    // child.kill().await?;
-                    // let out = child.wait_with_output().await?;
-                    // println!("stdout: {}", String::from_utf8_lossy(&out.stdout));
+                    match fs::remove_file(data_dir.join("wallet_pid")) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        }
+                    }
                     Ok(())
                 })),
             },
@@ -139,6 +146,10 @@ impl ProcessAdapter for WalletAdapter {
 
     fn name(&self) -> &str {
         "wallet"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "wallet_pid"
     }
 }
 
