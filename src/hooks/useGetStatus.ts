@@ -1,7 +1,6 @@
 import useAppStateStore from '../store/appStateStore.ts';
 import { useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { AppStatus } from '../types/app-status.ts';
 import useWalletStore from '../store/walletStore.ts';
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
 
@@ -14,8 +13,8 @@ export function useGetStatus() {
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-            invoke<AppStatus>('status', {})
-                .then((status: AppStatus) => {
+            invoke('status')
+                .then((status) => {
                     console.debug('Status', status);
                     if (status) {
                         setAppStatus(status);
