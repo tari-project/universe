@@ -61,17 +61,16 @@ impl XmrigAdapter {
     }
     pub fn spawn(
         &self,
+        cache_dir: PathBuf,
+        logs_dir: PathBuf,
         window: tauri::Window,
     ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
         let (_tx, rx) = tokio::sync::mpsc::channel(100);
-        let cache_dir = tauri::api::path::cache_dir()
-            .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
-            .join("tari-universe");
         let force_download = self.force_download;
         let xmrig_shutdown = Shutdown::new();
         let mut shutdown_signal = xmrig_shutdown.to_signal();
         let mut args = self.node_connection.generate_args();
-        let xmrig_log_file = cache_dir.join("log").join("xmrig.log");
+        let xmrig_log_file = logs_dir.join("xmrig.log");
         std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
         args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
         args.push(format!("--http-port={}", self.http_api_port));
@@ -129,11 +128,9 @@ impl XmrigAdapter {
         force_download: bool,
         window: tauri::Window,
     ) -> Result<String, Error> {
+        dbg!(&cache_dir);
         let latest_release = fetch_latest_release().await?;
-        let xmrig_dir = cache_dir
-            .join("com.tari.universe")
-            .join("xmrig")
-            .join(&latest_release.version);
+        let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
         if force_download {
             println!("Cleaning up xmrig dir");
             let _ = fs::remove_dir_all(&xmrig_dir).await;
@@ -141,10 +138,7 @@ impl XmrigAdapter {
         if !xmrig_dir.exists() {
             println!("Latest version of xmrig doesn't exist");
             println!("latest version is {}", latest_release.version);
-            let in_progress_dir = cache_dir
-                .join("com.tari.universe")
-                .join("xmrig")
-                .join("in_progress");
+            let in_progress_dir = cache_dir.join("xmrig").join("in_progress");
             if in_progress_dir.exists() {
                 println!("Trying to delete dir {:?}", in_progress_dir);
                 match fs::remove_dir(&in_progress_dir).await {
@@ -156,10 +150,10 @@ impl XmrigAdapter {
                 }
             }
 
-            let os_string = get_os_string();
-            info!(target: LOG_TARGET, "Downloading xmrig for {}", &os_string);
+            let id = get_os_string_id();
+            info!(target: LOG_TARGET, "Downloading xmrig for {}", &id);
             let platform = latest_release
-                .get_asset(&os_string)
+                .get_asset(&id)
                 .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
             println!("Downloading file");
             println!("Downloading file from {}", &platform.url);
@@ -209,10 +203,10 @@ impl Drop for XmrigInstance {
 }
 
 #[allow(unreachable_code)]
-fn get_os_string() -> String {
+fn get_os_string_id() -> String {
     #[cfg(target_os = "windows")]
     {
-        return "windows-x64".to_string();
+        return "msvc-win64".to_string();
     }
 
     #[cfg(target_os = "macos")]
@@ -232,12 +226,12 @@ fn get_os_string() -> String {
 
     #[cfg(target_os = "linux")]
     {
-        return "linux-x64".to_string();
+        return "linux-static-x64".to_string();
     }
 
     #[cfg(target_os = "freebsd")]
     {
-        return "freebsd-x64".to_string();
+        return "freebsd-static-x64".to_string();
     }
 
     panic!("Unsupported OS");

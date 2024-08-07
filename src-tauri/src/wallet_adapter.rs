@@ -46,7 +46,7 @@ impl ProcessAdapter for WalletAdapter {
     type StatusMonitor = WalletStatusMonitor;
     fn spawn_inner(
         &self,
-        _log_path: PathBuf,
+        data_dir: PathBuf,
         window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
@@ -54,10 +54,7 @@ impl ProcessAdapter for WalletAdapter {
         let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting read only wallet");
-        let working_dir = data_local_dir()
-            .unwrap()
-            .join("tari-universe")
-            .join("wallet");
+        let working_dir = data_dir.join("wallet");
         std::fs::create_dir_all(&working_dir)?;
 
         let mut args: Vec<String> = vec![

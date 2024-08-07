@@ -19,6 +19,8 @@ import useAppStateStore from './store/appStateStore.ts';
 function App() {
     const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
+    const setView = useUIStore((s) => s.setView);
+    const setBackground = useUIStore((s) => s.setBackground);
     const startupInitiated = useRef(false);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
@@ -33,6 +35,8 @@ function App() {
                         setSetupDetails(payload.title, payload.progress);
                         if (payload.progress >= 1.0) {
                             settingUpFinished();
+                            setView("mining");
+                            setBackground("mining");
                         }
                         break;
                     default:
@@ -46,10 +50,13 @@ function App() {
         );
         if (!startupInitiated.current) {
             startupInitiated.current = true;
-            invoke('setup_application').then((r) => {
-                console.log(r);
+            setView("setup");
+            setBackground("onboarding");
+            invoke('setup_application').catch((e) => {
+                console.error('Failed to setup application:', e);
 
             });
+
         }
 
         return () => {
