@@ -11,6 +11,7 @@ use tari_shutdown::Shutdown;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
+use cpulimiter::{CpuLimit, Pid};
 
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
