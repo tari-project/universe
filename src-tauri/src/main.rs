@@ -17,6 +17,7 @@ mod node_manager;
 mod process_adapter;
 mod wallet_manager;
 
+mod process_killer;
 mod wallet_adapter;
 
 use crate::cpu_miner::CpuMiner;
@@ -65,6 +66,7 @@ async fn setup_application<'r>(
         },
     );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
+    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
     let task1 = state
         .node_manager
         .ensure_started(state.shutdown.to_signal(), data_dir.clone(), window.clone())
@@ -81,11 +83,10 @@ async fn setup_application<'r>(
             e.to_string()
         });
 
-    let task3 =
-        XmrigAdapter::ensure_latest(cache_dir().unwrap(), false, window.clone()).map_err(|e| {
-            error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
-            e.to_string()
-        });
+    let task3 = XmrigAdapter::ensure_latest(cache_dir, false, window.clone()).map_err(|e| {
+        error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
+        e.to_string()
+    });
 
     match try_join!(task1, task2, task3) {
         Ok(_) => {
@@ -133,6 +134,8 @@ async fn start_mining<'r>(
             &config,
             &mm_proxy_manager,
             app.path_resolver().app_local_data_dir().unwrap(),
+            app.path_resolver().app_cache_dir().unwrap(),
+            app.path_resolver().app_log_dir().unwrap(),
             window.clone(),
         )
         .await
