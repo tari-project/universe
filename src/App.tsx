@@ -19,9 +19,30 @@ import useAppStateStore from './store/appStateStore.ts';
 function App() {
     const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
+    const setUserMousePosition = useUIStore((s) => s.setUserMousePosition);
+    const setError = useAppStateStore((s) => s.setError);
     const startupInitiated = useRef(false);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+             invoke('check_user_mouse_position')
+                .then((response) => {
+                    if (response && typeof response === 'object' ) {
+                        setUserMousePosition(response as [number,number]);
+                    }
+                })
+                .catch((e) => {
+                    console.error('Could not listen to user inactivity', e);
+                    setError(e.toString());
+                });
+        }, 1000);
+
+        return () => {
+            clearInterval(intervalId);
+        };
+    })
 
     useEffect(() => {
         const unlistenPromise = listen(

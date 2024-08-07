@@ -7,6 +7,8 @@ interface State {
     visualMode: boolean;
     sidebarOpen: boolean;
     isAutoMining: boolean;
+    userMousePosition: [number, number];
+
 }
 interface Actions {
     setBackground: (background: State['background']) => void;
@@ -14,6 +16,7 @@ interface Actions {
     setVisualMode: (visualMode: State['visualMode']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setIsAutoMining: (isAutoMining: State['isAutoMining']) => void;
+    setUserMousePosition: (userMousePosition: State['userMousePosition']) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -24,6 +27,7 @@ const initialState: State = {
     visualMode: true,
     sidebarOpen: false,
     isAutoMining: false,
+    userMousePosition: [0, 0],
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -33,4 +37,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setVisualMode: (visualMode) => set({ visualMode }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setIsAutoMining: (isAutoMining) => set({ isAutoMining }),
+    setUserMousePosition: (userMousePosition) => set({ userMousePosition }),
 }));

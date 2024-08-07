@@ -40,8 +40,7 @@ use tokio::try_join;
 
 use crate::xmrig_adapter::XmrigAdapter;
 use dirs_next::cache_dir;
-use std::thread;
-use std::time::Duration;
+use device_query::{ DeviceQuery, DeviceState};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -105,6 +104,17 @@ async fn setup_application<'r>(
         },
     );
     Ok(())
+}
+
+#[tauri::command]
+async fn check_user_mouse_position<'r> (
+    _window: tauri::Window,
+) -> Result<(i32, i32), String> {
+
+    let device_state = DeviceState::new();
+    let mouse = device_state.get_mouse();
+
+    Ok(mouse.coords)
 }
 
 #[tauri::command]
@@ -339,7 +349,8 @@ fn main() {
             setup_application,
             status,
             start_mining,
-            stop_mining
+            stop_mining,
+            check_user_mouse_position
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
