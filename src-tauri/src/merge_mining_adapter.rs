@@ -30,16 +30,13 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
     fn spawn_inner(
         &self,
-        _log_folder: PathBuf,
+        data_dir: PathBuf,
         window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
-        let working_dir = data_local_dir()
-            .unwrap()
-            .join("tari-universe")
-            .join("mmproxy");
+        let working_dir = data_dir.join("mmproxy");
         std::fs::create_dir_all(&working_dir)?;
         let args: Vec<String> = vec![
             "-b".to_string(),
