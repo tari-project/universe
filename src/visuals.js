@@ -19,7 +19,6 @@ export const preload = () => {
 function init() {
     glApp.init();
     time = performance.now() / 1000;
-    glApp.setSize(window.innerWidth + 600, window.innerHeight);
 
     window.addEventListener('resize', onResize);
     onResize();
@@ -27,7 +26,7 @@ function init() {
 }
 
 function onResize() {
-    glApp.setSize(window.innerWidth + 100, window.innerHeight);
+    glApp.setSize(window.innerWidth, window.innerHeight);
 }
 
 function animate() {
@@ -44,9 +43,9 @@ function update(dt) {
     glApp.render(dt);
 }
 
-export function setStart() {
+export const setStart = () => {
     properties.stateSignal.dispatch(STATUS.STARTED);
-}
+};
 
 function setSuccess() {
     properties.resultSignal.dispatch(RESULT.COMPLETED);
@@ -56,9 +55,10 @@ function setFailure() {
     properties.resultSignal.dispatch(RESULT.FAILED);
 }
 
-export function setPause() {
+export const setPause = () => {
     properties.resultSignal.dispatch(RESULT.PAUSE);
-}
+    properties.stateSignal.dispatch(STATUS.NOT_STARTED);
+};
 
 function onNewSpawn(callback) {
     if (callback && typeof callback === 'function') {
