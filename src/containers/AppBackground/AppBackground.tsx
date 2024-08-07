@@ -10,7 +10,6 @@ import winner from '../../assets/backgrounds/winner.jpg';
 import { backgroundType } from '../../store/types';
 
 import { AppContainer } from './styles';
-import { useUIStore } from '../../store/useUIStore.ts';
 
 function AppBackground({
     children,
@@ -19,7 +18,6 @@ function AppBackground({
     children: ReactNode;
     status: backgroundType;
 }) {
-    const visualMode = useUIStore((s) => s.visualMode);
     const theme = useTheme();
 
     let bg: string;
@@ -47,14 +45,6 @@ function AppBackground({
         default:
             bg = defaultbg;
             break;
-    }
-
-    if (!visualMode) {
-        return (
-            <AppContainer theme={theme} status={loading}>
-                {children}
-            </AppContainer>
-        );
     }
 
     return (
