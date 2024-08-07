@@ -11,7 +11,6 @@ use tokio::fs;
 use tokio::runtime::Handle;
 use tokio::sync::mpsc::Receiver;
 use tokio::task::JoinHandle;
-use cpulimiter::{CpuLimit, Pid};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
