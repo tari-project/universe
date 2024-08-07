@@ -40,6 +40,8 @@ impl CpuMiner {
         cpu_miner_config: &CpuMinerConfig,
         local_mm_proxy: &MmProxyManager,
         base_path: PathBuf,
+        cache_dir: PathBuf,
+        log_dir: PathBuf,
         window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         if self.watcher_task.is_some() {
@@ -69,7 +71,7 @@ impl CpuMiner {
             }
         };
         let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
-        let (mut _rx, mut xmrig_child, client) = xmrig.spawn(window.clone())?;
+        let (mut _rx, mut xmrig_child, client) = xmrig.spawn(cache_dir, log_dir, window.clone())?;
         self.api_client = Some(client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {

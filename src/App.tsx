@@ -46,10 +46,11 @@ function App() {
         );
         if (!startupInitiated.current) {
             startupInitiated.current = true;
-            invoke('setup_application').then((r) => {
-                console.log(r);
+            invoke('setup_application').catch((e) => {
+                console.error('Failed to setup application:', e);
 
             });
+
         }
 
         return () => {
