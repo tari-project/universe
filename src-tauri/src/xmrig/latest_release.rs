@@ -22,16 +22,10 @@ pub struct XmrigRelease {
 }
 
 impl XmrigRelease {
-    pub fn get_asset(&self, os: &str) -> Option<&Asset> {
+    pub fn get_asset(&self, id: &str) -> Option<&Asset> {
         for asset in &self.assets {
             info!(target: LOG_TARGET, "Checking asset {:?}", asset);
-            // macos-arm64 doesn't have an os field for some reason
-            if asset.os.is_none() {
-                if asset.id == os {
-                    return Some(asset);
-                }
-            }
-            if asset.os.as_deref() == Some(os) {
+            if asset.id == id {
                 return Some(asset);
             }
         }
