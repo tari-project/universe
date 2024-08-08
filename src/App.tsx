@@ -15,7 +15,6 @@ import { useGetStatus } from './hooks/useGetStatus.ts';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from './types.ts';
 import useAppStateStore from './store/appStateStore.ts';
-import { useUserMousePosition } from './hooks/useUserMousePosition.ts';
 import { useMining } from './hooks/useMining.ts';
 
 function App() {
@@ -24,6 +23,7 @@ function App() {
     const startupInitiated = useRef(false);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const { startMining, stopMining } = useMining();
 
     useEffect(() => {
         const unlistenPromise = listen(
@@ -38,12 +38,12 @@ function App() {
                         }
                         break;
                     case 'user_idle':
-                        invoke('start_mining').then(() => {
+                        startMining().then(() => {
                             console.log('Mining started');
                         });
                         break;
                     case 'user_active':
-                        invoke('stop_mining').then(() => {
+                        stopMining().then(() => {
                             console.log('Mining stopped');
                         });
                         break;
@@ -69,7 +69,6 @@ function App() {
     }, []);
 
     useGetStatus();
-    useUserMousePosition();
 
     return (
         <ThemeProvider theme={lightTheme}>
