@@ -65,7 +65,6 @@ libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
 log = "0.4.22"
 rand = "0.8.5"
 
-
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
