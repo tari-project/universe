@@ -78,8 +78,13 @@ impl CpuMiner {
             MiningMode::Ludicrous => 100,
         };
         let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
-        let (mut _rx, mut xmrig_child, client) =
-            xmrig.spawn(cache_dir, log_dir, base_path, window.clone(), cpu_max_percentage)?;
+        let (mut _rx, mut xmrig_child, client) = xmrig.spawn(
+            cache_dir,
+            log_dir,
+            base_path,
+            window.clone(),
+            cpu_max_percentage,
+        )?;
         self.api_client = Some(client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
