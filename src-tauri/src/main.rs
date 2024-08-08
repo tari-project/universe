@@ -42,7 +42,7 @@ use tokio::sync::RwLock;
 
 use crate::xmrig_adapter::XmrigAdapter;
 use tokio::try_join;
-use wgpu::{Instance, Backends, InstanceDescriptor};
+use wgpu::{Backends, Instance, InstanceDescriptor};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
