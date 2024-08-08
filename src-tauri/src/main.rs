@@ -367,12 +367,12 @@ fn main() {
                 info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
             }
         },
-        tauri::RunEvent::ExitRequested { api: _, .. } => {
+        tauri::RunEvent::ExitRequested { api: _, .. } | tauri::RunEvent::Exit => {
             // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown caught");
             shutdown.trigger();
             // TODO: Find a better way of knowing that all miners have stopped
-            sleep(std::time::Duration::from_secs(5));
+            sleep(std::time::Duration::from_secs(3));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         RunEvent::MainEventsCleared => {
