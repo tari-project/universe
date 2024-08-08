@@ -24,10 +24,10 @@ const CustomSelect = styled(Select)(({ theme }: { theme: any }) => ({
 
 function ModeSelect() {
     const mode = useAppStatusStore((s) => s.mode);
-    const setMode = useAppStatusStore((s) => s.setMode);
+    const setConfigMode = useAppStatusStore((s) => s.setConfigMode);
 
     const handleChange = (event: SelectChangeEvent<unknown>) => {
-        setMode(event.target.value as modeType);
+        setConfigMode(event.target.value as modeType);
     };
     const theme = useTheme();
     return (
@@ -47,8 +47,8 @@ function ModeSelect() {
                         },
                     }}
                 >
-                    <MenuItem value={'eco'}>Eco</MenuItem>
-                    <MenuItem value={'ludicrous'}>Ludicrous</MenuItem>
+                    <MenuItem value="Eco">Eco</MenuItem>
+                    <MenuItem value="Ludicrous">Ludicrous</MenuItem>
                 </CustomSelect>
             </FormControl>
         </TileItem>
