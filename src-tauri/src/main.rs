@@ -117,7 +117,7 @@ async fn start_auto_mining<'r>(
     app: tauri::AppHandle
 ) -> Result<(), String> {
     let mut auto_miner = state.auto_miner.write().await;
-    auto_miner.start_listening_to_mouse_poisition_change();
+    auto_miner.start_listening_to_mouse_poisition_change(window);
     Ok(())
 }
 

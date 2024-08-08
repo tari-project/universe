@@ -16,6 +16,7 @@ import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from './types.ts';
 import useAppStateStore from './store/appStateStore.ts';
 import { useUserMousePosition } from './hooks/useUserMousePosition.ts';
+import { useMining } from './hooks/useMining.ts';
 
 function App() {
     const background = useUIStore((s) => s.background);
@@ -35,6 +36,16 @@ function App() {
                         if (payload.progress >= 1.0) {
                             settingUpFinished();
                         }
+                        break;
+                    case 'user_idle':
+                        invoke('start_mining').then(() => {
+                            console.log('Mining started');
+                        });
+                        break;
+                    case 'user_active':
+                        invoke('stop_mining').then(() => {
+                            console.log('Mining stopped');
+                        });
                         break;
                     default:
                         console.log('Unknown tauri event: ', {

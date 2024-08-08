@@ -46,6 +46,7 @@
     "windows": [
       {
         "title": "tari-universe",
+        "label": "main",
         "width": 1200,
         "height": 800,
         "resizable": true,
