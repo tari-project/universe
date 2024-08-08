@@ -39,6 +39,7 @@ use tauri::{RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tokio::try_join;
 
+use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::xmrig_adapter::XmrigAdapter;
 use dirs_next::cache_dir;
 use std::thread;
@@ -49,6 +50,59 @@ struct SetupStatusEvent {
     event_type: String,
     title: String,
     progress: f64,
+}
+
+pub struct ProgressTracker {
+    inner: Arc<RwLock<ProgressTrackerInner>>,
+}
+
+impl ProgressTracker {
+    pub fn new(window: tauri::Window) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(ProgressTrackerInner::new(window))),
+        }
+    }
+
+    pub async fn set_max(&self, max: u64) {
+        self.inner.write().await.set_next_max(max);
+    }
+
+    pub async fn update(&self, title: String, progress: u64) {
+        self.inner.read().await.update(title, progress);
+    }
+}
+
+pub struct ProgressTrackerInner {
+    window: tauri::Window,
+    min: u64,
+    next_max: u64,
+}
+
+impl ProgressTrackerInner {
+    pub fn new(window: tauri::Window) -> Self {
+        Self {
+            window,
+            min: 0,
+            next_max: 0,
+        }
+    }
+
+    pub fn set_next_max(&mut self, max: u64) {
+        self.min = self.next_max;
+        self.next_max = max;
+    }
+
+    pub fn update(&self, title: String, progress: u64) {
+        let _ = self.window.emit(
+            "message",
+            SetupStatusEvent {
+                event_type: "setup_status".to_string(),
+                title,
+                progress: self.min
+                    + ((self.next_max - self.min) as f64 * (progress as f64 / 100.0) as u64),
+            },
+        );
+    }
 }
 
 #[tauri::command]
@@ -67,6 +121,14 @@ async fn setup_application<'r>(
     );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+
+    let mut progress = ProgressTracker::new(window.clone());
+
+    progress.set_max(5);
+    BinaryResolver::current()
+        .ensure_latest(Binaries::MinotariNode, pro)
+        .await;
+
     let task1 = state
         .node_manager
         .ensure_started(state.shutdown.to_signal(), data_dir.clone(), window.clone())
@@ -159,8 +221,6 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
     // stop the mmproxy. TODO: change it so that the cpu miner stops this dependency.
     state
         .mm_proxy_manager
-        .write()
-        .await
         .stop()
         .await
         .map_err(|e| e.to_string())?;
@@ -262,7 +322,7 @@ struct UniverseAppState {
     shutdown: Shutdown,
     cpu_miner: RwLock<CpuMiner>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
-    mm_proxy_manager: Arc<RwLock<MmProxyManager>>,
+    mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
 }
@@ -277,7 +337,7 @@ fn main() {
     }));
     let mut shutdown = Shutdown::new();
 
-    let mm_proxy_manager = Arc::new(RwLock::new(MmProxyManager::new()));
+    let mm_proxy_manager = MmProxyManager::new();
     let node_manager = NodeManager::new();
     let wallet_manager = WalletManager::new(node_manager.clone());
     let wallet_manager2 = wallet_manager.clone();
