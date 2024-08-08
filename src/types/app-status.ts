@@ -2,6 +2,7 @@ export interface AppStatus {
     cpu?: CpuMinerStatus;
     base_node?: BaseNodeStatus;
     wallet_balance?: WalletBalance;
+    gpu_brand?: string;
 }
 
 export interface CpuMinerStatus {

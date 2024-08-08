@@ -1,13 +1,13 @@
 import { styled } from '@mui/material/styles';
 import { Button, Box } from '@mui/material';
 
-export const MinerContainer = styled(Box)(({ theme }) => ({
+export const MinerWrapper = styled(Box)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   gap: theme.spacing(2),
 }));
 
-export const TileContainer = styled(Box)(({ theme }) => ({
+export const TileWrapper = styled(Box)(({ theme }) => ({
   display: 'grid',
   gridTemplateColumns: '1fr 1fr',
   gap: theme.spacing(1),

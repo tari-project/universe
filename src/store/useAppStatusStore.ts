@@ -17,6 +17,7 @@ const initialState: State = {
     base_node: undefined,
     wallet_balance: undefined,
     mode: 'eco',
+    gpu_brand: undefined,
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(
