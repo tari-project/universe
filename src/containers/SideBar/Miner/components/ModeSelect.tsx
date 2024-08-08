@@ -47,8 +47,8 @@ function ModeSelect() {
                         },
                     }}
                 >
-                    <MenuItem value={'eco'}>Eco</MenuItem>
-                    <MenuItem value={'ludicrous'}>Ludicrous</MenuItem>
+                    <MenuItem value="Eco">Eco</MenuItem>
+                    <MenuItem value="Ludicrous">Ludicrous</MenuItem>
                 </CustomSelect>
             </FormControl>
         </TileItem>
