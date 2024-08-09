@@ -1,5 +1,6 @@
 use crate::minotari_node_adapter::MinotariNodeAdapter;
 use crate::process_watcher::ProcessWatcher;
+use crate::ProgressTracker;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -44,12 +45,9 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher
-            .start(app_shutdown, base_path, window)
-            .await?;
+        process_watcher.start(app_shutdown, base_path).await?;
         process_watcher.wait_ready().await?;
         Ok(())
     }
@@ -58,16 +56,25 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher
-            .start(app_shutdown, base_path, window)
-            .await?;
+        process_watcher.start(app_shutdown, base_path).await?;
 
         Ok(())
     }
 
+    pub async fn wait_synced(
+        &self,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), anyhow::Error> {
+        self.wait_ready().await?;
+        let status_monitor_lock = self.watcher.read().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+        status_monitor.wait_synced(progress_tracker).await
+    }
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         while true {
             match self.get_identity().await {

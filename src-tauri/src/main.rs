@@ -43,6 +43,7 @@ use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tokio::try_join;
 
+use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::xmrig_adapter::XmrigAdapter;
 use dirs_next::cache_dir;
 
@@ -51,6 +52,70 @@ struct SetupStatusEvent {
     event_type: String,
     title: String,
     progress: f64,
+}
+
+pub struct ProgressTracker {
+    inner: Arc<RwLock<ProgressTrackerInner>>,
+}
+
+impl Clone for ProgressTracker {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
+impl ProgressTracker {
+    pub fn new(window: tauri::Window) -> Self {
+        Self {
+            inner: Arc::new(RwLock::new(ProgressTrackerInner::new(window))),
+        }
+    }
+
+    pub async fn set_max(&self, max: u64) {
+        self.inner.write().await.set_next_max(max);
+    }
+
+    pub async fn update(&self, title: String, progress: u64) {
+        self.inner.read().await.update(title, progress);
+    }
+}
+
+pub struct ProgressTrackerInner {
+    window: tauri::Window,
+    min: u64,
+    next_max: u64,
+}
+
+impl ProgressTrackerInner {
+    pub fn new(window: tauri::Window) -> Self {
+        Self {
+            window,
+            min: 0,
+            next_max: 0,
+        }
+    }
+
+    pub fn set_next_max(&mut self, max: u64) {
+        self.min = self.next_max;
+        self.next_max = max;
+    }
+
+    pub fn update(&self, title: String, progress: u64) {
+        info!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
+        let _ = self.window.emit(
+            "message",
+            SetupStatusEvent {
+                event_type: "setup_status".to_string(),
+                title,
+                progress: (self.min
+                    + ((self.next_max - self.min) as f64 * (progress as f64 / 100.0)) as u64)
+                    as f64
+                    / 100.0,
+            },
+        );
+    }
 }
 
 #[tauri::command]
@@ -81,36 +146,82 @@ async fn setup_application<'r>(
     );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
-    let task1 = state
+
+    let mut progress = ProgressTracker::new(window.clone());
+
+    progress.set_max(10).await;
+    progress
+        .update("Checking for latest version of node".to_string(), 0)
+        .await;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::MinotariNode, progress.clone())
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download node: {:?}", e);
+            e.to_string()
+        })?;
+
+    progress.set_max(15).await;
+    progress
+        .update("Checking for latest version of mmproxy".to_string(), 0)
+        .await;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download mmproxy: {:?}", e);
+            e.to_string()
+        })?;
+    progress.set_max(20).await;
+    progress
+        .update("Checking for latest version of wallet".to_string(), 0)
+        .await;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::Wallet, progress.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    progress.set_max(30).await;
+    progress
+        .update("Checking for latest version of xmrig".to_string(), 0)
+        .await;
+    XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
+            e.to_string()
+        })?;
+
+    state
         .node_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir.clone(), window.clone())
+        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+        .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
             e.to_string()
-        });
+        })?;
 
-    let task2 = state
+    progress.set_max(40).await;
+    progress
+        .update("Waiting for node to sync".to_string(), 0)
+        .await;
+    state
+        .node_manager
+        .wait_synced(progress.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    progress.set_max(80).await;
+    progress.update("Waiting for wallet".to_string(), 0).await;
+    state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir, window.clone())
+        .ensure_started(state.shutdown.to_signal(), data_dir)
+        .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
             e.to_string()
-        });
+        })?;
 
-    let task3 = XmrigAdapter::ensure_latest(cache_dir, false, window.clone()).map_err(|e| {
-        error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
-        e.to_string()
-    });
-
-    match try_join!(task1, task2, task3) {
-        Ok(_) => {
-            debug!(target: LOG_TARGET, "Applications started");
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET, "Error starting applications: {:?}", e);
-            // return Err(e.to_string());
-        }
-    }
     _ = window.emit(
         "message",
         SetupStatusEvent {
@@ -152,16 +263,8 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.cpu_miner_config.read().await;
-    state
-        .node_manager
-        .ensure_started(
-            state.shutdown.to_signal(),
-            app.path_resolver().app_local_data_dir().unwrap(),
-            window.clone(),
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-    let mm_proxy_manager = state.mm_proxy_manager.read().await;
+    let mm_proxy_manager = state.mm_proxy_manager.clone();
+    let progress_tracker = ProgressTracker::new(window.clone());
     state
         .cpu_miner
         .write()
@@ -173,7 +276,7 @@ async fn start_mining<'r>(
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
-            window.clone(),
+            progress_tracker,
             state.config.read().await.get_mode(),
         )
         .await
@@ -197,8 +300,6 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
     // stop the mmproxy. TODO: change it so that the cpu miner stops this dependency.
     state
         .mm_proxy_manager
-        .write()
-        .await
         .stop()
         .await
         .map_err(|e| e.to_string())?;
@@ -308,7 +409,7 @@ struct UniverseAppState {
     cpu_miner: RwLock<CpuMiner>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     user_listener: Arc<RwLock<UserListener>>,
-    mm_proxy_manager: Arc<RwLock<MmProxyManager>>,
+    mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
 }
@@ -323,7 +424,7 @@ fn main() {
     }));
     let mut shutdown = Shutdown::new();
 
-    let mm_proxy_manager = Arc::new(RwLock::new(MmProxyManager::new()));
+    let mm_proxy_manager = MmProxyManager::new();
     let node_manager = NodeManager::new();
     let wallet_manager = WalletManager::new(node_manager.clone());
     let wallet_manager2 = wallet_manager.clone();

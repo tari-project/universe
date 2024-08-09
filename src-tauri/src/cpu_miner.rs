@@ -1,8 +1,9 @@
+use crate::app_config::MiningMode;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
-    CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, MiningMode,
+    CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
 };
 use log::warn;
 use std::path::PathBuf;
@@ -44,7 +45,7 @@ impl CpuMiner {
         base_path: PathBuf,
         cache_dir: PathBuf,
         log_dir: PathBuf,
-        window: tauri::Window,
+        progress_tracker: ProgressTracker,
         mode: MiningMode,
     ) -> Result<(), anyhow::Error> {
         if self.watcher_task.is_some() {
@@ -61,7 +62,6 @@ impl CpuMiner {
                         app_shutdown.clone(),
                         base_path.clone(),
                         cpu_miner_config.tari_address.clone(),
-                        window.clone(),
                     )
                     .await?;
                 local_mm_proxy.wait_ready().await?;
@@ -82,7 +82,7 @@ impl CpuMiner {
             cache_dir,
             log_dir,
             base_path,
-            window.clone(),
+            progress_tracker,
             cpu_max_percentage,
         )?;
         self.api_client = Some(client);
