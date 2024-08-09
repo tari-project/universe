@@ -12,7 +12,6 @@ interface AppState {
     setSetupDetails: (setupTitle: string, setupProgress: number) => void;
 
     // gui
-
     isSettingUp: boolean;
 
     // functions
@@ -26,7 +25,6 @@ const useAppStateStore = create<AppState>((set) => ({
     setTopStatus: (value) => set({ topStatus: value }),
     errorOpen: false,
     setErrorOpen: (value) => set({ errorOpen: value }),
-
     isSettingUp: true,
     setupTitle: '',
     setupProgress: 0,
