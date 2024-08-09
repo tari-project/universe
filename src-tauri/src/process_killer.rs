@@ -1,6 +1,13 @@
 use std::process::Command;
 
 pub fn kill_process(pid: u32) -> Result<(), anyhow::Error> {
+    #[cfg(target_os = "linux")]
+    {
+        let _ = Command::new("kill")
+            .args(&["-9", &pid.to_string()])
+            .output()?;
+    }
+
     #[cfg(target_os = "windows")]
     {
         let _ = Command::new("taskkill")
