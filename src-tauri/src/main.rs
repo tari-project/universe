@@ -29,7 +29,9 @@ use crate::node_manager::NodeManager;
 use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
+use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
+use binary_resolver::{Binaries, BinaryResolver};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -40,9 +42,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
-
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::xmrig_adapter::XmrigAdapter;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -333,9 +332,39 @@ fn open_log_dir(app: tauri::AppHandle) {
     }
 }
 
+#[tauri::command]
+async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
+    let default_message = "Failed to read version".to_string();
+
+    let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
+
+    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+    let xmrig_version: String =
+        XmrigAdapter::ensure_latest(cache_dir, false, progress_tracker.clone())
+            .await
+            .unwrap_or(default_message.clone());
+
+    let minotari_node_version: semver::Version = BinaryResolver::current()
+        .get_latest_version(Binaries::MinotariNode)
+        .await;
+    let mm_proxy_version: semver::Version = BinaryResolver::current()
+        .get_latest_version(Binaries::MergeMiningProxy)
+        .await;
+    let wallet_version: semver::Version = BinaryResolver::current()
+        .get_latest_version(Binaries::Wallet)
+        .await;
+
+    Ok(ApplicationsVersions {
+        xmrig: xmrig_version,
+        minotari_node: minotari_node_version.to_string(),
+        mm_proxy: mm_proxy_version.to_string(),
+        wallet: wallet_version.to_string(),
+    })
+}
+
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-async fn status(state: tauri::State<'_, UniverseAppState> ) -> Result<AppStatus, String> {
+async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let cpu_miner = state.cpu_miner.read().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
@@ -396,7 +425,7 @@ pub struct AppStatus {
     auto_mining: bool,
 }
 
-#[derive(Debug,Serialize)]
+#[derive(Debug, Serialize)]
 pub struct ApplicationsVersions {
     xmrig: String,
     minotari_node: String,
@@ -507,10 +536,6 @@ fn main() {
                 }
             };
 
-            // let auto_mining = app_config.read().auto_mining;
-            // let user_listener = app_state.user_listener.write();
-
-            // let user_listener = app_state.user_listener.clone();
             let app_window = app.get_window("main").unwrap().clone();
             let auto_miner_thread = tauri::async_runtime::spawn(async move {
                 let auto_mining = app_config_clone.read().await.auto_mining;
@@ -566,7 +591,8 @@ fn main() {
             set_auto_mining,
             set_mode,
             open_log_dir,
-            get_seed_words
+            get_seed_words,
+            get_applications_versions
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
