@@ -7,6 +7,7 @@ mod process_watcher;
 mod xmrig;
 mod xmrig_adapter;
 
+mod app_config;
 mod binary_resolver;
 mod download_utils;
 mod github;
@@ -26,6 +27,7 @@ use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
+use app_config::{AppConfig, MiningMode};
 use futures_util::TryFutureExt;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -114,6 +116,18 @@ impl ProgressTrackerInner {
             },
         );
     }
+}
+
+#[tauri::command]
+async fn set_mode<'r>(
+    mode: String,
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+    let _ = state.config.write().await.set_mode(mode).await;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -228,6 +242,7 @@ async fn start_mining<'r>(
             app.path_resolver().app_cache_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
             progress_tracker,
+            state.config.read().await.get_mode(),
         )
         .await
         .map_err(|e| {
@@ -296,6 +311,8 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
+    let config_guard = state.config.read().await;
+
     Ok(AppStatus {
         cpu,
         base_node: BaseNodeStatus {
@@ -304,6 +321,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             is_synced,
         },
         wallet_balance,
+        mode: config_guard.mode.clone(),
     })
 }
 
@@ -313,6 +331,7 @@ pub struct AppStatus {
     cpu: CpuMinerStatus,
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
+    mode: MiningMode,
 }
 
 #[derive(Debug, Serialize)]
@@ -348,6 +367,7 @@ struct CpuMinerConfig {
 }
 
 struct UniverseAppState {
+    config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
     cpu_miner: RwLock<CpuMiner>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
@@ -375,7 +395,9 @@ fn main() {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
     }));
+    let app_config = Arc::new(RwLock::new(AppConfig::new()));
     let app_state = UniverseAppState {
+        config: app_config.clone(),
         shutdown: shutdown.clone(),
         cpu_miner: CpuMiner::new().into(),
         cpu_miner_config: cpu_config.clone(),
@@ -396,6 +418,17 @@ fn main() {
                 include_str!("../log4rs_sample.yml"),
             )
             .expect("Could not set up logging");
+
+            let config_path = app.path_resolver().app_config_dir().unwrap();
+            let thread_config = tauri::async_runtime::spawn(async move {
+                app_config.write().await.load_or_create(config_path).await
+            });
+            match tauri::async_runtime::block_on(thread_config).unwrap() {
+                Ok(_) => {}
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
+                }
+            };
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread = tauri::async_runtime::spawn(async move {
@@ -431,7 +464,8 @@ fn main() {
             setup_application,
             status,
             start_mining,
-            stop_mining
+            stop_mining,
+            set_mode
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
