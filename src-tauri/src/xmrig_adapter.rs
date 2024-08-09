@@ -86,8 +86,7 @@ impl XmrigAdapter {
         process_instance.handle = Some(tokio::spawn(async move {
             // TODO: Ensure version string is not malicious
             let version =
-                Self::ensure_latest(cache_dir.clone(), force_download, progress_tracker)
-                    .await?;
+                Self::ensure_latest(cache_dir.clone(), force_download, progress_tracker).await?;
             let xmrig_dir = cache_dir
                 .join("xmrig")
                 .join(&version)
@@ -116,11 +115,7 @@ impl XmrigAdapter {
             Ok(())
         }));
 
-        Ok((
-            rx,
-            process_instance,
-            client,
-        ))
+        Ok((rx, process_instance, client))
     }
 
     pub async fn ensure_latest(
