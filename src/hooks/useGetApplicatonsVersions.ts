@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useAppStatusStore } from '../store/useAppStatusStore';
 import { invoke } from '@tauri-apps/api';
 import { ApplicationsVersions } from '../types/app-status';
+import { getVersion } from '@tauri-apps/api/app';
 
 export const getApplicationsVersions = async () => {
     invoke<ApplicationsVersions>('get_applications_versions')
@@ -19,6 +20,19 @@ export const useGetApplicatonsVersions = () => {
     const applicationsVersions = useAppStatusStore(
         (state) => state.applications_versions
     );
+
+    const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
+    const setMainAppVersion = useAppStatusStore(
+        (state) => state.setMainAppVersion
+    );
+
+    useEffect(() => {
+        if (!mainAppVersion) {
+            getVersion().then((version) => {
+                setMainAppVersion(version);
+            });
+        }
+    }, [mainAppVersion]);
 
     useEffect(() => {
         if (!applicationsVersions) {
@@ -40,5 +54,5 @@ export const useGetApplicatonsVersions = () => {
         getApplicationsVersions();
     }, []);
 
-    return { applicationsVersions, refreshVersions };
+    return { applicationsVersions, mainAppVersion, refreshVersions };
 };

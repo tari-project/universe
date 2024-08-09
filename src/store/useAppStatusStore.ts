@@ -10,6 +10,7 @@ interface Actions {
     ) => void;
     setMode: (mode: modeType) => void;
     setConfigMode: (mode: modeType) => void;
+    setMainAppVersion: (mainAppVersion: string) => void;
 }
 type AppStatusStoreState = AppStatus & Actions;
 
@@ -19,6 +20,7 @@ const initialState: AppStatus = {
     wallet_balance: undefined,
     mode: 'Eco',
     auto_mining: false,
+    main_app_version: undefined,
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(
@@ -27,6 +29,7 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
             setAppStatus: (appStatus) => set({ ...appStatus }),
             setApplicationsVersions: (applications_versions) =>
                 set({ applications_versions }),
+            setMainAppVersion: (main_app_version) => set({ main_app_version }),
             setMode: (mode) => set({ mode }),
             setConfigMode: async (mode: modeType) => {
                 try {

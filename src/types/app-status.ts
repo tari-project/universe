@@ -5,6 +5,7 @@ export interface AppStatus {
     base_node?: BaseNodeStatus;
     wallet_balance?: WalletBalance;
     applications_versions?: ApplicationsVersions;
+    main_app_version?: string;
     mode: modeType;
     auto_mining: boolean;
 }

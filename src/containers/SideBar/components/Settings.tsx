@@ -21,7 +21,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useGetApplicatonsVersions } from '../../../hooks/useGetApplicatonsVersions';
 
 const Settings: React.FC = () => {
-    const { refreshVersions, applicationsVersions } =
+    const { refreshVersions, applicationsVersions, mainAppVersion } =
         useGetApplicatonsVersions();
     const [open, setOpen] = useState(false);
     const [formState, setFormState] = useState({ field1: '', field2: '' });
@@ -190,6 +190,7 @@ const Settings: React.FC = () => {
                                 </Button>
                             </Stack>
                             <Divider />
+                            <Typography>mainApp: {mainAppVersion}</Typography>
                             {Object.entries(applicationsVersions).map(
                                 ([key, value]) => (
                                     <Typography key={key}>
