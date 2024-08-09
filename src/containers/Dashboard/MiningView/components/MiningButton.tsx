@@ -1,7 +1,6 @@
 import { Button } from '@mui/material';
 import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
 import { AiOutlineLoading } from 'react-icons/ai';
-import { useUIStore } from '../../../../store/useUIStore.ts';
 import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 import { useMining } from '../../../../hooks/useMining.ts';
 import { styled } from '@mui/material/styles';
@@ -45,18 +44,13 @@ const StyledIcon = styled(AiOutlineLoading)(() => ({
 
 function MiningButton() {
     const mining = useAppStatusStore((s) => s.cpu?.is_mining);
-    const setBackground = useUIStore((s) => s.setBackground);
     const { startMining, stopMining, isLoading } = useMining();
 
     const handleMining = () => {
         if (mining) {
-            stopMining().then(() => {
-                setBackground('idle');
-            });
+            stopMining();
         } else {
-            startMining().then(() => {
-                setBackground('mining');
-            });
+            startMining();
         }
     };
 
