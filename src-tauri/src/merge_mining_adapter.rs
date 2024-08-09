@@ -1,17 +1,12 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::ProgressTracker;
 use anyhow::Error;
-use async_trait::async_trait;
-use dirs_next::data_local_dir;
 use log::warn;
 use std::fs;
 use std::path::PathBuf;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
 use tokio::select;
-use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
@@ -30,13 +25,12 @@ impl MergeMiningProxyAdapter {
 }
 
 impl ProcessAdapter for MergeMiningProxyAdapter {
-    type Instance = MergeMiningProxyInstance;
     type StatusMonitor = MergeMiningProxyStatusMonitor;
 
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
@@ -59,7 +53,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
         ];
         Ok((
-            MergeMiningProxyInstance {
+            ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
@@ -109,40 +103,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     }
 }
 
-pub struct MergeMiningProxyInstance {
-    pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
-}
-
 pub struct MergeMiningProxyStatusMonitor {}
-
-#[async_trait]
-impl ProcessInstance for MergeMiningProxyInstance {
-    fn ping(&self) -> bool {
-        self.handle
-            .as_ref()
-            .map(|m| !m.is_finished())
-            .unwrap_or_else(|| false)
-    }
-
-    async fn stop(&mut self) -> Result<(), Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        let res = handle.unwrap().await??;
-        Ok(res)
-    }
-}
-impl Drop for MergeMiningProxyInstance {
-    fn drop(&mut self) {
-        println!("Drop being called");
-        self.shutdown.trigger();
-        if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                handle.await.unwrap();
-            });
-        }
-    }
-}
 
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
     fn status(&self) -> Result<(), Error> {
