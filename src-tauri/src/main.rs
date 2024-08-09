@@ -254,6 +254,26 @@ async fn set_auto_mining<'r>(
 }
 
 #[tauri::command]
+async fn get_seed_words<'r>(
+    _window: tauri::Window,
+    _state: tauri::State<'r, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<Vec<String>, String> {
+    let config_path = app.path_resolver().app_config_dir().unwrap();
+    let internal_wallet = InternalWallet::load_or_create(config_path)
+        .await
+        .map_err(|e| e.to_string())?;
+    let seed_words = internal_wallet
+        .decrypt_seed_words()
+        .map_err(|e| e.to_string())?;
+    let mut res = vec![];
+    for i in 0..seed_words.len() {
+        res.push(seed_words.get_word(i).unwrap().clone());
+    }
+    Ok(res)
+}
+
+#[tauri::command]
 async fn start_mining<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -537,7 +557,8 @@ fn main() {
             stop_mining,
             set_auto_mining,
             set_mode,
-            open_log_dir
+            open_log_dir,
+            get_seed_words
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
