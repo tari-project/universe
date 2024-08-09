@@ -59,6 +59,7 @@ nix = { version = "0.29.0", features = ["signal"] }
 # static bind lzma
 xz2 = { version = "0.1.7", features = ["static"] }
 humantime = "2.1.0"
+open = "5"
 
 # needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
 libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
