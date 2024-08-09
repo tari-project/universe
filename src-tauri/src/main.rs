@@ -29,8 +29,9 @@ use crate::node_manager::NodeManager;
 use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
+use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
-use futures_util::TryFutureExt;
+use binary_resolver::{Binaries, BinaryResolver};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -41,11 +42,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
-use tokio::try_join;
-
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::xmrig_adapter::XmrigAdapter;
-use dirs_next::cache_dir;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -257,6 +253,26 @@ async fn set_auto_mining<'r>(
 }
 
 #[tauri::command]
+async fn get_seed_words<'r>(
+    _window: tauri::Window,
+    _state: tauri::State<'r, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<Vec<String>, String> {
+    let config_path = app.path_resolver().app_config_dir().unwrap();
+    let internal_wallet = InternalWallet::load_or_create(config_path)
+        .await
+        .map_err(|e| e.to_string())?;
+    let seed_words = internal_wallet
+        .decrypt_seed_words()
+        .map_err(|e| e.to_string())?;
+    let mut res = vec![];
+    for i in 0..seed_words.len() {
+        res.push(seed_words.get_word(i).unwrap().clone());
+    }
+    Ok(res)
+}
+
+#[tauri::command]
 async fn start_mining<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -306,6 +322,44 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
 
     // state.node_manager.stop().await.map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+fn open_log_dir(app: tauri::AppHandle) {
+    let log_dir = app.path_resolver().app_log_dir().unwrap();
+    if let Err(e) = open::that(log_dir) {
+        error!(target: LOG_TARGET, "Could not open log dir: {:?}", e);
+    }
+}
+
+#[tauri::command]
+async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
+    let default_message = "Failed to read version".to_string();
+
+    let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
+
+    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+    let xmrig_version: String =
+        XmrigAdapter::ensure_latest(cache_dir, false, progress_tracker.clone())
+            .await
+            .unwrap_or(default_message.clone());
+
+    let minotari_node_version: semver::Version = BinaryResolver::current()
+        .get_latest_version(Binaries::MinotariNode)
+        .await;
+    let mm_proxy_version: semver::Version = BinaryResolver::current()
+        .get_latest_version(Binaries::MergeMiningProxy)
+        .await;
+    let wallet_version: semver::Version = BinaryResolver::current()
+        .get_latest_version(Binaries::Wallet)
+        .await;
+
+    Ok(ApplicationsVersions {
+        xmrig: xmrig_version,
+        minotari_node: minotari_node_version.to_string(),
+        mm_proxy: mm_proxy_version.to_string(),
+        wallet: wallet_version.to_string(),
+    })
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -369,6 +423,14 @@ pub struct AppStatus {
     wallet_balance: WalletBalance,
     mode: MiningMode,
     auto_mining: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ApplicationsVersions {
+    xmrig: String,
+    minotari_node: String,
+    mm_proxy: String,
+    wallet: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -474,10 +536,6 @@ fn main() {
                 }
             };
 
-            // let auto_mining = app_config.read().auto_mining;
-            // let user_listener = app_state.user_listener.write();
-
-            // let user_listener = app_state.user_listener.clone();
             let app_window = app.get_window("main").unwrap().clone();
             let auto_miner_thread = tauri::async_runtime::spawn(async move {
                 let auto_mining = app_config_clone.read().await.auto_mining;
@@ -532,6 +590,9 @@ fn main() {
             stop_mining,
             set_auto_mining,
             set_mode,
+            open_log_dir,
+            get_seed_words,
+            get_applications_versions
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
