@@ -18,8 +18,11 @@ import { IoSettingsOutline, IoClose } from 'react-icons/io5';
 import { useGetSeedWords } from '../../../hooks/useGetSeedWords';
 import truncateString from '../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
+import { useGetApplicatonsVersions } from '../../../hooks/useGetApplicatonsVersions';
 
 const Settings: React.FC = () => {
+    const { refreshVersions, applicationsVersions } =
+        useGetApplicatonsVersions();
     const [open, setOpen] = useState(false);
     const [formState, setFormState] = useState({ field1: '', field2: '' });
     const [showSeedWords, setShowSeedWords] = useState(false);
@@ -166,11 +169,6 @@ const Settings: React.FC = () => {
                             </Button>
                         </DialogActions>
                     </Box>
-                    <Stack spacing={1} pt={1}>
-                        <Button onClick={openLogsDirectory}>
-                            Open logs directory
-                        </Button>
-                    </Stack>
                     <Divider />
                     <DialogActions>
                         <Button onClick={handleCancel} variant="outlined">
@@ -180,6 +178,32 @@ const Settings: React.FC = () => {
                             Submit
                         </Button>
                     </DialogActions>
+                    {applicationsVersions && (
+                        <Stack spacing={1} pt={1}>
+                            <Stack
+                                direction="row"
+                                justifyContent="space-between"
+                            >
+                                <Typography variant="h5">Versions</Typography>
+                                <Button onClick={refreshVersions}>
+                                    Refresh Versions
+                                </Button>
+                            </Stack>
+                            <Divider />
+                            {Object.entries(applicationsVersions).map(
+                                ([key, value]) => (
+                                    <Typography key={key}>
+                                        {key}: {value}
+                                    </Typography>
+                                )
+                            )}
+                        </Stack>
+                    )}
+                    <Stack spacing={1} pt={1}>
+                        <Button onClick={openLogsDirectory}>
+                            Open logs directory
+                        </Button>
+                    </Stack>
                 </DialogContent>
             </Dialog>
         </>

@@ -1,10 +1,13 @@
 import { create } from 'zustand';
-import { AppStatus } from '../types/app-status.ts';
+import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/tauri';
 interface Actions {
     setAppStatus: (appStatus: AppStatus) => void;
+    setApplicationsVersions: (
+        applicationsVersions: ApplicationsVersions
+    ) => void;
     setMode: (mode: modeType) => void;
     setConfigMode: (mode: modeType) => void;
 }
@@ -22,6 +25,8 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         (set) => ({
             ...initialState,
             setAppStatus: (appStatus) => set({ ...appStatus }),
+            setApplicationsVersions: (applications_versions) =>
+                set({ applications_versions }),
             setMode: (mode) => set({ mode }),
             setConfigMode: async (mode: modeType) => {
                 try {

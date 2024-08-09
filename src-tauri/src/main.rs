@@ -335,7 +335,7 @@ fn open_log_dir(app: tauri::AppHandle) {
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
+async fn status(state: tauri::State<'_, UniverseAppState> ) -> Result<AppStatus, String> {
     let cpu_miner = state.cpu_miner.read().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
@@ -394,6 +394,14 @@ pub struct AppStatus {
     wallet_balance: WalletBalance,
     mode: MiningMode,
     auto_mining: bool,
+}
+
+#[derive(Debug,Serialize)]
+pub struct ApplicationsVersions {
+    xmrig: String,
+    minotari_node: String,
+    mm_proxy: String,
+    wallet: String,
 }
 
 #[derive(Debug, Serialize)]

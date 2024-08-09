@@ -18,6 +18,7 @@ import useAppStateStore from './store/appStateStore.ts';
 import { useMining } from './hooks/useMining.ts';
 
 import { preload } from './visuals.js';
+import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts';
 
 function App() {
     const background = useUIStore((s) => s.background);
@@ -87,6 +88,7 @@ function App() {
     }, []);
 
     useGetStatus();
+    useGetApplicatonsVersions();
 
     const hideCanvas = !visualMode || view === 'setup';
 
