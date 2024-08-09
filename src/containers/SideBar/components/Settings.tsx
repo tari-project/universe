@@ -17,6 +17,7 @@ import {
 import { IoSettingsOutline, IoClose } from 'react-icons/io5';
 import { useGetSeedWords } from '../../../hooks/useGetSeedWords';
 import truncateString from '../../../utils/truncateString';
+import { invoke } from '@tauri-apps/api/tauri';
 
 const Settings: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -47,6 +48,16 @@ const Settings: React.FC = () => {
         event.preventDefault();
         // console.log(formState);
         handleClose();
+    };
+
+    const openLogsDirectory = () => {
+        invoke('open_log_dir')
+            .then(() => {
+                console.log('Opening logs directory');
+            })
+            .catch((error) => {
+                console.error(error);
+            });
     };
 
     const toggleSeedWordsVisibility = async () => {
@@ -145,7 +156,21 @@ const Settings: React.FC = () => {
                                 onChange={handleChange}
                             />
                         </Stack>
+                        <Divider />
+                        <DialogActions>
+                            <Button onClick={handleCancel} variant="outlined">
+                                Cancel
+                            </Button>
+                            <Button type="submit" variant="contained">
+                                Submit
+                            </Button>
+                        </DialogActions>
                     </Box>
+                    <Stack spacing={1} pt={1}>
+                        <Button onClick={openLogsDirectory}>
+                            Open logs directory
+                        </Button>
+                    </Stack>
                     <Divider />
                     <DialogActions>
                         <Button onClick={handleCancel} variant="outlined">
