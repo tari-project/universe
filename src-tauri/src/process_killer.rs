@@ -4,13 +4,6 @@ use std::process::Command;
 const LOG_TARGET: &str = "tari::universe::process_killer";
 
 pub fn kill_process(pid: u32) -> Result<(), anyhow::Error> {
-    #[cfg(target_os = "linux")]
-    {
-        let _ = Command::new("kill")
-            .args(&["-9", &pid.to_string()])
-            .output()?;
-    }
-
     #[cfg(target_os = "windows")]
     {
         let output = Command::new("taskkill")
@@ -27,7 +20,7 @@ pub fn kill_process(pid: u32) -> Result<(), anyhow::Error> {
         use nix::unistd::Pid;
 
         let pid = Pid::from_raw(pid as i32);
-        signal::kill(pid, Signal::SIGTERM);
+        let _ = signal::kill(pid, Signal::SIGTERM);
     }
     Ok(())
 }
