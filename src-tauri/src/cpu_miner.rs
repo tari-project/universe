@@ -97,7 +97,7 @@ impl CpuMiner {
                 select! {
                               _ = watch_timer.tick() => {
                                     println!("watching");
-                                    if xmrig_child.ping().expect("idk") {
+                                    if xmrig_child.ping() {
                                        println!("xmrig is running");
                                     } else {
                                        println!("xmrig is not running");

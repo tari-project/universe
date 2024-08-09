@@ -1,6 +1,6 @@
 use crate::cpu_miner::CpuMinerEvent;
 use crate::download_utils::{download_file, extract};
-use crate::process_killer::kill_process;
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use crate::ProgressTracker;
@@ -9,9 +9,7 @@ use log::{debug, info, warn};
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
-use tokio::runtime::Handle;
 use tokio::sync::mpsc::Receiver;
-use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -46,11 +44,6 @@ pub struct XmrigAdapter {
     http_api_port: u16,
 }
 
-pub struct XmrigInstance {
-    shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
-}
-
 impl XmrigAdapter {
     pub fn new(xmrig_node_connection: XmrigNodeConnection, monero_address: String) -> Self {
         Self {
@@ -67,8 +60,8 @@ impl XmrigAdapter {
         logs_dir: PathBuf,
         data_dir: PathBuf,
         progress_tracker: ProgressTracker,
-        cpu_max_percentage: usize,
-    ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
+        cpu_max_percentage: u16,
+    ) -> Result<(Receiver<CpuMinerEvent>, ProcessInstance, XmrigHttpApiClient), anyhow::Error> {
         self.kill_previous_instances(data_dir.clone())?;
 
         let (_tx, rx) = tokio::sync::mpsc::channel(100);
@@ -92,7 +85,7 @@ impl XmrigAdapter {
 
         Ok((
             rx,
-            XmrigInstance {
+            ProcessInstance {
                 shutdown: xmrig_shutdown,
                 handle: Some(tokio::spawn(async move {
                     // TODO: Ensure version string is not malicious
@@ -177,52 +170,42 @@ impl XmrigAdapter {
 
         Ok(latest_release.version)
     }
+}
 
-    fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
-        match std::fs::read_to_string(base_folder.join("xmrig_pid")) {
-            Ok(pid) => {
-                let pid = pid.trim().parse::<u32>()?;
-                kill_process(pid)?;
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Could not read xmrigs pid file: {}", e);
-            }
-        }
-        Ok(())
+impl ProcessAdapter for XmrigAdapter {
+    type StatusMonitor = XmrigStatusMonitor;
+
+    // It's not used, it's just to follow the trait
+    fn spawn_inner(
+        &self,
+        base_folder: PathBuf,
+        _window: tauri::Window,
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+        self.kill_previous_instances(base_folder.clone())?;
+
+        // TODO: HOW TO NOT CREATE INSTANCE?
+        let instance = ProcessInstance {
+            shutdown: Shutdown::new(),
+            handle: None,
+        };
+
+        Ok((instance, XmrigStatusMonitor {}))
+    }
+
+    fn name(&self) -> &str {
+        "xmrig"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "xmrig_pid"
     }
 }
 
-impl XmrigInstance {
-    pub fn ping(&self) -> Result<bool, anyhow::Error> {
-        Ok(self
-            .handle
-            .as_ref()
-            .map(|m| !m.is_finished())
-            .unwrap_or_else(|| false))
-    }
+pub struct XmrigStatusMonitor {}
 
-    pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        handle.unwrap().await?
-    }
-    pub fn kill(&self) -> Result<(), anyhow::Error> {
+impl StatusMonitor for XmrigStatusMonitor {
+    fn status(&self) -> Result<(), Error> {
         todo!()
-        // Ok(())
-    }
-}
-
-impl Drop for XmrigInstance {
-    fn drop(&mut self) {
-        println!("Drop being called");
-        self.shutdown.trigger();
-        if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                let _ = handle.await.unwrap().map_err(|e| {
-                    warn!(target: LOG_TARGET, "Error in XmrigInstance: {}", e);
-                });
-            });
-        }
     }
 }
 
