@@ -1,10 +1,11 @@
-import { modeType } from "../store/types";
+import { modeType } from '../store/types';
 
 export interface AppStatus {
     cpu?: CpuMinerStatus;
     base_node?: BaseNodeStatus;
     wallet_balance?: WalletBalance;
     mode: modeType;
+    auto_mining: boolean;
 }
 
 export interface CpuMinerStatus {
