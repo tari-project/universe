@@ -135,7 +135,7 @@ async fn setup_application<'r>(
 
     let mut progress = ProgressTracker::new(window.clone());
 
-    progress.set_max(5).await;
+    progress.set_max(10).await;
     progress
         .update("Checking for latest version of node".to_string(), 0)
         .await;
@@ -146,7 +146,7 @@ async fn setup_application<'r>(
             error!(target: LOG_TARGET, "Could not download node: {:?}", e);
             e.to_string()
         })?;
-    progress.set_max(10).await;
+    progress.set_max(20).await;
     progress
         .update("Checking for latest version of wallet".to_string(), 0)
         .await;
@@ -155,42 +155,47 @@ async fn setup_application<'r>(
         .await
         .map_err(|e| e.to_string())?;
 
-    progress.set_max(20).await;
+    progress.set_max(30).await;
     progress
         .update("Checking for latest version of xmrig".to_string(), 0)
         .await;
-    XmrigAdapter::ensure_latest(cache_dir, false, progress)
+    XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
             e.to_string()
         })?;
 
-    let task1 = state
+    state
         .node_manager
         .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+        .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
             e.to_string()
-        });
+        })?;
 
-    let task2 = state
+    progress.set_max(40).await;
+    progress
+        .update("Waiting for node to sync".to_string(), 0)
+        .await;
+    state
+        .node_manager
+        .wait_synced(progress.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    progress.set_max(80).await;
+    progress.update("Waiting for wallet".to_string(), 0).await;
+    state
         .wallet_manager
         .ensure_started(state.shutdown.to_signal(), data_dir)
+        .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
             e.to_string()
-        });
+        })?;
 
-    match try_join!(task1, task2) {
-        Ok(_) => {
-            debug!(target: LOG_TARGET, "Applications started");
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET, "Error starting applications: {:?}", e);
-            // return Err(e.to_string());
-        }
-    }
     _ = window.emit(
         "message",
         SetupStatusEvent {

@@ -7,6 +7,7 @@ use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
+use humantime::format_duration;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
     Empty, GetHeaderByHashRequest, HeightRequest, NewBlockTemplateRequest, PowAlgo,
@@ -14,6 +15,7 @@ use minotari_node_grpc_client::grpc::{
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
 use std::path::PathBuf;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
@@ -233,5 +235,37 @@ impl MinotariNodeStatusMonitor {
                 .map_err(|e| anyhow!(e.to_string()))?,
             public_addresses: res.public_addresses,
         })
+    }
+
+    pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
+        let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
+        while true {
+            let tip = client.get_tip_info(Empty {}).await?;
+            let res = tip.into_inner();
+            dbg!(&res);
+            if res.initial_sync_achieved {
+                break;
+            }
+            let metadata = res.metadata.as_ref().cloned().unwrap();
+            let time_behind = Duration::from_secs(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs()
+                    - metadata.timestamp,
+            );
+            progress_tracker
+                .update(
+                    format!(
+                        "Waiting for initial sync. Tip height: {} Behind:{}",
+                        metadata.best_block_height,
+                        format_duration(time_behind)
+                    ),
+                    1,
+                )
+                .await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        }
+        Ok(())
     }
 }

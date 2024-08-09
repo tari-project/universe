@@ -63,6 +63,18 @@ impl NodeManager {
         Ok(())
     }
 
+    pub async fn wait_synced(
+        &self,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), anyhow::Error> {
+        self.wait_ready().await?;
+        let status_monitor_lock = self.watcher.read().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+        status_monitor.wait_synced(progress_tracker).await
+    }
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         while true {
             match self.get_identity().await {

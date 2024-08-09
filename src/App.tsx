@@ -38,12 +38,14 @@ function App() {
                         console.log('Setup status:', payload.title, payload.progress);
                         setSetupDetails(payload.title, payload.progress);
 
-                        if (payload.progress >= 0.1) {
+                        // if (payload.progress >= 0.1) {
+                        //     setView('mining');
+                        //     setBackground('mining');
+                        // }
+                        if (payload.progress >= 1) {
+                            settingUpFinished();
                             setView('mining');
                             setBackground('mining');
-                        }
-                        if (payload.progress >= 1.0) {
-                            settingUpFinished();
                         }
                         break;
                     default:

@@ -5058,6 +5058,7 @@ dependencies = [
  "flate2",
  "futures-lite",
  "futures-util",
+ "humantime",
  "keyring",
  "libsqlite3-sys",
  "log",
