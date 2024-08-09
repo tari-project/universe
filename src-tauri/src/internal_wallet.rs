@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use keyring::Entry;
 use log::{info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -67,19 +68,25 @@ impl InternalWallet {
             view_key_private_hex: "".to_string(),
             seed_words_encrypted_base58: "".to_string(),
             spend_public_key_hex: "".to_string(),
-            passphrase: "".to_string(),
         };
-        let passphrase = generate_password(32);
-        let safe_password = SafePassword::from(passphrase.clone());
+        let entry = Entry::new("com.tari.universe", "internal_wallet")?;
+
+        let passphrase = SafePassword::from(match entry.get_password() {
+            Ok(pass) => pass,
+            Err(_) => {
+                let passphrase = generate_password(32);
+                entry.set_password(&passphrase)?;
+                passphrase
+            }
+        });
 
         let seed = CipherSeed::new();
-        // TODO: Don't print out the seed words lol
         let seed_words = seed.to_mnemonic(MnemonicLanguage::English, None).unwrap();
         for i in 0..seed_words.len() {
             dbg!(seed_words.get_word(i).unwrap());
             info!(target: LOG_TARGET, "Seed: {}:{}", i+1, seed_words.get_word(i).unwrap());
         }
-        let seed_file = seed.encipher(Some(safe_password))?;
+        let seed_file = seed.encipher(Some(passphrase))?;
         config.seed_words_encrypted_base58 = seed_file.to_base58();
 
         let comms_key_manager = KeyManager::<RistrettoPublicKey, KeyDigest>::from(
@@ -108,7 +115,6 @@ impl InternalWallet {
         config.tari_address_base58 = tari_address.to_base58();
         config.view_key_private_hex = view_key_private.to_hex();
         config.spend_public_key_hex = comms_pub_key.to_hex();
-        config.passphrase = passphrase;
         Ok((
             Self {
                 tari_address,
@@ -119,10 +125,12 @@ impl InternalWallet {
     }
 
     pub fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
-        let safe_password = SafePassword::from(self.config.passphrase.clone());
+        let entry = Entry::new("com.tari.universe", "internal_wallet")?;
+
+        let passphrase = SafePassword::from(entry.get_password()?);
         let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
             .map_err(|e| anyhow!(e.to_string()))?;
-        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, Some(safe_password))?;
+        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, Some(passphrase))?;
         let seed_words = seed.to_mnemonic(MnemonicLanguage::English, None)?;
         Ok(seed_words)
     }
@@ -157,5 +165,4 @@ pub struct WalletConfig {
     view_key_private_hex: String,
     spend_public_key_hex: String,
     seed_words_encrypted_base58: String,
-    passphrase: String,
 }
