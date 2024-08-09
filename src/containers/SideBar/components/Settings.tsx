@@ -170,14 +170,6 @@ const Settings: React.FC = () => {
                         </DialogActions>
                     </Box>
                     <Divider />
-                    <DialogActions>
-                        <Button onClick={handleCancel} variant="outlined">
-                            Cancel
-                        </Button>
-                        <Button type="submit" variant="contained">
-                            Submit
-                        </Button>
-                    </DialogActions>
                     {applicationsVersions && (
                         <Stack spacing={1} pt={1}>
                             <Stack
