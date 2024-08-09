@@ -5,9 +5,7 @@ use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use humantime::format_duration;
 use log::{info, warn};
-use minotari_node_grpc_client::grpc::{
-    Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo,
-};
+use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
 use std::path::PathBuf;

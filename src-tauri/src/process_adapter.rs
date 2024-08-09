@@ -1,10 +1,10 @@
 use crate::process_killer::kill_process;
 use anyhow::Error;
 use log::warn;
-use tokio::runtime::Handle;
 use std::fs;
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
+use tokio::runtime::Handle;
 use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
@@ -52,8 +52,7 @@ pub struct ProcessInstance {
 
 impl ProcessInstance {
     pub fn ping(&self) -> bool {
-        self
-            .handle
+        self.handle
             .as_ref()
             .map(|m| !m.is_finished())
             .unwrap_or_else(|| false)
