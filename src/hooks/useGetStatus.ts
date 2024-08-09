@@ -10,12 +10,13 @@ export function useGetStatus() {
     const setBalance = useWalletStore((state) => state.setBalance);
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const setError = useAppStateStore((s) => s.setError);
+    const setMode = useAppStatusStore(s => s.setMode);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
             invoke('status')
                 .then((status) => {
-                    console.debug('Status', status);
+                    // console.debug('Status', status); // do we need to log this
                     if (status) {
                         setAppStatus(status);
                         const wallet_balance = status.wallet_balance;
@@ -30,6 +31,7 @@ export function useGetStatus() {
                                 timelocked_balance +
                                 pending_incoming_balance
                         );
+                        setMode(status.mode)
                     } else {
                         console.error('Could not get status');
                     }

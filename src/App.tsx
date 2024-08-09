@@ -17,22 +17,32 @@ import { TauriEvent } from './types.ts';
 import useAppStateStore from './store/appStateStore.ts';
 import { useMining } from './hooks/useMining.ts';
 
+import { preload } from './visuals.js';
+
 function App() {
     const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
+    const setView = useUIStore((s) => s.setView);
+    const setBackground = useUIStore((s) => s.setBackground);
     const startupInitiated = useRef(false);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const { startMining, stopMining } = useMining();
+    const visualMode = useUIStore((s) => s.visualMode);
 
     useEffect(() => {
         const unlistenPromise = listen(
             'message',
             ({ event, payload }: TauriEvent) => {
-                console.log('Event:', event, payload);
+                console.debug('Event:', event, payload);
                 switch (payload.event_type) {
                     case 'setup_status':
                         setSetupDetails(payload.title, payload.progress);
+
+                        if (payload.progress >= 0.1) {
+                            setView('mining');
+                            setBackground('mining');
+                        }
                         if (payload.progress >= 1.0) {
                             settingUpFinished();
                         }
@@ -48,7 +58,7 @@ function App() {
                         });
                         break;
                     default:
-                        console.log('Unknown tauri event: ', {
+                        console.debug('Unknown tauri event: ', {
                             event,
                             payload,
                         });
@@ -57,9 +67,10 @@ function App() {
             }
         );
         if (!startupInitiated.current) {
-            invoke('setup_application').then((r) => {
-                console.log(r);
-                startupInitiated.current = true;
+            startupInitiated.current = true;
+            preload();
+            invoke('setup_application').catch((e) => {
+                console.error('Failed to setup application:', e);
             });
         }
 
@@ -70,20 +81,25 @@ function App() {
 
     useGetStatus();
 
+    const hideCanvas = !visualMode || view === 'setup';
+
     return (
-        <ThemeProvider theme={lightTheme}>
-            <CssBaseline enableColorScheme />
-            <AppBackground status={background}>
-                <DashboardContainer>
-                    <TitleBar />
-                    <ContainerInner>
-                        <SideBar />
-                        <Dashboard status={view} />
-                    </ContainerInner>
-                </DashboardContainer>
-            </AppBackground>
-            <ErrorSnackbar />
-        </ThemeProvider>
+        <>
+            <canvas id="canvas" className={hideCanvas ? 'hidden' : undefined} />
+            <ThemeProvider theme={lightTheme}>
+                <CssBaseline enableColorScheme />
+                <AppBackground status={background}>
+                    <DashboardContainer>
+                        <TitleBar />
+                        <ContainerInner>
+                            <SideBar />
+                            <Dashboard status={view} />
+                        </ContainerInner>
+                    </DashboardContainer>
+                </AppBackground>
+                <ErrorSnackbar />
+            </ThemeProvider>
+        </>
     );
 }
 
