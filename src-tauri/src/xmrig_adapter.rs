@@ -62,8 +62,8 @@ impl XmrigAdapter {
         progress_tracker: ProgressTracker,
         cpu_max_percentage: u16,
     ) -> Result<(Receiver<CpuMinerEvent>, ProcessInstance, XmrigHttpApiClient), anyhow::Error> {
-        self.kill_previous_instances(data_dir.clone())?;
-
+        let (instance, _) = self.spawn_inner(data_dir.clone())?;
+        let mut process_instance = instance;
         let (_tx, rx) = tokio::sync::mpsc::channel(100);
         let force_download = self.force_download;
         let xmrig_shutdown = Shutdown::new();
@@ -83,43 +83,42 @@ impl XmrigAdapter {
             self.http_api_token.clone(),
         );
 
+        process_instance.handle = Some(tokio::spawn(async move {
+            // TODO: Ensure version string is not malicious
+            let version =
+                Self::ensure_latest(cache_dir.clone(), force_download, progress_tracker)
+                    .await?;
+            let xmrig_dir = cache_dir
+                .join("xmrig")
+                .join(&version)
+                .join(format!("xmrig-{}", version));
+            let xmrig_bin = xmrig_dir.join("xmrig");
+            let mut xmrig = tokio::process::Command::new(xmrig_bin)
+                .args(args)
+                .kill_on_drop(true)
+                .spawn()?;
+
+            if let Some(id) = xmrig.id() {
+                std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
+            }
+            shutdown_signal.wait().await;
+            println!("Stopping xmrig");
+
+            xmrig.kill().await?;
+
+            match std::fs::remove_file(data_dir.join("xmrig_pid")) {
+                Ok(_) => {}
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Could not clear xmrig's pid file {:?}", e);
+                }
+            }
+
+            Ok(())
+        }));
+
         Ok((
             rx,
-            ProcessInstance {
-                shutdown: xmrig_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    // TODO: Ensure version string is not malicious
-                    let version =
-                        Self::ensure_latest(cache_dir.clone(), force_download, progress_tracker)
-                            .await?;
-                    let xmrig_dir = cache_dir
-                        .join("xmrig")
-                        .join(&version)
-                        .join(format!("xmrig-{}", version));
-                    let xmrig_bin = xmrig_dir.join("xmrig");
-                    let mut xmrig = tokio::process::Command::new(xmrig_bin)
-                        .args(args)
-                        .kill_on_drop(true)
-                        .spawn()?;
-
-                    if let Some(id) = xmrig.id() {
-                        std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
-                    }
-                    shutdown_signal.wait().await;
-                    println!("Stopping xmrig");
-
-                    xmrig.kill().await?;
-
-                    match std::fs::remove_file(data_dir.join("xmrig_pid")) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file {:?}", e);
-                        }
-                    }
-
-                    Ok(())
-                })),
-            },
+            process_instance,
             client,
         ))
     }
@@ -175,14 +174,11 @@ impl XmrigAdapter {
 impl ProcessAdapter for XmrigAdapter {
     type StatusMonitor = XmrigStatusMonitor;
 
-    // It's not used, it's just to follow the trait
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         self.kill_previous_instances(base_folder.clone())?;
-
-        // TODO: HOW TO NOT CREATE INSTANCE?
         let instance = ProcessInstance {
             shutdown: Shutdown::new(),
             handle: None,
