@@ -39,12 +39,11 @@ use std::{panic, process};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::{RunEvent, UpdaterEvent};
+use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tokio::try_join;
 
 use crate::xmrig_adapter::XmrigAdapter;
-use device_query::{DeviceQuery, DeviceState};
 use dirs_next::cache_dir;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -124,21 +123,25 @@ async fn setup_application<'r>(
 }
 
 #[tauri::command]
-async fn start_listening_to_user_activity<'r>(
+async fn set_auto_mining<'r>(
+    auto_mining: bool,
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
 ) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_auto_mining(auto_mining)
+        .await;
     let mut user_listener = state.user_listener.write().await;
-    user_listener.start_listening_to_mouse_poisition_change(window);
-    Ok(())
-}
 
-#[tauri::command]
-async fn stop_listening_to_user_activity<'r>(
-    state: tauri::State<'r, UniverseAppState>,
-) -> Result<(), String> {
-    let mut user_listener = state.user_listener.write().await;
-    user_listener.stop_listening_to_mouse_poisition_change();
+    if auto_mining {
+        user_listener.start_listening_to_mouse_poisition_change(window);
+    } else {
+        user_listener.stop_listening_to_mouse_poisition_change();
+    }
+
     Ok(())
 }
 
@@ -253,6 +256,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         },
         wallet_balance,
         mode: config_guard.mode.clone(),
+        auto_mining: config_guard.auto_mining.clone(),
     })
 }
 
@@ -263,6 +267,7 @@ pub struct AppStatus {
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
     mode: MiningMode,
+    auto_mining: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -339,6 +344,8 @@ fn main() {
         wallet_manager,
     };
 
+    let user_listener = app_state.user_listener.clone();
+
     let app = tauri::Builder::default()
         .manage(app_state)
         .setup(|app| {
@@ -352,16 +359,40 @@ fn main() {
             )
             .expect("Could not set up logging");
 
+            let app_config_clone = app_config.clone();
+
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread_config = tauri::async_runtime::spawn(async move {
                 app_config.write().await.load_or_create(config_path).await
             });
+
             match tauri::async_runtime::block_on(thread_config).unwrap() {
                 Ok(_) => {}
                 Err(e) => {
                     error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
                 }
             };
+
+            // let auto_mining = app_config.read().auto_mining;
+            // let user_listener = app_state.user_listener.write();
+
+            // let user_listener = app_state.user_listener.clone();
+            let app_window = app.get_window("main").unwrap().clone();
+            let auto_miner_thread = tauri::async_runtime::spawn(async move {
+                let auto_mining = app_config_clone.read().await.auto_mining;
+                let mut user_listener = user_listener.write().await;
+
+                if auto_mining {
+                    user_listener.start_listening_to_mouse_poisition_change(app_window);
+                }
+            });
+
+            match tauri::async_runtime::block_on(auto_miner_thread) {
+                Ok(_) => {}
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Error setting up auto mining: {:?}", e);
+                }
+            }
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread = tauri::async_runtime::spawn(async move {
@@ -398,9 +429,8 @@ fn main() {
             status,
             start_mining,
             stop_mining,
-            start_listening_to_user_activity,
-            stop_listening_to_user_activity,
-            set_mode
+            set_auto_mining,
+            set_mode,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

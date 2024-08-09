@@ -1,22 +1,15 @@
 import { FormGroup, Switch, Stack, Typography } from '@mui/material';
 import { AutoMinerContainer } from '../styles';
 import { invoke } from '@tauri-apps/api/tauri';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore';
 
 function AutoMiner() {
+    const isAutoMining = useAppStatusStore((state) => state.auto_mining);
+
     const handleAutoMining = (event: React.ChangeEvent<HTMLInputElement>) => {
         const isChecked = event.target.checked;
         console.log('Auto mining checked', isChecked);
-
-        if (isChecked) {
-            invoke('start_listening_to_user_activity').then(() => {
-                console.log('Auto mining stopped');
-            });
-        }
-        if (!isChecked) {
-            invoke('stop_listening_to_user_activity').then(() => {
-                console.log('Auto mining started');
-            });
-        }
+        invoke('set_auto_mining', { autoMining: isChecked });
     };
 
     return (
@@ -33,7 +26,7 @@ function AutoMiner() {
                     <Switch
                         focusVisibleClassName=".Mui-focusVisible"
                         disableRipple
-                        // checked={isAutoMining}
+                        checked={isAutoMining}
                         onChange={handleAutoMining}
                     />
                 </FormGroup>

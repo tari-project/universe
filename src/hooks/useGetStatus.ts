@@ -10,7 +10,7 @@ export function useGetStatus() {
     const setBalance = useWalletStore((state) => state.setBalance);
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const setError = useAppStateStore((s) => s.setError);
-    const setMode = useAppStatusStore(s => s.setMode);
+    const setMode = useAppStatusStore((s) => s.setMode);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
@@ -31,7 +31,7 @@ export function useGetStatus() {
                                 timelocked_balance +
                                 pending_incoming_balance
                         );
-                        setMode(status.mode)
+                        setMode(status.mode);
                     } else {
                         console.error('Could not get status');
                     }

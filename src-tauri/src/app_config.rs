@@ -9,6 +9,7 @@ const LOG_TARGET: &str = "tari::universe::app_config";
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfigFromFile {
     pub mode: String,
+    pub auto_mining: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -38,7 +39,7 @@ impl MiningMode {
 pub struct AppConfig {
     config_file: Option<PathBuf>,
     pub mode: MiningMode,
-    // auto-mining in future etc.
+    pub auto_mining: bool,
 }
 
 impl AppConfig {
@@ -46,6 +47,7 @@ impl AppConfig {
         Self {
             config_file: None,
             mode: MiningMode::Eco,
+            auto_mining: false,
         }
     }
 
@@ -59,6 +61,7 @@ impl AppConfig {
             match serde_json::from_str::<AppConfigFromFile>(&config) {
                 Ok(config) => {
                     self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
+                    self.auto_mining = config.auto_mining;
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -68,6 +71,7 @@ impl AppConfig {
         info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
+            auto_mining: self.auto_mining.clone(),
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -89,10 +93,21 @@ impl AppConfig {
         self.mode.clone()
     }
 
+    pub async fn set_auto_mining(&mut self, auto_mining: bool) -> Result<(), anyhow::Error> {
+        self.auto_mining = auto_mining;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn get_auto_mining(&self) -> bool {
+        self.auto_mining.clone()
+    }
+
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
         let file = self.config_file.clone().unwrap();
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
+            auto_mining: self.auto_mining,
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
