@@ -3,6 +3,7 @@ use crate::download_utils::{download_file, extract};
 use crate::process_killer::kill_process;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
+use crate::ProgressTracker;
 use anyhow::Error;
 use log::{info, warn};
 use std::path::PathBuf;
@@ -65,7 +66,7 @@ impl XmrigAdapter {
         cache_dir: PathBuf,
         logs_dir: PathBuf,
         data_dir: PathBuf,
-        window: tauri::Window,
+        progress_tracker: ProgressTracker,
     ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
         self.kill_previous_instances(data_dir.clone())?;
 
@@ -95,7 +96,8 @@ impl XmrigAdapter {
                 handle: Some(tokio::spawn(async move {
                     // TODO: Ensure version string is not malicious
                     let version =
-                        Self::ensure_latest(cache_dir.clone(), force_download, window).await?;
+                        Self::ensure_latest(cache_dir.clone(), force_download, progress_tracker)
+                            .await?;
                     let xmrig_dir = cache_dir
                         .join("xmrig")
                         .join(&version)
@@ -131,7 +133,7 @@ impl XmrigAdapter {
     pub async fn ensure_latest(
         cache_dir: PathBuf,
         force_download: bool,
-        window: tauri::Window,
+        progress_tracker: ProgressTracker,
     ) -> Result<String, Error> {
         dbg!(&cache_dir);
         let latest_release = fetch_latest_release().await?;
@@ -164,7 +166,7 @@ impl XmrigAdapter {
             println!("Downloading file from {}", &platform.url);
 
             let in_progress_file = in_progress_dir.join(&platform.name);
-            download_file(&platform.url, &in_progress_file, window).await?;
+            download_file(&platform.url, &in_progress_file, progress_tracker).await?;
 
             println!("Renaming file");
             println!("Extracting file");

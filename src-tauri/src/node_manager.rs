@@ -1,5 +1,6 @@
 use crate::minotari_node_adapter::MinotariNodeAdapter;
 use crate::process_watcher::ProcessWatcher;
+use crate::ProgressTracker;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -44,12 +45,9 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher
-            .start(app_shutdown, base_path, window)
-            .await?;
+        process_watcher.start(app_shutdown, base_path).await?;
         process_watcher.wait_ready().await?;
         Ok(())
     }
@@ -58,12 +56,9 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher
-            .start(app_shutdown, base_path, window)
-            .await?;
+        process_watcher.start(app_shutdown, base_path).await?;
 
         Ok(())
     }

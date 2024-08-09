@@ -3,6 +3,7 @@ use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_killer::kill_process;
 use crate::xmrig_adapter::XmrigInstance;
+use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
@@ -45,7 +46,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-        window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -88,12 +88,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
             MinotariNodeInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::MinotariNode, window)
+                    let file_path = BinaryResolver::current()
+                        .resolve_path(Binaries::MinotariNode)
                         .await?;
-
-                    let file_path =
-                        BinaryResolver::current().resolve_path(Binaries::MinotariNode, &version)?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)

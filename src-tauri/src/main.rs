@@ -56,6 +56,14 @@ pub struct ProgressTracker {
     inner: Arc<RwLock<ProgressTrackerInner>>,
 }
 
+impl Clone for ProgressTracker {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 impl ProgressTracker {
     pub fn new(window: tauri::Window) -> Self {
         Self {
@@ -93,13 +101,16 @@ impl ProgressTrackerInner {
     }
 
     pub fn update(&self, title: String, progress: u64) {
+        info!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
         let _ = self.window.emit(
             "message",
             SetupStatusEvent {
                 event_type: "setup_status".to_string(),
                 title,
-                progress: self.min
-                    + ((self.next_max - self.min) as f64 * (progress as f64 / 100.0) as u64),
+                progress: (self.min
+                    + ((self.next_max - self.min) as f64 * (progress as f64 / 100.0)) as u64)
+                    as f64
+                    / 100.0,
             },
         );
     }
@@ -124,14 +135,40 @@ async fn setup_application<'r>(
 
     let mut progress = ProgressTracker::new(window.clone());
 
-    progress.set_max(5);
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MinotariNode, pro)
+    progress.set_max(5).await;
+    progress
+        .update("Checking for latest version of node".to_string(), 0)
         .await;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::MinotariNode, progress.clone())
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download node: {:?}", e);
+            e.to_string()
+        })?;
+    progress.set_max(10).await;
+    progress
+        .update("Checking for latest version of wallet".to_string(), 0)
+        .await;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::Wallet, progress.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    progress.set_max(20).await;
+    progress
+        .update("Checking for latest version of xmrig".to_string(), 0)
+        .await;
+    XmrigAdapter::ensure_latest(cache_dir, false, progress)
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
+            e.to_string()
+        })?;
 
     let task1 = state
         .node_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir.clone(), window.clone())
+        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
             e.to_string()
@@ -139,18 +176,13 @@ async fn setup_application<'r>(
 
     let task2 = state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir, window.clone())
+        .ensure_started(state.shutdown.to_signal(), data_dir)
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
             e.to_string()
         });
 
-    let task3 = XmrigAdapter::ensure_latest(cache_dir, false, window.clone()).map_err(|e| {
-        error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
-        e.to_string()
-    });
-
-    match try_join!(task1, task2, task3) {
+    match try_join!(task1, task2) {
         Ok(_) => {
             debug!(target: LOG_TARGET, "Applications started");
         }
@@ -177,16 +209,8 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.cpu_miner_config.read().await;
-    state
-        .node_manager
-        .ensure_started(
-            state.shutdown.to_signal(),
-            app.path_resolver().app_local_data_dir().unwrap(),
-            window.clone(),
-        )
-        .await
-        .map_err(|e| e.to_string())?;
-    let mm_proxy_manager = state.mm_proxy_manager.read().await;
+    let mm_proxy_manager = state.mm_proxy_manager.clone();
+    let progress_tracker = ProgressTracker::new(window.clone());
     state
         .cpu_miner
         .write()
@@ -198,7 +222,7 @@ async fn start_mining<'r>(
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
-            window.clone(),
+            progress_tracker,
         )
         .await
         .map_err(|e| {
