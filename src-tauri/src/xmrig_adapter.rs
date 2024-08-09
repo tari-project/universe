@@ -174,6 +174,7 @@ impl XmrigAdapter {
             extract(&in_progress_file, &xmrig_dir).await?;
             fs::remove_dir_all(in_progress_dir).await?;
         }
+
         Ok(latest_release.version)
     }
 

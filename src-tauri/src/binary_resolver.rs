@@ -2,6 +2,7 @@ use crate::download_utils::{download_file, extract};
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use futures_util::FutureExt;
 use log::{info, warn};
 use semver::Version;
 use std::collections::HashMap;
@@ -276,6 +277,11 @@ impl BinaryResolver {
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
+    }
+
+    pub async fn get_latest_version(&self, binary: Binaries) -> Version {
+        let guard = self.latest_versions.read().await;
+        guard.get(&binary).cloned().unwrap_or(Version::new(0, 0, 0))
     }
 }
 
