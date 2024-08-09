@@ -399,7 +399,7 @@ fn main() {
             start_mining,
             stop_mining,
             start_listening_to_user_activity,
-            stop_listening_to_user_activity
+            stop_listening_to_user_activity,
             set_mode
         ])
         .build(tauri::generate_context!())
@@ -416,15 +416,14 @@ fn main() {
         app.path_resolver().app_log_dir().unwrap()
     );
 
-    app.run(move |_app_handle, event| {
-        match event {
-            tauri::RunEvent::Updater(updater_event) => match updater_event {
-                UpdaterEvent::Error(e) => {
-                    error!(target: LOG_TARGET, "Updater error: {:?}", e);
-                }
-                _ => {
-                    info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
-                }
+    app.run(move |_app_handle, event| match event {
+        tauri::RunEvent::Updater(updater_event) => match updater_event {
+            UpdaterEvent::Error(e) => {
+                error!(target: LOG_TARGET, "Updater error: {:?}", e);
+            }
+            _ => {
+                info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
+            }
         },
         tauri::RunEvent::ExitRequested { api: _, .. } | tauri::RunEvent::Exit => {
             // api.prevent_exit();
