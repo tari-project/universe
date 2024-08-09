@@ -1,5 +1,6 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::ProgressTracker;
 use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
@@ -35,7 +36,6 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-        window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -62,12 +62,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             MergeMiningProxyInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::MergeMiningProxy, window)
-                        .await?;
-
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MergeMiningProxy, &version)?;
+                        .resolve_path(Binaries::MergeMiningProxy)
+                        .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)
