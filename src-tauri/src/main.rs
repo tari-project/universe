@@ -30,7 +30,6 @@ use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use app_config::{AppConfig, MiningMode};
-use futures_util::TryFutureExt;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -41,11 +40,9 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
-use tokio::try_join;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::xmrig_adapter::XmrigAdapter;
-use dirs_next::cache_dir;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -308,6 +305,14 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
     Ok(())
 }
 
+#[tauri::command]
+fn open_log_dir(app: tauri::AppHandle) {
+    let log_dir = app.path_resolver().app_log_dir().unwrap();
+    if let Err(e) = open::that(log_dir) {
+        error!(target: LOG_TARGET, "Could not open log dir: {:?}", e);
+    }
+}
+
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
@@ -532,6 +537,7 @@ fn main() {
             stop_mining,
             set_auto_mining,
             set_mode,
+            open_log_dir
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -12,6 +12,7 @@ import {
     Divider,
 } from '@mui/material';
 import { IoSettingsOutline, IoClose } from 'react-icons/io5';
+import { invoke } from '@tauri-apps/api/tauri';
 
 const Settings: React.FC = () => {
     const [open, setOpen] = useState(false);
@@ -34,6 +35,16 @@ const Settings: React.FC = () => {
         event.preventDefault();
         // console.log(formState);
         handleClose();
+    };
+
+    const openLogsDirectory = () => {
+        invoke('open_log_dir')
+            .then(() => {
+                console.log('Opening logs directory');
+            })
+            .catch((error) => {
+                console.error(error);
+            });
     };
 
     return (
@@ -85,6 +96,11 @@ const Settings: React.FC = () => {
                             </Button>
                         </DialogActions>
                     </Box>
+                    <Stack spacing={1} pt={1}>
+                        <Button onClick={openLogsDirectory}>
+                            Open logs directory
+                        </Button>
+                    </Stack>
                 </DialogContent>
             </Dialog>
         </>
