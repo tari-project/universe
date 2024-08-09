@@ -1,7 +1,6 @@
 import useAppStateStore from '../store/appStateStore.ts';
 import { useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { AppStatus } from '../types/app-status.ts';
 import useWalletStore from '../store/walletStore.ts';
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
 
@@ -11,12 +10,12 @@ export function useGetStatus() {
     const setBalance = useWalletStore((state) => state.setBalance);
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const setError = useAppStateStore((s) => s.setError);
-    const setMode = useAppStatusStore(s => s.setMode);
+    const setMode = useAppStatusStore((s) => s.setMode);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-            invoke<AppStatus>('status', {})
-                .then((status: AppStatus) => {
+            invoke('status')
+                .then((status) => {
                     // console.debug('Status', status); // do we need to log this
                     if (status) {
                         setAppStatus(status);
@@ -32,7 +31,7 @@ export function useGetStatus() {
                                 timelocked_balance +
                                 pending_incoming_balance
                         );
-                        setMode(status.mode)
+                        setMode(status.mode);
                     } else {
                         console.error('Could not get status');
                     }

@@ -4,6 +4,7 @@
 mod cpu_miner;
 mod mm_proxy_manager;
 mod process_watcher;
+mod user_listener;
 mod xmrig;
 mod xmrig_adapter;
 
@@ -25,6 +26,7 @@ use crate::cpu_miner::CpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
+use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use app_config::{AppConfig, MiningMode};
@@ -37,15 +39,13 @@ use std::{panic, process};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::{RunEvent, UpdaterEvent};
+use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tokio::try_join;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::xmrig_adapter::XmrigAdapter;
 use dirs_next::cache_dir;
-use std::thread;
-use std::time::Duration;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -234,6 +234,29 @@ async fn setup_application<'r>(
 }
 
 #[tauri::command]
+async fn set_auto_mining<'r>(
+    auto_mining: bool,
+    window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_auto_mining(auto_mining)
+        .await;
+    let mut user_listener = state.user_listener.write().await;
+
+    if auto_mining {
+        user_listener.start_listening_to_mouse_poisition_change(window);
+    } else {
+        user_listener.stop_listening_to_mouse_poisition_change();
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn start_mining<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -334,6 +357,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         },
         wallet_balance,
         mode: config_guard.mode.clone(),
+        auto_mining: config_guard.auto_mining.clone(),
     })
 }
 
@@ -344,6 +368,7 @@ pub struct AppStatus {
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
     mode: MiningMode,
+    auto_mining: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -383,6 +408,7 @@ struct UniverseAppState {
     shutdown: Shutdown,
     cpu_miner: RwLock<CpuMiner>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
+    user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
@@ -413,10 +439,13 @@ fn main() {
         shutdown: shutdown.clone(),
         cpu_miner: CpuMiner::new().into(),
         cpu_miner_config: cpu_config.clone(),
+        user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
     };
+
+    let user_listener = app_state.user_listener.clone();
 
     let app = tauri::Builder::default()
         .manage(app_state)
@@ -431,16 +460,40 @@ fn main() {
             )
             .expect("Could not set up logging");
 
+            let app_config_clone = app_config.clone();
+
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread_config = tauri::async_runtime::spawn(async move {
                 app_config.write().await.load_or_create(config_path).await
             });
+
             match tauri::async_runtime::block_on(thread_config).unwrap() {
                 Ok(_) => {}
                 Err(e) => {
                     error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
                 }
             };
+
+            // let auto_mining = app_config.read().auto_mining;
+            // let user_listener = app_state.user_listener.write();
+
+            // let user_listener = app_state.user_listener.clone();
+            let app_window = app.get_window("main").unwrap().clone();
+            let auto_miner_thread = tauri::async_runtime::spawn(async move {
+                let auto_mining = app_config_clone.read().await.auto_mining;
+                let mut user_listener = user_listener.write().await;
+
+                if auto_mining {
+                    user_listener.start_listening_to_mouse_poisition_change(app_window);
+                }
+            });
+
+            match tauri::async_runtime::block_on(auto_miner_thread) {
+                Ok(_) => {}
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Error setting up auto mining: {:?}", e);
+                }
+            }
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread = tauri::async_runtime::spawn(async move {
@@ -461,7 +514,7 @@ fn main() {
 
                         return Err(e);
                     }
-                };
+                }
                 Ok(())
             });
             match tauri::async_runtime::block_on(thread).unwrap() {
@@ -477,7 +530,8 @@ fn main() {
             status,
             start_mining,
             stop_mining,
-            set_mode
+            set_auto_mining,
+            set_mode,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -507,7 +561,7 @@ fn main() {
             info!(target: LOG_TARGET, "App shutdown caught");
             shutdown.trigger();
             // TODO: Find a better way of knowing that all miners have stopped
-            sleep(std::time::Duration::from_secs(3));
+            sleep(std::time::Duration::from_secs(5));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         RunEvent::MainEventsCleared => {
