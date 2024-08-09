@@ -113,7 +113,7 @@ impl XmrigAdapter {
                     match std::fs::remove_file(data_dir.join("xmrig_pid")) {
                         Ok(_) => {}
                         Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file");
+                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file {:?}", e);
                         }
                     }
 
@@ -178,7 +178,6 @@ impl ProcessAdapter for XmrigAdapter {
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
-        _window: tauri::Window,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         self.kill_previous_instances(base_folder.clone())?;
 

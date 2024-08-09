@@ -1,5 +1,4 @@
 use crate::process_killer::kill_process;
-use crate::ProgressTracker;
 use anyhow::Error;
 use log::warn;
 use tokio::runtime::Handle;

@@ -1,12 +1,8 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::process_killer::kill_process;
-use crate::xmrig_adapter::XmrigInstance;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
-use async_trait::async_trait;
-use dirs_next::data_local_dir;
 use humantime::format_duration;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
