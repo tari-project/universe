@@ -15,6 +15,7 @@ import { useGetStatus } from './hooks/useGetStatus.ts';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from './types.ts';
 import useAppStateStore from './store/appStateStore.ts';
+import { useMining } from './hooks/useMining.ts';
 
 import { preload } from './visuals.js';
 
@@ -26,6 +27,7 @@ function App() {
     const startupInitiated = useRef(false);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const { startMining, stopMining } = useMining();
     const visualMode = useUIStore((s) => s.visualMode);
 
     useEffect(() => {
@@ -44,6 +46,16 @@ function App() {
                         if (payload.progress >= 1.0) {
                             settingUpFinished();
                         }
+                        break;
+                    case 'user_idle':
+                        startMining().then(() => {
+                            console.log('Mining started');
+                        });
+                        break;
+                    case 'user_active':
+                        stopMining().then(() => {
+                            console.log('Mining stopped');
+                        });
                         break;
                     default:
                         console.debug('Unknown tauri event: ', {
