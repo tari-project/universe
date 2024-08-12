@@ -49,6 +49,10 @@ struct SetupStatusEvent {
     title: String,
     progress: f64,
 }
+#[derive(Debug, Serialize, Clone)]
+struct LoadPayload {
+    message: String,
+}
 
 pub struct ProgressTracker {
     inner: Arc<RwLock<ProgressTrackerInner>>,
@@ -132,6 +136,7 @@ async fn setup_application<'r>(
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    window.emit("loaded", LoadPayload { message: "window loaded".to_string() }).expect("error while loading window");
     let _ = window.emit(
         "message",
         SetupStatusEvent {
@@ -537,6 +542,7 @@ fn main() {
             };
 
             let app_window = app.get_window("main").unwrap().clone();
+
             let auto_miner_thread = tauri::async_runtime::spawn(async move {
                 let auto_mining = app_config_clone.read().await.auto_mining;
                 let mut user_listener = user_listener.write().await;

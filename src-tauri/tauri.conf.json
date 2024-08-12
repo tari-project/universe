@@ -35,6 +35,11 @@
                 "unmaximize": true,
                 "unminimize": true,
                 "startDragging": true
+            },
+            "fs": {
+                "all": false,
+                "readFile": true,
+                "writeFile": true
             }
         },
         "pattern": {
@@ -62,6 +67,7 @@
             "active": true,
             "targets": "all",
             "identifier": "com.tari.universe",
+            "resources": ["../assets"],
             "icon": [
                 "icons/32x32.png",
                 "icons/128x128.png",

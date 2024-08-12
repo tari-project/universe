@@ -17,8 +17,8 @@ import { TauriEvent } from './types.ts';
 import useAppStateStore from './store/appStateStore.ts';
 import { useMining } from './hooks/useMining.ts';
 
-import { preload } from './visuals.js';
 import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts';
+import { preload } from './visuals';
 
 function App() {
     const background = useUIStore((s) => s.background);
@@ -76,7 +76,7 @@ function App() {
         );
         if (!startupInitiated.current) {
             startupInitiated.current = true;
-            preload();
+
             invoke('setup_application').catch((e) => {
                 console.error('Failed to setup application:', e);
             });
@@ -89,6 +89,17 @@ function App() {
 
     useGetStatus();
     useGetApplicatonsVersions();
+
+    useEffect(() => {
+        const ul = listen('loaded', ({ payload }) => {
+            if (payload) {
+                preload();
+            }
+        });
+        return () => {
+            ul.then((unlisten) => unlisten());
+        };
+    }, []);
 
     const hideCanvas = !visualMode || view === 'setup';
 
