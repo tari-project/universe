@@ -76,7 +76,7 @@ function App() {
         );
         if (!startupInitiated.current) {
             startupInitiated.current = true;
-
+            preload();
             invoke('setup_application').catch((e) => {
                 console.error('Failed to setup application:', e);
             });
@@ -89,17 +89,6 @@ function App() {
 
     useGetStatus();
     useGetApplicatonsVersions();
-
-    useEffect(() => {
-        const ul = listen('loaded', ({ payload }) => {
-            if (payload) {
-                preload();
-            }
-        });
-        return () => {
-            ul.then((unlisten) => unlisten());
-        };
-    }, []);
 
     const hideCanvas = !visualMode || view === 'setup';
 
