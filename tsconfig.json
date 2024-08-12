@@ -19,7 +19,10 @@
         "strict": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "noFallthroughCasesInSwitch": true
+        "noFallthroughCasesInSwitch": true,
+
+        "allowSyntheticDefaultImports": true,
+        "types": ["vite/client", "node"]
     },
     "include": ["src"],
     "references": [{ "path": "./tsconfig.node.json" }]
