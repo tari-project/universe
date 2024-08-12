@@ -386,9 +386,9 @@ pub struct BaseNodeStatus {
     is_synced: bool,
 }
 
-#[derive(Debug, Serialize, PartialEq, PartialOrd)]
+#[derive(Debug, Serialize, PartialEq, PartialOrd, Clone)]
 pub struct CpuCoreTemperature {
-    pub id : u32,
+    pub id: u32,
     pub label: String,
     pub temperature: f32,
     pub max_temperature: f32,
