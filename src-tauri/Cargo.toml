@@ -25,7 +25,7 @@ tari_crypto = "0.20.3"
 anyhow = "1"
 dirs-next = "2.0.0"
 reqwest = { version = "0.12.5", features = ["stream", "json"] }
-tauri = { version = "1", features = [ "fs-read-file", "fs-write-file",
+tauri = { version = "1", features = [
     "updater",
     "window-show",
     "window-unminimize",
