@@ -10,11 +10,18 @@ export interface AppStatus {
     auto_mining: boolean;
 }
 
+export interface CpuCoreTemperature {
+    label: string;
+    temperature: number;
+    max_temperature: number;
+}
+
 export interface CpuMinerStatus {
     is_mining: boolean;
     hash_rate: number;
     cpu_usage: number;
     cpu_brand: string;
+    cpu_temperatures: CpuCoreTemperature[];
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
 }
