@@ -311,7 +311,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
-    let cpu_miner = state.cpu_miner.read().await;
+    let mut cpu_miner = state.cpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -386,12 +386,33 @@ pub struct BaseNodeStatus {
     is_synced: bool,
 }
 
+#[derive(Debug, Serialize, PartialEq, PartialOrd)]
+pub struct CpuCoreTemperature {
+    pub id : u32,
+    pub label: String,
+    pub temperature: f32,
+    pub max_temperature: f32,
+}
+
+impl Ord for CpuCoreTemperature {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl Eq for CpuCoreTemperature {
+    fn assert_receiver_is_total_eq(&self) {
+        self.id.assert_receiver_is_total_eq();
+    }
+} 
+
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
     pub is_mining_enabled: bool,
     pub is_mining: bool,
     pub hash_rate: f64,
     pub cpu_usage: u32,
+    pub cpu_temperatures: Vec<CpuCoreTemperature>,
     pub cpu_brand: String,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,

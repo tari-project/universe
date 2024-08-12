@@ -19,6 +19,7 @@ const initialState: State = {
     mode: 'Eco',
     auto_mining: false,
     main_app_version: undefined,
+    applications_versions: undefined,
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(

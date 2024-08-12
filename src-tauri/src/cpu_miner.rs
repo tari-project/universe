@@ -2,11 +2,11 @@ use crate::app_config::MiningMode;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
-    CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
+    CpuCoreTemperature, CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker
 };
 use log::warn;
 use std::path::PathBuf;
-use sysinfo::{CpuRefreshKind, RefreshKind, System};
+use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
@@ -21,6 +21,7 @@ pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     miner_shutdown: Shutdown,
     api_client: Option<XmrigHttpApiClient>,
+    cpu_temperature_components: Components
 }
 
 impl CpuMiner {
@@ -29,6 +30,7 @@ impl CpuMiner {
             watcher_task: None,
             miner_shutdown: Shutdown::new(),
             api_client: None,
+            cpu_temperature_components: Components::new_with_refreshed_list()
         }
     }
 
@@ -143,10 +145,26 @@ impl CpuMiner {
     }
 
     pub async fn status(
-        &self,
+        &mut self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {
+        
+        let components = &mut self.cpu_temperature_components;
+        components.refresh();
+
+        let cpu_components:Vec<&Component> = components.iter().filter(|component| component.label().contains("Core")).collect();
+        let cpu_temperatures: Vec<CpuCoreTemperature> = cpu_components.iter().map(|component| {
+            CpuCoreTemperature {
+                id: component.label().split(" ").last().unwrap().parse().unwrap(),
+                label: component.label().split(" ").skip(1).collect::<Vec<&str>>().join(" ").to_string(),
+                temperature: component.temperature(),
+                max_temperature: component.max(),
+            }
+        }).collect(); 
+
+        // cpu_temperatures.sort();
+
         let mut s =
             System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
@@ -158,6 +176,7 @@ impl CpuMiner {
         let cpu_brand = s.cpus().first().map(|cpu| cpu.brand()).unwrap_or("Unknown");
 
         let cpu_usage = s.global_cpu_usage() as u32;
+        // let cpu_temperature = s.
 
         match &self.api_client {
             Some(client) => {
@@ -205,7 +224,7 @@ impl CpuMiner {
                     is_mining_enabled: true,
                     is_mining,
                     hash_rate,
-                    cpu_usage,
+                    cpu_usage: cpu_usage as u32,
                     cpu_brand: cpu_brand.to_string(),
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
