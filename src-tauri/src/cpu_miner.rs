@@ -6,7 +6,6 @@ use crate::{
     CpuCoreTemperature, CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker
 };
 use log::warn;
-use std::ops::Deref;
 use std::path::PathBuf;
 use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -27,7 +26,6 @@ pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     miner_shutdown: Shutdown,
     api_client: Option<XmrigHttpApiClient>,
-    cpu_temperature_components: Components,
     cpu_temperatures: Vec<CpuCoreTemperature>,
 }
 
@@ -37,7 +35,6 @@ impl CpuMiner {
             watcher_task: None,
             miner_shutdown: Shutdown::new(),
             api_client: None,
-            cpu_temperature_components: Components::new_with_refreshed_list(),
             cpu_temperatures: Vec::new(),
         }
     }
@@ -166,8 +163,7 @@ impl CpuMiner {
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {
         
-        let components = &mut self.cpu_temperature_components;
-        components.refresh();
+        let components = Components::new_with_refreshed_list();
 
         let cpu_components:Vec<&Component> = components.iter().filter(|component| component.label().contains("Core")).collect();
         let cpu_temperatures: Vec<CpuCoreTemperature> = cpu_components.iter().map(|component| {

@@ -36,6 +36,10 @@ const Settings: React.FC = () => {
         (state) => state.cpu?.cpu_temperatures
     );
 
+    const gpuHardwareStatuses = useAppStatusStore(
+        (state) => state.gpu?.hardware_statuses
+    );
+
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
@@ -219,10 +223,39 @@ const Settings: React.FC = () => {
                     )}
                     <Divider />
                     <Stack spacing={1} pt={1}>
-                        <Typography variant="h5">CPU Temperatures</Typography>
-                        {cpuTemperatures ? (
-                            <CardContainer>
-                                {cpuTemperatures.map((core) => (
+                        <Typography variant="h5">
+                            Hardware Temperatures
+                        </Typography>
+                        <CardContainer>
+                            {gpuHardwareStatuses &&
+                                gpuHardwareStatuses.map((gpu) => (
+                                    <CardComponent
+                                        key={gpu.uuid}
+                                        heading={gpu.name}
+                                        labels={[
+                                            {
+                                                labelText: 'Utilization',
+                                                labelValue:
+                                                    gpu.load.toString() + '%',
+                                            },
+                                            {
+                                                labelText:
+                                                    'Current temperature',
+                                                labelValue:
+                                                    gpu.temperature.toString() +
+                                                    '°C',
+                                            },
+                                            {
+                                                labelText: 'Max temperature',
+                                                labelValue:
+                                                    gpu.max_temperature.toString() +
+                                                    '°C',
+                                            },
+                                        ]}
+                                    />
+                                ))}
+                            {cpuTemperatures &&
+                                cpuTemperatures.map((core) => (
                                     <CardComponent
                                         key={core.label}
                                         heading={core.label}
@@ -243,10 +276,7 @@ const Settings: React.FC = () => {
                                         ]}
                                     />
                                 ))}
-                            </CardContainer>
-                        ) : (
-                            <Typography>No CPU Temperatures</Typography>
-                        )}
+                        </CardContainer>
                     </Stack>
                     <Divider />
                     <Stack spacing={1} pt={1}>
