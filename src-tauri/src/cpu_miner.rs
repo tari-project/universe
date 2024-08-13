@@ -192,10 +192,19 @@ impl CpuMiner {
                     }
                 });
 
+                // mining should be true if the hashrate is greater than 0
+                let mut is_mining = false;
+                let hasrate_sum = xmrig_status.hashrate.total.iter().fold(0.0, |acc, x| {
+                    acc + x.unwrap_or(0.0)
+                });
+
+                if hasrate_sum > 0.0 {
+                    is_mining = true;
+                }
+
                 Ok(CpuMinerStatus {
-                    is_mining: xmrig_status.hashrate.total.len() > 0
-                        && xmrig_status.hashrate.total[0].is_some()
-                        && xmrig_status.hashrate.total[0].unwrap() > 0.0,
+                    is_mining_enabled: true,
+                    is_mining,
                     hash_rate,
                     cpu_usage: cpu_usage as u32,
                     cpu_brand: cpu_brand.to_string(),
@@ -211,6 +220,7 @@ impl CpuMiner {
                 })
             }
             None => Ok(CpuMinerStatus {
+                is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
                 cpu_usage: cpu_usage as u32,

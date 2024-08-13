@@ -459,6 +459,7 @@ pub struct BaseNodeStatus {
 
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
+    pub is_mining_enabled: bool,
     pub is_mining: bool,
     pub hash_rate: f64,
     pub cpu_usage: u32,
