@@ -17,8 +17,8 @@ import { TauriEvent } from './types.ts';
 import useAppStateStore from './store/appStateStore.ts';
 import { useMining } from './hooks/useMining.ts';
 
-import { preload } from './visuals.js';
 import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts';
+import { preload } from './visuals';
 
 function App() {
     const background = useUIStore((s) => s.background);
