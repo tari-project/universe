@@ -419,12 +419,18 @@ struct CpuMinerConfig {
     tari_address: TariAddress,
 }
 
-#[derive(Debug, Serialize, PartialEq, PartialOrd, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct CpuCoreTemperature {
     pub id: u32,
     pub label: String,
     pub temperature: f32,
     pub max_temperature: f32,
+}
+
+impl Eq for CpuCoreTemperature {
+    fn assert_receiver_is_total_eq(&self) {
+        self.id.assert_receiver_is_total_eq();
+    }
 }
 
 impl Ord for CpuCoreTemperature {
@@ -433,11 +439,12 @@ impl Ord for CpuCoreTemperature {
     }
 }
 
-impl Eq for CpuCoreTemperature {
-    fn assert_receiver_is_total_eq(&self) {
-        self.id.assert_receiver_is_total_eq();
+impl PartialOrd for CpuCoreTemperature {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.id.partial_cmp(&other.id)
     }
 }
+
 #[derive(Debug, Serialize, Clone)]
 struct GpuMinerStatus {
     hardware_statuses: Vec<GpuMinerHardwareStatus>,
