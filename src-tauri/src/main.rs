@@ -417,8 +417,6 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 
     let config_guard = state.config.read().await;
 
-    println!("is mining {}", cpu.is_mining);
-
     Ok(AppStatus {
         cpu,
         base_node: BaseNodeStatus {

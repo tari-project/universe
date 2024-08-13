@@ -80,12 +80,6 @@ impl CpuMiner {
 
         self.api_client = Some(client);
 
-        if self.api_client.is_none() {
-            println!("Failed to start xmrig");
-        }else {
-            println!("Started xmrig");
-        }
-
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             println!("Starting process");
             let mut watch_timer = tokio::time::interval(tokio::time::Duration::from_secs(1));
@@ -171,7 +165,6 @@ impl CpuMiner {
 
         let cpu_usage = s.global_cpu_usage() as u32;
 
-
         match &self.api_client {
             Some(client) => {
                 let xmrig_status = client.summary().await?;
@@ -186,17 +179,13 @@ impl CpuMiner {
                     block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
                 );
 
-                xmrig_status.hashrate.total.iter().for_each(|h| {
-                    if let Some(h) = h {
-                        println!("Hashrate: {}", h);
-                    }
-                });
-
                 // mining should be true if the hashrate is greater than 0
                 let mut is_mining = false;
-                let hasrate_sum = xmrig_status.hashrate.total.iter().fold(0.0, |acc, x| {
-                    acc + x.unwrap_or(0.0)
-                });
+                let hasrate_sum = xmrig_status
+                    .hashrate
+                    .total
+                    .iter()
+                    .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
 
                 if hasrate_sum > 0.0 {
                     is_mining = true;
