@@ -5,6 +5,7 @@ import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 import { useMining } from '../../../../hooks/useMining.ts';
 import { styled } from '@mui/material/styles';
 import { keyframes } from '@emotion/react';
+import { useUIStore } from '../../../../store/useUIStore.ts';
 
 const StartStyle = {
     background: '#06C983',
@@ -44,9 +45,12 @@ const StyledIcon = styled(AiOutlineLoading)(() => ({
 
 function MiningButton() {
     const mining = useAppStatusStore((s) => s.cpu?.is_mining);
-    const { startMining, stopMining, isLoading } = useMining();
+    const isLoading = useUIStore((s) => s.isMiningLoading);
+
+    const { startMining, stopMining } = useMining();
 
     const handleMining = () => {
+        if (isLoading) return;
         if (mining) {
             stopMining();
         } else {
