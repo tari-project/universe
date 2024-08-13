@@ -46,9 +46,8 @@
         },
         "windows": [
             {
-                "label": "app",
                 "title": "tari-universe",
-        "label": "main",
+                "label": "main",
                 "width": 1200,
                 "height": 800,
                 "resizable": true,
@@ -73,7 +72,8 @@
                 "icons/icon.ico"
             ],
             "macOS": {
-                "minimumSystemVersion": "14.6"
+                "minimumSystemVersion": "14.6",
+                "entitlements": "com.apple.developer.web-browser-engine.webcontent"
             },
             "windows": {
                 "webviewInstallMode": {
