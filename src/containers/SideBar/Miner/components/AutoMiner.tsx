@@ -1,50 +1,15 @@
 import { FormGroup, Switch, Stack, Typography } from '@mui/material';
 import { AutoMinerContainer } from '../styles';
-import { useIdleTimer } from 'react-idle-timer';
-import React from 'react';
-import { useUIStore } from '../../../../store/useUIStore.ts';
-import { useMining } from '../../../../hooks/useMining.ts';
+import { invoke } from '@tauri-apps/api/tauri';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore';
 
 function AutoMiner() {
-    const isAutoMining = useUIStore((s) => s.isAutoMining);
-    const setBackground = useUIStore((s) => s.setBackground);
-    const setIsAutoMining = useUIStore((s) => s.setIsAutoMining);
-    const { startMining, stopMining } = useMining();
+    const isAutoMining = useAppStatusStore((state) => state.auto_mining);
 
-    const enableAutoMining = () => {
-        startMining().then(() => {
-            setBackground('mining');
-        });
-    };
-    const disableAutoMining = () => {
-        stopMining().then(() => {
-            setBackground('idle');
-        });
-    };
-
-    const { start, pause } = useIdleTimer({
-        timeout: 1000 * 30,
-        startManually: true,
-        onIdle: enableAutoMining,
-        onActive: disableAutoMining,
-        events: ['mousemove'],
-    });
-
-    React.useEffect(() => {
-        if (isAutoMining) {
-            start();
-        } else {
-            pause();
-        }
-    }, [isAutoMining]);
-
-    const handleAutoMining = () => {
-        if (isAutoMining) {
-            setIsAutoMining(false);
-            disableAutoMining();
-        } else {
-            setIsAutoMining(true);
-        }
+    const handleAutoMining = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        console.log('Auto mining checked', isChecked);
+        invoke('set_auto_mining', { autoMining: isChecked });
     };
 
     return (

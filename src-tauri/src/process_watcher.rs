@@ -1,7 +1,6 @@
 use crate::process_adapter::{ProcessAdapter, ProcessInstance};
 use log::{debug, error, info};
 use std::path::PathBuf;
-use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
@@ -29,24 +28,33 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
+    pub async fn kill_previous_instances(
+        &mut self,
+        base_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
+        self.adapter.kill_previous_instances(base_path)?;
+        Ok(())
+    }
+
     pub async fn start(
         &mut self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-        window: tauri::Window,
     ) -> Result<(), anyhow::Error> {
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
             println!("Tried to start process watcher for {} twice", name);
             return Ok(());
         }
+        info!(target: LOG_TARGET, "Starting process watcher for {}", name);
+        self.kill_previous_instances(base_path.clone()).await?;
 
         self.internal_shutdown = Shutdown::new();
         let mut inner_shutdown = self.internal_shutdown.to_signal();
 
         let poll_time = self.poll_time;
 
-        let (mut child, status_monitor) = self.adapter.spawn(base_path, window)?;
+        let (mut child, status_monitor) = self.adapter.spawn(base_path)?;
         self.status_monitor = Some(status_monitor);
 
         let mut app_shutdown = app_shutdown.clone();

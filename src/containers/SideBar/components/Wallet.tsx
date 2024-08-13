@@ -1,6 +1,6 @@
-import { Typography, Stack, Divider } from '@mui/material';
+import { Typography, Stack } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
-import { WalletContainer, Handle, HoverStack, WalletButton } from '../styles';
+import { WalletContainer, Handle } from '../styles';
 import { darkTheme } from '../../../theme/themes';
 import { AddressBox, BalanceChangeChip } from '../styles';
 import { FaCircleArrowUp } from 'react-icons/fa6';
@@ -93,35 +93,6 @@ function Wallet() {
             />
           </Stack>
         </Stack>
-        <HoverStack className="hover-stack">
-          <Stack
-            direction="row"
-            spacing={1}
-            justifyContent="space-between"
-            divider={<Divider orientation="vertical" />}
-            style={{
-              borderTop: '1px solid rgba(255,255,255,0.1)',
-              marginTop: '10px',
-              paddingTop: '10px',
-              width: '100%',
-            }}
-          >
-            <WalletButton
-              variant="contained"
-              fullWidth
-              onClick={() => console.log('Send')}
-            >
-              Send
-            </WalletButton>
-            <WalletButton
-              variant="contained"
-              fullWidth
-              onClick={() => console.log('Receive')}
-            >
-              Receive
-            </WalletButton>
-          </Stack>
-        </HoverStack>
       </WalletContainer>
     </ThemeProvider>
   );

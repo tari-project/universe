@@ -6,24 +6,24 @@ interface State {
     view: viewType;
     visualMode: boolean;
     sidebarOpen: boolean;
-    isAutoMining: boolean;
+    isMiningLoading: boolean;
 }
 interface Actions {
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
     setVisualMode: (visualMode: State['visualMode']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
-    setIsAutoMining: (isAutoMining: State['isAutoMining']) => void;
+    setIsMiningLoading: (isMiningLoading: State['isMiningLoading']) => void;
 }
 
 type UIStoreState = State & Actions;
 
 const initialState: State = {
-    background: 'idle',
-    view: 'mining',
+    background: 'onboarding',
+    view: 'setup',
     visualMode: true,
     sidebarOpen: false,
-    isAutoMining: false,
+    isMiningLoading: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -32,5 +32,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setView: (view) => set({ view }),
     setVisualMode: (visualMode) => set({ visualMode }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    setIsAutoMining: (isAutoMining) => set({ isAutoMining }),
+    setIsMiningLoading: (isMiningLoading) => set({ isMiningLoading }),
 }));

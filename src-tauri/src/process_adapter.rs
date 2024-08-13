@@ -1,5 +1,12 @@
+use crate::process_killer::kill_process;
+use crate::ProgressTracker;
+use anyhow::Error;
 use async_trait::async_trait;
+use log::warn;
+use std::fs;
 use std::path::PathBuf;
+
+const LOG_TARGET: &str = "tari::universe::process_adapter";
 
 pub trait ProcessAdapter {
     type Instance: ProcessInstance;
@@ -8,16 +15,29 @@ pub trait ProcessAdapter {
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
-        window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
     fn spawn(
         &self,
         base_folder: PathBuf,
-        window: tauri::Window,
     ) -> Result<(Self::Instance, Self::StatusMonitor), anyhow::Error> {
-        self.spawn_inner(base_folder, window)
+        self.spawn_inner(base_folder)
+    }
+
+    fn pid_file_name(&self) -> &str;
+
+    fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
+        match fs::read_to_string(base_folder.join(self.pid_file_name())) {
+            Ok(pid) => {
+                let pid = pid.trim().parse::<u32>()?;
+                kill_process(pid)?;
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Could not read node's pid file: {}", e);
+            }
+        }
+        Ok(())
     }
 }
 

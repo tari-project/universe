@@ -1,9 +1,11 @@
 use crate::cpu_miner::CpuMinerEvent;
 use crate::download_utils::{download_file, extract};
+use crate::process_killer::kill_process;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
+use crate::ProgressTracker;
 use anyhow::Error;
-use log::info;
+use log::{info, warn};
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
@@ -61,24 +63,27 @@ impl XmrigAdapter {
     }
     pub fn spawn(
         &self,
-        window: tauri::Window,
+        cache_dir: PathBuf,
+        logs_dir: PathBuf,
+        data_dir: PathBuf,
+        progress_tracker: ProgressTracker,
+        cpu_max_percentage: u16,
     ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
+        self.kill_previous_instances(data_dir.clone())?;
+
         let (_tx, rx) = tokio::sync::mpsc::channel(100);
-        let cache_dir = tauri::api::path::cache_dir()
-            .ok_or(anyhow::anyhow!("Failed to get cache dir"))?
-            .join("tari-universe");
         let force_download = self.force_download;
         let xmrig_shutdown = Shutdown::new();
         let mut shutdown_signal = xmrig_shutdown.to_signal();
         let mut args = self.node_connection.generate_args();
-        let xmrig_log_file = cache_dir.join("log").join("xmrig.log");
+        let xmrig_log_file = logs_dir.join("xmrig.log");
         std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
         args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push(format!("--donate-level=1"));
         args.push(format!("--user={}", self.monero_address));
-        args.push("--threads=6".to_string());
+        args.push(format!("--cpu-max-threads-hint={}", cpu_max_percentage));
 
         let client = XmrigHttpApiClient::new(
             format!("http://127.0.0.1:{}", self.http_api_port),
@@ -92,7 +97,8 @@ impl XmrigAdapter {
                 handle: Some(tokio::spawn(async move {
                     // TODO: Ensure version string is not malicious
                     let version =
-                        Self::ensure_latest(cache_dir.clone(), force_download, window).await?;
+                        Self::ensure_latest(cache_dir.clone(), force_download, progress_tracker)
+                            .await?;
                     let xmrig_dir = cache_dir
                         .join("xmrig")
                         .join(&version)
@@ -100,22 +106,23 @@ impl XmrigAdapter {
                     let xmrig_bin = xmrig_dir.join("xmrig");
                     let mut xmrig = tokio::process::Command::new(xmrig_bin)
                         .args(args)
-                        // TODO: IF you uncomment these, then it will capture the output to mem. Not sure if that is better or worse
-                        // than outputing it immediately
-                        // .stdout(std::process::Stdio::piped())
-                        // .stderr(std::process::Stdio::piped())
                         .kill_on_drop(true)
                         .spawn()?;
 
-                    // let (receiver, xmrig) =
-                    //     tauri::api::process::Command::new(xmrig_bin.to_str().unwrap().to_string())
-                    //         .current_dir(xmrig_dir)
-                    //         .spawn()?;
-                    // TODO: Try use an either here
+                    if let Some(id) = xmrig.id() {
+                        std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
+                    }
                     shutdown_signal.wait().await;
                     println!("Stopping xmrig");
 
                     xmrig.kill().await?;
+
+                    match std::fs::remove_file(data_dir.join("xmrig_pid")) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file");
+                        }
+                    }
 
                     Ok(())
                 })),
@@ -127,13 +134,11 @@ impl XmrigAdapter {
     pub async fn ensure_latest(
         cache_dir: PathBuf,
         force_download: bool,
-        window: tauri::Window,
+        progress_tracker: ProgressTracker,
     ) -> Result<String, Error> {
+        dbg!(&cache_dir);
         let latest_release = fetch_latest_release().await?;
-        let xmrig_dir = cache_dir
-            .join("com.tari.universe")
-            .join("xmrig")
-            .join(&latest_release.version);
+        let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
         if force_download {
             println!("Cleaning up xmrig dir");
             let _ = fs::remove_dir_all(&xmrig_dir).await;
@@ -141,10 +146,7 @@ impl XmrigAdapter {
         if !xmrig_dir.exists() {
             println!("Latest version of xmrig doesn't exist");
             println!("latest version is {}", latest_release.version);
-            let in_progress_dir = cache_dir
-                .join("com.tari.universe")
-                .join("xmrig")
-                .join("in_progress");
+            let in_progress_dir = cache_dir.join("xmrig").join("in_progress");
             if in_progress_dir.exists() {
                 println!("Trying to delete dir {:?}", in_progress_dir);
                 match fs::remove_dir(&in_progress_dir).await {
@@ -156,23 +158,37 @@ impl XmrigAdapter {
                 }
             }
 
-            let os_string = get_os_string();
-            info!(target: LOG_TARGET, "Downloading xmrig for {}", &os_string);
+            let id = get_os_string_id();
+            info!(target: LOG_TARGET, "Downloading xmrig for {}", &id);
             let platform = latest_release
-                .get_asset(&os_string)
+                .get_asset(&id)
                 .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
             println!("Downloading file");
             println!("Downloading file from {}", &platform.url);
 
             let in_progress_file = in_progress_dir.join(&platform.name);
-            download_file(&platform.url, &in_progress_file, window).await?;
+            download_file(&platform.url, &in_progress_file, progress_tracker).await?;
 
             println!("Renaming file");
             println!("Extracting file");
             extract(&in_progress_file, &xmrig_dir).await?;
             fs::remove_dir_all(in_progress_dir).await?;
         }
+
         Ok(latest_release.version)
+    }
+
+    fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
+        match std::fs::read_to_string(base_folder.join("xmrig_pid")) {
+            Ok(pid) => {
+                let pid = pid.trim().parse::<u32>()?;
+                kill_process(pid)?;
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Could not read xmrigs pid file: {}", e);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -209,10 +225,10 @@ impl Drop for XmrigInstance {
 }
 
 #[allow(unreachable_code)]
-fn get_os_string() -> String {
+fn get_os_string_id() -> String {
     #[cfg(target_os = "windows")]
     {
-        return "windows-x64".to_string();
+        return "msvc-win64".to_string();
     }
 
     #[cfg(target_os = "macos")]
@@ -224,20 +240,19 @@ fn get_os_string() -> String {
 
         #[cfg(target_arch = "aarch64")]
         {
-            return "macos-arm64".to_string();
-            // TODO: confirm whether to use the macos-x64 or macos-arm64
-            // return "macos-x64".to_string();
+            // the x64 seems to work better on the M1
+            return "macos-x64".to_string();
         }
     }
 
     #[cfg(target_os = "linux")]
     {
-        return "linux-x64".to_string();
+        return "linux-static-x64".to_string();
     }
 
     #[cfg(target_os = "freebsd")]
     {
-        return "freebsd-x64".to_string();
+        return "freebsd-static-x64".to_string();
     }
 
     panic!("Unsupported OS");

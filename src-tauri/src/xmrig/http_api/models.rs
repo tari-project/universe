@@ -74,10 +74,7 @@ pub struct Connection {
 #[derive(Deserialize, Debug)]
 pub struct Cpu {
     brand: String,
-    family: u64,
-    model: u64,
-    stepping: u64,
-    proc_info: u64,
+    // family: u64,
     aes: bool,
     avx2: bool,
     x64: bool,

@@ -1,19 +1,24 @@
 use crate::download_utils::{download_file, extract};
-use crate::{github, SetupStatusEvent};
+use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{error, info, warn};
+use futures_util::FutureExt;
+use log::{info, warn};
 use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::{Arc, LazyLock};
 use tauri::api::path::cache_dir;
 use tokio::fs;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
 const LOG_TARGET: &str = "tari::universe::binary_resolver";
+static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(|| BinaryResolver::new());
+
 pub struct BinaryResolver {
     download_mutex: Mutex<()>,
     adapters: HashMap<Binaries, Box<dyn LatestVersionApiAdapter>>,
+    latest_versions: Arc<RwLock<HashMap<Binaries, Version>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -121,6 +126,8 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             name_suffix = "linux-x86_64.zip";
         }
 
+        info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
+
         let platform = version
             .assets
             .iter()
@@ -159,21 +166,24 @@ impl BinaryResolver {
         Self {
             adapters,
             download_mutex: Mutex::new(()),
+            latest_versions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
-    pub fn current() -> Self {
-        Self::new()
+    pub fn current() -> &'static Self {
+        &*INSTANCE
     }
-    pub fn resolve_path(
-        &self,
-        binary: Binaries,
-        version: &Version,
-    ) -> Result<PathBuf, anyhow::Error> {
+
+    pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
+        dbg!(&self.latest_versions);
         let adapter = self
             .adapters
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
+        let guard = self.latest_versions.read().await;
+        let version = guard
+            .get(&binary)
+            .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
         let base_dir = adapter.get_binary_folder().join(&version.to_string());
         match binary {
             Binaries::Xmrig => {
@@ -198,9 +208,16 @@ impl BinaryResolver {
     pub async fn ensure_latest(
         &self,
         binary: Binaries,
-        window: tauri::Window,
+        progress_tracker: ProgressTracker,
     ) -> Result<Version, anyhow::Error> {
-        let version = self.ensure_latest_inner(binary, false, window).await?;
+        let version = self
+            .ensure_latest_inner(binary, false, progress_tracker)
+            .await?;
+        self.latest_versions
+            .write()
+            .await
+            .insert(binary, version.clone());
+        info!(target: LOG_TARGET, "Latest version of {} is {}", binary.name(), version);
         Ok(version)
     }
 
@@ -208,21 +225,13 @@ impl BinaryResolver {
         &self,
         binary: Binaries,
         force_download: bool,
-        window: tauri::Window,
+        progress_tracker: ProgressTracker,
     ) -> Result<Version, Error> {
         let adapter = self
             .adapters
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
         let name = binary.name();
-        let _ = window.emit(
-            "message",
-            SetupStatusEvent {
-                event_type: "setup_status".to_string(),
-                title: format!("Fetching latest version of {}", name),
-                progress: 0.2,
-            },
-        );
         let latest_release = adapter.fetch_latest_release().await?;
         // TODO: validate that version doesn't have any ".." or "/" in it
 
@@ -257,7 +266,7 @@ impl BinaryResolver {
             info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
             let in_progress_file = in_progress_dir.join(&asset.name);
-            download_file(&asset.url, &in_progress_file, window).await?;
+            download_file(&asset.url, &in_progress_file, progress_tracker).await?;
             info!(target: LOG_TARGET, "Renaming file");
             info!(target: LOG_TARGET, "Extracting file");
             let bin_dir = adapter
@@ -269,9 +278,14 @@ impl BinaryResolver {
         }
         Ok(latest_release.version)
     }
+
+    pub async fn get_latest_version(&self, binary: Binaries) -> Version {
+        let guard = self.latest_versions.read().await;
+        guard.get(&binary).cloned().unwrap_or(Version::new(0, 0, 0))
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Binaries {
     Xmrig,
     MergeMiningProxy,

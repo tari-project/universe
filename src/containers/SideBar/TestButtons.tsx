@@ -14,13 +14,21 @@ function TestButtons() {
     const handleSetView = (value: viewType) => {
         setView(value);
         setSelectedView(value);
-        if (value === 'setup' || value === 'tribes') {
+        if (value === 'setup') {
+            setBackground('onboarding');
+        }
+        if (value === 'tribes') {
             setBackground('loading');
         }
         if (value === 'mining') {
             setBackground('idle');
         }
     };
+
+    // const handleSetStatus = (value: backgroundType) => {
+    //   setBackground(value);
+    //   setSelectedBg(value);
+    // };
 
     return (
         <Stack direction="column" spacing={1}>
