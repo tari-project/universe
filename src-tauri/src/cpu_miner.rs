@@ -169,7 +169,8 @@ impl CpuMiner {
             .iter()
             .filter(|component| component.label().contains("Core"))
             .collect();
-        let cpu_temperatures: Vec<CpuCoreTemperature> = cpu_components
+
+        let mut cpu_temperatures: Vec<CpuCoreTemperature> = cpu_components
             .iter()
             .map(|component| CpuCoreTemperature {
                 id: component
@@ -190,6 +191,8 @@ impl CpuMiner {
                 max_temperature: component.max(),
             })
             .collect();
+
+        cpu_temperatures.sort();
 
         if self.cpu_temperatures.is_empty() {
             self.cpu_temperatures = cpu_temperatures.clone()
