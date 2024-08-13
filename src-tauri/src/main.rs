@@ -437,8 +437,8 @@ impl Eq for CpuCoreTemperature {
     fn assert_receiver_is_total_eq(&self) {
         self.id.assert_receiver_is_total_eq();
     }
-} 
-#[derive(Debug, Serialize,Clone)]
+}
+#[derive(Debug, Serialize, Clone)]
 struct GpuMinerStatus {
     hardware_statuses: Vec<GpuMinerHardwareStatus>,
 }

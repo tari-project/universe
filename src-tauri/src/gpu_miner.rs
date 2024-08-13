@@ -1,5 +1,8 @@
 use log::info;
-use nvml_wrapper::{ enum_wrappers::device::{TemperatureSensor, TemperatureThreshold}, Nvml };
+use nvml_wrapper::{
+    enum_wrappers::device::{TemperatureSensor, TemperatureThreshold},
+    Nvml,
+};
 
 use crate::{GpuMinerHardwareStatus, GpuMinerStatus};
 
@@ -7,14 +10,16 @@ const LOG_TARGET: &str = "tari::universe::cpu_miner";
 
 pub(crate) struct GpuMiner {
     nvml: Nvml,
-    status: GpuMinerStatus
+    status: GpuMinerStatus,
 }
 
 impl GpuMiner {
     pub fn new() -> Self {
         Self {
             nvml: Nvml::init().unwrap(),
-            status: GpuMinerStatus::from(GpuMinerStatus {hardware_statuses: Vec::new()})
+            status: GpuMinerStatus::from(GpuMinerStatus {
+                hardware_statuses: Vec::new(),
+            }),
         }
     }
 
@@ -29,11 +34,9 @@ impl GpuMiner {
     }
 
     pub fn status(&mut self) -> GpuMinerStatus {
-
-
         if self.status.hardware_statuses.is_empty() {
             let devices_count = self.nvml.device_count().unwrap();
-        
+
             for i in 0..devices_count {
                 let device = self.nvml.device_by_index(i).unwrap();
 
@@ -47,29 +50,32 @@ impl GpuMiner {
                     name,
                     temperature,
                     max_temperature: temperature,
-                    load
+                    load,
                 });
             }
         }
 
-        self.status.hardware_statuses = self.status.hardware_statuses.iter().map(|status| {
-            let device = self.nvml.device_by_uuid(status.uuid.clone()).unwrap();
+        self.status.hardware_statuses = self
+            .status
+            .hardware_statuses
+            .iter()
+            .map(|status| {
+                let device = self.nvml.device_by_uuid(status.uuid.clone()).unwrap();
 
-            let temperature = device.temperature(TemperatureSensor::Gpu).unwrap();
-            let load = device.utilization_rates().unwrap().gpu;
-            let max_temperature = status.max_temperature.max(temperature);
+                let temperature = device.temperature(TemperatureSensor::Gpu).unwrap();
+                let load = device.utilization_rates().unwrap().gpu;
+                let max_temperature = status.max_temperature.max(temperature);
 
-            GpuMinerHardwareStatus {
-                uuid: status.uuid.clone(),
-                name: status.name.clone(),
-                temperature,
-                max_temperature,
-                load
-            }
-        }).collect();
-
+                GpuMinerHardwareStatus {
+                    uuid: status.uuid.clone(),
+                    name: status.name.clone(),
+                    temperature,
+                    max_temperature,
+                    load,
+                }
+            })
+            .collect();
 
         self.status.clone()
-
     }
 }

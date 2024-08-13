@@ -2,7 +2,8 @@ use crate::app_config::MiningMode;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
-    CpuCoreTemperature, CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker
+    CpuCoreTemperature, CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus,
+    CpuMinerStatus, ProgressTracker,
 };
 use log::warn;
 use std::path::PathBuf;
@@ -149,27 +150,47 @@ impl CpuMiner {
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {
-        
         let components = Components::new_with_refreshed_list();
 
-        let cpu_components:Vec<&Component> = components.iter().filter(|component| component.label().contains("Core")).collect();
-        let cpu_temperatures: Vec<CpuCoreTemperature> = cpu_components.iter().map(|component| {
-                CpuCoreTemperature {
-                    id: component.label().split(" ").last().unwrap().parse().unwrap(),
-                    label: component.label().split(" ").skip(1).collect::<Vec<&str>>().join(" ").to_string(),
-                    temperature: component.temperature(),
-                    max_temperature: component.max(),
-                }
-            }).collect();
+        let cpu_components: Vec<&Component> = components
+            .iter()
+            .filter(|component| component.label().contains("Core"))
+            .collect();
+        let cpu_temperatures: Vec<CpuCoreTemperature> = cpu_components
+            .iter()
+            .map(|component| CpuCoreTemperature {
+                id: component
+                    .label()
+                    .split(" ")
+                    .last()
+                    .unwrap()
+                    .parse()
+                    .unwrap(),
+                label: component
+                    .label()
+                    .split(" ")
+                    .skip(1)
+                    .collect::<Vec<&str>>()
+                    .join(" ")
+                    .to_string(),
+                temperature: component.temperature(),
+                max_temperature: component.max(),
+            })
+            .collect();
 
         if self.cpu_temperatures.is_empty() {
             self.cpu_temperatures = cpu_temperatures.clone()
-        }else {
+        } else {
             for (i, component) in cpu_temperatures.clone().iter().enumerate() {
-                let position = self.cpu_temperatures.iter().position(|x| x.id == component.id).unwrap();
+                let position = self
+                    .cpu_temperatures
+                    .iter()
+                    .position(|x| x.id == component.id)
+                    .unwrap();
                 self.cpu_temperatures[position].temperature = component.temperature;
                 if component.temperature > self.cpu_temperatures[position].max_temperature {
-                    self.cpu_temperatures[position].max_temperature = self.cpu_temperatures[i].temperature;
+                    self.cpu_temperatures[position].max_temperature =
+                        self.cpu_temperatures[i].temperature;
                 }
             }
         }
