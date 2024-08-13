@@ -15,10 +15,13 @@ import {
     Tooltip,
 } from '@mui/material';
 import { IoSettingsOutline, IoClose } from 'react-icons/io5';
-import { useGetSeedWords } from '../../../hooks/useGetSeedWords';
-import truncateString from '../../../utils/truncateString';
+import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
+import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
-import { useGetApplicatonsVersions } from '../../../hooks/useGetApplicatonsVersions';
+import { useGetApplicatonsVersions } from '../../../../hooks/useGetApplicatonsVersions';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore';
+import { CardContainer } from './Settings.styles';
+import { CardComponent } from './Card.component';
 
 const Settings: React.FC = () => {
     const { refreshVersions, applicationsVersions, mainAppVersion } =
@@ -29,6 +32,13 @@ const Settings: React.FC = () => {
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } =
         useGetSeedWords();
+    const cpuTemperatures = useAppStatusStore(
+        (state) => state.cpu?.cpu_temperatures
+    );
+
+    const gpuHardwareStatuses = useAppStatusStore(
+        (state) => state.gpu?.hardware_statuses
+    );
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -171,9 +181,10 @@ const Settings: React.FC = () => {
                     </Box>
                     <Divider />
                     {applicationsVersions && (
-                        <Stack spacing={1} pt={1}>
+                        <Stack spacing={1} py={1}>
                             <Stack
                                 direction="row"
+                                alignItems="center"
                                 justifyContent="space-between"
                             >
                                 <Typography variant="h5">Versions</Typography>
@@ -181,17 +192,93 @@ const Settings: React.FC = () => {
                                     Refresh Versions
                                 </Button>
                             </Stack>
-                            <Divider />
-                            <Typography>mainApp: {mainAppVersion}</Typography>
-                            {Object.entries(applicationsVersions).map(
-                                ([key, value]) => (
-                                    <Typography key={key}>
-                                        {key}: {value}
-                                    </Typography>
-                                )
-                            )}
+
+                            <CardContainer>
+                                <CardComponent
+                                    heading="Main app"
+                                    labels={[
+                                        {
+                                            labelText: 'version',
+                                            labelValue:
+                                                mainAppVersion || 'Unknown',
+                                        },
+                                    ]}
+                                />
+                                {Object.entries(applicationsVersions).map(
+                                    ([key, value]) => (
+                                        <CardComponent
+                                            key={key}
+                                            heading={key}
+                                            labels={[
+                                                {
+                                                    labelText: 'version',
+                                                    labelValue: value,
+                                                },
+                                            ]}
+                                        />
+                                    )
+                                )}
+                            </CardContainer>
                         </Stack>
                     )}
+                    <Divider />
+                    <Stack spacing={1} pt={1}>
+                        <Typography variant="h5">
+                            Hardware Temperatures
+                        </Typography>
+                        <CardContainer>
+                            {gpuHardwareStatuses &&
+                                gpuHardwareStatuses.map((gpu) => (
+                                    <CardComponent
+                                        key={gpu.uuid}
+                                        heading={gpu.name}
+                                        labels={[
+                                            {
+                                                labelText: 'Utilization',
+                                                labelValue:
+                                                    gpu.load.toString() + '%',
+                                            },
+                                            {
+                                                labelText:
+                                                    'Current temperature',
+                                                labelValue:
+                                                    gpu.temperature.toString() +
+                                                    '°C',
+                                            },
+                                            {
+                                                labelText: 'Max temperature',
+                                                labelValue:
+                                                    gpu.max_temperature.toString() +
+                                                    '°C',
+                                            },
+                                        ]}
+                                    />
+                                ))}
+                            {cpuTemperatures &&
+                                cpuTemperatures.map((core) => (
+                                    <CardComponent
+                                        key={core.label}
+                                        heading={core.label}
+                                        labels={[
+                                            {
+                                                labelText:
+                                                    'Current temperature',
+                                                labelValue:
+                                                    core.temperature.toString() +
+                                                    '°C',
+                                            },
+                                            {
+                                                labelText: 'Max temperature',
+                                                labelValue:
+                                                    core.max_temperature.toString() +
+                                                    '°C',
+                                            },
+                                        ]}
+                                    />
+                                ))}
+                        </CardContainer>
+                    </Stack>
+                    <Divider />
                     <Stack spacing={1} pt={1}>
                         <Button onClick={openLogsDirectory}>
                             Open logs directory
