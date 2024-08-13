@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "Tari Universe",
-    "version": "0.1.28"
+    "version": "0.1.29"
   },
   "tauri": {
     "updater": {
@@ -51,8 +51,8 @@
         "height": 780,
         "resizable": true,
         "fullscreen": false,
-        "decorations": false,
-        "transparent": true
+        "decorations": true,
+        "transparent": false
       }
     ],
     "security": {
