@@ -208,6 +208,8 @@ impl CpuMiner {
             }
         }
 
+        self.cpu_temperatures.sort();
+
         let mut s =
             System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
