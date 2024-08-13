@@ -44,22 +44,30 @@ const StyledIcon = styled(AiOutlineLoading)(() => ({
 }));
 
 function MiningButton() {
-    const mining = useAppStatusStore((s) => s.cpu?.is_mining);
+    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
+    const hashRate = useAppStatusStore((s) => s.cpu?.hash_rate);
+    const isHashRatePresent = hashRate !== undefined && hashRate > 0;
+    console.log('hashRate', hashRate);
     const isLoading = useUIStore((s) => s.isMiningLoading);
 
     const { startMining, stopMining } = useMining();
 
     const handleMining = () => {
         if (isLoading) return;
-        if (mining) {
+        if (isMining && isHashRatePresent) {
             stopMining();
         } else {
             startMining();
         }
     };
 
-    const buttonStyle = mining ? StopStyle : StartStyle;
-    const buttonIcon = mining ? <IoPauseCircle /> : <IoChevronForwardCircle />;
+    const buttonStyle = isMining && isHashRatePresent ? StopStyle : StartStyle;
+    const buttonIcon =
+        isMining && isHashRatePresent ? (
+            <IoPauseCircle />
+        ) : (
+            <IoChevronForwardCircle />
+        );
 
     return (
         <StyledButton
@@ -77,7 +85,7 @@ function MiningButton() {
             }}
         >
             <span style={{ flexGrow: 1 }}>
-                {mining ? 'Stop Mining' : 'Start Mining'}
+                {isMining && isHashRatePresent ? 'Stop Mining' : 'Start Mining'}
             </span>
         </StyledButton>
     );

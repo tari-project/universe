@@ -57,14 +57,6 @@ impl CpuMiner {
 
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
-                local_mm_proxy
-                    .start(
-                        app_shutdown.clone(),
-                        base_path.clone(),
-                        cpu_miner_config.tari_address.clone(),
-                    )
-                    .await?;
-                local_mm_proxy.wait_ready().await?;
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
                     // port: local_mm_proxy.try_get_listening_port().await?
@@ -85,7 +77,14 @@ impl CpuMiner {
             progress_tracker,
             cpu_max_percentage,
         )?;
+
         self.api_client = Some(client);
+
+        if self.api_client.is_none() {
+            println!("Failed to start xmrig");
+        }else {
+            println!("Started xmrig");
+        }
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             println!("Starting process");
@@ -172,6 +171,7 @@ impl CpuMiner {
 
         let cpu_usage = s.global_cpu_usage() as u32;
 
+
         match &self.api_client {
             Some(client) => {
                 let xmrig_status = client.summary().await?;
@@ -185,6 +185,12 @@ impl CpuMiner {
                     estimated_earnings,
                     block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
                 );
+
+                xmrig_status.hashrate.total.iter().for_each(|h| {
+                    if let Some(h) = h {
+                        println!("Hashrate: {}", h);
+                    }
+                });
 
                 Ok(CpuMinerStatus {
                     is_mining: xmrig_status.hashrate.total.len() > 0
