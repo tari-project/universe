@@ -1,24 +1,24 @@
-import { useState } from 'react'
-import { appWindow } from '@tauri-apps/api/window'
-import { Stack } from '@mui/material'
-import { IoClose, IoRemove } from 'react-icons/io5'
-import { RiExpandUpDownFill, RiContractUpDownFill } from 'react-icons/ri'
+import { useState } from 'react';
+import { appWindow } from '@tauri-apps/api/window';
+import { Stack } from '@mui/material';
+import { IoClose, IoRemove } from 'react-icons/io5';
+import { RiExpandUpDownFill, RiContractUpDownFill } from 'react-icons/ri';
 import {
     CloseButton,
     MinimizeButton,
     ToggleButton,
     MinMaxStyle,
     TitleBarContainer,
-} from './styles'
+} from './styles';
 
 const TitleBar = () => {
-    const [isExpanded, setIsExpanded] = useState(false)
-    const minimize = () => appWindow.minimize()
-    const close = () => appWindow.close()
+    const [isExpanded, setIsExpanded] = useState(false);
+    const minimize = () => appWindow.minimize();
+    const close = () => appWindow.close();
     const toggleMaximize = () => {
-        setIsExpanded(!isExpanded)
-        appWindow.toggleMaximize()
-    }
+        setIsExpanded(!isExpanded);
+        appWindow.toggleMaximize();
+    };
 
     return (
         <TitleBarContainer data-tauri-drag-region>
@@ -44,7 +44,7 @@ const TitleBar = () => {
                 </ToggleButton>
             </Stack>
         </TitleBarContainer>
-    )
-}
+    );
+};
 
-export default TitleBar
+export default TitleBar;
