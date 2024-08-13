@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod cpu_miner;
+mod gpu_miner;
 mod mm_proxy_manager;
 mod process_watcher;
 mod user_listener;
@@ -23,6 +24,7 @@ mod process_killer;
 mod wallet_adapter;
 
 use crate::cpu_miner::CpuMiner;
+use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
@@ -42,6 +44,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use xmrig_adapter::XmrigNodeConnection;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -143,6 +146,9 @@ async fn setup_application<'r>(
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
+    let cpu_miner_config = state.cpu_miner_config.read().await;
+    let mm_proxy_manager = state.mm_proxy_manager.clone();
+
     let mut progress = ProgressTracker::new(window.clone());
 
     progress.set_max(10).await;
@@ -207,7 +213,7 @@ async fn setup_application<'r>(
         .await
         .map_err(|e| e.to_string())?;
 
-    progress.set_max(80).await;
+    progress.set_max(55).await;
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
@@ -217,6 +223,17 @@ async fn setup_application<'r>(
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
             e.to_string()
         })?;
+
+    progress.set_max(75).await;
+    progress.update("Starting MMProxy".to_string(), 0).await;
+    let _ = mm_proxy_manager
+        .start(
+            state.shutdown.to_signal().clone(),
+            app.path_resolver().app_local_data_dir().unwrap().clone(),
+            cpu_miner_config.tari_address.clone(),
+        )
+        .await;
+    let _ = mm_proxy_manager.wait_ready().await;
 
     _ = window.emit(
         "message",
@@ -314,11 +331,11 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
         .map_err(|e| e.to_string())?;
 
     // stop the mmproxy. TODO: change it so that the cpu miner stops this dependency.
-    state
-        .mm_proxy_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
+    // state
+    //     .mm_proxy_manager
+    //     .stop()
+    //     .await
+    //     .map_err(|e| e.to_string())?;
 
     // state.node_manager.stop().await.map_err(|e| e.to_string())?;
     Ok(())
@@ -365,7 +382,8 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
-    let cpu_miner = state.cpu_miner.read().await;
+    let mut cpu_miner = state.cpu_miner.write().await;
+    let mut gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -400,10 +418,13 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
+    let gpu_status = gpu_miner.status();
+
     let config_guard = state.config.read().await;
 
     Ok(AppStatus {
         cpu,
+        gpu: gpu_status,
         base_node: BaseNodeStatus {
             block_height,
             block_time,
@@ -419,6 +440,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 pub struct AppStatus {
     // TODO: add each application version.
     cpu: CpuMinerStatus,
+    gpu: GpuMinerStatus,
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
     mode: MiningMode,
@@ -439,12 +461,13 @@ pub struct BaseNodeStatus {
     block_time: u64,
     is_synced: bool,
 }
-
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
+    pub is_mining_enabled: bool,
     pub is_mining: bool,
     pub hash_rate: f64,
     pub cpu_usage: u32,
+    pub cpu_temperatures: Vec<CpuCoreTemperature>,
     pub cpu_brand: String,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
@@ -465,10 +488,50 @@ struct CpuMinerConfig {
     tari_address: TariAddress,
 }
 
+#[derive(Debug, Serialize, PartialEq, Clone)]
+pub struct CpuCoreTemperature {
+    pub id: u32,
+    pub label: String,
+    pub temperature: f32,
+    pub max_temperature: f32,
+}
+
+impl Eq for CpuCoreTemperature {
+    fn assert_receiver_is_total_eq(&self) {
+        self.id.assert_receiver_is_total_eq();
+    }
+}
+
+impl Ord for CpuCoreTemperature {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.id.cmp(&other.id)
+    }
+}
+
+impl PartialOrd for CpuCoreTemperature {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.id.partial_cmp(&other.id)
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
+struct GpuMinerStatus {
+    hardware_statuses: Vec<GpuMinerHardwareStatus>,
+}
+#[derive(Debug, Serialize, Clone)]
+struct GpuMinerHardwareStatus {
+    uuid: String,
+    temperature: u32,
+    max_temperature: u32,
+    name: String,
+    load: u32,
+}
+
 struct UniverseAppState {
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
     cpu_miner: RwLock<CpuMiner>,
+    gpu_miner: RwLock<GpuMiner>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
@@ -500,6 +563,7 @@ fn main() {
         config: app_config.clone(),
         shutdown: shutdown.clone(),
         cpu_miner: CpuMiner::new().into(),
+        gpu_miner: GpuMiner::new().into(),
         cpu_miner_config: cpu_config.clone(),
         user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),

@@ -6,14 +6,16 @@ interface State {
     view: viewType;
     visualMode: boolean;
     sidebarOpen: boolean;
-    isMiningLoading: boolean;
+    isMiningSwitchingState: boolean;
 }
 interface Actions {
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
     setVisualMode: (visualMode: State['visualMode']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
-    setIsMiningLoading: (isMiningLoading: State['isMiningLoading']) => void;
+    setIsMiningSwitchingState: (
+        isMiningSwitchingState: State['isMiningSwitchingState']
+    ) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -23,7 +25,7 @@ const initialState: State = {
     view: 'setup',
     visualMode: true,
     sidebarOpen: false,
-    isMiningLoading: false,
+    isMiningSwitchingState: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -32,5 +34,6 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setView: (view) => set({ view }),
     setVisualMode: (visualMode) => set({ visualMode }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    setIsMiningLoading: (isMiningLoading) => set({ isMiningLoading }),
+    setIsMiningSwitchingState: (isMiningSwitchingState) =>
+        set({ isMiningSwitchingState }),
 }));
