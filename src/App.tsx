@@ -1,5 +1,5 @@
 import './theme/theme.css';
-import { useEffect, useRef } from 'react';
+import { CSSProperties, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
@@ -19,6 +19,7 @@ import { useMining } from './hooks/useMining.ts';
 
 import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts';
 import { preload } from './visuals';
+import { appBorderRadius } from './theme/tokens.ts';
 
 function App() {
     const background = useUIStore((s) => s.background);
@@ -91,10 +92,15 @@ function App() {
     useGetApplicatonsVersions();
 
     const hideCanvas = !visualMode || view === 'setup';
-
+    const canvasStyle: CSSProperties = {
+        visibility: hideCanvas ? 'hidden' : 'visible',
+        borderRadius: appBorderRadius,
+        position: 'absolute',
+        zIndex: '0',
+    };
     return (
         <>
-            <canvas id="canvas" className={hideCanvas ? 'hidden' : undefined} />
+            <canvas id="canvas" style={canvasStyle} />
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
                 <AppBackground status={background}>
