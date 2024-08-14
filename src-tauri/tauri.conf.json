@@ -6,8 +6,8 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "tari-universe",
-    "version": "0.1.17"
+    "productName": "Tari Universe",
+    "version": "0.1.31"
   },
   "tauri": {
     "updater": {
@@ -46,12 +46,13 @@
     "windows": [
       {
         "title": "tari-universe",
-        "width": 1200,
-        "height": 800,
+        "label": "main",
+        "width": 1380,
+        "height": 780,
         "resizable": true,
         "fullscreen": false,
         "decorations": false,
-        "transparent": true
+        "transparent": false
       }
     ],
     "security": {

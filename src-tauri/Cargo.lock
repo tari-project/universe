@@ -1088,6 +1088,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c877555693c14d2f84191cfd3ad8582790fc52b5e2274b40b59cf5f5cea25c7"
 
 [[package]]
+name = "device_query"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bafa241a89a5edccff5057d0b85fbc083a781bd03d766c11a688331604980985"
+dependencies = [
+ "lazy_static",
+ "macos-accessibility-client",
+ "pkg-config",
+ "readkey",
+ "readmouse",
+ "windows 0.48.0",
+ "x11",
+]
+
+[[package]]
 name = "diesel"
 version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2378,6 +2393,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
 
 [[package]]
+name = "is-docker"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "928bae27f42bc99b60d9ac7334e3a21d10ad8f1835a4e12ec3ec0464765ed1b3"
+dependencies = [
+ "once_cell",
+]
+
+[[package]]
+name = "is-wsl"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "173609498df190136aa7dea1a91db051746d339e18476eed5ca40521f02d7aa5"
+dependencies = [
+ "is-docker",
+ "once_cell",
+]
+
+[[package]]
 name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2493,6 +2527,12 @@ name = "keyring"
 version = "3.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c163ef0b9da5ccf44ae4d7c9d24fb1a8750aa1969d484865fc1eedc44b26c09"
+dependencies = [
+ "byteorder",
+ "linux-keyutils",
+ "security-framework",
+ "windows-sys 0.52.0",
+]
 
 [[package]]
 name = "kuchikiki"
@@ -2554,6 +2594,16 @@ dependencies = [
  "cc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "linux-keyutils"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "761e49ec5fd8a5a463f9b84e877c373d888935b71c6be78f3767fe2ae6bed18e"
+dependencies = [
+ "bitflags 2.6.0",
+ "libc",
 ]
 
 [[package]]
@@ -2658,6 +2708,16 @@ name = "mac"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
+
+[[package]]
+name = "macos-accessibility-client"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edf7710fbff50c24124331760978fb9086d6de6288dcdb38b25a97f8b1bdebbb"
+dependencies = [
+ "core-foundation",
+ "core-foundation-sys",
+]
 
 [[package]]
 name = "malloc_buf"
@@ -2977,6 +3037,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "nix"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
+dependencies = [
+ "bitflags 2.6.0",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
+]
+
+[[package]]
 name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3165,6 +3237,17 @@ checksum = "2078c0039e6a54a0c42c28faa984e115fb4c2d5bf2208f77d1961002df8576f8"
 dependencies = [
  "pathdiff",
  "windows-sys 0.42.0",
+]
+
+[[package]]
+name = "open"
+version = "5.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61a877bf6abd716642a53ef1b89fb498923a4afca5c754f9050b4d081c05c4b3"
+dependencies = [
+ "is-wsl",
+ "libc",
+ "pathdiff",
 ]
 
 [[package]]
@@ -3941,6 +4024,18 @@ dependencies = [
  "time",
  "yasna",
 ]
+
+[[package]]
+name = "readkey"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7677f98ca49bc9bb26e04c8abf80ba579e2cb98e8a384a0ff8128ad70670d249"
+
+[[package]]
+name = "readmouse"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "be105c72a1e6a5a1198acee3d5b506a15676b74a02ecd78060042a447f408d94"
 
 [[package]]
 name = "redox_syscall"
@@ -5042,16 +5137,20 @@ dependencies = [
  "anyhow",
  "async-trait",
  "async_zip",
+ "device_query",
  "dirs-next 2.0.0",
  "flate2",
  "futures-lite",
  "futures-util",
+ "humantime",
  "keyring",
  "libsqlite3-sys",
  "log",
  "log4rs",
  "minotari_node_grpc_client",
  "minotari_wallet_grpc_client",
+ "nix",
+ "open 5.3.0",
  "rand 0.8.5",
  "reqwest 0.12.5",
  "sanitize-filename",
@@ -5541,7 +5640,7 @@ dependencies = [
  "minisign-verify",
  "objc",
  "once_cell",
- "open",
+ "open 3.2.0",
  "os_pipe",
  "percent-encoding",
  "rand 0.8.5",

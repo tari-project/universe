@@ -1,5 +1,7 @@
+use log::info;
 use serde::Deserialize;
 
+const LOG_TARGET: &str = "tari::universe::xmrig::latest_release";
 #[derive(Debug, Deserialize)]
 pub struct Asset {
     os: Option<String>,
@@ -20,8 +22,14 @@ pub struct XmrigRelease {
 }
 
 impl XmrigRelease {
-    pub fn get_asset(&self, os: &str) -> Option<&Asset> {
-        self.assets.iter().find(|a| a.os.as_deref() == Some(os))
+    pub fn get_asset(&self, id: &str) -> Option<&Asset> {
+        for asset in &self.assets {
+            info!(target: LOG_TARGET, "Checking asset {:?}", asset);
+            if asset.id == id {
+                return Some(asset);
+            }
+        }
+        return None;
     }
 }
 

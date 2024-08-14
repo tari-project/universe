@@ -1,13 +1,12 @@
-import {Stack, Typography, Divider} from '@mui/material';
-import useAppStateStore from '../../../../store/appStateStore.ts';
-import {useEffect, useState} from 'react';
+import { Stack, Typography, Divider } from '@mui/material';
+
+import { useEffect, useState } from 'react';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 
 function BlockInfo() {
-    let {blockHeight, blockTime} = useAppStateStore((state) => ({
-        blockHeight: state.blockHeight,
-        blockTime: state.blockTime,
-    }));
-
+    const base_node = useAppStatusStore((s) => s.base_node);
+    const blockHeight = base_node?.block_height;
+    const blockTime = base_node?.block_time || 1;
     const [timeSince, setTimeSince] = useState('');
 
     useEffect(() => {
@@ -22,9 +21,13 @@ function BlockInfo() {
             const hours = Math.floor(
                 (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
             );
-            const hoursString = hours.toString().padStart(2, "0");
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, "0");
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000).toString().padStart(2, "0");
+            const hoursString = hours.toString().padStart(2, '0');
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+                .toString()
+                .padStart(2, '0');
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+                .toString()
+                .padStart(2, '0');
 
             if (days > 0) {
                 setTimeSince(
@@ -53,15 +56,17 @@ function BlockInfo() {
                 <Typography variant="h6">#{blockHeight}</Typography>
                 <Typography variant="body2">Floor</Typography>
             </Stack>
-            <Divider orientation="vertical" flexItem/>
+            <Divider orientation="vertical" flexItem />
             <Stack>
                 <Typography variant="h6">Tiny Green Whales</Typography>
                 <Typography variant="body2">Last floor winner</Typography>
             </Stack>
-            <Divider orientation="vertical" flexItem/>
+            <Divider orientation="vertical" flexItem />
             <Stack>
                 <Typography variant="h6">{timeSince}</Typography>
-                <Typography variant="body2">Current floor build time</Typography>
+                <Typography variant="body2">
+                    Current floor build time
+                </Typography>
             </Stack>
         </Stack>
     );

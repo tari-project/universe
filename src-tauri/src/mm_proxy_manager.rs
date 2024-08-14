@@ -1,5 +1,6 @@
 use crate::merge_mining_adapter::MergeMiningProxyAdapter;
 use crate::process_watcher::ProcessWatcher;
+use crate::ProgressTracker;
 use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -12,6 +13,14 @@ const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
 
 pub struct MmProxyManager {
     watcher: Arc<RwLock<ProcessWatcher<MergeMiningProxyAdapter>>>,
+}
+
+impl Clone for MmProxyManager {
+    fn clone(&self) -> Self {
+        Self {
+            watcher: self.watcher.clone(),
+        }
+    }
 }
 
 impl MmProxyManager {

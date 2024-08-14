@@ -30,8 +30,7 @@ impl WalletManager {
 
         // Unix systems have built in tor.
         // TODO: Add tor service for windows.
-        #[cfg(target_os = "windows")]
-        {
+        if cfg!(target_os = "windows") {
             use_tor = false;
         }
 

@@ -1,16 +1,21 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_killer::kill_process;
 use crate::xmrig_adapter::XmrigInstance;
+use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
-use log::info;
+use humantime::format_duration;
+use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
     Empty, GetHeaderByHashRequest, HeightRequest, NewBlockTemplateRequest, PowAlgo,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
+use std::fs;
 use std::path::PathBuf;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
@@ -42,13 +47,13 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
     fn spawn_inner(
         &self,
-        _log_path: PathBuf,
+        data_dir: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting minotari node");
-        let working_dir = data_local_dir().unwrap().join("tari-universe").join("node");
+        let working_dir = data_dir.join("node");
         std::fs::create_dir_all(&working_dir)?;
 
         let mut args: Vec<String> = vec![
@@ -85,12 +90,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
             MinotariNodeInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::MinotariNode)
+                    let file_path = BinaryResolver::current()
+                        .resolve_path(Binaries::MinotariNode)
                         .await?;
-
-                    let file_path =
-                        BinaryResolver::current().resolve_path(Binaries::MinotariNode, &version)?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)
@@ -98,6 +100,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         // .stderr(std::process::Stdio::piped())
                         .kill_on_drop(true)
                         .spawn()?;
+
+                    if let Some(id) = child.id() {
+                        fs::write(data_dir.join("node_pid"), id.to_string())?;
+                    }
 
                     select! {
                         _res = shutdown_signal =>{
@@ -110,9 +116,12 @@ impl ProcessAdapter for MinotariNodeAdapter {
                     };
                     println!("Stopping minotari node");
 
-                    // child.kill().await?;
-                    // let out = child.wait_with_output().await?;
-                    // println!("stdout: {}", String::from_utf8_lossy(&out.stdout));
+                    match fs::remove_file(data_dir.join("node_pid")) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        }
+                    }
                     Ok(())
                 })),
             },
@@ -122,6 +131,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
     fn name(&self) -> &str {
         "minotari_node"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "node_pid"
     }
 }
 
@@ -183,7 +196,7 @@ impl MinotariNodeStatusMonitor {
 
         let res = client.get_tip_info(Empty {}).await?;
         let res = res.into_inner();
-        let (sync_achieved, block_height, hash, block_time) = (
+        let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
             res.metadata.as_ref().unwrap().best_block_height,
             res.metadata.as_ref().unwrap().best_block_hash.clone(),
@@ -197,7 +210,7 @@ impl MinotariNodeStatusMonitor {
             })
             .await?;
         let mut res = res.into_inner();
-        while let Some(difficulty) = res.message().await? {
+        if let Some(difficulty) = res.message().await? {
             return Ok((
                 difficulty.sha3x_estimated_hash_rate,
                 difficulty.randomx_estimated_hash_rate,
@@ -222,5 +235,39 @@ impl MinotariNodeStatusMonitor {
                 .map_err(|e| anyhow!(e.to_string()))?,
             public_addresses: res.public_addresses,
         })
+    }
+
+    pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
+        let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
+        while true {
+            let tip = client.get_tip_info(Empty {}).await?;
+            let res = tip.into_inner();
+            if res.initial_sync_achieved {
+                break;
+            }
+            let metadata = res.metadata.as_ref().cloned().unwrap();
+            let time_behind = Duration::from_secs(
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs()
+                    - metadata.timestamp,
+            );
+            if time_behind < Duration::from_secs(600) {
+                break;
+            }
+            progress_tracker
+                .update(
+                    format!(
+                        "Waiting for initial sync. Tip height: {} Behind:{}",
+                        metadata.best_block_height,
+                        format_duration(time_behind)
+                    ),
+                    1,
+                )
+                .await;
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        }
+        Ok(())
     }
 }

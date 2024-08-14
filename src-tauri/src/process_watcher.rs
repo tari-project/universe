@@ -1,11 +1,12 @@
 use crate::process_adapter::{ProcessAdapter, ProcessInstance};
+use log::{debug, error, info};
 use std::path::PathBuf;
-use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
 
+const LOG_TARGET: &str = "tari::universe::process_watcher";
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
@@ -27,6 +28,14 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
+    pub async fn kill_previous_instances(
+        &mut self,
+        base_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
+        self.adapter.kill_previous_instances(base_path)?;
+        Ok(())
+    }
+
     pub async fn start(
         &mut self,
         app_shutdown: ShutdownSignal,
@@ -37,6 +46,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             println!("Tried to start process watcher for {} twice", name);
             return Ok(());
         }
+        info!(target: LOG_TARGET, "Starting process watcher for {}", name);
+        self.kill_previous_instances(base_path.clone()).await?;
 
         self.internal_shutdown = Shutdown::new();
         let mut inner_shutdown = self.internal_shutdown.to_signal();
@@ -54,48 +65,30 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             // read events such as stdout
             loop {
                 select! {
-                              _ = watch_timer.tick() => {
-                                    println!("watching {}", name);
-                                    if child.ping() {
-                                       println!("{} is running", name);
-                                    } else {
-                                       println!("{} is not running", name);
-                                       match child.stop().await {
-                                           Ok(()) => {
-                                              println!("{} exited successfully", name);
-                                           }
-                                           Err(e) => {
-                                              println!("{} exited with error: {}", name, e);
-                                           }
-                                       }
-                                       break;
-                                    }
-                              },
-                                //   event = rx.recv() => {
-                                //     if let Some(event) = event {
-                                //
-                                //   // if let CommandEvent::Stdout(line) = event {
-                                //   //    window
-                                //   //   .emit("message", Some(format!("'{}'", line)))
-                                //   //   .expect("failed to emit event");
-                                // // write to stdin
-                                // //child.write("message from Rust\n".as_bytes()).unwrap();
-                                //
-                                //    }
-                                // else {
-                                //  break;
-                                // }
-                          //         },
-                //
-                            _ = inner_shutdown.wait() => {
-                                child.stop().await?;
-                                break;
-                            },
-                            _ = app_shutdown.wait() => {
-                                child.stop().await?;
-                                break;
+                      _ = watch_timer.tick() => {
+                            if child.ping() {
+                            } else {
+                               debug!(target: LOG_TARGET, "{} is not running", name);
+                               match child.stop().await {
+                                   Ok(()) => {
+                                      info!(target: LOG_TARGET, "{} exited successfully", name);
+                                   }
+                                   Err(e) => {
+                                      error!(target: LOG_TARGET, "{} exited with error: {}", name, e);
+                                   }
+                               }
+                               break;
                             }
-                        }
+                      },
+                    _ = inner_shutdown.wait() => {
+                        child.stop().await?;
+                        break;
+                    },
+                    _ = app_shutdown.wait() => {
+                        child.stop().await?;
+                        break;
+                    }
+                }
             }
             Ok(())
         }));

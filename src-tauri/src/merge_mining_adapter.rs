@@ -1,14 +1,19 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::ProgressTracker;
 use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
+use log::warn;
+use std::fs;
 use std::path::PathBuf;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
+
+const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
 pub struct MergeMiningProxyAdapter {
     force_download: bool,
@@ -30,15 +35,12 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
     fn spawn_inner(
         &self,
-        _log_folder: PathBuf,
+        data_dir: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
-        let working_dir = data_local_dir()
-            .unwrap()
-            .join("tari-universe")
-            .join("mmproxy");
+        let working_dir = data_dir.join("mmproxy");
         std::fs::create_dir_all(&working_dir)?;
         let args: Vec<String> = vec![
             "-b".to_string(),
@@ -53,18 +55,16 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                 "merge_mining_proxy.wallet_payment_address={}",
                 self.tari_address.to_base58()
             ),
+            "-p".to_string(),
+            "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
         ];
-        dbg!(&args);
         Ok((
             MergeMiningProxyInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::MergeMiningProxy)
-                        .await?;
-
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MergeMiningProxy, &version)?;
+                        .resolve_path(Binaries::MergeMiningProxy)
+                        .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)
@@ -72,6 +72,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                         // .stderr(std::process::Stdio::piped())
                         .kill_on_drop(true)
                         .spawn()?;
+
+                    if let Some(id) = child.id() {
+                        fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;
+                    }
 
                     select! {
                         _res = shutdown_signal =>{
@@ -82,6 +86,13 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                             dbg!("Exited badly:", res2?);
                         },
                     };
+
+                    match fs::remove_file(data_dir.join("mmproxy_pid")) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        }
+                    }
                     Ok(())
                 })),
             },
@@ -91,6 +102,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
     fn name(&self) -> &str {
         "minotari_merge_mining_proxy"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "mmproxy_pid"
     }
 }
 

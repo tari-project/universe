@@ -1,65 +1,111 @@
-import { useState } from 'react';
 import { Button } from '@mui/material';
 import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
-import useAppStateStore from '../../../../store/appStateStore';
+import { AiOutlineLoading } from 'react-icons/ai';
+import { useMining } from '../../../../hooks/useMining.ts';
+import { styled } from '@mui/material/styles';
+import { keyframes } from '@emotion/react';
+import { useVisualisation } from '../../../../hooks/useVisualisation.ts';
+import { useCallback, useEffect } from 'react';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
+
+const selectButtonText = (isMining: boolean, hasMiningBeenStopped: boolean) => {
+    if (!isMining && hasMiningBeenStopped) return 'Resume Mining';
+    if (isMining) return 'Stop Mining';
+    if (!isMining) return 'Start Mining';
+};
 
 const StartStyle = {
-  borderRadius: '30px',
-  background: '#06C983',
-  border: '1px solid #06C983',
-  padding: '10px 18px',
-  '&:hover': {
-    background: '#ff0000',
-  },
+    background: '#06C983',
+    border: '1px solid #06C983',
+    '&:hover': {
+        background: '#ff0000',
+    },
 };
 
 const StopStyle = {
-  borderRadius: '30px',
-  background: '#000000',
-  border: '1px solid #000000',
-  padding: '10px 18px',
+    background: '#000000',
+    border: '1px solid #000000',
 };
 
+const LoadingStyle = {
+    opacity: 0.7,
+    pointerEvents: 'none',
+};
+
+const StyledButton = styled(Button)(() => ({
+    padding: '10px 18px',
+    borderRadius: '30px',
+}));
+
+const spin = keyframes`
+  from {
+  transform:rotate(0deg)
+  }
+  to {
+  transform:rotate(360deg)
+  }
+`;
+const StyledIcon = styled(AiOutlineLoading)(() => ({
+    animation: `${spin} 1s infinite`,
+    animationTimingFunction: 'cubic-bezier(0.76, 0.89, 0.95, 0.85)',
+}));
+
 function MiningButton() {
-  const { startMining, stopMining, setBackground } = useAppStateStore(
-    (state) => ({
-      startMining: state.startMining,
-      stopMining: state.stopMining,
-      setBackground: state.setBackground,
-    })
-  );
-  const [mining, setMining] = useState(false);
+    const { handleStart, handlePause } = useVisualisation();
+    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
+    const {
+        startMining,
+        stopMining,
+        shouldDisplayLoading,
+        hasMiningBeenStopped,
+    } = useMining();
 
-  const handleMining = () => {
-    if (mining) {
-      stopMining();
-      setMining(false);
-      setBackground('idle');
-    } else {
-      startMining();
-      setMining(true);
-      setBackground('mining');
-    }
-  };
+    const handleStartMining = useCallback(async () => {
+        await startMining();
+    }, [startMining]);
 
-  return (
-    <Button
-      variant="contained"
-      color="primary"
-      size="large"
-      style={mining ? StopStyle : StartStyle}
-      onClick={() => handleMining()}
-      endIcon={mining ? <IoPauseCircle /> : <IoChevronForwardCircle />}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-      }}
-    >
-      <span style={{ flexGrow: 1 }}>
-        {mining ? 'Stop Mining' : 'Start Mining'}
-      </span>
-    </Button>
-  );
+    useEffect(() => {
+        if (!shouldDisplayLoading && isMining) {
+            handleStart(hasMiningBeenStopped);
+        }
+    }, [shouldDisplayLoading, hasMiningBeenStopped, isMining]);
+
+    const handleStopMining = useCallback(async () => {
+        stopMining().then(() => {
+            handlePause();
+        });
+    }, [shouldDisplayLoading, stopMining, handlePause]);
+
+    const buttonStyle = isMining ? StopStyle : StartStyle;
+    const buttonIcon = isMining ? (
+        <IoPauseCircle />
+    ) : (
+        <IoChevronForwardCircle />
+    );
+
+    return (
+        <StyledButton
+            variant="contained"
+            color="primary"
+            disabled={shouldDisplayLoading}
+            size="large"
+            style={
+                shouldDisplayLoading
+                    ? { ...buttonStyle, ...LoadingStyle }
+                    : buttonStyle
+            }
+            onClick={isMining ? handleStopMining : handleStartMining}
+            endIcon={shouldDisplayLoading ? <StyledIcon /> : buttonIcon}
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+            }}
+        >
+            <span style={{ flexGrow: 1 }}>
+                {selectButtonText(Boolean(isMining), hasMiningBeenStopped)}
+            </span>
+        </StyledButton>
+    );
 }
 
 export default MiningButton;

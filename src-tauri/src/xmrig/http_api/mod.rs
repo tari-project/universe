@@ -1,4 +1,6 @@
 mod models;
+use log::error;
+const LOG_TARGET: &str = "tari::universe::xmrig::http_api";
 
 pub struct XmrigHttpApiClient {
     url: String,
@@ -28,7 +30,7 @@ impl XmrigHttpApiClient {
                 Ok(summary) => summary,
                 Err(e) => {
                     dbg!(summary);
-                    eprintln!("Failed to parse xmrig summary: {}", e);
+                    error!(target: LOG_TARGET, "Failed to parse xmrig summary: {}", e);
                     // Xmrig has a bug where it doesn't return valid json sometimes.
                     // https://github.com/xmrig/xmrig/issues/3363
                     continue;

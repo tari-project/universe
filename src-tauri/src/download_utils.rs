@@ -1,4 +1,10 @@
-pub async fn download_file(url: &str, destination: &Path) -> Result<(), anyhow::Error> {
+const LOG_TARGET: &str = "tari::universe::download_utils";
+
+pub async fn download_file(
+    url: &str,
+    destination: &Path,
+    progress_tracker: ProgressTracker,
+) -> Result<(), anyhow::Error> {
     println!("Downloading {} to {:?}", url, destination);
     let response = reqwest::get(url).await?;
 
@@ -14,9 +20,14 @@ pub async fn download_file(url: &str, destination: &Path) -> Result<(), anyhow::
     // Stream the response body directly to the file
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
+        let _ = progress_tracker.update("Downloading".to_string(), 10).await;
         dest.write_all(&item?).await?;
     }
-    println!("Done downloading");
+
+    progress_tracker
+        .update("Download completed".to_string(), 100)
+        .await;
+    info!(target: LOG_TARGET, "Done downloading");
 
     Ok(())
 }
@@ -51,10 +62,12 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
     Ok(())
 }
 
+use crate::ProgressTracker;
 use anyhow::anyhow;
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
+use log::info;
 use std::path::{Path, PathBuf};
 use tar::Archive;
 use tokio::fs;
