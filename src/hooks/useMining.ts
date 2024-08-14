@@ -20,13 +20,11 @@ export function useMining() {
 
         if (isMiningEnabled && isMining) {
             hasMiningStartedAtLeastOnce.current = true;
-            setBackground('mining');
             return;
         }
 
         if (!isMiningEnabled) {
             setBackground('idle');
-
             return;
         }
     }, [isMiningEnabled, isMining, isMiningSwitchingState]);
