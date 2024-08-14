@@ -42,6 +42,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use xmrig_adapter::XmrigNodeConnection;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -143,6 +144,9 @@ async fn setup_application<'r>(
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
+    let cpu_miner_config = state.cpu_miner_config.read().await;
+    let mm_proxy_manager = state.mm_proxy_manager.clone();
+
     let mut progress = ProgressTracker::new(window.clone());
 
     progress.set_max(10).await;
@@ -207,7 +211,7 @@ async fn setup_application<'r>(
         .await
         .map_err(|e| e.to_string())?;
 
-    progress.set_max(80).await;
+    progress.set_max(55).await;
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
@@ -217,6 +221,17 @@ async fn setup_application<'r>(
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
             e.to_string()
         })?;
+
+    progress.set_max(75).await;
+    progress.update("Starting MMProxy".to_string(), 0).await;
+    let _ = mm_proxy_manager
+        .start(
+            state.shutdown.to_signal().clone(),
+            app.path_resolver().app_local_data_dir().unwrap().clone(),
+            cpu_miner_config.tari_address.clone(),
+        )
+        .await;
+    let _ = mm_proxy_manager.wait_ready().await;
 
     _ = window.emit(
         "message",
@@ -314,11 +329,11 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
         .map_err(|e| e.to_string())?;
 
     // stop the mmproxy. TODO: change it so that the cpu miner stops this dependency.
-    state
-        .mm_proxy_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
+    // state
+    //     .mm_proxy_manager
+    //     .stop()
+    //     .await
+    //     .map_err(|e| e.to_string())?;
 
     // state.node_manager.stop().await.map_err(|e| e.to_string())?;
     Ok(())
@@ -442,6 +457,7 @@ pub struct BaseNodeStatus {
 
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
+    pub is_mining_enabled: bool,
     pub is_mining: bool,
     pub hash_rate: f64,
     pub cpu_usage: u32,

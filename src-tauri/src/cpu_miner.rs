@@ -57,14 +57,6 @@ impl CpuMiner {
 
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
-                local_mm_proxy
-                    .start(
-                        app_shutdown.clone(),
-                        base_path.clone(),
-                        cpu_miner_config.tari_address.clone(),
-                    )
-                    .await?;
-                local_mm_proxy.wait_ready().await?;
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
                     // port: local_mm_proxy.try_get_listening_port().await?
@@ -85,6 +77,7 @@ impl CpuMiner {
             progress_tracker,
             cpu_max_percentage,
         )?;
+
         self.api_client = Some(client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
@@ -186,10 +179,21 @@ impl CpuMiner {
                     block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
                 );
 
+                // mining should be true if the hashrate is greater than 0
+                let mut is_mining = false;
+                let hasrate_sum = xmrig_status
+                    .hashrate
+                    .total
+                    .iter()
+                    .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
+
+                if hasrate_sum > 0.0 {
+                    is_mining = true;
+                }
+
                 Ok(CpuMinerStatus {
-                    is_mining: xmrig_status.hashrate.total.len() > 0
-                        && xmrig_status.hashrate.total[0].is_some()
-                        && xmrig_status.hashrate.total[0].unwrap() > 0.0,
+                    is_mining_enabled: true,
+                    is_mining,
                     hash_rate,
                     cpu_usage: cpu_usage as u32,
                     cpu_brand: cpu_brand.to_string(),
@@ -205,6 +209,7 @@ impl CpuMiner {
                 })
             }
             None => Ok(CpuMinerStatus {
+                is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
                 cpu_usage: cpu_usage as u32,
