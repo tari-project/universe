@@ -1,11 +1,11 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import eslintPlugin from '@nabla/vite-plugin-eslint'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import eslintPlugin from '@nabla/vite-plugin-eslint';
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
+    assetsInclude: ['vis-index.js'],
     plugins: [react(), eslintPlugin({ eslintOptions: { cache: false } })],
-
     // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
     //
     // 1. prevent vite from obscuring rust errors
@@ -19,4 +19,4 @@ export default defineConfig(async () => ({
             ignored: ['**/src-tauri/**'],
         },
     },
-}))
+}));

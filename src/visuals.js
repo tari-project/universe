@@ -1,8 +1,14 @@
-/* eslint-disable no-undef */
+const glApp = await import('/assets/vis-index.js?url&init');
+
+console.log('vis:');
+
+console.log(glApp.preload);
+
 let time;
 export const preload = () => {
     const el = document.getElementById('canvas');
-    if (el) {
+    console.log(glApp);
+    if (el && glApp) {
         glApp.preload(
             {
                 canvas: el,
@@ -17,7 +23,7 @@ export const preload = () => {
 };
 
 function init() {
-    glApp.init();
+    glApp?.init();
     time = performance.now() / 1000;
 
     window.addEventListener('resize', onResize);

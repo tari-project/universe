@@ -39,7 +39,7 @@ function App() {
                 console.debug('Event:', event, payload);
                 switch (payload.event_type) {
                     case 'setup_status':
-                        console.log(
+                        console.debug(
                             'Setup status:',
                             payload.title,
                             payload.progress
@@ -58,12 +58,12 @@ function App() {
                         break;
                     case 'user_idle':
                         startMining().then(() => {
-                            console.log('Mining started');
+                            console.debug('Mining started');
                         });
                         break;
                     case 'user_active':
                         stopMining().then(() => {
-                            console.log('Mining stopped');
+                            console.debug('Mining stopped');
                         });
                         break;
                     default:

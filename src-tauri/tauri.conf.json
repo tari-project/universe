@@ -3,11 +3,12 @@
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build",
         "devPath": "http://localhost:1420",
-        "distDir": "../dist"
+        "distDir": "../dist",
+        "withGlobalTauri": true
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.1.27"
+        "version": "0.1.29"
     },
     "tauri": {
         "updater": {
@@ -51,8 +52,8 @@
                 "height": 780,
                 "resizable": true,
                 "fullscreen": false,
-                "decorations": false,
-                "transparent": true
+                "decorations": true,
+                "transparent": false
             }
         ],
         "security": {
