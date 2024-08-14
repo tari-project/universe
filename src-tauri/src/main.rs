@@ -194,6 +194,18 @@ async fn setup_application<'r>(
             e.to_string()
         })?;
 
+    progress.set_max(35).await;
+    progress
+        .update("Checking for latest version of sha-p2pool".to_string(), 0)
+        .await;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::ShaP2pool, progress.clone())
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download sha-p2pool: {:?}", e);
+            e.to_string()
+        })?;
+
     state
         .node_manager
         .ensure_started(state.shutdown.to_signal(), data_dir.clone())
@@ -234,6 +246,9 @@ async fn setup_application<'r>(
         )
         .await;
     let _ = mm_proxy_manager.wait_ready().await;
+    
+    // TODO: collect all tribes
+    // TODO: then select a random tribe and start p2pool with that
 
     _ = window.emit(
         "message",

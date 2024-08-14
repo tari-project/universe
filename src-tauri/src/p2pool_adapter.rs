@@ -1,8 +1,9 @@
+use std::fs;
 use std::path::PathBuf;
 use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
-use log::info;
+use log::{info, warn};
 use tari_shutdown::Shutdown;
 use tokio::runtime::Handle;
 use tokio::select;
@@ -18,8 +19,9 @@ pub struct P2poolAdapter {
 }
 
 impl P2poolAdapter {
-    pub fn new(grpc_port: u16,
-               stats_server_port: u16,
+    pub fn new(
+        grpc_port: u16, 
+        stats_server_port: u16,
     ) -> Self {
         Self {
             grpc_port,
@@ -34,13 +36,31 @@ impl P2poolAdapter {
     pub fn stats_server_port(&self) -> u16 {
         self.stats_server_port
     }
+    
+    pub async fn list_tribes(&self) -> Result<Vec<String>, Error> {
+        let file_path = BinaryResolver::current()
+            .resolve_path(Binaries::ShaP2pool)
+            .await?;
+        crate::download_utils::set_permissions(&file_path).await?;
+
+        let child = tokio::process::Command::new(file_path)
+            .args(vec!["list-tribes"])
+            .stdout(std::process::Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()?;
+        
+        let output = child.wait_with_output().await?;
+        let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
+        
+        Ok(tribes)
+    }
 }
 
 impl ProcessAdapter for P2poolAdapter {
     type Instance = P2poolInstance;
     type StatusMonitor = P2poolStatusMonitor;
 
-    fn spawn_inner(&self, _log_folder: PathBuf) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    fn spawn_inner(&self, data_dir: PathBuf) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
@@ -50,29 +70,29 @@ impl ProcessAdapter for P2poolAdapter {
         std::fs::create_dir_all(&working_dir)?;
 
         let args: Vec<String> = vec![
+            "start".to_string(),
             "--grpc-port".to_string(),
             self.grpc_port.to_string(),
             "--stats-server-port".to_string(),
             self.stats_server_port.to_string(),
         ];
-
+        let pid_file_name = self.pid_file_name().to_string();
         Ok((
             P2poolInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let version = BinaryResolver::current()
-                        .ensure_latest(Binaries::ShaP2pool)
+                    let file_path = BinaryResolver::current()
+                        .resolve_path(Binaries::ShaP2pool)
                         .await?;
-
-                    let file_path =
-                        BinaryResolver::current().resolve_path(Binaries::ShaP2pool, &version)?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)
-                        // .stdout(std::process::Stdio::piped())
-                        // .stderr(std::process::Stdio::piped())
                         .kill_on_drop(true)
                         .spawn()?;
+
+                    if let Some(id) = child.id() {
+                        fs::write(data_dir.join(pid_file_name.clone()), id.to_string())?;
+                    }
 
                     select! {
                         _res = shutdown_signal =>{
@@ -85,6 +105,10 @@ impl ProcessAdapter for P2poolAdapter {
                     };
                     println!("Stopping p2pool node");
 
+                    if let Err(error) = fs::remove_file(data_dir.join(pid_file_name)) {
+                        warn!(target: LOG_TARGET, "Could not clear p2pool's pid file: {error:?}");
+                    }
+
                     Ok(())
                 })
                 )
@@ -95,6 +119,10 @@ impl ProcessAdapter for P2poolAdapter {
 
     fn name(&self) -> &str {
         "p2pool"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "p2pool_pid"
     }
 }
 
