@@ -54,3 +54,11 @@ export function setRestart() {
 export const setStart = () => {
     window.properties.stateSignal.dispatch(window.STATUS.STARTED);
 };
+
+export const setSuccess = () => {
+    window.properties.resultSignal.dispatch(window.RESULT.COMPLETED);
+};
+
+export const setFailure = () => {
+    window.properties.resultSignal.dispatch(window.RESULT.FAILED);
+};
