@@ -27,7 +27,7 @@ export function useMining() {
             setBackground('idle');
             return;
         }
-    }, [isMiningEnabled, isMining, isMiningSwitchingState]);
+    }, [isMiningEnabled, isMining, isMiningSwitchingState, setBackground]);
 
     const startMining = useCallback(async () => {
         setIsMiningSwitchingState(true);

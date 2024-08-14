@@ -16,7 +16,7 @@ function TopStatus() {
         } else {
             setTopStatus('Not mining');
         }
-    }, [isMining]);
+    }, [isMining, setTopStatus]);
 
     return (
         <Typography variant="h5" textTransform="uppercase">

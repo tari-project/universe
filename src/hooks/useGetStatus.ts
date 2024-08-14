@@ -44,5 +44,5 @@ export function useGetStatus() {
         return () => {
             clearInterval(intervalId);
         };
-    }, []);
+    }, [setAppStatus, setBalance, setError, setMode]);
 }

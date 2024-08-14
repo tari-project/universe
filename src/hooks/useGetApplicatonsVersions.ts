@@ -32,7 +32,7 @@ export const useGetApplicatonsVersions = () => {
                 setMainAppVersion(version);
             });
         }
-    }, [mainAppVersion]);
+    }, [mainAppVersion, setMainAppVersion]);
 
     useEffect(() => {
         if (!applicationsVersions) {

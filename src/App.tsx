@@ -99,6 +99,8 @@ function App() {
         handleStart,
         handlePause,
         isMining,
+        settingUpFinished,
+        setView,
     ]);
 
     useGetStatus();
