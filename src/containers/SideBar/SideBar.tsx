@@ -2,16 +2,17 @@ import Miner from './Miner/Miner';
 import Wallet from './components/Wallet';
 import Heading from './components/Heading';
 import Milestones from './components/Milestone';
+import MinerUptimeChart from './components/MinerUptimeChart.tsx';
+import HashRateChart from './components/HashRateChart.tsx';
 import {
     SideBarContainer,
     SideBarInner,
     HeadingContainer,
     BottomContainer,
 } from './styles';
-import TestButtons from './TestButtons';
-import {useTheme} from '@mui/material/styles';
-
-import {useUIStore} from '../../store/useUIStore.ts';
+import { useTheme } from '@mui/material/styles';
+import { useUIStore } from '../../store/useUIStore.ts';
+import { Divider } from '@mui/material';
 
 function SideBar() {
     const theme = useTheme();
@@ -19,15 +20,17 @@ function SideBar() {
     return (
         <SideBarContainer theme={theme} sidebaropen={sidebarOpen}>
             <HeadingContainer>
-                <Heading/>
+                <Heading />
             </HeadingContainer>
             <SideBarInner>
-                <Miner/>
-                <Milestones/>
-                {/*<TestButtons />*/}
+                <Miner />
+                <MinerUptimeChart />
+                <Divider />
+                <HashRateChart />
             </SideBarInner>
             <BottomContainer>
-                <Wallet/>
+                <Milestones />
+                <Wallet />
             </BottomContainer>
         </SideBarContainer>
     );

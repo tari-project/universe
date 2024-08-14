@@ -1,7 +1,6 @@
 import Tile from './components/Tile.tsx';
 import { MinerContainer, TileContainer } from './styles.ts';
 import AutoMiner from './components/AutoMiner.tsx';
-import Scheduler from './components/Scheduler.tsx';
 import ModeSelect from './components/ModeSelect.tsx';
 import { useAppStatusStore } from '../../../store/useAppStatusStore.ts';
 
@@ -36,7 +35,6 @@ function Miner() {
     return (
         <MinerContainer>
             <AutoMiner />
-            <Scheduler />
             <TileContainer>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
