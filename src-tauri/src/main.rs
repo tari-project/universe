@@ -18,6 +18,8 @@ mod process_adapter;
 mod wallet_manager;
 
 mod wallet_adapter;
+mod p2pool_adapter;
+mod p2pool_manager;
 
 use crate::cpu_miner::CpuMiner;
 use crate::internal_wallet::InternalWallet;
