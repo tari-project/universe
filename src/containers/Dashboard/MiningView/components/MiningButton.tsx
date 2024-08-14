@@ -4,9 +4,12 @@ import { AiOutlineLoading } from 'react-icons/ai';
 import { useMining } from '../../../../hooks/useMining.ts';
 import { styled } from '@mui/material/styles';
 import { keyframes } from '@emotion/react';
+import { useVisualisation } from '../../../../hooks/useVisualisation.ts';
+import { useCallback, useEffect } from 'react';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 
 const selectButtonText = (isMining: boolean, hasMiningBeenStopped: boolean) => {
-    if (hasMiningBeenStopped) return 'Resume Mining';
+    if (!isMining && hasMiningBeenStopped) return 'Resume Mining';
     if (isMining) return 'Stop Mining';
     if (!isMining) return 'Start Mining';
 };
@@ -48,22 +51,30 @@ const StyledIcon = styled(AiOutlineLoading)(() => ({
 }));
 
 function MiningButton() {
+    const { handleStart, handlePause } = useVisualisation();
+    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
     const {
         startMining,
         stopMining,
-        isMining,
         shouldDisplayLoading,
         hasMiningBeenStopped,
     } = useMining();
 
-    const handleMining = () => {
-        if (shouldDisplayLoading) return;
-        if (isMining) {
-            stopMining();
-        } else {
-            startMining();
+    const handleStartMining = useCallback(async () => {
+        await startMining();
+    }, [startMining]);
+
+    useEffect(() => {
+        if (!shouldDisplayLoading && isMining) {
+            handleStart(hasMiningBeenStopped);
         }
-    };
+    }, [shouldDisplayLoading, hasMiningBeenStopped, isMining]);
+
+    const handleStopMining = useCallback(async () => {
+        stopMining().then(() => {
+            handlePause();
+        });
+    }, [shouldDisplayLoading, stopMining, handlePause]);
 
     const buttonStyle = isMining ? StopStyle : StartStyle;
     const buttonIcon = isMining ? (
@@ -76,13 +87,14 @@ function MiningButton() {
         <StyledButton
             variant="contained"
             color="primary"
+            disabled={shouldDisplayLoading}
             size="large"
             style={
                 shouldDisplayLoading
                     ? { ...buttonStyle, ...LoadingStyle }
                     : buttonStyle
             }
-            onClick={() => handleMining()}
+            onClick={isMining ? handleStopMining : handleStartMining}
             endIcon={shouldDisplayLoading ? <StyledIcon /> : buttonIcon}
             sx={{
                 display: 'flex',
