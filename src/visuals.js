@@ -1,15 +1,10 @@
-const glApp = await import('/assets/vis-index.js?url&init');
-
-console.log('vis:');
-
-console.log(glApp.preload);
+import '/assets/vis-index.js?url&init';
 
 let time;
 export const preload = () => {
     const el = document.getElementById('canvas');
-    console.log(glApp);
-    if (el && glApp) {
-        glApp.preload(
+    if (el && window.glApp) {
+        window.glApp.preload(
             {
                 canvas: el,
                 orbitTarget: el,
@@ -23,7 +18,7 @@ export const preload = () => {
 };
 
 function init() {
-    glApp?.init();
+    window.glApp?.init();
     time = performance.now() / 1000;
 
     window.addEventListener('resize', onResize);
@@ -32,7 +27,7 @@ function init() {
 }
 
 function onResize() {
-    glApp.setSize(window.innerWidth, window.innerHeight);
+    window.glApp.setSize(window.innerWidth, window.innerHeight);
 }
 
 function animate() {
@@ -46,16 +41,16 @@ function animate() {
 }
 
 function update(dt) {
-    glApp.render(dt);
+    window.glApp.render(dt);
 }
 
 export function setStop() {
-    properties.stateSignal.dispatch(STATUS.NOT_STARTED);
+    window.properties.stateSignal.dispatch(window.STATUS.NOT_STARTED);
 }
 export function setRestart() {
-    properties.stateSignal.dispatch(STATUS.FREE);
+    window.properties.stateSignal.dispatch(window.STATUS.FREE);
 }
 
 export const setStart = () => {
-    properties.stateSignal.dispatch(STATUS.STARTED);
+    window.properties.stateSignal.dispatch(window.STATUS.STARTED);
 };
