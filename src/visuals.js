@@ -1,10 +1,9 @@
 // import '/assets/vis-index.js?url&init';
 
 let time;
+
 export function preload() {
     const el = document.getElementById('canvas');
-    console.log('vis:');
-    console.log(window.glApp?.preload);
     window.glApp?.preload(
         {
             canvas: el,
@@ -43,24 +42,26 @@ function update(dt) {
     window.glApp.render(dt);
 }
 
-export function setStop() {
-    console.log(window.properties);
+export async function setStop() {
     window.properties?.stateSignal.dispatch(window.STATUS.NOT_STARTED);
+    return window.properties;
 }
-export function setRestart() {
-    console.log(window.properties);
+export async function setRestart() {
     window.properties?.stateSignal.dispatch(window.STATUS.FREE);
+    return window.properties;
 }
 
-export function setStart() {
-    console.log(window.properties);
+export async function setStart() {
     window.properties?.stateSignal.dispatch(window.STATUS.STARTED);
+    return window.properties;
 }
 
-export function setSuccess() {
+export async function setSuccess() {
     window.properties?.resultSignal.dispatch(window.RESULT.COMPLETED);
+    return window.properties;
 }
 
-export function setFailure() {
+export async function setFailure() {
     window.properties?.resultSignal.dispatch(window.RESULT.FAILED);
+    return window.properties;
 }

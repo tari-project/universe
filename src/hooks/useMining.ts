@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore';
-import { setStart, setStop, setRestart } from '../visuals';
 import { useAppStatusStore } from '../store/useAppStatusStore';
 
 export function useMining() {
@@ -21,13 +20,7 @@ export function useMining() {
         if (isMiningSwitchingState) return;
 
         if (isMiningEnabled && isMining) {
-            if (!isMiningAnimationRunning.current) {
-                setStart();
-                isMiningAnimationRunning.current = true;
-                hasMiningStartedAtLeastOnce.current = true;
-            } else {
-                setRestart();
-            }
+            hasMiningStartedAtLeastOnce.current = true;
             setBackground('mining');
             return;
         }
@@ -35,7 +28,6 @@ export function useMining() {
         if (!isMiningEnabled) {
             if (isMiningAnimationRunning.current) {
                 setBackground('idle');
-                setStop();
                 isMiningAnimationRunning.current = false;
             }
             return;
@@ -51,7 +43,7 @@ export function useMining() {
         } finally {
             setIsMiningSwitchingState(false);
         }
-    }, []);
+    }, [setIsMiningSwitchingState]);
 
     const stopMining = useCallback(async () => {
         setIsMiningSwitchingState(true);
@@ -62,19 +54,16 @@ export function useMining() {
         } finally {
             setIsMiningSwitchingState(false);
         }
-    }, []);
+    }, [setIsMiningSwitchingState]);
 
     const shouldDisplayLoading =
         isMiningSwitchingState || (!isMining && isMiningEnabled);
-
-    const hasMiningBeenStopped =
-        hasMiningStartedAtLeastOnce.current && !isMiningEnabled;
+    console.log(isMiningEnabled);
 
     return {
         startMining,
         stopMining,
         shouldDisplayLoading,
-        isMining,
-        hasMiningBeenStopped,
+        hasMiningBeenStopped: hasMiningStartedAtLeastOnce.current,
     };
 }
