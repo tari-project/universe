@@ -18,19 +18,25 @@ import useAppStateStore from './store/appStateStore.ts';
 import { useMining } from './hooks/useMining.ts';
 
 import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts';
-import { preload } from './visuals';
 import { appBorderRadius } from './theme/tokens.ts';
+
+import { preload } from './visuals.js';
+import { useAppStatusStore } from './store/useAppStatusStore.ts';
+import { useVisualisation } from './hooks/useVisualisation.ts';
 
 function App() {
     const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
     const setView = useUIStore((s) => s.setView);
-    const setBackground = useUIStore((s) => s.setBackground);
     const startupInitiated = useRef(false);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
+    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
-    const { startMining, stopMining } = useMining();
+    const { startMining, stopMining, hasMiningBeenStopped } = useMining();
     const visualMode = useUIStore((s) => s.visualMode);
+    const { handleStart, handlePause } = useVisualisation();
+
+    console.log(`background= ${background}`);
 
     useEffect(() => {
         const unlistenPromise = listen(
@@ -39,31 +45,30 @@ function App() {
                 console.debug('Event:', event, payload);
                 switch (payload.event_type) {
                     case 'setup_status':
-                        console.log(
+                        console.debug(
                             'Setup status:',
                             payload.title,
                             payload.progress
                         );
                         setSetupDetails(payload.title, payload.progress);
 
-                        // if (payload.progress >= 0.1) {
-                        //     setView('mining');
-                        //     setBackground('mining');
-                        // }
                         if (payload.progress >= 1) {
                             settingUpFinished();
                             setView('mining');
-                            setBackground('mining');
                         }
                         break;
                     case 'user_idle':
+                        if (isMining) return;
                         startMining().then(() => {
-                            console.log('Mining started');
+                            console.debug('Mining started');
+                            handleStart(hasMiningBeenStopped);
                         });
                         break;
                     case 'user_active':
+                        if (!isMining) return;
                         stopMining().then(() => {
-                            console.log('Mining stopped');
+                            console.debug('Mining stopped');
+                            handlePause();
                         });
                         break;
                     default:
@@ -77,7 +82,7 @@ function App() {
         );
         if (!startupInitiated.current) {
             startupInitiated.current = true;
-            preload();
+            preload?.();
             invoke('setup_application').catch((e) => {
                 console.error('Failed to setup application:', e);
             });
@@ -86,7 +91,15 @@ function App() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, []);
+    }, [
+        setSetupDetails,
+        hasMiningBeenStopped,
+        stopMining,
+        startMining,
+        handleStart,
+        handlePause,
+        isMining,
+    ]);
 
     useGetStatus();
     useGetApplicatonsVersions();
