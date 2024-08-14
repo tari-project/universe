@@ -39,6 +39,7 @@ use log::{debug, error, info, warn};
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
+use std::ops::DerefMut;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
@@ -59,6 +60,23 @@ async fn set_mode<'r>(
     _app: tauri::AppHandle,
 ) -> Result<(), String> {
     let _ = state.config.write().await.set_mode(mode).await;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_user_inactivity_timeout<'r>(
+    timeout: u64,
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_user_inactivity_timeout(timeout)
+        .await;
 
     Ok(())
 }
@@ -186,16 +204,13 @@ async fn set_auto_mining<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
 ) -> Result<(), String> {
-    let _ = state
-        .config
-        .write()
-        .await
-        .set_auto_mining(auto_mining)
-        .await;
+    let mut config = state.config.write().await;
+    config.set_auto_mining(auto_mining).await;
+    let timeout = config.get_user_inactivity_timeout();
     let mut user_listener = state.user_listener.write().await;
 
     if auto_mining {
-        user_listener.start_listening_to_mouse_poisition_change(window);
+        user_listener.start_listening_to_mouse_poisition_change(timeout,window);
     } else {
         user_listener.stop_listening_to_mouse_poisition_change();
     }
@@ -367,7 +382,8 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         },
         wallet_balance,
         mode: config_guard.mode.clone(),
-        auto_mining: config_guard.auto_mining,
+        auto_mining: config_guard.auto_mining.clone(),
+        user_inactivity_timeout: config_guard.user_inactivity_timeout.clone(),
     })
 }
 
@@ -379,6 +395,7 @@ pub struct AppStatus {
     wallet_balance: WalletBalance,
     mode: MiningMode,
     auto_mining: bool,
+    user_inactivity_timeout: u64,
 }
 
 #[derive(Debug, Serialize)]
@@ -506,10 +523,11 @@ fn main() {
             let app_window = app.get_window("main").unwrap().clone();
             let auto_miner_thread = tauri::async_runtime::spawn(async move {
                 let auto_mining = app_config_clone.read().await.auto_mining;
+                let timeout = app_config_clone.read().await.get_user_inactivity_timeout();
                 let mut user_listener = user_listener.write().await;
 
                 if auto_mining {
-                    user_listener.start_listening_to_mouse_poisition_change(app_window);
+                    user_listener.start_listening_to_mouse_poisition_change(timeout,app_window);
                 }
             });
 
@@ -559,7 +577,8 @@ fn main() {
             set_mode,
             open_log_dir,
             get_seed_words,
-            get_applications_versions
+            get_applications_versions,
+            set_user_inactivity_timeout
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

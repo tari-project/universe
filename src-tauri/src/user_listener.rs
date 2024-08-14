@@ -33,7 +33,11 @@ impl UserListener {
         mouse.coords
     }
 
-    pub fn start_listening_to_mouse_poisition_change(&mut self, window: tauri::Window) {
+    pub fn set_idle_timeout(&mut self, timeout: u64) {
+        self.idle_timeout = timeout;
+    }
+
+    pub fn start_listening_to_mouse_poisition_change(&mut self,timeout: u64, window: tauri::Window) {
         let idle_timeout = self.idle_timeout;
 
         let cancellation_token = CancellationToken::new();

@@ -10,6 +10,7 @@ const LOG_TARGET: &str = "tari::universe::app_config";
 pub struct AppConfigFromFile {
     pub mode: String,
     pub auto_mining: bool,
+    pub user_inactivity_timeout: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -40,6 +41,7 @@ pub struct AppConfig {
     config_file: Option<PathBuf>,
     pub mode: MiningMode,
     pub auto_mining: bool,
+    pub user_inactivity_timeout: u64,
 }
 
 impl AppConfig {
@@ -48,6 +50,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: false,
+            user_inactivity_timeout: 5000,
         }
     }
 
@@ -72,6 +75,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
+            user_inactivity_timeout: self.user_inactivity_timeout,
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -100,7 +104,27 @@ impl AppConfig {
     }
 
     pub fn get_auto_mining(&self) -> bool {
-        self.auto_mining
+        self.auto_mining.clone()
+    }
+
+    pub async fn set_user_inactivity_timeout(&mut self, timeout: u64) -> Result<(), anyhow::Error> {
+        self.user_inactivity_timeout = timeout;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn get_user_inactivity_timeout(&self) -> u64 {
+        self.user_inactivity_timeout.clone()
+    }
+
+    pub async fn set_user_inactivity_timeout(&mut self, timeout: u64) -> Result<(), anyhow::Error> {
+        self.user_inactivity_timeout = timeout;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn get_user_inactivity_timeout(&self) -> u64 {
+        self.user_inactivity_timeout.clone()
     }
 
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
@@ -108,6 +132,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
+            user_inactivity_timeout: self.user_inactivity_timeout,
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

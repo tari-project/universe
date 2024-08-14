@@ -7,6 +7,7 @@ export interface AppStatus {
     wallet_balance?: WalletBalance;
     applications_versions?: ApplicationsVersions;
     main_app_version?: string;
+    user_inactivity_timeout?: number;
     mode: modeType;
     auto_mining: boolean;
 }
