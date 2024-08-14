@@ -18,6 +18,7 @@ export interface Result {
 }
 
 export interface GlApp {
+    status?: Status;
     preload(
         e: {
             canvas: Element;
@@ -32,14 +33,8 @@ export interface GlApp {
     setResult(e): void;
 }
 
-export interface Properties {
-    stateSignal: {
-        dispatch: (s: Status) => void;
-    };
-    resultSignal: {
-        dispatch: (r: Result) => void;
-    };
-    endCycleSignal: {
-        dispatch: () => void;
-    };
+export interface Properties extends Record<string, unknown> {
+    stateSignal: unknown;
+    resultSignal: unknown;
+    endCycleSignal: unknown;
 }

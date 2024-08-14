@@ -7,7 +7,7 @@
         "dev": "vite",
         "build": "tsc && vite build",
         "preview": "vite preview",
-        "tauri": "RUST_BACKTRACE=1 tauri",
+        "tauri": "tauri",
         "lint": "eslint src/"
     },
     "dependencies": {
