@@ -202,16 +202,6 @@ async fn setup_application<'r>(
         })?;
 
     progress.set_max(40).await;
-    progress
-        .update("Waiting for node to sync".to_string(), 0)
-        .await;
-    state
-        .node_manager
-        .wait_synced(progress.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-
-    progress.set_max(55).await;
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
@@ -221,6 +211,16 @@ async fn setup_application<'r>(
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
             e.to_string()
         })?;
+
+    progress.set_max(55).await;
+    progress
+        .update("Waiting for node to sync".to_string(), 0)
+        .await;
+    state
+        .node_manager
+        .wait_synced(progress.clone())
+        .await
+        .map_err(|e| e.to_string())?;
 
     progress.set_max(75).await;
     progress.update("Starting MMProxy".to_string(), 0).await;
@@ -628,6 +628,9 @@ fn main() {
         tauri::RunEvent::Updater(updater_event) => match updater_event {
             UpdaterEvent::Error(e) => {
                 error!(target: LOG_TARGET, "Updater error: {:?}", e);
+            }
+            UpdaterEvent::Downloaded => {
+                shutdown.trigger();
             }
             _ => {
                 info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
