@@ -1,39 +1,34 @@
 import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
 import { useMining } from '../../../../hooks/useMining.ts';
-import { useVisualisation } from '../../../../hooks/useVisualisation.ts';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 import { StyledButton, StyledIcon } from '../MiningButton.styles.ts';
 import { ButtonProps } from '@mui/material';
+import { useUIStore } from '../../../../store/useUIStore.ts';
 
 function MiningButton() {
     const [buttonLoading, setButtonLoading] = useState(false);
-    const { handlePause } = useVisualisation();
     const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
+    const miningInitiated = useUIStore((s) => s.miningInitiated);
+    const isMiningEnabled = useAppStatusStore((s) => s.cpu?.is_mining_enabled);
+
     const { startMining, stopMining, hasMiningBeenStopped } = useMining();
 
-    const handleStartMining = useCallback(async () => {
-        startMining().then(() => {
-            setButtonLoading(false);
-        });
-    }, [startMining]);
-
-    const handleStopMining = useCallback(() => {
-        stopMining().then(() => {
-            void handlePause();
-            setButtonLoading(false);
-        });
-    }, [handlePause, stopMining]);
+    useEffect(() => {
+        const startLoad = !isMining && miningInitiated;
+        console.log(`startLoad= ${startLoad}`);
+        setButtonLoading(startLoad);
+    }, [isMining, miningInitiated]);
 
     const handleClick = useCallback(() => {
         setButtonLoading(true);
         if (isMining) {
-            return handleStopMining();
+            return stopMining();
         }
         if (!isMining) {
-            return handleStartMining();
+            return startMining();
         }
-    }, [handleStartMining, handleStopMining, isMining]);
+    }, [isMining]);
 
     const btnProps: ButtonProps = {
         variant: 'contained',
@@ -53,6 +48,7 @@ function MiningButton() {
             {...btnProps}
             hasStarted={!!isMining}
             onClick={handleClick}
+            disabled={!isMining && !isMiningEnabled}
             endIcon={buttonLoading ? <StyledIcon /> : btnProps.endIcon}
         >
             <span style={{ flexGrow: 1 }}>{`${actionText} mining`}</span>

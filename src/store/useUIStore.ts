@@ -7,7 +7,7 @@ interface State {
     visualMode: boolean;
     sidebarOpen: boolean;
     isMiningSwitchingState: boolean;
-    miningInitiated?: boolean;
+    miningInitiated: boolean;
 }
 interface Actions {
     setBackground: (background: State['background']) => void;

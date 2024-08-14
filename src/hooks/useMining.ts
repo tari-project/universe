@@ -2,30 +2,44 @@ import { useCallback, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore';
 import { useAppStatusStore } from '../store/useAppStatusStore';
+import { useVisualisation } from './useVisualisation.ts';
 
 export function useMining() {
+    const { handlePause, handleStart } = useVisualisation();
     const isMiningEnabled = useAppStatusStore((s) => s.cpu?.is_mining_enabled);
     const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
-    const isMiningSwitchingState = useUIStore((s) => s.isMiningSwitchingState);
+
     const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
 
     const hasMiningStartedAtLeastOnce = useRef(false);
 
     useEffect(() => {
-        if (isMiningEnabled && isMining) {
-            hasMiningStartedAtLeastOnce.current = true;
-            return;
-        }
-    }, [isMiningEnabled, isMining, isMiningSwitchingState]);
+        const start = async () => {
+            if (isMining) {
+                await handleStart(hasMiningStartedAtLeastOnce.current);
+                hasMiningStartedAtLeastOnce.current = true;
+            }
+        };
+
+        return () => {
+            start().then((s) => s);
+        };
+    }, [handleStart, isMining]);
 
     const startMining = useCallback(async () => {
-        await invoke('start_mining', {});
-    }, []);
+        if (isMiningEnabled) {
+            setMiningInitiated(true);
+            await invoke('start_mining', {});
+        }
+    }, [isMiningEnabled, setMiningInitiated]);
 
     const stopMining = useCallback(async () => {
-        setMiningInitiated(true);
-        await invoke('stop_mining', {});
-    }, [setMiningInitiated]);
+        const stop = await invoke('stop_mining', {});
+        if (stop) {
+            console.log(stop);
+            await handlePause();
+        }
+    }, [handlePause]);
 
     return {
         startMining,

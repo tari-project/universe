@@ -12,7 +12,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 
 import { useUIStore } from '../../store/useUIStore.ts';
-import TestButtons from './TestButtons.tsx';
+// import TestButtons from './TestButtons.tsx';
 
 function SideBar() {
     const theme = useTheme();
@@ -25,7 +25,7 @@ function SideBar() {
             <SideBarInner>
                 <Miner />
                 <Milestones />
-                <TestButtons />
+                {/*<TestButtons />*/}
             </SideBarInner>
             <BottomContainer>
                 <Wallet />
