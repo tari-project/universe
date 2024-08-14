@@ -5,11 +5,11 @@ import { useMining } from '../../../../hooks/useMining.ts';
 import { styled } from '@mui/material/styles';
 import { keyframes } from '@emotion/react';
 import { useVisualisation } from '../../../../hooks/useVisualisation.ts';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 
 const selectButtonText = (isMining: boolean, hasMiningBeenStopped: boolean) => {
-    if (hasMiningBeenStopped) return 'Resume Mining';
+    if (!isMining && hasMiningBeenStopped) return 'Resume Mining';
     if (isMining) return 'Stop Mining';
     if (!isMining) return 'Start Mining';
 };
@@ -53,7 +53,6 @@ const StyledIcon = styled(AiOutlineLoading)(() => ({
 function MiningButton() {
     const { handleStart, handlePause } = useVisualisation();
     const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
-
     const {
         startMining,
         stopMining,
@@ -61,14 +60,20 @@ function MiningButton() {
         hasMiningBeenStopped,
     } = useMining();
 
-    const handleStartMining = useCallback(() => {
-        if (shouldDisplayLoading) return;
-        startMining().then(() => handleStart(hasMiningBeenStopped));
-    }, [shouldDisplayLoading, startMining, handleStart, hasMiningBeenStopped]);
+    const handleStartMining = useCallback(async () => {
+        await startMining();
+    }, [startMining]);
 
-    const handleStopMining = useCallback(() => {
-        if (shouldDisplayLoading) return;
-        stopMining().then(() => handlePause());
+    useEffect(() => {
+        if (!shouldDisplayLoading && isMining) {
+            handleStart(hasMiningBeenStopped);
+        }
+    }, [shouldDisplayLoading, hasMiningBeenStopped, isMining]);
+
+    const handleStopMining = useCallback(async () => {
+        stopMining().then(() => {
+            handlePause();
+        });
     }, [shouldDisplayLoading, stopMining, handlePause]);
 
     const buttonStyle = isMining ? StopStyle : StartStyle;
@@ -82,6 +87,7 @@ function MiningButton() {
         <StyledButton
             variant="contained"
             color="primary"
+            disabled={shouldDisplayLoading}
             size="large"
             style={
                 shouldDisplayLoading

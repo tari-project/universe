@@ -13,7 +13,6 @@ export function useMining() {
     );
     const setBackground = useUIStore((s) => s.setBackground);
 
-    const isMiningAnimationRunning = useRef(false);
     const hasMiningStartedAtLeastOnce = useRef(false);
 
     useEffect(() => {
@@ -26,10 +25,8 @@ export function useMining() {
         }
 
         if (!isMiningEnabled) {
-            if (isMiningAnimationRunning.current) {
-                setBackground('idle');
-                isMiningAnimationRunning.current = false;
-            }
+            setBackground('idle');
+
             return;
         }
     }, [isMiningEnabled, isMining, isMiningSwitchingState]);
@@ -43,7 +40,7 @@ export function useMining() {
         } finally {
             setIsMiningSwitchingState(false);
         }
-    }, [setIsMiningSwitchingState]);
+    }, [setIsMiningSwitchingState, isMining]);
 
     const stopMining = useCallback(async () => {
         setIsMiningSwitchingState(true);
@@ -58,8 +55,6 @@ export function useMining() {
 
     const shouldDisplayLoading =
         isMiningSwitchingState || (!isMining && isMiningEnabled);
-    console.log(isMiningEnabled);
-
     return {
         startMining,
         stopMining,

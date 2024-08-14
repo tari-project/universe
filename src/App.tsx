@@ -21,6 +21,8 @@ import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts'
 import { appBorderRadius } from './theme/tokens.ts';
 
 import { preload } from './visuals.js';
+import { useAppStatusStore } from './store/useAppStatusStore.ts';
+import { useVisualisation } from './hooks/useVisualisation.ts';
 
 function App() {
     const background = useUIStore((s) => s.background);
@@ -29,9 +31,11 @@ function App() {
     const setBackground = useUIStore((s) => s.setBackground);
     const startupInitiated = useRef(false);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
+    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
-    const { startMining, stopMining } = useMining();
+    const { startMining, stopMining, hasMiningBeenStopped } = useMining();
     const visualMode = useUIStore((s) => s.visualMode);
+    const { handleStart, handlePause } = useVisualisation();
 
     useEffect(() => {
         const unlistenPromise = listen(
@@ -58,13 +62,17 @@ function App() {
                         }
                         break;
                     case 'user_idle':
+                        if (isMining) return;
                         startMining().then(() => {
                             console.debug('Mining started');
+                            handleStart(hasMiningBeenStopped);
                         });
                         break;
                     case 'user_active':
+                        if (!isMining) return;
                         stopMining().then(() => {
                             console.debug('Mining stopped');
+                            handlePause();
                         });
                         break;
                     default:
@@ -87,7 +95,14 @@ function App() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, []);
+    }, [
+        hasMiningBeenStopped,
+        stopMining,
+        startMining,
+        handleStart,
+        handlePause,
+        isMining,
+    ]);
 
     useGetStatus();
     useGetApplicatonsVersions();
