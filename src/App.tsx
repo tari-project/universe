@@ -28,7 +28,6 @@ function App() {
     const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
     const setView = useUIStore((s) => s.setView);
-    const setBackground = useUIStore((s) => s.setBackground);
     const startupInitiated = useRef(false);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
@@ -51,14 +50,9 @@ function App() {
                         );
                         setSetupDetails(payload.title, payload.progress);
 
-                        // if (payload.progress >= 0.1) {
-                        //     setView('mining');
-                        //     setBackground('mining');
-                        // }
                         if (payload.progress >= 1) {
                             settingUpFinished();
                             setView('mining');
-                            setBackground('mining');
                         }
                         break;
                     case 'user_idle':
@@ -96,6 +90,7 @@ function App() {
             unlistenPromise.then((unlisten) => unlisten());
         };
     }, [
+        setSetupDetails,
         hasMiningBeenStopped,
         stopMining,
         startMining,
