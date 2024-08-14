@@ -1,4 +1,4 @@
-import '/assets/vis-index.js?url&init';
+// import '/assets/vis-index.js?url&init';
 
 let time;
 export function preload() {

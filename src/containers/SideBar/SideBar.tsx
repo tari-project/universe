@@ -8,10 +8,10 @@ import {
     HeadingContainer,
     BottomContainer,
 } from './styles';
-import TestButtons from './TestButtons';
-import {useTheme} from '@mui/material/styles';
 
-import {useUIStore} from '../../store/useUIStore.ts';
+import { useTheme } from '@mui/material/styles';
+
+import { useUIStore } from '../../store/useUIStore.ts';
 
 function SideBar() {
     const theme = useTheme();
@@ -19,15 +19,15 @@ function SideBar() {
     return (
         <SideBarContainer theme={theme} sidebaropen={sidebarOpen}>
             <HeadingContainer>
-                <Heading/>
+                <Heading />
             </HeadingContainer>
             <SideBarInner>
-                <Miner/>
-                <Milestones/>
+                <Miner />
+                <Milestones />
                 {/*<TestButtons />*/}
             </SideBarInner>
             <BottomContainer>
-                <Wallet/>
+                <Wallet />
             </BottomContainer>
         </SideBarContainer>
     );
