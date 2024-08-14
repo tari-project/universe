@@ -1,10 +1,11 @@
-import '/assets/vis-index.js?url&init';
+import '/assets/vis-index.js?url';
 
 let time;
 export const preload = () => {
     const el = document.getElementById('canvas');
-    if (el && window.glApp) {
-        window.glApp.preload(
+    console.log(el);
+    if (el) {
+        globalThis?.glApp?.preload(
             {
                 canvas: el,
                 orbitTarget: el,
@@ -18,7 +19,7 @@ export const preload = () => {
 };
 
 function init() {
-    window.glApp?.init();
+    window.glApp.init();
     time = performance.now() / 1000;
 
     window.addEventListener('resize', onResize);

@@ -17,15 +17,22 @@ export interface Result {
     FAILED: 'failed';
 }
 
-export class GlApp {
-    preload(e: Element, t: () => void): void;
+export interface GlApp {
+    preload(
+        e: {
+            canvas: Element;
+            orbitTarget: Element;
+            ASSETS_PATH: string;
+        },
+        t: () => void
+    ): void;
     init(): void;
     setSize(e: number, t: number): void;
     render(e: number): void;
     setResult(e): void;
 }
 
-export class Properties {
+export interface Properties {
     stateSignal: {
         dispatch: (s: Status) => void;
     };
