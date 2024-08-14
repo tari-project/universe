@@ -3,11 +3,15 @@ import { useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import useWalletStore from '../store/walletStore.ts';
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
+import { useUIStore } from '../store/useUIStore.ts';
 
 const INTERVAL = 1000;
 
 export function useGetStatus() {
+    const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
+
     const setBalance = useWalletStore((state) => state.setBalance);
+
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const setError = useAppStateStore((s) => s.setError);
     const setMode = useAppStatusStore((s) => s.setMode);
@@ -16,9 +20,15 @@ export function useGetStatus() {
         const intervalId = setInterval(() => {
             invoke('status')
                 .then((status) => {
-                    // console.debug('Status', status); // do we need to log this
                     if (status) {
                         setAppStatus(status);
+
+                        if (
+                            status.cpu?.is_mining_enabled &&
+                            status.cpu.is_mining
+                        ) {
+                            setMiningInitiated(false);
+                        }
                         const wallet_balance = status.wallet_balance;
                         const {
                             available_balance = 0,
@@ -44,5 +54,5 @@ export function useGetStatus() {
         return () => {
             clearInterval(intervalId);
         };
-    }, [setAppStatus, setBalance, setError, setMode]);
+    }, [setAppStatus, setBalance, setError, setMiningInitiated, setMode]);
 }

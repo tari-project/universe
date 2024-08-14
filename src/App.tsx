@@ -36,8 +36,6 @@ function App() {
     const visualMode = useUIStore((s) => s.visualMode);
     const { handleStart, handlePause } = useVisualisation();
 
-    console.log(`background= ${background}`);
-
     useEffect(() => {
         const unlistenPromise = listen(
             'message',
