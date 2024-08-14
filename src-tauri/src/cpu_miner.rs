@@ -3,12 +3,11 @@ use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
-    CpuCoreTemperature, CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus,
-    CpuMinerStatus, ProgressTracker,
+    CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
 };
 use log::warn;
 use std::path::PathBuf;
-use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
+use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
@@ -27,7 +26,6 @@ pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     miner_shutdown: Shutdown,
     api_client: Option<XmrigHttpApiClient>,
-    cpu_temperatures: Vec<CpuCoreTemperature>,
 }
 
 impl CpuMiner {
@@ -36,7 +34,6 @@ impl CpuMiner {
             watcher_task: None,
             miner_shutdown: Shutdown::new(),
             api_client: None,
-            cpu_temperatures: Vec::new(),
         }
     }
 
@@ -152,60 +149,10 @@ impl CpuMiner {
     }
 
     pub async fn status(
-        &mut self,
+        &self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {
-        let components = Components::new_with_refreshed_list();
-
-        let cpu_components: Vec<&Component> = components
-            .iter()
-            .filter(|component| component.label().contains("Core"))
-            .collect();
-
-        let mut cpu_temperatures: Vec<CpuCoreTemperature> = cpu_components
-            .iter()
-            .map(|component| CpuCoreTemperature {
-                id: component
-                    .label()
-                    .split(" ")
-                    .last()
-                    .unwrap()
-                    .parse()
-                    .unwrap(),
-                label: component
-                    .label()
-                    .split(" ")
-                    .skip(1)
-                    .collect::<Vec<&str>>()
-                    .join(" ")
-                    .to_string(),
-                temperature: component.temperature(),
-                max_temperature: component.max(),
-            })
-            .collect();
-
-        cpu_temperatures.sort();
-
-        if self.cpu_temperatures.is_empty() {
-            self.cpu_temperatures = cpu_temperatures.clone()
-        } else {
-            for (i, component) in cpu_temperatures.clone().iter().enumerate() {
-                let position = self
-                    .cpu_temperatures
-                    .iter()
-                    .position(|x| x.id == component.id)
-                    .unwrap();
-                self.cpu_temperatures[position].temperature = component.temperature;
-                if component.temperature > self.cpu_temperatures[position].max_temperature {
-                    self.cpu_temperatures[position].max_temperature =
-                        self.cpu_temperatures[i].temperature;
-                }
-            }
-        }
-
-        self.cpu_temperatures.sort();
-
         let mut s =
             System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
@@ -217,7 +164,6 @@ impl CpuMiner {
         let cpu_brand = s.cpus().get(0).map(|cpu| cpu.brand()).unwrap_or("Unknown");
 
         let cpu_usage = s.global_cpu_usage() as u32;
-        // let cpu_temperature = s.
 
         match &self.api_client {
             Some(client) => {
@@ -250,7 +196,6 @@ impl CpuMiner {
                     is_mining,
                     hash_rate,
                     cpu_usage: cpu_usage as u32,
-                    cpu_temperatures: self.cpu_temperatures.clone(),
                     cpu_brand: cpu_brand.to_string(),
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
@@ -267,7 +212,6 @@ impl CpuMiner {
                 is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
-                cpu_temperatures: self.cpu_temperatures.clone(),
                 cpu_usage: cpu_usage as u32,
                 cpu_brand: cpu_brand.to_string(),
                 estimated_earnings: 0,
