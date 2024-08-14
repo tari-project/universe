@@ -1,75 +1,75 @@
 {
-  "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
-    "devPath": "http://localhost:1420",
-    "distDir": "../dist"
-  },
-  "package": {
-    "productName": "Tari Universe",
-    "version": "0.1.29"
-  },
-  "tauri": {
-    "updater": {
-      "active": true,
-      "endpoints": [
-        "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"
-      ],
-      "dialog": true,
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
+    "build": {
+        "beforeDevCommand": "npm run dev",
+        "beforeBuildCommand": "npm run build",
+        "devPath": "http://localhost:1420",
+        "distDir": "../dist"
     },
-    "allowlist": {
-      "all": false,
-      "shell": {
-        "all": false,
-        "open": true,
-        "sidecar": false
-      },
-      "window": {
-        "all": false,
-        "close": true,
-        "hide": true,
-        "show": true,
-        "maximize": true,
-        "minimize": true,
-        "unmaximize": true,
-        "unminimize": true,
-        "startDragging": true
-      }
+    "package": {
+        "productName": "Tari Universe",
+        "version": "0.1.29"
     },
-    "pattern": {
-      "use": "isolation",
-      "options": {
-        "dir": "../dist-isolation"
-      }
-    },
-    "windows": [
-      {
-        "title": "tari-universe",
-        "label": "main",
-        "width": 1380,
-        "height": 780,
-        "resizable": true,
-        "fullscreen": false,
-        "decorations": true,
-        "transparent": false
-      }
-    ],
-    "security": {
-      "csp": null
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "identifier": "com.tari.universe",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ]
-    },
-    "macOSPrivateApi": true
-  }
+    "tauri": {
+        "updater": {
+            "active": true,
+            "endpoints": [
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"
+            ],
+            "dialog": true,
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
+        },
+        "allowlist": {
+            "all": false,
+            "shell": {
+                "all": false,
+                "open": true,
+                "sidecar": false
+            },
+            "window": {
+                "all": false,
+                "close": true,
+                "hide": true,
+                "show": true,
+                "maximize": true,
+                "minimize": true,
+                "unmaximize": true,
+                "unminimize": true,
+                "startDragging": true
+            }
+        },
+        "pattern": {
+            "use": "isolation",
+            "options": {
+                "dir": "../dist-isolation"
+            }
+        },
+        "windows": [
+            {
+                "title": "tari-universe",
+                "label": "main",
+                "width": 1380,
+                "height": 780,
+                "resizable": true,
+                "fullscreen": false,
+                "decorations": true,
+                "transparent": false
+            }
+        ],
+        "security": {
+            "csp": null
+        },
+        "bundle": {
+            "active": true,
+            "targets": "all",
+            "identifier": "com.tari.universe",
+            "icon": [
+                "icons/32x32.png",
+                "icons/128x128.png",
+                "icons/128x128@2x.png",
+                "icons/icon.icns",
+                "icons/icon.ico"
+            ]
+        },
+        "macOSPrivateApi": true
+    }
 }
