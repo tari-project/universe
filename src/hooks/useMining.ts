@@ -3,10 +3,12 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore';
 import { useAppStatusStore } from '../store/useAppStatusStore';
 import { useVisualisation } from './useVisualisation.ts';
+import useAppStateStore from '../store/appStateStore.ts';
 
 export function useMining() {
     const { handlePause, handleStart } = useVisualisation();
-    const isMiningEnabled = useAppStatusStore((s) => s.cpu?.is_mining_enabled);
+    const progress = useAppStateStore((s) => s.setupProgress);
+    const miningAllowed = progress >= 1;
     const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
 
     const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
@@ -27,11 +29,11 @@ export function useMining() {
     }, [handleStart, isMining]);
 
     const startMining = useCallback(async () => {
-        if (isMiningEnabled) {
+        if (miningAllowed) {
             setMiningInitiated(true);
             await invoke('start_mining', {});
         }
-    }, [isMiningEnabled, setMiningInitiated]);
+    }, [miningAllowed, setMiningInitiated]);
 
     const stopMining = useCallback(async () => {
         const stop = await invoke('stop_mining', {});

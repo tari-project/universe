@@ -21,15 +21,7 @@ export function useGetStatus() {
             invoke('status')
                 .then((status) => {
                     if (status) {
-                        console.debug(status);
-                        setAppStatus(status);
-                        console.log(
-                            `status.cpu?.is_mining_enabled= ${status.cpu?.is_mining_enabled}`
-                        );
-                        if (
-                            status.cpu?.is_mining_enabled &&
-                            status.cpu.is_mining
-                        ) {
+                        if (status.cpu?.is_mining) {
                             setMiningInitiated(false);
                         }
                         const wallet_balance = status.wallet_balance;

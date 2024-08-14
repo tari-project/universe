@@ -5,19 +5,24 @@ import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 import { StyledButton, StyledIcon } from '../MiningButton.styles.ts';
 import { ButtonProps } from '@mui/material';
 import { useUIStore } from '../../../../store/useUIStore.ts';
+import useAppStateStore from '../../../../store/appStateStore.ts';
 
 function MiningButton() {
     const [buttonLoading, setButtonLoading] = useState(false);
     const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
     const miningInitiated = useUIStore((s) => s.miningInitiated);
-    const isMiningEnabled = useAppStatusStore((s) => s.cpu?.is_mining_enabled);
+    const progress = useAppStateStore((s) => s.setupProgress);
+    const miningAllowed = progress >= 1;
 
     const { startMining, stopMining, hasMiningBeenStopped } = useMining();
 
     useEffect(() => {
         const startLoad = !isMining && miningInitiated;
-        console.log(`startLoad= ${startLoad}`);
-        setButtonLoading(startLoad);
+        if (startLoad) {
+            setButtonLoading(true);
+        } else {
+            setButtonLoading(!isMining);
+        }
     }, [isMining, miningInitiated]);
 
     const handleClick = useCallback(() => {
@@ -48,7 +53,7 @@ function MiningButton() {
             {...btnProps}
             hasStarted={!!isMining}
             onClick={handleClick}
-            disabled={!isMining && !isMiningEnabled}
+            disabled={!miningAllowed}
             endIcon={buttonLoading ? <StyledIcon /> : btnProps.endIcon}
         >
             <span style={{ flexGrow: 1 }}>{`${actionText} mining`}</span>

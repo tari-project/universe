@@ -31,4 +31,8 @@ export const StyledButton = styled(Button, {
         background: hasStarted ? 'rgba(0,0,0,0.7)' : 'rgba(6,201,131,0.7)',
         borderColor: hasStarted ? 'rgba(0,0,0,0.7)' : 'rgba(6,201,131,0.7)',
     },
+    '&:disabled': {
+        borderColor: 'rgba(0,0,0,0.3)',
+        background: 'rgba(0,0,0,0.01)',
+    },
 }));
