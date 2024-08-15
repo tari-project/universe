@@ -161,7 +161,7 @@ impl CpuMiner {
         // Refresh CPUs again.
         s.refresh_cpu_all();
 
-        let cpu_brand = s.cpus().get(0).map(|cpu| cpu.brand()).unwrap_or("Unknown");
+        let cpu_brand = s.cpus().first().map(|cpu| cpu.brand()).unwrap_or("Unknown");
 
         let cpu_usage = s.global_cpu_usage() as u32;
 
@@ -211,7 +211,7 @@ impl CpuMiner {
                     is_mining_enabled: true,
                     is_mining,
                     hash_rate,
-                    cpu_usage: cpu_usage as u32,
+                    cpu_usage,
                     cpu_brand: cpu_brand.to_string(),
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
@@ -228,7 +228,7 @@ impl CpuMiner {
                 is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
-                cpu_usage: cpu_usage as u32,
+                cpu_usage,
                 cpu_brand: cpu_brand.to_string(),
                 estimated_earnings: 0,
                 connection: CpuMinerConnectionStatus {
