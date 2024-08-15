@@ -385,7 +385,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             .node_manager
             .get_network_hash_rate_and_block_reward()
             .await
-            .unwrap_or_else(|e| {
+            .unwrap_or({
                 //  warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
@@ -425,7 +425,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         },
         wallet_balance,
         mode: config_guard.mode.clone(),
-        auto_mining: config_guard.auto_mining.clone(),
+        auto_mining: config_guard.auto_mining,
     })
 }
 

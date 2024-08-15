@@ -81,7 +81,7 @@ impl XmrigAdapter {
         args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));
-        args.push(format!("--donate-level=1"));
+        args.push("--donate-level=1".to_string());
         args.push(format!("--user={}", self.monero_address));
         args.push(format!("--cpu-max-threads-hint={}", cpu_max_percentage));
 

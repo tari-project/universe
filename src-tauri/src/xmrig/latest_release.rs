@@ -29,7 +29,7 @@ impl XmrigRelease {
                 return Some(asset);
             }
         }
-        return None;
+        None
     }
 }
 

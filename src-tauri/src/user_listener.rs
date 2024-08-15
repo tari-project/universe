@@ -30,7 +30,7 @@ impl UserListener {
         let device_state = DeviceState::new();
         let mouse = device_state.get_mouse();
 
-        return mouse.coords;
+        mouse.coords
     }
 
     pub fn start_listening_to_mouse_poisition_change(&mut self, window: tauri::Window) {
