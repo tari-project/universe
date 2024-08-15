@@ -537,9 +537,6 @@ fn main() {
 
             app.emit_all("single-instance", Payload { args: argv, cwd }).unwrap();
         }))
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-
         .manage(app_state)
         .setup(|app| {
             tari_common::initialize_logging(
