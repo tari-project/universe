@@ -1,14 +1,15 @@
 import { useEffect } from 'react';
 import { Typography } from '@mui/material';
 import useAppStateStore from '../../../../store/appStateStore';
-import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
+
+import { useCPUStatusStore } from '../../../../store/useCPUStatusStore.ts';
 function TopStatus() {
     const { topStatus, setTopStatus } = useAppStateStore((state) => ({
         topStatus: state.topStatus,
         setTopStatus: state.setTopStatus,
     }));
 
-    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
+    const isMining = useCPUStatusStore((s) => s.is_mining);
 
     useEffect(() => {
         if (isMining) {

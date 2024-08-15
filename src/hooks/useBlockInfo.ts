@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useInterval } from './useInterval.ts';
-import { useAppStatusStore } from '../store/useAppStatusStore.ts';
+
+import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 
 const INTERVAL = 1000; // 1 sec
@@ -32,13 +33,20 @@ function calculateTimeSince(blockTime: number) {
 }
 
 export function useBlockInfo() {
-    const base_node = useAppStatusStore(useShallow((s) => s.base_node));
-    const blockHeight = base_node?.block_height;
-    const blockTime = base_node?.block_time || 1;
+    const block_height = useBaseNodeStatusStore(useShallow((s) => s.block_height));
+    const block_time = useBaseNodeStatusStore(useShallow((s) => s.block_time));
     const [timeSince, setTimeSince] = useState('');
 
+    const heightRef = useRef(block_height);
+
+    useEffect(() => {
+        if (heightRef.current !== block_height) {
+            console.info('hey!', heightRef.current, block_height);
+        }
+    }, [block_height]);
+
     useInterval(() => {
-        const { days, hours, minutes, seconds, hoursString } = calculateTimeSince(blockTime);
+        const { days, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);
 
         if (days > 0) {
             setTimeSince(`${days} day${days === 1 ? '' : 's'}, ${hoursString}:${minutes}:${seconds}`);
@@ -49,5 +57,5 @@ export function useBlockInfo() {
         }
     }, INTERVAL);
 
-    return { timeSince, blockHeight };
+    return { timeSince, blockHeight: block_height };
 }
