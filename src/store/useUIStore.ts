@@ -15,15 +15,14 @@ interface Actions {
     setVisualMode: (visualMode: State['visualMode']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setMiningInitiated: (miningInitiated: boolean) => void;
-    setIsMiningSwitchingState: (
-        isMiningSwitchingState: State['isMiningSwitchingState']
-    ) => void;
+    setIsMiningSwitchingState: (isMiningSwitchingState: State['isMiningSwitchingState']) => void;
 }
 
 type UIStoreState = State & Actions;
 
 const initialState: State = {
     background: 'onboarding',
+    // view: 'mining',
     view: 'setup',
     visualMode: true,
     sidebarOpen: false,
@@ -38,6 +37,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setVisualMode: (visualMode) => set({ visualMode }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
-    setIsMiningSwitchingState: (isMiningSwitchingState) =>
-        set({ isMiningSwitchingState }),
+    setIsMiningSwitchingState: (isMiningSwitchingState) => set({ isMiningSwitchingState }),
 }));
