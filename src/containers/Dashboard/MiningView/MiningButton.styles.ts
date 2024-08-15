@@ -28,8 +28,9 @@ export const StyledButton = styled(Button, {
     borderColor: hasStarted ? '#000' : '#06C983',
     transition: 'all 0.2s ease-in-out',
     '&:hover': {
-        background: hasStarted ? 'rgba(0,0,0,0.7)' : 'rgba(6,201,131,0.7)',
-        borderColor: hasStarted ? 'rgba(0,0,0,0.7)' : 'rgba(6,201,131,0.7)',
+        background: hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(6,201,131,0.9)',
+        borderColor: hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(6,201,131,0.9)',
+        transform: 'scale(1.01)',
     },
     '&:disabled': {
         borderColor: 'rgba(0,0,0,0.3)',

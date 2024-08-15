@@ -21,6 +21,7 @@ export function useGetStatus() {
             invoke('status')
                 .then((status) => {
                     if (status) {
+                        setAppStatus(status);
                         if (status.cpu?.is_mining) {
                             setMiningInitiated(false);
                         }

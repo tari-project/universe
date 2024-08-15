@@ -21,7 +21,7 @@ function MiningButton() {
         if (startLoad) {
             setButtonLoading(true);
         } else {
-            setButtonLoading(!isMining);
+            setButtonLoading(false);
         }
     }, [isMining, miningInitiated]);
 
@@ -33,7 +33,7 @@ function MiningButton() {
         if (!isMining) {
             return startMining();
         }
-    }, [isMining]);
+    }, [isMining, startMining, stopMining]);
 
     const btnProps: ButtonProps = {
         variant: 'contained',

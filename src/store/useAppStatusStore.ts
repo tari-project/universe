@@ -35,7 +35,7 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
                 try {
                     await invoke('set_mode', { mode });
                     set({ mode });
-                    console.log(`Mode changed to ${mode}`);
+                    console.info(`Mode changed to ${mode}`);
                 } catch (e) {
                     console.error('Could not change the mode', e);
                 }

@@ -12,7 +12,7 @@ export const getApplicationsVersions = async () => {
             });
         })
         .catch((error) => {
-            console.log('Error getting applications versions', error);
+            console.error('Error getting applications versions', error);
         });
 };
 

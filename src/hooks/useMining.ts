@@ -16,31 +16,26 @@ export function useMining() {
     const hasMiningStartedAtLeastOnce = useRef(false);
 
     useEffect(() => {
-        const start = async () => {
-            if (isMining) {
-                await handleStart(hasMiningStartedAtLeastOnce.current);
-                hasMiningStartedAtLeastOnce.current = true;
-            }
-        };
-
-        return () => {
-            start().then((s) => s);
-        };
+        if (isMining) {
+            handleStart(hasMiningStartedAtLeastOnce.current);
+            hasMiningStartedAtLeastOnce.current = true;
+        }
     }, [handleStart, isMining]);
 
     const startMining = useCallback(async () => {
         if (miningAllowed) {
             setMiningInitiated(true);
-            await invoke('start_mining', {});
+            await invoke('start_mining', {}).then(() => {
+                console.info(`mining started`);
+            });
         }
     }, [miningAllowed, setMiningInitiated]);
 
     const stopMining = useCallback(async () => {
-        const stop = await invoke('stop_mining', {});
-        if (stop) {
-            console.log(stop);
+        await invoke('stop_mining', {}).then(async () => {
+            console.info(`mining stopped`);
             await handlePause();
-        }
+        });
     }, [handlePause]);
 
     return {
