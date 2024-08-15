@@ -4,7 +4,7 @@ import { useBlockInfo } from '../../../../hooks/useBlockInfo.ts';
 import { useBaseNodeStatusStore } from '../../../../store/useBaseNodeStatusStore.ts';
 
 function BlockInfo() {
-    const { timeSince } = useBlockInfo();
+    const timeSince = useBlockInfo();
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
 
     const timerMarkup = timeSince ? (

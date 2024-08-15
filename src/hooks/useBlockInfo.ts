@@ -47,6 +47,7 @@ export function useBlockInfo() {
 
     useEffect(() => {
         if (heightRef.current !== block_height) {
+            setTimeSince('');
             setIsPaused(true);
             handleFail().then(() => {
                 setIsPaused(false);
@@ -73,5 +74,5 @@ export function useBlockInfo() {
         isMining && !isPaused ? INTERVAL : null
     );
 
-    return { timeSince };
+    return timeSince;
 }
