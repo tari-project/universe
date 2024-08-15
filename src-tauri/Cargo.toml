@@ -23,7 +23,6 @@ tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = 
 tari_utilities = "0.7.0"
 tari_crypto = "0.20.3"
 
-
 anyhow = "1"
 dirs-next = "2.0.0"
 reqwest = { version = "0.12.5", features = ["stream", "json"] }
@@ -78,4 +77,4 @@ device_query = "2.1.0"
 custom-protocol = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]
+ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client", "dirs-next"]
