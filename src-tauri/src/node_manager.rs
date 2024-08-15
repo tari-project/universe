@@ -76,7 +76,7 @@ impl NodeManager {
         status_monitor.wait_synced(progress_tracker).await
     }
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
-        while true {
+        loop {
             match self.get_identity().await {
                 Ok(_) => break,
                 Err(_) => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,

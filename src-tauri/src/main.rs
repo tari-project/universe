@@ -42,7 +42,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
-use xmrig_adapter::XmrigNodeConnection;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -147,7 +146,7 @@ async fn setup_application<'r>(
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
-    let mut progress = ProgressTracker::new(window.clone());
+    let progress = ProgressTracker::new(window.clone());
 
     progress.set_max(10).await;
     progress

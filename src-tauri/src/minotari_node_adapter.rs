@@ -1,16 +1,13 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::process_killer::kill_process;
-use crate::xmrig_adapter::XmrigInstance;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use dirs_next::data_local_dir;
 use humantime::format_duration;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
-    Empty, GetHeaderByHashRequest, HeightRequest, NewBlockTemplateRequest, PowAlgo,
+    Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
@@ -23,7 +20,6 @@ use tari_utilities::ByteArray;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
-use tokio::time::Instant;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
@@ -239,7 +235,7 @@ impl MinotariNodeStatusMonitor {
 
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
-        while true {
+        loop {
             let tip = client.get_tip_info(Empty {}).await?;
             let res = tip.into_inner();
             if res.initial_sync_achieved {

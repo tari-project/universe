@@ -1,9 +1,7 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::ProgressTracker;
 use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::data_local_dir;
 use log::warn;
 use std::fs;
 use std::path::PathBuf;
