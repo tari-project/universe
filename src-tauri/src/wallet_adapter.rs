@@ -1,14 +1,10 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::minotari_node_adapter::{MinotariNodeInstance, MinotariNodeStatusMonitor};
-use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::data_local_dir;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{Empty, GetBalanceRequest};
-use minotari_node_grpc_client::BaseNodeGrpcClient;
+use minotari_node_grpc_client::grpc::GetBalanceRequest;
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;

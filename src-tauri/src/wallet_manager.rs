@@ -1,4 +1,3 @@
-use crate::minotari_node_adapter::MinotariNodeAdapter;
 use crate::node_manager::NodeManager;
 use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};

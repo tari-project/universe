@@ -2,7 +2,6 @@ use crate::download_utils::{download_file, extract};
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use futures_util::FutureExt;
 use log::{info, warn};
 use semver::Version;
 use std::collections::HashMap;
