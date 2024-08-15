@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/tauri';
 interface Actions {
     setAppStatus: (appStatus: AppStatus) => void;
@@ -41,6 +41,9 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
                 }
             },
         }),
-        { name: 'status-store' }
+        {
+            name: 'status-store',
+            storage: createJSONStorage(() => sessionStorage),
+        }
     )
 );

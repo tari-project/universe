@@ -1,9 +1,10 @@
 import useAppStateStore from '../store/appStateStore.ts';
-import { useEffect } from 'react';
+
 import { invoke } from '@tauri-apps/api/tauri';
 import useWalletStore from '../store/walletStore.ts';
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
 import { useUIStore } from '../store/useUIStore.ts';
+import { useInterval } from './useInterval.ts';
 
 const INTERVAL = 1000;
 
@@ -16,8 +17,8 @@ export function useGetStatus() {
     const setError = useAppStateStore((s) => s.setError);
     const setMode = useAppStatusStore((s) => s.setMode);
 
-    useEffect(() => {
-        const intervalId = setInterval(() => {
+    useInterval(
+        () =>
             invoke('status')
                 .then((status) => {
                     if (status) {
@@ -45,10 +46,7 @@ export function useGetStatus() {
                 .catch((e) => {
                     console.error('Could not get status', e);
                     setError(e.toString());
-                });
-        }, INTERVAL);
-        return () => {
-            clearInterval(intervalId);
-        };
-    }, [setAppStatus, setBalance, setError, setMiningInitiated, setMode]);
+                }),
+        INTERVAL
+    );
 }
