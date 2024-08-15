@@ -1,15 +1,21 @@
-use std::fs;
-use std::path::PathBuf;
-use anyhow::Error;
+use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::p2pool;
+use crate::p2pool::models::Stats;
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::{info, warn};
+use rand::seq::SliceRandom;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 use tari_shutdown::Shutdown;
+use tari_utilities::epoch_time::EpochTime;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -19,10 +25,7 @@ pub struct P2poolAdapter {
 }
 
 impl P2poolAdapter {
-    pub fn new(
-        grpc_port: u16, 
-        stats_server_port: u16,
-    ) -> Self {
+    pub fn new(grpc_port: u16, stats_server_port: u16) -> Self {
         Self {
             grpc_port,
             stats_server_port,
@@ -36,40 +39,28 @@ impl P2poolAdapter {
     pub fn stats_server_port(&self) -> u16 {
         self.stats_server_port
     }
-    
-    pub async fn list_tribes(&self) -> Result<Vec<String>, Error> {
-        let file_path = BinaryResolver::current()
-            .resolve_path(Binaries::ShaP2pool)
-            .await?;
-        crate::download_utils::set_permissions(&file_path).await?;
-
-        let child = tokio::process::Command::new(file_path)
-            .args(vec!["list-tribes"])
-            .stdout(std::process::Stdio::piped())
-            .kill_on_drop(true)
-            .spawn()?;
-        
-        let output = child.wait_with_output().await?;
-        let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
-        
-        Ok(tribes)
-    }
 }
 
 impl ProcessAdapter for P2poolAdapter {
     type Instance = P2poolInstance;
     type StatusMonitor = P2poolStatusMonitor;
 
-    fn spawn_inner(&self, data_dir: PathBuf) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    fn spawn_inner(
+        &self,
+        data_dir: PathBuf,
+    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting p2pool node");
 
-        let working_dir = data_local_dir().unwrap().join("tari-universe").join("p2pool");
+        let working_dir = data_local_dir()
+            .unwrap()
+            .join("tari-universe")
+            .join("sha-p2pool");
         std::fs::create_dir_all(&working_dir)?;
 
-        let args: Vec<String> = vec![
+        let mut args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
             self.grpc_port.to_string(),
@@ -81,10 +72,29 @@ impl ProcessAdapter for P2poolAdapter {
             P2poolInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
+                    // file details
                     let file_path = BinaryResolver::current()
                         .resolve_path(Binaries::ShaP2pool)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
+
+                    // select tribe
+                    let child = tokio::process::Command::new(file_path.clone())
+                        .args(vec!["list-tribes"])
+                        .stdout(std::process::Stdio::piped())
+                        .kill_on_drop(true)
+                        .spawn()?;
+
+                    let output = child.wait_with_output().await?;
+                    let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
+                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
+                        Some(tribe) => tribe.to_string(),
+                        None => String::from("default"), // TODO: generate name
+                    };
+                    args.push("--tribe".to_string());
+                    args.push(tribe);
+
+                    // start
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)
                         .kill_on_drop(true)
@@ -110,10 +120,9 @@ impl ProcessAdapter for P2poolAdapter {
                     }
 
                     Ok(())
-                })
-                )
+                })),
             },
-            P2poolStatusMonitor {}
+            P2poolStatusMonitor::new(format!("http://127.0.0.1:{}", self.stats_server_port)),
         ))
     }
 
@@ -160,11 +169,21 @@ impl Drop for P2poolInstance {
     }
 }
 
-pub struct P2poolStatusMonitor {}
+pub struct P2poolStatusMonitor {
+    stats_client: p2pool::stats_client::Client,
+}
 
-impl StatusMonitor for P2poolStatusMonitor {
-    fn status(&self) -> Result<(), Error> {
+impl P2poolStatusMonitor {
+    pub fn new(stats_server_addr: String) -> Self {
+        Self {
+            stats_client: p2pool::stats_client::Client::new(stats_server_addr),
+        }
+    }
+}
 
-        todo!()
+#[async_trait]
+impl StatusMonitor<Stats> for P2poolStatusMonitor {
+    async fn status(&self) -> Result<Stats, Error> {
+        self.stats_client.stats().await
     }
 }

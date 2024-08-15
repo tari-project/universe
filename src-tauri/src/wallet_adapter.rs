@@ -185,8 +185,9 @@ impl Drop for WalletInstance {
 
 pub struct WalletStatusMonitor {}
 
-impl StatusMonitor for WalletStatusMonitor {
-    fn status(&self) -> Result<(), Error> {
+#[async_trait]
+impl StatusMonitor<()> for WalletStatusMonitor {
+    async fn status(&self) -> Result<(), Error> {
         todo!()
     }
 }

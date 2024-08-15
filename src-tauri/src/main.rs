@@ -19,15 +19,17 @@ mod node_manager;
 mod process_adapter;
 mod wallet_manager;
 
-mod process_killer;
-mod wallet_adapter;
+mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
+mod process_killer;
+mod wallet_adapter;
 
 use crate::cpu_miner::CpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
+use crate::p2pool_manager::P2poolManager;
 use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
@@ -219,7 +221,7 @@ async fn setup_application<'r>(
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir)
+        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
@@ -246,9 +248,13 @@ async fn setup_application<'r>(
         )
         .await;
     let _ = mm_proxy_manager.wait_ready().await;
-    
-    // TODO: collect all tribes
-    // TODO: then select a random tribe and start p2pool with that
+
+    progress.set_max(80).await;
+    progress.update("Starting P2Pool".to_string(), 0).await;
+    let _ = state
+        .p2pool_manager
+        .ensure_started(state.shutdown.to_signal(), data_dir)
+        .await;
 
     _ = window.emit(
         "message",
@@ -507,6 +513,7 @@ struct UniverseAppState {
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
+    p2pool_manager: P2poolManager,
 }
 
 pub const LOG_TARGET: &str = "tari::universe::main";
@@ -523,6 +530,7 @@ fn main() {
     let node_manager = NodeManager::new();
     let wallet_manager = WalletManager::new(node_manager.clone());
     let wallet_manager2 = wallet_manager.clone();
+    let p2pool_manager = P2poolManager::new();
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -538,6 +546,7 @@ fn main() {
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
+        p2pool_manager,
     };
 
     let user_listener = app_state.user_listener.clone();

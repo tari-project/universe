@@ -312,7 +312,7 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
-            Binaries::ShaP2pool => "sha-p2pool"
+            Binaries::ShaP2pool => "sha-p2pool",
         }
     }
 }

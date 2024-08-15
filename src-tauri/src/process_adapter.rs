@@ -42,8 +42,9 @@ pub trait ProcessAdapter {
     }
 }
 
-pub trait StatusMonitor {
-    fn status(&self) -> Result<(), anyhow::Error>;
+#[async_trait]
+pub trait StatusMonitor<S> {
+    async fn status(&self) -> Result<S, anyhow::Error>;
 }
 
 #[async_trait]
