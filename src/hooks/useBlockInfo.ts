@@ -47,7 +47,6 @@ export function useBlockInfo() {
 
     useEffect(() => {
         if (heightRef.current !== block_height) {
-            setTimeSince('');
             setIsPaused(true);
             handleFail().then(() => {
                 setIsPaused(false);
