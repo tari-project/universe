@@ -1,15 +1,17 @@
 import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
 import { useMining } from '../../../../hooks/useMining.ts';
 import { useCallback, useEffect, useState } from 'react';
-import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
+
 import { StyledButton, StyledIcon } from '../MiningButton.styles.ts';
 import { ButtonProps } from '@mui/material';
 import { useUIStore } from '../../../../store/useUIStore.ts';
 import useAppStateStore from '../../../../store/appStateStore.ts';
+import { useCPUStatusStore } from '../../../../store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 function MiningButton() {
     const [buttonLoading, setButtonLoading] = useState(false);
-    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const miningInitiated = useUIStore((s) => s.miningInitiated);
     const progress = useAppStateStore((s) => s.setupProgress);
     const miningAllowed = progress >= 1;
@@ -42,11 +44,7 @@ function MiningButton() {
         endIcon: isMining ? <IoPauseCircle /> : <IoChevronForwardCircle />,
     };
 
-    const actionText = !isMining
-        ? hasMiningBeenStopped
-            ? 'Resume'
-            : 'Start'
-        : 'Stop';
+    const actionText = !isMining ? (hasMiningBeenStopped ? 'Resume' : 'Start') : 'Stop';
 
     return (
         <StyledButton
