@@ -1,5 +1,4 @@
 use crate::app_config::MiningMode;
-use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
@@ -16,11 +15,7 @@ use tokio::time::MissedTickBehavior;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 350;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
-pub enum CpuMinerEvent {
-    Stdout(String),
-    Stderr(String),
-    Exit(i32),
-}
+pub enum CpuMinerEvent {}
 
 pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
@@ -41,7 +36,6 @@ impl CpuMiner {
         &mut self,
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
-        local_mm_proxy: &MmProxyManager,
         base_path: PathBuf,
         cache_dir: PathBuf,
         log_dir: PathBuf,
@@ -140,7 +134,7 @@ impl CpuMiner {
         self.miner_shutdown.trigger();
         self.api_client = None;
         if let Some(task) = self.watcher_task.take() {
-            task.await?;
+            task.await??;
             println!("Task finished");
         }
         // TODO: This doesn't seem to be called

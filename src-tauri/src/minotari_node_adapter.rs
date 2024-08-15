@@ -5,10 +5,8 @@ use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use humantime::format_duration;
-use log::{info, warn};
-use minotari_node_grpc_client::grpc::{
-    Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo,
-};
+use log::{debug, info, warn};
+use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
 use std::path::PathBuf;
@@ -24,16 +22,12 @@ use tokio::task::JoinHandle;
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub struct MinotariNodeAdapter {
-    force_download: bool,
     use_tor: bool,
 }
 
 impl MinotariNodeAdapter {
     pub fn new(use_tor: bool) -> Self {
-        Self {
-            force_download: false,
-            use_tor,
-        }
+        Self { use_tor }
     }
 }
 
@@ -114,8 +108,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
                     match fs::remove_file(data_dir.join("node_pid")) {
                         Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        Err(_e) => {
+                            debug!(target: LOG_TARGET, "Could not clear node's pid file");
                         }
                     }
                     Ok(())
@@ -162,18 +156,17 @@ impl Drop for MinotariNodeInstance {
         self.shutdown.trigger();
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
-                handle.await.unwrap();
+                let _ = handle.await.unwrap().map_err(|e| {
+                    warn!(target: LOG_TARGET, "Error stopping minotari node: {:?}", e);
+                    e
+                });
             });
         }
     }
 }
 pub struct MinotariNodeStatusMonitor {}
 
-impl StatusMonitor for MinotariNodeStatusMonitor {
-    fn status(&self) -> Result<(), Error> {
-        todo!()
-    }
-}
+impl StatusMonitor for MinotariNodeStatusMonitor {}
 
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
@@ -229,7 +222,6 @@ impl MinotariNodeStatusMonitor {
         Ok(NodeIdentity {
             public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
                 .map_err(|e| anyhow!(e.to_string()))?,
-            public_addresses: res.public_addresses,
         })
     }
 

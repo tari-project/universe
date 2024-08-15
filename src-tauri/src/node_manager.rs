@@ -8,8 +8,6 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
-const LOG_TARGET: &str = "tari::universe::node_manager";
-
 pub struct NodeManager {
     watcher: Arc<RwLock<ProcessWatcher<MinotariNodeAdapter>>>,
 }
@@ -122,5 +120,4 @@ impl NodeManager {
 
 pub struct NodeIdentity {
     pub public_key: RistrettoPublicKey,
-    pub public_addresses: Vec<String>,
 }

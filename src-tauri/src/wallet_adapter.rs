@@ -2,7 +2,7 @@ use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{info, warn};
+use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetBalanceRequest;
 use serde::Serialize;
@@ -123,10 +123,11 @@ impl ProcessAdapter for WalletAdapter {
                         },
                     };
                     println!("Stopping minotari node");
+
                     match fs::remove_file(data_dir.join("wallet_pid")) {
                         Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        Err(_e) => {
+                            debug!(target: LOG_TARGET, "Could not clear wallet's pid file");
                         }
                     }
                     Ok(())
@@ -173,7 +174,10 @@ impl Drop for WalletInstance {
         self.shutdown.trigger();
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
-                handle.await.unwrap();
+                let _ = handle.await.unwrap().map_err(|e| {
+                    warn!(target: LOG_TARGET, "Error stopping wallet: {:?}", e);
+                    e
+                });
             });
         }
     }
@@ -181,11 +185,7 @@ impl Drop for WalletInstance {
 
 pub struct WalletStatusMonitor {}
 
-impl StatusMonitor for WalletStatusMonitor {
-    fn status(&self) -> Result<(), Error> {
-        todo!()
-    }
-}
+impl StatusMonitor for WalletStatusMonitor {}
 
 #[derive(Debug, Serialize)]
 pub struct WalletBalance {

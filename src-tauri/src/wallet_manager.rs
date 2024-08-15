@@ -6,8 +6,6 @@ use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
-const LOG_TARGET: &str = "tari::universe::node_manager";
-
 pub struct WalletManager {
     watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
     node_manager: NodeManager,
