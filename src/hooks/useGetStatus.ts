@@ -27,8 +27,8 @@ export function useGetStatus() {
                 .then((status) => {
                     if (status) {
                         setAppStatus(status);
-
                         setCPUStatus(status.cpu);
+                        console.debug(status.base_node);
                         setBaseNodeStatus(status.base_node);
 
                         if (status.cpu?.is_mining) {

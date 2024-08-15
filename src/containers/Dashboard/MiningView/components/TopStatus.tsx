@@ -1,27 +1,13 @@
-import { useEffect } from 'react';
 import { Typography } from '@mui/material';
-import useAppStateStore from '../../../../store/appStateStore';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useCPUStatusStore } from '../../../../store/useCPUStatusStore.ts';
+
 function TopStatus() {
-    const { topStatus, setTopStatus } = useAppStateStore((state) => ({
-        topStatus: state.topStatus,
-        setTopStatus: state.setTopStatus,
-    }));
-
-    const isMining = useCPUStatusStore((s) => s.is_mining);
-
-    useEffect(() => {
-        if (isMining) {
-            setTopStatus('Mining');
-        } else {
-            setTopStatus('Not mining');
-        }
-    }, [isMining, setTopStatus]);
-
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     return (
         <Typography variant="h5" textTransform="uppercase">
-            {topStatus}
+            {isMining ? 'Mining' : 'Not Mining'}
         </Typography>
     );
 }

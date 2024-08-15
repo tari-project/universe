@@ -5,6 +5,16 @@ import { useBlockInfo } from '../../../../hooks/useBlockInfo.ts';
 function BlockInfo() {
     const { timeSince, blockHeight } = useBlockInfo();
 
+    const timerMarkup = timeSince ? (
+        <>
+            <Divider orientation="vertical" flexItem />
+            <Stack>
+                <Typography variant="h6">{timeSince}</Typography>
+                <Typography variant="body2">Current floor build time</Typography>
+            </Stack>
+        </>
+    ) : null;
+
     return (
         <Stack direction="row" spacing={2}>
             <Stack>
@@ -16,11 +26,7 @@ function BlockInfo() {
                 <Typography variant="h6">Tiny Green Whales</Typography>
                 <Typography variant="body2">Last floor winner</Typography>
             </Stack>
-            <Divider orientation="vertical" flexItem />
-            <Stack>
-                <Typography variant="h6">{timeSince}</Typography>
-                <Typography variant="body2">Current floor build time</Typography>
-            </Stack>
+            {timerMarkup}
         </Stack>
     );
 }

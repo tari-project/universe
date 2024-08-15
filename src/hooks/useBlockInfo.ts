@@ -3,6 +3,8 @@ import { useInterval } from './useInterval.ts';
 
 import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
+import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
+import { useVisualisation } from './useVisualisation.ts';
 
 const INTERVAL = 1000; // 1 sec
 
@@ -33,29 +35,40 @@ function calculateTimeSince(blockTime: number) {
 }
 
 export function useBlockInfo() {
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const block_height = useBaseNodeStatusStore(useShallow((s) => s.block_height));
     const block_time = useBaseNodeStatusStore(useShallow((s) => s.block_time));
-    const [timeSince, setTimeSince] = useState('');
+    const [timeSince, setTimeSince] = useState<string | undefined>();
+    const [isPaused, setIsPaused] = useState(false);
+    const { handleFail } = useVisualisation();
 
     const heightRef = useRef(block_height);
 
     useEffect(() => {
         if (heightRef.current !== block_height) {
+            setIsPaused(true);
+            console.log('OI YOU FRIGGEN LOST');
             console.info('hey!', heightRef.current, block_height);
+            handleFail().then(() => {
+                setIsPaused(false);
+            });
         }
-    }, [block_height]);
+    }, [block_height, handleFail]);
 
-    useInterval(() => {
-        const { days, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);
+    useInterval(
+        () => {
+            const { days, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);
 
-        if (days > 0) {
-            setTimeSince(`${days} day${days === 1 ? '' : 's'}, ${hoursString}:${minutes}:${seconds}`);
-        } else if (hours > 0) {
-            setTimeSince(`${hoursString}:${minutes}:${seconds}`);
-        } else {
-            setTimeSince(`${minutes}:${seconds}`);
-        }
-    }, INTERVAL);
+            if (days > 0) {
+                setTimeSince(`${days} day${days === 1 ? '' : 's'}, ${hoursString}:${minutes}:${seconds}`);
+            } else if (hours > 0) {
+                setTimeSince(`${hoursString}:${minutes}:${seconds}`);
+            } else {
+                setTimeSince(`${minutes}:${seconds}`);
+            }
+        },
+        isMining && !isPaused ? INTERVAL : null
+    );
 
     return { timeSince, blockHeight: block_height };
 }

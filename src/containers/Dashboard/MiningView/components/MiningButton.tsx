@@ -7,10 +7,11 @@ import { ButtonProps } from '@mui/material';
 import { useUIStore } from '../../../../store/useUIStore.ts';
 import useAppStateStore from '../../../../store/appStateStore.ts';
 import { useCPUStatusStore } from '../../../../store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 function MiningButton() {
     const [buttonLoading, setButtonLoading] = useState(false);
-    const isMining = useCPUStatusStore((s) => s.is_mining);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const miningInitiated = useUIStore((s) => s.miningInitiated);
     const progress = useAppStateStore((s) => s.setupProgress);
     const miningAllowed = progress >= 1;

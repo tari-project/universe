@@ -1,4 +1,4 @@
-import { setStart, setStop, setRestart } from '../visuals';
+import { setStart, setStop, setRestart, setFailure } from '../visuals';
 import { useCallback } from 'react';
 
 export function useVisualisation() {
@@ -14,5 +14,9 @@ export function useVisualisation() {
         return await setStop();
     }, []);
 
-    return { handleStart, handlePause };
+    const handleFail = useCallback(async () => {
+        return await setFailure();
+    }, []);
+
+    return { handleStart, handlePause, handleFail };
 }
