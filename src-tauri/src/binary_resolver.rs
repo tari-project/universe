@@ -230,7 +230,6 @@ impl BinaryResolver {
             .adapters
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
-        let name = binary.name();
         let latest_release = adapter.fetch_latest_release().await?;
         // TODO: validate that version doesn't have any ".." or "/" in it
 

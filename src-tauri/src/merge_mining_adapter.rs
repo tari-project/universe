@@ -2,7 +2,7 @@ use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use anyhow::Error;
 use async_trait::async_trait;
-use log::warn;
+use log::{debug, warn};
 use std::fs;
 use std::path::PathBuf;
 use tari_common_types::tari_address::TariAddress;
@@ -14,14 +14,12 @@ use tokio::task::JoinHandle;
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
 pub struct MergeMiningProxyAdapter {
-    force_download: bool,
     pub(crate) tari_address: TariAddress,
 }
 
 impl MergeMiningProxyAdapter {
     pub fn new() -> Self {
         Self {
-            force_download: false,
             tari_address: TariAddress::default(),
         }
     }
@@ -87,8 +85,8 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
                     match fs::remove_file(data_dir.join("mmproxy_pid")) {
                         Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        Err(_e) => {
+                            debug!(target: LOG_TARGET, "Could not clear mmproxy's pid file");
                         }
                     }
                     Ok(())
@@ -136,14 +134,12 @@ impl Drop for MergeMiningProxyInstance {
         self.shutdown.trigger();
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
-                handle.await.unwrap();
+                let _ = handle.await.unwrap().map_err(|e| {
+                    warn!(target: LOG_TARGET, "Error in MergeMiningProxyInstance: {}", e);
+                });
             });
         }
     }
 }
 
-impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    fn status(&self) -> Result<(), Error> {
-        todo!()
-    }
-}
+impl StatusMonitor for MergeMiningProxyStatusMonitor {}

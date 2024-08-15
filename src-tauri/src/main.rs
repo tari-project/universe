@@ -293,7 +293,6 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.cpu_miner_config.read().await;
-    let mm_proxy_manager = state.mm_proxy_manager.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
     state
         .cpu_miner
@@ -302,7 +301,6 @@ async fn start_mining<'r>(
         .start(
             state.shutdown.to_signal(),
             &config,
-            &mm_proxy_manager,
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),

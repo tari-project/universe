@@ -5,7 +5,7 @@ use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use crate::ProgressTracker;
 use anyhow::Error;
-use log::{info, warn};
+use log::{debug, info, warn};
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
@@ -119,8 +119,8 @@ impl XmrigAdapter {
 
                     match std::fs::remove_file(data_dir.join("xmrig_pid")) {
                         Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file");
+                        Err(_e) => {
+                            debug!(target: LOG_TARGET, "Could not clear xmrig's pid file");
                         }
                     }
 
@@ -218,7 +218,9 @@ impl Drop for XmrigInstance {
         self.shutdown.trigger();
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
-                handle.await.unwrap();
+                let _ = handle.await.unwrap().map_err(|e| {
+                    warn!(target: LOG_TARGET, "Error in XmrigInstance: {}", e);
+                });
             });
         }
     }
