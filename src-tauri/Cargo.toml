@@ -1,8 +1,10 @@
 [package]
 name = "tari-universe"
+authors = ["The Tari Development Community"]
+description = "Tari Universe"
+repository = "https://github.com/tari-project/universe"
+license = "BSD-3-Clause"
 version = "0.0.0"
-description = "A Tauri App"
-authors = ["you"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
