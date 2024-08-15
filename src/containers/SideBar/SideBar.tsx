@@ -13,6 +13,7 @@ import { useTheme } from '@mui/material/styles';
 
 import { useUIStore } from '../../store/useUIStore.ts';
 import ConnectButton from '../Airdrop/components/ConnectButton.tsx';
+// import TestButtons from './TestButtons.tsx';
 
 function SideBar() {
     const theme = useTheme();
@@ -26,7 +27,7 @@ function SideBar() {
                 <ConnectButton />
                 <Miner />
                 <Milestones />
-                <TestButtons />
+                {/*<TestButtons />*/}
             </SideBarInner>
             <BottomContainer>
                 <Wallet />

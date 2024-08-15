@@ -1,46 +1,46 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore';
-import { setStart, setStop, setRestart } from '../visuals';
+import { useAppStatusStore } from '../store/useAppStatusStore';
+import { useVisualisation } from './useVisualisation.ts';
+import useAppStateStore from '../store/appStateStore.ts';
 
 export function useMining() {
-    const setIsLoading = useUIStore((s) => s.setIsMiningLoading);
-    const setBackground = useUIStore((s) => s.setBackground);
-    const hasStarted = useRef(false);
+    const { handlePause, handleStart } = useVisualisation();
+    const progress = useAppStateStore((s) => s.setupProgress);
+    const miningAllowed = progress >= 1;
+    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
+
+    const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
+
+    const hasMiningStartedAtLeastOnce = useRef(false);
+
+    useEffect(() => {
+        if (isMining) {
+            handleStart(hasMiningStartedAtLeastOnce.current);
+            hasMiningStartedAtLeastOnce.current = true;
+        }
+    }, [handleStart, isMining]);
 
     const startMining = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            await invoke('start_mining', {});
-        } catch (e) {
-            console.error('Could not start mining', e);
-        } finally {
-            setIsLoading(false);
-            setBackground('mining');
-            if (!hasStarted.current) {
-                hasStarted.current = true;
-                setStart();
-            } else {
-                setRestart();
-            }
+        if (miningAllowed) {
+            setMiningInitiated(true);
+            await invoke('start_mining', {}).then(() => {
+                console.info(`mining started`);
+            });
         }
-    }, [setIsLoading, setIsLoading]);
+    }, [miningAllowed, setMiningInitiated]);
 
     const stopMining = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            await invoke('stop_mining', {});
-            setStop();
-        } catch (e) {
-            console.error('Could not stop mining', e);
-        } finally {
-            setIsLoading(false);
-            setBackground('idle');
-        }
-    }, [setIsLoading, setIsLoading]);
+        await invoke('stop_mining', {}).then(async () => {
+            console.info(`mining stopped`);
+            await handlePause();
+        });
+    }, [handlePause]);
 
     return {
         startMining,
         stopMining,
+        hasMiningBeenStopped: hasMiningStartedAtLeastOnce.current,
     };
 }

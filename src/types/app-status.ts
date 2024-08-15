@@ -11,6 +11,7 @@ export interface AppStatus {
 }
 
 export interface CpuMinerStatus {
+    is_mining_enabled: boolean;
     is_mining: boolean;
     hash_rate: number;
     cpu_usage: number;

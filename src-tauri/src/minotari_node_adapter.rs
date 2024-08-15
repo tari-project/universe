@@ -242,7 +242,6 @@ impl MinotariNodeStatusMonitor {
         while true {
             let tip = client.get_tip_info(Empty {}).await?;
             let res = tip.into_inner();
-            dbg!(&res);
             if res.initial_sync_achieved {
                 break;
             }
@@ -254,6 +253,9 @@ impl MinotariNodeStatusMonitor {
                     .as_secs()
                     - metadata.timestamp,
             );
+            if time_behind < Duration::from_secs(600) {
+                break;
+            }
             progress_tracker
                 .update(
                     format!(

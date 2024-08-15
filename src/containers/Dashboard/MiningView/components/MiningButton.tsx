@@ -1,84 +1,62 @@
-import { Button } from '@mui/material';
 import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
-import { AiOutlineLoading } from 'react-icons/ai';
-import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 import { useMining } from '../../../../hooks/useMining.ts';
-import { styled } from '@mui/material/styles';
-import { keyframes } from '@emotion/react';
+import { useCallback, useEffect, useState } from 'react';
+import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
+import { StyledButton, StyledIcon } from '../MiningButton.styles.ts';
+import { ButtonProps } from '@mui/material';
 import { useUIStore } from '../../../../store/useUIStore.ts';
-
-const StartStyle = {
-    background: '#06C983',
-    border: '1px solid #06C983',
-    '&:hover': {
-        background: '#ff0000',
-    },
-};
-
-const StopStyle = {
-    background: '#000000',
-    border: '1px solid #000000',
-};
-
-const LoadingStyle = {
-    opacity: 0.7,
-    pointerEvents: 'none',
-};
-
-const StyledButton = styled(Button)(() => ({
-    padding: '10px 18px',
-    borderRadius: '30px',
-}));
-
-const spin = keyframes`
-  from {
-  transform:rotate(0deg)
-  }
-  to {
-  transform:rotate(360deg)
-  }
-`;
-const StyledIcon = styled(AiOutlineLoading)(() => ({
-    animation: `${spin} 1s infinite`,
-    animationTimingFunction: 'cubic-bezier(0.76, 0.89, 0.95, 0.85)',
-}));
+import useAppStateStore from '../../../../store/appStateStore.ts';
 
 function MiningButton() {
-    const mining = useAppStatusStore((s) => s.cpu?.is_mining);
-    const isLoading = useUIStore((s) => s.isMiningLoading);
+    const [buttonLoading, setButtonLoading] = useState(false);
+    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
+    const miningInitiated = useUIStore((s) => s.miningInitiated);
+    const progress = useAppStateStore((s) => s.setupProgress);
+    const miningAllowed = progress >= 1;
 
-    const { startMining, stopMining } = useMining();
+    const { startMining, stopMining, hasMiningBeenStopped } = useMining();
 
-    const handleMining = () => {
-        if (isLoading) return;
-        if (mining) {
-            stopMining();
+    useEffect(() => {
+        const startLoad = !isMining && miningInitiated;
+        if (startLoad) {
+            setButtonLoading(true);
         } else {
-            startMining();
+            setButtonLoading(false);
         }
+    }, [isMining, miningInitiated]);
+
+    const handleClick = useCallback(() => {
+        setButtonLoading(true);
+        if (isMining) {
+            return stopMining();
+        }
+        if (!isMining) {
+            return startMining();
+        }
+    }, [isMining, startMining, stopMining]);
+
+    const btnProps: ButtonProps = {
+        variant: 'contained',
+        color: 'primary',
+        size: 'large',
+        endIcon: isMining ? <IoPauseCircle /> : <IoChevronForwardCircle />,
     };
 
-    const buttonStyle = mining ? StopStyle : StartStyle;
-    const buttonIcon = mining ? <IoPauseCircle /> : <IoChevronForwardCircle />;
+    const actionText = !isMining
+        ? hasMiningBeenStopped
+            ? 'Resume'
+            : 'Start'
+        : 'Stop';
 
     return (
         <StyledButton
-            variant="contained"
-            color="primary"
-            size="large"
-            style={
-                isLoading ? { ...buttonStyle, ...LoadingStyle } : buttonStyle
-            }
-            onClick={() => handleMining()}
-            endIcon={isLoading ? <StyledIcon /> : buttonIcon}
-            sx={{
-                display: 'flex',
-                alignItems: 'center',
-            }}
+            {...btnProps}
+            hasStarted={!!isMining}
+            onClick={handleClick}
+            disabled={!miningAllowed}
+            endIcon={buttonLoading ? <StyledIcon /> : btnProps.endIcon}
         >
-            <span style={{ flexGrow: 1 }}>
-                {mining ? 'Stop Mining' : 'Start Mining'}
-            </span>
+            <span style={{ flexGrow: 1 }}>{`${actionText} mining`}</span>
         </StyledButton>
     );
 }

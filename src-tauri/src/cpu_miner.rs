@@ -57,14 +57,6 @@ impl CpuMiner {
 
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
-                local_mm_proxy
-                    .start(
-                        app_shutdown.clone(),
-                        base_path.clone(),
-                        cpu_miner_config.tari_address.clone(),
-                    )
-                    .await?;
-                local_mm_proxy.wait_ready().await?;
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
                     // port: local_mm_proxy.try_get_listening_port().await?
@@ -85,6 +77,7 @@ impl CpuMiner {
             progress_tracker,
             cpu_max_percentage,
         )?;
+
         self.api_client = Some(client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
@@ -174,28 +167,55 @@ impl CpuMiner {
 
         match &self.api_client {
             Some(client) => {
-                let xmrig_status = client.summary().await?;
-                let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                dbg!(hash_rate, network_hash_rate, block_reward);
-                let estimated_earnings = (block_reward.as_u64() as f64
-                    * (hash_rate / network_hash_rate as f64 * RANDOMX_BLOCKS_PER_DAY as f64))
-                    as u64;
-                // Can't be more than the max reward for a day
-                let estimated_earnings = std::cmp::min(
-                    estimated_earnings,
-                    block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
-                );
+                let mut is_mining = false;
+                let (hash_rate, hashrate_sum, estimated_earnings, is_connected) =
+                    match client.summary().await {
+                        Ok(xmrig_status) => {
+                            let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
+                            dbg!(hash_rate, network_hash_rate, block_reward);
+                            let estimated_earnings = (block_reward.as_u64() as f64
+                                * (hash_rate / network_hash_rate as f64
+                                    * RANDOMX_BLOCKS_PER_DAY as f64))
+                                as u64;
+                            // Can't be more than the max reward for a day
+                            let estimated_earnings = std::cmp::min(
+                                estimated_earnings,
+                                block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
+                            );
+
+                            // mining should be true if the hashrate is greater than 0
+
+                            let hasrate_sum = xmrig_status
+                                .hashrate
+                                .total
+                                .iter()
+                                .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
+                            (
+                                hash_rate,
+                                hasrate_sum,
+                                estimated_earnings,
+                                xmrig_status.connection.uptime > 0,
+                            )
+                        }
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
+                            (0.0, 0.0, 0, false)
+                        }
+                    };
+
+                if hashrate_sum > 0.0 {
+                    is_mining = true;
+                }
 
                 Ok(CpuMinerStatus {
-                    is_mining: xmrig_status.hashrate.total.len() > 0
-                        && xmrig_status.hashrate.total[0].is_some()
-                        && xmrig_status.hashrate.total[0].unwrap() > 0.0,
+                    is_mining_enabled: true,
+                    is_mining,
                     hash_rate,
                     cpu_usage: cpu_usage as u32,
                     cpu_brand: cpu_brand.to_string(),
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
-                        is_connected: xmrig_status.connection.uptime > 0,
+                        is_connected,
                         // error: if xmrig_status.connection.error_log.is_empty() {
                         //     None
                         // } else {
@@ -205,6 +225,7 @@ impl CpuMiner {
                 })
             }
             None => Ok(CpuMinerStatus {
+                is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
                 cpu_usage: cpu_usage as u32,

@@ -5,16 +5,16 @@ import MiningButton from './components/MiningButton';
 import { InfoContainer } from '../styles';
 
 function MiningView() {
-  return (
-    <>
-      <InfoContainer>
-        <TopStatus />
-        <BlockInfo />
-      </InfoContainer>
-      <VisualMode />
-      <MiningButton />
-    </>
-  );
+    return (
+        <>
+            <InfoContainer>
+                <TopStatus />
+                <BlockInfo />
+            </InfoContainer>
+            <VisualMode />
+            <MiningButton />
+        </>
+    );
 }
 
 export default MiningView;
