@@ -492,6 +492,12 @@ struct UniverseAppState {
     wallet_manager: WalletManager,
 }
 
+#[derive(Clone, serde::Serialize)]
+struct Payload {
+  args: Vec<String>,
+  cwd: String,
+}
+
 pub const LOG_TARGET: &str = "tari::universe::main";
 
 fn main() {
@@ -526,6 +532,14 @@ fn main() {
     let user_listener = app_state.user_listener.clone();
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+            println!("{}, {argv:?}, {cwd}", app.package_info().name);
+
+            app.emit_all("single-instance", Payload { args: argv, cwd }).unwrap();
+        }))
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+
         .manage(app_state)
         .setup(|app| {
             tari_common::initialize_logging(
