@@ -22,7 +22,6 @@ import { appBorderRadius } from './theme/tokens.ts';
 
 import { preload } from './visuals.js';
 import { useAppStatusStore } from './store/useAppStatusStore.ts';
-import { useVisualisation } from './hooks/useVisualisation.ts';
 
 function App() {
     const background = useUIStore((s) => s.background);
@@ -32,11 +31,8 @@ function App() {
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
-    const { startMining, stopMining, hasMiningBeenStopped } = useMining();
+    const { startMining, stopMining } = useMining();
     const visualMode = useUIStore((s) => s.visualMode);
-    const { handleStart, handlePause } = useVisualisation();
-
-    console.log(`background= ${background}`);
 
     useEffect(() => {
         const unlistenPromise = listen(
@@ -61,14 +57,11 @@ function App() {
                         if (isMining) return;
                         startMining().then(() => {
                             console.debug('Mining started');
-                            handleStart(hasMiningBeenStopped);
                         });
                         break;
                     case 'user_active':
-                        if (!isMining) return;
                         stopMining().then(() => {
                             console.debug('Mining stopped');
-                            handlePause();
                         });
                         break;
                     default:
@@ -93,12 +86,11 @@ function App() {
         };
     }, [
         setSetupDetails,
-        hasMiningBeenStopped,
         stopMining,
         startMining,
-        handleStart,
-        handlePause,
         isMining,
+        settingUpFinished,
+        setView,
     ]);
 
     useGetStatus();
