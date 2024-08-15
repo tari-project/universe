@@ -5,6 +5,9 @@ import { preload } from '../visuals';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
 import useAppStateStore from '../store/appStateStore.ts';
+import { useMining } from './useMining.ts';
+
+import { useAppStatusStore } from '../store/useAppStatusStore.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
@@ -13,6 +16,8 @@ export function useSetUp() {
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     // TODO: set up separate auto-miner listener
+    const autoMiningEnabled = useAppStatusStore((s) => s.auto_mining);
+    const { startMining, stopMining } = useMining();
 
     useEffect(() => {
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
@@ -25,6 +30,19 @@ export function useSetUp() {
                         settingUpFinished();
                         setView('mining');
                     }
+                    break;
+                //Auto Miner
+                case 'user_idle':
+                    if (!autoMiningEnabled) return;
+                    startMining().then(() => {
+                        console.debug('Mining started');
+                    });
+                    break;
+                case 'user_active':
+                    if (!autoMiningEnabled) return;
+                    stopMining().then(() => {
+                        console.debug('Mining stopped');
+                    });
                     break;
                 default:
                     console.warn('Unknown tauri event: ', { e, p });
@@ -43,5 +61,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [setSetupDetails, setView, settingUpFinished]);
+    }, [autoMiningEnabled, setSetupDetails, setView, settingUpFinished, startMining, stopMining]);
 }
