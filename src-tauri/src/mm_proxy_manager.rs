@@ -1,6 +1,5 @@
 use crate::merge_mining_adapter::MergeMiningProxyAdapter;
 use crate::process_watcher::ProcessWatcher;
-use crate::ProgressTracker;
 use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;

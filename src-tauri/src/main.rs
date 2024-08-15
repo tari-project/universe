@@ -33,7 +33,9 @@ use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use log::{debug, error, info, warn};
-use serde::{Deserialize, Serialize};
+use progress_tracker::ProgressTracker;
+use serde::Serialize;
+use setup_status_event::SetupStatusEvent;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
@@ -42,78 +44,9 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
-use xmrig_adapter::XmrigNodeConnection;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct SetupStatusEvent {
-    event_type: String,
-    title: String,
-    progress: f64,
-}
-
-pub struct ProgressTracker {
-    inner: Arc<RwLock<ProgressTrackerInner>>,
-}
-
-impl Clone for ProgressTracker {
-    fn clone(&self) -> Self {
-        Self {
-            inner: self.inner.clone(),
-        }
-    }
-}
-
-impl ProgressTracker {
-    pub fn new(window: tauri::Window) -> Self {
-        Self {
-            inner: Arc::new(RwLock::new(ProgressTrackerInner::new(window))),
-        }
-    }
-
-    pub async fn set_max(&self, max: u64) {
-        self.inner.write().await.set_next_max(max);
-    }
-
-    pub async fn update(&self, title: String, progress: u64) {
-        self.inner.read().await.update(title, progress);
-    }
-}
-
-pub struct ProgressTrackerInner {
-    window: tauri::Window,
-    min: u64,
-    next_max: u64,
-}
-
-impl ProgressTrackerInner {
-    pub fn new(window: tauri::Window) -> Self {
-        Self {
-            window,
-            min: 0,
-            next_max: 0,
-        }
-    }
-
-    pub fn set_next_max(&mut self, max: u64) {
-        self.min = self.next_max;
-        self.next_max = max;
-    }
-
-    pub fn update(&self, title: String, progress: u64) {
-        info!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
-        let _ = self.window.emit(
-            "message",
-            SetupStatusEvent {
-                event_type: "setup_status".to_string(),
-                title,
-                progress: (self.min
-                    + ((self.next_max - self.min) as f64 * (progress as f64 / 100.0)) as u64)
-                    as f64
-                    / 100.0,
-            },
-        );
-    }
-}
+mod progress_tracker;
+mod setup_status_event;
 
 #[tauri::command]
 async fn set_mode<'r>(
@@ -147,7 +80,7 @@ async fn setup_application<'r>(
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
-    let mut progress = ProgressTracker::new(window.clone());
+    let progress = ProgressTracker::new(window.clone());
 
     progress.set_max(10).await;
     progress
@@ -294,7 +227,6 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.cpu_miner_config.read().await;
-    let mm_proxy_manager = state.mm_proxy_manager.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
     state
         .cpu_miner
@@ -303,7 +235,6 @@ async fn start_mining<'r>(
         .start(
             state.shutdown.to_signal(),
             &config,
-            &mm_proxy_manager,
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
@@ -386,7 +317,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             .node_manager
             .get_network_hash_rate_and_block_reward()
             .await
-            .unwrap_or_else(|e| {
+            .unwrap_or({
                 //  warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
@@ -426,7 +357,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         },
         wallet_balance,
         mode: config_guard.mode.clone(),
-        auto_mining: config_guard.auto_mining.clone(),
+        auto_mining: config_guard.auto_mining,
     })
 }
 

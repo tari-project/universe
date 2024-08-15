@@ -71,7 +71,7 @@ impl AppConfig {
         info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
-            auto_mining: self.auto_mining.clone(),
+            auto_mining: self.auto_mining,
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -100,7 +100,7 @@ impl AppConfig {
     }
 
     pub fn get_auto_mining(&self) -> bool {
-        self.auto_mining.clone()
+        self.auto_mining
     }
 
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {

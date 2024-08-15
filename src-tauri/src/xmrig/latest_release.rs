@@ -4,20 +4,14 @@ use serde::Deserialize;
 const LOG_TARGET: &str = "tari::universe::xmrig::latest_release";
 #[derive(Debug, Deserialize)]
 pub struct Asset {
-    os: Option<String>,
     id: String,
     pub(crate) name: String,
     pub url: String,
-    size: u64,
-    ts: u64,
-    hash: String,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct XmrigRelease {
-    pub(crate) url: String,
     pub(crate) version: String,
-    ts: u64,
     assets: Vec<Asset>,
 }
 
@@ -29,7 +23,7 @@ impl XmrigRelease {
                 return Some(asset);
             }
         }
-        return None;
+        None
     }
 }
 

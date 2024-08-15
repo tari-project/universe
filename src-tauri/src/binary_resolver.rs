@@ -2,7 +2,6 @@ use crate::download_utils::{download_file, extract};
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use futures_util::FutureExt;
 use log::{info, warn};
 use semver::Version;
 use std::collections::HashMap;
@@ -13,7 +12,7 @@ use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
 
 const LOG_TARGET: &str = "tari::universe::binary_resolver";
-static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(|| BinaryResolver::new());
+static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
 
 pub struct BinaryResolver {
     download_mutex: Mutex<()>,
@@ -171,7 +170,7 @@ impl BinaryResolver {
     }
 
     pub fn current() -> &'static Self {
-        &*INSTANCE
+        &INSTANCE
     }
 
     pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
@@ -184,7 +183,7 @@ impl BinaryResolver {
         let version = guard
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
-        let base_dir = adapter.get_binary_folder().join(&version.to_string());
+        let base_dir = adapter.get_binary_folder().join(version.to_string());
         match binary {
             Binaries::Xmrig => {
                 let xmrig_bin = base_dir.join("xmrig");
@@ -231,13 +230,12 @@ impl BinaryResolver {
             .adapters
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
-        let name = binary.name();
         let latest_release = adapter.fetch_latest_release().await?;
         // TODO: validate that version doesn't have any ".." or "/" in it
 
         let bin_folder = adapter
             .get_binary_folder()
-            .join(&latest_release.version.to_string());
+            .join(latest_release.version.to_string());
         let _lock = self.download_mutex.lock().await;
 
         if force_download {
@@ -271,7 +269,7 @@ impl BinaryResolver {
             info!(target: LOG_TARGET, "Extracting file");
             let bin_dir = adapter
                 .get_binary_folder()
-                .join(&latest_release.version.to_string());
+                .join(latest_release.version.to_string());
             extract(&in_progress_file, &bin_dir).await?;
 
             fs::remove_dir_all(in_progress_dir).await?;
