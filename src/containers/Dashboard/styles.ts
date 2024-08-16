@@ -58,7 +58,7 @@ export const SetupDescription = styled(Typography)(({ theme }) => ({
 
 export const SetupPercentage = styled(Typography)(({ theme }) => ({
     color: `${theme.palette.text.primary} !important`,
-    fontFamily: '"PoppinsLight", sans-serif',
-    fontSize: '18px',
+    fontFamily: '"PoppinsBold", sans-serif',
+    fontSize: '15px',
     textAlign: 'center',
 }));

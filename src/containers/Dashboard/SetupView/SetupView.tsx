@@ -17,7 +17,8 @@ function SetupView({ title, progressPercentage }: { title: string; progressPerce
             <ProgressBox>
                 <StyledLinearProgress variant="determinate" value={progressPercentage} />
             </ProgressBox>
-            <SetupPercentage mt={2.2}>{`${progressPercentage}% - ${title}`}</SetupPercentage>
+            <SetupPercentage mt={2.2}>{`${progressPercentage}%`}</SetupPercentage>
+            <SetupDescription>{title}</SetupDescription>
         </Stack>
     );
 }
