@@ -1,20 +1,14 @@
 export function setStart() {
     window.glApp.stateManager.setStart();
+    console.log(`window app:}`);
+    console.log(window.glApp.stateManager);
 }
 
 export function setPause() {
-    window.glApp.stateManager.setPause();
-    // window.glApp.stateManager.statusUpdateQueue.push(() =>
-    //     window.glApp.stateManager.updateStatusAndResult('none', 'pause')
-    // );
-    // console.log('clicked pause!');
-    // window.glApp.stateManager.statusUpdateQueue.push(() =>
-    //     window.glApp.stateManager.updateStatusAndResult('pause', 'result')
-    // );
-
-    // window.glApp.stateManager.updateStatus(0);
-    console.log(window.glApp.stateManager.status);
-    console.log(window.glApp.stateManager.result);
+    window.glApp.stateManager.status = 'not-started';
+    window.glApp.stateManager.statusIndex = 0;
+    window.glApp.stateManager.updateFlags();
+    console.log(window.glApp.stateManager);
 }
 
 export function setStop() {
@@ -30,5 +24,8 @@ export function setFail() {
 }
 
 export function setRestartAnimation() {
-    window.glApp.stateManager.setRestartAnimation();
+    window.glApp.stateManager.status = 'free';
+    window.glApp.stateManager.statusIndex = 2;
+    window.glApp.stateManager.updateFlags();
+    console.log(window.glApp.stateManager);
 }

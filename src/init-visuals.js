@@ -19,8 +19,11 @@ function init() {
     window.addEventListener('resize', onResize);
     window.glApp.properties.cameraOffsetX = 0.33;
     window.glApp.properties.cameraZoom = 0.8;
+
     onResize();
     animate();
+    console.log(window.glApp.stateManager.status);
+    console.log(window.glApp.stateManager.result);
 }
 
 function onResize() {
