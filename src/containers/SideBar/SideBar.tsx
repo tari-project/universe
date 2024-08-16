@@ -4,15 +4,12 @@ import Heading from './components/Heading';
 import Milestones from './components/Milestone';
 import MinerUptimeChart from './components/MinerUptimeChart.tsx';
 import HashRateChart from './components/HashRateChart.tsx';
-import {
-    SideBarContainer,
-    SideBarInner,
-    HeadingContainer,
-    BottomContainer,
-} from './styles';
-import { useTheme } from '@mui/material/styles';
-import { useUIStore } from '../../store/useUIStore.ts';
+import { SideBarContainer, SideBarInner, HeadingContainer, BottomContainer } from './styles';
 import { Divider } from '@mui/material';
+
+import { useTheme } from '@mui/material/styles';
+
+import { useUIStore } from '../../store/useUIStore.ts';
 
 function SideBar() {
     const theme = useTheme();

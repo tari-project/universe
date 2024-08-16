@@ -2,7 +2,6 @@ import { ReactNode } from 'react';
 import { useTheme } from '@mui/material/styles';
 import clouds from '../../assets/backgrounds/clouds.png';
 import loading from '../../assets/backgrounds/loading.jpg';
-import defaultbg from '../../assets/backgrounds/defaultbg.jpg';
 import determining from '../../assets/backgrounds/determining.jpg';
 import loser from '../../assets/backgrounds/loser.jpg';
 import winner from '../../assets/backgrounds/winner.jpg';
@@ -42,7 +41,7 @@ function AppBackground({
         case 'mining':
         case 'idle':
         default:
-            bg = defaultbg;
+            bg = clouds;
             break;
     }
 

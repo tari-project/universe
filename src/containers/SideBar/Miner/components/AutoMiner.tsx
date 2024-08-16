@@ -1,3 +1,4 @@
+import React from 'react';
 import { FormGroup, Switch, Stack, Typography } from '@mui/material';
 import { AutoMinerContainer } from '../styles';
 import { invoke } from '@tauri-apps/api/tauri';
@@ -8,8 +9,9 @@ function AutoMiner() {
 
     const handleAutoMining = (event: React.ChangeEvent<HTMLInputElement>) => {
         const isChecked = event.target.checked;
-        console.log('Auto mining checked', isChecked);
-        invoke('set_auto_mining', { autoMining: isChecked });
+        invoke('set_auto_mining', { autoMining: isChecked }).then(() => {
+            console.info('Auto mining checked', isChecked);
+        });
     };
 
     return (

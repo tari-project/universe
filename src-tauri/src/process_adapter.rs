@@ -1,8 +1,7 @@
 use crate::process_killer::kill_process;
-use crate::ProgressTracker;
 use anyhow::Error;
 use async_trait::async_trait;
-use log::warn;
+use log::{info, warn};
 use std::fs;
 use std::path::PathBuf;
 
@@ -28,6 +27,7 @@ pub trait ProcessAdapter {
     fn pid_file_name(&self) -> &str;
 
     fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
             Ok(pid) => {
                 let pid = pid.trim().parse::<u32>()?;
@@ -41,9 +41,7 @@ pub trait ProcessAdapter {
     }
 }
 
-pub trait StatusMonitor {
-    fn status(&self) -> Result<(), anyhow::Error>;
-}
+pub trait StatusMonitor {}
 
 #[async_trait]
 pub trait ProcessInstance: Send + Sync + 'static {

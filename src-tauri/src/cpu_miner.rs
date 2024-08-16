@@ -1,5 +1,4 @@
 use crate::app_config::MiningMode;
-use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
@@ -16,11 +15,7 @@ use tokio::time::MissedTickBehavior;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 350;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
-pub enum CpuMinerEvent {
-    Stdout(String),
-    Stderr(String),
-    Exit(i32),
-}
+pub enum CpuMinerEvent {}
 
 pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
@@ -41,7 +36,6 @@ impl CpuMiner {
         &mut self,
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
-        local_mm_proxy: &MmProxyManager,
         base_path: PathBuf,
         cache_dir: PathBuf,
         log_dir: PathBuf,
@@ -140,7 +134,7 @@ impl CpuMiner {
         self.miner_shutdown.trigger();
         self.api_client = None;
         if let Some(task) = self.watcher_task.take() {
-            task.await?;
+            task.await??;
             println!("Task finished");
         }
         // TODO: This doesn't seem to be called
@@ -161,33 +155,49 @@ impl CpuMiner {
         // Refresh CPUs again.
         s.refresh_cpu_all();
 
-        let cpu_brand = s.cpus().get(0).map(|cpu| cpu.brand()).unwrap_or("Unknown");
+        let cpu_brand = s.cpus().first().map(|cpu| cpu.brand()).unwrap_or("Unknown");
 
         let cpu_usage = s.global_cpu_usage() as u32;
 
         match &self.api_client {
             Some(client) => {
-                let xmrig_status = client.summary().await?;
-                let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                dbg!(hash_rate, network_hash_rate, block_reward);
-                let estimated_earnings = (block_reward.as_u64() as f64
-                    * (hash_rate / network_hash_rate as f64 * RANDOMX_BLOCKS_PER_DAY as f64))
-                    as u64;
-                // Can't be more than the max reward for a day
-                let estimated_earnings = std::cmp::min(
-                    estimated_earnings,
-                    block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
-                );
-
-                // mining should be true if the hashrate is greater than 0
                 let mut is_mining = false;
-                let hasrate_sum = xmrig_status
-                    .hashrate
-                    .total
-                    .iter()
-                    .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
+                let (hash_rate, hashrate_sum, estimated_earnings, is_connected) =
+                    match client.summary().await {
+                        Ok(xmrig_status) => {
+                            let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
+                            dbg!(hash_rate, network_hash_rate, block_reward);
+                            let estimated_earnings = (block_reward.as_u64() as f64
+                                * (hash_rate / network_hash_rate as f64
+                                    * RANDOMX_BLOCKS_PER_DAY as f64))
+                                as u64;
+                            // Can't be more than the max reward for a day
+                            let estimated_earnings = std::cmp::min(
+                                estimated_earnings,
+                                block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
+                            );
 
-                if hasrate_sum > 0.0 {
+                            // mining should be true if the hashrate is greater than 0
+
+                            let hasrate_sum = xmrig_status
+                                .hashrate
+                                .total
+                                .iter()
+                                .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
+                            (
+                                hash_rate,
+                                hasrate_sum,
+                                estimated_earnings,
+                                xmrig_status.connection.uptime > 0,
+                            )
+                        }
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
+                            (0.0, 0.0, 0, false)
+                        }
+                    };
+
+                if hashrate_sum > 0.0 {
                     is_mining = true;
                 }
 
@@ -195,11 +205,11 @@ impl CpuMiner {
                     is_mining_enabled: true,
                     is_mining,
                     hash_rate,
-                    cpu_usage: cpu_usage as u32,
+                    cpu_usage,
                     cpu_brand: cpu_brand.to_string(),
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
-                        is_connected: xmrig_status.connection.uptime > 0,
+                        is_connected,
                         // error: if xmrig_status.connection.error_log.is_empty() {
                         //     None
                         // } else {
@@ -212,7 +222,7 @@ impl CpuMiner {
                 is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
-                cpu_usage: cpu_usage as u32,
+                cpu_usage,
                 cpu_brand: cpu_brand.to_string(),
                 estimated_earnings: 0,
                 connection: CpuMinerConnectionStatus {

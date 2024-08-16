@@ -39,6 +39,6 @@ impl XmrigHttpApiClient {
 
             return Ok(summary);
         }
-        return Err(anyhow::anyhow!("Failed to get xmrig summary"));
+        Err(anyhow::anyhow!("Failed to get xmrig summary"))
     }
 }

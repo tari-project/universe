@@ -1,32 +1,31 @@
-/* eslint-disable no-undef */
+// import '/assets/vis-index.js?url&init';
+
 let time;
-export const preload = () => {
+
+export function preload() {
     const el = document.getElementById('canvas');
-    if (el) {
-        glApp.preload(
-            {
-                canvas: el,
-                orbitTarget: el,
-                ASSETS_PATH: '/assets/',
-            },
-            () => {
-                init();
-            }
-        );
-    }
-};
+    window.glApp?.preload(
+        {
+            canvas: el,
+            orbitTarget: el,
+            ASSETS_PATH: '/assets/',
+        },
+        () => {
+            init();
+        }
+    );
+}
 
 function init() {
-    glApp.init();
+    window.glApp.init();
     time = performance.now() / 1000;
-
     window.addEventListener('resize', onResize);
     onResize();
     animate();
 }
 
 function onResize() {
-    glApp.setSize(window.innerWidth, window.innerHeight);
+    window.glApp.setSize(window.innerWidth, window.innerHeight);
 }
 
 function animate() {
@@ -40,16 +39,29 @@ function animate() {
 }
 
 function update(dt) {
-    glApp.render(dt);
+    window.glApp.render(dt);
 }
 
-export function setStop() {
-    properties.stateSignal.dispatch(STATUS.NOT_STARTED);
+export async function setStop() {
+    window.properties?.stateSignal.dispatch(window.STATUS.NOT_STARTED);
+    return window.properties;
 }
-export function setRestart() {
-    properties.stateSignal.dispatch(STATUS.FREE);
+export async function setRestart() {
+    window.properties?.stateSignal.dispatch(window.STATUS.FREE);
+    return window.properties;
 }
 
-export const setStart = () => {
-    properties.stateSignal.dispatch(STATUS.STARTED);
-};
+export async function setStart() {
+    window.properties?.stateSignal.dispatch(window.STATUS.STARTED);
+    return window.properties;
+}
+
+export async function setSuccess() {
+    window.properties?.resultSignal.dispatch(window.RESULT.COMPLETED);
+    return window.properties;
+}
+
+export async function setFailure() {
+    window.properties?.resultSignal.dispatch(window.RESULT.FAILED);
+    return window.properties;
+}
