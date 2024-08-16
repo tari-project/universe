@@ -1,12 +1,12 @@
 import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
-import { useMining } from '../../../../hooks/useMining.ts';
+import { useMining } from '@app/hooks/useMining.ts';
 import { useCallback, useEffect, useState } from 'react';
 
 import { StyledButton, StyledIcon } from '../MiningButton.styles.ts';
 import { ButtonProps } from '@mui/material';
-import { useUIStore } from '../../../../store/useUIStore.ts';
-import useAppStateStore from '../../../../store/appStateStore.ts';
-import { useCPUStatusStore } from '../../../../store/useCPUStatusStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
+import useAppStateStore from '@app/store/appStateStore.ts';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 
 function MiningButton() {

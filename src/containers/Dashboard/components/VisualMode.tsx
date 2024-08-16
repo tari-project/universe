@@ -1,6 +1,6 @@
 import { Switch, Typography } from '@mui/material';
 import { VisualModeContainer } from '../styles';
-import { useUIStore } from '../../../store/useUIStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 function VisualMode() {
     const visualMode = useUIStore((s) => s.visualMode);

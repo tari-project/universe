@@ -1,4 +1,4 @@
-import setup from '../../../assets/setup.png';
+import setup from '@app/assets/setup.png';
 import { Stack, Typography } from '@mui/material';
 import { StyledLinearProgress, ProgressBox } from '../styles';
 import VisualMode from '../components/VisualMode';

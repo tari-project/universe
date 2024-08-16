@@ -1,5 +1,5 @@
 import './theme/theme.css';
-import { CSSProperties } from 'react';
+import { CSSProperties, StrictMode } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from './theme/themes';
@@ -34,7 +34,7 @@ function App() {
         zIndex: '0',
     };
     return (
-        <>
+        <StrictMode>
             <canvas id="canvas" style={canvasStyle} />
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
@@ -49,7 +49,7 @@ function App() {
                 </AppBackground>
                 <ErrorSnackbar />
             </ThemeProvider>
-        </>
+        </StrictMode>
     );
 }
 

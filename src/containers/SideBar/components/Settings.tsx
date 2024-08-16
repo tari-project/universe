@@ -15,20 +15,18 @@ import {
     Tooltip,
 } from '@mui/material';
 import { IoSettingsOutline, IoClose } from 'react-icons/io5';
-import { useGetSeedWords } from '../../../hooks/useGetSeedWords';
-import truncateString from '../../../utils/truncateString';
+import { useGetSeedWords } from '@app/hooks/useGetSeedWords';
+import truncateString from '@app/utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
-import { useGetApplicatonsVersions } from '../../../hooks/useGetApplicatonsVersions';
+import { useGetApplicatonsVersions } from '@app/hooks/useGetApplicatonsVersions';
 
 const Settings: React.FC = () => {
-    const { refreshVersions, applicationsVersions, mainAppVersion } =
-        useGetApplicatonsVersions();
+    const { refreshVersions, applicationsVersions, mainAppVersion } = useGetApplicatonsVersions();
     const [open, setOpen] = useState(false);
     const [formState, setFormState] = useState({ field1: '', field2: '' });
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
-    const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } =
-        useGetSeedWords();
+    const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -91,12 +89,7 @@ const Settings: React.FC = () => {
                         height: '600px',
                     }}
                 >
-                    <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        pb={1}
-                    >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center" pb={1}>
                         <Typography variant="h4">Settings</Typography>
                         <IconButton onClick={handleClose}>
                             <IoClose size={20} />
@@ -117,14 +110,8 @@ const Settings: React.FC = () => {
                                 <CircularProgress size="34px" />
                             ) : (
                                 <>
-                                    <IconButton
-                                        onClick={toggleSeedWordsVisibility}
-                                    >
-                                        {showSeedWords ? (
-                                            <CgEyeAlt />
-                                        ) : (
-                                            <CgEye />
-                                        )}
+                                    <IconButton onClick={toggleSeedWordsVisibility}>
+                                        {showSeedWords ? <CgEyeAlt /> : <CgEye />}
                                     </IconButton>
                                     <Tooltip
                                         title="Copied!"
@@ -146,18 +133,8 @@ const Settings: React.FC = () => {
                     <Box component="form" onSubmit={handleSubmit} my={1}>
                         <Typography variant="h5">Random</Typography>
                         <Stack spacing={1} pt={1}>
-                            <TextField
-                                label="Field 1"
-                                name="field1"
-                                value={formState.field1}
-                                onChange={handleChange}
-                            />
-                            <TextField
-                                label="Field 2"
-                                name="field2"
-                                value={formState.field2}
-                                onChange={handleChange}
-                            />
+                            <TextField label="Field 1" name="field1" value={formState.field1} onChange={handleChange} />
+                            <TextField label="Field 2" name="field2" value={formState.field2} onChange={handleChange} />
                         </Stack>
                         <Divider />
                         <DialogActions>
@@ -172,30 +149,21 @@ const Settings: React.FC = () => {
                     <Divider />
                     {applicationsVersions && (
                         <Stack spacing={1} pt={1}>
-                            <Stack
-                                direction="row"
-                                justifyContent="space-between"
-                            >
+                            <Stack direction="row" justifyContent="space-between">
                                 <Typography variant="h5">Versions</Typography>
-                                <Button onClick={refreshVersions}>
-                                    Refresh Versions
-                                </Button>
+                                <Button onClick={refreshVersions}>Refresh Versions</Button>
                             </Stack>
                             <Divider />
                             <Typography>mainApp: {mainAppVersion}</Typography>
-                            {Object.entries(applicationsVersions).map(
-                                ([key, value]) => (
-                                    <Typography key={key}>
-                                        {key}: {value}
-                                    </Typography>
-                                )
-                            )}
+                            {Object.entries(applicationsVersions).map(([key, value]) => (
+                                <Typography key={key}>
+                                    {key}: {value}
+                                </Typography>
+                            ))}
                         </Stack>
                     )}
                     <Stack spacing={1} pt={1}>
-                        <Button onClick={openLogsDirectory}>
-                            Open logs directory
-                        </Button>
+                        <Button onClick={openLogsDirectory}>Open logs directory</Button>
                     </Stack>
                 </DialogContent>
             </Dialog>
