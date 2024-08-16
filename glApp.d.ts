@@ -30,8 +30,9 @@ export interface GlApp {
     init(): void;
     updateAfterCycle(): void;
     updateFlags(): void;
-    updateStatus(): void;
+    updateStatus(e?: unknown): void;
     setSize(e: number, t: number): void;
+    updateStatusAndResult(e: unknown, t: unknown): void;
     render(e: number): void;
     setResult(e): void;
     setStart(): void;
@@ -44,6 +45,7 @@ export interface GlApp {
     setRestartAnimation(): void;
     setRestart(): void;
     properties: Properties;
+    statusUpdateQueue: Array<unknown>;
 }
 
 export interface Properties extends Record<string, unknown> {

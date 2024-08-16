@@ -18,7 +18,8 @@ export function useMining() {
 
     useEffect(() => {
         if (isMining) {
-            handleStart(hasMiningStartedAtLeastOnce.current);
+            // handleStart(hasMiningStartedAtLeastOnce.current);
+            handleStart();
             hasMiningStartedAtLeastOnce.current = true;
         }
     }, [handleStart, isMining]);

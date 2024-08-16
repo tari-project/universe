@@ -48,10 +48,10 @@ export function useBlockInfo() {
     useEffect(() => {
         if (heightRef.current !== block_height) {
             setIsPaused(true);
-            handleFail().then(() => {
-                setIsPaused(false);
-                heightRef.current = block_height;
-            });
+            // handleFail();
+
+            setIsPaused(false);
+            heightRef.current = block_height;
         }
     }, [block_height, handleFail]);
 

@@ -35,7 +35,7 @@ function App() {
     };
     return (
         <StrictMode>
-            <canvas id="canvas" style={canvasStyle} />
+            <canvas id="canvas1" style={canvasStyle} />
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
                 <AppBackground status={background}>

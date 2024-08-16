@@ -1,8 +1,8 @@
 import { styled } from '@mui/material/styles';
 import { Button } from '@mui/material';
 import { keyframes } from '@emotion/react';
-import { PiSpinner } from 'react-icons/pi';
-
+// import { PiSpinner } from 'react-icons/pi';
+import { ImSpinner3 } from 'react-icons/im';
 export const spin = keyframes`
   from {
   transform:rotate(0deg)
@@ -11,8 +11,8 @@ export const spin = keyframes`
   transform:rotate(360deg)
   }
 `;
-export const StyledIcon = styled(PiSpinner)(() => ({
-    animation: `${spin} 1s infinite`,
+export const StyledIcon = styled(ImSpinner3)(() => ({
+    animation: `${spin} 2s infinite`,
     animationTimingFunction: 'cubic-bezier(0.76, 0.89, 0.95, 0.85)',
 }));
 

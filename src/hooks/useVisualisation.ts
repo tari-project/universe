@@ -1,22 +1,13 @@
-import { setStart, setStop, setRestart, setFailure } from '../visuals';
 import { useCallback } from 'react';
+import { setStart, setPause, setStop, setComplete, setFail, setRestartAnimation } from '../visuals';
 
 export function useVisualisation() {
-    const handleStart = useCallback(async (hasMiningBeenStopped = false) => {
-        if (!hasMiningBeenStopped) {
-            return await setStart();
-        } else {
-            return await setRestart();
-        }
-    }, []);
+    const handleStart = useCallback(() => setStart(), []);
+    const handleRestart = useCallback(() => setRestartAnimation(), []);
+    const handlePause = useCallback(() => setPause(), []);
+    const handleStop = useCallback(() => setStop(), []);
+    const handleFail = useCallback(() => setFail(), []);
+    const handleComplete = useCallback(() => setComplete(), []);
 
-    const handlePause = useCallback(async () => {
-        return await setStop();
-    }, []);
-
-    const handleFail = useCallback(async () => {
-        return await setFailure();
-    }, []);
-
-    return { handleStart, handlePause, handleFail };
+    return { handleComplete, handleStop, handleStart, handleRestart, handlePause, handleFail };
 }
