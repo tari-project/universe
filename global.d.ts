@@ -5,9 +5,11 @@ export {};
 
 declare global {
     interface Window {
-        properties: Properties;
-        STATUS: Status;
-        RESULT: Result;
-        glApp: GlApp;
+        glApp: GlApp & {
+            properties: Properties;
+            STATUS: Status;
+            RESULT: Result;
+            stateManager: GlApp;
+        };
     }
 }

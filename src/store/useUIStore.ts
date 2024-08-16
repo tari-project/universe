@@ -22,7 +22,6 @@ type UIStoreState = State & Actions;
 
 const initialState: State = {
     background: 'onboarding',
-    // view: 'mining',
     view: 'setup',
     visualMode: true,
     sidebarOpen: false,

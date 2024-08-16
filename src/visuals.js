@@ -1,5 +1,3 @@
-// import '/assets/vis-index.js?url&init';
-
 let time;
 
 export function preload() {
@@ -20,6 +18,7 @@ function init() {
     window.glApp.init();
     time = performance.now() / 1000;
     window.addEventListener('resize', onResize);
+    window.glApp.properties.cameraOffsetX = 0.3;
     onResize();
     animate();
 }
@@ -27,6 +26,7 @@ function init() {
 function onResize() {
     window.glApp.setSize(window.innerWidth, window.innerHeight);
 }
+
 
 function animate() {
     requestAnimationFrame(animate);
@@ -43,25 +43,24 @@ function update(dt) {
 }
 
 export async function setStop() {
-    window.properties?.stateSignal.dispatch(window.STATUS.NOT_STARTED);
-    return window.properties;
+    window.glApp.stateManager.setStop();
 }
 export async function setRestart() {
-    window.properties?.stateSignal.dispatch(window.STATUS.FREE);
-    return window.properties;
+    window.glApp.stateManager.setFree();
 }
 
 export async function setStart() {
-    window.properties?.stateSignal.dispatch(window.STATUS.STARTED);
-    return window.properties;
+    window.glApp.stateManager.setStart();
 }
 
-export async function setSuccess() {
-    window.properties?.resultSignal.dispatch(window.RESULT.COMPLETED);
-    return window.properties;
-}
+// export async function setSuccess() {
+//     window.glApp.stateManager.setComplete();
+// }
 
 export async function setFailure() {
-    window.properties?.resultSignal.dispatch(window.RESULT.FAILED);
-    return window.properties;
+    window.glApp.stateManager.setFail();
 }
+
+// function setPause() {
+//     window.glApp.stateManager.setPause();
+// }

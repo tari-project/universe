@@ -28,13 +28,32 @@ export interface GlApp {
         t: () => void
     ): void;
     init(): void;
+    updateAfterCycle(): void;
+    updateFlags(): void;
+    updateStatus(): void;
     setSize(e: number, t: number): void;
     render(e: number): void;
     setResult(e): void;
+    setStart(): void;
+    setFree(): void;
+    setPause(): void;
+    setStop(): void;
+    setComplete(): void;
+    setFail(): void;
+    setResultAnimation(): void;
+    setRestartAnimation(): void;
+    setRestart(): void;
+    properties: Properties;
 }
 
 export interface Properties extends Record<string, unknown> {
     stateSignal: unknown;
     resultSignal: unknown;
     endCycleSignal: unknown;
+    statusIndex: unknown;
+    status: unknown;
+    result: unknown;
+    spawnSignal: unknown;
+    gameEndedSignal: unknown;
+    statusUpdateQueue: unknown;
 }
