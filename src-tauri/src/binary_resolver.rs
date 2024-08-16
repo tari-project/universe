@@ -162,6 +162,13 @@ impl BinaryResolver {
                 owner: "tari-project".to_string(),
             }),
         );
+        adapters.insert(
+            Binaries::GpuMiner,
+            Box::new(GithubReleasesAdapter {
+                repo: "tarigpuminer".to_string(),
+                owner: "stringhandler".to_string(),
+            }),
+        );
         Self {
             adapters,
             download_mutex: Mutex::new(()),
@@ -201,6 +208,11 @@ impl BinaryResolver {
                 let wallet_bin = base_dir.join("minotari_console_wallet");
                 Ok(wallet_bin)
             }
+            Binaries::GpuMiner => {
+                let xtrgpu_bin = base_dir.join("xtrgpuminer");
+
+                Ok(xtrgpu_bin)
+            }
         }
     }
 
@@ -239,7 +251,7 @@ impl BinaryResolver {
         let _lock = self.download_mutex.lock().await;
 
         if force_download {
-            println!("Cleaning up existing dir");
+            info!(target: LOG_TARGET, "Cleaning up existing dir");
             let _ = fs::remove_dir_all(&bin_folder).await;
         }
         if !bin_folder.exists() || bin_folder.join("in_progress").exists() {
@@ -289,6 +301,7 @@ pub enum Binaries {
     MergeMiningProxy,
     MinotariNode,
     Wallet,
+    GpuMiner,
 }
 
 impl Binaries {
@@ -298,6 +311,7 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
+            Binaries::GpuMiner => "xtrgpuminer",
         }
     }
 }

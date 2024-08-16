@@ -112,7 +112,22 @@ async fn setup_application<'r>(
     BinaryResolver::current()
         .ensure_latest(Binaries::Wallet, progress.clone())
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download wallet: {:?}", e);
+            e.to_string()
+        })?;
+
+    progress.set_max(25).await;
+    progress
+        .update("Checking for latest version of xtrgpuminer".to_string(), 0)
+        .await;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::GpuMiner, progress.clone())
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Could not download xtrgpuminer: {:?}", e);
+            e.to_string()
+        })?;
 
     progress.set_max(30).await;
     progress
@@ -124,6 +139,11 @@ async fn setup_application<'r>(
             error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
             e.to_string()
         })?;
+
+    progress.set_max(35).await;
+    progress
+        .update("Waiting for node to start".to_string(), 0)
+        .await;
 
     state
         .node_manager
@@ -156,7 +176,9 @@ async fn setup_application<'r>(
         .map_err(|e| e.to_string())?;
 
     progress.set_max(75).await;
-    progress.update("Starting MMProxy".to_string(), 0).await;
+    progress
+        .update("Starting merge mining proxy".to_string(), 0)
+        .await;
     let _ = mm_proxy_manager
         .start(
             state.shutdown.to_signal().clone(),
@@ -336,7 +358,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
         Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
+            // warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
             WalletBalance {
                 available_balance: MicroMinotari(0),
                 pending_incoming_balance: MicroMinotari(0),
