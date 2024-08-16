@@ -174,8 +174,10 @@ impl Drop for MinotariNodeInstance {
 pub struct MinotariNodeStatusMonitor {}
 
 #[async_trait]
-impl StatusMonitor<()> for MinotariNodeStatusMonitor {
-    async fn status(&self) -> Result<(), Error> {
+impl StatusMonitor for MinotariNodeStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
         todo!()
     }
 }

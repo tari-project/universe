@@ -41,12 +41,15 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::{panic, process};
+use std::future::Future;
+use anyhow::Error;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use xmrig_adapter::XmrigNodeConnection;
+use crate::p2pool::models::Stats;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct SetupStatusEvent {
@@ -437,6 +440,14 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             }
         }
     };
+    
+    let p2pool_stats = match state.p2pool_manager.stats().await {
+        Ok(stats) => stats,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
+            Stats::default()
+        }
+    };
 
     let config_guard = state.config.read().await;
 
@@ -450,6 +461,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         wallet_balance,
         mode: config_guard.mode.clone(),
         auto_mining: config_guard.auto_mining.clone(),
+        p2pool_stats,
     })
 }
 
@@ -461,6 +473,7 @@ pub struct AppStatus {
     wallet_balance: WalletBalance,
     mode: MiningMode,
     auto_mining: bool,
+    p2pool_stats: Stats,
 }
 
 #[derive(Debug, Serialize)]

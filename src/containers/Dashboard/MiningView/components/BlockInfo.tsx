@@ -5,6 +5,9 @@ import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
 
 function BlockInfo() {
     const base_node = useAppStatusStore((s) => s.base_node);
+    const p2pool = useAppStatusStore((s) => s.p2pool_stats);
+    const tribe = p2pool?.tribe.name;
+    const minersCount = p2pool?.num_of_miners;
     const blockHeight = base_node?.block_height;
     const blockTime = base_node?.block_time || 1;
     const [timeSince, setTimeSince] = useState('');
@@ -52,6 +55,17 @@ function BlockInfo() {
 
     return (
         <Stack direction="row" spacing={2}>
+            <Divider orientation="vertical" flexItem />
+            <Stack>
+                <Typography variant="h6">{tribe}</Typography>
+                <Typography variant="body2">Tribe</Typography>
+            </Stack>
+            <Divider orientation="vertical" flexItem />
+            <Stack>
+                <Typography variant="h6">{minersCount}</Typography>
+                <Typography variant="body2">Miners</Typography>
+            </Stack>
+            <Divider orientation="vertical" flexItem />
             <Stack>
                 <Typography variant="h6">#{blockHeight}</Typography>
                 <Typography variant="body2">Floor</Typography>

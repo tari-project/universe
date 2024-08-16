@@ -66,6 +66,8 @@ impl ProcessAdapter for P2poolAdapter {
             self.grpc_port.to_string(),
             "--stats-server-port".to_string(),
             self.stats_server_port.to_string(),
+            "-b".to_string(),
+            data_dir.to_str().unwrap().to_string(), // TODO: use real log dir
         ];
         let pid_file_name = self.pid_file_name().to_string();
         Ok((
@@ -182,8 +184,10 @@ impl P2poolStatusMonitor {
 }
 
 #[async_trait]
-impl StatusMonitor<Stats> for P2poolStatusMonitor {
-    async fn status(&self) -> Result<Stats, Error> {
+impl StatusMonitor for P2poolStatusMonitor {
+    type Status = Stats;
+
+    async fn status(&self) -> Result<Self::Status, Error> {
         self.stats_client.stats().await
     }
 }

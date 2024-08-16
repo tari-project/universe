@@ -13,7 +13,7 @@ impl Client {
     }
 
     pub async fn stats(&self) -> Result<Stats, Error> {
-        let stats = reqwest::get(self.stats_server_address.as_str())
+        let stats = reqwest::get(format!("{}/stats", self.stats_server_address))
             .await?
             .json::<Stats>()
             .await?;

@@ -146,7 +146,9 @@ impl Drop for MergeMiningProxyInstance {
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    async fn status(&self) -> Result<(), Error> {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
         todo!()
     }
 }

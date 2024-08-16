@@ -15,12 +15,13 @@ interface Actions {
 type AppStatusStoreState = AppStatus & Actions;
 
 const initialState: AppStatus = {
+    p2pool_stats: undefined,
     cpu: undefined,
     base_node: undefined,
     wallet_balance: undefined,
     mode: 'Eco',
     auto_mining: false,
-    main_app_version: undefined,
+    main_app_version: undefined
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(

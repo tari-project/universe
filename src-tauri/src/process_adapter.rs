@@ -11,6 +11,7 @@ const LOG_TARGET: &str = "tari::universe::process_adapter";
 pub trait ProcessAdapter {
     type Instance: ProcessInstance;
     type StatusMonitor: StatusMonitor;
+    
     // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
     fn spawn_inner(
         &self,
@@ -43,8 +44,9 @@ pub trait ProcessAdapter {
 }
 
 #[async_trait]
-pub trait StatusMonitor<S> {
-    async fn status(&self) -> Result<S, anyhow::Error>;
+pub trait StatusMonitor {
+    type Status;
+    async fn status(&self) -> Result<Self::Status, anyhow::Error>;
 }
 
 #[async_trait]
