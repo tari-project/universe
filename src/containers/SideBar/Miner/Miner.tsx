@@ -1,8 +1,8 @@
 import Tile from './components/Tile.tsx';
 import { MinerContainer, TileContainer } from './styles.ts';
 import AutoMiner from './components/AutoMiner.tsx';
-import Scheduler from './components/Scheduler.tsx';
 import ModeSelect from './components/ModeSelect.tsx';
+import { Divider } from '@mui/material';
 
 import { useCPUStatusStore } from '../../../store/useCPUStatusStore.ts';
 
@@ -34,7 +34,7 @@ function Miner() {
     return (
         <MinerContainer>
             <AutoMiner />
-            <Scheduler />
+            <Divider />
             <TileContainer>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
@@ -42,7 +42,12 @@ function Miner() {
                 <Tile title="Hashrate (to remove)" stats={hash_rate + ' H/s'} />
                 <Tile title="CPU Utilization" stats={cpu_usage + '%'} />
                 <Tile title="CHIP/GPU" stats={truncateString(cpu_brand, 10)} />
-                <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' XTM/24h'} />
+                <Tile
+                    title="Est Earnings"
+                    stats={
+                        formatNumber(estimated_earnings / 1000000) + ' XTM/24h'
+                    }
+                />
             </TileContainer>
         </MinerContainer>
     );

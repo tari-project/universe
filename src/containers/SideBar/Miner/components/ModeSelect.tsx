@@ -13,7 +13,7 @@ const CustomSelect = styled(Select)(({ theme }: { theme: Theme }) => ({
     '& .MuiSelect-select': {
         padding: 0,
         textTransform: 'uppercase',
-        fontSize: theme.typography.h5.fontSize,
+        fontSize: 18,
         fontFamily: theme.typography.h5.fontFamily,
         lineHeight: theme.typography.h5.lineHeight,
     },

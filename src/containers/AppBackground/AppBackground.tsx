@@ -5,23 +5,18 @@ import loading from '../../assets/backgrounds/loading.jpg';
 import determining from '../../assets/backgrounds/determining.jpg';
 import loser from '../../assets/backgrounds/loser.jpg';
 import winner from '../../assets/backgrounds/winner.jpg';
+import setupbg from '../../assets/backgrounds/setupbg.jpg';
 import { backgroundType } from '../../store/types';
 
 import { AppContainer } from './styles';
 
-function AppBackground({
-    children,
-    status,
-}: {
-    children: ReactNode;
-    status: backgroundType;
-}) {
+function AppBackground({ children, status }: { children: ReactNode; status: backgroundType }) {
     const theme = useTheme();
     let bg: string;
 
     switch (status) {
         case 'onboarding':
-            bg = clouds;
+            bg = setupbg;
             break;
         case 'determining':
             bg = determining;

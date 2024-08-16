@@ -15,10 +15,10 @@ function AutoMiner() {
     };
 
     return (
-        <Stack direction="column" spacing={1}>
+        <Stack direction="column" spacing={2}>
             <AutoMinerContainer>
-                <Stack direction="column" spacing={1}>
-                    <Typography variant="h5">Auto Miner</Typography>
+                <Stack direction="column" spacing={0}>
+                    <Typography variant="h6">Auto Miner</Typography>
                     <Typography variant="body2">
                         Auto miner will turn on your miner when your machine is
                         idle
