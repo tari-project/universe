@@ -19,6 +19,7 @@ export const useGetApplicationsVersions = () => {
                 console.error('Error getting applications versions', error);
             });
     }, [setApplicationsVersions]);
+
     useEffect(() => {
         if (!mainAppVersion) {
             getVersion().then((version) => {
