@@ -20,7 +20,6 @@ function SideBar() {
             <SideBarInner>
                 <MiningButton />
                 <Miner />
-                <Milestones />
             </SideBarInner>
             <BottomContainer>
                 <Milestones />
