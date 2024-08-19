@@ -16,9 +16,20 @@ export interface Result {
     COMPLETED: 'completed';
     FAILED: 'failed';
 }
+export type GlAppState =
+    | 'start'
+    | 'free'
+    | 'pause'
+    | 'resume'
+    | 'stop'
+    | 'complete'
+    | 'success'
+    | 'fail'
+    | 'resultAnimation'
+    | 'restartAnimation'
+    | 'restart';
 
 export interface GlApp {
-    status?: Status;
     preload(
         e: {
             canvas: Element;
@@ -28,24 +39,7 @@ export interface GlApp {
         t: () => void
     ): void;
     init(): void;
-    updateAfterCycle(): void;
-    updateFlags(): void;
-    updateStatus(e?: unknown): void;
-    setSize(e: number, t: number): void;
-    updateStatusAndResult(e: unknown, t: unknown): void;
-    render(e: number): void;
-    setResult(e): void;
-    setStart(): void;
-    setFree(): void;
-    setPause(): void;
-    setStop(): void;
-    setComplete(): void;
-    setFail(): void;
-    setResultAnimation(): void;
-    setRestartAnimation(): void;
-    setRestart(): void;
-    properties: Properties;
-    statusUpdateQueue: Array<unknown>;
+    set(e: GlAppState): void;
 }
 
 export interface Properties extends Record<string, unknown> {

@@ -22,8 +22,6 @@ function init() {
 
     onResize();
     animate();
-    console.log(window.glApp.stateManager.status);
-    console.log(window.glApp.stateManager.result);
 }
 
 function onResize() {

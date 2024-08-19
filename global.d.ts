@@ -1,5 +1,5 @@
 // global.d.ts
-import { GlApp, Properties, Result, Status } from './glApp';
+import { GlAppState, Properties, Result, Status } from './glApp';
 import { State } from 'zustand';
 
 export {};
@@ -18,11 +18,8 @@ declare global {
         properties: Properties;
         STATUS: Status;
         RESULT: Result;
-        glApp: GlApp & {
-            properties: Properties;
-            STATUS: Status;
-            RESULT: Result;
-            stateManager: GlApp;
+        glApp: {
+            set(e: GlAppState): void;
         };
     }
 }
