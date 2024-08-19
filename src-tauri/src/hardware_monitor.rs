@@ -28,6 +28,7 @@ pub struct HardwareStatus {
 }
 
 trait HardwareMonitorImpl: Send + Sync + 'static{
+    fn get_implementation_name(&self) -> String;
     fn read_cpu_parameters(&self, current_parameters: Option<HardwareParameters>) -> HardwareParameters;
     fn read_gpu_parameters(&self, current_parameters: Option<HardwareParameters>) -> HardwareParameters;
     fn log_all_components(&self);
@@ -45,9 +46,18 @@ impl HardwareMonitor {
         HardwareMonitor {
             current_os: HardwareMonitor::detect_current_os(),
             current_implementation: match HardwareMonitor::detect_current_os() {
-                CurrentOperatingSystem::Windows => Box::new(WindowsHardwareMonitor {nvml: HardwareMonitor::initialize_nvml()}),
-                CurrentOperatingSystem::Linux => Box::new(LinuxHardwareMonitor {nvml: HardwareMonitor::initialize_nvml()}),
-                CurrentOperatingSystem::MacOS => Box::new(MacOSHardwareMonitor {}),
+                CurrentOperatingSystem::Windows => {
+                    println!("Windows");
+                    Box::new(WindowsHardwareMonitor {nvml: HardwareMonitor::initialize_nvml()})
+                },
+                CurrentOperatingSystem::Linux => {
+                    println!("Linux");
+                    Box::new(LinuxHardwareMonitor {nvml: HardwareMonitor::initialize_nvml()})
+                },
+                CurrentOperatingSystem::MacOS => {
+                    println!("MacOS");
+                    Box::new(MacOSHardwareMonitor {})
+                },
             },
             cpu: None,
             gpu: None,
@@ -85,6 +95,7 @@ impl HardwareMonitor {
     }
 
     pub fn read_hardware_parameters(&self) -> HardwareStatus {
+        println!("Reading hardware parameters for {}", self.current_implementation.get_implementation_name());
         self.current_implementation.log_all_components();
         HardwareStatus {
             cpu: Some(self.current_implementation.read_cpu_parameters(self.cpu.clone())),
@@ -98,10 +109,14 @@ struct WindowsHardwareMonitor {
     nvml: Option<Nvml>
 }
 impl HardwareMonitorImpl for WindowsHardwareMonitor {
+    fn get_implementation_name(&self) -> String {
+        "Windows".to_string()
+    }
+
     fn log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
-            info!(target: LOG_TARGET, "Component: {} Temperature: {}", component.label(), component.temperature());
+            println!("Component: {} Temperature: {}", component.label(), component.temperature());
         }
     }
 
@@ -188,10 +203,13 @@ struct LinuxHardwareMonitor {
     nvml: Option<Nvml>
 }
 impl HardwareMonitorImpl for LinuxHardwareMonitor{
+    fn get_implementation_name(&self) -> String {
+        "Linux".to_string()
+    }
     fn log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
-            info!(target: LOG_TARGET, "Component: {} Temperature: {}", component.label(), component.temperature());
+            println!("Component: {} Temperature: {}", component.label(), component.temperature());
         }
     }
     fn read_cpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
@@ -278,10 +296,13 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
 
 struct MacOSHardwareMonitor {}
 impl HardwareMonitorImpl for MacOSHardwareMonitor {
+    fn get_implementation_name(&self) -> String {
+        "MacOS".to_string()
+    }
     fn log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
-            info!(target: LOG_TARGET, "Component: {} Temperature: {}", component.label(), component.temperature());
+            println!("Component: {} Temperature: {}", component.label(), component.temperature());
         }
     }
     fn read_cpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
