@@ -15,13 +15,7 @@
     <script type="text/javascript" src="src/init-visuals.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", preload);
-      document.addEventListener("DOMContentLoaded", () => {
-        onStateChange((state, result) => {
-          console.log("State:", state);
-          console.log("Result:", result);
-          console.log("=====================");
-        });
-      });
+      document.addEventListener("DOMContentLoaded", onStateChange);
     </script>
   </main>
   </body>

@@ -6,14 +6,16 @@ import { InfoContainer } from '../styles';
 import { useVisualisation } from '@app/hooks/useVisualisation.ts';
 
 function MiningView() {
-    const { handlePause, handleStart, handleFail } = useVisualisation();
+    const handleVisual = useVisualisation();
     return (
         <>
             <InfoContainer>
                 <TopStatus />
-                <button onClick={handleStart}>start</button>
-                <button onClick={handleFail}>fail</button>
-                <button onClick={handlePause}>pause</button>
+                <button onClick={() => handleVisual('start')}>start</button>
+                <button onClick={() => handleVisual('fail')}>fail</button>
+                <button onClick={() => handleVisual('success')}>success</button>
+                <button onClick={() => handleVisual('pause')}>pause</button>
+                <button onClick={() => handleVisual('stop')}>stop</button>
                 <BlockInfo />
             </InfoContainer>
             <VisualMode />

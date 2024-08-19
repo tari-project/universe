@@ -7,7 +7,7 @@ import useAppStateStore from '../store/appStateStore.ts';
 import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
 
 export function useMining() {
-    const { handlePause, handleStart } = useVisualisation();
+    const handleVisual = useVisualisation();
     const progress = useAppStateStore((s) => s.setupProgress);
     const miningAllowed = progress >= 1;
     const isMining = useCPUStatusStore((s) => s.is_mining);
@@ -19,10 +19,10 @@ export function useMining() {
     useEffect(() => {
         if (isMining) {
             // handleStart(hasMiningStartedAtLeastOnce.current);
-            handleStart();
+            handleVisual('start');
             hasMiningStartedAtLeastOnce.current = true;
         }
-    }, [handleStart, isMining]);
+    }, [handleVisual, isMining]);
 
     const startMining = useCallback(async () => {
         if (miningAllowed) {
@@ -36,9 +36,9 @@ export function useMining() {
     const stopMining = useCallback(async () => {
         await invoke('stop_mining', {}).then(async () => {
             console.info(`mining stopped`);
-            await handlePause();
+            handleVisual('pause');
         });
-    }, [handlePause]);
+    }, [handleVisual]);
 
     return {
         startMining,

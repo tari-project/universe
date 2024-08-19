@@ -42,8 +42,6 @@ function update(dt) {
     window.glApp.render(dt);
 }
 
-function onStateChange(callback) {
-    if (callback && typeof callback === 'function') {
-        window.glApp.stateManager.stateSignal.add((state, result) => callback(state, result));
-    }
+function onStateChange() {
+    console.log(window.glApp);
 }
