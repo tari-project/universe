@@ -19,8 +19,46 @@
     <canvas id="canvas"></canvas>
     <div id="root"></div>
     <script type="module" src="src/main.tsx"></script>
-    <script type="text/javascript" src="src/init-visuals.js"></script>
     <script>
+      function preload() {
+        glApp?.preload(
+            {
+              canvas: document.getElementById('canvas'),
+              orbitTarget: document.getElementById('canvas'),
+              ASSETS_PATH: '/assets/',
+            },
+            () => {
+              init();
+            }
+        );
+      }
+
+      function init() {
+        glApp.init();
+        time = performance.now() / 1000;
+        window.addEventListener('resize', onResize);
+        glApp.properties.cameraOffsetX = 348 / window.innerWidth; // 348 is sidebar width
+        onResize();
+        animate();
+      }
+
+      function onResize() {
+        glApp.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        let newTime = performance.now() / 1000;
+        let dt = newTime - time;
+        time = newTime;
+
+        update(dt);
+      }
+
+      function update(dt) {
+        glApp.render(dt);
+      }
       document.addEventListener("DOMContentLoaded", preload);
     </script>
   </main>
