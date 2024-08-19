@@ -8,10 +8,9 @@ mod process_watcher;
 mod user_listener;
 mod xmrig;
 mod xmrig_adapter;
-mod hardware_monitor;
-
 mod app_config;
 mod binary_resolver;
+mod hardware_monitor;
 mod download_utils;
 mod github;
 mod internal_wallet;
@@ -35,6 +34,7 @@ use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
+use hardware_monitor::HardwareMonitor;
 use log::{debug, error, info, warn};
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
@@ -349,6 +349,8 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             }
         }
     };
+
+    let status = HardwareMonitor::current().read_hardware_parameters();
 
     let gpu_status = gpu_miner.status();
 
