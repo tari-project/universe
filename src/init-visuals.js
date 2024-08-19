@@ -1,5 +1,6 @@
 let time;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function preload() {
     window.glApp?.preload(
         {

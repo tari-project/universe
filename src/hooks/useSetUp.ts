@@ -51,7 +51,6 @@ export function useSetUp() {
         });
 
         if (!startupInitiated.current) {
-            // preload?.();
             startupInitiated.current = true;
             invoke('setup_application').catch((e) => {
                 console.error('Failed to setup application:', e);

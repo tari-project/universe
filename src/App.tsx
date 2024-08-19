@@ -25,23 +25,21 @@ function App() {
     useGetApplicatonsVersions();
 
     return (
-        <>
-            <StrictMode>
-                <ThemeProvider theme={lightTheme}>
-                    <CssBaseline enableColorScheme />
-                    <AppBackground status={background}>
-                        <DashboardContainer>
-                            <TitleBar />
-                            <ContainerInner>
-                                <SideBar />
-                                <Dashboard status={view} />
-                            </ContainerInner>
-                        </DashboardContainer>
-                    </AppBackground>
-                    <ErrorSnackbar />
-                </ThemeProvider>
-            </StrictMode>
-        </>
+        <StrictMode>
+            <ThemeProvider theme={lightTheme}>
+                <CssBaseline enableColorScheme />
+                <AppBackground status={background}>
+                    <DashboardContainer>
+                        <TitleBar />
+                        <ContainerInner>
+                            <SideBar />
+                            <Dashboard status={view} />
+                        </ContainerInner>
+                    </DashboardContainer>
+                </AppBackground>
+                <ErrorSnackbar />
+            </ThemeProvider>
+        </StrictMode>
     );
 }
 
