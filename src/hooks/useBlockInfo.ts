@@ -41,19 +41,20 @@ export function useBlockInfo() {
     const [timeSince, setTimeSince] = useState<string | undefined>();
     const [isPaused, setIsPaused] = useState(false);
 
-    const { handleFail } = useVisualisation();
+    const handleVisual = useVisualisation();
 
     const heightRef = useRef(block_height);
 
     useEffect(() => {
         if (heightRef.current !== block_height) {
             setIsPaused(true);
-            handleFail().then(() => {
+            handleVisual('fail');
+            heightRef.current = block_height;
+            return () => {
                 setIsPaused(false);
-                heightRef.current = block_height;
-            });
+            };
         }
-    }, [block_height, handleFail]);
+    }, [block_height, handleVisual]);
 
     const handleTimer = useCallback(() => {
         const { days, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);

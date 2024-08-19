@@ -1,10 +1,10 @@
 import { Typography, Stack } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { WalletContainer, Handle } from '../styles';
-import { darkTheme } from '../../../theme/themes';
+import { darkTheme } from '@app/theme/themes';
 import { AddressBox, BalanceChangeChip } from '../styles';
 import { FaCircleArrowUp } from 'react-icons/fa6';
-import useWalletStore from '../../../store/walletStore';
+import useWalletStore from '@app/store/walletStore';
 
 function Wallet() {
     const balance = useWalletStore((state) => state.balance);

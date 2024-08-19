@@ -1,11 +1,11 @@
-import setup from '../../../assets/setup.png';
+import setup from '@app/assets/setup.png';
 import { Stack, Typography } from '@mui/material';
 import { StyledLinearProgress, ProgressBox, SetupDescription, SetupPercentage } from '../styles';
 
 function SetupView({ title, progressPercentage }: { title: string; progressPercentage: number }) {
     return (
         <Stack spacing={0} alignItems="center" alignSelf="flex-end" marginBottom={5}>
-            <img src={setup} alt="Setup" style={{ maxWidth: '260px', height: 'auto' }} />{' '}
+            <img src={setup} alt="Setup" style={{ maxWidth: '260px', height: 'auto' }} />
             <Typography variant="h3" fontSize={21} mt={3.4}>
                 Setting up the Tari truth machine...
             </Typography>
