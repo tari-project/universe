@@ -6,6 +6,13 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <script type="module" crossorigin src="/assets/glApp.js"></script>
     <title>Tari Universe</title>
+    <style>
+      #canvas {
+        position: absolute;
+        z-index: 0;
+        border-radius: 12px;
+      }
+    </style>
   </head>
   <body>
   <main>
@@ -15,7 +22,6 @@
     <script type="text/javascript" src="src/init-visuals.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", preload);
-      document.addEventListener("DOMContentLoaded", onStateChange);
     </script>
   </main>
   </body>

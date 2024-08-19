@@ -23,7 +23,7 @@
 import { ThemeOptions } from '@mui/material/styles';
 import { tariPurple, grey, success, info, warning, error, brightGreen } from './colors';
 
-export const appBorderRadius = '12px';
+export const appBorderRadius = '12px'; // if this changes, please update the #canvas styling in index.html - can't import there
 
 export const componentSettings: ThemeOptions = {
     shape: {
@@ -147,7 +147,8 @@ export const componentSettings: ThemeOptions = {
                     },
                 },
             },
-        },MuiSwitch: {
+        },
+        MuiSwitch: {
             defaultProps: {
                 disableRipple: true,
                 sx: {

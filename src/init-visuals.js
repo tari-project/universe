@@ -18,7 +18,7 @@ function init() {
     time = performance.now() / 1000;
     window.addEventListener('resize', onResize);
     window.glApp.properties.cameraOffsetX = 0.33;
-    window.glApp.properties.cameraZoom = 0.8;
+    window.glApp.properties.cameraZoom = 0.75;
 
     onResize();
     animate();
@@ -40,8 +40,4 @@ function animate() {
 
 function update(dt) {
     window.glApp.render(dt);
-}
-
-function onStateChange() {
-    console.log(window.glApp);
 }
