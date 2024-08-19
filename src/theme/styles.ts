@@ -9,6 +9,7 @@ export const ContainerInner = styled(Box)(({ theme }) => ({
     flexDirection: 'row',
     alignItems: 'stretch',
     justifyContent: 'center',
+    pointerEvents: 'none',
     gap: theme.spacing(2),
     minHeight: `calc(100vh - ${headerHeight})`,
     paddingLeft: sidebarWidth,
@@ -20,5 +21,6 @@ export const DashboardContainer = styled(Box)(() => ({
     height: '100vh',
     overflowY: 'auto',
     paddingTop: headerHeight,
+    pointerEvents: 'none',
     position: 'relative',
 }));

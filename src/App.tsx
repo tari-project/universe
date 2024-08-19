@@ -12,7 +12,7 @@ import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 
-import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts';
+import { useGetApplicationsVersions } from './hooks/useGetApplicationsVersions.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 
 function App() {
@@ -20,18 +20,14 @@ function App() {
     const view = useUIStore((s) => s.view);
 
     useGetStatus();
-    useGetApplicatonsVersions();
+    useGetApplicationsVersions();
 
     return (
         <StrictMode>
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
                 <AppBackground />
-                <DashboardContainer
-                    sx={{
-                        pointerEvents: view === 'setup' ? 'none' : 'inherit',
-                    }}
-                >
+                <DashboardContainer>
                     <TitleBar />
                     <ContainerInner>
                         <SideBar />

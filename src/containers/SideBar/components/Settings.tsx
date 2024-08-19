@@ -18,10 +18,14 @@ import { IoSettingsOutline, IoClose } from 'react-icons/io5';
 import { useGetSeedWords } from '@app/hooks/useGetSeedWords';
 import truncateString from '@app/utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
-import { useGetApplicatonsVersions } from '@app/hooks/useGetApplicatonsVersions';
+
+import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
+import { useGetApplicationsVersions } from '@app/hooks/useGetApplicationsVersions.ts';
 
 const Settings: React.FC = () => {
-    const { refreshVersions, applicationsVersions, mainAppVersion } = useGetApplicatonsVersions();
+    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
+    const refreshVersions = useGetApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [formState, setFormState] = useState({ field1: '', field2: '' });
     const [showSeedWords, setShowSeedWords] = useState(false);
