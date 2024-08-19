@@ -1,18 +1,16 @@
 import Tile from './components/Tile.tsx';
 import { MinerContainer, TileContainer } from './styles.ts';
 import AutoMiner from './components/AutoMiner.tsx';
-import Scheduler from './components/Scheduler.tsx';
 import ModeSelect from './components/ModeSelect.tsx';
-import { useAppStatusStore } from '../../../store/useAppStatusStore.ts';
+import { Divider } from '@mui/material';
+
+import { useCPUStatusStore } from '../../../store/useCPUStatusStore.ts';
 
 function Miner() {
-    const cpu = useAppStatusStore((s) => s.cpu);
-    const {
-        cpu_usage,
-        cpu_brand = '',
-        hash_rate,
-        estimated_earnings = 0,
-    } = cpu || {};
+    const cpu_usage = useCPUStatusStore((s) => s.cpu_usage);
+    const cpu_brand = useCPUStatusStore((s) => s.cpu_brand);
+    const hash_rate = useCPUStatusStore((s) => s.hash_rate);
+    const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
 
     const truncateString = (str: string, num: number): string => {
         if (str.length <= num) {
@@ -36,7 +34,7 @@ function Miner() {
     return (
         <MinerContainer>
             <AutoMiner />
-            <Scheduler />
+            <Divider />
             <TileContainer>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />

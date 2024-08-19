@@ -56,7 +56,7 @@ const Settings: React.FC = () => {
     const openLogsDirectory = () => {
         invoke('open_log_dir')
             .then(() => {
-                console.log('Opening logs directory');
+                console.info('Opening logs directory');
             })
             .catch((error) => {
                 console.error(error);
@@ -75,7 +75,7 @@ const Settings: React.FC = () => {
             await getSeedWords();
         }
         setIsCopyTooltipHidden(false);
-        navigator.clipboard.writeText(seedWords.join(','));
+        await navigator.clipboard.writeText(seedWords.join(','));
         setTimeout(() => setIsCopyTooltipHidden(true), 1000);
     };
 

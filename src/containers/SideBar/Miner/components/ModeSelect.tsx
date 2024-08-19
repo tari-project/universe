@@ -7,13 +7,13 @@ import { IoCode } from 'react-icons/io5';
 import { Typography } from '@mui/material';
 import { TileItem } from '../styles';
 import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
-import { useTheme } from '@mui/material/styles';
+import { Theme, useTheme } from '@mui/material/styles';
 
-const CustomSelect = styled(Select)(({ theme }: { theme: any }) => ({
+const CustomSelect = styled(Select)(({ theme }: { theme: Theme }) => ({
     '& .MuiSelect-select': {
         padding: 0,
         textTransform: 'uppercase',
-        fontSize: theme.typography.h5.fontSize,
+        fontSize: 18,
         fontFamily: theme.typography.h5.fontFamily,
         lineHeight: theme.typography.h5.lineHeight,
     },

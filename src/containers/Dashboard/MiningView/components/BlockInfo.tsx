@@ -1,16 +1,17 @@
 import { Stack, Typography, Divider } from '@mui/material';
 
-import { useEffect, useState } from 'react';
-import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
+import { useBlockInfo } from '../../../../hooks/useBlockInfo.ts';
+import { useBaseNodeStatusStore } from '../../../../store/useBaseNodeStatusStore.ts';
+import { useCPUStatusStore } from '../../../../store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 function BlockInfo() {
-    const base_node = useAppStatusStore((s) => s.base_node);
     const p2pool = useAppStatusStore((s) => s.p2pool_stats);
     const tribe = p2pool?.tribe.name;
     const minersCount = p2pool?.num_of_miners;
-    const blockHeight = base_node?.block_height;
-    const blockTime = base_node?.block_time || 1;
-    const [timeSince, setTimeSince] = useState('');
+    const timeSince = useBlockInfo();
+    const block_height = useBaseNodeStatusStore((s) => s.block_height);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
 
     useEffect(() => {
         // Function to calculate the time difference
@@ -19,39 +20,16 @@ function BlockInfo() {
             const past: Date = new Date(blockTime * 1000); // Convert seconds to milliseconds
             const diff: number = now.getTime() - past.getTime();
 
-            // Convert the difference to days, hours, minutes, and seconds
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor(
-                (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-            );
-            const hoursString = hours.toString().padStart(2, '0');
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-                .toString()
-                .padStart(2, '0');
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-                .toString()
-                .padStart(2, '0');
-
-            if (days > 0) {
-                setTimeSince(
-                    `${days} day${days === 1 ? '' : 's'}, ${hoursString}:${minutes}:${seconds}`
-                );
-            } else if (hours > 0) {
-                setTimeSince(`${hoursString}:${minutes}:${seconds}`);
-            } else {
-                setTimeSince(`${minutes}:${seconds}`);
-            }
-        };
-
-        // Initial calculation
-        calculateTimeSince();
-
-        // Set interval to update the time since every second
-        const interval = setInterval(calculateTimeSince, 1000);
-
-        // Cleanup interval on component unmount
-        return () => clearInterval(interval);
-    }, [blockTime]);
+    const timerMarkup =
+        timeSince && isMining ? (
+            <>
+                <Divider orientation="vertical" flexItem />
+                <Stack>
+                    <Typography variant="h6">{timeSince}</Typography>
+                    <Typography variant="body2">Current floor build time</Typography>
+                </Stack>
+            </>
+        ) : null;
 
     return (
         <Stack direction="row" spacing={2}>
@@ -67,7 +45,7 @@ function BlockInfo() {
             </Stack>
             <Divider orientation="vertical" flexItem />
             <Stack>
-                <Typography variant="h6">#{blockHeight}</Typography>
+                <Typography variant="h6">#{block_height}</Typography>
                 <Typography variant="body2">Floor</Typography>
             </Stack>
             <Divider orientation="vertical" flexItem />
@@ -75,13 +53,7 @@ function BlockInfo() {
                 <Typography variant="h6">Tiny Green Whales</Typography>
                 <Typography variant="body2">Last floor winner</Typography>
             </Stack>
-            <Divider orientation="vertical" flexItem />
-            <Stack>
-                <Typography variant="h6">{timeSince}</Typography>
-                <Typography variant="body2">
-                    Current floor build time
-                </Typography>
-            </Stack>
+            {timerMarkup}
         </Stack>
     );
 }

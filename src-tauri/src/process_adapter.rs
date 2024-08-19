@@ -1,5 +1,4 @@
 use crate::process_killer::kill_process;
-use crate::ProgressTracker;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
@@ -11,7 +10,7 @@ const LOG_TARGET: &str = "tari::universe::process_adapter";
 pub trait ProcessAdapter {
     type Instance: ProcessInstance;
     type StatusMonitor: StatusMonitor;
-    
+
     // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
     fn spawn_inner(
         &self,
