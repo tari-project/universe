@@ -8,6 +8,7 @@ export interface AppStatus {
     main_app_version?: string;
     mode: modeType;
     auto_mining: boolean;
+    p2pool_enabled: boolean;
     p2pool_stats?: P2poolStats;
 }
 
@@ -84,4 +85,5 @@ export interface ApplicationsVersions {
     minotari_node: string;
     mm_proxy: string;
     wallet: string;
+    sha_p2pool: string;
 }

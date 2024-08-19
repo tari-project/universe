@@ -26,9 +26,9 @@ impl P2poolManager {
     }
     
     pub async fn stats(&self) -> Result<Stats, anyhow::Error> {
-        let mut process_watcher = self.watcher.read().await;
+        let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
-            return Ok(status_monitor.status().await?);
+            return status_monitor.status().await;
         }
         Err(anyhow!("Failed to get stats"))
     }
@@ -37,9 +37,10 @@ impl P2poolManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.start(app_shutdown, base_path).await?;
+        process_watcher.start(app_shutdown, base_path, log_path).await?;
         process_watcher.wait_ready().await?;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {

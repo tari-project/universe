@@ -12,13 +12,17 @@ import {
     Typography,
     Divider,
     CircularProgress,
-    Tooltip,
+    Tooltip, FormGroup, Switch,
 } from '@mui/material';
 import { IoSettingsOutline, IoClose } from 'react-icons/io5';
 import { useGetSeedWords } from '../../../hooks/useGetSeedWords';
 import truncateString from '../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useGetApplicatonsVersions } from '../../../hooks/useGetApplicatonsVersions';
+import {AutoMinerContainer} from "../Miner/styles.ts";
+import {useAppStatusStore} from "../../../store/useAppStatusStore.ts";
+import {useCPUStatusStore} from "../../../store/useCPUStatusStore.ts";
+import {useShallow} from "zustand/react/shallow";
 
 const Settings: React.FC = () => {
     const { refreshVersions, applicationsVersions, mainAppVersion } =
@@ -78,6 +82,15 @@ const Settings: React.FC = () => {
         await navigator.clipboard.writeText(seedWords.join(','));
         setTimeout(() => setIsCopyTooltipHidden(true), 1000);
     };
+
+    // p2pool
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        invoke('set_p2pool_enabled', {p2poolEnabled: isChecked}).then(() => {});
+    };
+
 
     return (
         <>
@@ -169,7 +182,25 @@ const Settings: React.FC = () => {
                             </Button>
                         </DialogActions>
                     </Box>
-                    <Divider />
+                    <Stack direction="column" spacing={2}>
+                        <AutoMinerContainer>
+                            <Stack direction="column" spacing={0}>
+                                <Typography variant="h6">Pool Mining</Typography>
+                                <Typography variant="body2">
+                                    When mining, you are joining a pool of miners to earn more rewards.
+                                </Typography>
+                            </Stack>
+                            <FormGroup>
+                                <Switch
+                                    focusVisibleClassName=".Mui-focusVisible"
+                                    disableRipple
+                                    checked={isP2poolEnabled}
+                                    onChange={handleP2poolEnabled}
+                                    disabled={isMining}
+                                />
+                            </FormGroup>
+                        </AutoMinerContainer>
+                    </Stack>
                     {applicationsVersions && (
                         <Stack spacing={1} pt={1}>
                             <Stack

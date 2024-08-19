@@ -48,6 +48,7 @@ impl ProcessAdapter for P2poolAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        log_path: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -67,7 +68,7 @@ impl ProcessAdapter for P2poolAdapter {
             "--stats-server-port".to_string(),
             self.stats_server_port.to_string(),
             "-b".to_string(),
-            data_dir.to_str().unwrap().to_string(), // TODO: use real log dir
+            log_path.join("sha-p2pool").to_str().unwrap().to_string(),
         ];
         let pid_file_name = self.pid_file_name().to_string();
         Ok((
@@ -89,9 +90,15 @@ impl ProcessAdapter for P2poolAdapter {
 
                     let output = child.wait_with_output().await?;
                     let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
-                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
-                        Some(tribe) => tribe.to_string(),
-                        None => String::from("default"), // TODO: generate name
+                    let only_default_tribe = tribes.contains(&"default".to_string()) && tribes.len() == 1;
+                    let tribe = if only_default_tribe {
+                        // TODO: generate name
+                        String::from("a")
+                    } else {
+                        match tribes.choose(&mut rand::thread_rng()) {
+                            Some(tribe) => tribe.to_string(),
+                            None => String::from("default"), // TODO: generate name
+                        }
                     };
                     args.push("--tribe".to_string());
                     args.push(tribe);

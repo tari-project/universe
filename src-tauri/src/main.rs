@@ -53,13 +53,6 @@ use tokio::sync::RwLock;
 use xmrig_adapter::XmrigNodeConnection;
 use crate::p2pool::models::Stats;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-struct SetupStatusEvent {
-    event_type: String,
-    title: String,
-    progress: f64,
-}
-
 mod progress_tracker;
 mod setup_status_event;
 
@@ -91,6 +84,7 @@ async fn setup_application<'r>(
     );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+    let log_dir = app.path_resolver().app_log_dir().unwrap();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
@@ -154,7 +148,7 @@ async fn setup_application<'r>(
 
     state
         .node_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+        .ensure_started(state.shutdown.to_signal(), data_dir.clone(), log_dir.clone())
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
@@ -165,7 +159,7 @@ async fn setup_application<'r>(
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+        .ensure_started(state.shutdown.to_signal(), data_dir.clone(), log_dir.clone())
         .await
         .map_err(|e| {
             error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
@@ -188,6 +182,7 @@ async fn setup_application<'r>(
         .start(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
+            app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
         )
         .await;
@@ -197,7 +192,7 @@ async fn setup_application<'r>(
     progress.update("Starting P2Pool".to_string(), 0).await;
     let _ = state
         .p2pool_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir)
+        .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
         .await;
 
     _ = window.emit(
@@ -208,6 +203,21 @@ async fn setup_application<'r>(
             progress: 1.0,
         },
     );
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_p2pool_enabled<'r>(
+    p2pool_enabled: bool,
+    state: tauri::State<'r, UniverseAppState>,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_p2pool_enabled(p2pool_enabled)
+        .await;
+    
     Ok(())
 }
 
@@ -333,12 +343,16 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
     let wallet_version: semver::Version = BinaryResolver::current()
         .get_latest_version(Binaries::Wallet)
         .await;
+    let sha_p2pool_version: semver::Version = BinaryResolver::current()
+        .get_latest_version(Binaries::ShaP2pool)
+        .await;
 
     Ok(ApplicationsVersions {
         xmrig: xmrig_version,
         minotari_node: minotari_node_version.to_string(),
         mm_proxy: mm_proxy_version.to_string(),
         wallet: wallet_version.to_string(),
+        sha_p2pool: sha_p2pool_version.to_string(),
     })
 }
 
@@ -400,6 +414,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         wallet_balance,
         mode: config_guard.mode.clone(),
         auto_mining: config_guard.auto_mining,
+        p2pool_enabled: config_guard.p2pool_enabled,
         p2pool_stats,
     })
 }
@@ -412,6 +427,7 @@ pub struct AppStatus {
     wallet_balance: WalletBalance,
     mode: MiningMode,
     auto_mining: bool,
+    p2pool_enabled: bool,
     p2pool_stats: Stats,
 }
 
@@ -421,6 +437,7 @@ pub struct ApplicationsVersions {
     minotari_node: String,
     mm_proxy: String,
     wallet: String,
+    sha_p2pool: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -595,6 +612,7 @@ fn main() {
             start_mining,
             stop_mining,
             set_auto_mining,
+            set_p2pool_enabled,
             set_mode,
             open_log_dir,
             get_seed_words,

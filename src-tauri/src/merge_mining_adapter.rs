@@ -32,6 +32,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        _log_path: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -44,7 +45,8 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "--non-interactive-mode".to_string(),
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
-            "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/18142".to_string(),
+            // "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/18142".to_string(),
+            "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/18145".to_string(),
             "-p".to_string(),
             // TODO: If you leave this out, it does not start. It just halts. Probably an error on the mmproxy noninteractive
             format!(
@@ -53,6 +55,8 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
+            "-p".to_string(),
+            "merge_mining_proxy.p2pool_enabled=true".to_string(), // TODO: get p2pool enabled flag from config
         ];
         Ok((
             MergeMiningProxyInstance {

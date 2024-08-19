@@ -11,6 +11,7 @@ interface Actions {
     setMode: (mode: modeType) => void;
     setConfigMode: (mode: modeType) => void;
     setMainAppVersion: (mainAppVersion: string) => void;
+    setP2poolEnabled: (p2poolEnabled: boolean) => void;
 }
 type AppStatusStoreState = State & Actions;
 
@@ -19,6 +20,7 @@ const initialState: State = {
     wallet_balance: undefined,
     mode: 'Eco',
     auto_mining: false,
+    p2pool_enabled: true,
     main_app_version: undefined
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
@@ -29,6 +31,7 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMainAppVersion: (main_app_version) => set({ main_app_version }),
             setMode: (mode) => set({ mode }),
+            setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
             setConfigMode: async (mode: modeType) => {
                 try {
                     await invoke('set_mode', { mode });

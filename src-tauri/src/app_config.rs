@@ -40,6 +40,7 @@ pub struct AppConfig {
     config_file: Option<PathBuf>,
     pub mode: MiningMode,
     pub auto_mining: bool,
+    pub p2pool_enabled: bool,
 }
 
 impl AppConfig {
@@ -48,6 +49,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: false,
+            p2pool_enabled: true,
         }
     }
 
@@ -95,6 +97,12 @@ impl AppConfig {
 
     pub async fn set_auto_mining(&mut self, auto_mining: bool) -> Result<(), anyhow::Error> {
         self.auto_mining = auto_mining;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_p2pool_enabled(&mut self, p2pool_enabled: bool) -> Result<(), anyhow::Error> {
+        self.p2pool_enabled = p2pool_enabled;
         self.update_config_file().await?;
         Ok(())
     }

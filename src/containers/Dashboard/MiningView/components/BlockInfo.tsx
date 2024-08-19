@@ -4,6 +4,8 @@ import { useBlockInfo } from '../../../../hooks/useBlockInfo.ts';
 import { useBaseNodeStatusStore } from '../../../../store/useBaseNodeStatusStore.ts';
 import { useCPUStatusStore } from '../../../../store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
+import {useAppStatusStore} from "../../../../store/useAppStatusStore.ts";
+import Box from "@mui/material/Box";
 
 function BlockInfo() {
     const p2pool = useAppStatusStore((s) => s.p2pool_stats);
@@ -12,13 +14,7 @@ function BlockInfo() {
     const timeSince = useBlockInfo();
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
-
-    useEffect(() => {
-        // Function to calculate the time difference
-        const calculateTimeSince = () => {
-            const now: Date = new Date();
-            const past: Date = new Date(blockTime * 1000); // Convert seconds to milliseconds
-            const diff: number = now.getTime() - past.getTime();
+    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
 
     const timerMarkup =
         timeSince && isMining ? (
@@ -31,9 +27,8 @@ function BlockInfo() {
             </>
         ) : null;
 
-    return (
+    const p2poolStats = isP2poolEnabled ? (
         <Stack direction="row" spacing={2}>
-            <Divider orientation="vertical" flexItem />
             <Stack>
                 <Typography variant="h6">{tribe}</Typography>
                 <Typography variant="body2">Tribe</Typography>
@@ -44,6 +39,13 @@ function BlockInfo() {
                 <Typography variant="body2">Miners</Typography>
             </Stack>
             <Divider orientation="vertical" flexItem />
+        </Stack>
+    ) : null;
+
+    return (
+        <Stack direction="row" spacing={2}>
+            <Divider orientation="vertical" flexItem />
+            {p2poolStats}
             <Stack>
                 <Typography variant="h6">#{block_height}</Typography>
                 <Typography variant="body2">Floor</Typography>
