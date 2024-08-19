@@ -45,8 +45,10 @@
             {
                 "title": "tari-universe",
                 "label": "main",
-                "width": 1200,
+                "width": 1420,
                 "height": 800,
+                "minWidth": 924,
+                "minHeight": 520,
                 "resizable": true,
                 "fullscreen": false,
                 "decorations": false,

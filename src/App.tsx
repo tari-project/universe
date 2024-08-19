@@ -17,8 +17,6 @@ import { useSetUp } from './hooks/useSetUp.ts';
 
 function App() {
     useSetUp();
-
-    const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
 
     useGetStatus();
@@ -28,15 +26,18 @@ function App() {
         <StrictMode>
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
-                <AppBackground status={background}>
-                    <DashboardContainer>
-                        <TitleBar />
-                        <ContainerInner>
-                            <SideBar />
-                            <Dashboard status={view} />
-                        </ContainerInner>
-                    </DashboardContainer>
-                </AppBackground>
+                <AppBackground />
+                <DashboardContainer
+                    sx={{
+                        pointerEvents: view === 'setup' ? 'none' : 'inherit',
+                    }}
+                >
+                    <TitleBar />
+                    <ContainerInner>
+                        <SideBar />
+                        <Dashboard status={view} />
+                    </ContainerInner>
+                </DashboardContainer>
                 <ErrorSnackbar />
             </ThemeProvider>
         </StrictMode>

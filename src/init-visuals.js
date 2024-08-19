@@ -18,8 +18,8 @@ function init() {
     window.glApp.init();
     time = performance.now() / 1000;
     window.addEventListener('resize', onResize);
-    window.glApp.properties.cameraOffsetX = 0.33;
-    window.glApp.properties.cameraZoom = 0.75;
+
+    window.glApp.properties.cameraOffsetX = 348 / window.innerWidth; // 348 is sidebar width
 
     onResize();
     animate();
