@@ -137,7 +137,17 @@ export const componentSettings: ThemeOptions = {
                 },
             },
         },
-        MuiSwitch: {
+        MuiLinearProgress: {
+            defaultProps: {
+                sx: {
+                    borderRadius: 10,
+                    height: 10,
+                    '& .MuiLinearProgress-bar': {
+                        borderRadius: 10,
+                    },
+                },
+            },
+        },MuiSwitch: {
             defaultProps: {
                 disableRipple: true,
                 sx: {
@@ -207,8 +217,8 @@ export const light: ThemeOptions = {
         },
         divider: 'rgba(0,0,0,0.06)',
         text: {
-            primary: grey[950],
-            secondary: grey[600],
+            primary: '#000000',
+            secondary: '#797979',
             disabled: grey[400],
         },
         background: {

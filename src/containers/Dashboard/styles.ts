@@ -1,5 +1,5 @@
 import { styled } from '@mui/material/styles';
-import { LinearProgress, Box } from '@mui/material';
+import { LinearProgress, Box, Typography } from '@mui/material';
 import { headerHeight, sidebarWidth } from '../../theme/styles';
 
 export const DashboardContainer = styled(Box)(() => ({
@@ -47,4 +47,18 @@ export const InfoContainer = styled(Box)(({ theme }) => ({
     justifyContent: 'space-between',
     width: `calc(100% - ${sidebarWidth} - ${theme.spacing(8)})`,
     gap: theme.spacing(2),
+}));
+
+export const SetupDescription = styled(Typography)(({ theme }) => ({
+    color: `${theme.palette.text.primary} !important`,
+    fontFamily: '"PoppinsRegular", sans-serif',
+    fontSize: '15px',
+    textAlign: 'center',
+}));
+
+export const SetupPercentage = styled(Typography)(({ theme }) => ({
+    color: `${theme.palette.text.primary} !important`,
+    fontFamily: '"PoppinsBold", sans-serif',
+    fontSize: '15px',
+    textAlign: 'center',
 }));

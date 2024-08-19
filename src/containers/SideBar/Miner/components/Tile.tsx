@@ -11,7 +11,7 @@ function Tile({ title, stats }: TileProps) {
     return (
         <TileItem>
             <Typography variant="body2">{title}</Typography>
-            <Typography variant="h5" title={stats}>
+            <Typography variant="h5" fontSize={18}>
                 {truncateString(stats, 10)}
             </Typography>
         </TileItem>

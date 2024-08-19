@@ -1,6 +1,5 @@
 import { Stack, Typography } from '@mui/material';
-import { StyledLinearProgress, ProgressBox } from '../styles';
-import gem from '@app/assets/images/gem-sml.png';
+import { StyledLinearProgress, ProgressBox, GemBox } from '../styles';
 
 function Milestones() {
     const progress = 70;
@@ -12,7 +11,7 @@ function Milestones() {
             </Stack>
             <ProgressBox>
                 <StyledLinearProgress variant="determinate" value={progress} />
-                <img src={gem} alt="gem" />
+                <GemBox />
             </ProgressBox>
         </Stack>
     );

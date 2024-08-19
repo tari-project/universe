@@ -52,7 +52,7 @@ function Wallet() {
     return (
         <ThemeProvider theme={darkTheme}>
             <WalletContainer>
-                <Stack direction="column" spacing={0.5} alignItems="center" width="100%" height="90px">
+                <Stack direction="column" spacing={0.5} alignItems="center" width="100%" height="93px">
                     <Handle />
                     <Stack direction="column" spacing={1} alignItems="flex-end" width="100%">
                         <AddressBox>{address}</AddressBox>

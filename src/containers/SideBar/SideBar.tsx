@@ -23,6 +23,7 @@ function SideBar() {
                 <Milestones />
             </SideBarInner>
             <BottomContainer>
+                <Milestones />
                 <Wallet />
             </BottomContainer>
         </SideBarContainer>
