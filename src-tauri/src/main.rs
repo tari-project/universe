@@ -8,6 +8,7 @@ mod process_watcher;
 mod user_listener;
 mod xmrig;
 mod xmrig_adapter;
+mod hardware_monitor;
 
 mod app_config;
 mod binary_resolver;

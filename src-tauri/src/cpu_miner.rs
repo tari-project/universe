@@ -152,8 +152,6 @@ impl CpuMiner {
     ) -> Result<CpuMinerStatus, anyhow::Error> {
         let components = Components::new_with_refreshed_list();
 
-        println!("Components: {:?}", components);
-
         let cpu_components: Vec<&Component> = components
             .iter()
             .filter(|component| component.label().contains("Core"))
