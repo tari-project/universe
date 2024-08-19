@@ -7,6 +7,7 @@ import { SideBarContainer, SideBarInner, HeadingContainer, BottomContainer } fro
 import { useTheme } from '@mui/material/styles';
 
 import { useUIStore } from '../../store/useUIStore.ts';
+import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
 
 function SideBar() {
     const theme = useTheme();
@@ -17,6 +18,7 @@ function SideBar() {
                 <Heading />
             </HeadingContainer>
             <SideBarInner>
+                <MiningButton />
                 <Miner />
             </SideBarInner>
             <BottomContainer>

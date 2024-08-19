@@ -1,5 +1,5 @@
 import './theme/theme.css';
-import { CSSProperties } from 'react';
+import { StrictMode } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from './theme/themes';
@@ -13,43 +13,34 @@ import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 
 import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts';
-import { appBorderRadius } from './theme/tokens.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 
 function App() {
     useSetUp();
-
-    const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
-    const visualMode = useUIStore((s) => s.visualMode);
 
     useGetStatus();
     useGetApplicatonsVersions();
 
-    const hideCanvas = !visualMode || view === 'setup';
-    const canvasStyle: CSSProperties = {
-        visibility: hideCanvas ? 'hidden' : 'visible',
-        borderRadius: appBorderRadius,
-        position: 'absolute',
-        zIndex: '0',
-    };
     return (
-        <>
-            <canvas id="canvas" style={canvasStyle} />
+        <StrictMode>
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
-                <AppBackground status={background}>
-                    <DashboardContainer>
-                        <TitleBar />
-                        <ContainerInner>
-                            <SideBar />
-                            <Dashboard status={view} />
-                        </ContainerInner>
-                    </DashboardContainer>
-                </AppBackground>
+                <AppBackground />
+                <DashboardContainer
+                    sx={{
+                        pointerEvents: view === 'setup' ? 'none' : 'inherit',
+                    }}
+                >
+                    <TitleBar />
+                    <ContainerInner>
+                        <SideBar />
+                        <Dashboard status={view} />
+                    </ContainerInner>
+                </DashboardContainer>
                 <ErrorSnackbar />
             </ThemeProvider>
-        </>
+        </StrictMode>
     );
 }
 

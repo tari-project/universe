@@ -1,5 +1,6 @@
 import { Typography } from '@mui/material';
 import { TileItem } from '../styles';
+import truncateString from '@app/utils/truncateString.ts';
 
 interface TileProps {
     title: string;
@@ -11,7 +12,7 @@ function Tile({ title, stats }: TileProps) {
         <TileItem>
             <Typography variant="body2">{title}</Typography>
             <Typography variant="h5" fontSize={18}>
-                {stats}
+                {truncateString(stats, 10)}
             </Typography>
         </TileItem>
     );
