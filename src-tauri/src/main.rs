@@ -47,6 +47,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use systemstat::{Platform, System};
 
 mod progress_tracker;
 mod setup_status_event;
@@ -350,6 +351,9 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
+    let sys = System::new();
+    let cpu_temp = sys.cpu_temp().map_err(|e| e.to_string())?;
+    println!("CPU temp: {:?}", cpu_temp);
     let status = HardwareMonitor::current().read_hardware_parameters();
 
     let gpu_status = gpu_miner.status();
