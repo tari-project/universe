@@ -20,6 +20,19 @@ export default defineConfig(() => {
             },
         },
         plugins: [react(), tsconfigPaths(), eslintPlugin({ eslintOptions: { cache: false } })],
+        build: {
+            rollupOptions: {
+                external: [
+                    'react',
+                    'react-dom',
+                    'react/jsx-runtime',
+                    '@emotion/react',
+                    '@emotion/styled',
+                    '@mui/material',
+                    'framer-motion',
+                ],
+            },
+        },
         resolve: {
             alias: {
                 '@app': path.resolve(__dirname, './src'),

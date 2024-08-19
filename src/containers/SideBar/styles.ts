@@ -21,6 +21,7 @@ export const SideBarContainer = styled(Box, {
     borderRadius: 20,
     marginLeft: theme.spacing(2),
     marginRight: theme.spacing(1),
+    pointerEvents: 'all',
     marginBottom: theme.spacing(1),
     marginTop: 0,
     position: 'absolute',
