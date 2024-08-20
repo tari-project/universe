@@ -107,12 +107,6 @@ impl AppConfig {
         self.auto_mining.clone()
     }
 
-    pub async fn set_user_inactivity_timeout(&mut self, timeout: u64) -> Result<(), anyhow::Error> {
-        self.user_inactivity_timeout = timeout;
-        self.update_config_file().await?;
-        Ok(())
-    }
-
     pub fn get_user_inactivity_timeout(&self) -> u64 {
         self.user_inactivity_timeout.clone()
     }
@@ -121,10 +115,6 @@ impl AppConfig {
         self.user_inactivity_timeout = timeout;
         self.update_config_file().await?;
         Ok(())
-    }
-
-    pub fn get_user_inactivity_timeout(&self) -> u64 {
-        self.user_inactivity_timeout.clone()
     }
 
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
