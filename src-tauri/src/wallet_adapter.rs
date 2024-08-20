@@ -112,7 +112,7 @@ impl ProcessAdapter for WalletAdapter {
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
                     }
-                    let mut exit_code = -1;
+                    let exit_code;
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;

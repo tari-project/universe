@@ -5,7 +5,7 @@ use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use humantime::format_duration;
-use log::{debug, error, info, warn};
+use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
@@ -94,7 +94,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         fs::write(data_dir.join("node_pid"), id.to_string())?;
                     }
 
-                    let mut exit_code = -1;
+                    let exit_code;
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;

@@ -72,7 +72,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;
                     }
-                    let mut exit_code = -1;
+                    let exit_code;
 
                     select! {
                         _res = shutdown_signal =>{
