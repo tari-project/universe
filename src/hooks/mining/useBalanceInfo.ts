@@ -31,7 +31,6 @@ export default function useBalanceInfo() {
 
     return {
         hasEarned,
-        hasBalanceChange: balanceRef.current !== balance,
         setHasEarned,
         successHeight,
         setResetSuccess,

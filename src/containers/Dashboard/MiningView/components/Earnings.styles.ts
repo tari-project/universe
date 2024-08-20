@@ -1,7 +1,6 @@
 import { styled } from '@mui/system';
-import { motion } from 'framer-motion';
 import { Typography } from '@mui/material';
-
+import { motion } from 'framer-motion';
 export const EarningsContainer = styled('div')`
     display: flex;
     align-items: flex-start;
@@ -9,8 +8,17 @@ export const EarningsContainer = styled('div')`
     height: 60%;
 `;
 
-export const EarningsText = styled(motion(Typography))`
+export const EarningsText = styled(Typography)`
     font-family: 'DrukWideLCGBold', sans-serif;
     font-size: 60px;
     line-height: 1.1;
+`;
+
+export const EarningsWrapper = styled(motion.div)`
+    font-family: 'DrukWideLCGBold', sans-serif;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 `;
