@@ -1,10 +1,11 @@
 import { useShallow } from 'zustand/react/shallow';
 import useWalletStore from '@app/store/walletStore.ts';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
 export default function useBalanceInfo() {
     const [hasEarned, setHasEarned] = useState(false);
+    const [resetSuccess, setResetSuccess] = useState(false);
     const [successHeight, setSuccessHeight] = useState<number | undefined>();
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const total = useWalletStore(useShallow((s) => s.balance));
@@ -19,7 +20,7 @@ export default function useBalanceInfo() {
     const timelockedRef = useRef(timelocked);
     const availableRef = useRef(available);
 
-    const handleChanges = useCallback(() => {
+    const hasChanges = useMemo(() => {
         let hasChanges = false;
         if (availableRef.current !== available) {
             hasChanges = true;
@@ -41,16 +42,20 @@ export default function useBalanceInfo() {
     }, [available, pending, timelocked, total]);
 
     useEffect(() => {
-        const hasChanges = handleChanges();
         console.log(`hasChanges | height:`, hasChanges, heightRef.current, block_height);
 
         if (hasChanges && heightRef.current !== block_height) {
             setHasEarned(true);
             setSuccessHeight(heightRef.current);
         }
+    }, [block_height, hasChanges]);
 
-        heightRef.current = block_height;
-    }, [block_height, handleChanges]);
+    useEffect(() => {
+        if (resetSuccess) {
+            setSuccessHeight(undefined)
+            heightRef.current = block_height;
+        }
+    }, [block_height, resetSuccess, successHeight]);
 
-    return { hasEarned, setHasEarned, successHeight, setSuccessHeight };
+    return { hasEarned, setHasEarned, successHeight, setResetSuccess };
 }

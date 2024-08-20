@@ -4,6 +4,7 @@ import { WalletBalance } from '@app/types/app-status.ts';
 
 interface State extends WalletBalance {
     balance: number;
+    previousBalance: number;
 }
 
 interface Actions {
@@ -14,6 +15,7 @@ type WalletStore = State & Actions;
 
 const initialState: State = {
     balance: 0,
+    previousBalance: 0,
     available_balance: 0,
     timelocked_balance: 0,
     pending_incoming_balance: 0,
@@ -26,16 +28,20 @@ const useWalletStore = create<WalletStore>()(
             ...initialState,
             setBalance: (balance) => set({ balance }),
             setBalanceData: (wallet_balance) =>
-                set(() => {
+                set((state) => {
                     const {
                         available_balance = 0,
                         timelocked_balance = 0,
                         pending_incoming_balance = 0,
                     } = wallet_balance || {};
 
+                    const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
+                    const prevValue = state.balance != newBalance ? state.balance : state.previousBalance;
+
                     return {
                         ...wallet_balance,
-                        balance: available_balance + timelocked_balance + pending_incoming_balance,
+                        balance: newBalance,
+                        previousBalance: prevValue,
                     };
                 }),
         }),

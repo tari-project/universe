@@ -13,8 +13,11 @@ function MiningView() {
                 <TopStatus />
                 <BlockInfo />
             </InfoContainer>
-            <BlockTime />
             <Earnings />
+            <InfoContainer>
+                <div />
+                <BlockTime />
+            </InfoContainer>
         </MiningViewContainer>
     );
 }

@@ -1,10 +1,7 @@
 import { styled } from '@mui/material/styles';
 import { Box, Typography } from '@mui/material';
 
-export const BlockTimeContainer = styled(Box)(({ theme }) => ({
-    position: 'absolute',
-    right: theme.spacing(2),
-    bottom: theme.spacing(2),
+export const BlockTimeContainer = styled(Box)(() => ({
     zIndex: 1,
     display: 'flex',
     flexDirection: 'column',

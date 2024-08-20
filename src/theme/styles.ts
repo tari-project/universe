@@ -11,17 +11,17 @@ export const ContainerInner = styled(Box)(({ theme }) => ({
     justifyContent: 'flex-start',
     pointerEvents: 'none',
     gap: theme.spacing(2),
-    minHeight: `calc(100vh - ${headerHeight})`,
+    minHeight: '100%',
 }));
 
-export const DashboardContainer = styled(Box)(() => ({
+export const DashboardContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
     overflowY: 'auto',
-    paddingTop: headerHeight,
+    padding: `${headerHeight} ${theme.spacing(2)} ${theme.spacing(2)}`,
     pointerEvents: 'none',
     flexGrow: '1',
-    border: '1px solid blue',
     position: 'relative',
+    gap: theme.spacing(2),
 }));

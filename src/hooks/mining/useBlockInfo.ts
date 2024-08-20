@@ -54,7 +54,7 @@ export function useBlockInfo() {
     }>();
     const [isPaused, setIsPaused] = useState(false);
 
-    const { hasEarned, setHasEarned, successHeight, setSuccessHeight } = useBalanceInfo();
+    const { hasEarned, setHasEarned, successHeight, setResetSuccess } = useBalanceInfo();
     const handleVisual = useVisualisation();
     const heightRef = useRef(block_height);
 
@@ -90,12 +90,12 @@ export function useBlockInfo() {
                 setDisplayBlock(block_height);
                 setHasEarned(false);
                 setIsPaused(false);
-                setSuccessHeight(undefined);
+                setResetSuccess(true);
                 heightRef.current = block_height;
             }, animationTimeout);
             return () => clearTimeout(timeout);
         }
-    }, [hasEarned, block_height, handleAnimation, setHasEarned, shouldAnimate, setSuccessHeight]);
+    }, [hasEarned, block_height, handleAnimation, setHasEarned, shouldAnimate, setResetSuccess]);
 
     const handleTimer = useCallback(() => {
         const { days, daysString, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);

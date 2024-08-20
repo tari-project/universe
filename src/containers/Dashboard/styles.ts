@@ -6,7 +6,8 @@ export const DashboardContainer = styled(Box)(() => ({
     alignItems: 'center',
     flexDirection: 'column',
     pointerEvents: 'none',
-    border: '1px solid green',
+    justifyContent: 'center',
+    height: '100%',
     flexGrow: '1',
 }));
 
@@ -44,8 +45,7 @@ export const InfoContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-
-    width: `calc(100% - ${theme.spacing(8)})`,
+    width: '100%',
     gap: theme.spacing(2),
 }));
 
