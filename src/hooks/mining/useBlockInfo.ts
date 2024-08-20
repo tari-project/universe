@@ -57,15 +57,13 @@ export function useBlockInfo() {
     const { hasEarned, setHasEarned, successHeight, setResetSuccess } = useBalanceInfo();
     const handleVisual = useVisualisation();
     const heightRef = useRef(block_height);
+    const animating = useRef(false);
 
     useEffect(() => setBlockHeightChanged(heightRef.current !== block_height), [block_height]);
     useEffect(() => setShouldAnimate(blockHeightChanged || hasEarned), [blockHeightChanged, hasEarned]);
 
     const handleAnimation = useCallback(() => {
-        setIsPaused(true);
-
         const currentIsWon = heightRef.current === successHeight;
-
         if (!currentIsWon && block_height !== successHeight) {
             handleVisual('fail');
         }
@@ -79,21 +77,24 @@ export function useBlockInfo() {
         setIsPaused(false);
         setResetSuccess();
         heightRef.current = block_height;
+        animating.current = false;
+        setDisplayBlock(block_height);
     }, [block_height, setHasEarned, setResetSuccess]);
 
     useEffect(() => {
         if (shouldAnimate) {
-            const animationTimeout = hasEarned ? 1 : 3500;
+            animating.current = true;
+            setIsPaused(true);
+            const animationTimeout = hasEarned ? 1 : 5000;
             const timeout = setTimeout(() => {
                 handleAnimation();
-                setDisplayBlock(block_height);
                 handleReset();
             }, animationTimeout);
             return () => {
                 clearTimeout(timeout);
             };
         }
-    }, [block_height, handleAnimation, handleReset, hasEarned, shouldAnimate]);
+    }, [handleAnimation, handleReset, hasEarned, shouldAnimate]);
 
     const handleTimer = useCallback(() => {
         const { days, daysString, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);
