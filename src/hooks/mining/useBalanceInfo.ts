@@ -29,5 +29,11 @@ export default function useBalanceInfo() {
         setSuccessHeight(undefined);
     }, [block_height, balance, successHeight]);
 
-    return { hasEarned, setHasEarned, successHeight, setResetSuccess };
+    return {
+        hasEarned,
+        hasBalanceChange: balanceRef.current !== balance,
+        setHasEarned,
+        successHeight,
+        setResetSuccess,
+    };
 }

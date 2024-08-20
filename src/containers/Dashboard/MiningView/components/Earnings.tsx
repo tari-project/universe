@@ -7,18 +7,18 @@ import { useEffect, useState } from 'react';
 import useBalanceInfo from '@app/hooks/mining/useBalanceInfo.ts';
 
 export default function Earnings() {
-    const { hasEarned } = useBalanceInfo();
+    const { hasBalanceChange } = useBalanceInfo();
     const [earnings, setEarnings] = useState(0);
 
     const previousBalance = useWalletStore((state) => state.previousBalance);
     const balance = useWalletStore((state) => state.balance);
-
+    console.log(`hasBalanceChange= ${hasBalanceChange}`);
     useEffect(() => {
-        if (hasEarned) {
+        if (hasBalanceChange) {
             setEarnings(balance - previousBalance);
         }
-    }, [balance, hasEarned, previousBalance]);
-
+    }, [balance, hasBalanceChange, previousBalance]);
+    console.log(earnings);
     return (
         <EarningsContainer>
             <AnimatePresence>
