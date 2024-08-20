@@ -2,7 +2,8 @@ use std::{ops::Deref, sync::LazyLock};
 
 use log::info;
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
-use sysinfo::{Component, Components, Cpu, CpuRefreshKind, RefreshKind, System};
+use serde::Serialize;
+use sysinfo::{Component, Components, System};
 
 const LOG_TARGET: &str = "tari::universe::hardware_monitor";
 static INSTANCE: LazyLock<HardwareMonitor> = LazyLock::new(|| HardwareMonitor::new());
@@ -13,7 +14,7 @@ enum CurrentOperatingSystem {
     MacOS,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Serialize)]
 pub struct HardwareParameters {
     label: String,
     usage_percentage: f32,
@@ -21,7 +22,7 @@ pub struct HardwareParameters {
     max_temperature: f32,
 }
 
-
+#[derive(Debug, Serialize)]
 pub struct HardwareStatus {
     cpu: Option<HardwareParameters>,
     gpu: Option<HardwareParameters>,

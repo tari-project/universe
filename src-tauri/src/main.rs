@@ -34,7 +34,7 @@ use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
-use hardware_monitor::HardwareMonitor;
+use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
@@ -350,7 +350,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
-    let status = HardwareMonitor::current().read_hardware_parameters();
+    let hardware_status = HardwareMonitor::current().read_hardware_parameters();
 
     let gpu_status = gpu_miner.status();
 
@@ -359,6 +359,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
     Ok(AppStatus {
         cpu,
         gpu: gpu_status,
+        hardware_status,
         base_node: BaseNodeStatus {
             block_height,
             block_time,
@@ -375,6 +376,7 @@ pub struct AppStatus {
     // TODO: add each application version.
     cpu: CpuMinerStatus,
     gpu: GpuMinerStatus,
+    hardware_status: HardwareStatus,
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
     mode: MiningMode,
