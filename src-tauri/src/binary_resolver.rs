@@ -174,7 +174,6 @@ impl BinaryResolver {
     }
 
     pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
-        dbg!(&self.latest_versions);
         let adapter = self
             .adapters
             .get(&binary)
