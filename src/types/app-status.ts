@@ -2,7 +2,6 @@ import { modeType } from '../store/types';
 
 export interface AppStatus {
     cpu?: CpuMinerStatus;
-    gpu?: GpuMinerStatus;
     base_node?: BaseNodeStatus;
     hardware_status?: HardwareStatus;
     wallet_balance?: WalletBalance;
@@ -24,30 +23,10 @@ export interface HardwareStatus {
     gpu: HardwareParameters;
 }
 
-export interface GpuMinerStatus {
-    hardware_statuses: GpuMinerHardwareStatus[];
-}
-
-export interface GpuMinerHardwareStatus {
-    uuid: string;
-    temperature: number;
-    max_temperature: number;
-    name: string;
-    load: number;
-}
-export interface CpuCoreTemperature {
-    label: string;
-    temperature: number;
-    max_temperature: number;
-}
-
 export interface CpuMinerStatus {
     is_mining_enabled: boolean;
     is_mining: boolean;
     hash_rate: number;
-    cpu_usage: number;
-    cpu_brand: string;
-    cpu_temperatures: CpuCoreTemperature[];
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
 }

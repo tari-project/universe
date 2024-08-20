@@ -108,7 +108,6 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         &self,
         version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, Error> {
-
         let mut name_suffix = "";
         // TODO: add platform specific logic
         if cfg!(target_os = "windows") {

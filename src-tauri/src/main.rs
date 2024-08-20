@@ -1,24 +1,24 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod cpu_miner;
-mod gpu_miner;
-mod mm_proxy_manager;
-mod process_watcher;
-mod user_listener;
-mod xmrig;
-mod xmrig_adapter;
 mod app_config;
 mod binary_resolver;
-mod hardware_monitor;
+mod cpu_miner;
 mod download_utils;
 mod github;
+mod gpu_miner;
+mod hardware_monitor;
 mod internal_wallet;
 mod merge_mining_adapter;
 mod minotari_node_adapter;
+mod mm_proxy_manager;
 mod node_manager;
 mod process_adapter;
+mod process_watcher;
+mod user_listener;
 mod wallet_manager;
+mod xmrig;
+mod xmrig_adapter;
 
 mod process_killer;
 mod wallet_adapter;
@@ -350,15 +350,15 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
-    let hardware_status = HardwareMonitor::current().write().await.read_hardware_parameters();
-
-    let gpu_status = gpu_miner.status();
+    let hardware_status = HardwareMonitor::current()
+        .write()
+        .await
+        .read_hardware_parameters();
 
     let config_guard = state.config.read().await;
 
     Ok(AppStatus {
         cpu,
-        gpu: gpu_status,
         hardware_status,
         base_node: BaseNodeStatus {
             block_height,
@@ -375,7 +375,6 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 pub struct AppStatus {
     // TODO: add each application version.
     cpu: CpuMinerStatus,
-    gpu: GpuMinerStatus,
     hardware_status: HardwareStatus,
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
@@ -402,9 +401,6 @@ pub struct CpuMinerStatus {
     pub is_mining_enabled: bool,
     pub is_mining: bool,
     pub hash_rate: f64,
-    pub cpu_usage: u32,
-    pub cpu_temperatures: Vec<CpuCoreTemperature>,
-    pub cpu_brand: String,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
 }
@@ -423,46 +419,6 @@ struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
 }
-
-#[derive(Debug, Serialize, PartialEq, Clone)]
-pub struct CpuCoreTemperature {
-    pub id: u32,
-    pub label: String,
-    pub temperature: f32,
-    pub max_temperature: f32,
-}
-
-impl Eq for CpuCoreTemperature {
-    fn assert_receiver_is_total_eq(&self) {
-        self.id.assert_receiver_is_total_eq();
-    }
-}
-
-impl Ord for CpuCoreTemperature {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.id.cmp(&other.id)
-    }
-}
-
-impl PartialOrd for CpuCoreTemperature {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.id.partial_cmp(&other.id)
-    }
-}
-
-#[derive(Debug, Serialize, Clone)]
-struct GpuMinerStatus {
-    hardware_statuses: Vec<GpuMinerHardwareStatus>,
-}
-#[derive(Debug, Serialize, Clone)]
-struct GpuMinerHardwareStatus {
-    uuid: String,
-    temperature: u32,
-    max_temperature: u32,
-    name: String,
-    load: u32,
-}
-
 struct UniverseAppState {
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
