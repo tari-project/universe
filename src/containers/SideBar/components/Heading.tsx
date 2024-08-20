@@ -1,7 +1,5 @@
-import { Stack, Typography, IconButton } from '@mui/material';
-import { CgArrowsExpandRight, CgCompressRight } from 'react-icons/cg';
+import { Stack, Typography } from '@mui/material';
 import SettingsDialog from './Settings/Settings.tsx';
-import { useUIStore } from '../../../store/useUIStore.ts';
 
 function Heading() {
     return (
