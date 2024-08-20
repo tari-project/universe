@@ -373,7 +373,6 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
-    // TODO: add each application version.
     cpu: CpuMinerStatus,
     hardware_status: HardwareStatus,
     base_node: BaseNodeStatus,
