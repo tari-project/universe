@@ -2,7 +2,7 @@ import { useMining } from '@app/hooks/useMining.ts';
 import { useCallback, useEffect, useState } from 'react';
 import { GiPauseButton } from 'react-icons/gi';
 
-import { IconWrapper, StyledButton, StyledIcon } from '../MiningButton.styles.ts';
+import { IconWrapper, StyledButton, StyledIcon } from './MiningButton.styles.ts';
 import { ButtonProps } from '@mui/material';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import useAppStateStore from '@app/store/appStateStore.ts';

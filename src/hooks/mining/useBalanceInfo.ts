@@ -43,6 +43,9 @@ export default function useBalanceInfo() {
 
     useEffect(() => {
         const hasChanges = handleChanges();
+        console.log('=========');
+        console.log(`hasChanges= ${hasChanges}`);
+        console.log('=========');
         if (hasChanges && heightRef.current !== block_height) {
             setHasEarned(true);
             setSuccessHeight(heightRef.current);

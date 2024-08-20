@@ -1,12 +1,14 @@
 import { styled } from '@mui/material/styles';
 import { LinearProgress, Box, Typography } from '@mui/material';
-import { headerHeight, sidebarWidth } from '../../theme/styles';
+import { sidebarWidth } from '../../theme/styles';
 
 export const DashboardContainer = styled(Box)(() => ({
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'column',
     pointerEvents: 'none',
+    border: '1px solid green',
+    flexGrow: '1',
 }));
 
 export const ProgressBox = styled(Box)(() => ({
@@ -32,6 +34,7 @@ export const VisualModeContainer = styled(Box)(({ theme }) => ({
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     padding: theme.spacing(1),
+    pointerEvents: 'all',
     borderRadius: '24px',
     gap: theme.spacing(1),
     position: 'absolute',
@@ -40,9 +43,9 @@ export const VisualModeContainer = styled(Box)(({ theme }) => ({
 }));
 
 export const InfoContainer = styled(Box)(({ theme }) => ({
-    position: 'absolute',
-    top: `calc(${headerHeight} + ${theme.spacing(1)})`,
-    right: theme.spacing(4),
+    // position: 'absolute',
+    // top: `calc(${headerHeight} + ${theme.spacing(1)})`,
+    // right: theme.spacing(4),
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'space-between',

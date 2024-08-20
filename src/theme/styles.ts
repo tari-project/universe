@@ -8,11 +8,10 @@ export const ContainerInner = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'stretch',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     pointerEvents: 'none',
     gap: theme.spacing(2),
     minHeight: `calc(100vh - ${headerHeight})`,
-    paddingLeft: sidebarWidth,
 }));
 
 export const DashboardContainer = styled(Box)(() => ({
@@ -22,5 +21,7 @@ export const DashboardContainer = styled(Box)(() => ({
     overflowY: 'auto',
     paddingTop: headerHeight,
     pointerEvents: 'none',
+    flexGrow: '1',
+    border: '1px solid blue',
     position: 'relative',
 }));
