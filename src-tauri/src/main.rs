@@ -1,6 +1,38 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::{panic, process};
+use std::future::Future;
+use std::sync::Arc;
+use std::thread::sleep;
+
+use anyhow::Error;
+use log::{debug, error, info, warn};
+use serde::Serialize;
+use tari_common_types::tari_address::TariAddress;
+use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_shutdown::Shutdown;
+use tauri::{Manager, RunEvent, UpdaterEvent};
+use tokio::sync::RwLock;
+
+use app_config::{AppConfig, MiningMode};
+use binary_resolver::{Binaries, BinaryResolver};
+use progress_tracker::ProgressTracker;
+use setup_status_event::SetupStatusEvent;
+use xmrig_adapter::XmrigNodeConnection;
+
+use crate::cpu_miner::CpuMiner;
+use crate::internal_wallet::InternalWallet;
+use crate::merge_mining_adapter::MergeMiningProxyConfig;
+use crate::mm_proxy_manager::MmProxyManager;
+use crate::node_manager::NodeManager;
+use crate::p2pool::models::Stats;
+use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::user_listener::UserListener;
+use crate::wallet_adapter::WalletBalance;
+use crate::wallet_manager::WalletManager;
+use crate::xmrig_adapter::XmrigAdapter;
+
 mod cpu_miner;
 mod mm_proxy_manager;
 mod process_watcher;
@@ -24,34 +56,6 @@ mod p2pool_adapter;
 mod p2pool_manager;
 mod process_killer;
 mod wallet_adapter;
-
-use crate::cpu_miner::CpuMiner;
-use crate::internal_wallet::InternalWallet;
-use crate::mm_proxy_manager::MmProxyManager;
-use crate::node_manager::NodeManager;
-use crate::p2pool_manager::P2poolManager;
-use crate::user_listener::UserListener;
-use crate::wallet_adapter::WalletBalance;
-use crate::wallet_manager::WalletManager;
-use crate::xmrig_adapter::XmrigAdapter;
-use app_config::{AppConfig, MiningMode};
-use binary_resolver::{Binaries, BinaryResolver};
-use log::{debug, error, info, warn};
-use progress_tracker::ProgressTracker;
-use serde::Serialize;
-use setup_status_event::SetupStatusEvent;
-use std::sync::Arc;
-use std::thread::sleep;
-use std::{panic, process};
-use std::future::Future;
-use anyhow::Error;
-use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_shutdown::Shutdown;
-use tauri::{Manager, RunEvent, UpdaterEvent};
-use tokio::sync::RwLock;
-use xmrig_adapter::XmrigNodeConnection;
-use crate::p2pool::models::Stats;
 
 mod progress_tracker;
 mod setup_status_event;
@@ -177,6 +181,13 @@ async fn setup_application<'r>(
         .map_err(|e| e.to_string())?;
 
     progress.set_max(75).await;
+    progress.update("Starting P2Pool".to_string(), 0).await;
+    let _ = state
+        .p2pool_manager
+        .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
+        .await;
+
+    progress.set_max(80).await;
     progress.update("Starting MMProxy".to_string(), 0).await;
     let _ = mm_proxy_manager
         .start(
@@ -187,13 +198,6 @@ async fn setup_application<'r>(
         )
         .await;
     let _ = mm_proxy_manager.wait_ready().await;
-
-    progress.set_max(80).await;
-    progress.update("Starting P2Pool".to_string(), 0).await;
-    let _ = state
-        .p2pool_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
-        .await;
 
     _ = window.emit(
         "message",
@@ -217,7 +221,10 @@ async fn set_p2pool_enabled<'r>(
         .await
         .set_p2pool_enabled(p2pool_enabled)
         .await;
-    
+
+    // TODO: run state.mm_proxy_manager.change_config if needed
+    // TODO: check if we need to stop and restart xmrig
+
     Ok(())
 }
 
@@ -501,17 +508,27 @@ fn main() {
     }));
     let mut shutdown = Shutdown::new();
 
-    let mm_proxy_manager = MmProxyManager::new();
+    // TODO: pass this to node_manager
+    let base_node_grpc_port = 18142u16;
     let node_manager = NodeManager::new();
     let wallet_manager = WalletManager::new(node_manager.clone());
     let wallet_manager2 = wallet_manager.clone();
-    let p2pool_manager = P2poolManager::new();
+    let p2pool_config = Arc::new(P2poolConfig::default());
+    let p2pool_manager = P2poolManager::new(p2pool_config.clone());
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
     }));
-    let app_config = Arc::new(RwLock::new(AppConfig::new()));
+    let app_config_raw = AppConfig::new();
+    let app_config = Arc::new(RwLock::new(app_config_raw));
+    let mm_proxy_port = 18081u16;
+    let mm_proxy_config = if app_config_raw.p2pool_enabled {
+        MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port)
+    } else {
+        MergeMiningProxyConfig::new(mm_proxy_port, base_node_grpc_port)
+    };
+    let mm_proxy_manager = MmProxyManager::new(mm_proxy_config);
     let app_state = UniverseAppState {
         config: app_config.clone(),
         shutdown: shutdown.clone(),
@@ -543,7 +560,7 @@ fn main() {
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
-            .expect("Could not set up logging");
+                .expect("Could not set up logging");
 
             let app_config_clone = app_config.clone();
 

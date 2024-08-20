@@ -1,36 +1,58 @@
-use crate::p2pool::models::Stats;
-use crate::p2pool_adapter::P2poolAdapter;
-use crate::process_adapter::StatusMonitor;
-use crate::process_watcher::ProcessWatcher;
-use anyhow::{anyhow, Error};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
-use log::{error, info};
+
+use anyhow::anyhow;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
+use crate::p2pool::models::Stats;
+use crate::p2pool_adapter::P2poolAdapter;
+use crate::process_adapter::StatusMonitor;
+use crate::process_watcher::ProcessWatcher;
+
+#[derive(Clone)]
+pub struct P2poolConfig {
+    pub grpc_port: u16,
+    pub stats_server_port: u16,
+}
+
+impl Default for P2poolConfig {
+    fn default() -> Self {
+        Self {
+            grpc_port: 18145,
+            stats_server_port: 19000,
+        }
+    }
+}
+
 pub struct P2poolManager {
+    config: Arc<P2poolConfig>,
     watcher: Arc<RwLock<ProcessWatcher<P2poolAdapter>>>,
 }
 
 impl P2poolManager {
-    pub fn new() -> Self {
-        let adapter = P2poolAdapter::new(18145, 19000);
+    pub fn new(config: Arc<P2poolConfig>) -> Self {
+        let adapter = P2poolAdapter::new(config.clone());
         let process_watcher = ProcessWatcher::new(adapter);
 
         Self {
+            config,
             watcher: Arc::new(RwLock::new(process_watcher)),
         }
     }
-    
+
     pub async fn stats(&self) -> Result<Stats, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             return status_monitor.status().await;
         }
         Err(anyhow!("Failed to get stats"))
+    }
+
+    pub fn config(&self) -> Arc<P2poolConfig> {
+        self.config.clone()
     }
 
     pub async fn ensure_started(
@@ -45,12 +67,10 @@ impl P2poolManager {
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {
                 sleep(Duration::from_secs(5)).await;
-                if let Ok(stats) = status_monitor.status().await {
-                    if stats.connected {
-                        break;
-                    }
+                if let Ok(_stats) = status_monitor.status().await {
+                    break;
                 }
-            } // wait until we are connected to p2pool network
+            } // wait until we have stats from p2pool, so its started
         }
         Ok(())
     }

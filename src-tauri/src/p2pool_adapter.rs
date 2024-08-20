@@ -1,43 +1,49 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::p2pool;
-use crate::p2pool::models::Stats;
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
+use std::sync::Arc;
+
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::{info, warn};
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::fs;
-use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tari_utilities::epoch_time::EpochTime;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
 
+use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::p2pool;
+use crate::p2pool::models::Stats;
+use crate::p2pool_manager::P2poolConfig;
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
 pub struct P2poolAdapter {
-    grpc_port: u16,
-    stats_server_port: u16,
+    config: Arc<P2poolConfig>,
 }
 
 impl P2poolAdapter {
-    pub fn new(grpc_port: u16, stats_server_port: u16) -> Self {
+    pub fn new(config: Arc<P2poolConfig>) -> Self {
         Self {
-            grpc_port,
-            stats_server_port,
+            config
         }
     }
 
     pub fn grpc_port(&self) -> u16 {
-        self.grpc_port
+        self.config.grpc_port
     }
 
     pub fn stats_server_port(&self) -> u16 {
-        self.stats_server_port
+        self.config.stats_server_port
+    }
+
+    pub fn config(&self) -> &P2poolConfig {
+        &self.config
     }
 }
 
@@ -64,9 +70,9 @@ impl ProcessAdapter for P2poolAdapter {
         let mut args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
-            self.grpc_port.to_string(),
+            self.config.grpc_port.to_string(),
             "--stats-server-port".to_string(),
-            self.stats_server_port.to_string(),
+            self.config.stats_server_port.to_string(),
             "-b".to_string(),
             log_path.join("sha-p2pool").to_str().unwrap().to_string(),
         ];
@@ -90,15 +96,9 @@ impl ProcessAdapter for P2poolAdapter {
 
                     let output = child.wait_with_output().await?;
                     let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
-                    let only_default_tribe = tribes.contains(&"default".to_string()) && tribes.len() == 1;
-                    let tribe = if only_default_tribe {
-                        // TODO: generate name
-                        String::from("a")
-                    } else {
-                        match tribes.choose(&mut rand::thread_rng()) {
-                            Some(tribe) => tribe.to_string(),
-                            None => String::from("default"), // TODO: generate name
-                        }
+                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
+                        Some(tribe) => tribe.to_string(),
+                        None => String::from("default"), // TODO: generate name
                     };
                     args.push("--tribe".to_string());
                     args.push(tribe);
@@ -121,7 +121,8 @@ impl ProcessAdapter for P2poolAdapter {
                         res2 = child.wait() => {
                             dbg!("Exited badly:", res2?);
                         },
-                    };
+                    }
+                    ;
                     println!("Stopping p2pool node");
 
                     if let Err(error) = fs::remove_file(data_dir.join(pid_file_name)) {
@@ -131,7 +132,7 @@ impl ProcessAdapter for P2poolAdapter {
                     Ok(())
                 })),
             },
-            P2poolStatusMonitor::new(format!("http://127.0.0.1:{}", self.stats_server_port)),
+            P2poolStatusMonitor::new(format!("http://127.0.0.1:{}", self.config.stats_server_port)),
         ))
     }
 
