@@ -56,10 +56,7 @@ export function useBlockInfo() {
         setIsPaused(true);
 
         console.log('=============================================');
-
-        console.log(`block_height= ${block_height}`);
-        console.log(`heightRef.current= ${heightRef.current}`);
-        console.log(`successHeight= ${successHeight}`);
+        console.log('block | ref | success =', block_height, heightRef.current, successHeight);
         console.log('=============================================');
 
         const currentIsWon = heightRef.current === successHeight;
@@ -77,17 +74,16 @@ export function useBlockInfo() {
 
     useEffect(() => {
         if (shouldAnimate) {
-            const timeout = setTimeout(
-                () => {
-                    handleAnimation();
-                    setDisplayBlock(block_height);
-                    setHasEarned(false);
-                    setIsPaused(false);
-                    setSuccessHeight(undefined);
-                    heightRef.current = block_height;
-                },
-                hasEarned ? 1 : 1500
-            );
+            const animationTimeout = hasEarned ? 1 : 3500;
+            console.log('animationTimeout', animationTimeout);
+            const timeout = setTimeout(() => {
+                handleAnimation();
+                setDisplayBlock(block_height);
+                setHasEarned(false);
+                setIsPaused(false);
+                setSuccessHeight(undefined);
+                heightRef.current = block_height;
+            }, animationTimeout);
             return () => clearTimeout(timeout);
         }
     }, [hasEarned, block_height, handleAnimation, setHasEarned, shouldAnimate, setSuccessHeight]);
