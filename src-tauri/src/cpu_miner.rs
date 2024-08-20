@@ -1,13 +1,12 @@
 use crate::app_config::MiningMode;
-use crate::mm_proxy_manager::MmProxyManager;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
     CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
 };
-use log::warn;
+use log::{error, warn};
 use std::path::PathBuf;
-use sysinfo::{CpuRefreshKind, RefreshKind, System};
+use std::thread;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
@@ -16,11 +15,7 @@ use tokio::time::MissedTickBehavior;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 350;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
-pub enum CpuMinerEvent {
-    Stdout(String),
-    Stderr(String),
-    Exit(i32),
-}
+pub enum CpuMinerEvent {}
 
 pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
@@ -41,7 +36,6 @@ impl CpuMiner {
         &mut self,
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
-        local_mm_proxy: &MmProxyManager,
         base_path: PathBuf,
         cache_dir: PathBuf,
         log_dir: PathBuf,
@@ -65,11 +59,25 @@ impl CpuMiner {
                 }
             }
         };
-        let cpu_max_percentage = match mode {
-            MiningMode::Eco => 30,
-            MiningMode::Ludicrous => 100,
+        let max_cpu_available = thread::available_parallelism();
+        let max_cpu_available = match max_cpu_available {
+            Ok(available_cpus) => {
+                dbg!("Available CPUs: {}", available_cpus);
+                available_cpus.get()
+            }
+            Err(err) => {
+                error!("Available CPUs: Unknown, error: {}", err);
+                1
+            }
         };
-        let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
+        let cpu_max_percentage = match mode {
+            MiningMode::Eco => (30 * max_cpu_available) / 100,
+            MiningMode::Ludicrous => max_cpu_available,
+        };
+        let xmrig = XmrigAdapter::new(
+            xmrig_node_connection,
+            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()
+        );
         let (mut _rx, mut xmrig_child, client) = xmrig.spawn(
             cache_dir,
             log_dir,
@@ -140,7 +148,7 @@ impl CpuMiner {
         self.miner_shutdown.trigger();
         self.api_client = None;
         if let Some(task) = self.watcher_task.take() {
-            task.await?;
+            task.await??;
             println!("Task finished");
         }
         // TODO: This doesn't seem to be called
@@ -149,22 +157,10 @@ impl CpuMiner {
     }
 
     pub async fn status(
-        &self,
+        &mut self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {
-        let mut s =
-            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
-
-        // Wait a bit because CPU usage is based on diff.
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        // Refresh CPUs again.
-        s.refresh_cpu_all();
-
-        let cpu_brand = s.cpus().get(0).map(|cpu| cpu.brand()).unwrap_or("Unknown");
-
-        let cpu_usage = s.global_cpu_usage() as u32;
-
         match &self.api_client {
             Some(client) => {
                 let mut is_mining = false;
@@ -173,9 +169,9 @@ impl CpuMiner {
                         Ok(xmrig_status) => {
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
                             dbg!(hash_rate, network_hash_rate, block_reward);
-                            let estimated_earnings = (block_reward.as_u64() as f64
-                                * (hash_rate / network_hash_rate as f64
-                                    * RANDOMX_BLOCKS_PER_DAY as f64))
+                            let estimated_earnings = ((block_reward.as_u64() as f64)
+                                * ((hash_rate / (network_hash_rate as f64))
+                                    * (RANDOMX_BLOCKS_PER_DAY as f64)))
                                 as u64;
                             // Can't be more than the max reward for a day
                             let estimated_earnings = std::cmp::min(
@@ -211,8 +207,6 @@ impl CpuMiner {
                     is_mining_enabled: true,
                     is_mining,
                     hash_rate,
-                    cpu_usage: cpu_usage as u32,
-                    cpu_brand: cpu_brand.to_string(),
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
                         is_connected,
@@ -228,8 +222,6 @@ impl CpuMiner {
                 is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
-                cpu_usage: cpu_usage as u32,
-                cpu_brand: cpu_brand.to_string(),
                 estimated_earnings: 0,
                 connection: CpuMinerConnectionStatus {
                     is_connected: false,

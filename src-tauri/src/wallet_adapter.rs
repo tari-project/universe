@@ -1,14 +1,10 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::minotari_node_adapter::{MinotariNodeInstance, MinotariNodeStatusMonitor};
-use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::data_local_dir;
-use log::{info, warn};
+use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{Empty, GetBalanceRequest};
-use minotari_node_grpc_client::BaseNodeGrpcClient;
+use minotari_node_grpc_client::grpc::GetBalanceRequest;
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
@@ -71,6 +67,8 @@ impl ProcessAdapter for WalletAdapter {
             "--grpc-address".to_string(),
             "/ip4/127.0.0.1/tcp/18141".to_string(),
             "-p".to_string(),
+            "wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string(),
+            "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
                 self.base_node_public_key
@@ -116,24 +114,35 @@ impl ProcessAdapter for WalletAdapter {
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
                     }
-
+                    let exit_code;
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
+                            exit_code = 0;
                             // res
                         },
                        res2 = child.wait() => {
-                            dbg!("Exited badly:", res2?);
+                        match res2
+                        {
+                           Ok(res) => {
+                               exit_code = res.code().unwrap_or(0)
+                               },
+                           Err(e) => {
+                               warn!(target: LOG_TARGET, "Error in NodeInstance: {}", e);
+                               return Err(e.into());
+                           }
+                       }
                         },
                     };
                     println!("Stopping minotari node");
+
                     match fs::remove_file(data_dir.join("wallet_pid")) {
                         Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        Err(_e) => {
+                            debug!(target: LOG_TARGET, "Could not clear wallet's pid file");
                         }
                     }
-                    Ok(())
+                    Ok(exit_code)
                 })),
             },
             WalletStatusMonitor {},
@@ -151,7 +160,7 @@ impl ProcessAdapter for WalletAdapter {
 
 pub struct WalletInstance {
     pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
+    handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
 }
 
 #[async_trait]
@@ -163,7 +172,7 @@ impl ProcessInstance for WalletInstance {
             .unwrap_or_else(|| false)
     }
 
-    async fn stop(&mut self) -> Result<(), Error> {
+    async fn stop(&mut self) -> Result<i32, Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
         let res = handle.unwrap().await??;
@@ -177,7 +186,10 @@ impl Drop for WalletInstance {
         self.shutdown.trigger();
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
-                handle.await.unwrap();
+                let _ = handle.await.unwrap().map_err(|e| {
+                    warn!(target: LOG_TARGET, "Error stopping wallet: {:?}", e);
+                    e
+                });
             });
         }
     }
@@ -185,11 +197,7 @@ impl Drop for WalletInstance {
 
 pub struct WalletStatusMonitor {}
 
-impl StatusMonitor for WalletStatusMonitor {
-    fn status(&self) -> Result<(), Error> {
-        todo!()
-    }
-}
+impl StatusMonitor for WalletStatusMonitor {}
 
 #[derive(Debug, Serialize)]
 pub struct WalletBalance {

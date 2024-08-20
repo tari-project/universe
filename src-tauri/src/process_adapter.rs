@@ -1,5 +1,4 @@
 use crate::process_killer::kill_process;
-use crate::ProgressTracker;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
@@ -42,12 +41,10 @@ pub trait ProcessAdapter {
     }
 }
 
-pub trait StatusMonitor {
-    fn status(&self) -> Result<(), anyhow::Error>;
-}
+pub trait StatusMonitor {}
 
 #[async_trait]
 pub trait ProcessInstance: Send + Sync + 'static {
     fn ping(&self) -> bool;
-    async fn stop(&mut self) -> Result<(), anyhow::Error>;
+    async fn stop(&mut self) -> Result<i32, anyhow::Error>;
 }

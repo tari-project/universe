@@ -3,19 +3,31 @@ import { modeType } from '../store/types';
 export interface AppStatus {
     cpu?: CpuMinerStatus;
     base_node?: BaseNodeStatus;
+    hardware_status?: HardwareStatus;
     wallet_balance?: WalletBalance;
     applications_versions?: ApplicationsVersions;
     main_app_version?: string;
+    user_inactivity_timeout?: number;
     mode: modeType;
     auto_mining: boolean;
+}
+
+export interface HardwareParameters {
+    label: string;
+    usage_percentage: number;
+    current_temperature: number;
+    max_temperature: number;
+}
+
+export interface HardwareStatus {
+    cpu: HardwareParameters;
+    gpu: HardwareParameters;
 }
 
 export interface CpuMinerStatus {
     is_mining_enabled: boolean;
     is_mining: boolean;
     hash_rate: number;
-    cpu_usage: number;
-    cpu_brand: string;
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
 }
