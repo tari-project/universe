@@ -6,6 +6,7 @@ use crate::{
 };
 use log::warn;
 use std::path::PathBuf;
+use std::thread;
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -59,11 +60,15 @@ impl CpuMiner {
                 }
             }
         };
+        let max_cpu_available = thread::available_parallelism().unwrap().get();
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => 30,
-            MiningMode::Ludicrous => 100,
+            MiningMode::Eco => (30 * max_cpu_available) / 100,
+            MiningMode::Ludicrous => max_cpu_available,
         };
-        let xmrig = XmrigAdapter::new(xmrig_node_connection, "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()  );
+        let xmrig = XmrigAdapter::new(
+            xmrig_node_connection,
+            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()
+        );
         let (mut _rx, mut xmrig_child, client) = xmrig.spawn(
             cache_dir,
             log_dir,
@@ -167,9 +172,9 @@ impl CpuMiner {
                         Ok(xmrig_status) => {
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
                             dbg!(hash_rate, network_hash_rate, block_reward);
-                            let estimated_earnings = (block_reward.as_u64() as f64
-                                * (hash_rate / network_hash_rate as f64
-                                    * RANDOMX_BLOCKS_PER_DAY as f64))
+                            let estimated_earnings = ((block_reward.as_u64() as f64)
+                                * ((hash_rate / (network_hash_rate as f64))
+                                    * (RANDOMX_BLOCKS_PER_DAY as f64)))
                                 as u64;
                             // Can't be more than the max reward for a day
                             let estimated_earnings = std::cmp::min(
