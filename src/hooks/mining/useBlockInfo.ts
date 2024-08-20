@@ -64,38 +64,36 @@ export function useBlockInfo() {
     const handleAnimation = useCallback(() => {
         setIsPaused(true);
 
-        console.log('=============================================');
-        console.log('block | ref | success =', block_height, heightRef.current, successHeight);
-        console.log('=============================================');
-
         const currentIsWon = heightRef.current === successHeight;
 
         if (!currentIsWon && block_height !== successHeight) {
-            console.log(`FAILED`);
             handleVisual('fail');
         }
         if (currentIsWon) {
-            console.log(`EARNED`);
             handleVisual('success');
         }
-        console.log('=============================================');
     }, [block_height, handleVisual, successHeight]);
+
+    const handleReset = useCallback(() => {
+        setHasEarned(false);
+        setIsPaused(false);
+        setResetSuccess();
+        heightRef.current = block_height;
+    }, [block_height, setHasEarned, setResetSuccess]);
 
     useEffect(() => {
         if (shouldAnimate) {
             const animationTimeout = hasEarned ? 1 : 3500;
-            console.log('animationTimeout', animationTimeout);
             const timeout = setTimeout(() => {
                 handleAnimation();
                 setDisplayBlock(block_height);
-                setHasEarned(false);
-                setIsPaused(false);
-                setResetSuccess(true);
-                heightRef.current = block_height;
             }, animationTimeout);
-            return () => clearTimeout(timeout);
+            return () => {
+                clearTimeout(timeout);
+                handleReset();
+            };
         }
-    }, [hasEarned, block_height, handleAnimation, setHasEarned, shouldAnimate, setResetSuccess]);
+    }, [block_height, handleAnimation, handleReset, hasEarned, shouldAnimate]);
 
     const handleTimer = useCallback(() => {
         const { days, daysString, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);

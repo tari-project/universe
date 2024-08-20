@@ -37,7 +37,6 @@ const useWalletStore = create<WalletStore>()(
 
                     const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
                     const prevValue = state.balance != newBalance ? state.balance : state.previousBalance;
-
                     return {
                         ...wallet_balance,
                         balance: newBalance,
