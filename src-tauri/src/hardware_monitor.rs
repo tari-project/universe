@@ -3,7 +3,6 @@ use std::{ops::Deref, sync::LazyLock};
 use log::info;
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use sysinfo::{Component, Components, Cpu, CpuRefreshKind, RefreshKind, System};
-use precord_core::{Features, System as PrecordSystem};
 
 const LOG_TARGET: &str = "tari::universe::hardware_monitor";
 static INSTANCE: LazyLock<HardwareMonitor> = LazyLock::new(|| HardwareMonitor::new());
@@ -97,13 +96,6 @@ impl HardwareMonitor {
 
     pub fn read_hardware_parameters(&self) -> HardwareStatus {
         println!("Reading hardware parameters for {}", self.current_implementation.get_implementation_name());
-
-        let system = PrecordSystem::new(Features::CPU_FREQUENCY, []);
-        let cpu = system.unwrap().system_cpu_temperature().unwrap();
-        
-        for cpu in cpu {
-            println!("Temperature: {}", cpu);
-        }
 
         self.current_implementation.log_all_components();
         HardwareStatus {
@@ -228,10 +220,10 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
         let intel_cpu_component: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("Package")).collect();
         let amd_cpu_component: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("k10temp Tctl")).collect();
 
-        let available_cpu_components = if intel_cpu_component.len() > 0 {
-            intel_cpu_component
-        } else {
+        let available_cpu_components = if amd_cpu_component.len() > 0 {
             amd_cpu_component
+        } else {
+            intel_cpu_component
         };
         let avarage_temperature = available_cpu_components.iter().map(|c| c.temperature()).sum::<f32>() / available_cpu_components.len() as f32;
 
