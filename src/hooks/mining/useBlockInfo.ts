@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useInterval } from './useInterval.ts';
-
-import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
-import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
-import { useVisualisation } from './useVisualisation.ts';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useInterval } from '../useInterval.ts';
+
+import { useBaseNodeStatusStore } from '../../store/useBaseNodeStatusStore.ts';
+import { useCPUStatusStore } from '../../store/useCPUStatusStore.ts';
+import { useVisualisation } from '../useVisualisation.ts';
+import useBalanceInfo from '@app/hooks/mining/useBalanceInfo.ts';
 
 const INTERVAL = 1000; // 1 sec
 
@@ -40,6 +41,8 @@ export function useBlockInfo() {
     const block_time = useBaseNodeStatusStore((s) => s.block_time);
     const [timeSince, setTimeSince] = useState<string | undefined>();
     const [isPaused, setIsPaused] = useState(false);
+
+    useBalanceInfo();
 
     const handleVisual = useVisualisation();
 

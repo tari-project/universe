@@ -13,7 +13,7 @@ const INTERVAL = 1000;
 export function useGetStatus() {
     const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
 
-    const setBalance = useWalletStore((state) => state.setBalance);
+    const setBalanceData = useWalletStore((state) => state.setBalanceData);
 
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
@@ -34,13 +34,8 @@ export function useGetStatus() {
                             setMiningInitiated(false);
                         }
                         const wallet_balance = status.wallet_balance;
-                        const {
-                            available_balance = 0,
-                            timelocked_balance = 0,
-                            pending_incoming_balance = 0,
-                        } = wallet_balance || {};
 
-                        setBalance(available_balance + timelocked_balance + pending_incoming_balance);
+                        setBalanceData(wallet_balance);
                         setMode(status.mode);
                     } else {
                         console.error('Could not get status');

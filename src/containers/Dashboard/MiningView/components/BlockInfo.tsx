@@ -1,6 +1,6 @@
 import { Stack, Typography, Divider } from '@mui/material';
 
-import { useBlockInfo } from '@app/hooks/useBlockInfo.ts';
+import { useBlockInfo } from '@app/hooks/mining/useBlockInfo.ts';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
