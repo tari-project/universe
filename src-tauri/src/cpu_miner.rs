@@ -6,7 +6,6 @@ use crate::{
 };
 use log::warn;
 use std::path::PathBuf;
-use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
@@ -143,22 +142,10 @@ impl CpuMiner {
     }
 
     pub async fn status(
-        &self,
+        &mut self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {
-        let mut s =
-            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
-
-        // Wait a bit because CPU usage is based on diff.
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        // Refresh CPUs again.
-        s.refresh_cpu_all();
-
-        let cpu_brand = s.cpus().first().map(|cpu| cpu.brand()).unwrap_or("Unknown");
-
-        let cpu_usage = s.global_cpu_usage() as u32;
-
         match &self.api_client {
             Some(client) => {
                 let mut is_mining = false;
@@ -205,8 +192,6 @@ impl CpuMiner {
                     is_mining_enabled: true,
                     is_mining,
                     hash_rate,
-                    cpu_usage,
-                    cpu_brand: cpu_brand.to_string(),
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
                         is_connected,
@@ -222,8 +207,6 @@ impl CpuMiner {
                 is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
-                cpu_usage,
-                cpu_brand: cpu_brand.to_string(),
                 estimated_earnings: 0,
                 connection: CpuMinerConnectionStatus {
                     is_connected: false,
