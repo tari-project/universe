@@ -11,23 +11,25 @@ import {
     Tooltip,
 } from '@mui/material';
 import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
-import { useGetSeedWords } from '../../../hooks/useGetSeedWords';
-import truncateString from '../../../utils/truncateString';
+import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
+import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useGetApplicationsVersions } from '../../../hooks/useGetApplicationsVersions.ts';
-import VisualMode from '../../Dashboard/components/VisualMode';
-import { HorisontalBox, RightHandColumn } from './Settings.styles';
+import { useGetApplicationsVersions } from '../../../../hooks/useGetApplicationsVersions.ts';
+import VisualMode from '../../../Dashboard/components/VisualMode';
+import { CardContainer, CardItem, HorisontalBox, RightHandColumn } from './Settings.styles';
+import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
+import { CardComponent } from './Card.component.tsx';
 
 const Settings: React.FC = () => {
-    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
     const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
-    const refreshVersions = useGetApplicationsVersions();
+    const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
+    const { cpu, gpu } = useHardwareStatus();
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -123,21 +125,75 @@ const Settings: React.FC = () => {
                                 <HorisontalBox>
                                     <Typography variant="h6">Versions</Typography>
                                     <RightHandColumn>
-                                        <Button onClick={refreshVersions} variant="text">
+                                        <Button onClick={getApplicationsVersions} variant="text">
                                             Refresh Versions
                                         </Button>
                                     </RightHandColumn>
                                 </HorisontalBox>
                                 <Stack spacing={0}>
-                                    <Typography variant="body2">mainApp: {mainAppVersion}</Typography>
-                                    {Object.entries(applicationsVersions).map(([key, value]) => (
-                                        <Typography variant="body2" key={key}>
-                                            {key}: {value}
-                                        </Typography>
-                                    ))}
+                                    <CardContainer>
+                                        <CardComponent
+                                            heading="Tari App"
+                                            labels={[
+                                                {
+                                                    labelText: 'Version',
+                                                    labelValue: mainAppVersion || 'Unknown',
+                                                },
+                                            ]}
+                                        />
+                                        {Object.entries(applicationsVersions).map(([key, value]) => (
+                                            <CardComponent
+                                                key={key}
+                                                heading={key}
+                                                labels={[
+                                                    {
+                                                        labelText: 'Version',
+                                                        labelValue: value || 'Unknown',
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </CardContainer>
                                 </Stack>
                             </>
                         )}
+                        {
+                            <>
+                                <HorisontalBox>
+                                    <Typography variant="h6">Hardware Status:</Typography>
+                                </HorisontalBox>
+                                <CardContainer>
+                                    <CardComponent
+                                        heading={cpu?.label || 'Unknown CPU'}
+                                        labels={[
+                                            { labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%` },
+                                            {
+                                                labelText: 'Temperature',
+                                                labelValue: `${cpu?.current_temperature || 0}°C`,
+                                            },
+                                            {
+                                                labelText: 'Max Temperature',
+                                                labelValue: `${cpu?.max_temperature || 0}°C`,
+                                            },
+                                        ]}
+                                    />
+                                    <CardComponent
+                                        heading={gpu?.label || 'Unknown GPU'}
+                                        labels={[
+                                            { labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%` },
+                                            {
+                                                labelText: 'Temperature',
+                                                labelValue: `${gpu?.current_temperature || 0}°C`,
+                                            },
+                                            {
+                                                labelText: 'Max Temperature',
+                                                labelValue: `${gpu?.max_temperature || 0}°C`,
+                                            },
+                                        ]}
+                                    />
+                                </CardContainer>
+                            </>
+                        }
                         <Divider />
                         <HorisontalBox>
                             <VisualMode />
