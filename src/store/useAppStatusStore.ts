@@ -3,20 +3,18 @@ import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/tauri';
+
+type State = Partial<AppStatus>;
 interface Actions {
     setAppStatus: (appStatus: AppStatus) => void;
-    setApplicationsVersions: (
-        applicationsVersions: ApplicationsVersions
-    ) => void;
+    setApplicationsVersions: (applicationsVersions: ApplicationsVersions) => void;
     setMode: (mode: modeType) => void;
     setConfigMode: (mode: modeType) => void;
     setMainAppVersion: (mainAppVersion: string) => void;
 }
-type AppStatusStoreState = AppStatus & Actions;
+type AppStatusStoreState = State & Actions;
 
-const initialState: AppStatus = {
-    cpu: undefined,
-    base_node: undefined,
+const initialState: State = {
     wallet_balance: undefined,
     mode: 'Eco',
     auto_mining: false,
@@ -27,8 +25,7 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         (set) => ({
             ...initialState,
             setAppStatus: (appStatus) => set({ ...appStatus }),
-            setApplicationsVersions: (applications_versions) =>
-                set({ applications_versions }),
+            setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMainAppVersion: (main_app_version) => set({ main_app_version }),
             setMode: (mode) => set({ mode }),
             setConfigMode: async (mode: modeType) => {
@@ -41,6 +38,8 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
                 }
             },
         }),
-        { name: 'status-store' }
+        {
+            name: 'status-store',
+        }
     )
 );

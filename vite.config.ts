@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import eslintPlugin from '@nabla/vite-plugin-eslint';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import * as path from 'node:path';
 
 // https://vitejs.dev/config/
 
@@ -17,6 +19,24 @@ export default defineConfig(() => {
                 ignored: ['**/src-tauri/**'],
             },
         },
-        plugins: [react(), eslintPlugin({ eslintOptions: { cache: false } })],
+        plugins: [react(), tsconfigPaths(), eslintPlugin({ eslintOptions: { cache: false } })],
+        build: {
+            rollupOptions: {
+                external: [
+                    'react',
+                    'react-dom',
+                    'react/jsx-runtime',
+                    '@emotion/react',
+                    '@emotion/styled',
+                    '@mui/material',
+                    'framer-motion',
+                ],
+            },
+        },
+        resolve: {
+            alias: {
+                '@app': path.resolve(__dirname, './src'),
+            },
+        },
     };
 });

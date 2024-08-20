@@ -21,17 +21,9 @@
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { ThemeOptions } from '@mui/material/styles';
-import {
-    tariPurple,
-    grey,
-    success,
-    info,
-    warning,
-    error,
-    brightGreen,
-} from './colors';
+import { tariPurple, grey, success, info, warning, error, brightGreen } from './colors';
 
-export const appBorderRadius = '12px';
+export const appBorderRadius = '12px'; // if this changes, please update the #canvas styling in index.html - can't import there
 
 export const componentSettings: ThemeOptions = {
     shape: {
@@ -41,13 +33,6 @@ export const componentSettings: ThemeOptions = {
     typography: {
         fontFamily: '"PoppinsMedium", sans-serif',
         fontSize: 14,
-        button: {
-            fontSize: '13px',
-            lineHeight: '1.1',
-            fontFamily: '"Poppins", sans-serif',
-            textTransform: 'none',
-            fontWeight: '700',
-        },
         body1: {
             fontSize: '14px',
             lineHeight: '20px',
@@ -55,6 +40,13 @@ export const componentSettings: ThemeOptions = {
         body2: {
             fontSize: '12px',
             lineHeight: '18px',
+        },
+        button: {
+            fontSize: '13px',
+            lineHeight: '1.1',
+            fontFamily: '"Poppins", sans-serif',
+            textTransform: 'none',
+            fontWeight: '700',
         },
         h1: {
             fontSize: '30px',
@@ -119,8 +111,7 @@ export const componentSettings: ThemeOptions = {
         MuiDivider: {
             defaultProps: {
                 sx: {
-                    borderBottom: (theme) =>
-                        `1px solid ${theme.palette.divider}`,
+                    borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
                 },
             },
         },
@@ -140,10 +131,7 @@ export const componentSettings: ThemeOptions = {
                 disableRipple: true,
                 sx: {
                     textTransform: 'none',
-                    // boxShadow: 'none',
-                    // fontFamily: '"PoppinsMedium", sans-serif',
-                    // height: 44,
-                    // padding: '8px 16px',
+                    letterSpacing: '-0.4px',
                 },
             },
         },
@@ -152,6 +140,17 @@ export const componentSettings: ThemeOptions = {
                 sx: {
                     '& .MuiBackdrop-root': {
                         borderRadius: appBorderRadius,
+                    },
+                },
+            },
+        },
+        MuiLinearProgress: {
+            defaultProps: {
+                sx: {
+                    borderRadius: 10,
+                    height: 10,
+                    '& .MuiLinearProgress-bar': {
+                        borderRadius: 10,
                     },
                 },
             },
@@ -171,10 +170,7 @@ export const componentSettings: ThemeOptions = {
                             transform: 'translateX(16px)',
                             color: '#fff',
                             '& + .MuiSwitch-track': {
-                                backgroundColor: (theme) =>
-                                    theme.palette.mode === 'dark'
-                                        ? '#2ECA45'
-                                        : '#06C983',
+                                backgroundColor: (theme) => (theme.palette.mode === 'dark' ? '#2ECA45' : '#06C983'),
                                 opacity: 1,
                                 border: 0,
                             },
@@ -188,13 +184,10 @@ export const componentSettings: ThemeOptions = {
                         },
                         '&.Mui-disabled .MuiSwitch-thumb': {
                             color: (theme) =>
-                                theme.palette.mode === 'light'
-                                    ? theme.palette.grey[100]
-                                    : theme.palette.grey[600],
+                                theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[600],
                         },
                         '&.Mui-disabled + .MuiSwitch-track': {
-                            opacity: (theme) =>
-                                theme.palette.mode === 'light' ? 0.7 : 0.3,
+                            opacity: (theme) => (theme.palette.mode === 'light' ? 0.7 : 0.3),
                         },
                     },
                     '& .MuiSwitch-thumb': {
@@ -232,8 +225,8 @@ export const light: ThemeOptions = {
         },
         divider: 'rgba(0,0,0,0.06)',
         text: {
-            primary: grey[950],
-            secondary: grey[600],
+            primary: '#000000',
+            secondary: '#797979',
             disabled: grey[400],
         },
         background: {

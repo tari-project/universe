@@ -1,8 +1,10 @@
 [package]
 name = "tari-universe"
-version = "0.0.0"
-description = "A Tauri App"
-authors = ["you"]
+authors = ["The Tari Development Community"]
+description = "Tari Universe"
+repository = "https://github.com/tari-project/universe"
+license = "BSD-3-Clause"
+version = "0.1.31"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -20,7 +22,6 @@ tari_core = { git = "https://github.com/tari-project/tari.git", branch = "develo
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_utilities = "0.7.0"
 tari_crypto = "0.20.3"
-
 
 anyhow = "1"
 dirs-next = "2.0.0"
@@ -40,6 +41,9 @@ tauri = { version = "1", features = [ "window-create",
     "shell-open",
     "process-command-api",
 ] }
+
+tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+
 tokio = { version = "1", features = ["full"] }
 semver = "1.0.23"
 serde = { version = "1", features = ["derive"] }
@@ -73,4 +77,4 @@ device_query = "2.1.0"
 custom-protocol = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]
+ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client", "dirs-next"]

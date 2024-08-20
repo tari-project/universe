@@ -8,8 +8,6 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
-const LOG_TARGET: &str = "tari::universe::node_manager";
-
 pub struct NodeManager {
     watcher: Arc<RwLock<ProcessWatcher<MinotariNodeAdapter>>>,
 }
@@ -76,7 +74,7 @@ impl NodeManager {
         status_monitor.wait_synced(progress_tracker).await
     }
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
-        while true {
+        loop {
             match self.get_identity().await {
                 Ok(_) => break,
                 Err(_) => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
@@ -122,5 +120,4 @@ impl NodeManager {
 
 pub struct NodeIdentity {
     pub public_key: RistrettoPublicKey,
-    pub public_addresses: Vec<String>,
 }

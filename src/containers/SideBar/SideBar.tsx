@@ -2,18 +2,13 @@ import Miner from './Miner/Miner';
 import Wallet from './components/Wallet';
 import Heading from './components/Heading';
 import Milestones from './components/Milestone';
-import {
-    SideBarContainer,
-    SideBarInner,
-    HeadingContainer,
-    BottomContainer,
-} from './styles';
-import TestButtons from './TestButtons';
+import { SideBarContainer, SideBarInner, HeadingContainer, BottomContainer } from './styles';
+
 import { useTheme } from '@mui/material/styles';
 
 import { useUIStore } from '../../store/useUIStore.ts';
-import ConnectButton from '../Airdrop/components/ConnectButton.tsx';
-// import TestButtons from './TestButtons.tsx';
+import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
+import ConnectButton from '@app/containers/Airdrop/components/ConnectButton.tsx';
 
 function SideBar() {
     const theme = useTheme();
@@ -25,11 +20,11 @@ function SideBar() {
             </HeadingContainer>
             <SideBarInner>
                 <ConnectButton />
+                <MiningButton />
                 <Miner />
-                <Milestones />
-                {/*<TestButtons />*/}
             </SideBarInner>
             <BottomContainer>
+                <Milestones />
                 <Wallet />
             </BottomContainer>
         </SideBarContainer>
