@@ -10,4 +10,8 @@ declare module '@tauri-apps/api/tauri' {
         param: 'set_auto_mining',
         payload: { autoMining: boolean }
     ): Promise<void>;
+    function invoke(
+        param: 'set_user_inactivity_timeout',
+        payload: { timeout: number }
+    ): Promise<void>;
 }

@@ -9,6 +9,8 @@ import {
     Divider,
     CircularProgress,
     Tooltip,
+    Box,
+    DialogActions,
 } from '@mui/material';
 import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
@@ -18,16 +20,31 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { useGetApplicationsVersions } from '../../../../hooks/useGetApplicationsVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { CardContainer, CardItem, HorisontalBox, RightHandColumn } from './Settings.styles';
+import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles';
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
 import { CardComponent } from './Card.component.tsx';
+import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
+import { useForm } from 'react-hook-form';
+
+enum FormFields {
+    IDLE_TIMEOUT = 'idleTimeout',
+}
+
+interface FormState {
+    [FormFields.IDLE_TIMEOUT]: number;
+}
 
 const Settings: React.FC = () => {
     const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
+    const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
+    const { reset, handleSubmit, control } = useForm<FormState>({
+        defaultValues: { idleTimeout: userInActivityTimeout },
+        mode: 'onSubmit',
+    });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const { cpu, gpu } = useHardwareStatus();
 
@@ -61,6 +78,27 @@ const Settings: React.FC = () => {
         setIsCopyTooltipHidden(false);
         await navigator.clipboard.writeText(seedWords.join(','));
         setTimeout(() => setIsCopyTooltipHidden(true), 1000);
+    };
+
+    const handleCancel = () => {
+        reset({ idleTimeout: userInActivityTimeout });
+    };
+
+    const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        console.log('submitting');
+        handleSubmit(
+            (data) => {
+                console.log(typeof data[FormFields.IDLE_TIMEOUT]);
+                invoke('set_user_inactivity_timeout', {
+                    timeout: Number(data[FormFields.IDLE_TIMEOUT]),
+                });
+                handleClose();
+            },
+            (error) => {
+                console.log(error);
+            }
+        )();
     };
 
     return (
@@ -119,6 +157,41 @@ const Settings: React.FC = () => {
                                 </Button>
                             </RightHandColumn>
                         </HorisontalBox>
+                        <Divider />
+                        <form onSubmit={onSubmit}>
+                            <Box my={1}>
+                                <Typography variant="h5">Random</Typography>
+                                <Stack spacing={1} pt={1}>
+                                    <ControlledNumberInput
+                                        name={FormFields.IDLE_TIMEOUT}
+                                        control={control}
+                                        title="Idle Timeout"
+                                        endAdornment="seconds"
+                                        placeholder="Enter idle timeout in seconds"
+                                        type="int"
+                                        rules={{
+                                            max: {
+                                                value: 21600,
+                                                message: 'Maximum is 21600 seconds',
+                                            },
+                                            min: {
+                                                value: 1,
+                                                message: 'Minimum is 1 second',
+                                            },
+                                        }}
+                                    />
+                                </Stack>
+                                <Divider />
+                                <DialogActions>
+                                    <Button onClick={handleCancel} variant="outlined">
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" variant="contained">
+                                        Submit
+                                    </Button>
+                                </DialogActions>
+                            </Box>
+                        </form>
                         <Divider />
                         {applicationsVersions && (
                             <>

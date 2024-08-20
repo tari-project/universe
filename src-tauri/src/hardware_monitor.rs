@@ -55,22 +55,13 @@ impl HardwareMonitor {
         HardwareMonitor {
             current_os: HardwareMonitor::detect_current_os(),
             current_implementation: match HardwareMonitor::detect_current_os() {
-                CurrentOperatingSystem::Windows => {
-                    println!("Windows");
-                    Box::new(WindowsHardwareMonitor {
-                        nvml: HardwareMonitor::initialize_nvml(),
-                    })
-                }
-                CurrentOperatingSystem::Linux => {
-                    println!("Linux");
-                    Box::new(LinuxHardwareMonitor {
-                        nvml: HardwareMonitor::initialize_nvml(),
-                    })
-                }
-                CurrentOperatingSystem::MacOS => {
-                    println!("MacOS");
-                    Box::new(MacOSHardwareMonitor {})
-                }
+                CurrentOperatingSystem::Windows => Box::new(WindowsHardwareMonitor {
+                    nvml: HardwareMonitor::initialize_nvml(),
+                }),
+                CurrentOperatingSystem::Linux => Box::new(LinuxHardwareMonitor {
+                    nvml: HardwareMonitor::initialize_nvml(),
+                }),
+                CurrentOperatingSystem::MacOS => Box::new(MacOSHardwareMonitor {}),
             },
             cpu: None,
             gpu: None,
@@ -292,18 +283,12 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let label: String = system.cpus().get(0).unwrap().brand().to_string();
 
         match current_parameters {
-            Some(current_parameters) => {
-                println!(
-                    "CPU: {} currentTemperature: {} maxTemperature: {} ",
-                    label, avarage_temperature, current_parameters.max_temperature
-                );
-                HardwareParameters {
-                    label,
-                    usage_percentage: usage,
-                    current_temperature: avarage_temperature,
-                    max_temperature: current_parameters.max_temperature.max(avarage_temperature),
-                }
-            }
+            Some(current_parameters) => HardwareParameters {
+                label,
+                usage_percentage: usage,
+                current_temperature: avarage_temperature,
+                max_temperature: current_parameters.max_temperature.max(avarage_temperature),
+            },
             None => HardwareParameters {
                 label,
                 usage_percentage: usage,
@@ -345,11 +330,6 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
         let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
         let label = main_gpu.name().unwrap();
-
-        println!(
-            "GPU: {} Usage: {} Temperature: {}",
-            label, usage_percentage, current_temperature
-        );
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
