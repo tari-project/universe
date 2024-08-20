@@ -112,7 +112,10 @@ impl AppConfig {
         self.user_inactivity_timeout.clone()
     }
 
-    pub async fn set_user_inactivity_timeout(&mut self, timeout: Duration) -> Result<(), anyhow::Error> {
+    pub async fn set_user_inactivity_timeout(
+        &mut self,
+        timeout: Duration,
+    ) -> Result<(), anyhow::Error> {
         self.user_inactivity_timeout = timeout;
         self.update_config_file().await?;
         Ok(())

@@ -55,19 +55,13 @@ impl HardwareMonitor {
         HardwareMonitor {
             current_os: HardwareMonitor::detect_current_os(),
             current_implementation: match HardwareMonitor::detect_current_os() {
-                CurrentOperatingSystem::Windows => {
-                    Box::new(WindowsHardwareMonitor {
-                        nvml: HardwareMonitor::initialize_nvml(),
-                    })
-                }
-                CurrentOperatingSystem::Linux => {
-                    Box::new(LinuxHardwareMonitor {
-                        nvml: HardwareMonitor::initialize_nvml(),
-                    })
-                }
-                CurrentOperatingSystem::MacOS => {
-                    Box::new(MacOSHardwareMonitor {})
-                }
+                CurrentOperatingSystem::Windows => Box::new(WindowsHardwareMonitor {
+                    nvml: HardwareMonitor::initialize_nvml(),
+                }),
+                CurrentOperatingSystem::Linux => Box::new(LinuxHardwareMonitor {
+                    nvml: HardwareMonitor::initialize_nvml(),
+                }),
+                CurrentOperatingSystem::MacOS => Box::new(MacOSHardwareMonitor {}),
             },
             cpu: None,
             gpu: None,
@@ -289,14 +283,12 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let label: String = system.cpus().get(0).unwrap().brand().to_string();
 
         match current_parameters {
-            Some(current_parameters) => {
-                HardwareParameters {
-                    label,
-                    usage_percentage: usage,
-                    current_temperature: avarage_temperature,
-                    max_temperature: current_parameters.max_temperature.max(avarage_temperature),
-                }
-            }
+            Some(current_parameters) => HardwareParameters {
+                label,
+                usage_percentage: usage,
+                current_temperature: avarage_temperature,
+                max_temperature: current_parameters.max_temperature.max(avarage_temperature),
+            },
             None => HardwareParameters {
                 label,
                 usage_percentage: usage,

@@ -36,7 +36,6 @@ impl UserListener {
         timeout: Duration,
         window: tauri::Window,
     ) {
-
         let cancellation_token = CancellationToken::new();
         self.cancelation_token = Some(cancellation_token.clone());
         self.is_listening = true;
