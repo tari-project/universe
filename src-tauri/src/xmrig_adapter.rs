@@ -67,7 +67,7 @@ impl XmrigAdapter {
         logs_dir: PathBuf,
         data_dir: PathBuf,
         progress_tracker: ProgressTracker,
-        cpu_max_percentage: u16,
+        cpu_max_percentage: usize,
     ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
         self.kill_previous_instances(data_dir.clone())?;
 
@@ -83,7 +83,7 @@ impl XmrigAdapter {
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push("--donate-level=1".to_string());
         args.push(format!("--user={}", self.monero_address));
-        args.push(format!("--cpu-max-threads-hint={}", cpu_max_percentage));
+        args.push(format!("--threads={}", cpu_max_percentage));
 
         let client = XmrigHttpApiClient::new(
             format!("http://127.0.0.1:{}", self.http_api_port),
