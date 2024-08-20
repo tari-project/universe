@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { WalletBalance } from '@app/types/app-status.ts';
 
 interface State extends WalletBalance {
@@ -19,19 +20,30 @@ const initialState: State = {
     pending_outgoing_balance: 0,
 };
 
-const useWalletStore = create<WalletStore>()((set) => ({
-    ...initialState,
-    setBalance: (balance) => set({ balance }),
-    setBalanceData: (wallet_balance) =>
-        set(() => {
-            const {
-                available_balance = 0,
-                timelocked_balance = 0,
-                pending_incoming_balance = 0,
-            } = wallet_balance || {};
+const useWalletStore = create<WalletStore>()(
+    persist(
+        (set) => ({
+            ...initialState,
+            setBalance: (balance) => set({ balance }),
+            setBalanceData: (wallet_balance) =>
+                set(() => {
+                    const {
+                        available_balance = 0,
+                        timelocked_balance = 0,
+                        pending_incoming_balance = 0,
+                    } = wallet_balance || {};
 
-            return { ...wallet_balance, balance: available_balance + timelocked_balance + pending_incoming_balance };
+                    return {
+                        ...wallet_balance,
+                        balance: available_balance + timelocked_balance + pending_incoming_balance,
+                    };
+                }),
         }),
-}));
+        {
+            name: 'wallet_balance',
+            storage: createJSONStorage(() => sessionStorage),
+        }
+    )
+);
 
 export default useWalletStore;

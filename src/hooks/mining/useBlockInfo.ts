@@ -39,25 +39,53 @@ export function useBlockInfo() {
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const block_time = useBaseNodeStatusStore((s) => s.block_time);
+    const [shouldAnimate, setShouldAnimate] = useState(false);
+    const [displayBlock, setDisplayBlock] = useState(block_height);
+    const [blockHeightChanged, setBlockHeightChanged] = useState(false);
     const [timeSince, setTimeSince] = useState<string | undefined>();
     const [isPaused, setIsPaused] = useState(false);
 
-    useBalanceInfo();
-
+    const { hasEarned, setHasEarned, successHeight, setSuccessHeight } = useBalanceInfo();
     const handleVisual = useVisualisation();
-
     const heightRef = useRef(block_height);
 
-    useEffect(() => {
-        if (heightRef.current !== block_height) {
-            setIsPaused(true);
+    useEffect(() => setBlockHeightChanged(heightRef.current !== block_height), [block_height]);
+    useEffect(() => setShouldAnimate(blockHeightChanged || hasEarned), [blockHeightChanged, hasEarned]);
+
+    const handleAnimation = useCallback(() => {
+        setIsPaused(true);
+        console.log(`block_height= ${block_height}`);
+        console.log(`heightRef.current= ${heightRef.current}`);
+        console.log(`successHeight= ${successHeight}`);
+
+        const currentIsWon = heightRef.current === successHeight;
+
+        if (!currentIsWon && block_height !== successHeight) {
+            console.log(`got to fail`);
             handleVisual('fail');
-            heightRef.current = block_height;
-            return () => {
-                setIsPaused(false);
-            };
         }
-    }, [block_height, handleVisual]);
+        if (currentIsWon) {
+            console.log(`got to success`);
+            handleVisual('success');
+        }
+    }, [block_height, handleVisual, successHeight]);
+
+    useEffect(() => {
+        if (shouldAnimate) {
+            const timeout = setTimeout(
+                () => {
+                    handleAnimation();
+                    setDisplayBlock(block_height);
+                    setHasEarned(false);
+                    setIsPaused(false);
+                    setSuccessHeight(undefined);
+                    heightRef.current = block_height;
+                },
+                hasEarned ? 1 : 1500
+            );
+            return () => clearTimeout(timeout);
+        }
+    }, [hasEarned, block_height, handleAnimation, setHasEarned, shouldAnimate, setSuccessHeight]);
 
     const handleTimer = useCallback(() => {
         const { days, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);
@@ -77,5 +105,5 @@ export function useBlockInfo() {
         isMining && !isPaused ? INTERVAL : null
     );
 
-    return timeSince;
+    return { displayBlock, timeSince };
 }

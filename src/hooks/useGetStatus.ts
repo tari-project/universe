@@ -11,13 +11,11 @@ import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 const INTERVAL = 1000;
 
 export function useGetStatus() {
-    const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
-
-    const setBalanceData = useWalletStore((state) => state.setBalanceData);
-
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
+    const setBalanceData = useWalletStore((state) => state.setBalanceData);
     const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
+    const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
     const setError = useAppStateStore((s) => s.setError);
     const setMode = useAppStatusStore((s) => s.setMode);
 
