@@ -210,7 +210,7 @@ async fn set_auto_mining<'r>(
     let mut user_listener = state.user_listener.write().await;
 
     if auto_mining {
-        user_listener.start_listening_to_mouse_poisition_change(timeout,window);
+        user_listener.start_listening_to_mouse_poisition_change(timeout, window);
     } else {
         user_listener.stop_listening_to_mouse_poisition_change();
     }
@@ -527,7 +527,7 @@ fn main() {
                 let mut user_listener = user_listener.write().await;
 
                 if auto_mining {
-                    user_listener.start_listening_to_mouse_poisition_change(timeout,app_window);
+                    user_listener.start_listening_to_mouse_poisition_change(timeout, app_window);
                 }
             });
 
