@@ -97,6 +97,14 @@ impl HardwareMonitor {
 
     pub fn read_hardware_parameters(&self) -> HardwareStatus {
         println!("Reading hardware parameters for {}", self.current_implementation.get_implementation_name());
+
+        let system = PrecordSystem::new(Features::CPU_FREQUENCY, []);
+        let cpu = system.unwrap().system_cpu_temperature().unwrap();
+        
+        for cpu in cpu {
+            println!("Temperature: {}", cpu);
+        }
+
         self.current_implementation.log_all_components();
         HardwareStatus {
             cpu: Some(self.current_implementation.read_cpu_parameters(self.cpu.clone())),
@@ -115,15 +123,6 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
     }
 
     fn log_all_components(&self) {
-
-        let system = PrecordSystem::new(Features::CPU_FREQUENCY, []);
-        let cpu = system.unwrap().system_cpu_temperature().unwrap();
-        
-        for cpu in cpu {
-            println!("Temperature: {}", cpu);
-        }
-
-
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
             println!("Component: {} Temperature: {}", component.label(), component.temperature());
