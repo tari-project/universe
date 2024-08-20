@@ -19,13 +19,13 @@ export default function ConnectButton() {
     return (
         <StyledButton
             onClick={handleAuth}
+            size="medium"
             endIcon={
                 <StyledXIconWrapper>
                     <StyledXIcon />
                 </StyledXIconWrapper>
             }
             sx={{
-                height: 42,
                 position: 'relative',
                 '& .MuiButton-endIcon': {
                     position: 'absolute',

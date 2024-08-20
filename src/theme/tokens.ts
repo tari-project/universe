@@ -134,6 +134,11 @@ export const componentSettings: ThemeOptions = {
                     letterSpacing: '-0.4px',
                 },
             },
+            styleOverrides: {
+                root: {
+                    height: 42,
+                },
+            },
         },
         MuiDialog: {
             defaultProps: {
