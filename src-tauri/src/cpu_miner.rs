@@ -4,7 +4,7 @@ use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
     CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
 };
-use log::warn;
+use log::{error, warn};
 use std::path::PathBuf;
 use std::thread;
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
@@ -60,7 +60,17 @@ impl CpuMiner {
                 }
             }
         };
-        let max_cpu_available = thread::available_parallelism().unwrap().get();
+        let max_cpu_available = thread::available_parallelism();
+        let max_cpu_available = match max_cpu_available {
+            Ok(available_cpus) => {
+                dbg!("Available CPUs: {}", available_cpus);
+                available_cpus.get()
+            }
+            Err(err) => {
+                error!("Available CPUs: Unknown, error: {}", err);
+                1
+            }
+        };
         let cpu_max_percentage = match mode {
             MiningMode::Eco => (30 * max_cpu_available) / 100,
             MiningMode::Ludicrous => max_cpu_available,
