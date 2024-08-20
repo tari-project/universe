@@ -6,6 +6,7 @@ export const DashboardContainer = styled(Box)(() => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    pointerEvents: 'none',
 }));
 
 export const ProgressBox = styled(Box)(() => ({

@@ -14,12 +14,16 @@ import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutlin
 import { useGetSeedWords } from '../../../hooks/useGetSeedWords';
 import truncateString from '../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
-import { useGetApplicatonsVersions } from '../../../hooks/useGetApplicatonsVersions';
+
+import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
+import { useGetApplicationsVersions } from '../../../hooks/useGetApplicationsVersions.ts';
 import VisualMode from '../../Dashboard/components/VisualMode';
 import { HorisontalBox, RightHandColumn } from './Settings.styles';
 
 const Settings: React.FC = () => {
-    const { refreshVersions, applicationsVersions, mainAppVersion } = useGetApplicatonsVersions();
+    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
+    const refreshVersions = useGetApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
