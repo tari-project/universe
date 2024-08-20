@@ -67,6 +67,8 @@ impl ProcessAdapter for WalletAdapter {
             "--grpc-address".to_string(),
             "/ip4/127.0.0.1/tcp/18141".to_string(),
             "-p".to_string(),
+            "wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string(),
+            "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
                 self.base_node_public_key
