@@ -43,16 +43,16 @@
         },
         "windows": [
             {
-                "title": "tari-universe",
+                "title": "Tari Universe",
                 "label": "main",
-                "width": 1420,
-                "height": 800,
-                "minWidth": 924,
-                "minHeight": 520,
+                "width": 1380,
+                "height": 780,
+                "minWidth": 388,
+                "minHeight": 455,
                 "resizable": true,
                 "fullscreen": false,
-                "decorations": false,
-                "transparent": true
+                "decorations": true,
+                "transparent": false
             }
         ],
         "security": {
