@@ -18,7 +18,9 @@ tari_common_types = { git = "https://github.com/tari-project/tari.git", branch =
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", branch = "development" }
-tari_core = { git = "https://github.com/tari-project/tari.git", branch = "development", features = ["transactions"] }
+tari_core = { git = "https://github.com/tari-project/tari.git", branch = "development", features = [
+    "transactions",
+] }
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_utilities = "0.7.0"
 tari_crypto = "0.20.3"
@@ -58,12 +60,17 @@ sanitize-filename = "0.5"
 async-trait = "0.1.81"
 sysinfo = "0.31.2"
 log4rs = "1.3.0"
-keyring = { version = "3.0.5", features = ["windows-native", "apple-native", "linux-native"] }
+keyring = { version = "3.0.5", features = [
+    "windows-native",
+    "apple-native",
+    "linux-native",
+] }
 nix = { version = "0.29.0", features = ["signal"] }
 # static bind lzma
 xz2 = { version = "0.1.7", features = ["static"] }
 humantime = "2.1.0"
 open = "5"
+thiserror = "1.0.26"
 
 # needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
 libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
@@ -77,4 +84,10 @@ device_query = "2.1.0"
 custom-protocol = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client", "dirs-next"]
+ignored = [
+    "log4rs",
+    "xz2",
+    "libsqlite3-sys",
+    "minotari_wallet_grpc_client",
+    "dirs-next",
+]

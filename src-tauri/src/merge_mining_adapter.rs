@@ -72,14 +72,26 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;
                     }
+                    let mut exit_code = -1;
 
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
+                            exit_code = 0;
                             // res
                         },
                         res2 = child.wait() => {
-                            dbg!("Exited badly:", res2?);
+                            match res2
+                             {
+                                Ok(res) => {
+                                    exit_code = res.code().unwrap_or(0)
+                                    },
+                                Err(e) => {
+                                    warn!(target: LOG_TARGET, "Error in MergeMiningProxyInstance: {}", e);
+                                    return Err(e.into());
+                                }
+                            }
+
                         },
                     };
 
@@ -89,7 +101,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                             debug!(target: LOG_TARGET, "Could not clear mmproxy's pid file");
                         }
                     }
-                    Ok(())
+                    Ok(exit_code)
                 })),
             },
             MergeMiningProxyStatusMonitor {},
@@ -107,7 +119,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
 pub struct MergeMiningProxyInstance {
     pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
+    handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
 }
 
 pub struct MergeMiningProxyStatusMonitor {}
@@ -121,7 +133,7 @@ impl ProcessInstance for MergeMiningProxyInstance {
             .unwrap_or_else(|| false)
     }
 
-    async fn stop(&mut self) -> Result<(), Error> {
+    async fn stop(&mut self) -> Result<i32, Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
         let res = handle.unwrap().await??;

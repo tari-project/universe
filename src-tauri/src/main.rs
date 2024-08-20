@@ -14,7 +14,7 @@ mod download_utils;
 mod github;
 mod internal_wallet;
 mod merge_mining_adapter;
-mod minotari_node_adapter;
+mod node_adapter;
 mod node_manager;
 mod process_adapter;
 mod wallet_manager;
@@ -33,6 +33,7 @@ use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use log::{debug, error, info, warn};
+use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
@@ -125,14 +126,36 @@ async fn setup_application<'r>(
             e.to_string()
         })?;
 
-    state
-        .node_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
-            e.to_string()
-        })?;
+    for i in 0..2 {
+        match state
+            .node_manager
+            .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+            .await
+        {
+            Ok(_) => {}
+            Err(e) => {
+                match e {
+                    NodeManagerError::ExitCode(code) => {
+                        if code == 114 {
+                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
+                            state.node_manager.clean_data_folder(&data_dir).await.map_err(|e| {
+                                error!(target: LOG_TARGET, "Could not clean data folder for node:{}", e);
+                                e.to_string()
+                            })?;
+                            continue;
+                        }
+                    }
+                    _ => {}
+                }
+                error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
+
+                app.exit(-1);
+                return Err(e.to_string());
+            }
+        }
+    }
+
+    info!(target: LOG_TARGET, "Node has started and is ready");
 
     progress.set_max(40).await;
     progress.update("Waiting for wallet".to_string(), 0).await;
