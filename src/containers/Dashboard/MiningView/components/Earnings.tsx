@@ -12,13 +12,11 @@ export default function Earnings() {
 
     const previousBalance = useWalletStore((state) => state.previousBalance);
     const balance = useWalletStore((state) => state.balance);
-    console.log(`hasBalanceChange= ${hasBalanceChange}`);
     useEffect(() => {
         if (hasBalanceChange) {
             setEarnings(balance - previousBalance);
         }
     }, [balance, hasBalanceChange, previousBalance]);
-    console.log(earnings);
     return (
         <EarningsContainer>
             <AnimatePresence>
