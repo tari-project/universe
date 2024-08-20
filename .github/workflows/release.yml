@@ -118,7 +118,7 @@ jobs:
           releaseName: 'Tari Universe v__VERSION__'
           releaseBody: 'Tari Universe - See the assets to download this version and install'
           releaseDraft: true
-          prerelease: ${{ ( ! startsWith(github.ref, 'refs/tags/v') ) }}
-          includeDebug: ${{ ( ! startsWith(github.ref, 'refs/tags/v') ) }}
-          includeRelease: ${{ ( startsWith(github.ref, 'refs/tags/v') ) }}
+          prerelease: true
+          includeDebug: false
+          includeRelease: true
           args: ${{ matrix.args }}

@@ -7,7 +7,6 @@ use tokio_util::sync::CancellationToken;
 pub struct UserListener {
     pub is_listening: bool,
     pub is_mining_initialized: bool,
-    pub idle_timeout: u64,
     pub cancelation_token: Option<CancellationToken>,
 }
 
@@ -21,7 +20,6 @@ impl UserListener {
         Self {
             is_listening: false,
             is_mining_initialized: false,
-            idle_timeout: 5000,
             cancelation_token: None,
         }
     }
@@ -30,12 +28,14 @@ impl UserListener {
         let device_state = DeviceState::new();
         let mouse = device_state.get_mouse();
 
-        return mouse.coords;
+        mouse.coords
     }
 
-    pub fn start_listening_to_mouse_poisition_change(&mut self, window: tauri::Window) {
-        let idle_timeout = self.idle_timeout;
-
+    pub fn start_listening_to_mouse_poisition_change(
+        &mut self,
+        timeout: Duration,
+        window: tauri::Window,
+    ) {
         let cancellation_token = CancellationToken::new();
         self.cancelation_token = Some(cancellation_token.clone());
         self.is_listening = true;
@@ -43,7 +43,7 @@ impl UserListener {
         let mut user_listener = self.to_owned();
         let window = window.clone();
 
-        let mut timeout_counter: u64 = 0;
+        let mut timeout_counter: Duration = Duration::from_secs(0);
         let mut last_mouse_coords = UserListener::read_user_mouse_coords();
 
         tokio::spawn(async move {
@@ -55,23 +55,23 @@ impl UserListener {
 
                         if current_mouse_coords != last_mouse_coords {
                             last_mouse_coords = current_mouse_coords;
-                            timeout_counter = 0;
+                            timeout_counter = Duration::from_secs(0);
                         } else {
-                            timeout_counter += 1000;
+                            timeout_counter += Duration::from_secs(1);
                         }
 
 
-                        if timeout_counter >= idle_timeout && !user_listener.is_mining_initialized {
+                        if timeout_counter >= timeout && !user_listener.is_mining_initialized {
                             UserListener::on_user_idle(&window);
                             user_listener.is_mining_initialized = true;
                         }
 
-                        if timeout_counter < idle_timeout && user_listener.is_mining_initialized {
+                        if timeout_counter < timeout && user_listener.is_mining_initialized {
                             UserListener::on_user_active(&window);
                             user_listener.is_mining_initialized = false;
                         }
 
-                        sleep(Duration::from_millis(idle_timeout)).await;
+                        sleep(Duration::from_secs(1)).await;
                     }
                 } => {},
                 _ = cancellation_token.cancelled() => {

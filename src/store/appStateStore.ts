@@ -18,7 +18,7 @@ interface AppState {
     settingUpFinished: () => void;
 }
 
-const useAppStateStore = create<AppState>((set) => ({
+const useAppStateStore = create<AppState>()((set) => ({
     error: '',
     setError: (value) => set({ error: value }),
     topStatus: 'Not mining',

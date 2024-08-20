@@ -1,32 +1,21 @@
-import { useEffect, useMemo } from "react";
-import useAppStateStore from "../../../store/appStateStore";
-import SetupView from "./SetupView";
-
-let latestSetupProgress = 0;
+import { useState } from 'react';
+import useAppStateStore from '@app/store/appStateStore';
+import SetupView from './SetupView';
+import { useInterval } from '@app/hooks/useInterval.ts';
 
 function SetupViewContainer() {
-  const { setupTitle, setupProgress } = useAppStateStore((state) => ({
-    setupTitle: state.setupTitle,
-    setupProgress: state.setupProgress,
-  }));
-  const progressPercentage = useMemo(
-    () => Math.floor(latestSetupProgress * 100),
-    [latestSetupProgress]
-  );
+    const setupTitle = useAppStateStore((s) => s.setupTitle);
+    const setupProgress = useAppStateStore((s) => s.setupProgress);
 
-  useEffect(() => {
-    const progressInterval = setInterval(() => {
-      latestSetupProgress += (setupProgress - latestSetupProgress) * 0.25;
+    const [progress, setProgress] = useState(setupProgress || 0);
+
+    useInterval(() => {
+        setProgress((c) => (setupProgress + c) * 0.25);
     }, 500);
 
-    return () => {
-      clearInterval(progressInterval);
-    };
-  }, [setupProgress]);
+    const progressPercentage = Math.floor(progress * 100);
 
-  return (
-    <SetupView title={setupTitle} progressPercentage={progressPercentage} />
-  );
+    return <SetupView title={setupTitle} progressPercentage={progressPercentage} />;
 }
 
 export default SetupViewContainer;

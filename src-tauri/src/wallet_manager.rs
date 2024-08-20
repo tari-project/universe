@@ -1,4 +1,3 @@
-use crate::minotari_node_adapter::MinotariNodeAdapter;
 use crate::node_manager::NodeManager;
 use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};
@@ -6,8 +5,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
-
-const LOG_TARGET: &str = "tari::universe::node_manager";
 
 pub struct WalletManager {
     watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
