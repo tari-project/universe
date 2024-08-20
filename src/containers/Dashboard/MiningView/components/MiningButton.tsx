@@ -45,7 +45,7 @@ function MiningButton() {
         endIcon: isMining ? <GiPauseButton /> : <IoChevronForwardOutline />,
     };
 
-    const actionText = !isMining ? (hasMiningBeenStopped ? 'Resume' : 'Start') : 'Stop';
+    const actionText = !isMining ? (hasMiningBeenStopped ? 'Resume' : 'Start') : 'Pause';
 
     return (
         <StyledButton

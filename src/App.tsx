@@ -6,7 +6,6 @@ import { lightTheme } from './theme/themes';
 import { ContainerInner, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
-import { TitleBar } from './containers/TitleBar';
 import { AppBackground } from './containers/AppBackground';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 import { useUIStore } from './store/useUIStore.ts';
@@ -28,7 +27,6 @@ function App() {
                 <CssBaseline enableColorScheme />
                 <AppBackground />
                 <DashboardContainer>
-                    <TitleBar />
                     <ContainerInner>
                         <SideBar />
                         <Dashboard status={view} />

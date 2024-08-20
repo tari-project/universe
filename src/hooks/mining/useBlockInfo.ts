@@ -17,6 +17,7 @@ function calculateTimeSince(blockTime: number) {
 
     // Convert the difference to days, hours, minutes, and seconds
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const daysString = days > 0 ? `${days} day${days === 1 ? '' : 's'}, ` : '';
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const hoursString = hours.toString().padStart(2, '0');
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
@@ -28,6 +29,7 @@ function calculateTimeSince(blockTime: number) {
 
     return {
         days,
+        daysString,
         hours,
         minutes,
         seconds,
@@ -42,7 +44,14 @@ export function useBlockInfo() {
     const [shouldAnimate, setShouldAnimate] = useState(false);
     const [displayBlock, setDisplayBlock] = useState(block_height);
     const [blockHeightChanged, setBlockHeightChanged] = useState(false);
-    const [timeSince, setTimeSince] = useState<string | undefined>();
+    const [timeSince, setTimeSince] = useState<{
+        days: number;
+        daysString: string;
+        hours: number;
+        hoursString: string;
+        minutes: string;
+        seconds: string;
+    }>();
     const [isPaused, setIsPaused] = useState(false);
 
     const { hasEarned, setHasEarned, successHeight, setSuccessHeight } = useBalanceInfo();
@@ -89,14 +98,8 @@ export function useBlockInfo() {
     }, [hasEarned, block_height, handleAnimation, setHasEarned, shouldAnimate, setSuccessHeight]);
 
     const handleTimer = useCallback(() => {
-        const { days, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);
-        if (days > 0) {
-            setTimeSince(`${days} day${days === 1 ? '' : 's'}, ${hoursString}:${minutes}:${seconds}`);
-        } else if (hours > 0) {
-            setTimeSince(`${hoursString}:${minutes}:${seconds}`);
-        } else {
-            setTimeSince(`${minutes}:${seconds}`);
-        }
+        const { days, daysString, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);
+        setTimeSince({ days, daysString, hours, hoursString, minutes, seconds });
     }, [block_time]);
 
     useInterval(

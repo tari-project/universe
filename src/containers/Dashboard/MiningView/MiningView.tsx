@@ -1,6 +1,6 @@
 import BlockInfo from './components/BlockInfo';
+import BlockTime from './components/BlockTime';
 import TopStatus from './components/TopStatus';
-import VisualMode from '../components/VisualMode';
 
 import { InfoContainer } from '../styles';
 import Earnings from '@app/containers/Dashboard/MiningView/components/Earnings.tsx';
@@ -13,8 +13,8 @@ function MiningView() {
                 <TopStatus />
                 <BlockInfo />
             </InfoContainer>
+            <BlockTime />
             <Earnings />
-            <VisualMode />
         </MiningViewContainer>
     );
 }

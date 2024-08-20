@@ -36,9 +36,8 @@ export const VisualModeContainer = styled(Box)(({ theme }) => ({
     pointerEvents: 'all',
     borderRadius: '24px',
     gap: theme.spacing(1),
-    position: 'absolute',
-    bottom: theme.spacing(1),
-    right: theme.spacing(1),
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
 }));
 
 export const InfoContainer = styled(Box)(({ theme }) => ({
