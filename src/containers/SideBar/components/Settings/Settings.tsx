@@ -32,9 +32,7 @@ const Settings: React.FC = () => {
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const cpuTemperatures = useAppStatusStore((state) => state.cpu?.cpu_temperatures);
 
-    const gpuHardwareStatuses = useAppStatusStore(
-        (state) => state.gpu?.hardware_statuses
-    );
+    const gpuHardwareStatuses = useAppStatusStore((state) => state.gpu?.hardware_statuses);
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -189,9 +187,7 @@ const Settings: React.FC = () => {
                     )}
                     <Divider />
                     <Stack spacing={1} pt={1}>
-                        <Typography variant="h5">
-                            Hardware Temperatures
-                        </Typography>
+                        <Typography variant="h5">Hardware Temperatures</Typography>
                         <CardContainer>
                             {gpuHardwareStatuses &&
                                 gpuHardwareStatuses.map((gpu) => (
@@ -201,21 +197,15 @@ const Settings: React.FC = () => {
                                         labels={[
                                             {
                                                 labelText: 'Utilization',
-                                                labelValue:
-                                                    gpu.load.toString() + '%',
+                                                labelValue: gpu.load.toString() + '%',
                                             },
                                             {
-                                                labelText:
-                                                    'Current temperature',
-                                                labelValue:
-                                                    gpu.temperature.toString() +
-                                                    '°C',
+                                                labelText: 'Current temperature',
+                                                labelValue: gpu.temperature.toString() + '°C',
                                             },
                                             {
                                                 labelText: 'Max temperature',
-                                                labelValue:
-                                                    gpu.max_temperature.toString() +
-                                                    '°C',
+                                                labelValue: gpu.max_temperature.toString() + '°C',
                                             },
                                         ]}
                                     />

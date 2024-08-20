@@ -89,44 +89,44 @@ async fn setup_application<'r>(
     progress
         .update("Checking for latest version of node".to_string(), 0)
         .await;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MinotariNode, progress.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not download node: {:?}", e);
-            e.to_string()
-        })?;
+    // BinaryResolver::current()
+    //     .ensure_latest(Binaries::MinotariNode, progress.clone())
+    //     .await
+    //     .map_err(|e| {
+    //         error!(target: LOG_TARGET, "Could not download node: {:?}", e);
+    //         e.to_string()
+    //     })?;
 
     progress.set_max(15).await;
     progress
         .update("Checking for latest version of mmproxy".to_string(), 0)
         .await;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not download mmproxy: {:?}", e);
-            e.to_string()
-        })?;
+    // BinaryResolver::current()
+    //     .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
+    //     .await
+    //     .map_err(|e| {
+    //         error!(target: LOG_TARGET, "Could not download mmproxy: {:?}", e);
+    //         e.to_string()
+    //     })?;
     progress.set_max(20).await;
     progress
         .update("Checking for latest version of wallet".to_string(), 0)
         .await;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::Wallet, progress.clone())
-        .await
-        .map_err(|e| e.to_string())?;
+    // BinaryResolver::current()
+    //     .ensure_latest(Binaries::Wallet, progress.clone())
+    //     .await
+    //     .map_err(|e| e.to_string())?;
 
     progress.set_max(30).await;
     progress
         .update("Checking for latest version of xmrig".to_string(), 0)
         .await;
-    XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
-            e.to_string()
-        })?;
+    // XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
+    //     .await
+    //     .map_err(|e| {
+    //         error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
+    //         e.to_string()
+    //     })?;
 
     state
         .node_manager
@@ -350,7 +350,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
-    let hardware_status = HardwareMonitor::current().read_hardware_parameters();
+    let hardware_status = HardwareMonitor::current().write().await.read_hardware_parameters();
 
     let gpu_status = gpu_miner.status();
 

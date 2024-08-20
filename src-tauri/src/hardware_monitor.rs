@@ -3,10 +3,11 @@ use std::{ops::Deref, sync::LazyLock};
 use log::info;
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use serde::Serialize;
-use sysinfo::{Component, Components, System};
+use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
+use tokio::sync::RwLock;
 
 const LOG_TARGET: &str = "tari::universe::hardware_monitor";
-static INSTANCE: LazyLock<HardwareMonitor> = LazyLock::new(|| HardwareMonitor::new());
+static INSTANCE: LazyLock<RwLock<HardwareMonitor>> = LazyLock::new(|| RwLock::new(HardwareMonitor::new()));
 
 enum CurrentOperatingSystem {
     Windows,
@@ -65,8 +66,8 @@ impl HardwareMonitor {
         }
     }
 
-    pub fn current() -> &'static Self {
-        &*INSTANCE
+    pub fn current() -> &'static RwLock<HardwareMonitor> {
+        &INSTANCE
     }
 
     fn initialize_nvml() -> Option<Nvml> {
@@ -95,13 +96,20 @@ impl HardwareMonitor {
         }
     }
 
-    pub fn read_hardware_parameters(&self) -> HardwareStatus {
-        println!("Reading hardware parameters for {}", self.current_implementation.get_implementation_name());
+    pub fn read_hardware_parameters(&mut self) -> HardwareStatus {
 
-        self.current_implementation.log_all_components();
+        // USED FOR DEBUGGING
+        // println!("Reading hardware parameters for {}", self.current_implementation.get_implementation_name());
+        // self.current_implementation.log_all_components();
+        let cpu = Some(self.current_implementation.read_cpu_parameters(self.cpu.clone()));
+        let gpu = Some(self.current_implementation.read_gpu_parameters(self.gpu.clone()));
+
+        self.cpu = cpu.clone();
+        self.gpu = gpu.clone();
+
         HardwareStatus {
-            cpu: Some(self.current_implementation.read_cpu_parameters(self.cpu.clone())),
-            gpu: Some(self.current_implementation.read_gpu_parameters(self.gpu.clone())),
+            cpu,
+            gpu,
         }
     }
 
@@ -123,11 +131,16 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
     }
 
     fn read_cpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
-        let system = System::new_all();
+        let mut system = System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
         let components = Components::new_with_refreshed_list();
         let cpu_components: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("Cpu")).collect();
 
         let avarage_temperature = cpu_components.iter().map(|c| c.temperature()).sum::<f32>() / cpu_components.len() as f32;
+
+        // Wait a bit because CPU usage is based on diff.
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        system.refresh_cpu_all();
+
         let usage = system.global_cpu_usage();
         let label: String = system.cpus().get(0).unwrap().brand().to_string();
 
@@ -166,7 +179,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
             Err(e) => {
-                info!(target: LOG_TARGET, "Failed to get main GPU: {}", e);
+                println!("Failed to get main GPU: {}", e);
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
@@ -176,8 +189,8 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
             }
         };
 
-        let current_temperature = f32::from_bits(main_gpu.temperature(TemperatureSensor::Gpu).unwrap());
-        let usage_percentage = f32::from_bits(main_gpu.utilization_rates().unwrap().gpu);
+        let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
+        let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
         let label = main_gpu.name().unwrap();
 
         match current_parameters {
@@ -215,7 +228,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
         }
     }
     fn read_cpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
-        let system = System::new_all();
+        let mut system = System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
         let components = Components::new_with_refreshed_list();
 
         let intel_cpu_component: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("Package")).collect();
@@ -226,13 +239,23 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
         } else {
             intel_cpu_component
         };
+
         let avarage_temperature = available_cpu_components.iter().map(|c| c.temperature()).sum::<f32>() / available_cpu_components.len() as f32;
 
+        // Wait a bit because CPU usage is based on diff.
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        system.refresh_cpu_all();
+
         let usage = system.global_cpu_usage();
+
         let label: String = system.cpus().get(0).unwrap().brand().to_string();
+
+
+        
 
         match current_parameters {
             Some(current_parameters) => {
+                println!("CPU: {} currentTemperature: {} maxTemperature: {} ", label, avarage_temperature, current_parameters.max_temperature);
                 HardwareParameters {
                     label,
                     usage_percentage: usage,
@@ -252,9 +275,10 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
 
     }
     fn read_gpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
-        let nvml = match &self.nvml {
+        let nvml: &Nvml = match &self.nvml {
             Some(nvml) => nvml,
             None => {
+                println!("Failed to get NVML");
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
@@ -267,7 +291,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
             Err(e) => {
-                info!(target: LOG_TARGET, "Failed to get main GPU: {}", e);
+                println!( "Failed to get main GPU: {}", e);
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
@@ -277,9 +301,11 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
             }
         };
 
-        let current_temperature = f32::from_bits(main_gpu.temperature(TemperatureSensor::Gpu).unwrap());
-        let usage_percentage = f32::from_bits(main_gpu.utilization_rates().unwrap().gpu);
+        let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
+        let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
         let label = main_gpu.name().unwrap();
+
+        println!("GPU: {} Usage: {} Temperature: {}", label, usage_percentage, current_temperature);
 
         match current_parameters {
             Some(current_parameters) => {
@@ -316,7 +342,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         }
     }
     fn read_cpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
-        let system = System::new_all();
+        let mut system = System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
         let components = Components::new_with_refreshed_list();
 
         let intel_cpu_components: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("CPU")).collect();
@@ -329,6 +355,11 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         };
 
         let avarage_temperature = available_cpu_components.iter().map(|c| c.temperature()).sum::<f32>() / available_cpu_components.len() as f32;
+
+        // Wait a bit because CPU usage is based on diff.
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        system.refresh_cpu_all();
+
         let usage = system.global_cpu_usage();
         let label: String = system.cpus().get(0).unwrap().brand().to_string();
 

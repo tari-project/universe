@@ -4,11 +4,24 @@ export interface AppStatus {
     cpu?: CpuMinerStatus;
     gpu?: GpuMinerStatus;
     base_node?: BaseNodeStatus;
+    hardware_status?: HardwareStatus;
     wallet_balance?: WalletBalance;
     applications_versions?: ApplicationsVersions;
     main_app_version?: string;
     mode: modeType;
     auto_mining: boolean;
+}
+
+export interface HardwareParameters {
+    label: string;
+    usage_percentage: number;
+    current_temperature: number;
+    max_temperature: number;
+}
+
+export interface HardwareStatus {
+    cpu: HardwareParameters;
+    gpu: HardwareParameters;
 }
 
 export interface GpuMinerStatus {

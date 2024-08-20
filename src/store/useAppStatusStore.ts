@@ -14,7 +14,10 @@ interface Actions {
 }
 type AppStatusStoreState = State & Actions;
 
-const initialState: State = {
+const initialState: AppStatus = {
+    cpu: undefined,
+    hardware_status: undefined,
+    base_node: undefined,
     wallet_balance: undefined,
     mode: 'Eco',
     auto_mining: false,
