@@ -317,9 +317,17 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
     fn read_cpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
         let system = System::new_all();
         let components = Components::new_with_refreshed_list();
-        let cpu_components: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("CPU")).collect();
 
-        let avarage_temperature = cpu_components.iter().map(|c| c.temperature()).sum::<f32>() / cpu_components.len() as f32;
+        let intel_cpu_components: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("CPU")).collect();
+        let silicon_cpu_components: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("MTR")).collect();
+
+        let available_cpu_components = if silicon_cpu_components.len() > 0 {
+            silicon_cpu_components
+        } else {
+            intel_cpu_components
+        };
+
+        let avarage_temperature = available_cpu_components.iter().map(|c| c.temperature()).sum::<f32>() / available_cpu_components.len() as f32;
         let usage = system.global_cpu_usage();
         let label: String = system.cpus().get(0).unwrap().brand().to_string();
 
