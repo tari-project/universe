@@ -3,6 +3,7 @@ use std::{ops::Deref, sync::LazyLock};
 use log::info;
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use sysinfo::{Component, Components, Cpu, CpuRefreshKind, RefreshKind, System};
+use precord_core::{Features, System as PrecordSystem};
 
 const LOG_TARGET: &str = "tari::universe::hardware_monitor";
 static INSTANCE: LazyLock<HardwareMonitor> = LazyLock::new(|| HardwareMonitor::new());
@@ -114,6 +115,15 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
     }
 
     fn log_all_components(&self) {
+
+        let system = PrecordSystem::new(Features::CPU_FREQUENCY, []);
+        let cpu = system.unwrap().system_cpu_temperature().unwrap();
+        
+        for cpu in cpu {
+            println!("Temperature: {}", cpu);
+        }
+
+
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
             println!("Component: {} Temperature: {}", component.label(), component.temperature());
@@ -215,9 +225,17 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
     fn read_cpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
         let system = System::new_all();
         let components = Components::new_with_refreshed_list();
-        let cpu_components: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("Core")).collect();
 
-        let avarage_temperature = cpu_components.iter().map(|c| c.temperature()).sum::<f32>() / cpu_components.len() as f32;
+        let intel_cpu_component: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("Package")).collect();
+        let amd_cpu_component: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("k10temp Tctl")).collect();
+
+        let available_cpu_components = if intel_cpu_component.len() > 0 {
+            intel_cpu_component
+        } else {
+            amd_cpu_component
+        };
+        let avarage_temperature = available_cpu_components.iter().map(|c| c.temperature()).sum::<f32>() / available_cpu_components.len() as f32;
+
         let usage = system.global_cpu_usage();
         let label: String = system.cpus().get(0).unwrap().brand().to_string();
 
