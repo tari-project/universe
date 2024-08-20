@@ -6,7 +6,6 @@ import { lightTheme } from './theme/themes';
 import { ContainerInner, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
-import { TitleBar } from './containers/TitleBar';
 import { AppBackground } from './containers/AppBackground';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 import { useUIStore } from './store/useUIStore.ts';
@@ -32,7 +31,6 @@ function App() {
                         pointerEvents: view === 'setup' ? 'none' : 'inherit',
                     }}
                 >
-                    <TitleBar />
                     <ContainerInner>
                         <SideBar />
                         <Dashboard status={view} />

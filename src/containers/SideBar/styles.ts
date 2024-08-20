@@ -27,7 +27,7 @@ export const SideBarContainer = styled(Box, {
     top: headerHeight,
     left: 0,
     height: `calc(100vh - ${headerHeight} - ${theme.spacing(2)})`,
-    width: sidebaropen ? `calc(100% - ${theme.spacing(2)})` : sidebarWidth,
+    width: sidebaropen ? `calc(100% - ${theme.spacing(4)})` : sidebarWidth,
     zIndex: 100,
     transition: 'width 0.5s ease-in-out',
     display: 'flex',

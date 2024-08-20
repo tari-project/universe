@@ -1,7 +1,7 @@
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 
-export const headerHeight = '40px';
+export const headerHeight = '20px';
 export const sidebarWidth = '348px'; // if this is updated please update the value in init-visuals.js
 
 export const ContainerInner = styled(Box)(({ theme }) => ({
