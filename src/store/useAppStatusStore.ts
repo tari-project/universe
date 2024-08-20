@@ -21,6 +21,7 @@ const initialState: AppStatus = {
     wallet_balance: undefined,
     mode: 'Eco',
     auto_mining: false,
+    user_inactivity_timeout: undefined,
     main_app_version: undefined,
     applications_versions: undefined,
 };
