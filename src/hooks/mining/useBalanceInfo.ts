@@ -37,15 +37,18 @@ export default function useBalanceInfo() {
             hasChanges = true;
             totalRef.current = total;
         }
-
+        console.log('=============================================');
+        console.log(`hasChanges= ${hasChanges}`);
         return hasChanges;
     }, [available, pending, timelocked, total]);
 
     useEffect(() => {
         const hasChanges = handleChanges();
-        console.log('=========');
-        console.log(`hasChanges= ${hasChanges}`);
-        console.log('=========');
+        console.log('=============================================');
+
+        console.log(`hasChangesIn hook= ${hasChanges}`);
+        console.log('=============================================');
+
         if (hasChanges && heightRef.current !== block_height) {
             setHasEarned(true);
             setSuccessHeight(heightRef.current);

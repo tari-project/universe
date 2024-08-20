@@ -54,20 +54,25 @@ export function useBlockInfo() {
 
     const handleAnimation = useCallback(() => {
         setIsPaused(true);
+
+        console.log('=============================================');
+
         console.log(`block_height= ${block_height}`);
         console.log(`heightRef.current= ${heightRef.current}`);
         console.log(`successHeight= ${successHeight}`);
+        console.log('=============================================');
 
         const currentIsWon = heightRef.current === successHeight;
 
         if (!currentIsWon && block_height !== successHeight) {
-            console.log(`got to fail`);
+            console.log(`FAILED`);
             handleVisual('fail');
         }
         if (currentIsWon) {
-            console.log(`got to success`);
+            console.log(`EARNED`);
             handleVisual('success');
         }
+        console.log('=============================================');
     }, [block_height, handleVisual, successHeight]);
 
     useEffect(() => {
