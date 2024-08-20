@@ -8,19 +8,20 @@ export const ContainerInner = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'stretch',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     pointerEvents: 'none',
     gap: theme.spacing(2),
-    minHeight: `calc(100vh - ${headerHeight})`,
-    paddingLeft: sidebarWidth,
+    minHeight: '100%',
 }));
 
-export const DashboardContainer = styled(Box)(() => ({
+export const DashboardContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
     overflowY: 'auto',
-    paddingTop: headerHeight,
+    padding: `${headerHeight} ${theme.spacing(2)} ${theme.spacing(2)}`,
     pointerEvents: 'none',
+    flexGrow: '1',
     position: 'relative',
+    gap: theme.spacing(2),
 }));
