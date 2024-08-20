@@ -166,17 +166,17 @@ const Settings: React.FC = () => {
                                         name={FormFields.IDLE_TIMEOUT}
                                         control={control}
                                         title="Idle Timeout"
-                                        endAdornment="miliseconds"
+                                        endAdornment="seconds"
                                         placeholder="Enter idle timeout in seconds"
                                         type="int"
                                         rules={{
                                             max: {
-                                                value: 21600000,
-                                                message: 'Maximum is 21600000 milliseconds ( 6 hours )',
+                                                value: 21600,
+                                                message: 'Maximum is 21600 seconds',
                                             },
                                             min: {
-                                                value: 1000,
-                                                message: 'Minimum is 1000 milliseconds ( 1 second )',
+                                                value: 1,
+                                                message: 'Minimum is 1 second',
                                             },
                                         }}
                                     />

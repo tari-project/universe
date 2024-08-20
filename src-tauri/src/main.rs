@@ -42,6 +42,7 @@ use setup_status_event::SetupStatusEvent;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use std::thread::sleep;
+use std::time::Duration;
 use std::{panic, process};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -75,7 +76,7 @@ async fn set_user_inactivity_timeout<'r>(
         .config
         .write()
         .await
-        .set_user_inactivity_timeout(timeout)
+        .set_user_inactivity_timeout(Duration::from_secs(timeout))
         .await;
 
     Ok(())
@@ -208,6 +209,9 @@ async fn set_auto_mining<'r>(
     config.set_auto_mining(auto_mining).await;
     let timeout = config.get_user_inactivity_timeout();
     let mut user_listener = state.user_listener.write().await;
+
+    println!("Auto mining: {}", auto_mining);
+    println!("Timeout: {:?}", timeout);
 
     if auto_mining {
         user_listener.start_listening_to_mouse_poisition_change(timeout, window);
@@ -383,7 +387,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         wallet_balance,
         mode: config_guard.mode.clone(),
         auto_mining: config_guard.auto_mining.clone(),
-        user_inactivity_timeout: config_guard.user_inactivity_timeout.clone(),
+        user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
     })
 }
 
