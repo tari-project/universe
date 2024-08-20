@@ -228,6 +228,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor{
         }
     }
     fn read_cpu_parameters(&self, current_parameters:Option<HardwareParameters>) -> HardwareParameters {
+        //TODO: Implement CPU usage for Linux
         let mut system = System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
         let components = Components::new_with_refreshed_list();
 
@@ -361,7 +362,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         system.refresh_cpu_all();
 
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().get(0).unwrap().brand().to_string();
+        let label: String = system.cpus().get(0).unwrap().brand().to_string() + " CPU";
 
         match current_parameters {
             Some(current_parameters) => {
@@ -388,8 +389,9 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         let gpu_components: Vec<&Component> = components.deref().iter().filter(|c| c.label().contains("GPU")).collect();
 
         let avarage_temperature = gpu_components.iter().map(|c| c.temperature()).sum::<f32>() / gpu_components.len() as f32;
+        //TODO: Implement GPU usage for MacOS
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().get(0).unwrap().brand().to_string();
+        let label: String = system.cpus().get(0).unwrap().brand().to_string() + " GPU";
 
         match current_parameters {
             Some(current_parameters) => {
