@@ -75,7 +75,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
                     .to_string(),
             );
         }
-        dbg!(&args);
         Ok((
             MinotariNodeInstance {
                 shutdown: inner_shutdown,
@@ -95,16 +94,27 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         fs::write(data_dir.join("node_pid"), id.to_string())?;
                     }
 
+                    let exit_code;
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
+                            exit_code = 0;
                             // res
                         },
                         res2 = child.wait() => {
-                            dbg!("Exited badly:", res2?);
+                            match res2
+                             {
+                                Ok(res) => {
+                                    exit_code = res.code().unwrap_or(0)
+                                    },
+                                Err(e) => {
+                                    warn!(target: LOG_TARGET, "Error in NodeInstance: {}", e);
+                                    return Err(e.into());
+                                }
+                            }
+
                         },
                     };
-                    println!("Stopping minotari node");
 
                     match fs::remove_file(data_dir.join("node_pid")) {
                         Ok(_) => {}
@@ -112,7 +122,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                             debug!(target: LOG_TARGET, "Could not clear node's pid file");
                         }
                     }
-                    Ok(())
+                    Ok(exit_code)
                 })),
             },
             MinotariNodeStatusMonitor {},
@@ -130,7 +140,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
 pub struct MinotariNodeInstance {
     pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
+    handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
 }
 
 #[async_trait]
@@ -142,7 +152,7 @@ impl ProcessInstance for MinotariNodeInstance {
             .unwrap_or_else(|| false)
     }
 
-    async fn stop(&mut self) -> Result<(), Error> {
+    async fn stop(&mut self) -> Result<i32, Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
         let res = handle.unwrap().await??;
@@ -217,7 +227,6 @@ impl MinotariNodeStatusMonitor {
         let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
-        dbg!(&res);
 
         Ok(NodeIdentity {
             public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)

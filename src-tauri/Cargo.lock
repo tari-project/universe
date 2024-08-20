@@ -5467,6 +5467,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-single-instance",
+ "thiserror",
  "tokio",
  "tokio-util 0.7.11",
  "xz2",

@@ -10,8 +10,8 @@ mod gpu_miner;
 mod hardware_monitor;
 mod internal_wallet;
 mod merge_mining_adapter;
-mod minotari_node_adapter;
 mod mm_proxy_manager;
+mod node_adapter;
 mod node_manager;
 mod process_adapter;
 mod process_watcher;
@@ -36,6 +36,7 @@ use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
+use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
@@ -88,6 +89,17 @@ async fn setup_application<'r>(
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    setup_inner(window, state, app).await.map_err(|e| {
+        warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
+        e.to_string()
+    })
+}
+
+async fn setup_inner<'r>(
+    window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), anyhow::Error> {
     let _ = window.emit(
         "message",
         SetupStatusEvent {
@@ -108,85 +120,82 @@ async fn setup_application<'r>(
     progress
         .update("Checking for latest version of node".to_string(), 0)
         .await;
-    // BinaryResolver::current()
-    //     .ensure_latest(Binaries::MinotariNode, progress.clone())
-    //     .await
-    //     .map_err(|e| {
-    //         error!(target: LOG_TARGET, "Could not download node: {:?}", e);
-    //         e.to_string()
-    //     })?;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::MinotariNode, progress.clone())
+        .await?;
 
     progress.set_max(15).await;
     progress
         .update("Checking for latest version of mmproxy".to_string(), 0)
         .await;
-    // BinaryResolver::current()
-    //     .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
-    //     .await
-    //     .map_err(|e| {
-    //         error!(target: LOG_TARGET, "Could not download mmproxy: {:?}", e);
-    //         e.to_string()
-    //     })?;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
+        .await?;
     progress.set_max(20).await;
     progress
         .update("Checking for latest version of wallet".to_string(), 0)
         .await;
-    // BinaryResolver::current()
-    //     .ensure_latest(Binaries::Wallet, progress.clone())
-    //     .await
-    //     .map_err(|e| e.to_string())?;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::Wallet, progress.clone())
+        .await?;
 
     progress.set_max(30).await;
     progress
         .update("Checking for latest version of xmrig".to_string(), 0)
         .await;
-    // XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
-    //     .await
-    //     .map_err(|e| {
-    //         error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
-    //         e.to_string()
-    //     })?;
+    XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
 
-    state
-        .node_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
-            e.to_string()
-        })?;
+    for i in 0..2 {
+        match state
+            .node_manager
+            .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+            .await
+        {
+            Ok(_) => {}
+            Err(e) => {
+                match e {
+                    NodeManagerError::ExitCode(code) => {
+                        if code == 114 {
+                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
+                            state.node_manager.clean_data_folder(&data_dir).await?;
+                            continue;
+                        }
+                    }
+                    _ => {}
+                }
+                error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
+
+                app.exit(-1);
+                return Err(e.into());
+            }
+        }
+    }
+
+    info!(target: LOG_TARGET, "Node has started and is ready");
 
     progress.set_max(40).await;
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
         .ensure_started(state.shutdown.to_signal(), data_dir)
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not start wallet manager: {:?}", e);
-            e.to_string()
-        })?;
+        .await?;
 
     progress.set_max(55).await;
     progress
         .update("Waiting for node to sync".to_string(), 0)
         .await;
-    state
-        .node_manager
-        .wait_synced(progress.clone())
-        .await
-        .map_err(|e| e.to_string())?;
+    state.node_manager.wait_synced(progress.clone()).await?;
 
     progress.set_max(75).await;
     progress.update("Starting MMProxy".to_string(), 0).await;
-    let _ = mm_proxy_manager
+    mm_proxy_manager
         .start(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
         )
-        .await;
-    let _ = mm_proxy_manager.wait_ready().await;
+        .await?;
+    mm_proxy_manager.wait_ready().await?;
 
     _ = window.emit(
         "message",
@@ -334,7 +343,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
-    let mut gpu_miner = state.gpu_miner.write().await;
+    let gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
