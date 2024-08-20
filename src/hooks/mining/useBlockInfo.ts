@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useInterval } from './useInterval.ts';
-
-import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
-import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
-import { useVisualisation } from './useVisualisation.ts';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useInterval } from '../useInterval.ts';
+
+import { useBaseNodeStatusStore } from '../../store/useBaseNodeStatusStore.ts';
+import { useCPUStatusStore } from '../../store/useCPUStatusStore.ts';
+import { useVisualisation } from '../useVisualisation.ts';
+import useBalanceInfo from '@app/hooks/mining/useBalanceInfo.ts';
 
 const INTERVAL = 1000; // 1 sec
 
@@ -40,7 +41,9 @@ export function useBlockInfo() {
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const block_time = useBaseNodeStatusStore((s) => s.block_time);
-    const [isPaused, setIsPaused] = useState(false);
+    const [shouldAnimate, setShouldAnimate] = useState(false);
+    const [displayBlock, setDisplayBlock] = useState(block_height);
+    const [blockHeightChanged, setBlockHeightChanged] = useState(false);
     const [timeSince, setTimeSince] = useState<{
         days: number;
         daysString: string;
@@ -49,21 +52,49 @@ export function useBlockInfo() {
         minutes: string;
         seconds: string;
     }>();
+    const [isPaused, setIsPaused] = useState(false);
 
+    const { hasEarned, setHasEarned, successHeight, setResetSuccess } = useBalanceInfo();
     const handleVisual = useVisualisation();
-
     const heightRef = useRef(block_height);
+    const animating = useRef(false);
+
+    useEffect(() => setBlockHeightChanged(heightRef.current !== block_height), [block_height]);
+    useEffect(() => setShouldAnimate(blockHeightChanged || hasEarned), [blockHeightChanged, hasEarned]);
+
+    const handleAnimation = useCallback(() => {
+        const currentIsWon = heightRef.current === successHeight;
+        if (!currentIsWon && block_height !== successHeight) {
+            handleVisual('fail');
+        }
+        if (currentIsWon) {
+            handleVisual('success');
+        }
+    }, [block_height, handleVisual, successHeight]);
+
+    const handleReset = useCallback(() => {
+        setHasEarned(false);
+        setIsPaused(false);
+        setResetSuccess();
+        heightRef.current = block_height;
+        animating.current = false;
+        setDisplayBlock(block_height);
+    }, [block_height, setHasEarned, setResetSuccess]);
 
     useEffect(() => {
-        if (heightRef.current !== block_height) {
+        if (shouldAnimate) {
+            animating.current = true;
             setIsPaused(true);
-            handleVisual('fail');
-            heightRef.current = block_height;
+            const animationTimeout = hasEarned ? 1 : 5000;
+            const timeout = setTimeout(() => {
+                handleAnimation();
+                handleReset();
+            }, animationTimeout);
             return () => {
-                setIsPaused(false);
+                clearTimeout(timeout);
             };
         }
-    }, [block_height, handleVisual]);
+    }, [handleAnimation, handleReset, hasEarned, shouldAnimate]);
 
     const handleTimer = useCallback(() => {
         const { days, daysString, hours, minutes, seconds, hoursString } = calculateTimeSince(block_time);
@@ -77,5 +108,5 @@ export function useBlockInfo() {
         isMining && !isPaused ? INTERVAL : null
     );
 
-    return timeSince;
+    return { displayBlock, timeSince };
 }

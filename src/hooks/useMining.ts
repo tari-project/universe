@@ -35,7 +35,7 @@ export function useMining() {
     const stopMining = useCallback(async () => {
         await invoke('stop_mining', {}).then(async () => {
             console.info(`mining stopped`);
-            handleVisual('pause');
+            handleVisual('stop');
         });
     }, [handleVisual]);
 
