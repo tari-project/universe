@@ -87,10 +87,10 @@ export function useBlockInfo() {
             const timeout = setTimeout(() => {
                 handleAnimation();
                 setDisplayBlock(block_height);
+                handleReset();
             }, animationTimeout);
             return () => {
                 clearTimeout(timeout);
-                handleReset();
             };
         }
     }, [block_height, handleAnimation, handleReset, hasEarned, shouldAnimate]);
