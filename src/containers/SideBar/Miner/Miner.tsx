@@ -40,7 +40,7 @@ function Miner() {
             <TileContainer>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
-                <Tile title="Hashrate (to remove)" stats={hash_rate + ' H/s'} />
+                <Tile title="Hashrate" stats={hash_rate + ' H/s'} />
                 <Tile title="CPU Utilization" stats={(cpuHardwareStatus?.usage_percentage || 0).toString() + '%'} />
                 <Tile title="CHIP/GPU" stats={truncateString(cpuHardwareStatus?.label || 'Unknown', 10)} />
                 <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' XTM/24h'} />
