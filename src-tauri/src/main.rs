@@ -1,28 +1,30 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod cpu_miner;
-mod mm_proxy_manager;
-mod process_watcher;
-mod user_listener;
-mod xmrig;
-mod xmrig_adapter;
-
 mod app_config;
 mod binary_resolver;
+mod cpu_miner;
 mod download_utils;
 mod github;
+mod gpu_miner;
+mod hardware_monitor;
 mod internal_wallet;
 mod merge_mining_adapter;
 mod minotari_node_adapter;
+mod mm_proxy_manager;
 mod node_manager;
 mod process_adapter;
+mod process_watcher;
+mod user_listener;
 mod wallet_manager;
+mod xmrig;
+mod xmrig_adapter;
 
 mod process_killer;
 mod wallet_adapter;
 
 use crate::cpu_miner::CpuMiner;
+use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node_manager::NodeManager;
@@ -32,6 +34,7 @@ use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
+use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
@@ -86,44 +89,44 @@ async fn setup_application<'r>(
     progress
         .update("Checking for latest version of node".to_string(), 0)
         .await;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MinotariNode, progress.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not download node: {:?}", e);
-            e.to_string()
-        })?;
+    // BinaryResolver::current()
+    //     .ensure_latest(Binaries::MinotariNode, progress.clone())
+    //     .await
+    //     .map_err(|e| {
+    //         error!(target: LOG_TARGET, "Could not download node: {:?}", e);
+    //         e.to_string()
+    //     })?;
 
     progress.set_max(15).await;
     progress
         .update("Checking for latest version of mmproxy".to_string(), 0)
         .await;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not download mmproxy: {:?}", e);
-            e.to_string()
-        })?;
+    // BinaryResolver::current()
+    //     .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
+    //     .await
+    //     .map_err(|e| {
+    //         error!(target: LOG_TARGET, "Could not download mmproxy: {:?}", e);
+    //         e.to_string()
+    //     })?;
     progress.set_max(20).await;
     progress
         .update("Checking for latest version of wallet".to_string(), 0)
         .await;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::Wallet, progress.clone())
-        .await
-        .map_err(|e| e.to_string())?;
+    // BinaryResolver::current()
+    //     .ensure_latest(Binaries::Wallet, progress.clone())
+    //     .await
+    //     .map_err(|e| e.to_string())?;
 
     progress.set_max(30).await;
     progress
         .update("Checking for latest version of xmrig".to_string(), 0)
         .await;
-    XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
-            e.to_string()
-        })?;
+    // XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
+    //     .await
+    //     .map_err(|e| {
+    //         error!(target: LOG_TARGET, "Could not download xmrig: {:?}", e);
+    //         e.to_string()
+    //     })?;
 
     state
         .node_manager
@@ -311,7 +314,8 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
-    let cpu_miner = state.cpu_miner.read().await;
+    let mut cpu_miner = state.cpu_miner.write().await;
+    let mut gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -346,10 +350,16 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         }
     };
 
+    let hardware_status = HardwareMonitor::current()
+        .write()
+        .await
+        .read_hardware_parameters();
+
     let config_guard = state.config.read().await;
 
     Ok(AppStatus {
         cpu,
+        hardware_status,
         base_node: BaseNodeStatus {
             block_height,
             block_time,
@@ -363,8 +373,8 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
-    // TODO: add each application version.
     cpu: CpuMinerStatus,
+    hardware_status: HardwareStatus,
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
     mode: MiningMode,
@@ -385,14 +395,11 @@ pub struct BaseNodeStatus {
     block_time: u64,
     is_synced: bool,
 }
-
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
     pub is_mining_enabled: bool,
     pub is_mining: bool,
     pub hash_rate: f64,
-    pub cpu_usage: u32,
-    pub cpu_brand: String,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
 }
@@ -411,11 +418,11 @@ struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
 }
-
 struct UniverseAppState {
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
     cpu_miner: RwLock<CpuMiner>,
+    gpu_miner: RwLock<GpuMiner>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
@@ -453,6 +460,7 @@ fn main() {
         config: app_config.clone(),
         shutdown: shutdown.clone(),
         cpu_miner: CpuMiner::new().into(),
+        gpu_miner: GpuMiner::new().into(),
         cpu_miner_config: cpu_config.clone(),
         user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),

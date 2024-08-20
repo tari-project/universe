@@ -42,5 +42,5 @@ export const useGetApplicationsVersions = () => {
         };
     }, [applicationsVersions, getApplicationsVersions]);
 
-    return getApplicationsVersions;
+    return { applicationsVersions, getApplicationsVersions };
 };
