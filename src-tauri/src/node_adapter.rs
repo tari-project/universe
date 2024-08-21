@@ -56,11 +56,12 @@ impl ProcessAdapter for MinotariNodeAdapter {
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
+            // args.push("-p".to_string());
+            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
-            args.push("base_node.p2p.allow_test_addresses=true".to_string());
-            args.push("-p".to_string());
-            args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
-            args.push("-p".to_string());
+            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
+            args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
+            // args.push("-p".to_string());
             // args.push(
             //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
             // );

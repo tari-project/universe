@@ -1,6 +1,7 @@
 use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
 use crate::process_watcher::ProcessWatcher;
+use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -87,6 +88,10 @@ impl WalletManager {
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
             .get_balance()
-            .await?)
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })?)
     }
 }

@@ -84,10 +84,11 @@ impl ProcessAdapter for WalletAdapter {
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
-            args.push("wallet.p2p.allow_test_addresses=true".to_string());
-            args.push("-p".to_string());
-            args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
+            args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
+            // args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
             args.push("-p".to_string());
             args.push(
                 "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
@@ -159,6 +160,14 @@ impl ProcessAdapter for WalletAdapter {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum WalletStatusMonitorError {
+    #[error("Wallet not started")]
+    WalletNotStarted,
+    #[error("Unknown error: {0}")]
+    UnknownError(#[from] anyhow::Error),
+}
+
 pub struct WalletStatusMonitor {}
 
 impl StatusMonitor for WalletStatusMonitor {}
@@ -171,9 +180,14 @@ pub struct WalletBalance {
     pub pending_outgoing_balance: MicroMinotari,
 }
 impl WalletStatusMonitor {
-    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
-        let mut client = WalletClient::connect("http://127.0.0.1:18141").await?;
-        let res = client.get_balance(GetBalanceRequest {}).await?;
+    pub async fn get_balance(&self) -> Result<WalletBalance, WalletStatusMonitorError> {
+        let mut client = WalletClient::connect("http://127.0.0.1:18141")
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_balance(GetBalanceRequest {})
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
 
         Ok(WalletBalance {

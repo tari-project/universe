@@ -51,6 +51,7 @@ use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use wallet_manager::WalletManagerError;
 
+mod gpu_miner_adapter;
 mod progress_tracker;
 mod setup_status_event;
 
@@ -140,7 +141,7 @@ async fn setup_inner<'r>(
         .await?;
     BinaryResolver::current()
         .read_current_highest_version(Binaries::GpuMiner, progress.clone())
-        .await;
+        .await?;
 
     if now
         .duration_since(last_binaries_update_timestamp)
@@ -330,9 +331,25 @@ async fn start_mining<'r>(
         )
         .await
         .map_err(|e| {
-            dbg!(e.to_string());
+            error!(target: LOG_TARGET, "Error starting cpu miner: {:?}", e);
             e.to_string()
         })?;
+    state
+        .gpu_miner
+        .write()
+        .await
+        .start(
+            state.shutdown.to_signal(),
+            config.tari_address.clone(),
+            app.path_resolver().app_local_data_dir().unwrap(),
+            app.path_resolver().app_log_dir().unwrap(),
+        )
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET, "Error starting gpu miner: {:?}", e);
+            e.to_string()
+        })?;
+
     Ok(())
 }
 
@@ -346,6 +363,13 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
         .await
         .map_err(|e| e.to_string())?;
 
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
     // stop the mmproxy. TODO: change it so that the cpu miner stops this dependency.
     // state
     //     .mm_proxy_manager

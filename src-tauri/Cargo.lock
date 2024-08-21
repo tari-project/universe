@@ -5450,6 +5450,7 @@ dependencies = [
  "nvml-wrapper",
  "open 5.3.0",
  "rand 0.8.5",
+ "regex",
  "reqwest 0.12.5",
  "sanitize-filename",
  "semver",

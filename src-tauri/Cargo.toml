@@ -71,6 +71,7 @@ xz2 = { version = "0.1.7", features = ["static"] }
 humantime = "2.1.0"
 open = "5"
 thiserror = "1.0.26"
+regex = "1.10.6"
 
 # needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
 libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
