@@ -12,7 +12,7 @@ interface Actions {
     setBlockTime: (blockTime: BlockTimeData) => void;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setEarnings: (earnings?: number) => void;
-    toggleTimerPaused: (pause?: boolean) => void;
+    toggleTimerPaused: ({ pause }: { pause?: boolean }) => void;
 }
 type MiningStoreState = State & Actions;
 
@@ -28,7 +28,8 @@ export const useMiningStore = create<MiningStoreState>()(
             setBlockTime: (blockTime) => set({ blockTime }),
             setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
             setEarnings: (earnings) => set({ earnings }),
-            toggleTimerPaused: (pause) => set((state) => ({ timerPaused: pause || !state.timerPaused })),
+            toggleTimerPaused: ({ pause }) =>
+                set((state) => ({ timerPaused: pause !== undefined ? pause : !state.timerPaused })),
         }),
         {
             name: 'mining',
