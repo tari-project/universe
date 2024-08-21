@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import useAppStateStore from '../../../store/appStateStore';
+import useAppStateStore from '@app/store/appStateStore';
 import SetupView from './SetupView';
-import { useInterval } from '../../../hooks/useInterval.ts';
+import { useInterval } from '@app/hooks/useInterval.ts';
 
 function SetupViewContainer() {
     const setupTitle = useAppStateStore((s) => s.setupTitle);

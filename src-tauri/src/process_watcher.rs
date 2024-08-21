@@ -1,4 +1,4 @@
-use crate::process_adapter::{ProcessAdapter, ProcessInstance};
+use crate::process_adapter::ProcessAdapter;
 use log::{debug, error, info};
 use std::path::PathBuf;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -9,7 +9,7 @@ use tokio::time::MissedTickBehavior;
 const LOG_TARGET: &str = "tari::universe::process_watcher";
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) adapter: TAdapter,
-    watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
+    watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
     poll_time: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
@@ -71,41 +71,55 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             } else {
                                debug!(target: LOG_TARGET, "{} is not running", name);
                                match child.stop().await {
-                                   Ok(()) => {
-                                      info!(target: LOG_TARGET, "{} exited successfully", name);
+                                   Ok(exit_code) => {
+                                      if exit_code != 0 {
+                                          error!(target: LOG_TARGET, "{} exited with error code: {}", name, exit_code);
+                                          return Ok(exit_code);
+                                      }
+                                      else {
+                                        info!(target: LOG_TARGET, "{} exited successfully", name);
+                                      }
                                    }
                                    Err(e) => {
                                       error!(target: LOG_TARGET, "{} exited with error: {}", name, e);
+                                      return Err(e);
                                    }
                                }
                                break;
                             }
                       },
                     _ = inner_shutdown.wait() => {
-                        child.stop().await?;
-                        break;
+                        return Ok(child.stop().await?);
+
                     },
                     _ = app_shutdown.wait() => {
-                        child.stop().await?;
-                        break;
+                        return Ok(child.stop().await?);
                     }
                 }
             }
-            Ok(())
+            Ok(0)
         }));
         Ok(())
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
+        if let Some(ref task) = self.watcher_task {
+            if task.inner().is_finished() {
+                //let exit_code = task.await??;
+
+                return Err(anyhow::anyhow!("Process watcher task has already finished"));
+            }
+        }
         //TODO
         Ok(())
     }
 
-    pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
+    pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.internal_shutdown.trigger();
         if let Some(task) = self.watcher_task.take() {
-            task.await??;
+            let exit_code = task.await??;
+            return Ok(exit_code);
         }
-        Ok(())
+        Ok(0)
     }
 }

@@ -1,10 +1,11 @@
 import { Typography, Stack } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { WalletContainer, Handle } from '../styles';
-import { darkTheme } from '../../../theme/themes';
+import { darkTheme } from '@app/theme/themes';
 import { AddressBox, BalanceChangeChip } from '../styles';
 import { FaCircleArrowUp } from 'react-icons/fa6';
-import useWalletStore from '../../../store/walletStore';
+import useWalletStore from '@app/store/walletStore';
+import formatBalance from '@app/utils/formatBalance.ts';
 
 function Wallet() {
     const balance = useWalletStore((state) => state.balance);
@@ -21,31 +22,6 @@ function Wallet() {
             return 25;
         } else {
             return 20;
-        }
-    };
-
-    const displayBalance = (balance: number) => {
-        const formattedBalance = balance / 1_000_000;
-        const truncate = (num: number, digits: number) => {
-            const factor = Math.pow(10, digits);
-            return Math.floor(num * factor) / factor;
-        };
-
-        if (formattedBalance >= 1000) {
-            return truncate(formattedBalance, 0).toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-            });
-        } else if (formattedBalance >= 1) {
-            return truncate(formattedBalance, 2).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-            });
-        } else {
-            return truncate(formattedBalance, 3).toLocaleString(undefined, {
-                minimumFractionDigits: 3,
-                maximumFractionDigits: 3,
-            });
         }
     };
 
@@ -71,7 +47,7 @@ function Wallet() {
                     >
                         <Stack direction="row" spacing={0.2} alignItems="baseline">
                             <Typography variant="h2" fontSize={balanceFontSize}>
-                                {displayBalance(balance)}
+                                {formatBalance(balance)}
                             </Typography>
                             <Typography variant="h4">XTM</Typography>
                         </Stack>

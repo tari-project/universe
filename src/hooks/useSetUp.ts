@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../types.ts';
-import { preload } from '../visuals';
+
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
 import useAppStateStore from '../store/appStateStore.ts';
@@ -49,10 +49,9 @@ export function useSetUp() {
                     break;
             }
         });
-        if (!startupInitiated.current) {
-            preload?.();
-            startupInitiated.current = true;
 
+        if (!startupInitiated.current) {
+            startupInitiated.current = true;
             invoke('setup_application').catch((e) => {
                 console.error('Failed to setup application:', e);
             });

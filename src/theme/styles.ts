@@ -1,23 +1,27 @@
 import { styled } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 
-export const headerHeight = '40px';
-export const sidebarWidth = '348px';
+export const headerHeight = '20px';
+export const sidebarWidth = '348px'; // if this is updated please update the value in init-visuals.js
 
 export const ContainerInner = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'stretch',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    pointerEvents: 'none',
     gap: theme.spacing(2),
-    minHeight: `calc(100vh - ${headerHeight})`,
-    paddingLeft: sidebarWidth,
+    minHeight: '100%',
 }));
 
-export const DashboardContainer = styled(Box)(() => ({
+export const DashboardContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
     overflowY: 'auto',
-    paddingTop: headerHeight,
+    padding: `${headerHeight} ${theme.spacing(2)} ${theme.spacing(2)}`,
+    pointerEvents: 'none',
+    flexGrow: '1',
+    position: 'relative',
+    gap: theme.spacing(2),
 }));

@@ -1,3 +1,5 @@
+import { Stack, Typography } from '@mui/material';
+import { useBlockInfo } from '@app/hooks/mining/useBlockInfo.ts';
 import {Divider, Stack, Typography} from '@mui/material';
 
 import {useBlockInfo} from '../../../../hooks/useBlockInfo.ts';
@@ -14,6 +16,7 @@ function BlockInfo() {
     const timeSince = useBlockInfo();
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const { displayBlock } = useBlockInfo();
 
     const timerMarkup =
         timeSince && isMining ? (
@@ -45,8 +48,8 @@ function BlockInfo() {
         <Stack direction="row" spacing={2}>
             <Divider orientation="vertical" flexItem/>
             {p2poolStats}
-            <Stack>
-                <Typography variant="h6">#{block_height}</Typography>
+            <Stack alignItems="flex-end">
+                <Typography variant="h6">#{displayBlock}</Typography>
                 <Typography variant="body2">Floor</Typography>
             </Stack>
             <Divider orientation="vertical" flexItem/>

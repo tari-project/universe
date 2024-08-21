@@ -1,55 +1,42 @@
 import './theme/theme.css';
-import { CSSProperties } from 'react';
+import { StrictMode } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from './theme/themes';
 import { ContainerInner, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
-import { TitleBar } from './containers/TitleBar';
 import { AppBackground } from './containers/AppBackground';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 
-import { useGetApplicatonsVersions } from './hooks/useGetApplicatonsVersions.ts';
-import { appBorderRadius } from './theme/tokens.ts';
+import { useGetApplicationsVersions } from './hooks/useGetApplicationsVersions.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
+import { useEnvironment } from './hooks/useEnvironment.ts';
 
 function App() {
     useSetUp();
-
-    const background = useUIStore((s) => s.background);
     const view = useUIStore((s) => s.view);
-    const visualMode = useUIStore((s) => s.visualMode);
 
     useGetStatus();
-    useGetApplicatonsVersions();
+    useGetApplicationsVersions();
+    useEnvironment();
 
-    const hideCanvas = !visualMode || view === 'setup';
-    const canvasStyle: CSSProperties = {
-        visibility: hideCanvas ? 'hidden' : 'visible',
-        borderRadius: appBorderRadius,
-        position: 'absolute',
-        zIndex: '0',
-    };
     return (
-        <>
-            <canvas id="canvas" style={canvasStyle} />
+        <StrictMode>
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
-                <AppBackground status={background}>
-                    <DashboardContainer>
-                        <TitleBar />
-                        <ContainerInner>
-                            <SideBar />
-                            <Dashboard status={view} />
-                        </ContainerInner>
-                    </DashboardContainer>
-                </AppBackground>
+                <AppBackground />
+                <DashboardContainer>
+                    <ContainerInner>
+                        <SideBar />
+                        <Dashboard status={view} />
+                    </ContainerInner>
+                </DashboardContainer>
                 <ErrorSnackbar />
             </ThemeProvider>
-        </>
+        </StrictMode>
     );
 }
 

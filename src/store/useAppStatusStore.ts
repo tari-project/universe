@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/tauri';
 
 type State = Partial<AppStatus>;
@@ -15,13 +15,19 @@ interface Actions {
 }
 type AppStatusStoreState = State & Actions;
 
-const initialState: State = {
+const initialState: AppStatus = {
+    cpu: undefined,
+    hardware_status: undefined,
+    base_node: undefined,
     p2pool_stats: undefined,
     wallet_balance: undefined,
     mode: 'Eco',
     auto_mining: false,
     p2pool_enabled: true,
-    main_app_version: undefined
+    main_app_version: undefined,
+    user_inactivity_timeout: undefined,
+    main_app_version: undefined,
+    applications_versions: undefined,
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(
@@ -32,7 +38,7 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
             setMainAppVersion: (main_app_version) => set({ main_app_version }),
             setMode: (mode) => set({ mode }),
             setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
-            setConfigMode: async (mode: modeType) => {
+            setConfigMode: async (mode) => {
                 try {
                     await invoke('set_mode', { mode });
                     set({ mode });
@@ -44,7 +50,6 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         }),
         {
             name: 'status-store',
-            storage: createJSONStorage(() => sessionStorage),
         }
     )
 );

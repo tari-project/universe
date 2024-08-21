@@ -3,7 +3,6 @@ use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
-use async_trait::async_trait;
 use humantime::format_duration;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
@@ -15,9 +14,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
-use tokio::runtime::Handle;
 use tokio::select;
-use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
@@ -32,14 +29,13 @@ impl MinotariNodeAdapter {
 }
 
 impl ProcessAdapter for MinotariNodeAdapter {
-    type Instance = MinotariNodeInstance;
     type StatusMonitor = MinotariNodeStatusMonitor;
 
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-        _log_path: PathBuf,
-    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+        log_dir: PathBuf,
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
@@ -52,6 +48,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
+            format!("--log-path={}", log_dir.to_str().unwrap()).to_string(),
             // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
         ];
         if !self.use_tor {
@@ -76,9 +73,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
                     .to_string(),
             );
         }
-        dbg!(&args);
         Ok((
-            MinotariNodeInstance {
+            ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
@@ -96,16 +92,27 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         fs::write(data_dir.join("node_pid"), id.to_string())?;
                     }
 
+                    let exit_code;
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
+                            exit_code = 0;
                             // res
                         },
                         res2 = child.wait() => {
-                            dbg!("Exited badly:", res2?);
+                            match res2
+                             {
+                                Ok(res) => {
+                                    exit_code = res.code().unwrap_or(0)
+                                    },
+                                Err(e) => {
+                                    warn!(target: LOG_TARGET, "Error in NodeInstance: {}", e);
+                                    return Err(e.into());
+                                }
+                            }
+
                         },
                     };
-                    println!("Stopping minotari node");
 
                     match fs::remove_file(data_dir.join("node_pid")) {
                         Ok(_) => {}
@@ -113,7 +120,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                             debug!(target: LOG_TARGET, "Could not clear node's pid file");
                         }
                     }
-                    Ok(())
+                    Ok(exit_code)
                 })),
             },
             MinotariNodeStatusMonitor {},
@@ -129,52 +136,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
     }
 }
 
-pub struct MinotariNodeInstance {
-    pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
-}
-
-#[async_trait]
-impl ProcessInstance for MinotariNodeInstance {
-    fn ping(&self) -> bool {
-        self.handle
-            .as_ref()
-            .map(|m| !m.is_finished())
-            .unwrap_or_else(|| false)
-    }
-
-    async fn stop(&mut self) -> Result<(), Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        let res = handle.unwrap().await??;
-        Ok(res)
-    }
-}
-
-impl Drop for MinotariNodeInstance {
-    fn drop(&mut self) {
-        println!("Drop being called");
-        self.shutdown.trigger();
-        if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                let _ = handle.await.unwrap().map_err(|e| {
-                    warn!(target: LOG_TARGET, "Error stopping minotari node: {:?}", e);
-                    e
-                });
-            });
-        }
-    }
-}
 pub struct MinotariNodeStatusMonitor {}
 
-#[async_trait]
-impl StatusMonitor for MinotariNodeStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
-    }
-}
+impl StatusMonitor for MinotariNodeStatusMonitor {}
 
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
@@ -225,7 +189,6 @@ impl MinotariNodeStatusMonitor {
         let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
-        dbg!(&res);
 
         Ok(NodeIdentity {
             public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
