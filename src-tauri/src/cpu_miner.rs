@@ -1,5 +1,4 @@
 use crate::app_config::MiningMode;
-use crate::mm_proxy_manager::MmProxyManager;
 use crate::process_adapter::ProcessAdapter;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
@@ -80,11 +79,11 @@ impl CpuMiner {
             xmrig_node_connection,
             "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
             cache_dir,
-            log_dir,
             progress_tracker,
             cpu_max_percentage,
         );
-        let (mut xmrig_child, _xmrig_status_monitor) = xmrig.spawn_inner(base_path.clone())?;
+        let (mut xmrig_child, _xmrig_status_monitor) =
+            xmrig.spawn_inner(base_path.clone(), log_dir.clone())?;
         self.api_client = Some(xmrig.client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
