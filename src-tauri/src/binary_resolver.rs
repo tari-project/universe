@@ -290,7 +290,15 @@ impl BinaryResolver {
 
     pub async fn read_current_highest_version(&self, binary: Binaries) {
         let bin_folder = self.adapters.get(&binary).unwrap().get_binary_folder();
-        let version_folders_list = std::fs::read_dir(&bin_folder).unwrap();
+
+        std::fs::create_dir_all(&bin_folder).unwrap();
+        let version_folders_list = match std::fs::read_dir(&bin_folder) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to read dir {:?}. Continuing", e);
+                return;
+            }
+        };
         let mut versions = vec![];
         for entry in version_folders_list {
             let entry = entry.unwrap();

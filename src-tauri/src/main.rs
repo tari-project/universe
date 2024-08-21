@@ -138,6 +138,9 @@ async fn setup_inner<'r>(
     BinaryResolver::current()
         .read_current_highest_version(Binaries::Wallet)
         .await;
+    BinaryResolver::current()
+        .read_current_highest_version(Binaries::GpuMiner)
+        .await;
 
     if now
         .duration_since(last_binaries_update_timestamp)
@@ -175,6 +178,15 @@ async fn setup_inner<'r>(
         sleep(Duration::from_secs(1));
         BinaryResolver::current()
             .ensure_latest(Binaries::Wallet, progress.clone())
+            .await?;
+
+        sleep(Duration::from_secs(1));
+        progress.set_max(25).await;
+        progress
+            .update("Checking for latest version of gpu miner".to_string(), 0)
+            .await;
+        BinaryResolver::current()
+            .ensure_latest(Binaries::GpuMiner, progress.clone())
             .await?;
 
         progress.set_max(30).await;
