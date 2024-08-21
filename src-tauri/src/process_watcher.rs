@@ -1,4 +1,4 @@
-use crate::process_adapter::{ProcessAdapter, ProcessInstance};
+use crate::process_adapter::ProcessAdapter;
 use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -40,6 +40,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         &mut self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
@@ -54,7 +55,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         let poll_time = self.poll_time;
 
-        let (mut child, status_monitor) = self.adapter.spawn(base_path)?;
+        let (mut child, status_monitor) = self.adapter.spawn(base_path, log_path)?;
         self.status_monitor = Some(status_monitor);
 
         let mut app_shutdown = app_shutdown.clone();
