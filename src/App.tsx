@@ -11,15 +11,13 @@ import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 
-import { useGetApplicationsVersions } from './hooks/useGetApplicationsVersions.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 
 function App() {
     useSetUp();
-    const view = useUIStore((s) => s.view);
-
     useGetStatus();
-    useGetApplicationsVersions();
+
+    const view = useUIStore((s) => s.view);
 
     return (
         <StrictMode>

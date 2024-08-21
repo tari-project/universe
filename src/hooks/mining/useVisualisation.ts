@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { setAnimationState } from '../visuals';
+import { setAnimationState } from '../../visuals';
 import { GlAppState } from '@app/glApp';
 
 export function useVisualisation() {

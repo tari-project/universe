@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { useUIStore } from '../store/useUIStore';
+import { useUIStore } from '../../store/useUIStore';
 
 import { useVisualisation } from './useVisualisation.ts';
-import useAppStateStore from '../store/appStateStore.ts';
-import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
+import useAppStateStore from '../../store/appStateStore.ts';
+import { useCPUStatusStore } from '../../store/useCPUStatusStore.ts';
+import { useBlockInfo } from '@app/hooks/mining/useBlockInfo.ts';
 
-export function useMining() {
+export function useMiningControls() {
     const handleVisual = useVisualisation();
     const progress = useAppStateStore((s) => s.setupProgress);
     const miningAllowed = progress >= 1;
     const isMining = useCPUStatusStore((s) => s.is_mining);
-
     const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
-
     const hasMiningStartedAtLeastOnce = useRef(false);
+
+    useBlockInfo(isMining);
 
     useEffect(() => {
         if (isMining) {

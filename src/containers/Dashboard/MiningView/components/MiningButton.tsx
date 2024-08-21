@@ -1,4 +1,3 @@
-import { useMining } from '@app/hooks/useMining.ts';
 import { useCallback, useEffect, useState } from 'react';
 import { GiPauseButton } from 'react-icons/gi';
 
@@ -9,6 +8,7 @@ import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { IoChevronForwardOutline } from 'react-icons/io5';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 function MiningButton() {
     const [buttonLoading, setButtonLoading] = useState(false);
@@ -17,7 +17,7 @@ function MiningButton() {
     const progress = useAppStateStore((s) => s.setupProgress);
     const miningAllowed = progress >= 1;
 
-    const { startMining, stopMining, hasMiningBeenStopped } = useMining();
+    const { startMining, stopMining, hasMiningBeenStopped } = useMiningControls();
 
     useEffect(() => {
         const startLoad = !isMining && miningInitiated;
