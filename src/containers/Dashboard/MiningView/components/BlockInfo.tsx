@@ -6,10 +6,12 @@ function BlockInfo() {
 
     return (
         <Stack direction="row" spacing={2}>
-            <Stack alignItems="flex-end">
-                <Typography variant="h6">#{displayBlockHeight}</Typography>
-                <Typography variant="body2">Floor</Typography>
-            </Stack>
+            {displayBlockHeight ? (
+                <Stack alignItems="flex-end">
+                    <Typography variant="h6">#{displayBlockHeight}</Typography>
+                    <Typography variant="body2">Floor</Typography>
+                </Stack>
+            ) : null}
         </Stack>
     );
 }

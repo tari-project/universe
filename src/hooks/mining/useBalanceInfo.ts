@@ -11,6 +11,7 @@ export default function useBalanceInfo() {
     const previousBalance = useWalletStore((state) => state.previousBalance);
     const setEarnings = useMiningStore((s) => s.setEarnings);
     const toggleTimerPaused = useMiningStore((s) => s.toggleTimerPaused);
+    const setDisplayBlockHeight = useMiningStore((s) => s.setDisplayBlockHeight);
 
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const balanceRef = useRef(balance);
@@ -35,25 +36,29 @@ export default function useBalanceInfo() {
         async (newBlock: number) => {
             toggleTimerPaused();
             const earnings = await getEarnings();
+            console.log(earnings);
             if (earnings) {
                 setEarnings(earnings);
             }
+
             blockHeightRef.current = newBlock;
 
-            return () => {
+            return async () => {
                 handleVisual(earnings ? 'success' : 'fail');
-                toggleTimerPaused();
             };
         },
         [getEarnings, handleVisual, setEarnings, toggleTimerPaused]
     );
 
     useEffect(() => {
+        console.log('blocks', block_height, blockHeightRef.current);
         if (block_height && block_height !== blockHeightRef.current) {
-            const p = handleNewBlock(block_height);
-            return () => {
-                p.then((x) => x());
-            };
+            handleNewBlock(block_height).then((x) =>
+                x().finally(() => {
+                    toggleTimerPaused();
+                    setDisplayBlockHeight(blockHeightRef.current);
+                })
+            );
         }
-    }, [block_height, getEarnings, handleNewBlock]);
+    }, [block_height, getEarnings, handleNewBlock, setDisplayBlockHeight, toggleTimerPaused]);
 }
