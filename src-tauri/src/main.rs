@@ -57,11 +57,13 @@ mod setup_status_event;
 #[tauri::command]
 async fn set_mode<'r>(
     mode: String,
-    _window: tauri::Window,
+    window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
-    _app: tauri::AppHandle,
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let _ = stop_mining(state.clone()).await;
     let _ = state.config.write().await.set_mode(mode).await;
+    let _ = start_mining(window, state.clone(), app).await;
 
     Ok(())
 }
