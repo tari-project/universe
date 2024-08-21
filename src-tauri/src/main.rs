@@ -429,6 +429,11 @@ async fn update_applications(
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
+    BinaryResolver::current()
+        .ensure_latest(Binaries::GpuMiner, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
     Ok(())
 }
 

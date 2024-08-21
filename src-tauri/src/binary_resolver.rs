@@ -111,18 +111,18 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let mut name_suffix = "";
         // TODO: add platform specific logic
         if cfg!(target_os = "windows") {
-            name_suffix = "windows-x64.exe.zip";
+            name_suffix = "windows-x64";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-            name_suffix = "macos-x86_64.zip";
+            name_suffix = "macos-x86_64";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            name_suffix = "macos-arm64.zip";
+            name_suffix = "macos-arm64";
         }
         if cfg!(target_os = "linux") {
-            name_suffix = "linux-x86_64.zip";
+            name_suffix = "linux-x86_64";
         }
 
         info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
@@ -130,7 +130,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let platform = version
             .assets
             .iter()
-            .find(|a| a.name.ends_with(name_suffix))
+            .find(|a| a.name.contains(name_suffix))
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
         info!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
