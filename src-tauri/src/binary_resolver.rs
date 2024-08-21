@@ -1,7 +1,6 @@
+use crate::download_utils::validate_checksum;
 use crate::download_utils::{download_file, extract};
 use crate::{github, ProgressTracker};
-use crate::download_utils::{download_file, extract, validate_checksum};
-use crate::github;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{info, warn};
@@ -265,7 +264,7 @@ impl BinaryResolver {
             info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
             let in_progress_file_zip = in_progress_dir.join(&asset.name);
-            download_file(&asset.url, &in_progress_file_zip, progress_tracker).await?;
+            download_file(&asset.url, &in_progress_file_zip, progress_tracker.clone()).await?;
             info!(target: LOG_TARGET, "Renaming file");
             info!(target: LOG_TARGET, "Extracting file");
 
@@ -273,7 +272,12 @@ impl BinaryResolver {
                 .clone()
                 .join(format!("{}.sha256", asset.name));
             let asset_sha256_url = format!("{}.sha256", asset.url.clone());
-            download_file(&asset_sha256_url, &in_progress_file_sha256, progress_tracker).await?;
+            download_file(
+                &asset_sha256_url,
+                &in_progress_file_sha256,
+                progress_tracker.clone(),
+            )
+            .await?;
 
             let is_sha_validated = validate_checksum(
                 in_progress_file_zip.clone(),
