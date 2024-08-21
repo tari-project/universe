@@ -4,7 +4,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, warn};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::runtime::Handle;
@@ -32,6 +32,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        log_dir: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -42,6 +43,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "-b".to_string(),
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
+            format!("--log-path={}", log_dir.to_str().unwrap()),
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/18142".to_string(),

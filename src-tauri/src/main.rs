@@ -9,7 +9,7 @@ mod github;
 mod gpu_miner;
 mod hardware_monitor;
 mod internal_wallet;
-mod merge_mining_adapter;
+mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod node_adapter;
 mod node_manager;
@@ -109,6 +109,7 @@ async fn setup_inner<'r>(
         },
     );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
+    let log_dir = app.path_resolver().app_log_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -148,7 +149,11 @@ async fn setup_inner<'r>(
     for i in 0..2 {
         match state
             .node_manager
-            .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                log_dir.clone(),
+            )
             .await
         {
             Ok(_) => {}
@@ -177,7 +182,7 @@ async fn setup_inner<'r>(
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir)
+        .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
         .await?;
 
     progress.set_max(55).await;
@@ -192,6 +197,7 @@ async fn setup_inner<'r>(
         .start(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
+            app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
         )
         .await?;

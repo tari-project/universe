@@ -3,7 +3,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
@@ -14,14 +14,16 @@ pub trait ProcessAdapter {
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
+        log_folder: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
     fn spawn(
         &self,
         base_folder: PathBuf,
+        log_folder: PathBuf,
     ) -> Result<(Self::Instance, Self::StatusMonitor), anyhow::Error> {
-        self.spawn_inner(base_folder)
+        self.spawn_inner(base_folder, log_folder)
     }
 
     fn pid_file_name(&self) -> &str;
