@@ -3,7 +3,7 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use anyhow::Error;
 use log::{debug, warn};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::select;

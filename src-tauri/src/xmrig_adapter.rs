@@ -44,7 +44,6 @@ pub struct XmrigAdapter {
     cache_dir: PathBuf,
     cpu_max_percentage: usize,
     progress_tracker: ProgressTracker,
-    rx: Receiver<CpuMinerEvent>,
     pub client: XmrigHttpApiClient,
     // TODO: secure
 }
@@ -57,7 +56,6 @@ impl XmrigAdapter {
         progress_tracker: ProgressTracker,
         cpu_max_percentage: usize,
     ) -> Self {
-        let (_tx, rx) = tokio::sync::mpsc::channel(100);
         let http_api_port = 9090;
         let http_api_token = "pass".to_string();
         Self {
@@ -69,7 +67,6 @@ impl XmrigAdapter {
             cache_dir,
             cpu_max_percentage,
             progress_tracker,
-            rx,
             client: XmrigHttpApiClient::new(
                 format!("http://127.0.0.1:{}", http_api_port).clone(),
                 http_api_token.clone(),

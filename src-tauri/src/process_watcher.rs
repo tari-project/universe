@@ -1,4 +1,4 @@
-use crate::process_adapter::{ProcessAdapter, ProcessInstance};
+use crate::process_adapter::ProcessAdapter;
 use log::{debug, error, info};
 use std::path::PathBuf;
 use tari_shutdown::{Shutdown, ShutdownSignal};

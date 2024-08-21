@@ -1,5 +1,4 @@
 use crate::app_config::MiningMode;
-use crate::mm_proxy_manager::MmProxyManager;
 use crate::process_adapter::ProcessAdapter;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
