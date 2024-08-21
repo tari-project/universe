@@ -243,7 +243,9 @@ async fn setup_inner<'r>(
     state.node_manager.wait_synced(progress.clone()).await?;
 
     progress.set_max(75).await;
-    progress.update("Starting MMProxy".to_string(), 0).await;
+    progress
+        .update("Starting merge mining proxy".to_string(), 0)
+        .await;
     mm_proxy_manager
         .start(
             state.shutdown.to_signal().clone(),

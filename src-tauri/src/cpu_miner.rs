@@ -5,7 +5,7 @@ use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
     CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
 };
-use log::{error, warn};
+use log::{error, info, warn};
 use std::path::PathBuf;
 use std::thread;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -94,17 +94,15 @@ impl CpuMiner {
             loop {
                 select! {
                               _ = watch_timer.tick() => {
-                                    println!("watching");
-                                    if xmrig_child.ping() {
-                                       println!("xmrig is running");
-                                    } else {
-                                       println!("xmrig is not running");
+                                    if !xmrig_child.ping()
+                                    {
+                                       warn!(target: LOG_TARGET, "xmrig is not running");
                                        match xmrig_child.stop().await {
                                            Ok(_) => {
-                                              println!("xmrig exited successfully");
+                                              info!(target: LOG_TARGET, "xmrig exited successfully");
                                            }
                                            Err(e) => {
-                                              println!("xmrig exited with error: {}", e);
+                                              error!(target: LOG_TARGET, "xmrig exited with error: {}", e);
                                            }
                                        }
                                        break;
@@ -142,12 +140,12 @@ impl CpuMiner {
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
-        println!("Triggering shutdown");
+        info!(target: LOG_TARGET, "Triggering shutdown");
         self.miner_shutdown.trigger();
         self.api_client = None;
         if let Some(task) = self.watcher_task.take() {
             task.await??;
-            println!("Task finished");
+            info!(target: LOG_TARGET, "Task finished");
         }
         // TODO: This doesn't seem to be called
 
@@ -166,7 +164,6 @@ impl CpuMiner {
                     match client.summary().await {
                         Ok(xmrig_status) => {
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                            dbg!(hash_rate, network_hash_rate, block_reward);
                             let estimated_earnings = ((block_reward.as_u64() as f64)
                                 * ((hash_rate / (network_hash_rate as f64))
                                     * (RANDOMX_BLOCKS_PER_DAY as f64)))

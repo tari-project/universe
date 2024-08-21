@@ -57,7 +57,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
-            args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
+            args.push("base_node.p2p.allow_test_addresses=true".to_string());
+            args.push("-p".to_string());
+            args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
             args.push("-p".to_string());
             // args.push(
             //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
@@ -83,8 +85,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)
-                        // .stdout(std::process::Stdio::piped())
-                        // .stderr(std::process::Stdio::piped())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
                         .kill_on_drop(true)
                         .spawn()?;
 
