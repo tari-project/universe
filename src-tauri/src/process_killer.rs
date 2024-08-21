@@ -20,7 +20,7 @@ pub fn kill_process(pid: u32) -> Result<(), anyhow::Error> {
         use nix::unistd::Pid;
 
         let pid = Pid::from_raw(pid as i32);
-        signal::kill(pid, Signal::SIGTERM);
+        let _ = signal::kill(pid, Signal::SIGTERM);
     }
     Ok(())
 }

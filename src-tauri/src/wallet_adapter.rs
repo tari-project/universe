@@ -1,7 +1,6 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use anyhow::Error;
-use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetBalanceRequest;
@@ -12,9 +11,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::runtime::Handle;
 use tokio::select;
-use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -39,13 +36,13 @@ impl WalletAdapter {
 }
 
 impl ProcessAdapter for WalletAdapter {
-    type Instance = WalletInstance;
     type StatusMonitor = WalletStatusMonitor;
+
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
         log_dir: PathBuf,
-    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -99,7 +96,7 @@ impl ProcessAdapter for WalletAdapter {
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=false".to_string())
         }
         Ok((
-            WalletInstance {
+            ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
@@ -157,43 +154,6 @@ impl ProcessAdapter for WalletAdapter {
 
     fn pid_file_name(&self) -> &str {
         "wallet_pid"
-    }
-}
-
-pub struct WalletInstance {
-    pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
-}
-
-#[async_trait]
-impl ProcessInstance for WalletInstance {
-    fn ping(&self) -> bool {
-        self.handle
-            .as_ref()
-            .map(|m| !m.is_finished())
-            .unwrap_or_else(|| false)
-    }
-
-    async fn stop(&mut self) -> Result<i32, Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        let res = handle.unwrap().await??;
-        Ok(res)
-    }
-}
-
-impl Drop for WalletInstance {
-    fn drop(&mut self) {
-        println!("Drop being called");
-        self.shutdown.trigger();
-        if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                let _ = handle.await.unwrap().map_err(|e| {
-                    warn!(target: LOG_TARGET, "Error stopping wallet: {:?}", e);
-                    e
-                });
-            });
-        }
     }
 }
 

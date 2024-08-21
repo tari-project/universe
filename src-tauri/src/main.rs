@@ -40,10 +40,9 @@ use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
-use std::ops::DerefMut;
 use std::sync::Arc;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use std::{panic, process};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -117,34 +116,64 @@ async fn setup_inner<'r>(
 
     let progress = ProgressTracker::new(window.clone());
 
-    progress.set_max(10).await;
-    progress
-        .update("Checking for latest version of node".to_string(), 0)
-        .await;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MinotariNode, progress.clone())
-        .await?;
+    let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
+    let now = SystemTime::now();
 
-    progress.set_max(15).await;
-    progress
-        .update("Checking for latest version of mmproxy".to_string(), 0)
+    BinaryResolver::current()
+        .read_current_highest_version(Binaries::MinotariNode)
         .await;
     BinaryResolver::current()
-        .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
-        .await?;
-    progress.set_max(20).await;
-    progress
-        .update("Checking for latest version of wallet".to_string(), 0)
+        .read_current_highest_version(Binaries::MergeMiningProxy)
         .await;
     BinaryResolver::current()
-        .ensure_latest(Binaries::Wallet, progress.clone())
-        .await?;
+        .read_current_highest_version(Binaries::Wallet)
+        .await;
 
-    progress.set_max(30).await;
-    progress
-        .update("Checking for latest version of xmrig".to_string(), 0)
-        .await;
-    XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
+    if now
+        .duration_since(last_binaries_update_timestamp)
+        .unwrap_or(Duration::from_secs(0))
+        > Duration::from_secs(60 * 60 * 6)
+    {
+        state
+            .config
+            .write()
+            .await
+            .set_last_binaries_update_timestamp(now)
+            .await?;
+
+        progress.set_max(10).await;
+        progress
+            .update("Checking for latest version of node".to_string(), 0)
+            .await;
+        BinaryResolver::current()
+            .ensure_latest(Binaries::MinotariNode, progress.clone())
+            .await?;
+        sleep(Duration::from_secs(1));
+
+        progress.set_max(15).await;
+        progress
+            .update("Checking for latest version of mmproxy".to_string(), 0)
+            .await;
+        sleep(Duration::from_secs(1));
+        BinaryResolver::current()
+            .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
+            .await?;
+        progress.set_max(20).await;
+        progress
+            .update("Checking for latest version of wallet".to_string(), 0)
+            .await;
+        sleep(Duration::from_secs(1));
+        BinaryResolver::current()
+            .ensure_latest(Binaries::Wallet, progress.clone())
+            .await?;
+
+        progress.set_max(30).await;
+        progress
+            .update("Checking for latest version of xmrig".to_string(), 0)
+            .await;
+        sleep(Duration::from_secs(1));
+        XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
+    }
 
     for i in 0..2 {
         match state
@@ -221,12 +250,9 @@ async fn set_auto_mining<'r>(
     state: tauri::State<'r, UniverseAppState>,
 ) -> Result<(), String> {
     let mut config = state.config.write().await;
-    config.set_auto_mining(auto_mining).await;
+    let _ = config.set_auto_mining(auto_mining).await;
     let timeout = config.get_user_inactivity_timeout();
     let mut user_listener = state.user_listener.write().await;
-
-    println!("Auto mining: {}", auto_mining);
-    println!("Timeout: {:?}", timeout);
 
     if auto_mining {
         user_listener.start_listening_to_mouse_poisition_change(timeout, window);
@@ -317,6 +343,8 @@ fn open_log_dir(app: tauri::AppHandle) {
 
 #[tauri::command]
 async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
+    //TODO could be move to status command when XmrigAdapter will be implemented in BinaryResolver
+
     let default_message = "Failed to read version".to_string();
 
     let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
@@ -343,6 +371,41 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
         mm_proxy: mm_proxy_version.to_string(),
         wallet: wallet_version.to_string(),
     })
+}
+
+#[tauri::command]
+async fn update_applications(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_last_binaries_update_timestamp(SystemTime::now())
+        .await;
+    let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
+    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+    XmrigAdapter::ensure_latest(cache_dir, true, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
+    BinaryResolver::current()
+        .ensure_latest(Binaries::MinotariNode, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
+    BinaryResolver::current()
+        .ensure_latest(Binaries::MergeMiningProxy, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
+    BinaryResolver::current()
+        .ensure_latest(Binaries::Wallet, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
+    Ok(())
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -597,7 +660,8 @@ fn main() {
             open_log_dir,
             get_seed_words,
             get_applications_versions,
-            set_user_inactivity_timeout
+            set_user_inactivity_timeout,
+            update_applications
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
