@@ -7,9 +7,11 @@ export function useVisualisation() {
     const toggleTimerPaused = useMiningStore((s) => s.toggleTimerPaused);
     return useCallback(
         (state: GlAppState) => {
-            toggleTimerPaused();
+            if (state == 'success' || state == 'fail') {
+                toggleTimerPaused(true);
+            }
             setAnimationState(state);
-            return () => toggleTimerPaused();
+            toggleTimerPaused(false);
         },
         [toggleTimerPaused]
     );

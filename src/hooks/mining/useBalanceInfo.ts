@@ -39,29 +39,24 @@ export default function useBalanceInfo() {
         }
     }, [balance, previousBalance]);
 
-    const handleNewBlock = useCallback(async () => {
-        const timeout = setTimeout(() => {
-            getEarnings().then((earnings) => {
-                console.log(earnings);
-                if (earnings) {
-                    setEarnings(earnings);
-                }
-                handleVisual(earnings ? 'success' : 'fail');
-            });
-        }, 10 * 1000);
-
-        return () => {
-            clearTimeout(timeout);
-        };
-    }, [getEarnings, handleVisual, setEarnings]);
-
     useEffect(() => {
         console.log('blocks', block_height, blockHeightRef.current);
         if (block_height && block_height !== blockHeightRef.current) {
-            handleNewBlock().finally(() => {
-                blockHeightRef.current = block_height;
-                setDisplayBlockHeight(blockHeightRef.current);
-            });
+            const timeout = setTimeout(() => {
+                getEarnings().then((earnings) => {
+                    console.log(earnings);
+                    if (earnings) {
+                        setEarnings(earnings);
+                    }
+                    handleVisual(earnings ? 'success' : 'fail');
+                    blockHeightRef.current = block_height;
+                    setDisplayBlockHeight(blockHeightRef.current);
+                });
+            }, 10 * 1000);
+
+            return () => {
+                clearTimeout(timeout);
+            };
         }
-    }, [block_height, getEarnings, handleNewBlock, setDisplayBlockHeight]);
+    }, [block_height, getEarnings, handleVisual, setDisplayBlockHeight, setEarnings]);
 }
