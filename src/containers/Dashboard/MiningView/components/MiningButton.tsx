@@ -1,15 +1,18 @@
-import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
-import { useMining } from '../../../../hooks/useMining.ts';
+import { useMining } from '@app/hooks/useMining.ts';
 import { useCallback, useEffect, useState } from 'react';
-import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
-import { StyledButton, StyledIcon } from '../MiningButton.styles.ts';
+import { GiPauseButton } from 'react-icons/gi';
+
+import { IconWrapper, StyledButton, StyledIcon } from './MiningButton.styles.ts';
 import { ButtonProps } from '@mui/material';
-import { useUIStore } from '../../../../store/useUIStore.ts';
-import useAppStateStore from '../../../../store/appStateStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
+import useAppStateStore from '@app/store/appStateStore.ts';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { IoChevronForwardOutline } from 'react-icons/io5';
 
 function MiningButton() {
     const [buttonLoading, setButtonLoading] = useState(false);
-    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const miningInitiated = useUIStore((s) => s.miningInitiated);
     const progress = useAppStateStore((s) => s.setupProgress);
     const miningAllowed = progress >= 1;
@@ -39,14 +42,10 @@ function MiningButton() {
         variant: 'contained',
         color: 'primary',
         size: 'large',
-        endIcon: isMining ? <IoPauseCircle /> : <IoChevronForwardCircle />,
+        endIcon: isMining ? <GiPauseButton /> : <IoChevronForwardOutline />,
     };
 
-    const actionText = !isMining
-        ? hasMiningBeenStopped
-            ? 'Resume'
-            : 'Start'
-        : 'Stop';
+    const actionText = !isMining ? (hasMiningBeenStopped ? 'Resume' : 'Start') : 'Pause';
 
     return (
         <StyledButton
@@ -54,9 +53,15 @@ function MiningButton() {
             hasStarted={!!isMining}
             onClick={handleClick}
             disabled={!miningAllowed}
-            endIcon={buttonLoading ? <StyledIcon /> : btnProps.endIcon}
+            endIcon={<IconWrapper>{buttonLoading ? <StyledIcon /> : btnProps.endIcon}</IconWrapper>}
+            sx={{
+                '& .MuiButton-endIcon': {
+                    position: 'absolute',
+                    right: '1rem',
+                },
+            }}
         >
-            <span style={{ flexGrow: 1 }}>{`${actionText} mining`}</span>
+            <span>{`${actionText} mining`}</span>
         </StyledButton>
     );
 }

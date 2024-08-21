@@ -181,7 +181,6 @@ impl BinaryResolver {
     }
 
     pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
-        dbg!(&self.latest_versions);
         let adapter = self
             .adapters
             .get(&binary)
@@ -287,6 +286,31 @@ impl BinaryResolver {
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
+    }
+
+    pub async fn read_current_highest_version(&self, binary: Binaries) {
+        let bin_folder = self.adapters.get(&binary).unwrap().get_binary_folder();
+        let version_folders_list = std::fs::read_dir(&bin_folder).unwrap();
+        let mut versions = vec![];
+        for entry in version_folders_list {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() {
+                let version = path.file_name().unwrap().to_str().unwrap();
+                versions.push(Version::parse(version).unwrap());
+            }
+        }
+        versions.sort();
+
+        let cached_version = versions.pop().unwrap();
+        let current_version = self.get_latest_version(binary).await;
+
+        let highest_version = cached_version.max(current_version);
+
+        self.latest_versions
+            .write()
+            .await
+            .insert(binary, highest_version);
     }
 
     pub async fn get_latest_version(&self, binary: Binaries) -> Version {
