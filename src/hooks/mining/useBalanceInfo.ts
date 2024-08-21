@@ -1,38 +1,59 @@
 import useWalletStore from '@app/store/walletStore.ts';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useCallback, useEffect, useRef } from 'react';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
 export default function useBalanceInfo() {
-    const [hasEarned, setHasEarned] = useState(false);
-    const [successHeight, setSuccessHeight] = useState<number | undefined>();
-    const block_height = useBaseNodeStatusStore((s) => s.block_height);
-    const balance = useWalletStore((state) => state.balance);
+    const handleVisual = useVisualisation();
 
+    const balance = useWalletStore((state) => state.balance);
+    const previousBalance = useWalletStore((state) => state.previousBalance);
+    const setEarnings = useMiningStore((s) => s.setEarnings);
+    const toggleTimerPaused = useMiningStore((s) => s.toggleTimerPaused);
+
+    const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const balanceRef = useRef(balance);
-    const heightRef = useRef(block_height);
-    const previousHeightRef = useRef(successHeight);
+    const blockHeightRef = useRef(block_height);
+
+    const getEarnings = useCallback(async () => {
+        try {
+            const change = balanceRef.current !== balance;
+            if (change) {
+                balanceRef.current = balance;
+                const diff = balance - previousBalance;
+                if (diff && diff > 0) {
+                    return diff;
+                }
+            }
+        } catch {
+            console.error('no beuno');
+        }
+    }, [balance, previousBalance]);
+
+    const handleNewBlock = useCallback(
+        async (newBlock: number) => {
+            toggleTimerPaused();
+            const earnings = await getEarnings();
+            if (earnings) {
+                setEarnings(earnings);
+            }
+            blockHeightRef.current = newBlock;
+
+            return () => {
+                handleVisual(earnings ? 'success' : 'fail');
+                toggleTimerPaused();
+            };
+        },
+        [getEarnings, handleVisual, setEarnings, toggleTimerPaused]
+    );
 
     useEffect(() => {
-        const hasChanges = balanceRef.current !== balance;
-        if (hasChanges && heightRef.current !== previousHeightRef.current) {
-            setHasEarned(true);
-            setSuccessHeight(heightRef.current);
+        if (block_height && block_height !== blockHeightRef.current) {
+            const p = handleNewBlock(block_height);
+            return () => {
+                p.then((x) => x());
+            };
         }
-    }, [block_height, balance]);
-
-    const setResetSuccess = useCallback(() => {
-        previousHeightRef.current = successHeight;
-        balanceRef.current = balance;
-        heightRef.current = block_height;
-
-        setHasEarned(false);
-        setSuccessHeight(undefined);
-    }, [block_height, balance, successHeight]);
-
-    return {
-        hasEarned,
-        setHasEarned,
-        successHeight,
-        setResetSuccess,
-    };
+    }, [block_height, getEarnings, handleNewBlock]);
 }

@@ -5,7 +5,6 @@ import { useUIStore } from '../../store/useUIStore';
 import { useVisualisation } from './useVisualisation.ts';
 import useAppStateStore from '../../store/appStateStore.ts';
 import { useCPUStatusStore } from '../../store/useCPUStatusStore.ts';
-import { useBlockInfo } from '@app/hooks/mining/useBlockInfo.ts';
 
 export function useMiningControls() {
     const handleVisual = useVisualisation();
@@ -14,8 +13,6 @@ export function useMiningControls() {
     const isMining = useCPUStatusStore((s) => s.is_mining);
     const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
     const hasMiningStartedAtLeastOnce = useRef(false);
-
-    useBlockInfo(isMining);
 
     useEffect(() => {
         if (isMining) {

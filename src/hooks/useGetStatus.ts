@@ -7,6 +7,7 @@ import { useUIStore } from '../store/useUIStore.ts';
 import { useInterval } from './useInterval.ts';
 import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
 import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
+import useMining from '@app/hooks/mining/useMining.ts';
 
 const INTERVAL = 1000;
 
@@ -18,6 +19,8 @@ export function useGetStatus() {
     const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
     const setError = useAppStateStore((s) => s.setError);
     const setMode = useAppStatusStore((s) => s.setMode);
+
+    useMining();
 
     useInterval(
         () =>
