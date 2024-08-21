@@ -29,9 +29,7 @@ pub struct P2poolAdapter {
 
 impl P2poolAdapter {
     pub fn new(config: Arc<P2poolConfig>) -> Self {
-        Self {
-            config
-        }
+        Self { config }
     }
 
     pub fn grpc_port(&self) -> u16 {
@@ -121,8 +119,7 @@ impl ProcessAdapter for P2poolAdapter {
                         res2 = child.wait() => {
                             dbg!("Exited badly:", res2?);
                         },
-                    }
-                    ;
+                    };
                     println!("Stopping p2pool node");
 
                     if let Err(error) = fs::remove_file(data_dir.join(pid_file_name)) {
@@ -132,7 +129,10 @@ impl ProcessAdapter for P2poolAdapter {
                     Ok(())
                 })),
             },
-            P2poolStatusMonitor::new(format!("http://127.0.0.1:{}", self.config.stats_server_port)),
+            P2poolStatusMonitor::new(format!(
+                "http://127.0.0.1:{}",
+                self.config.stats_server_port
+            )),
         ))
     }
 

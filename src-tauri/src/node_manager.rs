@@ -46,7 +46,9 @@ impl NodeManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.start(app_shutdown, base_path, log_path).await?;
+        process_watcher
+            .start(app_shutdown, base_path, log_path)
+            .await?;
         process_watcher.wait_ready().await?;
         Ok(())
     }
@@ -58,7 +60,9 @@ impl NodeManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.start(app_shutdown, base_path, log_path).await?;
+        process_watcher
+            .start(app_shutdown, base_path, log_path)
+            .await?;
 
         Ok(())
     }

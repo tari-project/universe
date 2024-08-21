@@ -30,10 +30,12 @@ impl PartialEq for StartConfig {
 }
 
 impl StartConfig {
-    pub fn new(app_shutdown: ShutdownSignal,
-               base_path: PathBuf,
-               log_path: PathBuf,
-               tari_address: TariAddress) -> Self {
+    pub fn new(
+        app_shutdown: ShutdownSignal,
+        base_path: PathBuf,
+        log_path: PathBuf,
+        tari_address: TariAddress,
+    ) -> Self {
         Self {
             app_shutdown,
             base_path,
@@ -68,43 +70,45 @@ impl MmProxyManager {
         }
     }
 
-    pub async fn change_config(&self,
-                               config: MergeMiningProxyConfig,
-    ) -> Result<(), anyhow::Error> {
-        self.stop().await?;
+    pub async fn config(&self) -> MergeMiningProxyConfig {
+        let lock = self.watcher.read().await;
+        lock.adapter.config.clone()
+    }
+
+    pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
         let sidecar_adapter = MergeMiningProxyAdapter::new(config);
         let process_watcher = ProcessWatcher::new(sidecar_adapter);
         let mut lock = self.watcher.write().await;
+        lock.stop().await?;
         *lock = process_watcher;
         let start_config_read = self.start_config.read().await;
         match start_config_read.as_ref() {
             Some(start_config) => {
-                self.start(start_config.clone()).await?;
+                drop(lock);
+                let config = start_config.clone();
+                drop(start_config_read);
+                self.start(config).await?;
                 self.wait_ready().await?;
             }
             None => {
-                return Err(anyhow!("Missing start config! MM proxy manager must be started at least once!"));
+                return Err(anyhow!(
+                    "Missing start config! MM proxy manager must be started at least once!"
+                ));
             }
         }
 
         Ok(())
     }
 
-    pub async fn start(
-        &self,
-        config: StartConfig,
-    ) -> Result<(), anyhow::Error> {
-        let current_start_config = self.start_config.read().await;
-        if let Some(current_config) = &*current_start_config {
-            if &config != current_config {
-                let mut write_lock = self.start_config.write().await;
-                *write_lock = Some(config.clone());
-            }
-        }
+    pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
+        let mut current_start_config = self.start_config.write().await;
+        *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = config.tari_address;
         info!(target: LOG_TARGET, "Starting mmproxy");
-        process_watcher.start(config.app_shutdown, config.base_path, config.log_path).await?;
+        process_watcher
+            .start(config.app_shutdown, config.base_path, config.log_path)
+            .await?;
 
         Ok(())
     }

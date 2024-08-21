@@ -8,12 +8,12 @@ use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
 
-use crate::{
-    CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
-};
 use crate::app_config::MiningMode;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
+use crate::{
+    CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
+};
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 350;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
@@ -171,7 +171,7 @@ impl CpuMiner {
                             dbg!(hash_rate, network_hash_rate, block_reward);
                             let estimated_earnings = (block_reward.as_u64() as f64
                                 * (hash_rate / network_hash_rate as f64
-                                * RANDOMX_BLOCKS_PER_DAY as f64))
+                                    * RANDOMX_BLOCKS_PER_DAY as f64))
                                 as u64;
                             // Can't be more than the max reward for a day
                             let estimated_earnings = std::cmp::min(
@@ -180,7 +180,6 @@ impl CpuMiner {
                             );
 
                             // mining should be true if the hashrate is greater than 0
-                            dbg!(&xmrig_status);
 
                             let hasrate_sum = xmrig_status
                                 .hashrate
