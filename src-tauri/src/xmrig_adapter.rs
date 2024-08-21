@@ -42,7 +42,6 @@ pub struct XmrigAdapter {
     http_api_token: String,
     http_api_port: u16,
     cache_dir: PathBuf,
-    logs_dir: PathBuf,
     cpu_max_percentage: usize,
     progress_tracker: ProgressTracker,
     rx: Receiver<CpuMinerEvent>,
@@ -55,7 +54,6 @@ impl XmrigAdapter {
         xmrig_node_connection: XmrigNodeConnection,
         monero_address: String,
         cache_dir: PathBuf,
-        logs_dir: PathBuf,
         progress_tracker: ProgressTracker,
         cpu_max_percentage: usize,
     ) -> Self {
@@ -69,7 +67,6 @@ impl XmrigAdapter {
             http_api_token: http_api_token.clone(),
             http_api_port: http_api_port.clone(),
             cache_dir,
-            logs_dir,
             cpu_max_percentage,
             progress_tracker,
             rx,
@@ -134,6 +131,7 @@ impl ProcessAdapter for XmrigAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         self.kill_previous_instances(data_dir.clone())?;
 
@@ -143,7 +141,7 @@ impl ProcessAdapter for XmrigAdapter {
         let xmrig_shutdown = Shutdown::new();
         let mut shutdown_signal = xmrig_shutdown.to_signal();
         let mut args = self.node_connection.generate_args();
-        let xmrig_log_file = self.logs_dir.join("xmrig.log");
+        let xmrig_log_file = log_dir.join("xmrig.log");
         std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
         args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
         args.push(format!("--http-port={}", self.http_api_port));
