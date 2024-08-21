@@ -35,12 +35,6 @@ const useWalletStore = create<WalletStore>()(
 
                     const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
                     const hasChanged = state.balance != newBalance;
-
-                    if (hasChanged) {
-                        console.log('------------wallet_balance------------');
-                        console.log(wallet_balance);
-                        console.log('----------------------------------------');
-                    }
                     const prevValue = hasChanged ? state.balance : state.previousBalance;
                     return {
                         ...wallet_balance,

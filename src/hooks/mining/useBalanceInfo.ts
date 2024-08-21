@@ -1,62 +1,54 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import useWalletStore from '@app/store/walletStore.ts';
 import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useCallback, useEffect, useRef } from 'react';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
 export default function useBalanceInfo() {
+    const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
     const handleVisual = useVisualisation();
 
     const balance = useWalletStore((state) => state.balance);
     const previousBalance = useWalletStore((state) => state.previousBalance);
     const setEarnings = useMiningStore((s) => s.setEarnings);
-
     const setDisplayBlockHeight = useMiningStore((s) => s.setDisplayBlockHeight);
-
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
-    const prevBalanceRef = useRef(previousBalance);
     const blockHeightRef = useRef(block_height);
 
-    const getEarnings = useCallback(async () => {
-        try {
-            const change = previousBalance !== balance && prevBalanceRef.current !== previousBalance;
-            if (change) {
-                const diff = balance - previousBalance;
-                console.log(`diff= ${diff}`);
-                if (diff && diff > 0) {
-                    return diff;
-                } else {
-                    return undefined;
-                }
-            } else {
-                return undefined;
-            }
-        } catch {
-            console.error('no beuno');
-            return undefined;
-        } finally {
-            prevBalanceRef.current = previousBalance;
+    const prevBalanceRef = useRef(previousBalance);
+
+    const handleEarnings = useCallback(() => {
+        const diff = balance - previousBalance;
+
+        const hasEarnings = diff && diff > 0;
+        if (hasEarnings) {
+            setEarnings(diff);
         }
-    }, [balance, previousBalance]);
+        handleVisual(hasEarnings ? 'success' : 'fail');
+        prevBalanceRef.current = previousBalance;
+    }, [balance, handleVisual, previousBalance, setEarnings]);
 
     useEffect(() => {
-        console.log('blocks', block_height, blockHeightRef.current);
-        if (block_height && block_height !== blockHeightRef.current) {
+        if (prevBalanceRef.current !== previousBalance) {
+            setBalanceChangeBlock(blockHeightRef.current);
+        }
+    }, [previousBalance]);
+
+    useEffect(() => {
+        console.debug('blocks: ', block_height, blockHeightRef.current, balanceChangeBlock);
+        if ((block_height && block_height !== blockHeightRef.current) || !!balanceChangeBlock) {
+            const timer = !balanceChangeBlock ? 10 * 1000 : 1;
+
             const timeout = setTimeout(() => {
-                getEarnings().then((earnings) => {
-                    console.log(earnings);
-                    if (earnings) {
-                        setEarnings(earnings);
-                    }
-                    handleVisual(earnings ? 'success' : 'fail');
-                    blockHeightRef.current = block_height;
-                    setDisplayBlockHeight(blockHeightRef.current);
-                });
-            }, 10 * 1000);
+                handleEarnings();
+                blockHeightRef.current = block_height;
+                setDisplayBlockHeight(blockHeightRef.current);
+                setBalanceChangeBlock(null);
+            }, timer);
 
             return () => {
                 clearTimeout(timeout);
             };
         }
-    }, [block_height, getEarnings, handleVisual, setDisplayBlockHeight, setEarnings]);
+    }, [balanceChangeBlock, block_height, handleEarnings, setDisplayBlockHeight]);
 }
