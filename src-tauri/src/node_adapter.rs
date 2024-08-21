@@ -3,7 +3,6 @@ use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
-use async_trait::async_trait;
 use humantime::format_duration;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
@@ -15,9 +14,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
-use tokio::runtime::Handle;
 use tokio::select;
-use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
@@ -32,13 +29,12 @@ impl MinotariNodeAdapter {
 }
 
 impl ProcessAdapter for MinotariNodeAdapter {
-    type Instance = MinotariNodeInstance;
     type StatusMonitor = MinotariNodeStatusMonitor;
 
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
@@ -76,7 +72,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             );
         }
         Ok((
-            MinotariNodeInstance {
+            ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
@@ -138,42 +134,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
     }
 }
 
-pub struct MinotariNodeInstance {
-    pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
-}
-
-#[async_trait]
-impl ProcessInstance for MinotariNodeInstance {
-    fn ping(&self) -> bool {
-        self.handle
-            .as_ref()
-            .map(|m| !m.is_finished())
-            .unwrap_or_else(|| false)
-    }
-
-    async fn stop(&mut self) -> Result<i32, Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        let res = handle.unwrap().await??;
-        Ok(res)
-    }
-}
-
-impl Drop for MinotariNodeInstance {
-    fn drop(&mut self) {
-        println!("Drop being called");
-        self.shutdown.trigger();
-        if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                let _ = handle.await.unwrap().map_err(|e| {
-                    warn!(target: LOG_TARGET, "Error stopping minotari node: {:?}", e);
-                    e
-                });
-            });
-        }
-    }
-}
 pub struct MinotariNodeStatusMonitor {}
 
 impl StatusMonitor for MinotariNodeStatusMonitor {}
