@@ -131,7 +131,7 @@ async fn setup_inner<'r>(
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60 * 60 * 24)
+        > Duration::from_secs(60 * 60 * 6)
     {
         state
             .config
