@@ -9,6 +9,7 @@ import formatBalance from '@app/utils/formatBalance.ts';
 
 function Wallet() {
     const balance = useWalletStore((state) => state.balance);
+    const formatted = formatBalance(balance);
     const address = '🚀⏰🎉';
 
     const balanceFontSize = () => {
@@ -47,7 +48,7 @@ function Wallet() {
                     >
                         <Stack direction="row" spacing={0.2} alignItems="baseline">
                             <Typography variant="h2" fontSize={balanceFontSize}>
-                                {formatBalance(balance)}
+                                {formatted}
                             </Typography>
                             <Typography variant="h4">XTM</Typography>
                         </Stack>

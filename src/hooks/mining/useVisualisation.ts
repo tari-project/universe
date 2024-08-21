@@ -1,7 +1,16 @@
 import { useCallback } from 'react';
 import { setAnimationState } from '../../visuals';
 import { GlAppState } from '@app/glApp';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useVisualisation() {
-    return useCallback((state: GlAppState) => setAnimationState(state), []);
+    const toggleTimerPaused = useMiningStore((s) => s.toggleTimerPaused);
+    return useCallback(
+        (state: GlAppState) => {
+            toggleTimerPaused();
+            setAnimationState(state);
+            return () => toggleTimerPaused();
+        },
+        [toggleTimerPaused]
+    );
 }

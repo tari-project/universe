@@ -10,55 +10,58 @@ export default function useBalanceInfo() {
     const balance = useWalletStore((state) => state.balance);
     const previousBalance = useWalletStore((state) => state.previousBalance);
     const setEarnings = useMiningStore((s) => s.setEarnings);
-    const toggleTimerPaused = useMiningStore((s) => s.toggleTimerPaused);
+
     const setDisplayBlockHeight = useMiningStore((s) => s.setDisplayBlockHeight);
 
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
-    const balanceRef = useRef(balance);
+    const prevBalanceRef = useRef(previousBalance);
     const blockHeightRef = useRef(block_height);
 
     const getEarnings = useCallback(async () => {
         try {
-            const change = balanceRef.current !== balance;
+            const change = previousBalance !== balance && prevBalanceRef.current !== previousBalance;
             if (change) {
-                balanceRef.current = balance;
                 const diff = balance - previousBalance;
+                console.log(`diff= ${diff}`);
                 if (diff && diff > 0) {
                     return diff;
+                } else {
+                    return undefined;
                 }
+            } else {
+                return undefined;
             }
         } catch {
             console.error('no beuno');
+            return undefined;
+        } finally {
+            prevBalanceRef.current = previousBalance;
         }
     }, [balance, previousBalance]);
 
-    const handleNewBlock = useCallback(
-        async (newBlock: number) => {
-            toggleTimerPaused();
-            const earnings = await getEarnings();
-            console.log(earnings);
-            if (earnings) {
-                setEarnings(earnings);
-            }
-
-            blockHeightRef.current = newBlock;
-
-            return async () => {
+    const handleNewBlock = useCallback(async () => {
+        const timeout = setTimeout(() => {
+            getEarnings().then((earnings) => {
+                console.log(earnings);
+                if (earnings) {
+                    setEarnings(earnings);
+                }
                 handleVisual(earnings ? 'success' : 'fail');
-            };
-        },
-        [getEarnings, handleVisual, setEarnings, toggleTimerPaused]
-    );
+            });
+        }, 10 * 1000);
+
+        return () => {
+            clearTimeout(timeout);
+        };
+    }, [getEarnings, handleVisual, setEarnings]);
 
     useEffect(() => {
         console.log('blocks', block_height, blockHeightRef.current);
         if (block_height && block_height !== blockHeightRef.current) {
-            handleNewBlock(block_height).then((x) =>
-                x().finally(() => {
-                    toggleTimerPaused();
-                    setDisplayBlockHeight(blockHeightRef.current);
-                })
-            );
+            handleNewBlock().finally(() => {
+                blockHeightRef.current = block_height;
+                setDisplayBlockHeight(blockHeightRef.current);
+            });
         }
-    }, [block_height, getEarnings, handleNewBlock, setDisplayBlockHeight, toggleTimerPaused]);
+    }, [block_height, getEarnings, handleNewBlock, setDisplayBlockHeight]);
 }

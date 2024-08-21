@@ -13,8 +13,10 @@ export function useBlockInfo() {
 
     useInterval(
         () => {
-            const blockTime = calculateTimeSince(block_time);
-            setBlockTime(blockTime);
+            if (!timerPaused) {
+                const blockTime = calculateTimeSince(block_time);
+                setBlockTime(blockTime);
+            }
         },
         !timerPaused ? INTERVAL : null
     );

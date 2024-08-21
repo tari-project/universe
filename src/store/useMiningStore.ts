@@ -33,6 +33,7 @@ export const useMiningStore = create<MiningStoreState>()(
         {
             name: 'mining',
             storage: createJSONStorage(() => sessionStorage),
+            version: 1,
         }
     )
 );
