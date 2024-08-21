@@ -2,6 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use anyhow::Error;
+use async_trait::async_trait;
 use log::{debug, warn};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -144,7 +145,8 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                             }
 
                         },
-                    };
+                    }
+                    ;
 
                     match fs::remove_file(data_dir.join("mmproxy_pid")) {
                         Ok(_) => {}
@@ -170,4 +172,11 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
 pub struct MergeMiningProxyStatusMonitor {}
 
-impl StatusMonitor for MergeMiningProxyStatusMonitor {}
+#[async_trait]
+impl StatusMonitor for MergeMiningProxyStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
+        todo!()
+    }
+}

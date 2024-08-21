@@ -1,11 +1,14 @@
-use crate::process_killer::kill_process;
-use anyhow::Error;
-use log::{info, warn};
 use std::fs;
 use std::path::PathBuf;
+
+use anyhow::Error;
+use async_trait::async_trait;
+use log::{info, warn};
 use tari_shutdown::Shutdown;
 use tokio::runtime::Handle;
 use tokio::task::JoinHandle;
+
+use crate::process_killer::kill_process;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 

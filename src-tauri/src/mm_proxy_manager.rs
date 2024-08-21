@@ -1,6 +1,3 @@
-use crate::mm_proxy_adapter::MergeMiningProxyAdapter;
-use crate::process_watcher::ProcessWatcher;
-use log::info;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -11,7 +8,7 @@ use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
-use crate::merge_mining_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
+use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";

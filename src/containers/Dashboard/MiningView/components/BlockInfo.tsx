@@ -1,12 +1,8 @@
-import { Stack, Typography } from '@mui/material';
-import { useBlockInfo } from '@app/hooks/mining/useBlockInfo.ts';
+import {useBlockInfo} from '@app/hooks/mining/useBlockInfo.ts';
 import {Divider, Stack, Typography} from '@mui/material';
-
-import {useBlockInfo} from '../../../../hooks/useBlockInfo.ts';
-import {useBaseNodeStatusStore} from '../../../../store/useBaseNodeStatusStore.ts';
-import {useCPUStatusStore} from '../../../../store/useCPUStatusStore.ts';
+import {useCPUStatusStore} from '@app/store/useCPUStatusStore.ts';
 import {useShallow} from 'zustand/react/shallow';
-import {useAppStatusStore} from "../../../../store/useAppStatusStore.ts";
+import {useAppStatusStore} from "@app/store/useAppStatusStore.ts";
 
 function BlockInfo() {
     const p2pool = useAppStatusStore((s) => s.p2pool_stats);
@@ -14,9 +10,8 @@ function BlockInfo() {
     let minersCount = p2pool?.num_of_miners;
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const timeSince = useBlockInfo();
-    const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
-    const { displayBlock } = useBlockInfo();
+    const {displayBlock} = useBlockInfo();
 
     const timerMarkup =
         timeSince && isMining ? (

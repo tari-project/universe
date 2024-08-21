@@ -1,19 +1,14 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::{info, warn};
 use rand::seq::SliceRandom;
-use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
-use tari_utilities::epoch_time::EpochTime;
-use tokio::runtime::Handle;
 use tokio::select;
-use tokio::task::JoinHandle;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::p2pool;
@@ -46,14 +41,13 @@ impl P2poolAdapter {
 }
 
 impl ProcessAdapter for P2poolAdapter {
-    type Instance = P2poolInstance;
     type StatusMonitor = P2poolStatusMonitor;
 
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
         log_path: PathBuf,
-    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
@@ -76,7 +70,7 @@ impl ProcessAdapter for P2poolAdapter {
         ];
         let pid_file_name = self.pid_file_name().to_string();
         Ok((
-            P2poolInstance {
+            ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     // file details
@@ -110,23 +104,35 @@ impl ProcessAdapter for P2poolAdapter {
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join(pid_file_name.clone()), id.to_string())?;
                     }
+                    let exit_code;
 
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
+                            exit_code = 0;
                             // res
                         },
                         res2 = child.wait() => {
-                            dbg!("Exited badly:", res2?);
+                            match res2
+                             {
+                                Ok(res) => {
+                                    exit_code = res.code().unwrap_or(0)
+                                    },
+                                Err(e) => {
+                                    warn!(target: LOG_TARGET, "Error in MergeMiningProxyInstance: {}", e);
+                                    return Err(e.into());
+                                }
+                            }
                         },
-                    };
+                    }
+                    ;
                     println!("Stopping p2pool node");
 
                     if let Err(error) = fs::remove_file(data_dir.join(pid_file_name)) {
                         warn!(target: LOG_TARGET, "Could not clear p2pool's pid file: {error:?}");
                     }
 
-                    Ok(())
+                    Ok(exit_code)
                 })),
             },
             P2poolStatusMonitor::new(format!(
@@ -142,40 +148,6 @@ impl ProcessAdapter for P2poolAdapter {
 
     fn pid_file_name(&self) -> &str {
         "p2pool_pid"
-    }
-}
-
-pub struct P2poolInstance {
-    pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
-}
-
-#[async_trait]
-impl ProcessInstance for P2poolInstance {
-    fn ping(&self) -> bool {
-        self.handle
-            .as_ref()
-            .map(|m| !m.is_finished())
-            .unwrap_or_else(|| false)
-    }
-
-    async fn stop(&mut self) -> Result<(), Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        let res = handle.unwrap().await??;
-        Ok(res)
-    }
-}
-
-impl Drop for P2poolInstance {
-    fn drop(&mut self) {
-        println!("Drop being called");
-        self.shutdown.trigger();
-        if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                handle.await.unwrap();
-            });
-        }
     }
 }
 

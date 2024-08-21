@@ -1,20 +1,23 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::node_manager::NodeIdentity;
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::ProgressTracker;
-use anyhow::{anyhow, Error};
-use humantime::format_duration;
-use log::{debug, info, warn};
-use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
-use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use anyhow::{anyhow, Error};
+use async_trait::async_trait;
+use humantime::format_duration;
+use log::{debug, info, warn};
+use minotari_node_grpc_client::BaseNodeGrpcClient;
+use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
 use tokio::select;
+
+use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::node_manager::NodeIdentity;
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::ProgressTracker;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
@@ -112,7 +115,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
                             }
 
                         },
-                    };
+                    }
+                    ;
 
                     match fs::remove_file(data_dir.join("node_pid")) {
                         Ok(_) => {}
@@ -138,7 +142,14 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
 pub struct MinotariNodeStatusMonitor {}
 
-impl StatusMonitor for MinotariNodeStatusMonitor {}
+#[async_trait]
+impl StatusMonitor for MinotariNodeStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
+        todo!()
+    }
+}
 
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(

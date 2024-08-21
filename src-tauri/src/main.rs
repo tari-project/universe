@@ -1,10 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::{panic, process};
 use std::future::Future;
 use std::sync::Arc;
 use std::thread::sleep;
-use std::{panic, process};
+use std::time::{Duration, SystemTime};
 
 use anyhow::Error;
 use log::{debug, error, info, warn};
@@ -22,27 +23,21 @@ use setup_status_event::SetupStatusEvent;
 use xmrig_adapter::XmrigNodeConnection;
 
 use crate::cpu_miner::CpuMiner;
+use crate::gpu_miner::GpuMiner;
+use crate::hardware_monitor::{HardwareMonitor, HardwareStatus};
 use crate::internal_wallet::InternalWallet;
-use crate::merge_mining_adapter::MergeMiningProxyConfig;
+use crate::mm_proxy_adapter::MergeMiningProxyConfig;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
-use crate::node_manager::NodeManager;
+use crate::node_manager::{NodeManager, NodeManagerError};
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
-use crate::wallet_manager::WalletManager;
+use crate::wallet_manager::{WalletManager, WalletManagerError};
 use crate::xmrig_adapter::XmrigAdapter;
-
-mod cpu_miner;
-mod mm_proxy_manager;
-mod process_watcher;
-mod user_listener;
-mod xmrig;
-mod xmrig_adapter;
 
 mod app_config;
 mod binary_resolver;
-mod cpu_miner;
 mod download_utils;
 mod github;
 mod gpu_miner;
@@ -65,36 +60,9 @@ mod p2pool_manager;
 mod process_killer;
 mod wallet_adapter;
 
-use crate::cpu_miner::CpuMiner;
-use crate::gpu_miner::GpuMiner;
-use crate::internal_wallet::InternalWallet;
-use crate::mm_proxy_manager::MmProxyManager;
-use crate::node_manager::NodeManager;
-use crate::user_listener::UserListener;
-use crate::wallet_adapter::WalletBalance;
-use crate::wallet_manager::WalletManager;
-use crate::xmrig_adapter::XmrigAdapter;
-use app_config::{AppConfig, MiningMode};
-use binary_resolver::{Binaries, BinaryResolver};
-use hardware_monitor::{HardwareMonitor, HardwareStatus};
-use log::{debug, error, info, warn};
-use node_manager::NodeManagerError;
-use progress_tracker::ProgressTracker;
-use serde::Serialize;
-use setup_status_event::SetupStatusEvent;
-use std::sync::Arc;
-use std::thread::sleep;
-use std::time::{Duration, SystemTime};
-use std::{panic, process};
-use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_shutdown::Shutdown;
-use tauri::{Manager, RunEvent, UpdaterEvent};
-use tokio::sync::RwLock;
-use wallet_manager::WalletManagerError;
-
 mod progress_tracker;
 mod setup_status_event;
+mod cpu_miner;
 
 #[tauri::command]
 async fn set_mode<'r>(
@@ -172,13 +140,13 @@ async fn setup_inner<'r>(
     let now = SystemTime::now();
 
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::MinotariNode,progress.clone())
+        .read_current_highest_version(Binaries::MinotariNode, progress.clone())
         .await?;
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::MergeMiningProxy,progress.clone())
+        .read_current_highest_version(Binaries::MergeMiningProxy, progress.clone())
         .await?;
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::Wallet,progress.clone())
+        .read_current_highest_version(Binaries::Wallet, progress.clone())
         .await?;
 
     if now
@@ -225,19 +193,19 @@ async fn setup_inner<'r>(
             .await;
         sleep(Duration::from_secs(1));
         XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
-    }
 
-    progress.set_max(35).await;
-    progress
-        .update("Checking for latest version of sha-p2pool".to_string(), 0)
-        .await;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::ShaP2pool, progress.clone())
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET, "Could not download sha-p2pool: {:?}", e);
-            e.to_string()
-        })?;
+        progress.set_max(35).await;
+        progress
+            .update("Checking for latest version of sha-p2pool".to_string(), 0)
+            .await;
+        BinaryResolver::current()
+            .ensure_latest(Binaries::ShaP2pool, progress.clone())
+            .await
+            .map_err(|e| {
+                error!(target: LOG_TARGET, "Could not download sha-p2pool: {:?}", e);
+                e
+            })?;
+    }
 
     for _i in 0..2 {
         match state
@@ -275,7 +243,7 @@ async fn setup_inner<'r>(
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
+        .ensure_started(state.shutdown.to_signal(), data_dir.clone(), log_dir.clone())
         .await?;
 
     progress.set_max(55).await;
@@ -293,14 +261,14 @@ async fn setup_inner<'r>(
 
     progress.set_max(80).await;
     progress.update("Starting MMProxy".to_string(), 0).await;
-    let _ = mm_proxy_manager
+    mm_proxy_manager
         .start(StartConfig::new(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
             app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
         ))
-        .await;
+        .await?;
     mm_proxy_manager.wait_ready().await?;
 
     _ = window.emit(
@@ -727,7 +695,7 @@ fn main() {
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
-            .expect("Could not set up logging");
+                .expect("Could not set up logging");
 
             let app_config_clone = app_config.clone();
 

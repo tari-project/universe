@@ -1,17 +1,20 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use anyhow::Error;
-use log::{debug, info, warn};
-use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::GetBalanceRequest;
-use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
+
+use anyhow::Error;
+use async_trait::async_trait;
+use log::{debug, info, warn};
+use minotari_node_grpc_client::grpc::GetBalanceRequest;
+use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
+use serde::Serialize;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
 use tokio::select;
+
+use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -132,7 +135,8 @@ impl ProcessAdapter for WalletAdapter {
                            }
                        }
                         },
-                    };
+                    }
+                    ;
                     println!("Stopping minotari node");
 
                     match fs::remove_file(data_dir.join("wallet_pid")) {
@@ -159,7 +163,14 @@ impl ProcessAdapter for WalletAdapter {
 
 pub struct WalletStatusMonitor {}
 
-impl StatusMonitor for WalletStatusMonitor {}
+#[async_trait]
+impl StatusMonitor for WalletStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
+        todo!()
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct WalletBalance {

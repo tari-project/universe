@@ -1,15 +1,18 @@
-use crate::cpu_miner::CpuMinerEvent;
-use crate::download_utils::{download_file, extract};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::xmrig::http_api::XmrigHttpApiClient;
-use crate::xmrig::latest_release::fetch_latest_release;
-use crate::ProgressTracker;
-use anyhow::Error;
-use log::{info, warn};
 use std::path::PathBuf;
+
+use anyhow::Error;
+use async_trait::async_trait;
+use log::{info, warn};
 use tari_shutdown::Shutdown;
 use tokio::fs;
 use tokio::sync::mpsc::Receiver;
+
+use crate::cpu_miner::CpuMinerEvent;
+use crate::download_utils::{download_file, extract};
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::ProgressTracker;
+use crate::xmrig::http_api::XmrigHttpApiClient;
+use crate::xmrig::latest_release::fetch_latest_release;
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -160,7 +163,7 @@ impl ProcessAdapter for XmrigAdapter {
                         force_download,
                         progress_tracker.clone(),
                     )
-                    .await?;
+                        .await?;
                     let xmrig_dir = cache_dir
                         .clone()
                         .join("xmrig")
@@ -205,7 +208,14 @@ impl ProcessAdapter for XmrigAdapter {
 
 pub struct XmrigStatusMonitor {}
 
-impl StatusMonitor for XmrigStatusMonitor {}
+#[async_trait]
+impl StatusMonitor for XmrigStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
+        todo!()
+    }
+}
 
 #[allow(unreachable_code)]
 fn get_os_string_id() -> String {
