@@ -16,7 +16,7 @@ export function useGetStatus() {
     const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
     const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
-    const setError = useAppStateStore((s) => s.setError);
+    const { error, setError } = useAppStateStore(({ error, setError }) => ({ error: error, setError }));
     const setMode = useAppStatusStore((s) => s.setMode);
 
     useInterval(
@@ -30,6 +30,12 @@ export function useGetStatus() {
 
                         if (status.cpu?.is_mining) {
                             setMiningInitiated(false);
+
+                            if (!status.cpu?.connection.is_connected) {
+                                setError('Xmrig connection lost!')
+                            } else if (error === "Xmrig connection lost!") {
+                                setError('');
+                            } 
                         }
                         const wallet_balance = status.wallet_balance;
 

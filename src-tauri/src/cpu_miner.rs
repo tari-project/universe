@@ -22,6 +22,7 @@ pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     miner_shutdown: Shutdown,
     api_client: Option<XmrigHttpApiClient>,
+    is_mining: bool,
 }
 
 impl CpuMiner {
@@ -30,6 +31,7 @@ impl CpuMiner {
             watcher_task: None,
             miner_shutdown: Shutdown::new(),
             api_client: None,
+            is_mining: false,
         }
     }
 
@@ -150,6 +152,7 @@ impl CpuMiner {
             println!("Task finished");
         }
         // TODO: This doesn't seem to be called
+        self.is_mining = false;
 
         Ok(())
     }
@@ -161,7 +164,6 @@ impl CpuMiner {
     ) -> Result<CpuMinerStatus, anyhow::Error> {
         match &self.api_client {
             Some(client) => {
-                let mut is_mining = false;
                 let (hash_rate, hashrate_sum, estimated_earnings, is_connected) =
                     match client.summary().await {
                         Ok(xmrig_status) => {
@@ -198,12 +200,12 @@ impl CpuMiner {
                     };
 
                 if hashrate_sum > 0.0 {
-                    is_mining = true;
+                    self.is_mining = true;
                 }
 
                 Ok(CpuMinerStatus {
                     is_mining_enabled: true,
-                    is_mining,
+                    is_mining: self.is_mining,
                     hash_rate,
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
