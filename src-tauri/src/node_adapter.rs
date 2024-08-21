@@ -34,6 +34,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -47,6 +48,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
+            format!("--log-path={}", log_dir.to_str().unwrap()).to_string(),
             // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
         ];
         if !self.use_tor {
