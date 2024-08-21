@@ -1,8 +1,6 @@
 use crate::process_killer::kill_process;
 use anyhow::Error;
-use async_trait::async_trait;
 use log::{info, warn};
-use log::warn;
 use std::fs;
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
@@ -48,7 +46,7 @@ pub trait StatusMonitor {}
 
 pub struct ProcessInstance {
     pub shutdown: Shutdown,
-    pub handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
+    pub handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
 }
 
 impl ProcessInstance {
@@ -59,7 +57,7 @@ impl ProcessInstance {
             .unwrap_or_else(|| false)
     }
 
-    pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
+    pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
         handle.unwrap().await?
@@ -73,7 +71,7 @@ impl Drop for ProcessInstance {
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
                 let _ = handle.await.unwrap().map_err(|e| {
-                    warn!(target: LOG_TARGET, "Error in {}: {}", self.name(), e);
+                    warn!(target: LOG_TARGET, "Error in Process Adapter: {}", e);
                 });
             });
         }

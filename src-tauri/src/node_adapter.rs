@@ -6,8 +6,6 @@ use anyhow::{anyhow, Error};
 use humantime::format_duration;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
-use log::{info, warn};
-use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
 use std::path::PathBuf;
@@ -17,7 +15,6 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
 use tokio::select;
-use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 

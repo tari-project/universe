@@ -101,7 +101,7 @@ impl CpuMiner {
                                     } else {
                                        println!("xmrig is not running");
                                        match xmrig_child.stop().await {
-                                           Ok(()) => {
+                                           Ok(_) => {
                                               println!("xmrig exited successfully");
                                            }
                                            Err(e) => {

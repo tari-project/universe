@@ -5,7 +5,7 @@ use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use crate::ProgressTracker;
 use anyhow::Error;
-use log::{debug, info, warn};
+use log::{info, warn};
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
@@ -192,7 +192,7 @@ impl ProcessAdapter for XmrigAdapter {
                         }
                     }
 
-                    Ok(())
+                    Ok(0)
                 })),
             },
             XmrigStatusMonitor {},
@@ -210,11 +210,7 @@ impl ProcessAdapter for XmrigAdapter {
 
 pub struct XmrigStatusMonitor {}
 
-impl StatusMonitor for XmrigStatusMonitor {
-    fn status(&self) -> Result<(), Error> {
-        todo!()
-    }
-}
+impl StatusMonitor for XmrigStatusMonitor {}
 
 #[allow(unreachable_code)]
 fn get_os_string_id() -> String {

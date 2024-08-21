@@ -1,9 +1,7 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use anyhow::Error;
-use async_trait::async_trait;
 use log::{debug, warn};
-use log::warn;
 use std::fs;
 use std::path::PathBuf;
 use tari_common_types::tari_address::TariAddress;
