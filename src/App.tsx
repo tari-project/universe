@@ -13,6 +13,7 @@ import { useGetStatus } from './hooks/useGetStatus.ts';
 
 import { useGetApplicationsVersions } from './hooks/useGetApplicationsVersions.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
+import { useEnvironment } from './hooks/useEnvironment.ts';
 
 function App() {
     useSetUp();
@@ -20,6 +21,7 @@ function App() {
 
     useGetStatus();
     useGetApplicationsVersions();
+    useEnvironment();
 
     return (
         <StrictMode>
