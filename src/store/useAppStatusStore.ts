@@ -33,7 +33,7 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMainAppVersion: (main_app_version) => set({ main_app_version }),
             setMode: (mode) => set({ mode }),
-            setConfigMode: async (mode: modeType) => {
+            setConfigMode: async (mode) => {
                 try {
                     await invoke('set_mode', { mode });
                     set({ mode });
