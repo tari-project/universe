@@ -174,6 +174,8 @@ impl ProcessAdapter for XmrigAdapter {
                     let xmrig_bin = xmrig_dir.join("xmrig");
                     let mut xmrig = tokio::process::Command::new(xmrig_bin)
                         .args(args)
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
                         .kill_on_drop(true)
                         .spawn()?;
 
@@ -181,7 +183,6 @@ impl ProcessAdapter for XmrigAdapter {
                         std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
                     }
                     shutdown_signal.wait().await;
-                    println!("Stopping xmrig");
 
                     xmrig.kill().await?;
 

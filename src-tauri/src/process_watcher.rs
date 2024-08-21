@@ -1,5 +1,5 @@
 use crate::process_adapter::{ProcessAdapter, ProcessInstance};
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
@@ -43,7 +43,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     ) -> Result<(), anyhow::Error> {
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
-            println!("Tried to start process watcher for {} twice", name);
+            warn!(target: LOG_TARGET, "Tried to start process watcher for {} twice", name);
             return Ok(());
         }
         info!(target: LOG_TARGET, "Starting process watcher for {}", name);
@@ -59,7 +59,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         let mut app_shutdown = app_shutdown.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
-            println!("Starting process watcher for {}", name);
+            info!(target: LOG_TARGET, "Starting process watcher for {}", name);
             let mut watch_timer = tokio::time::interval(poll_time);
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
             // read events such as stdout
