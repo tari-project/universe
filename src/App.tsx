@@ -12,10 +12,12 @@ import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 
 import { useSetUp } from './hooks/useSetUp.ts';
+import { useEnvironment } from './hooks/useEnvironment.ts';
 
 function App() {
     useSetUp();
     useGetStatus();
+    useEnvironment();
 
     const view = useUIStore((s) => s.view);
 

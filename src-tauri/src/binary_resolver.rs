@@ -276,6 +276,31 @@ impl BinaryResolver {
         Ok(latest_release.version)
     }
 
+    pub async fn read_current_highest_version(&self, binary: Binaries) {
+        let bin_folder = self.adapters.get(&binary).unwrap().get_binary_folder();
+        let version_folders_list = std::fs::read_dir(&bin_folder).unwrap();
+        let mut versions = vec![];
+        for entry in version_folders_list {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_dir() {
+                let version = path.file_name().unwrap().to_str().unwrap();
+                versions.push(Version::parse(version).unwrap());
+            }
+        }
+        versions.sort();
+
+        let cached_version = versions.pop().unwrap();
+        let current_version = self.get_latest_version(binary).await;
+
+        let highest_version = cached_version.max(current_version);
+
+        self.latest_versions
+            .write()
+            .await
+            .insert(binary, highest_version);
+    }
+
     pub async fn get_latest_version(&self, binary: Binaries) -> Version {
         let guard = self.latest_versions.read().await;
         guard.get(&binary).cloned().unwrap_or(Version::new(0, 0, 0))

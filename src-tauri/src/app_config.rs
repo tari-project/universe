@@ -1,16 +1,20 @@
 use anyhow::anyhow;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use std::{path::PathBuf, time::Duration};
+use std::{
+    path::PathBuf,
+    time::{Duration, SystemTime},
+};
 use tokio::fs;
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfigFromFile {
     pub mode: String,
     pub auto_mining: bool,
     pub user_inactivity_timeout: Duration,
+    pub last_binaries_update_timestamp: SystemTime,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -42,6 +46,7 @@ pub struct AppConfig {
     pub mode: MiningMode,
     pub auto_mining: bool,
     pub user_inactivity_timeout: Duration,
+    pub last_binaries_update_timestamp: SystemTime,
 }
 
 impl AppConfig {
@@ -51,6 +56,7 @@ impl AppConfig {
             mode: MiningMode::Eco,
             auto_mining: false,
             user_inactivity_timeout: Duration::from_secs(60),
+            last_binaries_update_timestamp: SystemTime::now(),
         }
     }
 
@@ -66,6 +72,7 @@ impl AppConfig {
                     self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                     self.auto_mining = config.auto_mining;
                     self.user_inactivity_timeout = config.user_inactivity_timeout;
+                    self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -77,6 +84,7 @@ impl AppConfig {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
             user_inactivity_timeout: self.user_inactivity_timeout,
+            last_binaries_update_timestamp: self.last_binaries_update_timestamp,
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -121,12 +129,26 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn get_last_binaries_update_timestamp(&self) -> SystemTime {
+        self.last_binaries_update_timestamp.clone()
+    }
+
+    pub async fn set_last_binaries_update_timestamp(
+        &mut self,
+        timestamp: SystemTime,
+    ) -> Result<(), anyhow::Error> {
+        self.last_binaries_update_timestamp = timestamp;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
         let file = self.config_file.clone().unwrap();
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
             user_inactivity_timeout: self.user_inactivity_timeout,
+            last_binaries_update_timestamp: self.last_binaries_update_timestamp,
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
