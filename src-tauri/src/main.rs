@@ -130,14 +130,14 @@ async fn setup_inner<'r>(
     let now = SystemTime::now();
 
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::MinotariNode)
-        .await;
+        .read_current_highest_version(Binaries::MinotariNode,progress.clone())
+        .await?;
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::MergeMiningProxy)
-        .await;
+        .read_current_highest_version(Binaries::MergeMiningProxy,progress.clone())
+        .await?;
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::Wallet)
-        .await;
+        .read_current_highest_version(Binaries::Wallet,progress.clone())
+        .await?;
 
     if now
         .duration_since(last_binaries_update_timestamp)
