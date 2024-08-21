@@ -151,19 +151,8 @@ const Settings: React.FC = () => {
                                 )}
                             </Stack>
                         </Stack>
-                        <Divider />
-                        <HorisontalBox>
-                            <Typography variant="h6">Logs</Typography>
-                            <RightHandColumn>
-                                <Button onClick={openLogsDirectory} variant="text">
-                                    Open logs directory
-                                </Button>
-                            </RightHandColumn>
-                        </HorisontalBox>
-                        <Divider />
                         <form onSubmit={onSubmit}>
                             <Box my={1}>
-                                <Typography variant="h5">Random</Typography>
                                 <Stack spacing={1} pt={1}>
                                     <ControlledNumberInput
                                         name={FormFields.IDLE_TIMEOUT}
@@ -195,6 +184,53 @@ const Settings: React.FC = () => {
                                 </DialogActions>
                             </Box>
                         </form>
+                        <Divider />
+                        <HorisontalBox>
+                            <Typography variant="h6">Logs</Typography>
+                            <RightHandColumn>
+                                <Button onClick={openLogsDirectory} variant="text">
+                                    Open logs directory
+                                </Button>
+                            </RightHandColumn>
+                        </HorisontalBox>
+                        <Divider />
+                        {
+                            <>
+                                <HorisontalBox>
+                                    <Typography variant="h6">Hardware Status:</Typography>
+                                </HorisontalBox>
+                                <CardContainer>
+                                    <CardComponent
+                                        heading={cpu?.label || 'Unknown CPU'}
+                                        labels={[
+                                            { labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%` },
+                                            {
+                                                labelText: 'Temperature',
+                                                labelValue: `${cpu?.current_temperature || 0}°C`,
+                                            },
+                                            {
+                                                labelText: 'Max Temperature',
+                                                labelValue: `${cpu?.max_temperature || 0}°C`,
+                                            },
+                                        ]}
+                                    />
+                                    <CardComponent
+                                        heading={gpu?.label || 'Unknown GPU'}
+                                        labels={[
+                                            { labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%` },
+                                            {
+                                                labelText: 'Temperature',
+                                                labelValue: `${gpu?.current_temperature || 0}°C`,
+                                            },
+                                            {
+                                                labelText: 'Max Temperature',
+                                                labelValue: `${gpu?.max_temperature || 0}°C`,
+                                            },
+                                        ]}
+                                    />
+                                </CardContainer>
+                            </>
+                        }
                         <Divider />
                         {applicationsVersions && (
                             <>
@@ -238,43 +274,6 @@ const Settings: React.FC = () => {
                                 </Stack>
                             </>
                         )}
-                        {
-                            <>
-                                <HorisontalBox>
-                                    <Typography variant="h6">Hardware Status:</Typography>
-                                </HorisontalBox>
-                                <CardContainer>
-                                    <CardComponent
-                                        heading={cpu?.label || 'Unknown CPU'}
-                                        labels={[
-                                            { labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%` },
-                                            {
-                                                labelText: 'Temperature',
-                                                labelValue: `${cpu?.current_temperature || 0}°C`,
-                                            },
-                                            {
-                                                labelText: 'Max Temperature',
-                                                labelValue: `${cpu?.max_temperature || 0}°C`,
-                                            },
-                                        ]}
-                                    />
-                                    <CardComponent
-                                        heading={gpu?.label || 'Unknown GPU'}
-                                        labels={[
-                                            { labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%` },
-                                            {
-                                                labelText: 'Temperature',
-                                                labelValue: `${gpu?.current_temperature || 0}°C`,
-                                            },
-                                            {
-                                                labelText: 'Max Temperature',
-                                                labelValue: `${gpu?.max_temperature || 0}°C`,
-                                            },
-                                        ]}
-                                    />
-                                </CardContainer>
-                            </>
-                        }
                         <Divider />
                         <HorisontalBox>
                             <VisualMode />
