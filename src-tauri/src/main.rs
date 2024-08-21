@@ -9,7 +9,7 @@ mod github;
 mod gpu_miner;
 mod hardware_monitor;
 mod internal_wallet;
-mod merge_mining_adapter;
+mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod node_adapter;
 mod node_manager;
@@ -49,6 +49,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use wallet_manager::WalletManagerError;
 
 mod progress_tracker;
 mod setup_status_event;
@@ -117,6 +118,7 @@ async fn setup_inner<'r>(
         },
     );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
+    let log_dir = app.path_resolver().app_log_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -183,10 +185,14 @@ async fn setup_inner<'r>(
         XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
     }
 
-    for i in 0..2 {
+    for _i in 0..2 {
         match state
             .node_manager
-            .ensure_started(state.shutdown.to_signal(), data_dir.clone())
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                log_dir.clone(),
+            )
             .await
         {
             Ok(_) => {}
@@ -215,7 +221,7 @@ async fn setup_inner<'r>(
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir)
+        .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
         .await?;
 
     progress.set_max(55).await;
@@ -230,6 +236,7 @@ async fn setup_inner<'r>(
         .start(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
+            app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
         )
         .await?;
@@ -432,7 +439,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
     {
         Ok(cpu) => cpu,
         Err(e) => {
-            eprintln!("Error getting cpu miner status: {:?}", e);
+            warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
             return Err(e);
         }
     };
@@ -440,12 +447,21 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
         Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
-            WalletBalance {
-                available_balance: MicroMinotari(0),
-                pending_incoming_balance: MicroMinotari(0),
-                pending_outgoing_balance: MicroMinotari(0),
-                timelocked_balance: MicroMinotari(0),
+            if matches!(e, WalletManagerError::WalletNotStarted) {
+                WalletBalance {
+                    available_balance: MicroMinotari(0),
+                    pending_incoming_balance: MicroMinotari(0),
+                    pending_outgoing_balance: MicroMinotari(0),
+                    timelocked_balance: MicroMinotari(0),
+                }
+            } else {
+                warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
+                WalletBalance {
+                    available_balance: MicroMinotari(0),
+                    pending_incoming_balance: MicroMinotari(0),
+                    pending_outgoing_balance: MicroMinotari(0),
+                    timelocked_balance: MicroMinotari(0),
+                }
             }
         }
     };
