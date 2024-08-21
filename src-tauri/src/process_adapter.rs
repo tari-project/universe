@@ -1,26 +1,27 @@
 use crate::process_killer::kill_process;
 use anyhow::Error;
-use async_trait::async_trait;
 use log::{info, warn};
 use std::fs;
 use std::path::PathBuf;
+use tari_shutdown::Shutdown;
+use tokio::runtime::Handle;
+use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
 pub trait ProcessAdapter {
-    type Instance: ProcessInstance;
     type StatusMonitor: StatusMonitor;
     // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
-    ) -> Result<(Self::Instance, Self::StatusMonitor), anyhow::Error>;
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
     fn spawn(
         &self,
         base_folder: PathBuf,
-    ) -> Result<(Self::Instance, Self::StatusMonitor), anyhow::Error> {
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         self.spawn_inner(base_folder)
     }
 
@@ -34,7 +35,7 @@ pub trait ProcessAdapter {
                 kill_process(pid)?;
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Could not read node's pid file: {}", e);
+                warn!(target: LOG_TARGET, "Could not read {} pid file: {}", self.pid_file_name(), e);
             }
         }
         Ok(())
@@ -43,8 +44,36 @@ pub trait ProcessAdapter {
 
 pub trait StatusMonitor {}
 
-#[async_trait]
-pub trait ProcessInstance: Send + Sync + 'static {
-    fn ping(&self) -> bool;
-    async fn stop(&mut self) -> Result<i32, anyhow::Error>;
+pub struct ProcessInstance {
+    pub shutdown: Shutdown,
+    pub handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
+}
+
+impl ProcessInstance {
+    pub fn ping(&self) -> bool {
+        self.handle
+            .as_ref()
+            .map(|m| !m.is_finished())
+            .unwrap_or_else(|| false)
+    }
+
+    pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
+        self.shutdown.trigger();
+        let handle = self.handle.take();
+        handle.unwrap().await?
+    }
+}
+
+impl Drop for ProcessInstance {
+    fn drop(&mut self) {
+        println!("Drop being called");
+        self.shutdown.trigger();
+        if let Some(handle) = self.handle.take() {
+            Handle::current().block_on(async move {
+                let _ = handle.await.unwrap().map_err(|e| {
+                    warn!(target: LOG_TARGET, "Error in Process Adapter: {}", e);
+                });
+            });
+        }
+    }
 }
