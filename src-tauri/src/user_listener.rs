@@ -36,6 +36,8 @@ impl UserListener {
         timeout: Duration,
         window: tauri::Window,
     ) {
+        println!("UserListener::start_listening_to_mouse_poisition_change");
+
         let cancellation_token = CancellationToken::new();
         self.cancelation_token = Some(cancellation_token.clone());
         self.is_listening = true;
@@ -43,14 +45,17 @@ impl UserListener {
         let mut user_listener = self.to_owned();
         let window = window.clone();
 
+        
         let mut timeout_counter: Duration = Duration::from_secs(0);
         let mut last_mouse_coords = UserListener::read_user_mouse_coords();
-
+        
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
+                    println!("UserListener::listening for user inactivity has been started");
                     info!("UserListener::listening for user inactivity has been started");
                     loop {
+                        println!("Listening for user inactivity, is_mining_initialized: {}, timeout: {}, timeout_counter: {}", user_listener.is_mining_initialized, timeout.as_secs(), timeout_counter.as_secs());
                         let current_mouse_coords = UserListener::read_user_mouse_coords();
 
                         if current_mouse_coords != last_mouse_coords {
@@ -76,8 +81,11 @@ impl UserListener {
                 } => {},
                 _ = cancellation_token.cancelled() => {
                     info!("UserListener::listening for user inactivity has been cancelled");
-                    UserListener::on_user_active(&window);
-                    user_listener.is_mining_initialized = false;
+                    if user_listener.is_mining_initialized {
+                        UserListener::on_user_active(&window);
+                        user_listener.is_mining_initialized = false;
+                    }
+
                 }
             }
         });
@@ -86,10 +94,12 @@ impl UserListener {
     pub fn stop_listening_to_mouse_poisition_change(&mut self) {
         match &self.cancelation_token {
             Some(token) => {
+                println!("UserListener::triggered cancelation of listening for user inactivity");
                 token.cancel();
                 self.is_listening = false;
             }
             None => {
+                println!("UserListener::triggered cancelation of listening for user inactivity but no cancelation token was found");
                 info!(
                     "UserListener::triggered cancelation of listening for user inactivity but no cancelation token was found"
                 );
@@ -98,6 +108,7 @@ impl UserListener {
     }
 
     pub fn on_user_idle(window: &tauri::Window) {
+        println!("User is idle");
         window
             .emit(
                 "message",
@@ -109,6 +120,7 @@ impl UserListener {
     }
 
     pub fn on_user_active(window: &tauri::Window) {
+        println!("User is active");
         window
             .emit(
                 "message",

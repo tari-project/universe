@@ -34,6 +34,7 @@ export function useGetStatus() {
                         if (status.cpu?.is_mining) {
                             setMiningInitiated(false);
                         }
+
                         const wallet_balance = status.wallet_balance;
 
                         setBalanceData(wallet_balance);

@@ -28,6 +28,7 @@ export function useSetUp() {
                     console.info('Setup status:', p.title, p.progress);
                     setSetupDetails(p.title, p.progress);
                     if (p.progress >= 1) {
+                        if (autoMiningEnabled) invoke('set_auto_mining', { autoMining: true });
                         settingUpFinished();
                         setView('mining');
                     }
