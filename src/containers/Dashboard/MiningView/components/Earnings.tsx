@@ -1,10 +1,11 @@
 import { AnimatePresence } from 'framer-motion';
 
-import { EarningsContainer, EarningsText, EarningsWrapper } from './Earnings.styles.ts';
+import { EarningsContainer, EarningsWrapper } from './Earnings.styles.ts';
 import formatBalance from '@app/utils/formatBalance.ts';
 import { useCallback } from 'react';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 
 const variants = {
     visible: {
@@ -12,7 +13,7 @@ const variants = {
         y: 0,
         scale: 1.05,
         transition: {
-            duration: 0.8,
+            duration: 1,
             scale: {
                 duration: 0.5,
             },
@@ -21,14 +22,14 @@ const variants = {
     hidden: {
         opacity: 0,
         y: 50,
-        transition: { duration: 0.2, delay: 0.75 },
+        transition: { duration: 0.2, delay: 0.8 },
     },
 };
 
 export default function Earnings() {
     const earnings = useMiningStore((s) => s.earnings);
     const setEarnings = useMiningStore((s) => s.setEarnings);
-
+    const formatted = formatBalance(earnings || 0);
     const handleComplete = useCallback(() => {
         setEarnings(undefined);
     }, [setEarnings]);
@@ -47,7 +48,7 @@ export default function Earnings() {
                         }}
                     >
                         <span>you&apos;ve earned</span>
-                        <EarningsText variant="h1">{formatBalance(earnings)}</EarningsText>
+                        <CharSpinner value={formatted} />
                         <span>XTR</span>
                     </EarningsWrapper>
                 ) : null}

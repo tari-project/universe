@@ -51,7 +51,7 @@ export const componentSettings: ThemeOptions = {
             fontSize: '26px',
             lineHeight: '36px',
             fontFamily: '"PoppinsSemiBold", sans-serif',
-            letterSpacing: '-0.4px',
+            letterSpacing: '-1.2px',
         },
         h3: {
             fontSize: '24px',
