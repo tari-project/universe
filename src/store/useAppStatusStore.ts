@@ -21,7 +21,7 @@ const initialState: AppStatus = {
     cpu: undefined,
     hardware_status: undefined,
     base_node: undefined,
-    p2pool_enabled: true,
+    p2pool_enabled: false,
     p2pool_stats: undefined,
     wallet_balance: undefined,
     mode: 'Eco',

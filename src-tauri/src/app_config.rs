@@ -58,7 +58,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: false,
-            p2pool_enabled: true,
+            p2pool_enabled: false,
             user_inactivity_timeout: Duration::from_secs(60),
             last_binaries_update_timestamp: SystemTime::now(),
         }
