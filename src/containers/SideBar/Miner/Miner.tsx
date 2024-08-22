@@ -7,11 +7,11 @@ import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
 import { Divider } from '@mui/material';
 
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
-import { useMining } from '@app/hooks/useMining.ts';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 function Miner() {
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
-    const { isWaitingForHashRate } = useMining();
+    const { isWaitingForHashRate } = useMiningControls();
 
     const truncateString = (str: string, num: number): string => {
         if (str.length <= num) {
