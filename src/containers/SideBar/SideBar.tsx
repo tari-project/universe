@@ -18,11 +18,11 @@ function SideBar() {
                 <Heading />
             </HeadingContainer>
             <SideBarInner>
-                <ConnectButton />
                 <MiningButton />
                 <Miner />
             </SideBarInner>
             <BottomContainer>
+                <ConnectButton />
                 <Wallet />
             </BottomContainer>
         </SideBarContainer>

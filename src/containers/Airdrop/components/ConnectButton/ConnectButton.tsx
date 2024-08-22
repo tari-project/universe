@@ -18,7 +18,6 @@ export default function ConnectButton() {
         if (authUuid) {
             const interval = setInterval(() => {
                 if (authUuid) {
-                    console.log(`fetching authUuid: ${authUuid}`);
                     fetch(`https://airdrop.tari.com/api/auth/twitter/get-token/${authUuid}`, {
                         method: 'POST',
                         headers: {
@@ -27,12 +26,10 @@ export default function ConnectButton() {
                     })
                         .then((response) => response.json())
                         .then((data) => {
-                            if (data.error) {
-                                console.log(data.error);
-                                return;
+                            if (!data.error) {
+                                clearInterval(interval);
+                                console.log(data);
                             }
-                            clearInterval(interval);
-                            console.log(data);
                         });
                 }
             }, 1000);
