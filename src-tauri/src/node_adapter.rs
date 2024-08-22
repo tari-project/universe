@@ -48,8 +48,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
-            format!("--log-path={}", log_dir.to_str().unwrap()).to_string(),
-            // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
+            format!("--log-path={}", log_dir.to_str().unwrap()).to_string(), // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
         ];
         if !self.use_tor {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
@@ -112,7 +111,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                             }
 
                         },
-                    };
+                    }
 
                     match fs::remove_file(data_dir.join("node_pid")) {
                         Ok(_) => {}
@@ -198,33 +197,47 @@ impl MinotariNodeStatusMonitor {
 
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
+        let mut sync_progress_history: Vec<(u64, u64)> = vec![];
         loop {
             let tip = client.get_tip_info(Empty {}).await?;
-            let res = tip.into_inner();
-            if res.initial_sync_achieved {
+            let sync_progress = client.get_sync_progress(Empty {}).await?;
+            let tip_res = tip.into_inner();
+            let sync_progress = sync_progress.into_inner();
+            if tip_res.initial_sync_achieved {
                 break;
             }
-            let metadata = res.metadata.as_ref().cloned().unwrap();
-            let time_behind = Duration::from_secs(
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs()
-                    - metadata.timestamp,
-            );
+            println!("Sync progress: {:?}", sync_progress);
+
+            let time_now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            if sync_progress_history.len() >= 10 {
+                sync_progress_history.remove(0);
+            }
+            sync_progress_history.push((sync_progress.local_height, time_now));
+
+            let syncing_speed = ((sync_progress_history.last().unwrap().0
+                - sync_progress_history.first().unwrap().0)
+                as f64)
+                / ((sync_progress_history.last().unwrap().1
+                    - sync_progress_history.first().unwrap().1) as f64);
+
+            println!("Syncing speed: {}", syncing_speed);
+            let metadata = tip_res.metadata.as_ref().cloned().unwrap();
+            let time_behind = Duration::from_secs(time_now - metadata.timestamp);
             if time_behind < Duration::from_secs(600) {
                 break;
             }
-            progress_tracker
-                .update(
-                    format!(
-                        "Waiting for initial sync. Tip height: {} Behind:{}",
-                        metadata.best_block_height,
-                        format_duration(time_behind)
-                    ),
-                    1,
-                )
-                .await;
+            progress_tracker.update(
+                format!(
+                    "Waiting for initial sync. Tip height: {} Behind:{}. Syncing {} blocks per second",
+                    metadata.best_block_height,
+                    format_duration(time_behind),
+                    syncing_speed
+                ),
+                1
+            ).await;
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
         Ok(())
