@@ -1,8 +1,6 @@
-import {useBlockInfo} from '@app/hooks/mining/useBlockInfo.ts';
 import {Divider, Stack, Typography} from '@mui/material';
 import {useAppStatusStore} from "@app/store/useAppStatusStore.ts";
-import { Stack, Typography } from '@mui/material';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
+import {useMiningStore} from '@app/store/useMiningStore.ts';
 
 function BlockInfo() {
     const p2pool = useAppStatusStore((s) => s.p2pool_stats);

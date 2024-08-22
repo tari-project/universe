@@ -1,16 +1,14 @@
 import {useCallback, useEffect, useState} from 'react';
 import {GiPauseButton} from 'react-icons/gi';
-import { useCallback, useEffect, useState } from 'react';
-import { GiPauseButton } from 'react-icons/gi';
 
 import {IconWrapper, StyledButton, StyledIcon} from './MiningButton.styles.ts';
 import {ButtonProps} from '@mui/material';
 import {useUIStore} from '@app/store/useUIStore.ts';
 import useAppStateStore from '@app/store/appStateStore.ts';
-import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
-import { useShallow } from 'zustand/react/shallow';
-import { IoChevronForwardOutline } from 'react-icons/io5';
-import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import {useCPUStatusStore} from '@app/store/useCPUStatusStore.ts';
+import {useShallow} from 'zustand/react/shallow';
+import {IoChevronForwardOutline} from 'react-icons/io5';
+import {useMiningControls} from '@app/hooks/mining/useMiningControls.ts';
 
 function MiningButton() {
     const [buttonLoading, setButtonLoading] = useState(false);
@@ -18,7 +16,7 @@ function MiningButton() {
     const miningInitiated = useUIStore((s) => s.miningInitiated);
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
 
-    const { startMining, stopMining, hasMiningBeenStopped } = useMiningControls();
+    const {startMining, stopMining, hasMiningBeenStopped} = useMiningControls();
 
     useEffect(() => {
         const startLoad = !isMining && miningInitiated;
