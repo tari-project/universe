@@ -107,17 +107,17 @@ const Settings: React.FC = () => {
 
     const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        console.log('submitting');
+        console.info('submitting');
         handleSubmit(
             (data) => {
-                console.log(typeof data[FormFields.IDLE_TIMEOUT]);
+                console.info(typeof data[FormFields.IDLE_TIMEOUT]);
                 invoke('set_user_inactivity_timeout', {
                     timeout: Number(data[FormFields.IDLE_TIMEOUT]),
                 });
                 handleClose();
             },
             (error) => {
-                console.log(error);
+                console.error(error);
             }
         )();
     };

@@ -1,13 +1,15 @@
 import {useBlockInfo} from '@app/hooks/mining/useBlockInfo.ts';
 import {Divider, Stack, Typography} from '@mui/material';
 import {useAppStatusStore} from "@app/store/useAppStatusStore.ts";
+import { Stack, Typography } from '@mui/material';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 function BlockInfo() {
     const p2pool = useAppStatusStore((s) => s.p2pool_stats);
     const tribe = p2pool?.tribe.name;
     const minersCount = p2pool?.num_of_miners;
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
-    const {displayBlock} = useBlockInfo();
+    const displayBlockHeight = useMiningStore((s) => s.displayBlockHeight);
 
     const p2poolStats = isP2poolEnabled ? (
         <Stack direction="row" spacing={2}>
@@ -27,10 +29,12 @@ function BlockInfo() {
     return (
         <Stack direction="row" spacing={2}>
             {p2poolStats}
-            <Stack alignItems="flex-end">
-                <Typography variant="h6">#{displayBlock}</Typography>
-                <Typography variant="body2">Floor</Typography>
-            </Stack>
+            {displayBlockHeight ? (
+                <Stack alignItems="flex-end">
+                    <Typography variant="h6">#{displayBlockHeight}</Typography>
+                    <Typography variant="body2">Floor</Typography>
+                </Stack>
+            ) : null}
         </Stack>
     );
 }
