@@ -49,7 +49,7 @@ function AutoMiner() {
                         />
                     </FormGroup>
                 </Stack>
-                {isAutoMining && (
+                {isAutoMining && isAutoMiningAllowed && (
                     <Stack direction="row" alignItems="center" gap={1} width="100%" height="100%">
                         <Typography variant="body2" flex={1}>
                             {currentUserInactivityDuration?.toFixed(2)}s

@@ -96,6 +96,7 @@ const Settings: React.FC = () => {
                 invoke('set_user_inactivity_timeout', {
                     timeout: Number(data[FormFields.IDLE_TIMEOUT]),
                 });
+                invoke('set_auto_mining', { autoMining: false });
                 handleClose();
             },
             (error) => {
