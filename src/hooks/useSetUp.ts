@@ -16,6 +16,7 @@ export function useSetUp() {
 
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const setCurrentUserInactivityDuration = useAppStatusStore((s) => s.setCurrentUserInactivityDuration);
     // TODO: set up separate auto-miner listener
     const autoMiningEnabled = useAppStatusStore((s) => s.auto_mining);
     const { startMining, stopMining } = useMiningControls();
@@ -45,6 +46,9 @@ export function useSetUp() {
                     stopMining().then(() => {
                         console.debug('Mining stopped');
                     });
+                    break;
+                case 'current_timeout_duration':
+                    setCurrentUserInactivityDuration(p.duration);
                     break;
                 default:
                     console.warn('Unknown tauri event: ', { e, p });

@@ -11,6 +11,7 @@ interface Actions {
     setMode: (mode: modeType) => void;
     setConfigMode: (mode: modeType) => void;
     setMainAppVersion: (mainAppVersion: string) => void;
+    setCurrentUserInactivityDuration: (duration: number) => void;
 }
 type AppStatusStoreState = State & Actions;
 
@@ -22,6 +23,7 @@ const initialState: AppStatus = {
     mode: 'Eco',
     auto_mining: false,
     user_inactivity_timeout: undefined,
+    current_user_inactivity_duration: undefined,
     main_app_version: undefined,
     applications_versions: undefined,
 };
@@ -30,6 +32,8 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         (set) => ({
             ...initialState,
             setAppStatus: (appStatus) => set({ ...appStatus }),
+            setCurrentUserInactivityDuration: (current_user_inactivity_duration) =>
+                set({ current_user_inactivity_duration }),
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMainAppVersion: (main_app_version) => set({ main_app_version }),
             setMode: (mode) => set({ mode }),

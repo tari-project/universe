@@ -1,15 +1,17 @@
 import Tile from './components/Tile.tsx';
 import { MinerContainer, TileContainer } from './styles.ts';
-import AutoMiner from './components/AutoMiner.tsx';
+import AutoMiner from './components/AutoMiner/AutoMiner.tsx';
 
 import ModeSelect from './components/ModeSelect.tsx';
 import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
 import { Divider } from '@mui/material';
 
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useMining } from '@app/hooks/useMining.ts';
 
 function Miner() {
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
+    const { isWaitingForHashRate } = useMining();
 
     const truncateString = (str: string, num: number): string => {
         if (str.length <= num) {
@@ -40,7 +42,7 @@ function Miner() {
             <TileContainer>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
-                <Tile title="Hashrate" stats={hash_rate + ' H/s'} />
+                <Tile title="Hashrate" stats={hash_rate + ' H/s'} isLoading={isWaitingForHashRate} />
                 <Tile title="CPU Utilization" stats={(cpuHardwareStatus?.usage_percentage || 0).toString() + '%'} />
                 <Tile title="CHIP/GPU" stats={truncateString(cpuHardwareStatus?.label || 'Unknown', 10)} />
                 <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' XTM/24h'} />

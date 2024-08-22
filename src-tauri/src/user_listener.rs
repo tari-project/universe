@@ -15,6 +15,12 @@ pub struct UserActivityEventPayload {
     event_type: String,
 }
 
+#[derive(Clone, serde::Serialize)]
+pub struct CurrentTimeoutDurationEventPayload {
+    event_type: String,
+    duration: u64,
+}
+
 impl UserListener {
     pub fn new() -> Self {
         Self {
@@ -76,6 +82,8 @@ impl UserListener {
                             user_listener.is_mining_initialized = false;
                         }
 
+
+                        UserListener::emit_current_timeout_duration(&window, timeout.saturating_sub(timeout_counter));
                         sleep(Duration::from_secs(1)).await;
                     }
                 } => {},
@@ -126,6 +134,19 @@ impl UserListener {
                 "message",
                 UserActivityEventPayload {
                     event_type: "user_active".to_string(),
+                },
+            )
+            .unwrap();
+    }
+
+
+    pub fn emit_current_timeout_duration(window: &tauri::Window, timeout: Duration) {
+        window
+            .emit(
+                "message",
+                CurrentTimeoutDurationEventPayload {
+                    event_type: "current_timeout_duration".to_string(),
+                    duration: timeout.as_secs(),
                 },
             )
             .unwrap();

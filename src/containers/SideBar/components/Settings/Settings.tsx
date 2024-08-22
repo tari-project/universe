@@ -157,7 +157,7 @@ const Settings: React.FC = () => {
                                     <ControlledNumberInput
                                         name={FormFields.IDLE_TIMEOUT}
                                         control={control}
-                                        title="Idle Timeout"
+                                        title="Time after which machine is considered idle"
                                         endAdornment="seconds"
                                         placeholder="Enter idle timeout in seconds"
                                         type="int"
