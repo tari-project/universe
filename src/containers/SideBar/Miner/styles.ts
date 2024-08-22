@@ -24,20 +24,6 @@ export const TileItem = styled(Box)(({ theme }) => ({
     boxShadow: '0px 4px 45px 0px rgba(0, 0, 0, 0.08)',
 }));
 
-export const AutoMinerContainer = styled(Box)(({ theme }) => ({
-    backgroundColor: backgrounds.medGrey,
-    borderRadius: theme.shape.borderRadius,
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
-    paddingLeft: theme.spacing(1.5),
-    paddingRight: theme.spacing(1.5),
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: theme.spacing(1),
-}));
-
 export const ScheduleButton = styled(Button)(({ theme }) => ({
     backgroundColor: `${theme.palette.background.default} !important`,
     color: theme.palette.text.secondary,
