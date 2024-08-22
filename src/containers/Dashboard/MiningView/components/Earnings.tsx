@@ -13,7 +13,7 @@ const variants = {
         y: 0,
         scale: 1.05,
         transition: {
-            duration: 0.8,
+            duration: 1,
             scale: {
                 duration: 0.5,
             },
@@ -22,7 +22,7 @@ const variants = {
     hidden: {
         opacity: 0,
         y: 50,
-        transition: { duration: 0.2, delay: 0.75 },
+        transition: { duration: 0.2, delay: 0.8 },
     },
 };
 

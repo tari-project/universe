@@ -8,12 +8,12 @@ export const EarningsContainer = styled('div')`
     height: 60%;
 `;
 
-
 export const EarningsWrapper = styled(motion.div)`
     font-family: 'DrukWideLCGBold', sans-serif;
     display: flex;
     width: 100%;
     align-items: center;
     justify-content: center;
+    position: relative;
     gap: 10px;
 `;

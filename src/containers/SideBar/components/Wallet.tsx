@@ -6,13 +6,14 @@ import { AddressBox, BalanceChangeChip } from '../styles';
 import { FaCircleArrowUp } from 'react-icons/fa6';
 import useWalletStore from '@app/store/walletStore';
 import formatBalance from '@app/utils/formatBalance.ts';
+import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 
 function Wallet() {
     const balance = useWalletStore((state) => state.balance);
     const formatted = formatBalance(balance);
     const address = '🚀⏰🎉';
 
-    const balanceFontSize = () => {
+    const balanceFontSize = (): number => {
         if (balance <= 100000 * 1_000_000) {
             return 45;
         } else if (balance <= 1_000_000 * 1_000_000) {
@@ -47,8 +48,8 @@ function Wallet() {
                         width="100%"
                     >
                         <Stack direction="row" spacing={0.2} alignItems="baseline">
-                            <Typography variant="h2" fontSize={balanceFontSize}>
-                                {formatted}
+                            <Typography variant="h2">
+                                <CharSpinner value={formatted} variant="simple" fontSize={balanceFontSize()} />
                             </Typography>
                             <Typography variant="h4">XTM</Typography>
                         </Stack>
