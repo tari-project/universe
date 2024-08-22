@@ -43,7 +43,7 @@ export const useGetApplicationsVersions = () => {
 
     const updateApplicationsVersions = useCallback(() => {
         invoke('update_applications')
-            .then((_) => {
+            .then(() => {
                 getApplicationsVersions();
             })
             .catch((error) => {
