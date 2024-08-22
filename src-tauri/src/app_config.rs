@@ -1,10 +1,11 @@
-use anyhow::anyhow;
-use log::{info, warn};
-use serde::{Deserialize, Serialize};
 use std::{
     path::PathBuf,
     time::{Duration, SystemTime},
 };
+
+use anyhow::anyhow;
+use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use tokio::fs;
 
 const LOG_TARGET: &str = "tari::universe::app_config";
@@ -13,6 +14,7 @@ const LOG_TARGET: &str = "tari::universe::app_config";
 pub struct AppConfigFromFile {
     pub mode: String,
     pub auto_mining: bool,
+    pub p2pool_enabled: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
 }
@@ -73,6 +75,7 @@ impl AppConfig {
                 Ok(config) => {
                     self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                     self.auto_mining = config.auto_mining;
+                    self.p2pool_enabled = self.p2pool_enabled;
                     self.user_inactivity_timeout = config.user_inactivity_timeout;
                     self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                 }
@@ -85,6 +88,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
+            p2pool_enabled: self.p2pool_enabled,
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
         };
@@ -155,6 +159,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
+            p2pool_enabled: self.p2pool_enabled,
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
         };

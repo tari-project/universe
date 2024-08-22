@@ -148,6 +148,9 @@ async fn setup_inner<'r>(
     BinaryResolver::current()
         .read_current_highest_version(Binaries::Wallet, progress.clone())
         .await?;
+    BinaryResolver::current()
+        .read_current_highest_version(Binaries::ShaP2pool, progress.clone())
+        .await?;
 
     if now
         .duration_since(last_binaries_update_timestamp)
@@ -198,13 +201,10 @@ async fn setup_inner<'r>(
         progress
             .update("Checking for latest version of sha-p2pool".to_string(), 0)
             .await;
+        sleep(Duration::from_secs(1));
         BinaryResolver::current()
             .ensure_latest(Binaries::ShaP2pool, progress.clone())
-            .await
-            .map_err(|e| {
-                error!(target: LOG_TARGET, "Could not download sha-p2pool: {:?}", e);
-                e
-            })?;
+            .await?;
     }
 
     for _i in 0..2 {
@@ -252,12 +252,12 @@ async fn setup_inner<'r>(
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    progress.set_max(75).await;
+    progress.set_max(70).await;
     progress.update("Starting P2Pool".to_string(), 0).await;
-    let _ = state
+    state
         .p2pool_manager
         .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
-        .await;
+        .await?;
 
     progress.set_max(80).await;
     progress.update("Starting MMProxy".to_string(), 0).await;

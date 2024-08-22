@@ -7,9 +7,9 @@ import {useAppStatusStore} from "@app/store/useAppStatusStore.ts";
 function BlockInfo() {
     const p2pool = useAppStatusStore((s) => s.p2pool_stats);
     const tribe = p2pool?.tribe.name;
-    let minersCount = p2pool?.num_of_miners;
+    const minersCount = p2pool?.num_of_miners;
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
-    const timeSince = useBlockInfo();
+    const {timeSince} = useBlockInfo();
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
     const {displayBlock} = useBlockInfo();
 
@@ -18,7 +18,8 @@ function BlockInfo() {
             <>
                 <Divider orientation="vertical" flexItem/>
                 <Stack>
-                    <Typography variant="h6">{timeSince}</Typography>
+                    <Typography
+                        variant="h6">{timeSince.hoursString}:{timeSince.minutes}:{timeSince.seconds}</Typography>
                     <Typography variant="body2">Current floor build time</Typography>
                 </Stack>
             </>
