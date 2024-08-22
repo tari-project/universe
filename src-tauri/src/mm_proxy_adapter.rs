@@ -145,8 +145,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                             }
 
                         },
-                    }
-                    ;
+                    };
 
                     match fs::remove_file(data_dir.join("mmproxy_pid")) {
                         Ok(_) => {}

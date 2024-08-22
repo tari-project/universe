@@ -6,8 +6,8 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use humantime::format_duration;
 use log::{debug, info, warn};
-use minotari_node_grpc_client::BaseNodeGrpcClient;
 use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
+use minotari_node_grpc_client::BaseNodeGrpcClient;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
@@ -115,8 +115,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                             }
 
                         },
-                    }
-                    ;
+                    };
 
                     match fs::remove_file(data_dir.join("node_pid")) {
                         Ok(_) => {}

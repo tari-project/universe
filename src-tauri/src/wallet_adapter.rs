@@ -4,8 +4,8 @@ use std::path::PathBuf;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, info, warn};
-use minotari_node_grpc_client::grpc::GetBalanceRequest;
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
+use minotari_node_grpc_client::grpc::GetBalanceRequest;
 use serde::Serialize;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -135,8 +135,7 @@ impl ProcessAdapter for WalletAdapter {
                            }
                        }
                         },
-                    }
-                    ;
+                    };
                     println!("Stopping minotari node");
 
                     match fs::remove_file(data_dir.join("wallet_pid")) {

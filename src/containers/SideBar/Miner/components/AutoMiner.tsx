@@ -1,15 +1,15 @@
 import React from 'react';
-import { FormGroup, Switch, Stack, Typography } from '@mui/material';
-import { AutoMinerContainer } from '../styles';
-import { invoke } from '@tauri-apps/api/tauri';
-import { useAppStatusStore } from '@app/store/useAppStatusStore';
+import {FormGroup, Stack, Switch, Typography} from '@mui/material';
+import {AutoMinerContainer} from '../styles';
+import {invoke} from '@tauri-apps/api/tauri';
+import {useAppStatusStore} from '@app/store/useAppStatusStore';
 
 function AutoMiner() {
     const isAutoMining = useAppStatusStore((state) => state.auto_mining);
 
     const handleAutoMining = (event: React.ChangeEvent<HTMLInputElement>) => {
         const isChecked = event.target.checked;
-        invoke('set_auto_mining', { autoMining: isChecked }).then(() => {
+        invoke('set_auto_mining', {autoMining: isChecked}).then(() => {
             console.info('Auto mining checked', isChecked);
         });
     };
@@ -29,6 +29,7 @@ function AutoMiner() {
                         disableRipple
                         checked={isAutoMining}
                         onChange={handleAutoMining}
+
                     />
                 </FormGroup>
             </AutoMinerContainer>

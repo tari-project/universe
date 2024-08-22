@@ -1,23 +1,22 @@
-import { useMining } from '@app/hooks/useMining.ts';
-import { useCallback, useEffect, useState } from 'react';
-import { GiPauseButton } from 'react-icons/gi';
+import {useMining} from '@app/hooks/useMining.ts';
+import {useCallback, useEffect, useState} from 'react';
+import {GiPauseButton} from 'react-icons/gi';
 
-import { IconWrapper, StyledButton, StyledIcon } from './MiningButton.styles.ts';
-import { ButtonProps } from '@mui/material';
-import { useUIStore } from '@app/store/useUIStore.ts';
+import {IconWrapper, StyledButton, StyledIcon} from './MiningButton.styles.ts';
+import {ButtonProps} from '@mui/material';
+import {useUIStore} from '@app/store/useUIStore.ts';
 import useAppStateStore from '@app/store/appStateStore.ts';
-import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
-import { useShallow } from 'zustand/react/shallow';
-import { IoChevronForwardOutline } from 'react-icons/io5';
+import {useCPUStatusStore} from '@app/store/useCPUStatusStore.ts';
+import {useShallow} from 'zustand/react/shallow';
+import {IoChevronForwardOutline} from 'react-icons/io5';
 
 function MiningButton() {
     const [buttonLoading, setButtonLoading] = useState(false);
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const miningInitiated = useUIStore((s) => s.miningInitiated);
-    const progress = useAppStateStore((s) => s.setupProgress);
-    const miningAllowed = progress >= 1;
+    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
 
-    const { startMining, stopMining, hasMiningBeenStopped } = useMining();
+    const {startMining, stopMining, hasMiningBeenStopped} = useMining();
 
     useEffect(() => {
         const startLoad = !isMining && miningInitiated;
@@ -42,7 +41,7 @@ function MiningButton() {
         variant: 'contained',
         color: 'primary',
         size: 'large',
-        endIcon: isMining ? <GiPauseButton /> : <IoChevronForwardOutline />,
+        endIcon: isMining ? <GiPauseButton/> : <IoChevronForwardOutline/>,
     };
 
     const actionText = !isMining ? (hasMiningBeenStopped ? 'Resume' : 'Start') : 'Pause';
@@ -52,8 +51,8 @@ function MiningButton() {
             {...btnProps}
             hasStarted={!!isMining}
             onClick={handleClick}
-            disabled={!miningAllowed}
-            endIcon={<IconWrapper>{buttonLoading ? <StyledIcon /> : btnProps.endIcon}</IconWrapper>}
+            disabled={!miningAllowed || buttonLoading}
+            endIcon={<IconWrapper>{buttonLoading ? <StyledIcon/> : btnProps.endIcon}</IconWrapper>}
             sx={{
                 '& .MuiButton-endIcon': {
                     position: 'absolute',

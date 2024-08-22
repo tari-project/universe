@@ -1,31 +1,38 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
-    IconButton,
-    Dialog,
-    DialogContent,
-    Button,
-    Stack,
-    Typography,
-    Divider,
-    CircularProgress,
-    Tooltip,
     Box,
+    Button,
+    CircularProgress,
+    Dialog,
     DialogActions,
+    DialogContent,
+    Divider,
+    FormGroup,
+    IconButton,
+    Stack,
+    Switch,
+    Tooltip,
+    Typography,
 } from '@mui/material';
-import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
-import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
+import {IoClose, IoCopyOutline, IoEyeOffOutline, IoEyeOutline, IoSettingsOutline} from 'react-icons/io5';
+import {useGetSeedWords} from '../../../../hooks/useGetSeedWords';
 import truncateString from '../../../../utils/truncateString';
-import { invoke } from '@tauri-apps/api/tauri';
+import {invoke} from '@tauri-apps/api/tauri';
 
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useGetApplicationsVersions } from '../../../../hooks/useGetApplicationsVersions.ts';
+import {useAppStatusStore} from '@app/store/useAppStatusStore.ts';
+import {useGetApplicationsVersions} from '../../../../hooks/useGetApplicationsVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles';
-import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
-import { CardComponent } from './Card.component.tsx';
-import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
-import { useForm } from 'react-hook-form';
-import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
+import {CardContainer, HorisontalBox, RightHandColumn} from './Settings.styles';
+import {useHardwareStatus} from '@app/hooks/useHardwareStatus.ts';
+import {CardComponent} from './Card.component.tsx';
+import {ControlledNumberInput} from '@app/components/NumberInput/NumberInput.component.tsx';
+import {useForm} from 'react-hook-form';
+import {Environment, useEnvironment} from '@app/hooks/useEnvironment.ts';
+import {AutoMinerContainer} from "@app/containers/SideBar/Miner/styles.ts";
+import {useCPUStatusStore} from "@app/store/useCPUStatusStore.ts";
+import {useShallow} from "zustand/react/shallow";
+import useAppStateStore from "@app/store/appStateStore.ts";
+import {useUIStore} from "@app/store/useUIStore.ts";
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -40,16 +47,27 @@ const Settings: React.FC = () => {
 
     const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
-    const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
+    const {getApplicationsVersions, applicationsVersions} = useGetApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
-    const { reset, handleSubmit, control } = useForm<FormState>({
-        defaultValues: { idleTimeout: userInActivityTimeout },
+    const {reset, handleSubmit, control} = useForm<FormState>({
+        defaultValues: {idleTimeout: userInActivityTimeout},
         mode: 'onSubmit',
     });
-    const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
-    const { cpu, gpu } = useHardwareStatus();
+    const {seedWords, getSeedWords, seedWordsFetched, seedWordsFetching} = useGetSeedWords();
+    const {cpu, gpu} = useHardwareStatus();
+
+    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const miningInitiated = useUIStore((s) => s.miningInitiated);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        invoke('set_p2pool_enabled', {p2poolEnabled: isChecked}).then(() => {
+            console.info('P2pool enabled checked', isChecked);
+        });
+    };
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -84,7 +102,7 @@ const Settings: React.FC = () => {
     };
 
     const handleCancel = () => {
-        reset({ idleTimeout: userInActivityTimeout });
+        reset({idleTimeout: userInActivityTimeout});
     };
 
     const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -107,7 +125,7 @@ const Settings: React.FC = () => {
     return (
         <>
             <IconButton onClick={handleClickOpen}>
-                <IoSettingsOutline size={16} />
+                <IoSettingsOutline size={16}/>
             </IconButton>
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth={'sm'}>
                 <DialogContent>
@@ -115,10 +133,10 @@ const Settings: React.FC = () => {
                         <Stack direction="row" justifyContent="space-between" alignItems="center" pb={1}>
                             <Typography variant="h4">Settings</Typography>
                             <IconButton onClick={handleClose}>
-                                <IoClose size={20} />
+                                <IoClose size={20}/>
                             </IconButton>
                         </Stack>
-                        <Divider />
+                        <Divider/>
                         <Stack spacing={1} pt={1} pb={1} direction="column">
                             <Typography variant="h6">Seed Words</Typography>
                             <Stack flexDirection="row" alignItems="center" gap={1}>
@@ -128,11 +146,11 @@ const Settings: React.FC = () => {
                                         : '****************************************************'}
                                 </Typography>
                                 {seedWordsFetching ? (
-                                    <CircularProgress size="34px" />
+                                    <CircularProgress size="34px"/>
                                 ) : (
                                     <>
                                         <IconButton onClick={toggleSeedWordsVisibility}>
-                                            {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                                            {showSeedWords ? <IoEyeOffOutline size={18}/> : <IoEyeOutline size={18}/>}
                                         </IconButton>
                                         <Tooltip
                                             title="Copied!"
@@ -141,17 +159,17 @@ const Settings: React.FC = () => {
                                             disableFocusListener
                                             disableHoverListener
                                             disableTouchListener
-                                            PopperProps={{ disablePortal: true }}
+                                            PopperProps={{disablePortal: true}}
                                         >
                                             <IconButton onClick={copySeedWords}>
-                                                <IoCopyOutline size={18} />
+                                                <IoCopyOutline size={18}/>
                                             </IconButton>
                                         </Tooltip>
                                     </>
                                 )}
                             </Stack>
                         </Stack>
-                        <Divider />
+                        <Divider/>
                         <HorisontalBox>
                             <Typography variant="h6">Logs</Typography>
                             <RightHandColumn>
@@ -160,7 +178,7 @@ const Settings: React.FC = () => {
                                 </Button>
                             </RightHandColumn>
                         </HorisontalBox>
-                        <Divider />
+                        <Divider/>
                         <form onSubmit={onSubmit}>
                             <Box my={1}>
                                 <Typography variant="h5">Random</Typography>
@@ -184,7 +202,7 @@ const Settings: React.FC = () => {
                                         }}
                                     />
                                 </Stack>
-                                <Divider />
+                                <Divider/>
                                 <DialogActions>
                                     <Button onClick={handleCancel} variant="outlined">
                                         Cancel
@@ -195,7 +213,25 @@ const Settings: React.FC = () => {
                                 </DialogActions>
                             </Box>
                         </form>
-                        <Divider />
+                        <Divider/>
+                        <AutoMinerContainer>
+                            <Stack direction="column" spacing={0}>
+                                <Typography variant="h6">Pool Mining</Typography>
+                                <Typography variant="body2">
+                                    When enabled, you will be mining in a pool.
+                                </Typography>
+                            </Stack>
+                            <FormGroup>
+                                <Switch
+                                    focusVisibleClassName=".Mui-focusVisible"
+                                    disableRipple
+                                    checked={isP2poolEnabled}
+                                    onChange={handleP2poolEnabled}
+                                    disabled={isMining || miningInitiated || !miningAllowed}
+                                />
+                            </FormGroup>
+                        </AutoMinerContainer>
+                        <Divider/>
                         {applicationsVersions && (
                             <>
                                 <HorisontalBox>
@@ -247,7 +283,7 @@ const Settings: React.FC = () => {
                                     <CardComponent
                                         heading={cpu?.label || 'Unknown CPU'}
                                         labels={[
-                                            { labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%` },
+                                            {labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%`},
                                             {
                                                 labelText: 'Temperature',
                                                 labelValue: `${cpu?.current_temperature || 0}°C`,
@@ -261,7 +297,7 @@ const Settings: React.FC = () => {
                                     <CardComponent
                                         heading={gpu?.label || 'Unknown GPU'}
                                         labels={[
-                                            { labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%` },
+                                            {labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%`},
                                             {
                                                 labelText: 'Temperature',
                                                 labelValue: `${gpu?.current_temperature || 0}°C`,
@@ -275,9 +311,9 @@ const Settings: React.FC = () => {
                                 </CardContainer>
                             </>
                         }
-                        <Divider />
+                        <Divider/>
                         <HorisontalBox>
-                            <VisualMode />
+                            <VisualMode/>
                         </HorisontalBox>
                     </Stack>
                 </DialogContent>

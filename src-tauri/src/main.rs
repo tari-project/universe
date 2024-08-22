@@ -1,11 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{panic, process};
 use std::future::Future;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
+use std::{panic, process};
 
 use anyhow::Error;
 use log::{debug, error, info, warn};
@@ -60,9 +60,9 @@ mod p2pool_manager;
 mod process_killer;
 mod wallet_adapter;
 
+mod cpu_miner;
 mod progress_tracker;
 mod setup_status_event;
-mod cpu_miner;
 
 #[tauri::command]
 async fn set_mode<'r>(
@@ -243,7 +243,11 @@ async fn setup_inner<'r>(
     progress.update("Waiting for wallet".to_string(), 0).await;
     state
         .wallet_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir.clone(), log_dir.clone())
+        .ensure_started(
+            state.shutdown.to_signal(),
+            data_dir.clone(),
+            log_dir.clone(),
+        )
         .await?;
 
     progress.set_max(55).await;
@@ -695,7 +699,7 @@ fn main() {
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
-                .expect("Could not set up logging");
+            .expect("Could not set up logging");
 
             let app_config_clone = app_config.clone();
 

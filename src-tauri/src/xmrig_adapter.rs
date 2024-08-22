@@ -10,9 +10,9 @@ use tokio::sync::mpsc::Receiver;
 use crate::cpu_miner::CpuMinerEvent;
 use crate::download_utils::{download_file, extract};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::ProgressTracker;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
+use crate::ProgressTracker;
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -163,7 +163,7 @@ impl ProcessAdapter for XmrigAdapter {
                         force_download,
                         progress_tracker.clone(),
                     )
-                        .await?;
+                    .await?;
                     let xmrig_dir = cache_dir
                         .clone()
                         .join("xmrig")

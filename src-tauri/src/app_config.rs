@@ -75,7 +75,7 @@ impl AppConfig {
                 Ok(config) => {
                     self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                     self.auto_mining = config.auto_mining;
-                    self.p2pool_enabled = self.p2pool_enabled;
+                    self.p2pool_enabled = config.p2pool_enabled;
                     self.user_inactivity_timeout = config.user_inactivity_timeout;
                     self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                 }
