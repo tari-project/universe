@@ -5,7 +5,6 @@ import TopStatus from './components/TopStatus';
 import { InfoContainer } from '../styles';
 import Earnings from '@app/containers/Dashboard/MiningView/components/Earnings.tsx';
 import { MiningViewContainer } from './MiningView.styles.ts';
-import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 
 function MiningView() {
     return (
@@ -14,7 +13,6 @@ function MiningView() {
                 <TopStatus />
                 <BlockInfo />
             </InfoContainer>
-            <CharSpinner />
             <Earnings />
             <InfoContainer>
                 <div />
