@@ -428,7 +428,7 @@ async fn start_mining<'r>(
     let config = state.cpu_miner_config.read().await;
     let monero_address = state.config.read().await.monero_address.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
-    state
+    let res = state
         .cpu_miner
         .write()
         .await
@@ -442,12 +442,15 @@ async fn start_mining<'r>(
             progress_tracker,
             state.config.read().await.get_mode(),
         )
-        .await
-        .map_err(|e| {
-            dbg!(e.to_string());
-            e.to_string()
-        })?;
-    Ok(())
+        .await;
+
+    match res {
+        Ok(_) => return Ok(()),
+        Err(e) => {
+            let _ = state.cpu_miner.write().await.stop().await;
+            return Err(e.to_string());
+        }
+    }
 }
 
 #[tauri::command]

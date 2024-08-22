@@ -77,12 +77,14 @@ impl CpuMiner {
             MiningMode::Eco => (30 * max_cpu_available) / 100,
             MiningMode::Ludicrous => max_cpu_available,
         };
+        let xmrig_version =
+            XmrigAdapter::ensure_latest(cache_dir.clone(), false, progress_tracker.clone()).await?;
         let xmrig = XmrigAdapter::new(
             xmrig_node_connection,
             monero_address.clone(),
             cache_dir,
-            progress_tracker,
             cpu_max_percentage,
+            xmrig_version
         );
         let (mut xmrig_child, _xmrig_status_monitor) =
             xmrig.spawn_inner(base_path.clone(), log_dir.clone())?;
@@ -105,6 +107,7 @@ impl CpuMiner {
                                            }
                                            Err(e) => {
                                               error!(target: LOG_TARGET, "xmrig exited with error: {}", e);
+                                              return Err(e)
                                            }
                                        }
                                        break;

@@ -39,14 +39,13 @@ impl XmrigNodeConnection {
 }
 
 pub struct XmrigAdapter {
-    force_download: bool,
+    version: String,
     node_connection: XmrigNodeConnection,
     monero_address: String,
     http_api_token: String,
     http_api_port: u16,
     cache_dir: PathBuf,
     cpu_max_percentage: usize,
-    progress_tracker: ProgressTracker,
     pub client: XmrigHttpApiClient,
     // TODO: secure
 }
@@ -56,20 +55,19 @@ impl XmrigAdapter {
         xmrig_node_connection: XmrigNodeConnection,
         monero_address: String,
         cache_dir: PathBuf,
-        progress_tracker: ProgressTracker,
         cpu_max_percentage: usize,
+        version: String,
     ) -> Self {
         let http_api_port = 9090;
         let http_api_token = "pass".to_string();
         Self {
-            force_download: false,
             node_connection: xmrig_node_connection,
             monero_address,
             http_api_token: http_api_token.clone(),
             http_api_port,
             cache_dir,
             cpu_max_percentage,
-            progress_tracker,
+            version,
             client: XmrigHttpApiClient::new(
                 format!("http://127.0.0.1:{}", http_api_port).clone(),
                 http_api_token.clone(),
@@ -135,8 +133,6 @@ impl ProcessAdapter for XmrigAdapter {
         self.kill_previous_instances(data_dir.clone())?;
 
         let cache_dir = self.cache_dir.clone();
-        let progress_tracker = self.progress_tracker.clone();
-        let force_download = self.force_download;
         let xmrig_shutdown = Shutdown::new();
         let mut shutdown_signal = xmrig_shutdown.to_signal();
         let mut args = self.node_connection.generate_args();
@@ -150,17 +146,12 @@ impl ProcessAdapter for XmrigAdapter {
         args.push(format!("--user={}", self.monero_address));
         args.push(format!("--threads={}", self.cpu_max_percentage));
 
+        let version = self.version.clone();
+
         Ok((
             ProcessInstance {
                 shutdown: xmrig_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    // TODO: Ensure version string is not malicious
-                    let version = Self::ensure_latest(
-                        cache_dir.clone(),
-                        force_download,
-                        progress_tracker.clone(),
-                    )
-                    .await?;
                     let xmrig_dir = cache_dir
                         .clone()
                         .join("xmrig")

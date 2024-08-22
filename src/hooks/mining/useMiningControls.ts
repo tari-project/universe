@@ -20,6 +20,7 @@ export enum MiningButtonStateText {
 export function useMiningControls() {
     const handleVisual = useVisualisation();
     const progress = useAppStateStore((s) => s.setupProgress);
+    const setError = useAppStateStore((s) => s.setError);
     const isMining = useCPUStatusStore((s) => s.is_mining);
     const isAutoMining = useAppStatusStore((s) => s.auto_mining);
     const hashRate = useCPUStatusStore((s) => s.hash_rate);
@@ -74,10 +75,12 @@ export function useMiningControls() {
 
     const startMining = useCallback(async () => {
         setIsMiningEnabled(true);
-        await invoke('start_mining', {}).catch(() => {
-            setIsMiningEnabled(false);
+        await invoke('start_mining', {}).then(() => {
+            console.info(`mining started`);
+        }).catch((e) => {
+            setError(e);
         });
-    }, [setIsMiningEnabled]);
+    }, [setIsMiningEnabled, setError]);
 
     const stopMining = useCallback(async () => {
         setIsMiningEnabled(false);
