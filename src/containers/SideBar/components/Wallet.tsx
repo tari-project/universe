@@ -51,7 +51,9 @@ function Wallet() {
                             <Typography variant="h2">
                                 <CharSpinner value={formatted} variant="simple" fontSize={balanceFontSize()} />
                             </Typography>
-                            <Typography variant="h4">XTM</Typography>
+                            <Typography variant="h4" fontSize={14}>
+                                XTM
+                            </Typography>
                         </Stack>
                         <BalanceChangeChip direction="up" icon={<FaCircleArrowUp size={20} />} label="30%" />
                     </Stack>
