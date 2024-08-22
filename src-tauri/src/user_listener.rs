@@ -51,10 +51,9 @@ impl UserListener {
         let mut user_listener = self.to_owned();
         let window = window.clone();
 
-        
         let mut timeout_counter: Duration = Duration::from_secs(0);
         let mut last_mouse_coords = UserListener::read_user_mouse_coords();
-        
+
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
@@ -138,7 +137,6 @@ impl UserListener {
             )
             .unwrap();
     }
-
 
     pub fn emit_current_timeout_duration(window: &tauri::Window, timeout: Duration) {
         window
