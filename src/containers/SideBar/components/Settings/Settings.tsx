@@ -201,14 +201,6 @@ const Settings: React.FC = () => {
                             </RightHandColumn>
                         </HorisontalBox>
                         <Divider />
-                        <HorisontalBox>
-                            <Typography variant="h6">Debug Info:</Typography>
-                        </HorisontalBox>
-                        <CardComponent
-                            heading="Blocks"
-                            labels={[{ labelText: 'Last block added to chain time', labelValue: displayTime }]}
-                        />
-                        <Divider />
                         {
                             <>
                                 <HorisontalBox>
@@ -246,6 +238,49 @@ const Settings: React.FC = () => {
                                 </CardContainer>
                             </>
                         }
+                        <Divider />
+                        {applicationsVersions && (
+                            <>
+                                <HorisontalBox>
+                                    <Typography variant="h6">Versions</Typography>
+                                    <RightHandColumn>
+                                        {currentEnvironment === Environment.Development && (
+                                            <Button onClick={getApplicationsVersions} variant="text">
+                                                Update Versions
+                                            </Button>
+                                        )}
+                                        <Button onClick={getApplicationsVersions} variant="text">
+                                            Refresh Versions
+                                        </Button>
+                                    </RightHandColumn>
+                                </HorisontalBox>
+                                <Stack spacing={0}>
+                                    <CardContainer>
+                                        <CardComponent
+                                            heading="Tari App"
+                                            labels={[
+                                                {
+                                                    labelText: 'Version',
+                                                    labelValue: mainAppVersion || 'Unknown',
+                                                },
+                                            ]}
+                                        />
+                                        {Object.entries(applicationsVersions).map(([key, value]) => (
+                                            <CardComponent
+                                                key={key}
+                                                heading={key}
+                                                labels={[
+                                                    {
+                                                        labelText: 'Version',
+                                                        labelValue: value || 'Unknown',
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </CardContainer>
+                                </Stack>
+                            </>
+                        )}
                         <Divider />
                         {applicationsVersions && (
                             <>

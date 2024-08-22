@@ -14,6 +14,13 @@ function Miner() {
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
     const { isWaitingForHashRate } = useMiningControls();
 
+    const truncateString = (str: string, num: number): string => {
+        if (str.length <= num) {
+            return str;
+        }
+        return str.slice(0, num) + '...';
+    };
+
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
     const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
 
@@ -35,22 +42,10 @@ function Miner() {
             <TileContainer>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
-                <Tile
-                    title="Hashrate"
-                    stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''}`}
-                    unit={`H/s`}
-                    isLoading={isWaitingForHashRate}
-                />
-                <Tile
-                    title="CPU Utilization"
-                    stats={
-                        (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                        }) + '%'
-                    }
-                />
-                <Tile title="CHIP/GPU" stats={hardwareVal || 'Unknown'} />
-                <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000)} unit="tXTM/24h" />
+                <Tile title="Hashrate" stats={hash_rate + ' H/s'} isLoading={isWaitingForHashRate} />
+                <Tile title="CPU Utilization" stats={(cpuHardwareStatus?.usage_percentage || 0).toString() + '%'} />
+                <Tile title="CHIP/GPU" stats={truncateString(cpuHardwareStatus?.label || 'Unknown', 10)} />
+                <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' XTM/24h'} />
             </TileContainer>
         </MinerContainer>
     );
