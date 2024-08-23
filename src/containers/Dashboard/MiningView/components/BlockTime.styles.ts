@@ -10,9 +10,7 @@ export const BlockTimeContainer = styled(Box)(() => ({
 
 export const TitleTypography = styled(Typography)(({ theme }) => ({
     fontFamily: '"PoppinsRegular", sans-serif',
-    fontVariantNumeric: 'tabular-nums',
     fontSize: '13px',
-    letterSpacing: '1px',
     color: theme.palette.text.secondary,
 }));
 
