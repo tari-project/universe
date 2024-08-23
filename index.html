@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/tari.svg" />
     <script type="module" crossorigin src="/assets/glApp.js"></script>
     <title>Tari Universe</title>
     <style>
@@ -40,7 +40,7 @@
         glApp.init();
         time = performance.now() / 1000;
         window.addEventListener('resize', onResize);
-        glApp.properties.cameraOffsetX = (348 + 16) / window.innerWidth; // 348 is sidebar width
+        glApp.properties.cameraOffsetX = (348 + 36) / window.innerWidth; // 348 is sidebar width with some padding
         glApp.properties.resultAnimationSpeed = 2;
         onResize();
         animate();

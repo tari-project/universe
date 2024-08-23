@@ -1,4 +1,4 @@
-use crate::merge_mining_adapter::MergeMiningProxyAdapter;
+use crate::mm_proxy_adapter::MergeMiningProxyAdapter;
 use crate::process_watcher::ProcessWatcher;
 use log::info;
 use std::path::PathBuf;
@@ -36,12 +36,15 @@ impl MmProxyManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        log_path: PathBuf,
         tari_address: TariAddress,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         info!(target: LOG_TARGET, "Starting mmproxy");
-        process_watcher.start(app_shutdown, base_path).await?;
+        process_watcher
+            .start(app_shutdown, base_path, log_path)
+            .await?;
 
         Ok(())
     }

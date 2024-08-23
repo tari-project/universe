@@ -1,10 +1,11 @@
 use crate::app_config::MiningMode;
+use crate::process_adapter::ProcessAdapter;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
     CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
 };
-use log::{error, warn};
+use log::{error, info, warn};
 use std::path::PathBuf;
 use std::thread;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -32,6 +33,7 @@ impl CpuMiner {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn start(
         &mut self,
         mut app_shutdown: ShutdownSignal,
@@ -76,17 +78,14 @@ impl CpuMiner {
         };
         let xmrig = XmrigAdapter::new(
             xmrig_node_connection,
-            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string()
-        );
-        let (mut _rx, mut xmrig_child, client) = xmrig.spawn(
+            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
             cache_dir,
-            log_dir,
-            base_path,
             progress_tracker,
             cpu_max_percentage,
-        )?;
-
-        self.api_client = Some(client);
+        );
+        let (mut xmrig_child, _xmrig_status_monitor) =
+            xmrig.spawn_inner(base_path.clone(), log_dir.clone())?;
+        self.api_client = Some(xmrig.client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             println!("Starting process");
@@ -96,17 +95,15 @@ impl CpuMiner {
             loop {
                 select! {
                               _ = watch_timer.tick() => {
-                                    println!("watching");
-                                    if xmrig_child.ping().expect("idk") {
-                                       println!("xmrig is running");
-                                    } else {
-                                       println!("xmrig is not running");
+                                    if !xmrig_child.ping()
+                                    {
+                                       warn!(target: LOG_TARGET, "xmrig is not running");
                                        match xmrig_child.stop().await {
-                                           Ok(()) => {
-                                              println!("xmrig exited successfully");
+                                           Ok(_) => {
+                                              info!(target: LOG_TARGET, "xmrig exited successfully");
                                            }
                                            Err(e) => {
-                                              println!("xmrig exited with error: {}", e);
+                                              error!(target: LOG_TARGET, "xmrig exited with error: {}", e);
                                            }
                                        }
                                        break;
@@ -144,12 +141,12 @@ impl CpuMiner {
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
-        println!("Triggering shutdown");
+        info!(target: LOG_TARGET, "Triggering shutdown");
         self.miner_shutdown.trigger();
         self.api_client = None;
         if let Some(task) = self.watcher_task.take() {
             task.await??;
-            println!("Task finished");
+            info!(target: LOG_TARGET, "Task finished");
         }
         // TODO: This doesn't seem to be called
 
@@ -167,8 +164,8 @@ impl CpuMiner {
                 let (hash_rate, hashrate_sum, estimated_earnings, is_connected) =
                     match client.summary().await {
                         Ok(xmrig_status) => {
+                            println!("xmrig status: {:?}", xmrig_status.hashrate.total[0]);
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                            dbg!(hash_rate, network_hash_rate, block_reward);
                             let estimated_earnings = ((block_reward.as_u64() as f64)
                                 * ((hash_rate / (network_hash_rate as f64))
                                     * (RANDOMX_BLOCKS_PER_DAY as f64)))
