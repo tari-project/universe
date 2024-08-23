@@ -15,6 +15,7 @@ export const Wrapper = styled('div')<{ $letterHeight?: number }>`
     overflow: hidden;
     flex-direction: row;
     align-items: baseline;
+    gap: 4px;
     span {
         display: flex;
         font-weight: 600;
@@ -24,7 +25,7 @@ export const Wrapper = styled('div')<{ $letterHeight?: number }>`
 
 export const SpinnerWrapper = styled('div')<Props>`
     font-variant-numeric: tabular-nums;
-    column-gap: ${({ $variant }) => ($variant == 'simple' ? '0' : '4px')};
+    column-gap: ${({ $variant }) => ($variant == 'simple' ? '0' : '2px')};
     display: flex;
 `;
 
@@ -41,14 +42,16 @@ export const Characters = styled(motion.div)<Props>`
     display: flex;
     flex-direction: column;
     align-items: center;
+    letter-spacing: -3px;
     font-family: ${({ $variant }) =>
         $variant == 'simple' ? '"PoppinsSemiBold", sans-serif' : `"DrukWideLCGBold", sans-serif`};
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
     line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
-    width: ${({ $decimal, $letterWidth }) => ($decimal ? '10px' : `${$letterWidth}px`)};
 `;
 
 export const Character = styled('div')<Props>`
     display: flex;
+    justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
+    letter-spacing: -3px;
 `;

@@ -48,7 +48,7 @@ export default function Earnings() {
                         }}
                     >
                         <span>YOUR REWARD IS</span>
-                        <CharSpinner value={formatted.toString()} fontSize={70} />
+                        <CharSpinner value={formatted.toString()} fontSize={75} />
                     </EarningsWrapper>
                 ) : null}
             </AnimatePresence>

@@ -17,7 +17,7 @@ interface CharSpinnerProps {
 
 const sizing = {
     large: {
-        widthDiv: 1,
+        widthDiv: 0.9991,
         hiddenX: 90,
     },
     simple: {
