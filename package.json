@@ -8,7 +8,9 @@
         "build": "tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
-        "lint": "eslint src/"
+        "lint": "eslint src/",
+        "prettier:check": "prettier --config .prettierrc \"./src/**/*.+(js|json|ts)\" --check --ignore-unknown",
+        "prettier:fix": "prettier --config .prettierrc \"./src/**/*.+(js|json|ts)\" --write --ignore-unknown"
     },
     "dependencies": {
         "@emotion/react": "^11.13.0",
