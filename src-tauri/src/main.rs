@@ -239,13 +239,6 @@ async fn setup_inner<'r>(
     progress
         .update("Starting merge mining proxy".to_string(), 0)
         .await;
-
-    let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
-
-    let mut analytics_id = state.analytics_manager.get_unique_string().await;
-    if analytics_id.is_empty() {
-        analytics_id = "unknown_miner_tari_universe".to_string();
-    }
     mm_proxy_manager
         .start(
             state.shutdown.to_signal().clone(),
