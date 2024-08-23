@@ -19,7 +19,7 @@ export default defineConfig(() => {
                 ignored: ['**/src-tauri/**'],
             },
         },
-        plugins: [react(), tsconfigPaths(), eslintPlugin({ eslintOptions: { cache: false } })],
+        // plugins: [react(), tsconfigPaths(), eslintPlugin({ eslintOptions: { cache: false } })],
         resolve: {
             alias: {
                 '@app': path.resolve(__dirname, './src'),
