@@ -10,10 +10,10 @@ import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 const variants = {
     visible: {
         opacity: 1,
-        y: 0,
+        y: -200,
         scale: 1.05,
         transition: {
-            duration: 1,
+            duration: 3,
             scale: {
                 duration: 0.5,
             },
@@ -21,7 +21,7 @@ const variants = {
     },
     hidden: {
         opacity: 0,
-        y: 50,
+        y: -150,
         transition: { duration: 0.2, delay: 0.8 },
     },
 };
@@ -47,9 +47,8 @@ export default function Earnings() {
                             handleComplete();
                         }}
                     >
-                        <span>you&apos;ve earned</span>
-                        <CharSpinner value={formatted} />
-                        <span>XTR</span>
+                        <span>YOUR REWARD IS</span>
+                        <CharSpinner value={formatted.toString()} fontSize={75} />
                     </EarningsWrapper>
                 ) : null}
             </AnimatePresence>

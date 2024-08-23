@@ -1,4 +1,4 @@
-import { Character, Characters, Wrapper } from './CharSpinner.styles.ts';
+import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper } from './CharSpinner.styles.ts';
 
 const transition = {
     type: 'spring',
@@ -11,66 +11,87 @@ const transition = {
 export type CharSpinnerVariant = 'simple' | 'large';
 interface CharSpinnerProps {
     value: string;
+    fontSize: number;
     variant?: CharSpinnerVariant;
-    fontSize?: number;
 }
 
 const sizing = {
     large: {
-        width: 48,
-        height: 52,
-        font: 45,
+        widthDiv: 0.9991,
+        hiddenX: 90,
     },
     simple: {
-        width: 18,
-        height: 36,
-        font: 36,
+        widthDiv: 1.9,
+        hiddenX: 10,
     },
 };
 
-export default function CharSpinner({ value, variant = 'large', fontSize: fontSizeProp }: CharSpinnerProps) {
-    const letterHeight = sizing[variant].height;
-    const letterWidth = sizing[variant].width;
-    const fontSize = fontSizeProp || sizing[variant].font;
-
+export default function CharSpinner({ value, variant = 'large', fontSize }: CharSpinnerProps) {
+    const letterHeight = Math.ceil(fontSize * 1.01);
     const charArray = value.split('').map((c) => c);
+    const letterWidth = Math.floor(fontSize / sizing[variant].widthDiv);
 
     const charMarkup = charArray.map((char, i) => {
-        if (char === ',' || char === '.') {
+        const isNum = !isNaN(Number(char));
+        const isDec = char === '.';
+        if (!isNum) {
             return (
-                <Character
+                <Characters
+                    $decimal={isDec}
                     key={`dec-${i}`}
                     initial={{ y: letterHeight }}
                     animate={{ y: 0 }}
                     transition={transition}
                     $letterHeight={letterHeight}
                     $fontSize={fontSize}
+                    $letterWidth={letterWidth}
                     $variant={variant}
                 >
-                    <span key={`dec-${i}`}>{char}</span>
-                </Character>
+                    {isDec ? (
+                        <Character $decimal={isDec} $letterWidth={letterWidth} $fontSize={fontSize}>
+                            {char}
+                        </Character>
+                    ) : (
+                        <Character
+                            key={`${i}-${char}`}
+                            $letterWidth={letterWidth}
+                            $fontSize={fontSize - 8}
+                            style={{ marginTop: '2px' }}
+                        >
+                            {char}
+                        </Character>
+                    )}
+                </Characters>
             );
         }
         const y = parseInt(char) * letterHeight;
+
         return (
-            <Character
+            <Characters
                 key={`char-${i}-${char}`}
                 initial={{ y: 0 }}
                 animate={{ y: `-${y}px` }}
+                $letterWidth={letterWidth}
                 transition={transition}
                 $letterHeight={letterHeight}
                 $fontSize={fontSize}
                 $variant={variant}
             >
                 {[...Array(10)].reverse().map((_, index) => (
-                    <span key={`number-scroll-${i}-${char}-${index}-num`}>{index}</span>
+                    <Character key={`${i}-${char}-${index}`} $letterWidth={letterWidth} $fontSize={fontSize}>
+                        {index}
+                    </Character>
                 ))}
-            </Character>
+            </Characters>
         );
     });
+
     return (
-        <Wrapper style={{ width: letterWidth * charArray.length }} $letterHeight={letterHeight}>
-            <Characters>{charMarkup}</Characters>
+        <Wrapper>
+            <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
+                <CharacterWrapper style={{ height: letterHeight * 10 }}>{charMarkup}</CharacterWrapper>
+            </SpinnerWrapper>
+            <span>tXTM</span>
         </Wrapper>
     );
 }

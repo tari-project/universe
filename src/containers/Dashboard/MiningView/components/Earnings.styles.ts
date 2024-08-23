@@ -2,18 +2,17 @@ import { styled } from '@mui/system';
 import { motion } from 'framer-motion';
 export const EarningsContainer = styled('div')`
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    position: relative;
-    height: 60%;
 `;
 
 export const EarningsWrapper = styled(motion.div)`
-    font-family: 'DrukWideLCGBold', sans-serif;
     display: flex;
-    width: 100%;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    position: relative;
-    gap: 10px;
+    span {
+        font-family: 'DrukWideLCGBold', sans-serif;
+        font-size: 16px;
+        letter-spacing: -0.1px;
+    }
 `;
