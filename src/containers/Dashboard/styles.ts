@@ -68,7 +68,7 @@ export const SetupPercentage = styled(Typography)(({ theme }) => ({
 export const SetupGradient = styled('div')`
     position: absolute;
     z-index: 0;
-    background-image: radial-gradient(circle 500px at 50% 100%, rgb(255, 255, 255, 1), rgba(255, 255, 255, 0));
+    background-image: radial-gradient(circle 1000px at 50% 100%, rgb(255, 255, 255, 1), rgba(255, 255, 255, 0));
     width: 100%;
     height: 100vh;
 `;
