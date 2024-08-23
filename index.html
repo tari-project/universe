@@ -40,9 +40,7 @@
         glApp.init();
         time = performance.now() / 1000;
         window.addEventListener('resize', onResize);
-        glApp.properties.cameraOffsetX = (348 + 36) / window.innerWidth; // 348 is sidebar width with some padding
-        glApp.properties.cameraZoom = 0.9;
-        glApp.properties.camera.aspect =1;
+        glApp.properties.cameraOffsetX = (348 + 16) / window.innerWidth; // 348 is sidebar width with some padding
         onResize();
         animate();
       }
