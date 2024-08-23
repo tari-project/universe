@@ -9,6 +9,8 @@ export const DashboardContainer = styled(Box)(() => ({
     justifyContent: 'center',
     height: '100%',
     flexGrow: '1',
+    position: 'relative',
+    zIndex: '1',
 }));
 
 export const ProgressBox = styled(Box)(() => ({
@@ -62,3 +64,11 @@ export const SetupPercentage = styled(Typography)(({ theme }) => ({
     fontSize: '15px',
     textAlign: 'center',
 }));
+
+export const SetupGradient = styled('div')`
+    position: absolute;
+    z-index: 0;
+    background-image: radial-gradient(circle 500px at 50% 100%, rgb(255, 255, 255, 1), rgba(255, 255, 255, 0));
+    width: 100%;
+    height: 100vh;
+`;

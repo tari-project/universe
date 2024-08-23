@@ -15,8 +15,10 @@ export default function useBalanceInfo() {
     const setDisplayBlockHeight = useMiningStore((s) => s.setDisplayBlockHeight);
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const toggleTimerPaused = useMiningStore((s) => s.toggleTimerPaused);
-    const blockHeightRef = useRef(block_height);
+    const postBlockAnimation = useMiningStore((s) => s.postBlockAnimation);
+    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
 
+    const blockHeightRef = useRef(block_height);
     const prevBalanceRef = useRef(previousBalance);
 
     const handleEarnings = useCallback(() => {
@@ -38,19 +40,31 @@ export default function useBalanceInfo() {
     }, [previousBalance, block_height]);
 
     useEffect(() => {
-        console.debug('block refs: ', block_height, blockHeightRef.current, balanceChangeBlock);
         if ((block_height && block_height !== blockHeightRef.current) || !!balanceChangeBlock) {
             const timer = balanceChangeBlock === block_height ? 1 : TIMER_VALUE;
             const timeout = setTimeout(() => {
                 handleEarnings();
                 setBalanceChangeBlock(null);
                 blockHeightRef.current = block_height;
-                setDisplayBlockHeight(blockHeightRef.current);
             }, timer);
 
             return () => {
                 clearTimeout(timeout);
             };
         }
-    }, [balanceChangeBlock, block_height, handleEarnings, setDisplayBlockHeight]);
+    }, [balanceChangeBlock, block_height, handleEarnings]);
+
+    useEffect(() => {
+        if (postBlockAnimation) {
+            const blockTimeout = setTimeout(() => {
+                setDisplayBlockHeight(blockHeightRef.current);
+
+                setPostBlockAnimation(false);
+            }, 1500);
+
+            return () => {
+                clearTimeout(blockTimeout);
+            };
+        }
+    }, [postBlockAnimation, setDisplayBlockHeight, setPostBlockAnimation]);
 }

@@ -1,4 +1,4 @@
-import { DashboardContainer } from './styles';
+import { DashboardContainer, SetupGradient } from './styles';
 import MiningView from './MiningView/MiningView';
 import TribesView from './TribesView/TribesView';
 import { viewType } from '../../store/types';
@@ -8,7 +8,12 @@ function Dashboard({ status }: { status: viewType }) {
     const viewMarkup =
         status == 'setup' ? <SetupViewContainer /> : status == 'tribes' ? <TribesView /> : <MiningView />;
 
-    return <DashboardContainer>{viewMarkup}</DashboardContainer>;
+    return (
+        <DashboardContainer>
+            {status == 'setup' ? <SetupGradient /> : null}
+            {viewMarkup}
+        </DashboardContainer>
+    );
 }
 
 export default Dashboard;
