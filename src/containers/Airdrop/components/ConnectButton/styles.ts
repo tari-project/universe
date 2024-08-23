@@ -3,7 +3,7 @@ import { styled } from '@mui/material/styles';
 import { FaXTwitter } from 'react-icons/fa6';
 
 export const StyledButton = styled(Button)`
-    padding: 10px;
+    padding: 10px 60px;
     justify-content: center;
     align-items: center;
     gap: 10px;
@@ -11,10 +11,6 @@ export const StyledButton = styled(Button)`
     border: 1px solid #000;
     display: flex;
     text-transform: none;
-    transition: scale 0.2s ease-in-out;
-    &:hover {
-        scale: 1.01;
-    }
 `;
 
 export const StyledXIcon = styled(FaXTwitter)`
