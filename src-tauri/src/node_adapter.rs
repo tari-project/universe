@@ -7,7 +7,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use humantime::format_duration;
 use log::{debug, info, warn};
-use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
+use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo, SyncState};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
 use std::path::PathBuf;
@@ -124,7 +124,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                             }
 
                         },
-                    };
+                    }
 
                     match fs::remove_file(data_dir.join("node_pid")) {
                         Ok(_) => {}
@@ -225,27 +225,59 @@ impl MinotariNodeStatusMonitor {
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+        let mut sync_progress_history: Vec<(u64, u64)> = vec![];
         loop {
             let tip = client.get_tip_info(Empty {}).await?;
-            let res = tip.into_inner();
-            if res.initial_sync_achieved {
+            let sync_progress = client.get_sync_progress(Empty {}).await?;
+            let tip_res = tip.into_inner();
+            let sync_progress = sync_progress.into_inner();
+            if tip_res.initial_sync_achieved {
                 break;
             }
-            let metadata = res.metadata.as_ref().cloned().unwrap();
-            let time_behind = Duration::from_secs(
-                SystemTime::now()
+            info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
+
+            if sync_progress.state == SyncState::Startup as i32 {
+                progress_tracker.update("Connecting with Tari nodes..".to_string(), 5).await;
+            } else if (sync_progress.state == SyncState::BlockStarting as i32) {
+                progress_tracker.update("Downloading block headers..".to_string(), 10).await;
+            } else {
+                let time_now = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
                     .unwrap_or_default()
-                    .as_secs()
-                    - metadata.timestamp,
-            );
-            if time_behind < Duration::from_secs(600) {
-                break;
+                    .as_secs();
+                if sync_progress_history.len() >= 10 {
+                    sync_progress_history.remove(0);
+                }
+                sync_progress_history.push((sync_progress.local_height, time_now));
+
+                let syncing_speed = sync_progress_history.first().and_then(|first| sync_progress_history.last().map(|last| {
+                    let denominator = (last.1 - first.1) as f64;
+
+                    if denominator != 0.0 {
+                        ((last.0 - first.0) as f64) / denominator
+                    } else {
+                        0.0
+                    }
+                })).unwrap_or(0.0) as u64;
+
+                let blocks_behind = sync_progress.tip_height - sync_progress.local_height;
+                let progress = if sync_progress.tip_height == 0 {
+                    10
+                } else {
+                    10 + (90 * sync_progress.local_height / sync_progress.tip_height)
+                };
+
+                progress_tracker.update(
+                    format!(
+                        "Waiting for initial sync. Tip height: {} Blocks behind:{}. Syncing {} blocks per second",
+                        sync_progress.tip_height,
+                        blocks_behind,
+                        syncing_speed
+                    ),
+                    progress
+                ).await;
             }
-            progress_tracker
-                .update("waiting-for-initial-sync".to_string(), 1)
-                .await;
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Ok(())
     }
