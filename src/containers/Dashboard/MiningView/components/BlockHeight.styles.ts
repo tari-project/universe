@@ -8,7 +8,7 @@ interface BlockHeightBgProps {
 const topHeight = 115;
 const bottomHeight = 115;
 
-export const BlockHeightContainer = styled(Box)(({}) => ({
+export const BlockHeightContainer = styled(Box)(() => ({
     zIndex: 100,
     position: 'absolute',
     right: '20px',

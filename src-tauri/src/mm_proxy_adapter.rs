@@ -1,5 +1,7 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::consts::PROCESS_CREATION_NO_WINDOW;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_utils;
 use anyhow::Error;
 use log::{debug, warn};
 use std::fs;
@@ -60,12 +62,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                         .resolve_path(Binaries::MergeMiningProxy)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(file_path)
-                        .args(args)
-                        .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::null())
-                        .kill_on_drop(true)
-                        .spawn()?;
+                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;

@@ -124,3 +124,48 @@ jobs:
         working-directory: ./src-tauri
         run: |
           cargo check --release --all-targets --workspace --locked
+
+  tauri-build:
+    name: tauri-build
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install dependencies (linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            libwebkit2gtk-4.0-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libprotobuf-dev \
+            protobuf-compiler
+
+      - name: Node.js setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: Install dependencies (node)
+        run: |
+          npm --version
+          npm install
+
+      - name: toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: cache cargo files and outputs
+        if: ${{ ( startsWith(runner.environment,'github-hosted') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: cargo tauri build
+        working-directory: ./src-tauri
+        run: |
+          cargo install tauri-cli
+          cargo tauri --version
+          cargo tauri build --ci --bundles deb
