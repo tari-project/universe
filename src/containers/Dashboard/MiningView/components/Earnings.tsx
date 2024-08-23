@@ -1,10 +1,11 @@
 import { AnimatePresence } from 'framer-motion';
-import useWalletStore from '@app/store/walletStore.ts';
 
-import { EarningsContainer, EarningsText, EarningsWrapper } from './Earnings.styles.ts';
+import { EarningsContainer, EarningsWrapper } from './Earnings.styles.ts';
 import formatBalance from '@app/utils/formatBalance.ts';
-import { useEffect, useState } from 'react';
-import useBalanceInfo from '@app/hooks/mining/useBalanceInfo.ts';
+import { useCallback } from 'react';
+
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 
 const variants = {
     visible: {
@@ -12,7 +13,7 @@ const variants = {
         y: 0,
         scale: 1.05,
         transition: {
-            duration: 0.8,
+            duration: 1,
             scale: {
                 duration: 0.5,
             },
@@ -21,39 +22,33 @@ const variants = {
     hidden: {
         opacity: 0,
         y: 50,
-        transition: { duration: 0.2, delay: 0.75 },
+        transition: { duration: 0.2, delay: 0.8 },
     },
 };
 
 export default function Earnings() {
-    const { hasEarned } = useBalanceInfo();
-    const [earnings, setEarnings] = useState(0);
-    const [show, setShow] = useState(false);
-
-    const previousBalance = useWalletStore((state) => state.previousBalance);
-    const balance = useWalletStore((state) => state.balance);
-
-    useEffect(() => {
-        const difference = balance - previousBalance;
-        setEarnings(difference);
-        setShow(hasEarned && difference > 0);
-    }, [balance, hasEarned, previousBalance]);
+    const earnings = useMiningStore((s) => s.earnings);
+    const setEarnings = useMiningStore((s) => s.setEarnings);
+    const formatted = formatBalance(earnings || 0);
+    const handleComplete = useCallback(() => {
+        setEarnings(undefined);
+    }, [setEarnings]);
 
     return (
         <EarningsContainer>
             <AnimatePresence>
-                {show ? (
+                {earnings ? (
                     <EarningsWrapper
                         initial="hidden"
                         variants={variants}
                         animate="visible"
                         exit="hidden"
                         onAnimationComplete={() => {
-                            setShow(false);
+                            handleComplete();
                         }}
                     >
                         <span>you&apos;ve earned</span>
-                        <EarningsText variant="h1">{formatBalance(earnings)}</EarningsText>
+                        <CharSpinner value={formatted} />
                         <span>XTR</span>
                     </EarningsWrapper>
                 ) : null}

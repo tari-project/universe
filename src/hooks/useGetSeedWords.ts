@@ -8,7 +8,7 @@ export function useGetSeedWords() {
     const getSeedWords = useCallback(async () => {
         setSeedWordsFetching(true);
         try {
-            const seedWords = await invoke('get_seed_words') as string[];
+            const seedWords = await invoke('get_seed_words');
             setSeedWords(seedWords);
         } catch (e) {
             console.error('Could not get seed words', e);

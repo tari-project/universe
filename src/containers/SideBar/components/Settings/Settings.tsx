@@ -25,6 +25,7 @@ import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
 import { CardComponent } from './Card.component.tsx';
 import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
 import { useForm } from 'react-hook-form';
+import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -35,6 +36,8 @@ interface FormState {
 }
 
 const Settings: React.FC = () => {
+    const currentEnvironment = useEnvironment();
+
     const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
@@ -86,17 +89,18 @@ const Settings: React.FC = () => {
 
     const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        console.log('submitting');
+        console.info('submitting');
         handleSubmit(
             (data) => {
-                console.log(typeof data[FormFields.IDLE_TIMEOUT]);
+                console.info(typeof data[FormFields.IDLE_TIMEOUT]);
                 invoke('set_user_inactivity_timeout', {
                     timeout: Number(data[FormFields.IDLE_TIMEOUT]),
                 });
+                invoke('set_auto_mining', { autoMining: false });
                 handleClose();
             },
             (error) => {
-                console.log(error);
+                console.error(error);
             }
         )();
     };
@@ -148,24 +152,13 @@ const Settings: React.FC = () => {
                                 )}
                             </Stack>
                         </Stack>
-                        <Divider />
-                        <HorisontalBox>
-                            <Typography variant="h6">Logs</Typography>
-                            <RightHandColumn>
-                                <Button onClick={openLogsDirectory} variant="text">
-                                    Open logs directory
-                                </Button>
-                            </RightHandColumn>
-                        </HorisontalBox>
-                        <Divider />
                         <form onSubmit={onSubmit}>
                             <Box my={1}>
-                                <Typography variant="h5">Random</Typography>
                                 <Stack spacing={1} pt={1}>
                                     <ControlledNumberInput
                                         name={FormFields.IDLE_TIMEOUT}
                                         control={control}
-                                        title="Idle Timeout"
+                                        title="Time after which machine is considered idle"
                                         endAdornment="seconds"
                                         placeholder="Enter idle timeout in seconds"
                                         type="int"
@@ -193,43 +186,15 @@ const Settings: React.FC = () => {
                             </Box>
                         </form>
                         <Divider />
-                        {applicationsVersions && (
-                            <>
-                                <HorisontalBox>
-                                    <Typography variant="h6">Versions</Typography>
-                                    <RightHandColumn>
-                                        <Button onClick={getApplicationsVersions} variant="text">
-                                            Refresh Versions
-                                        </Button>
-                                    </RightHandColumn>
-                                </HorisontalBox>
-                                <Stack spacing={0}>
-                                    <CardContainer>
-                                        <CardComponent
-                                            heading="Tari App"
-                                            labels={[
-                                                {
-                                                    labelText: 'Version',
-                                                    labelValue: mainAppVersion || 'Unknown',
-                                                },
-                                            ]}
-                                        />
-                                        {Object.entries(applicationsVersions).map(([key, value]) => (
-                                            <CardComponent
-                                                key={key}
-                                                heading={key}
-                                                labels={[
-                                                    {
-                                                        labelText: 'Version',
-                                                        labelValue: value || 'Unknown',
-                                                    },
-                                                ]}
-                                            />
-                                        ))}
-                                    </CardContainer>
-                                </Stack>
-                            </>
-                        )}
+                        <HorisontalBox>
+                            <Typography variant="h6">Logs</Typography>
+                            <RightHandColumn>
+                                <Button onClick={openLogsDirectory} variant="text">
+                                    Open logs directory
+                                </Button>
+                            </RightHandColumn>
+                        </HorisontalBox>
+                        <Divider />
                         {
                             <>
                                 <HorisontalBox>
@@ -267,6 +232,49 @@ const Settings: React.FC = () => {
                                 </CardContainer>
                             </>
                         }
+                        <Divider />
+                        {applicationsVersions && (
+                            <>
+                                <HorisontalBox>
+                                    <Typography variant="h6">Versions</Typography>
+                                    <RightHandColumn>
+                                        {currentEnvironment === Environment.Development && (
+                                            <Button onClick={getApplicationsVersions} variant="text">
+                                                Update Versions
+                                            </Button>
+                                        )}
+                                        <Button onClick={getApplicationsVersions} variant="text">
+                                            Refresh Versions
+                                        </Button>
+                                    </RightHandColumn>
+                                </HorisontalBox>
+                                <Stack spacing={0}>
+                                    <CardContainer>
+                                        <CardComponent
+                                            heading="Tari App"
+                                            labels={[
+                                                {
+                                                    labelText: 'Version',
+                                                    labelValue: mainAppVersion || 'Unknown',
+                                                },
+                                            ]}
+                                        />
+                                        {Object.entries(applicationsVersions).map(([key, value]) => (
+                                            <CardComponent
+                                                key={key}
+                                                heading={key}
+                                                labels={[
+                                                    {
+                                                        labelText: 'Version',
+                                                        labelValue: value || 'Unknown',
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </CardContainer>
+                                </Stack>
+                            </>
+                        )}
                         <Divider />
                         <HorisontalBox>
                             <VisualMode />
