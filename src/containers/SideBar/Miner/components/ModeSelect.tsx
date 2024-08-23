@@ -26,8 +26,8 @@ const CustomSelect = styled(Select)(({ theme }: { theme: Theme }) => ({
 function ModeSelect() {
     const mode = useAppStatusStore((s) => s.mode);
     const setConfigMode = useAppStatusStore((s) => s.setConfigMode);
-    const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
-    
+    const setMiningInitiated = useUIStore((s) => s.setIsMiningSwitchingState);
+
     const handleChange = (event: SelectChangeEvent<unknown>) => {
         setMiningInitiated(true);
         setConfigMode(event.target.value as modeType);

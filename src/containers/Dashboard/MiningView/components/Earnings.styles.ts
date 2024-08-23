@@ -6,14 +6,17 @@ export const EarningsContainer = styled('div')`
     justify-content: center;
     position: relative;
     height: 60%;
+    font-family: 'DrukWideLCGBold', sans-serif;
+    letter-spacing: -0.2px;
 `;
 
 export const EarningsWrapper = styled(motion.div)`
-    font-family: 'DrukWideLCGBold', sans-serif;
     display: flex;
-    width: 100%;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     position: relative;
-    gap: 10px;
+    gap: 4px;
+    span {
+        font-size: 16px;
+    }
 `;

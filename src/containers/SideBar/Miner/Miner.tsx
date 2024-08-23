@@ -8,6 +8,7 @@ import { Divider } from '@mui/material';
 
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { formatNumber } from '@app/utils/formatNumber.ts';
 
 function Miner() {
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
@@ -23,18 +24,6 @@ function Miner() {
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
     const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
 
-    function formatNumber(value: number): string {
-        if (value < 0) {
-            return value.toPrecision(1);
-        } else if (value >= 1_000_000) {
-            return (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
-        } else if (value >= 1_000) {
-            return (value / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
-        } else {
-            return value.toString();
-        }
-    }
-
     return (
         <MinerContainer>
             <AutoMiner />
@@ -43,9 +32,16 @@ function Miner() {
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
                 <Tile title="Hashrate" stats={hash_rate + ' H/s'} isLoading={isWaitingForHashRate} />
-                <Tile title="CPU Utilization" stats={(cpuHardwareStatus?.usage_percentage || 0).toString() + '%'} />
+                <Tile
+                    title="CPU Utilization"
+                    stats={
+                        (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                        }) + '%'
+                    }
+                />
                 <Tile title="CHIP/GPU" stats={truncateString(cpuHardwareStatus?.label || 'Unknown', 10)} />
-                <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' XTM/24h'} />
+                <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' tXTM/24h'} />
             </TileContainer>
         </MinerContainer>
     );

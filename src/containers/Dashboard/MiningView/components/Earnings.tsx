@@ -13,7 +13,7 @@ const variants = {
         y: 0,
         scale: 1.05,
         transition: {
-            duration: 1,
+            duration: 3,
             scale: {
                 duration: 0.5,
             },
@@ -47,9 +47,9 @@ export default function Earnings() {
                             handleComplete();
                         }}
                     >
-                        <span>you&apos;ve earned</span>
-                        <CharSpinner value={formatted} />
-                        <span>XTR</span>
+                        <span>YOUR REWARD IS</span>
+                        <CharSpinner value={formatted.toString()} fontSize={65} />
+                        <span>tXTM</span>
                     </EarningsWrapper>
                 ) : null}
             </AnimatePresence>

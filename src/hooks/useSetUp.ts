@@ -64,7 +64,15 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [autoMiningEnabled, setSetupDetails, setView, settingUpFinished, startMining, stopMining]);
+    }, [
+        autoMiningEnabled,
+        setCurrentUserInactivityDuration,
+        setSetupDetails,
+        setView,
+        settingUpFinished,
+        startMining,
+        stopMining,
+    ]);
 
     useGetApplicationsVersions();
 }

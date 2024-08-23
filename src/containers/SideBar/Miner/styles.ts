@@ -1,6 +1,5 @@
 import { styled } from '@mui/material/styles';
 import { Button, Box } from '@mui/material';
-import { backgrounds } from '../../../theme/colors';
 
 export const MinerContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
