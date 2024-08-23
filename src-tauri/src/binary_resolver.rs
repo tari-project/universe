@@ -180,7 +180,7 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "tarigpuminer".to_string(),
                 owner: "stringhandler".to_string(),
-                specific_name: Some("opencl".parse().expect("Bad regex string")),
+                specific_name: Some("opencl.*testnet".parse().expect("Bad regex string")),
             }),
         );
         Self {
