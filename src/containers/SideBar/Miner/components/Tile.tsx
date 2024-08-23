@@ -16,7 +16,7 @@ function Tile({ title, stats, isLoading }: TileProps) {
             {isLoading ? (
                 <StyledIcon sx={{ height: 24, width: 24 }} />
             ) : (
-                <Typography variant="h5" fontSize={18}>
+                <Typography variant="h5" fontSize={18} title={stats}>
                     {truncateString(stats, 10)}
                 </Typography>
             )}

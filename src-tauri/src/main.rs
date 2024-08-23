@@ -3,6 +3,7 @@
 
 mod app_config;
 mod binary_resolver;
+mod consts;
 mod cpu_miner;
 mod download_utils;
 mod github;
@@ -14,14 +15,14 @@ mod mm_proxy_manager;
 mod node_adapter;
 mod node_manager;
 mod process_adapter;
+mod process_killer;
+mod process_utils;
 mod process_watcher;
 mod user_listener;
+mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-
-mod process_killer;
-mod wallet_adapter;
 
 use crate::cpu_miner::CpuMiner;
 use crate::gpu_miner::GpuMiner;
