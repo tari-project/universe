@@ -34,7 +34,15 @@ function Miner() {
             <TileContainer>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
-                <Tile title="Hashrate" stats={hash_rate + ' H/s'} isLoading={isWaitingForHashRate} />
+                <Tile
+                    title="Hashrate"
+                    stats={
+                        (hash_rate > 1000 ? hash_rate / 1000 : hash_rate).toLocaleString(undefined, {
+                            maximumFractionDigits: 2,
+                        }) + ' kH/s'
+                    }
+                    isLoading={isWaitingForHashRate}
+                />
                 <Tile
                     title="CPU Utilization"
                     stats={
