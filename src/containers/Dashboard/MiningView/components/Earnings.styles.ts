@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 export const EarningsContainer = styled('div')`
     display: flex;
     align-items: center;
+    justify-content: center;
 `;
 
 export const EarningsWrapper = styled(motion.div)`

@@ -22,8 +22,10 @@ export const Wrapper = styled('div')<{ $letterHeight?: number }>`
     }
 `;
 
-export const SpinnerWrapper = styled('div')`
+export const SpinnerWrapper = styled('div')<Props>`
     font-variant-numeric: tabular-nums;
+    column-gap: ${({ $variant }) => ($variant == 'simple' ? '0' : '4px')};
+    display: flex;
 `;
 
 export const CharacterWrapper = styled(motion.div)<Props>`
@@ -43,12 +45,10 @@ export const Characters = styled(motion.div)<Props>`
         $variant == 'simple' ? '"PoppinsSemiBold", sans-serif' : `"DrukWideLCGBold", sans-serif`};
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
     line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
+    width: ${({ $decimal, $letterWidth }) => ($decimal ? '10px' : `${$letterWidth}px`)};
 `;
 
 export const Character = styled('div')<Props>`
     display: flex;
-    align-self: flex-end;
-    position: relative;
-    width: ${({ $decimal, $letterWidth }) => ($decimal ? '10px' : `${$letterWidth}px`)};
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
 `;

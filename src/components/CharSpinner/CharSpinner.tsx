@@ -29,8 +29,7 @@ const sizing = {
 export default function CharSpinner({ value, variant = 'large', fontSize }: CharSpinnerProps) {
     const letterHeight = Math.ceil(fontSize * 1.01);
     const charArray = value.split('').map((c) => c);
-
-    const letterWidth = Math.ceil(fontSize / sizing[variant].widthDiv);
+    const letterWidth = Math.floor(fontSize / sizing[variant].widthDiv);
 
     const charMarkup = charArray.map((char, i) => {
         const isNum = !isNaN(Number(char));
@@ -72,6 +71,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                 key={`char-${i}-${char}`}
                 initial={{ y: 0 }}
                 animate={{ y: `-${y}px` }}
+                $letterWidth={letterWidth}
                 transition={transition}
                 $letterHeight={letterHeight}
                 $fontSize={fontSize}
@@ -88,7 +88,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
 
     return (
         <Wrapper>
-            <SpinnerWrapper style={{ height: letterHeight }}>
+            <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
                 <CharacterWrapper style={{ height: letterHeight * 10 }}>{charMarkup}</CharacterWrapper>
             </SpinnerWrapper>
             <span>tXTM</span>

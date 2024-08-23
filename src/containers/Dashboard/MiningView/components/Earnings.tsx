@@ -27,7 +27,6 @@ const variants = {
 };
 
 export default function Earnings() {
-    // const earnings = 12878338344;
     const earnings = useMiningStore((s) => s.earnings);
     const setEarnings = useMiningStore((s) => s.setEarnings);
     const formatted = formatBalance(earnings || 0);
