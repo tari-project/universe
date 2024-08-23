@@ -4,20 +4,17 @@ import { CharSpinnerVariant } from '@app/components/CharSpinner/CharSpinner.tsx'
 
 interface Props {
     $decimal?: boolean;
-    $notNum?: boolean;
     $letterHeight?: number;
-    $letterWidth: number;
+    $letterWidth?: number;
     $fontSize?: number;
     $variant?: CharSpinnerVariant;
-    $offSet?: number;
 }
 
 export const Wrapper = styled('div')<{ $letterHeight?: number }>`
-    position: relative;
     display: flex;
+    overflow: hidden;
+    flex-direction: row;
     align-items: baseline;
-    height: ${({ $letterHeight }) => `${$letterHeight}px`};
-
     span {
         display: flex;
         font-weight: 600;
@@ -26,39 +23,32 @@ export const Wrapper = styled('div')<{ $letterHeight?: number }>`
 `;
 
 export const SpinnerWrapper = styled('div')`
-    display: flex;
-    position: relative;
-    overflow: hidden;
-    user-select: none;
     font-variant-numeric: tabular-nums;
 `;
 
-export const CharacterWrapper = styled(motion.div)`
+export const CharacterWrapper = styled(motion.div)<Props>`
     display: flex;
-    position: absolute;
-    z-index: 1;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    user-select: none;
+    font-variant-numeric: tabular-nums;
 `;
 
 export const Characters = styled(motion.div)<Props>`
     display: flex;
     flex-direction: column;
+    align-items: center;
     font-family: ${({ $variant }) =>
         $variant == 'simple' ? '"PoppinsSemiBold", sans-serif' : `"DrukWideLCGBold", sans-serif`};
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
-    height: ${({ $letterHeight }) => `${$letterHeight}px`};
     line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
 `;
 
 export const Character = styled('div')<Props>`
     display: flex;
+    align-self: flex-end;
+    position: relative;
+    width: ${({ $decimal, $letterWidth }) => ($decimal ? '10px' : `${$letterWidth}px`)};
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
-    width: ${({ $decimal, $letterWidth }) => ($decimal ? '14px' : `${$letterWidth}px`)};
-`;
-
-export const HiddenNumberSpacer = styled('div')<{ $fontSize?: number }>`
-    pointer-events: none;
-    visibility: hidden;
-    display: flex;
-    opacity: 0;
-    z-index: 0;
 `;
