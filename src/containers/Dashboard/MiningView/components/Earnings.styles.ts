@@ -7,7 +7,6 @@ export const EarningsContainer = styled('div')`
     position: relative;
     height: 60%;
     font-family: 'DrukWideLCGBold', sans-serif;
-    letter-spacing: -0.2px;
 `;
 
 export const EarningsWrapper = styled(motion.div)`
@@ -16,7 +15,10 @@ export const EarningsWrapper = styled(motion.div)`
     justify-content: center;
     position: relative;
     gap: 4px;
+    width: min-content;
     span {
         font-size: 16px;
+        letter-spacing: -0.1px;
+        white-space: pre;
     }
 `;

@@ -1,4 +1,5 @@
 import { Character, Characters, CharacterWrapper, HiddenNumberSpacer, Wrapper } from './CharSpinner.styles.ts';
+import { useRef } from 'react';
 
 const transition = {
     type: 'spring',
@@ -17,19 +18,21 @@ interface CharSpinnerProps {
 
 const sizing = {
     large: {
-        widthDiv: 1.2,
+        widthDiv: 1.15,
+        offSet: 50,
     },
     simple: {
         widthDiv: 1.6,
+        offSet: 20,
     },
 };
 
 export default function CharSpinner({ value, variant = 'large', fontSize }: CharSpinnerProps) {
-    const letterHeight = Math.ceil(fontSize * 1.02);
+    const letterHeight = Math.ceil(fontSize * 1.01);
     const charArray = value.split('').map((c) => c);
-
-    const fontSizeWidth = Math.ceil(fontSize / sizing[variant].widthDiv);
-    const letterWidth = fontSizeWidth;
+    const hiddenRef = useRef<HTMLDivElement>(null);
+    const hiddenWidth = hiddenRef.current?.clientWidth;
+    const letterWidth = Math.floor(fontSize / sizing[variant].widthDiv);
 
     const charMarkup = charArray.map((char, i) => {
         const isNum = !isNaN(Number(char));
@@ -63,26 +66,33 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                 animate={{ y: `-${y}px` }}
                 transition={transition}
                 $letterHeight={letterHeight}
+                $offSet={sizing[variant].offSet}
                 $letterWidth={letterWidth}
                 $fontSize={fontSize}
                 $variant={variant}
             >
                 {[...Array(10)].reverse().map((_, index) => (
-                    <Character key={`${i}-${char}-${index}`} $notNum={!isNum} $letterWidth={letterWidth}>
+                    <Character
+                        key={`${i}-${char}-${index}`}
+                        $notNum={!isNum}
+                        $letterWidth={letterWidth}
+                        $offSet={sizing[variant].offSet}
+                    >
                         {isNum ? index : char}
                     </Character>
                 ))}
             </Characters>
         );
     });
+
     return (
         <Wrapper $letterHeight={letterHeight}>
-            <CharacterWrapper>{charMarkup}</CharacterWrapper>
-            <HiddenNumberSpacer>
+            <CharacterWrapper style={{ width: hiddenWidth }}>{charMarkup}</CharacterWrapper>
+            <HiddenNumberSpacer ref={hiddenRef}>
                 {charArray.map((char, index) => {
                     const isNum = !isNaN(Number(char));
                     const isDec = char === '.';
-                    if (!isNum) {
+                    if (isDec) {
                         return (
                             <Characters
                                 $notNum
@@ -95,7 +105,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                                 $fontSize={fontSize}
                                 $letterWidth={letterWidth}
                                 $variant={variant}
-                                style={{ width: isDec ? '12px' : `${fontSizeWidth + 30}px` }}
+                                style={{ width: '14px' }}
                             >
                                 {char}
                             </Characters>
@@ -110,7 +120,6 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                             $fontSize={fontSize}
                             $variant={variant}
                             key={`${index}-number-ref`}
-                            style={{ width: fontSizeWidth }}
                         >
                             {char}
                         </Characters>

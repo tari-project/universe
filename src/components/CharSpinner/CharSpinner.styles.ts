@@ -9,6 +9,7 @@ interface Props {
     $letterWidth: number;
     $fontSize?: number;
     $variant?: CharSpinnerVariant;
+    $offSet?: number;
 }
 
 export const Wrapper = styled('div')<{ $letterHeight?: number }>`
@@ -30,7 +31,8 @@ export const Characters = styled(motion.div)<Props>`
     font-variant-numeric: tabular-nums;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+
     height: ${({ $letterHeight }) => `${$letterHeight}px`};
     margin: ${({ $decimal }) => ($decimal ? '0 0 0 -2px' : 0)};
     font-family: ${({ $variant }) =>
@@ -41,16 +43,17 @@ export const Characters = styled(motion.div)<Props>`
 
 export const Character = styled('div')<Props>`
     display: flex;
-    font-variant-numeric: tabular-nums;
-    width: ${({ $decimal, $letterWidth, $notNum }) =>
-        $decimal ? '12px' : `${$notNum ? $letterWidth + 30 : $letterWidth}px`};
+    width: auto;
+    max-width: ${({ $decimal, $letterWidth, $notNum, $offSet = 20 }) =>
+        $decimal ? '14px' : `${$notNum ? $letterWidth + $offSet : $letterWidth}px`};
 `;
 
 export const HiddenNumberSpacer = styled('div')`
-    font-variant-numeric: tabular-nums;
     visibility: hidden;
     opacity: 0;
+
     pointer-events: none;
     z-index: 0;
     display: flex;
+    flex-shrink: 0;
 `;
