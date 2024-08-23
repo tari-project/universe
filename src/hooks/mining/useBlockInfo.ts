@@ -10,11 +10,11 @@ export function useBlockInfo() {
     const block_time = useBaseNodeStatusStore((s) => s.block_time);
     const setBlockTime = useMiningStore((s) => s.setBlockTime);
     const timerPaused = useMiningStore((s) => s.timerPaused);
-
     useInterval(
         () => {
             if (!timerPaused) {
-                const blockTime = calculateTimeSince(block_time);
+                const now = new Date();
+                const blockTime = calculateTimeSince(block_time, now.getTime());
                 setBlockTime(blockTime);
             }
         },
