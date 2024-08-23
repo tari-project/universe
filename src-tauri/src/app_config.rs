@@ -113,11 +113,11 @@ impl AppConfig {
     }
 
     pub fn get_auto_mining(&self) -> bool {
-        self.auto_mining.clone()
+        self.auto_mining
     }
 
     pub fn get_user_inactivity_timeout(&self) -> Duration {
-        self.user_inactivity_timeout.clone()
+        self.user_inactivity_timeout
     }
 
     pub async fn set_user_inactivity_timeout(
@@ -130,7 +130,7 @@ impl AppConfig {
     }
 
     pub fn get_last_binaries_update_timestamp(&self) -> SystemTime {
-        self.last_binaries_update_timestamp.clone()
+        self.last_binaries_update_timestamp
     }
 
     pub async fn set_last_binaries_update_timestamp(
