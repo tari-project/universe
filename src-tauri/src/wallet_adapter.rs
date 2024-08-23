@@ -41,6 +41,7 @@ impl ProcessAdapter for WalletAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
@@ -60,6 +61,7 @@ impl ProcessAdapter for WalletAdapter {
             "--spend-key".to_string(),
             self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
+            format!("--log-path={}", log_dir.to_str().unwrap()),
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             "/ip4/127.0.0.1/tcp/18141".to_string(),
@@ -84,6 +86,10 @@ impl ProcessAdapter for WalletAdapter {
             args.push("wallet.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
             args.push("wallet.p2p.public_addresses=/ip4/172.2.3.4/tcp/18188".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
             args.push("-p".to_string());
             args.push(
                 "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
@@ -103,8 +109,8 @@ impl ProcessAdapter for WalletAdapter {
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)
-                        // .stdout(std::process::Stdio::piped())
-                        // .stderr(std::process::Stdio::piped())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
                         .kill_on_drop(true)
                         .spawn()?;
 

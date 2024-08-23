@@ -9,7 +9,6 @@ interface State extends WalletBalance {
 
 interface Actions {
     setBalanceData: (wallet_balance?: WalletBalance) => void;
-    setBalance: (balance: number) => void;
 }
 type WalletStore = State & Actions;
 
@@ -26,7 +25,6 @@ const useWalletStore = create<WalletStore>()(
     persist(
         (set) => ({
             ...initialState,
-            setBalance: (balance) => set({ balance }),
             setBalanceData: (wallet_balance) =>
                 set((state) => {
                     const {
@@ -36,7 +34,8 @@ const useWalletStore = create<WalletStore>()(
                     } = wallet_balance || {};
 
                     const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
-                    const prevValue = state.balance != newBalance ? state.balance : state.previousBalance;
+                    const hasChanged = state.balance != newBalance;
+                    const prevValue = hasChanged ? state.balance : state.previousBalance;
                     return {
                         ...wallet_balance,
                         balance: newBalance,
@@ -47,6 +46,7 @@ const useWalletStore = create<WalletStore>()(
         {
             name: 'wallet_balance',
             storage: createJSONStorage(() => sessionStorage),
+            version: 1,
         }
     )
 );

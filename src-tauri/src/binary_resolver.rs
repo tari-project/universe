@@ -302,6 +302,70 @@ impl BinaryResolver {
         Ok(latest_release.version)
     }
 
+    pub async fn read_current_highest_version(
+        &self,
+        binary: Binaries,
+        progress_tracker: ProgressTracker,
+    ) -> Result<Version, Error> {
+        let adapter = self
+            .adapters
+            .get(&binary)
+            .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
+        let bin_folder = adapter.get_binary_folder();
+        let version_folders_list = match std::fs::read_dir(&bin_folder) {
+            Ok(list) => list,
+            Err(_) => match std::fs::create_dir_all(&bin_folder) {
+                Ok(_) => std::fs::read_dir(&bin_folder).unwrap(),
+                Err(e) => {
+                    return Err(anyhow!("Failed to create dir: {}", e));
+                }
+            },
+        };
+        let mut versions = vec![];
+        for entry in version_folders_list {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(_) => continue,
+            };
+            let path = entry.path();
+            if path.is_dir() {
+                let version = path.file_name().unwrap().to_str().unwrap();
+                versions.push(Version::parse(version).unwrap());
+            }
+        }
+
+        if versions.is_empty() {
+            match self
+                .ensure_latest_inner(binary, true, progress_tracker)
+                .await
+            {
+                Ok(version) => {
+                    self.latest_versions
+                        .write()
+                        .await
+                        .insert(binary, version.clone());
+                    return Ok(version);
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+
+        versions.sort();
+        let cached_version = versions.pop().unwrap();
+        let current_version = self.get_latest_version(binary).await;
+
+        let highest_version = cached_version.max(current_version);
+
+        self.latest_versions
+            .write()
+            .await
+            .insert(binary, highest_version.clone());
+
+        Ok(highest_version.clone())
+    }
+
     pub async fn get_latest_version(&self, binary: Binaries) -> Version {
         let guard = self.latest_versions.read().await;
         guard.get(&binary).cloned().unwrap_or(Version::new(0, 0, 0))

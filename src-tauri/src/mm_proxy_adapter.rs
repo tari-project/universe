@@ -28,6 +28,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -38,6 +39,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "-b".to_string(),
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
+            format!("--log-path={}", log_dir.to_str().unwrap()),
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/18142".to_string(),
@@ -60,8 +62,8 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = tokio::process::Command::new(file_path)
                         .args(args)
-                        // .stdout(std::process::Stdio::piped())
-                        // .stderr(std::process::Stdio::piped())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
                         .kill_on_drop(true)
                         .spawn()?;
 
