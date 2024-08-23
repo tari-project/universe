@@ -14,11 +14,23 @@ interface Props {
 
 export const Wrapper = styled('div')<{ $letterHeight?: number }>`
     position: relative;
-    overflow-y: hidden;
+    display: flex;
+    align-items: baseline;
+    height: ${({ $letterHeight }) => `${$letterHeight}px`};
+
+    span {
+        display: flex;
+        font-weight: 600;
+        letter-spacing: -1px;
+    }
+`;
+
+export const SpinnerWrapper = styled('div')`
+    display: flex;
+    position: relative;
+    overflow: hidden;
     user-select: none;
     font-variant-numeric: tabular-nums;
-    display: flex;
-    height: ${({ $letterHeight }) => `${$letterHeight}px`};
 `;
 
 export const CharacterWrapper = styled(motion.div)`
@@ -28,32 +40,25 @@ export const CharacterWrapper = styled(motion.div)`
 `;
 
 export const Characters = styled(motion.div)<Props>`
-    font-variant-numeric: tabular-nums;
     display: flex;
     flex-direction: column;
-    align-items: center;
-
-    height: ${({ $letterHeight }) => `${$letterHeight}px`};
-    margin: ${({ $decimal }) => ($decimal ? '0 0 0 -2px' : 0)};
     font-family: ${({ $variant }) =>
         $variant == 'simple' ? '"PoppinsSemiBold", sans-serif' : `"DrukWideLCGBold", sans-serif`};
-    line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
+    height: ${({ $letterHeight }) => `${$letterHeight}px`};
+    line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
 `;
 
 export const Character = styled('div')<Props>`
     display: flex;
-    width: auto;
-    max-width: ${({ $decimal, $letterWidth, $notNum, $offSet = 20 }) =>
-        $decimal ? '14px' : `${$notNum ? $letterWidth + $offSet : $letterWidth}px`};
+    font-size: ${({ $fontSize }) => `${$fontSize}px`};
+    width: ${({ $decimal, $letterWidth }) => ($decimal ? '14px' : `${$letterWidth}px`)};
 `;
 
-export const HiddenNumberSpacer = styled('div')`
-    visibility: hidden;
-    opacity: 0;
-
+export const HiddenNumberSpacer = styled('div')<{ $fontSize?: number }>`
     pointer-events: none;
-    z-index: 0;
+    visibility: hidden;
     display: flex;
-    flex-shrink: 0;
+    opacity: 0;
+    z-index: 0;
 `;

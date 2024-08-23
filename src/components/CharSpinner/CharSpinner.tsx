@@ -1,4 +1,11 @@
-import { Character, Characters, CharacterWrapper, HiddenNumberSpacer, Wrapper } from './CharSpinner.styles.ts';
+import {
+    Character,
+    Characters,
+    CharacterWrapper,
+    HiddenNumberSpacer,
+    SpinnerWrapper,
+    Wrapper,
+} from './CharSpinner.styles.ts';
 import { useRef } from 'react';
 
 const transition = {
@@ -18,12 +25,12 @@ interface CharSpinnerProps {
 
 const sizing = {
     large: {
-        widthDiv: 1.15,
+        widthDiv: 1.1,
         offSet: 50,
     },
     simple: {
-        widthDiv: 1.6,
-        offSet: 20,
+        widthDiv: 1.9,
+        offSet: 30,
     },
 };
 
@@ -31,8 +38,10 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
     const letterHeight = Math.ceil(fontSize * 1.01);
     const charArray = value.split('').map((c) => c);
     const hiddenRef = useRef<HTMLDivElement>(null);
-    const hiddenWidth = hiddenRef.current?.clientWidth;
-    const letterWidth = Math.floor(fontSize / sizing[variant].widthDiv);
+    const hiddenWidth = hiddenRef.current?.offsetWidth;
+    const letterWidth = hiddenWidth
+        ? (hiddenWidth + 5) / charArray.length
+        : Math.ceil(fontSize / sizing[variant].widthDiv) + 5;
 
     const charMarkup = charArray.map((char, i) => {
         const isNum = !isNaN(Number(char));
@@ -51,7 +60,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                     $letterWidth={letterWidth}
                     $variant={variant}
                 >
-                    <Character $notNum $decimal={isDec} $letterWidth={letterWidth}>
+                    <Character $notNum $decimal={isDec} $letterWidth={letterWidth} $fontSize={fontSize}>
                         {char}
                     </Character>
                 </Characters>
@@ -66,66 +75,77 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                 animate={{ y: `-${y}px` }}
                 transition={transition}
                 $letterHeight={letterHeight}
-                $offSet={sizing[variant].offSet}
                 $letterWidth={letterWidth}
                 $fontSize={fontSize}
                 $variant={variant}
             >
-                {[...Array(10)].reverse().map((_, index) => (
+                {isNum ? (
+                    [...Array(10)].reverse().map((_, index) => (
+                        <Character
+                            key={`${i}-${char}-${index}`}
+                            $letterWidth={letterWidth}
+                            $offSet={sizing[variant].offSet}
+                            $fontSize={fontSize}
+                        >
+                            {index}
+                        </Character>
+                    ))
+                ) : (
                     <Character
-                        key={`${i}-${char}-${index}`}
-                        $notNum={!isNum}
+                        key={`${i}-${char}`}
+                        $notNum
                         $letterWidth={letterWidth}
-                        $offSet={sizing[variant].offSet}
+                        $fontSize={fontSize - 8}
+                        style={{ marginTop: '2px', border: '1px sold pink' }}
                     >
-                        {isNum ? index : char}
+                        {char}
                     </Character>
-                ))}
+                )}
             </Characters>
         );
     });
 
     return (
         <Wrapper $letterHeight={letterHeight}>
-            <CharacterWrapper style={{ width: hiddenWidth }}>{charMarkup}</CharacterWrapper>
-            <HiddenNumberSpacer ref={hiddenRef}>
-                {charArray.map((char, index) => {
-                    const isNum = !isNaN(Number(char));
-                    const isDec = char === '.';
-                    if (isDec) {
+            <SpinnerWrapper style={{ width: hiddenWidth }}>
+                <CharacterWrapper style={{ width: hiddenWidth }}>{charMarkup}</CharacterWrapper>
+                <HiddenNumberSpacer ref={hiddenRef} $fontSize={fontSize}>
+                    {charArray.map((char, index) => {
+                        const isDec = char === '.';
+                        if (isDec) {
+                            return (
+                                <Characters
+                                    $decimal={isDec}
+                                    key={`dec-${char}-${index}`}
+                                    initial={{ y: letterHeight }}
+                                    animate={{ y: 0 }}
+                                    transition={transition}
+                                    $letterHeight={letterHeight}
+                                    $fontSize={fontSize}
+                                    $letterWidth={letterWidth}
+                                    $variant={variant}
+                                    style={{ width: '14px' }}
+                                >
+                                    {char}
+                                </Characters>
+                            );
+                        }
+
                         return (
                             <Characters
-                                $notNum
-                                $decimal={isDec}
-                                key={`dec-${char}-${index}`}
-                                initial={{ y: letterHeight }}
-                                animate={{ y: 0 }}
-                                transition={transition}
                                 $letterHeight={letterHeight}
-                                $fontSize={fontSize}
                                 $letterWidth={letterWidth}
+                                $fontSize={fontSize}
                                 $variant={variant}
-                                style={{ width: '14px' }}
+                                key={`${index}-number-ref`}
                             >
                                 {char}
                             </Characters>
                         );
-                    }
-
-                    return (
-                        <Characters
-                            $notNum={!isNum}
-                            $letterHeight={letterHeight}
-                            $letterWidth={letterWidth}
-                            $fontSize={fontSize}
-                            $variant={variant}
-                            key={`${index}-number-ref`}
-                        >
-                            {char}
-                        </Characters>
-                    );
-                })}
-            </HiddenNumberSpacer>
+                    })}
+                </HiddenNumberSpacer>
+            </SpinnerWrapper>
+            <span>tXTM</span>
         </Wrapper>
     );
 }

@@ -5,12 +5,12 @@ import { darkTheme } from '@app/theme/themes';
 import useWalletStore from '@app/store/walletStore';
 import formatBalance from '@app/utils/formatBalance.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
-import { BalanceContainer, WalletBalance } from './Wallet.styles.ts';
+import { WalletBalance } from './Wallet.styles.ts';
 
 function Wallet() {
     const balance = useWalletStore((state) => state.balance);
     const formatted = formatBalance(balance);
-    const balanceFontSize = formatted.length <= 5 ? 60 : formatted.length <= 9 ? 35 : 30;
+    const balanceFontSize = formatted.length <= 5 ? 60 : formatted.length <= 8 ? 45 : 30;
 
     return (
         <ThemeProvider theme={darkTheme}>
@@ -19,19 +19,9 @@ function Wallet() {
                     <Handle />
                 </Stack>
                 <Typography variant="body2">Wallet Balance</Typography>
-                <BalanceContainer>
-                    <WalletBalance>
-                        <CharSpinner value={formatted} variant="simple" fontSize={balanceFontSize} />
-                    </WalletBalance>
-                    <Typography
-                        variant="h4"
-                        sx={{
-                            display: 'flex',
-                        }}
-                    >
-                        tXTM
-                    </Typography>
-                </BalanceContainer>
+                <WalletBalance>
+                    <CharSpinner value={formatted} variant="simple" fontSize={balanceFontSize} />
+                </WalletBalance>
             </WalletContainer>
         </ThemeProvider>
     );
