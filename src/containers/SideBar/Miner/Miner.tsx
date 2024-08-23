@@ -28,7 +28,7 @@ function Miner() {
     const hardwareVal = hardwareValSplit?.[0] + ' ' + hardwareValSplit?.[1];
 
     const hashRateOver1k = hash_rate > 1000; // TODO: add proper generic number format helper
-    const hashRateVal = hashRateOver1k || hash_rate;
+    const hashRateVal = hashRateOver1k ? hash_rate / 1000 : hash_rate;
     const hashRateStr = hashRateVal
         .toLocaleString(undefined, {
             maximumFractionDigits: 2,
