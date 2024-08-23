@@ -6,7 +6,9 @@ use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
 use humantime::format_duration;
 use log::{debug, info, warn};
-use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo, SyncState};
+use minotari_node_grpc_client::grpc::{
+    Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo, SyncState,
+};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::fs;
 use std::path::PathBuf;
@@ -229,9 +231,13 @@ impl MinotariNodeStatusMonitor {
             info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
 
             if sync_progress.state == SyncState::Startup as i32 {
-                progress_tracker.update("Connecting with Tari nodes..".to_string(), 5).await;
+                progress_tracker
+                    .update("Connecting with Tari nodes..".to_string(), 5)
+                    .await;
             } else if (sync_progress.state == SyncState::BlockStarting as i32) {
-                progress_tracker.update("Downloading block headers..".to_string(), 10).await;
+                progress_tracker
+                    .update("Downloading block headers..".to_string(), 10)
+                    .await;
             } else {
                 let time_now = SystemTime::now()
                     .duration_since(UNIX_EPOCH)
@@ -242,15 +248,20 @@ impl MinotariNodeStatusMonitor {
                 }
                 sync_progress_history.push((sync_progress.local_height, time_now));
 
-                let syncing_speed = sync_progress_history.first().and_then(|first| sync_progress_history.last().map(|last| {
-                    let denominator = (last.1 - first.1) as f64;
+                let syncing_speed = sync_progress_history
+                    .first()
+                    .and_then(|first| {
+                        sync_progress_history.last().map(|last| {
+                            let denominator = (last.1 - first.1) as f64;
 
-                    if denominator != 0.0 {
-                        ((last.0 - first.0) as f64) / denominator
-                    } else {
-                        0.0
-                    }
-                })).unwrap_or(0.0) as u64;
+                            if denominator != 0.0 {
+                                ((last.0 - first.0) as f64) / denominator
+                            } else {
+                                0.0
+                            }
+                        })
+                    })
+                    .unwrap_or(0.0) as u64;
 
                 let blocks_behind = sync_progress.tip_height - sync_progress.local_height;
                 let progress = if sync_progress.tip_height == 0 {
