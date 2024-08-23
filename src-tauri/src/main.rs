@@ -130,13 +130,13 @@ async fn setup_inner<'r>(
     let now = SystemTime::now();
 
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::MinotariNode,progress.clone())
+        .read_current_highest_version(Binaries::MinotariNode, progress.clone())
         .await?;
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::MergeMiningProxy,progress.clone())
+        .read_current_highest_version(Binaries::MergeMiningProxy, progress.clone())
         .await?;
     BinaryResolver::current()
-        .read_current_highest_version(Binaries::Wallet,progress.clone())
+        .read_current_highest_version(Binaries::Wallet, progress.clone())
         .await?;
 
     if now
@@ -250,6 +250,7 @@ async fn setup_inner<'r>(
             progress: 1.0,
         },
     );
+
     Ok(())
 }
 
@@ -586,8 +587,6 @@ fn main() {
         wallet_manager,
     };
 
-    let user_listener = app_state.user_listener.clone();
-
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
@@ -607,8 +606,6 @@ fn main() {
             )
             .expect("Could not set up logging");
 
-            let app_config_clone = app_config.clone();
-
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread_config = tauri::async_runtime::spawn(async move {
                 app_config.write().await.load_or_create(config_path).await
@@ -620,24 +617,6 @@ fn main() {
                     error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
                 }
             };
-
-            let app_window = app.get_window("main").unwrap().clone();
-            let auto_miner_thread = tauri::async_runtime::spawn(async move {
-                let auto_mining = app_config_clone.read().await.auto_mining;
-                let timeout = app_config_clone.read().await.get_user_inactivity_timeout();
-                let mut user_listener = user_listener.write().await;
-
-                if auto_mining {
-                    user_listener.start_listening_to_mouse_poisition_change(timeout, app_window);
-                }
-            });
-
-            match tauri::async_runtime::block_on(auto_miner_thread) {
-                Ok(_) => {}
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Error setting up auto mining: {:?}", e);
-                }
-            }
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread = tauri::async_runtime::spawn(async move {
