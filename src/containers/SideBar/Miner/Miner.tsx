@@ -27,6 +27,14 @@ function Miner() {
     const hardwareValSplit = cpuHardwareStatus?.label?.split(' ');
     const hardwareVal = hardwareValSplit?.[0] + ' ' + hardwareValSplit?.[1];
 
+    const hashRateOver1k = hash_rate > 1000; // TODO: add proper generic number format helper
+    const hashRateVal = hashRateOver1k || hash_rate;
+    const hashRateStr = hashRateVal
+        .toLocaleString(undefined, {
+            maximumFractionDigits: 2,
+        })
+        .replace(/,/g, '.');
+
     return (
         <MinerContainer>
             <AutoMiner />
@@ -36,11 +44,7 @@ function Miner() {
                 <ModeSelect />
                 <Tile
                     title="Hashrate"
-                    stats={
-                        (hash_rate > 1000 ? hash_rate / 1000 : hash_rate).toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                        }) + ' kH/s'
-                    }
+                    stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''} H/s`}
                     isLoading={isWaitingForHashRate}
                 />
                 <Tile
