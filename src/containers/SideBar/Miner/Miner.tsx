@@ -24,6 +24,9 @@ function Miner() {
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
     const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
 
+    const hardwareValSplit = cpuHardwareStatus?.label?.split(' ');
+    const hardwareVal = hardwareValSplit?.[0] + ' ' + hardwareValSplit?.[1];
+
     return (
         <MinerContainer>
             <AutoMiner />
@@ -40,7 +43,7 @@ function Miner() {
                         }) + '%'
                     }
                 />
-                <Tile title="CHIP/GPU" stats={truncateString(cpuHardwareStatus?.label || 'Unknown', 10)} />
+                <Tile title="CHIP/GPU" stats={truncateString(hardwareVal || 'Unknown', 10)} />
                 <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' tXTM/24h'} />
             </TileContainer>
         </MinerContainer>
