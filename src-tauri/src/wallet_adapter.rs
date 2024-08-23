@@ -85,9 +85,11 @@ impl ProcessAdapter for WalletAdapter {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
-            args.push("wallet.p2p.allow_test_addresses=true".to_string());
-            args.push("-p".to_string());
-            args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
+            args.push("wallet.p2p.public_addresses=/ip4/172.2.3.4/tcp/18188".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
             args.push("-p".to_string());
             args.push(
                 "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),

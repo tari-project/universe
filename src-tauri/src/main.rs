@@ -197,15 +197,12 @@ async fn setup_inner<'r>(
         {
             Ok(_) => {}
             Err(e) => {
-                match e {
-                    NodeManagerError::ExitCode(code) => {
-                        if code == 114 {
-                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
-                            state.node_manager.clean_data_folder(&data_dir).await?;
-                            continue;
-                        }
+                if let NodeManagerError::ExitCode(code) = e {
+                    if code == 114 {
+                        warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
+                        state.node_manager.clean_data_folder(&data_dir).await?;
+                        continue;
                     }
-                    _ => {}
                 }
                 error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
 
@@ -486,7 +483,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         },
         wallet_balance,
         mode: config_guard.mode.clone(),
-        auto_mining: config_guard.auto_mining.clone(),
+        auto_mining: config_guard.auto_mining,
         user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
     })
 }

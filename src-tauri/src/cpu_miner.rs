@@ -33,6 +33,7 @@ impl CpuMiner {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn start(
         &mut self,
         mut app_shutdown: ShutdownSignal,
