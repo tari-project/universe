@@ -1,7 +1,11 @@
 use anyhow::Result;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
+<<<<<<< HEAD
 use std::{env, sync::Arc, thread::sleep, time::Duration};
+=======
+use std::{sync::Arc, thread::sleep, time::Duration};
+>>>>>>> 6173d6e (Add telemetry_manager skeleton.)
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tokio::sync::RwLock;
