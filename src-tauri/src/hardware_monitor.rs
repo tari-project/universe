@@ -30,6 +30,27 @@ pub struct HardwareStatus {
     gpu: Option<HardwareParameters>,
 }
 
+impl HardwareStatus {
+    pub fn get_utilization(&self) -> Option<f32> {
+        match self.cpu {
+            Some(ref cpu) => Some(cpu.usage_percentage.clone()),
+            None => match self.gpu {
+                Some(ref gpu) => Some(gpu.usage_percentage.clone()),
+                None => None {},
+            },
+        }
+    }
+
+    pub fn get_label(&self) -> Option<String> {
+        match self.cpu {
+            Some(ref cpu) => Some(cpu.label.clone()),
+            None => match self.gpu {
+                Some(ref gpu) => Some(gpu.label.clone()),
+                None => None {},
+            },
+        }
+    }
+}
 trait HardwareMonitorImpl: Send + Sync + 'static {
     fn get_implementation_name(&self) -> String;
     fn read_cpu_parameters(

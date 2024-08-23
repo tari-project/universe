@@ -11,6 +11,7 @@ mod github;
 mod gpu_miner;
 mod hardware_monitor;
 mod internal_wallet;
+mod managers;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
@@ -40,6 +41,7 @@ use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
+use managers::telemetry_manager::TelemetryManager;
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
@@ -48,6 +50,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use std::{panic, process};
+use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
@@ -436,7 +439,7 @@ async fn update_applications(
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
-    let gpu_miner = state.gpu_miner.write().await;
+    let _gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -553,17 +556,19 @@ struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
 }
+
 struct UniverseAppState {
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
-    cpu_miner: RwLock<CpuMiner>,
-    gpu_miner: RwLock<GpuMiner>,
+    cpu_miner: Arc<RwLock<CpuMiner>>,
+    gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
     analytics_manager: AnalyticsManager,
+    // telemetry_manager: TelemetryManager,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -593,17 +598,30 @@ fn main() {
     }));
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
     let analytics = AnalyticsManager::new(app_config.clone());
+
+    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
+
+    let _telemetry_manager: TelemetryManager = TelemetryManager::new(
+        node_manager.clone(),
+        cpu_miner.clone(),
+        gpu_miner.clone(),
+        app_config.clone(),
+        Some(Network::default()),
+    );
+
     let app_state = UniverseAppState {
         config: app_config.clone(),
         shutdown: shutdown.clone(),
-        cpu_miner: CpuMiner::new().into(),
-        gpu_miner: GpuMiner::new().into(),
+        cpu_miner: cpu_miner.clone(),
+        gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
         user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
         analytics_manager: analytics,
+        // telemetry_manager,
     };
 
     let app = tauri::Builder::default()
