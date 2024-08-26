@@ -7,11 +7,11 @@ use log::{info, warn};
 use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::slice::Iter;
 use std::sync::{Arc, LazyLock};
 use tauri::api::path::cache_dir;
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
-use std::slice::Iter;
 
 const LOG_TARGET: &str = "tari::universe::binary_resolver";
 static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);

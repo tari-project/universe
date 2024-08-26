@@ -137,7 +137,8 @@ async fn setup_inner<'r>(
 
     for binary in Binaries::iterator() {
         BinaryResolver::current()
-            .read_current_highest_version(binary, progress.clone()).await?;
+            .read_current_highest_version(binary, progress.clone())
+            .await?;
     }
 
     if now
