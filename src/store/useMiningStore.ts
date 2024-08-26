@@ -3,14 +3,14 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { BlockTimeData } from '@app/types/mining.ts';
 
 interface State {
-    blockTime?: BlockTimeData;
+    displayBlockTime?: BlockTimeData;
     displayBlockHeight?: number;
     earnings?: number;
     postBlockAnimation?: boolean;
     timerPaused?: boolean;
 }
 interface Actions {
-    setBlockTime: (blockTime: BlockTimeData) => void;
+    setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setEarnings: (earnings?: number) => void;
     setPostBlockAnimation: (postBlockAnimation: boolean) => void;
@@ -28,7 +28,7 @@ export const useMiningStore = create<MiningStoreState>()(
     persist(
         (set) => ({
             ...initialState,
-            setBlockTime: (blockTime) => set({ blockTime }),
+            setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
             setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
             setEarnings: (earnings) => set({ earnings }),
             setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
