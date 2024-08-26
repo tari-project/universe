@@ -1,4 +1,4 @@
-export default function calculateTimeSince(time: number, start:number) {
+export default function calculateTimeSince(time: number, start: number) {
     const past: Date = new Date(time * 1000); // Convert seconds to milliseconds
     const diff: number = start - past.getTime();
 

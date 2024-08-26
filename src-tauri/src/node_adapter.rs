@@ -1,4 +1,5 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::{process_utils, ProgressTracker};
@@ -15,16 +16,22 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
 use tokio::select;
+use tonic::transport::Channel;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub struct MinotariNodeAdapter {
     use_tor: bool,
+    pub(crate) grpc_port: u16,
 }
 
 impl MinotariNodeAdapter {
     pub fn new(use_tor: bool) -> Self {
-        Self { use_tor }
+        let port = get_free_port().unwrap_or(18142);
+        Self {
+            use_tor,
+            grpc_port: port,
+        }
     }
 }
 
@@ -49,7 +56,13 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
             format!("--log-path={}", log_dir.to_str().unwrap()).to_string(),
-            // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
+            "-p".to_string(),
+            "base_node.grpc_enabled=true".to_string(),
+            "-p".to_string(),
+            format!(
+                "base_node.grpc_address=/ip4/127.0.0.1/tcp/{}",
+                self.grpc_port
+            ), // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
         ];
         if !self.use_tor {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
@@ -121,7 +134,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
                     Ok(exit_code)
                 })),
             },
-            MinotariNodeStatusMonitor {},
+            MinotariNodeStatusMonitor {
+                grpc_port: self.grpc_port,
+            },
         ))
     }
 
@@ -134,7 +149,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
     }
 }
 
-pub struct MinotariNodeStatusMonitor {}
+pub struct MinotariNodeStatusMonitor {
+    grpc_port: u16,
+}
 
 impl StatusMonitor for MinotariNodeStatusMonitor {}
 
@@ -143,7 +160,9 @@ impl MinotariNodeStatusMonitor {
         &self,
     ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), Error> {
         // TODO: use GRPC port returned from process
-        let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
         let res = client
             .get_new_block_template(NewBlockTemplateRequest {
                 algo: Some(PowAlgo { pow_algo: 1 }),
@@ -184,7 +203,8 @@ impl MinotariNodeStatusMonitor {
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
-        let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
 
@@ -195,7 +215,8 @@ impl MinotariNodeStatusMonitor {
     }
 
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
-        let mut client = BaseNodeGrpcClient::connect("http://127.0.0.1:18142").await?;
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
         loop {
             let tip = client.get_tip_info(Empty {}).await?;
             let res = tip.into_inner();
