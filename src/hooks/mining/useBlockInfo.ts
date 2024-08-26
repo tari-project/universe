@@ -10,11 +10,11 @@ export function useBlockInfo() {
     const setDisplayBlockTime = useMiningStore((s) => s.setDisplayBlockTime);
     const timerPaused = useMiningStore((s) => s.timerPaused);
 
-    const timeSince = useRef(0);
+    const timeSince = useRef(-1);
 
     useEffect(() => {
         if (timerPaused) {
-            timeSince.current = 0;
+            timeSince.current = -1;
         }
     }, [timerPaused]);
 
