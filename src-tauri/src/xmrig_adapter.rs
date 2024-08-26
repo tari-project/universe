@@ -144,10 +144,7 @@ impl ProcessAdapter for XmrigAdapter {
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push(format!("--donate-level=1"));
         args.push(format!("--user={}", self.monero_address));
-        args.push(format!(
-            "--cpu-max-threads-hint={}",
-            self.cpu_max_percentage
-        ));
+        args.push(format!("--threads={}", self.cpu_max_percentage));
 
         Ok((
             ProcessInstance {
