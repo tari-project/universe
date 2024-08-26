@@ -1,7 +1,7 @@
 use anyhow::Result;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::{sync::Arc, thread::sleep, time::Duration};
+use std::{env, sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tokio::sync::RwLock;
@@ -76,7 +76,7 @@ pub struct TelemetryData {
     pub network: Option<TelemetryNetwork>,
     pub hash_rate: f64,
     pub resource: TelemetryResource,
-    pub resoure_utilization: f32,
+    pub resoure_utilization: Option<f32>,
     pub resoure_make: Option<String>,
     pub mode: TelemetryMiningMode,
 }
@@ -143,7 +143,7 @@ impl TelemetryManager {
         let gpu_miner = self.gpu_miner.clone();
         let config = self.config.clone();
         let cancellation_token: CancellationToken = self.cancellation_token.clone();
-        let network = self.node_network.clone();
+        let network = self.node_network;
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
@@ -155,6 +155,17 @@ impl TelemetryManager {
                             match telemetry {
                                 Ok(telemetry) => {
                                     info!("Telemetry data: {:?}", telemetry);
+                                    get_airdrop_url();
+                                    // reqwest::Client::new()
+                                    //     .post("https://minotari.tari.com/telemetry")
+                                    //     .json(&telemetry)
+                                    //     .send()
+                                    //     .await
+                                    //     .map_err(|e| e.to_string())
+                                    //     .map(|_| ())
+                                    //     .unwrap_or_else(|e| {
+                                    //         error!("Error sending telemetry data: {:?}", e);
+                                    //     });
                                 },
                                 Err(e) => {
                                     error!("Error getting telemetry data: {:?}", e);
@@ -209,7 +220,11 @@ async fn get_telemetry_data(
 
     let config_guard = config.read().await;
     let is_mining_active = is_synced && cpu.is_mining;
-    let hash_rate = if cpu.is_mining { cpu.hash_rate } else { 0.0 };
+    let hash_rate = if cpu.is_mining && cpu.is_mining_enabled {
+        cpu.hash_rate
+    } else {
+        0.0
+    };
 
     Ok(TelemetryData {
         app_id: "minotari".to_string(),
@@ -218,12 +233,20 @@ async fn get_telemetry_data(
         network: network.map(|n| n.into()),
         hash_rate,
         mode: config_guard.mode.clone().into(),
-        resource: if cpu.is_mining {
+        resource: if cpu.is_mining_enabled {
             TelemetryResource::Cpu
         } else {
             TelemetryResource::Gpu
         },
-        resoure_utilization: hardware_status.get_utilization().unwrap_or(0.0),
+        resoure_utilization: hardware_status.get_utilization(),
         resoure_make: hardware_status.get_label(),
     })
+}
+
+fn get_airdrop_url() -> String {
+    for (key, value) in env::vars() {
+        println!("{key}: {value}");
+    }
+
+    "https://minotari.tari.com/telemetry".to_string()
 }
