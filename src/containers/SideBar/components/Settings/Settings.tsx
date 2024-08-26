@@ -27,6 +27,7 @@ import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.c
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
+import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -327,6 +328,7 @@ const Settings: React.FC = () => {
                         <Divider />
                         <HorisontalBox>
                             <VisualMode />
+                            <TelemetryMode />
                         </HorisontalBox>
                     </Stack>
                 </DialogContent>

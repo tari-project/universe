@@ -100,6 +100,23 @@ async fn set_user_inactivity_timeout<'r>(
 }
 
 #[tauri::command]
+async fn set_telemetry_mode<'r>(
+    telemetry_mode: bool,
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_telemetry_collection(telemetry_mode)
+        .await
+        .map_err(|e| e.to_string());
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -241,6 +258,14 @@ async fn setup_inner<'r>(
     progress
         .update("Starting merge mining proxy".to_string(), 0)
         .await;
+
+    let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
+
+    let mut analytics_id = state.analytics_manager.get_unique_string().await;
+    if analytics_id.is_empty() {
+        analytics_id = "unknown_miner_tari_universe".to_string();
+    }
+
     mm_proxy_manager
         .start(
             state.shutdown.to_signal().clone(),
@@ -591,6 +616,7 @@ fn main() {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
     }));
+
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
     let analytics = AnalyticsManager::new(app_config.clone());
 
@@ -691,7 +717,8 @@ fn main() {
             get_seed_words,
             get_applications_versions,
             set_user_inactivity_timeout,
-            update_applications
+            update_applications,
+            set_telemetry_mode
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

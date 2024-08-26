@@ -129,7 +129,7 @@ impl TelemetryManager {
         info!("Starting telemetry manager");
         let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         self.is_collecting_telemetry = telemetry_collection_enabled;
-        let _ = self.start_telemetry_process(Duration::from_secs(60)).await;
+        let _ = self.start_telemetry_process(Duration::from_secs(1)).await;
         Ok(())
     }
 
@@ -137,18 +137,19 @@ impl TelemetryManager {
         &mut self,
         timeout: Duration,
     ) -> Result<(), TelemetryManagerError> {
-        let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         let node_manager = self.node_manager.clone();
         let cpu_miner = self.cpu_miner.clone();
         let gpu_miner = self.gpu_miner.clone();
         let config = self.config.clone();
         let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
+        let config_cloned = self.config.clone();
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
                     info!("TelemetryManager::start_telemetry_process has  been started");
                     loop {
+                        let telemetry_collection_enabled = config_cloned.read().await.telemetry_collection;
                         if telemetry_collection_enabled {
                             let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
                             match telemetry {
