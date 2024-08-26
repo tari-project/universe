@@ -142,10 +142,11 @@ impl InternalWallet {
     }
 }
 
-fn generate_password(length: usize) -> String {
-    let charset: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:',.<>?/`~"
-        .chars()
-        .collect();
+pub fn generate_password(length: usize) -> String {
+    let charset: Vec<char> =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&"
+            .chars()
+            .collect();
 
     let mut rng = rand::thread_rng();
     let password: String = (0..length)

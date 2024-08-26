@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod analytics;
 mod app_config;
 mod binary_resolver;
 mod consts;
@@ -12,6 +13,7 @@ mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
+mod network_utils;
 mod node_adapter;
 mod node_manager;
 mod process_adapter;
@@ -33,6 +35,7 @@ use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
+use analytics::AnalyticsManager;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
@@ -233,12 +236,21 @@ async fn setup_inner<'r>(
     progress
         .update("Starting merge mining proxy".to_string(), 0)
         .await;
+
+    let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
+
+    let mut analytics_id = state.analytics_manager.get_unique_string().await;
+    if analytics_id.is_empty() {
+        analytics_id = "unknown_miner_tari_universe".to_string();
+    }
     mm_proxy_manager
         .start(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
             app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
+            base_node_grpc_port,
+            analytics_id,
         )
         .await?;
     mm_proxy_manager.wait_ready().await?;
@@ -430,10 +442,13 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             .node_manager
             .get_network_hash_rate_and_block_reward()
             .await
-            .unwrap_or({
-                //  warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
+            .unwrap_or_else(|e| {
+                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
+
+    info!(target: LOG_TARGET, "Network hash rate: {}", randomx_hash_rate);
+
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
@@ -548,6 +563,7 @@ struct UniverseAppState {
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
+    analytics_manager: AnalyticsManager,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -576,6 +592,7 @@ fn main() {
         tari_address: TariAddress::default(),
     }));
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
+    let analytics = AnalyticsManager::new(app_config.clone());
     let app_state = UniverseAppState {
         config: app_config.clone(),
         shutdown: shutdown.clone(),
@@ -586,6 +603,7 @@ fn main() {
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
+        analytics_manager: analytics,
     };
 
     let app = tauri::Builder::default()
