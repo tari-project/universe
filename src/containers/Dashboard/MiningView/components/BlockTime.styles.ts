@@ -18,11 +18,16 @@ export const TimerTypography = styled(Box)(({ theme }) => ({
     fontFamily: '"DrukWideLCGBold", sans-serif',
     fontVariantNumeric: 'tabular-nums',
     fontSize: '18px',
-    letterSpacing: '1px',
     color: `${theme.palette.text.primary}`,
+    gap: `2px`,
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing(1),
     textTransform: 'uppercase',
 }));
+
+export const SpacedNum = styled('span')`
+    font-variant-numeric: tabular-nums;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1ch;
+`;

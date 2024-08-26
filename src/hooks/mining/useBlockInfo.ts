@@ -1,21 +1,23 @@
 import { useInterval } from '../useInterval.ts';
 
-import { useBaseNodeStatusStore } from '../../store/useBaseNodeStatusStore.ts';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 const INTERVAL = 1000; // 1 sec
 
 export function useBlockInfo() {
-    const block_time = useBaseNodeStatusStore((s) => s.block_time);
-    const setBlockTime = useMiningStore((s) => s.setBlockTime);
+    const setDisplayBlockTime = useMiningStore((s) => s.setDisplayBlockTime);
     const timerPaused = useMiningStore((s) => s.timerPaused);
+    let timeSince = 0;
     useInterval(
         () => {
+            if (timerPaused) {
+                timeSince = 0;
+            }
             if (!timerPaused) {
-                const now = new Date();
-                const blockTime = calculateTimeSince(block_time, now.getTime());
-                setBlockTime(blockTime);
+                timeSince += 1;
+                const blockTime = calculateTimeSince(0, timeSince * INTERVAL);
+                setDisplayBlockTime(blockTime);
             }
         },
         !timerPaused ? INTERVAL : null
