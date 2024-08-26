@@ -79,8 +79,6 @@ impl CpuMiner {
         let xmrig = XmrigAdapter::new(
             xmrig_node_connection,
             "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
-            cache_dir,
-            progress_tracker,
             cpu_max_percentage,
         );
         let (mut xmrig_child, _xmrig_status_monitor) =

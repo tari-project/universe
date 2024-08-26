@@ -39,6 +39,7 @@ use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
+use semver::Version;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
 use std::sync::Arc;
@@ -122,6 +123,10 @@ async fn setup_inner<'r>(
     let log_dir = app.path_resolver().app_log_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
+    println!("Data dir: {:?}", data_dir);
+    println!("Log dir: {:?}", log_dir);
+    println!("Cache dir: {:?}", cache_dir);
+
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
@@ -139,10 +144,14 @@ async fn setup_inner<'r>(
     BinaryResolver::current()
         .read_current_highest_version(Binaries::Wallet, progress.clone())
         .await?;
+    BinaryResolver::current()
+        .read_current_highest_version(Binaries::Xmrig, progress.clone())
+        .await?;
 
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
+        // > Duration::from_secs(10)
         > Duration::from_secs(60 * 10)
     // 10 minutes
     {
@@ -184,7 +193,9 @@ async fn setup_inner<'r>(
             .update("Checking for latest version of xmrig".to_string(), 0)
             .await;
         sleep(Duration::from_secs(1));
-        XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
+        BinaryResolver::current()
+            .ensure_latest(Binaries::Xmrig, progress.clone())
+            .await?;
     }
 
     for _i in 0..2 {
@@ -355,30 +366,22 @@ fn open_log_dir(app: tauri::AppHandle) {
 
 #[tauri::command]
 async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
-    //TODO could be move to status command when XmrigAdapter will be implemented in BinaryResolver
+    let xmrig_version: Version = BinaryResolver::current()
+        .get_latest_version(Binaries::Xmrig)
+        .await;
 
-    let default_message = "Failed to read version".to_string();
-
-    let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
-
-    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
-    let xmrig_version: String =
-        XmrigAdapter::ensure_latest(cache_dir, false, progress_tracker.clone())
-            .await
-            .unwrap_or(default_message.clone());
-
-    let minotari_node_version: semver::Version = BinaryResolver::current()
+    let minotari_node_version: Version = BinaryResolver::current()
         .get_latest_version(Binaries::MinotariNode)
         .await;
-    let mm_proxy_version: semver::Version = BinaryResolver::current()
+    let mm_proxy_version: Version = BinaryResolver::current()
         .get_latest_version(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version: semver::Version = BinaryResolver::current()
+    let wallet_version: Version = BinaryResolver::current()
         .get_latest_version(Binaries::Wallet)
         .await;
 
     Ok(ApplicationsVersions {
-        xmrig: xmrig_version,
+        xmrig: xmrig_version.to_string(),
         minotari_node: minotari_node_version.to_string(),
         mm_proxy: mm_proxy_version.to_string(),
         wallet: wallet_version.to_string(),
@@ -397,8 +400,9 @@ async fn update_applications(
         .set_last_binaries_update_timestamp(SystemTime::now())
         .await;
     let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
-    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
-    XmrigAdapter::ensure_latest(cache_dir, true, progress_tracker.clone())
+
+    BinaryResolver::current()
+        .ensure_latest(Binaries::Xmrig, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
