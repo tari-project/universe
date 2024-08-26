@@ -11,7 +11,7 @@ export default function formatBalance(value: number) {
 
     if (balance >= 1_000_000) {
         const div = balance / 1_000_000;
-        const truncatedStr = truncate(div, 2).toString();
+        const truncatedStr = truncate(div, 3).toString();
         return replaceFn(`${truncatedStr}m`);
     }
 
