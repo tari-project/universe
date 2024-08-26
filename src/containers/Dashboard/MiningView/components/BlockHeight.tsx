@@ -19,11 +19,11 @@ function BlockHeight() {
         for (let i = 0; i < 100; i++) {
             const opacity = i % 5 === 0 ? 1 : 0.2;
             marks.push(
-                <RulerMarkContainer>
-                    <BlockHeightSml key={i}>
+                <RulerMarkContainer key={`mark-${i}`}>
+                    <BlockHeightSml key={`height-${i}`}>
                         {i % 5 === 0 && i > 50 && rulerNum > 10 ? (rulerNum -= 10).toLocaleString() : null}
                     </BlockHeightSml>
-                    <RulerMark key={i} style={{ opacity }} />
+                    <RulerMark key={`ruler-${i}`} style={{ opacity }} />
                 </RulerMarkContainer>
             );
         }

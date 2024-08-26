@@ -13,7 +13,7 @@ export default function calculateTimeSince(time: number, start: number) {
     const seconds = Math.floor((diff % (1000 * 60)) / 1000)
         .toString()
         .padStart(2, '0');
-    // console.log(`days= ${days}`);
+
     return {
         days,
         daysString,
