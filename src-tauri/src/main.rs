@@ -135,18 +135,10 @@ async fn setup_inner<'r>(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
     let now = SystemTime::now();
 
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::MinotariNode, progress.clone())
-        .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::MergeMiningProxy, progress.clone())
-        .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::Wallet, progress.clone())
-        .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::Xmrig, progress.clone())
-        .await?;
+    for binary in Binaries::iterator() {
+        BinaryResolver::current()
+            .read_current_highest_version(binary, progress.clone()).await?;
+    }
 
     if now
         .duration_since(last_binaries_update_timestamp)

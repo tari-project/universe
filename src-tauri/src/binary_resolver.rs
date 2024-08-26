@@ -11,6 +11,7 @@ use std::sync::{Arc, LazyLock};
 use tauri::api::path::cache_dir;
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
+use std::slice::Iter;
 
 const LOG_TARGET: &str = "tari::universe::binary_resolver";
 static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
@@ -426,5 +427,15 @@ impl Binaries {
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
         }
+    }
+    pub fn iterator() -> impl Iterator<Item = Binaries> {
+        [
+            Binaries::Xmrig,
+            Binaries::MergeMiningProxy,
+            Binaries::MinotariNode,
+            Binaries::Wallet,
+        ]
+        .iter()
+        .copied()
     }
 }
