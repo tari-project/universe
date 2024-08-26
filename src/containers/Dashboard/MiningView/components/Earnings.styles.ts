@@ -5,7 +5,8 @@ export const EarningsContainer = styled('div')`
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 10% 0 0 0;
+    height: 100%;
+    position: relative;
 `;
 
 export const EarningsWrapper = styled(motion.div)`
