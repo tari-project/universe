@@ -1,7 +1,7 @@
 use anyhow::Result;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::{env, sync::Arc, thread::sleep, time::Duration};
+use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tokio::sync::RwLock;
@@ -17,7 +17,7 @@ use crate::{
 };
 
 #[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all_fields = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum TelemetryResource {
     Cpu,
     Gpu,
@@ -39,6 +39,15 @@ pub enum TelemetryNetwork {
     Esmeralda,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum TelemetryManagerError {
+    #[error("telemetry data could not be sent because of an error: {0}")]
+    ReqwestError(#[from] reqwest::Error),
+
+    #[error("Other error: {0}")]
+    Other(#[from] anyhow::Error),
+}
+
 impl From<Network> for TelemetryNetwork {
     fn from(value: Network) -> Self {
         match value {
@@ -53,6 +62,7 @@ impl From<Network> for TelemetryNetwork {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum TelemetryMiningMode {
     Eco,
     Ludicrous,
@@ -76,8 +86,8 @@ pub struct TelemetryData {
     pub network: Option<TelemetryNetwork>,
     pub hash_rate: f64,
     pub resource: TelemetryResource,
-    pub resoure_utilization: Option<f32>,
-    pub resoure_make: Option<String>,
+    pub resource_utilization: Option<f32>,
+    pub resource_make: Option<String>,
     pub mode: TelemetryMiningMode,
 }
 
@@ -90,20 +100,6 @@ pub struct TelemetryManager {
     pub is_collecting_telemetry: bool,
     node_network: Option<Network>,
 }
-
-// impl Clone for TelemetryManager {
-//     fn clone(&self) -> Self {
-//         Self {
-//             node_manager: self.node_manager.clone(),
-//             cpu_miner: self.cpu_miner.clone(),
-//             gpu_miner: self.gpu_miner.clone(),
-//             wallet_manager: self.wallet_manager.clone(),
-//             config: self.config.clone(),
-//             cancelation_token: self.cancelation_token.clone(),
-//             is_collecting_telemetry: self.is_collecting_telemetry,
-//         }
-//     }
-// }
 
 impl TelemetryManager {
     pub fn new(
@@ -130,13 +126,17 @@ impl TelemetryManager {
     }
 
     pub async fn initialize(&mut self) -> Result<()> {
+        info!("Starting telemetry manager");
         let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         self.is_collecting_telemetry = telemetry_collection_enabled;
         let _ = self.start_telemetry_process(Duration::from_secs(60)).await;
         Ok(())
     }
 
-    async fn start_telemetry_process(&mut self, timeout: Duration) -> Result<(), String> {
+    async fn start_telemetry_process(
+        &mut self,
+        timeout: Duration,
+    ) -> Result<(), TelemetryManagerError> {
         let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         let node_manager = self.node_manager.clone();
         let cpu_miner = self.cpu_miner.clone();
@@ -150,22 +150,10 @@ impl TelemetryManager {
                     info!("TelemetryManager::start_telemetry_process has  been started");
                     loop {
                         if telemetry_collection_enabled {
-                            //do telemetry collection
                             let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
                             match telemetry {
                                 Ok(telemetry) => {
-                                    info!("Telemetry data: {:?}", telemetry);
-                                    get_airdrop_url();
-                                    // reqwest::Client::new()
-                                    //     .post("https://minotari.tari.com/telemetry")
-                                    //     .json(&telemetry)
-                                    //     .send()
-                                    //     .await
-                                    //     .map_err(|e| e.to_string())
-                                    //     .map(|_| ())
-                                    //     .unwrap_or_else(|e| {
-                                    //         error!("Error sending telemetry data: {:?}", e);
-                                    //     });
+                                    send_telemetry_data(telemetry).await;
                                 },
                                 Err(e) => {
                                     error!("Error getting telemetry data: {:?}", e);
@@ -174,7 +162,6 @@ impl TelemetryManager {
                         }
                         sleep(timeout);
                     }
-                    // Ok::<(),Box<dyn Error>>(())
                 } => {},
                 _ = cancellation_token.cancelled() => {
                     info!("TelemetryManager::start_telemetry_process has been cancelled");
@@ -191,7 +178,7 @@ async fn get_telemetry_data(
     node_manager: NodeManager,
     config: Arc<RwLock<AppConfig>>,
     network: Option<Network>,
-) -> Result<TelemetryData, String> {
+) -> Result<TelemetryData, TelemetryManagerError> {
     let mut cpu_miner = cpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, _block_time, is_synced) =
         node_manager
@@ -204,7 +191,7 @@ async fn get_telemetry_data(
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.into())
     {
         Ok(cpu) => cpu,
         Err(e) => {
@@ -233,20 +220,36 @@ async fn get_telemetry_data(
         network: network.map(|n| n.into()),
         hash_rate,
         mode: config_guard.mode.clone().into(),
-        resource: if cpu.is_mining_enabled {
-            TelemetryResource::Cpu
-        } else {
-            TelemetryResource::Gpu
-        },
-        resoure_utilization: hardware_status.get_utilization(),
-        resoure_make: hardware_status.get_label(),
+        resource: TelemetryResource::Cpu,
+        resource_utilization: hardware_status.get_utilization(),
+        resource_make: hardware_status.get_label(),
     })
 }
 
 fn get_airdrop_url() -> String {
-    for (key, value) in env::vars() {
-        println!("{key}: {value}");
-    }
+    "http://localhost:3004".to_string()
+}
 
-    "https://minotari.tari.com/telemetry".to_string()
+async fn send_telemetry_data(data: TelemetryData) {
+    debug!("Telemetry data being sent: {:?}", data);
+
+    let result = reqwest::Client::new()
+        .post(format!("{}/miner/heartbeat", get_airdrop_url()))
+        .json(&data)
+        .send()
+        .await
+        .map_err(TelemetryManagerError::ReqwestError);
+
+    match result {
+        Ok(response) => {
+            if response.status().is_success() {
+                println!("Telemetry data sent successfully");
+            } else {
+                warn!("Error sending telemetry data: {:#?}", response);
+            }
+        }
+        Err(e) => {
+            error!("Error sending telemetry data: {:#?}", e);
+        }
+    }
 }

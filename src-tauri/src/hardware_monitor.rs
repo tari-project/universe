@@ -33,9 +33,9 @@ pub struct HardwareStatus {
 impl HardwareStatus {
     pub fn get_utilization(&self) -> Option<f32> {
         match self.cpu {
-            Some(ref cpu) => Some(cpu.usage_percentage.clone()),
+            Some(ref cpu) => Some(cpu.usage_percentage),
             None => match self.gpu {
-                Some(ref gpu) => Some(gpu.usage_percentage.clone()),
+                Some(ref gpu) => Some(gpu.usage_percentage),
                 None => None {},
             },
         }

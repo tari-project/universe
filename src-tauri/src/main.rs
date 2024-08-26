@@ -136,6 +136,8 @@ async fn setup_inner<'r>(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
     let now = SystemTime::now();
 
+    state.telemetry_manager.write().await.initialize().await?;
+
     BinaryResolver::current()
         .read_current_highest_version(Binaries::MinotariNode, progress.clone())
         .await?;
@@ -561,7 +563,7 @@ struct UniverseAppState {
     node_manager: NodeManager,
     wallet_manager: WalletManager,
     analytics_manager: AnalyticsManager,
-    // telemetry_manager: TelemetryManager,
+    telemetry_manager: Arc<RwLock<TelemetryManager>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -595,7 +597,7 @@ fn main() {
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
 
-    let _telemetry_manager: TelemetryManager = TelemetryManager::new(
+    let telemetry_manager: TelemetryManager = TelemetryManager::new(
         node_manager.clone(),
         cpu_miner.clone(),
         gpu_miner.clone(),
@@ -614,7 +616,7 @@ fn main() {
         node_manager,
         wallet_manager,
         analytics_manager: analytics,
-        // telemetry_manager,
+        telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
     };
 
     let app = tauri::Builder::default()
