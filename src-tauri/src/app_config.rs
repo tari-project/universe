@@ -7,14 +7,19 @@ use std::{
 };
 use tokio::fs;
 
+use crate::internal_wallet::generate_password;
+
 const LOG_TARGET: &str = "tari::universe::app_config";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfigFromFile {
+    pub version: u32,
     pub mode: String,
     pub auto_mining: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
+    pub allow_analytics: bool,
+    pub anon_id: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -43,20 +48,26 @@ impl MiningMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     config_file: Option<PathBuf>,
+    pub version: u32,
     pub mode: MiningMode,
     pub auto_mining: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
+    pub allow_analytics: bool,
+    pub anon_id: String,
 }
 
 impl AppConfig {
     pub fn new() -> Self {
         Self {
+            version: 1,
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: false,
             user_inactivity_timeout: Duration::from_secs(60),
             last_binaries_update_timestamp: SystemTime::now(),
+            allow_analytics: true,
+            anon_id: generate_password(20),
         }
     }
 
@@ -73,6 +84,15 @@ impl AppConfig {
                     self.auto_mining = config.auto_mining;
                     self.user_inactivity_timeout = config.user_inactivity_timeout;
                     self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
+                    self.allow_analytics = config.allow_analytics;
+                    self.anon_id = config.anon_id;
+                    self.version = config.version;
+                    if self.version == 0 {
+                        // migrate
+                        self.version = 1;
+                        self.allow_analytics = true;
+                        self.anon_id = generate_password(20);
+                    }
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -85,6 +105,9 @@ impl AppConfig {
             auto_mining: self.auto_mining,
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
+            version: self.version,
+            allow_analytics: self.allow_analytics,
+            anon_id: self.anon_id.clone(),
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -149,6 +172,9 @@ impl AppConfig {
             auto_mining: self.auto_mining,
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
+            version: self.version,
+            allow_analytics: self.allow_analytics,
+            anon_id: self.anon_id.clone(),
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
