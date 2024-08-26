@@ -16,9 +16,9 @@ function BlockTime() {
                 <BlockTimeContainer>
                     <TimerTypography>
                         {daysString}
-                        {hoursString?.split('').map((c, i) => <SpacedNum key={`${c}-${i}`}>{c}</SpacedNum>)}:
-                        {minutes?.split('').map((c, i) => <SpacedNum key={`${c}-${i}`}>{c}</SpacedNum>)}:
-                        {seconds?.split('').map((c, i) => <SpacedNum key={`${c}-${i}`}>{c}</SpacedNum>)}
+                        {hoursString?.split('').map((c, i) => <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>)}:
+                        {minutes?.split('').map((c, i) => <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>)}:
+                        {seconds?.split('').map((c, i) => <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>)}
                     </TimerTypography>
                     <TitleTypography>Current block time</TitleTypography>
                 </BlockTimeContainer>

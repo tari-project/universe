@@ -275,7 +275,7 @@ const Settings: React.FC = () => {
                                         />
                                         {Object.entries(applicationsVersions).map(([key, value]) => (
                                             <CardComponent
-                                                key={key}
+                                                key={`${key}-${value}`}
                                                 heading={key}
                                                 labels={[
                                                     {

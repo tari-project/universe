@@ -58,9 +58,9 @@ export default function useBalanceInfo() {
         if (postBlockAnimation) {
             const blockTimeout = setTimeout(() => {
                 setDisplayBlockHeight(blockHeightRef.current);
-
                 setPostBlockAnimation(false);
-            }, 1500);
+                toggleTimerPaused({ pause: false });
+            }, 2000);
 
             return () => {
                 clearTimeout(blockTimeout);
