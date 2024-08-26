@@ -8,14 +8,19 @@ import {
     RulerMark,
     BlockHeightBg,
 } from './BlockHeight.styles';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
 function BlockHeight() {
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const displayBlockHeight = useMiningStore((s) => s.displayBlockHeight) ?? 0;
     const formattedBlockHeight = displayBlockHeight.toLocaleString();
-
+    const height = isMining ? displayBlockHeight : block_height;
     const renderRulerMarks = () => {
         const marks = [];
-        let rulerNum = displayBlockHeight;
+        let rulerNum = height;
         for (let i = 0; i < 100; i++) {
             const opacity = i % 5 === 0 ? 1 : 0.2;
             marks.push(
