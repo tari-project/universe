@@ -243,7 +243,7 @@ async fn send_telemetry_data(data: TelemetryData) {
     match result {
         Ok(response) => {
             if response.status().is_success() {
-                println!("Telemetry data sent successfully");
+                info!("Telemetry data sent");
             } else {
                 warn!("Error sending telemetry data: {:#?}", response);
             }
