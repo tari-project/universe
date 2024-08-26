@@ -131,24 +131,24 @@ const Settings: React.FC = () => {
                                 {seedWordsFetching ? (
                                     <CircularProgress size="34px" />
                                 ) : (
-                                    <>
-                                        <IconButton onClick={toggleSeedWordsVisibility}>
-                                            {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                                    <IconButton onClick={toggleSeedWordsVisibility}>
+                                        {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                                    </IconButton>
+                                )}
+                                {showSeedWords && seedWordsFetched && (
+                                    <Tooltip
+                                        title="Copied!"
+                                        placement="top"
+                                        open={!isCopyTooltipHidden}
+                                        disableFocusListener
+                                        disableHoverListener
+                                        disableTouchListener
+                                        PopperProps={{ disablePortal: true }}
+                                    >
+                                        <IconButton onClick={copySeedWords}>
+                                            <IoCopyOutline size={18} />
                                         </IconButton>
-                                        <Tooltip
-                                            title="Copied!"
-                                            placement="top"
-                                            open={!isCopyTooltipHidden}
-                                            disableFocusListener
-                                            disableHoverListener
-                                            disableTouchListener
-                                            PopperProps={{ disablePortal: true }}
-                                        >
-                                            <IconButton onClick={copySeedWords}>
-                                                <IoCopyOutline size={18} />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </>
+                                    </Tooltip>
                                 )}
                             </Stack>
                         </Stack>
