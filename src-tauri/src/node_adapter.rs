@@ -219,7 +219,8 @@ impl MinotariNodeStatusMonitor {
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
-        let mut sync_progress_history: Vec<(u64, u64)> = vec![];
+        let mut sync_util = SyncUtil::new(SyncingType::Headers);
+
         loop {
             let tip = client.get_tip_info(Empty {}).await?;
             let sync_progress = client.get_sync_progress(Empty {}).await?;
@@ -232,47 +233,38 @@ impl MinotariNodeStatusMonitor {
 
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
-                    .update("Connecting with Tari nodes..".to_string(), 5)
+                    .update("Preparing for initial sync..".to_string(), 10)
                     .await;
-            } else if (sync_progress.state == SyncState::BlockStarting as i32) {
-                progress_tracker
-                    .update("Downloading block headers..".to_string(), 10)
-                    .await;
-            } else {
-                let time_now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs();
-                if sync_progress_history.len() >= 10 {
-                    sync_progress_history.remove(0);
+            } else if sync_progress.state == SyncState::Header as i32 {
+                if sync_util.syncing_type != SyncingType::Headers {
+                    sync_util = SyncUtil::new(SyncingType::Headers);
                 }
-                sync_progress_history.push((sync_progress.local_height, time_now));
-
-                let syncing_speed = sync_progress_history
-                    .first()
-                    .and_then(|first| {
-                        sync_progress_history.last().map(|last| {
-                            let denominator = (last.1 - first.1) as f64;
-
-                            if denominator != 0.0 {
-                                ((last.0 - first.0) as f64) / denominator
-                            } else {
-                                0.0
-                            }
-                        })
-                    })
-                    .unwrap_or(0.0) as u64;
-
+                let syncing_speed = sync_util.get_syncing_speed(sync_progress.local_height);
                 let blocks_behind = sync_progress.tip_height - sync_progress.local_height;
-                let progress = if sync_progress.tip_height == 0 {
-                    10
-                } else {
-                    10 + (90 * sync_progress.local_height / sync_progress.tip_height)
-                };
+                let progress =
+                    sync_util.get_progress(sync_progress.tip_height, sync_progress.local_height);
 
                 progress_tracker.update(
                     format!(
-                        "Waiting for initial sync. Tip height: {} Blocks behind:{}. Syncing {} blocks per second",
+                        "Waiting for block headers sync. Tip height: {} headers behind: {}. Syncing {} headers/sec",
+                        sync_progress.tip_height,
+                        blocks_behind,
+                        syncing_speed
+                    ),
+                    progress
+                ).await;
+            } else if sync_progress.state == SyncState::Block as i32 {
+                if sync_util.syncing_type != SyncingType::Blocks {
+                    sync_util = SyncUtil::new(SyncingType::Blocks);
+                }
+                let syncing_speed = sync_util.get_syncing_speed(sync_progress.local_height);
+                let blocks_behind = sync_progress.tip_height - sync_progress.local_height;
+                let progress =
+                    sync_util.get_progress(sync_progress.tip_height, sync_progress.local_height);
+
+                progress_tracker.update(
+                    format!(
+                        "Waiting for blocks sync. Tip height: {} Blocks behind: {}. Syncing {} blocks/sec",
                         sync_progress.tip_height,
                         blocks_behind,
                         syncing_speed
@@ -283,5 +275,73 @@ impl MinotariNodeStatusMonitor {
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SyncingType {
+    Headers,
+    Blocks,
+}
+
+pub struct SyncUtil {
+    sync_progress_history: Vec<(u64, u64)>,
+    syncing_type: SyncingType,
+}
+
+impl SyncUtil {
+    pub fn new(syncing_type: SyncingType) -> Self {
+        Self {
+            sync_progress_history: vec![],
+            syncing_type,
+        }
+    }
+
+    fn get_syncing_speed(&mut self, local_height: u64) -> u64 {
+        let time_now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        if self.sync_progress_history.len() >= 10 {
+            self.sync_progress_history.remove(0);
+        }
+
+        self.sync_progress_history.push((local_height, time_now));
+
+        let syncing_speed = self
+            .sync_progress_history
+            .first()
+            .and_then(|first| {
+                self.sync_progress_history.last().map(|last| {
+                    let denominator = (last.1 - first.1) as f64;
+
+                    if denominator != 0.0 {
+                        ((last.0 as f64) - (first.0 as f64)) / denominator
+                    } else {
+                        0.0
+                    }
+                })
+            })
+            .unwrap_or(0.0) as u64;
+
+        syncing_speed
+    }
+
+    fn get_progress(&self, tip_height: u64, local_height: u64) -> u64 {
+        if self.syncing_type == SyncingType::Headers {
+            // 10% -> 40% - Header
+            if tip_height == 0 {
+                10
+            } else {
+                10 + (30 * local_height / tip_height)
+            }
+        } else {
+            // 40% -> 100% - Block
+            if tip_height == 0 {
+                40
+            } else {
+                40 + (60 * local_height / tip_height)
+            }
+        }
     }
 }
