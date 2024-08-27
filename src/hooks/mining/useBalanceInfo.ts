@@ -1,3 +1,5 @@
+import { appWindow } from '@tauri-apps/api/window';
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useWalletStore from '@app/store/walletStore.ts';
 import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
@@ -39,6 +41,12 @@ export default function useBalanceInfo() {
         }
     }, [previousBalance, block_height]);
 
+    const resetStates = useCallback(() => {
+        setPostBlockAnimation(false);
+        setDisplayBlockHeight(blockHeightRef.current);
+        setEarnings(undefined);
+    }, [setDisplayBlockHeight, setEarnings, setPostBlockAnimation]);
+
     useEffect(() => {
         if ((block_height && block_height !== blockHeightRef.current) || !!balanceChangeBlock) {
             const timer = balanceChangeBlock === block_height ? 1 : TIMER_VALUE;
@@ -57,14 +65,22 @@ export default function useBalanceInfo() {
     useEffect(() => {
         if (postBlockAnimation && !timerPaused) {
             const blockTimeout = setTimeout(() => {
-                setPostBlockAnimation(false);
-                setDisplayBlockHeight(blockHeightRef.current);
-                setEarnings(undefined);
+                resetStates();
             }, 1000);
 
             return () => {
                 clearTimeout(blockTimeout);
             };
         }
-    }, [postBlockAnimation, setDisplayBlockHeight, setEarnings, setPostBlockAnimation, timerPaused]);
+    }, [postBlockAnimation, resetStates, setDisplayBlockHeight, setEarnings, setPostBlockAnimation, timerPaused]);
+
+    useEffect(() => {
+        const ulp = appWindow.listen('tauri://focus', () => {
+            resetStates();
+        });
+
+        return () => {
+            ulp.then((ul) => ul());
+        };
+    }, [resetStates]);
 }
