@@ -20,6 +20,7 @@ mod process_adapter;
 mod process_killer;
 mod process_utils;
 mod process_watcher;
+mod telemetry_manager;
 mod user_listener;
 mod wallet_adapter;
 mod wallet_manager;
@@ -48,10 +49,12 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use std::{panic, process};
+use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
+use telemetry_manager::TelemetryManager;
 use tokio::sync::RwLock;
 use wallet_manager::WalletManagerError;
 
@@ -97,6 +100,23 @@ async fn set_user_inactivity_timeout<'r>(
 }
 
 #[tauri::command]
+async fn set_telemetry_mode<'r>(
+    telemetry_mode: bool,
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_telemetry_collection(telemetry_mode)
+        .await
+        .map_err(|e| e.to_string());
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -132,6 +152,8 @@ async fn setup_inner<'r>(
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
     let now = SystemTime::now();
+
+    state.telemetry_manager.write().await.initialize().await?;
 
     BinaryResolver::current()
         .read_current_highest_version(Binaries::MinotariNode, progress.clone())
@@ -436,7 +458,7 @@ async fn update_applications(
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
-    let gpu_miner = state.gpu_miner.write().await;
+    let _gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -553,17 +575,19 @@ struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
 }
+
 struct UniverseAppState {
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
-    cpu_miner: RwLock<CpuMiner>,
-    gpu_miner: RwLock<GpuMiner>,
+    cpu_miner: Arc<RwLock<CpuMiner>>,
+    gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
     analytics_manager: AnalyticsManager,
+    telemetry_manager: Arc<RwLock<TelemetryManager>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -591,19 +615,33 @@ fn main() {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
     }));
+
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
     let analytics = AnalyticsManager::new(app_config.clone());
+
+    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
+
+    let telemetry_manager: TelemetryManager = TelemetryManager::new(
+        node_manager.clone(),
+        cpu_miner.clone(),
+        gpu_miner.clone(),
+        app_config.clone(),
+        Some(Network::default()),
+    );
+
     let app_state = UniverseAppState {
         config: app_config.clone(),
         shutdown: shutdown.clone(),
-        cpu_miner: CpuMiner::new().into(),
-        gpu_miner: GpuMiner::new().into(),
+        cpu_miner: cpu_miner.clone(),
+        gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
         user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
         analytics_manager: analytics,
+        telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
     };
 
     let app = tauri::Builder::default()
@@ -678,7 +716,8 @@ fn main() {
             get_seed_words,
             get_applications_versions,
             set_user_inactivity_timeout,
-            update_applications
+            update_applications,
+            set_telemetry_mode
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

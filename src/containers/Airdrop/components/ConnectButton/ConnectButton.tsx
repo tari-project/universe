@@ -6,10 +6,10 @@ import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function ConnectButton() {
-    const {authUuid, setAuthUuid} = useAirdropStore();
+    const { authUuid, setAuthUuid } = useAirdropStore();
 
     const handleAuth = useCallback(() => {
-        const token = uuidv4() 
+        const token = uuidv4();
         setAuthUuid(token);
         open(`https://airdrop.tari.com?tari=${token}`);
     }, [setAuthUuid]);
@@ -33,18 +33,20 @@ export default function ConnectButton() {
                         });
                 }
             }, 1000);
-            const timeout = setTimeout(() => {
-                clearInterval(interval);
-                setAuthUuid('');
-            }, 1000 * 60 * 5);
+            const timeout = setTimeout(
+                () => {
+                    clearInterval(interval);
+                    setAuthUuid('');
+                },
+                1000 * 60 * 5
+            );
 
             return () => {
                 clearInterval(interval);
                 clearTimeout(timeout);
-            }
+            };
         }
     }, [authUuid, setAuthUuid]);
-
 
     return (
         <StyledButton
