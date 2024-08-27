@@ -53,5 +53,5 @@ export const Character = styled('div')<Props>`
     display: flex;
     justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
-    letter-spacing: -3px;
+    letter-spacing: -0.05ch;
 `;
