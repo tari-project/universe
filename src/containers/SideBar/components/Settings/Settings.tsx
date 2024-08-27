@@ -202,6 +202,14 @@ const Settings: React.FC = () => {
                             </RightHandColumn>
                         </HorisontalBox>
                         <Divider />
+                        <HorisontalBox>
+                            <Typography variant="h6">Debug Info:</Typography>
+                        </HorisontalBox>
+                        <CardComponent
+                            heading="Blocks"
+                            labels={[{ labelText: 'Last block added to chain time', labelValue: displayTime }]}
+                        />
+                        <Divider />
                         {
                             <>
                                 <HorisontalBox>
@@ -268,7 +276,7 @@ const Settings: React.FC = () => {
                                         />
                                         {Object.entries(applicationsVersions).map(([key, value]) => (
                                             <CardComponent
-                                                key={key}
+                                                key={`${key}-${value}`}
                                                 heading={key}
                                                 labels={[
                                                     {
