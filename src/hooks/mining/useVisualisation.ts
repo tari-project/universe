@@ -20,7 +20,13 @@ export function useVisualisation() {
         }
     }, [showFailAnimation, setPostBlockAnimation, setTimerPaused, setShowFailAnimation]);
 
-    return useCallback((state: GlAppState) => {
-        setAnimationState(state);
-    }, []);
+    return useCallback(
+        (state: GlAppState) => {
+            if (state === 'fail' && !showFailAnimation) {
+                return;
+            }
+            setAnimationState(state);
+        },
+        [showFailAnimation]
+    );
 }
