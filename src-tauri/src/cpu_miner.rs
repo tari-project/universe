@@ -160,7 +160,6 @@ impl CpuMiner {
     ) -> Result<CpuMinerStatus, anyhow::Error> {
         match &self.api_client {
             Some(client) => {
-                let mut is_mining = false;
                 let (hash_rate, hashrate_sum, estimated_earnings, is_connected) =
                     match client.summary().await {
                         Ok(xmrig_status) => {
@@ -196,13 +195,8 @@ impl CpuMiner {
                         }
                     };
 
-                if hashrate_sum > 0.0 {
-                    is_mining = true;
-                }
-
                 Ok(CpuMinerStatus {
-                    is_mining_enabled: true,
-                    is_mining,
+                    is_mining: is_connected,
                     hash_rate,
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
@@ -216,7 +210,6 @@ impl CpuMiner {
                 })
             }
             None => Ok(CpuMinerStatus {
-                is_mining_enabled: false,
                 is_mining: false,
                 hash_rate: 0.0,
                 estimated_earnings: 0,
