@@ -28,6 +28,7 @@ import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
+import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -291,8 +292,52 @@ const Settings: React.FC = () => {
                             </>
                         )}
                         <Divider />
+                        {applicationsVersions && (
+                            <>
+                                <HorisontalBox>
+                                    <Typography variant="h6">Versions</Typography>
+                                    <RightHandColumn>
+                                        {currentEnvironment === Environment.Development && (
+                                            <Button onClick={getApplicationsVersions} variant="text">
+                                                Update Versions
+                                            </Button>
+                                        )}
+                                        <Button onClick={getApplicationsVersions} variant="text">
+                                            Refresh Versions
+                                        </Button>
+                                    </RightHandColumn>
+                                </HorisontalBox>
+                                <Stack spacing={0}>
+                                    <CardContainer>
+                                        <CardComponent
+                                            heading="Tari App"
+                                            labels={[
+                                                {
+                                                    labelText: 'Version',
+                                                    labelValue: mainAppVersion || 'Unknown',
+                                                },
+                                            ]}
+                                        />
+                                        {Object.entries(applicationsVersions).map(([key, value]) => (
+                                            <CardComponent
+                                                key={`${key}-${value}`}
+                                                heading={key}
+                                                labels={[
+                                                    {
+                                                        labelText: 'Version',
+                                                        labelValue: value || 'Unknown',
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </CardContainer>
+                                </Stack>
+                            </>
+                        )}
+                        <Divider />
                         <HorisontalBox>
                             <VisualMode />
+                            <TelemetryMode />
                         </HorisontalBox>
                         <HorisontalBox>
                             <ConnectButton />

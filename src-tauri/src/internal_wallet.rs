@@ -5,7 +5,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
+use tari_common_types::tari_address::{TariAddress, TariAddressError, TariAddressFeatures};
 use tari_crypto::keys::PublicKey;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_key_manager::cipher_seed::CipherSeed;
@@ -139,6 +139,11 @@ impl InternalWallet {
     }
     pub fn get_spend_key(&self) -> String {
         self.config.spend_public_key_hex.clone()
+    }
+
+    pub fn get_network(&self) -> Result<Network, TariAddressError> {
+        let address = TariAddress::from_base58(&self.config.tari_address_base58);
+        address.map(|a| a.network())
     }
 }
 
