@@ -117,6 +117,18 @@ async fn set_telemetry_mode<'r>(
 }
 
 #[tauri::command]
+async fn set_airdrop_access_token<'r>(
+    token: String,
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+     let mut write_lock = state.airdrop_access_token.write().await;
+     *write_lock = Some(token);
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -153,7 +165,7 @@ async fn setup_inner<'r>(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
     let now = SystemTime::now();
 
-    state.telemetry_manager.write().await.initialize().await?;
+    state.telemetry_manager.write().await.initialize(state.clone()).await?;
 
     BinaryResolver::current()
         .read_current_highest_version(Binaries::MinotariNode, progress.clone())
@@ -588,6 +600,7 @@ struct UniverseAppState {
     wallet_manager: WalletManager,
     analytics_manager: AnalyticsManager,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
+    airdrop_access_token: Arc<RwLock<Option<String>>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -642,6 +655,7 @@ fn main() {
         wallet_manager,
         analytics_manager: analytics,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
+        airdrop_access_token: Arc::new(RwLock::new(None)),
     };
 
     let app = tauri::Builder::default()
@@ -717,7 +731,8 @@ fn main() {
             get_applications_versions,
             set_user_inactivity_timeout,
             update_applications,
-            set_telemetry_mode
+            set_telemetry_mode,
+            set_airdrop_access_token
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

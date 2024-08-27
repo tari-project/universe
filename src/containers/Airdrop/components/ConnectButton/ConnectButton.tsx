@@ -6,7 +6,7 @@ import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
 
 export default function ConnectButton() {
-    const { authUuid, setAuthUuid } = useAirdropStore();
+    const { authUuid, setAuthUuid, setAirdropTokens } = useAirdropStore();
 
     const handleAuth = useCallback(() => {
         const token = uuidv4();
@@ -28,7 +28,7 @@ export default function ConnectButton() {
                         .then((data) => {
                             if (!data.error) {
                                 clearInterval(interval);
-                                console.log(data);
+                                setAirdropTokens(data);
                             }
                         });
                 }
@@ -46,7 +46,7 @@ export default function ConnectButton() {
                 clearTimeout(timeout);
             };
         }
-    }, [authUuid, setAuthUuid]);
+    }, [authUuid, setAirdropTokens, setAuthUuid]);
 
     return (
         <StyledButton
