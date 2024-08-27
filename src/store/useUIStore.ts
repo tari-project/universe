@@ -9,6 +9,7 @@ interface State {
     sidebarOpen: boolean;
     isMiningSwitchingState: boolean;
     isMiningEnabled: boolean;
+    isConnectionLostDuringMining: boolean;
 }
 interface Actions {
     setShowSplash: (showSplash: boolean) => void;
@@ -18,6 +19,7 @@ interface Actions {
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setIsMiningSwitchingState: (isMiningSwitchingState: State['isMiningSwitchingState']) => void;
     setIsMiningEnabled: (isMiningEnabled: State['isMiningEnabled']) => void;
+    setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -30,6 +32,7 @@ const initialState: State = {
     sidebarOpen: false,
     isMiningSwitchingState: false,
     isMiningEnabled: false,
+    isConnectionLostDuringMining: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -41,4 +44,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setIsMiningSwitchingState: (isMiningSwitchingState) => set({ isMiningSwitchingState }),
     setIsMiningEnabled: (isMiningEnabled) => set({ isMiningEnabled }),
+    setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
 }));

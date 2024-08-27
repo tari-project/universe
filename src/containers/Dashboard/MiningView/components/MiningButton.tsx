@@ -16,18 +16,22 @@ function MiningButton() {
         stopMining,
         getMiningButtonStateText,
         isLoading,
-        connectionToMinerLost,
         shouldMiningControlsBeEnabled,
-        isMiningInProgress,
+        isConnectionLostDuringMining,
+        cancelMining,
     } = useMiningControls();
 
     const handleClick = useCallback(() => {
-        if (connectionToMinerLost && isMiningInProgress.current) {
-            return stopMining();
-        }
+        // if (connectionToMinerLost && isMiningInProgress.current) {
+        //     return stopMining();
+        // }
 
-        if (connectionToMinerLost && !isMiningInProgress.current) {
-            return startMining();
+        // if (connectionToMinerLost && !isMiningInProgress.current) {
+        //     return startMining();
+        // }
+
+        if (isConnectionLostDuringMining) {
+            return cancelMining();
         }
 
         if (isMining) {
@@ -36,7 +40,7 @@ function MiningButton() {
         if (!isMining) {
             return startMining();
         }
-    }, [isMining, startMining, stopMining]);
+    }, [isMining, startMining, stopMining, cancelMining, isConnectionLostDuringMining]);
 
     const btnProps: ButtonProps = {
         variant: 'contained',
@@ -51,7 +55,7 @@ function MiningButton() {
         <Stack gap={1}>
             <StyledButton
                 {...btnProps}
-                hasStarted={!!isMining || connectionToMinerLost}
+                hasStarted={!!isMining || isConnectionLostDuringMining}
                 onClick={handleClick}
                 disabled={!shouldMiningControlsBeEnabled}
                 endIcon={<IconWrapper>{isLoading ? <StyledIcon /> : btnProps.endIcon}</IconWrapper>}
@@ -64,7 +68,7 @@ function MiningButton() {
             >
                 <span>{getMiningButtonStateText()}</span>
             </StyledButton>
-            {connectionToMinerLost && (
+            {isConnectionLostDuringMining && (
                 <Stack
                     direction="row"
                     gap={1}
