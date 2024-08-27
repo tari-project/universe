@@ -163,7 +163,6 @@ impl CpuMiner {
                 let (hash_rate, hashrate_sum, estimated_earnings, is_connected) =
                     match client.summary().await {
                         Ok(xmrig_status) => {
-                            dbg!(&xmrig_status);
                             println!("xmrig status: {:?}", xmrig_status.hashrate.total[0]);
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
                             let estimated_earnings = ((block_reward.as_u64() as f64)
