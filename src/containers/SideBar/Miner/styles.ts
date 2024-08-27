@@ -1,6 +1,5 @@
 import { styled } from '@mui/material/styles';
 import { Button, Box } from '@mui/material';
-import { backgrounds } from '../../../theme/colors';
 
 export const MinerContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -31,3 +30,9 @@ export const ScheduleButton = styled(Button)(({ theme }) => ({
         backgroundColor: `${theme.palette.divider} !important`,
     },
 }));
+
+export const StatWrapper = styled('div')`
+    display: flex;
+    gap: 2px;
+    align-items: baseline;
+`;

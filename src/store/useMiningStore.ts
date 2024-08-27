@@ -1,40 +1,44 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { BlockTimeData } from '@app/types/mining.ts';
+import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
 interface State {
-    blockTime?: BlockTimeData;
+    displayBlockTime?: BlockTimeData;
     displayBlockHeight?: number;
     earnings?: number;
+    postBlockAnimation?: boolean;
     timerPaused?: boolean;
 }
 interface Actions {
-    setBlockTime: (blockTime: BlockTimeData) => void;
+    setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setEarnings: (earnings?: number) => void;
-    toggleTimerPaused: ({ pause }: { pause?: boolean }) => void;
+    setPostBlockAnimation: (postBlockAnimation: boolean) => void;
+    setTimerPaused: (timerPaused: boolean) => void;
 }
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
-    displayBlockHeight: undefined,
+    displayBlockHeight: useBaseNodeStatusStore.getState().block_height,
     timerPaused: false,
+    postBlockAnimation: false,
 };
 
 export const useMiningStore = create<MiningStoreState>()(
     persist(
         (set) => ({
             ...initialState,
-            setBlockTime: (blockTime) => set({ blockTime }),
+            setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
             setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
             setEarnings: (earnings) => set({ earnings }),
-            toggleTimerPaused: ({ pause }) =>
-                set((state) => ({ timerPaused: pause !== undefined ? pause : !state.timerPaused })),
+            setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
+            setTimerPaused: (timerPaused) => set({ timerPaused }),
         }),
         {
             name: 'mining',
             storage: createJSONStorage(() => sessionStorage),
-            version: 1,
+            version: 2,
         }
     )
 );
