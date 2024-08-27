@@ -38,9 +38,13 @@ impl MmProxyManager {
         base_path: PathBuf,
         log_path: PathBuf,
         tari_address: TariAddress,
+        base_node_grpc_port: u16,
+        coinbase_extra: String,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
+        process_watcher.adapter.base_node_grpc_port = base_node_grpc_port;
+        process_watcher.adapter.coinbase_extra = coinbase_extra;
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher
             .start(app_shutdown, base_path, log_path)

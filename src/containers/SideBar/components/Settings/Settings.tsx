@@ -26,6 +26,7 @@ import { CardComponent } from './Card.component.tsx';
 import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
+import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 
 enum FormFields {
@@ -292,6 +293,9 @@ const Settings: React.FC = () => {
                         <Divider />
                         <HorisontalBox>
                             <VisualMode />
+                        </HorisontalBox>
+                        <HorisontalBox>
+                            <ConnectButton />
                         </HorisontalBox>
                     </Stack>
                 </DialogContent>

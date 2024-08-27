@@ -83,6 +83,11 @@ impl NodeManager {
         Ok(())
     }
 
+    pub async fn get_grpc_port(&self) -> Result<u16, anyhow::Error> {
+        let lock = self.watcher.read().await;
+        Ok(lock.adapter.grpc_port)
+    }
+
     pub async fn wait_synced(
         &self,
         progress_tracker: ProgressTracker,
