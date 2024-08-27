@@ -36,9 +36,8 @@ function Miner() {
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
                 <Tile
-                    title="Hashrate"
+                    title="Hashrate (H/s)"
                     stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''}`}
-                    unit={`H/s`}
                     isLoading={isWaitingForHashRate}
                 />
                 <Tile
@@ -50,7 +49,11 @@ function Miner() {
                     }
                 />
                 <Tile title="CHIP/GPU" stats={hardwareVal || 'Unknown'} />
-                <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000)} unit="tXTM/24h" />
+                <Tile
+                    title="Est tXTM/day"
+                    stats={formatNumber(estimated_earnings / 1000000)}
+                    isLoading={isWaitingForHashRate}
+                />
             </TileContainer>
         </MinerContainer>
     );

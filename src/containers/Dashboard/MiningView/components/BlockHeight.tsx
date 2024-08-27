@@ -37,11 +37,13 @@ function BlockHeight() {
 
     return (
         <>
-            <BlockHeightContainer>
-                <BlockHeightBg length={formattedBlockHeight.length}>{formattedBlockHeight}</BlockHeightBg>
-                <RulerContainer>{renderRulerMarks()}</RulerContainer>
-                <BlockHeightLrg>{formattedBlockHeight}</BlockHeightLrg>
-            </BlockHeightContainer>
+            {displayBlockHeight > 0 ? (
+                <BlockHeightContainer>
+                    <BlockHeightBg length={formattedBlockHeight.length}>{formattedBlockHeight}</BlockHeightBg>
+                    <RulerContainer>{renderRulerMarks()}</RulerContainer>
+                    <BlockHeightLrg>{formattedBlockHeight}</BlockHeightLrg>
+                </BlockHeightContainer>
+            ) : null}
         </>
     );
 }
