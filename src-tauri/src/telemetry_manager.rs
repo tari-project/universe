@@ -231,7 +231,7 @@ async fn get_telemetry_data(
     };
 
     Ok(TelemetryData {
-        app_id: "minotari".to_string(),
+        app_id: config_guard.anon_id.clone(),
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
