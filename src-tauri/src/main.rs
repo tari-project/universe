@@ -265,7 +265,6 @@ async fn setup_inner<'r>(
     if analytics_id.is_empty() {
         analytics_id = "unknown_miner_tari_universe".to_string();
     }
-
     mm_proxy_manager
         .start(
             state.shutdown.to_signal().clone(),
