@@ -26,6 +26,7 @@ import { CardComponent } from './Card.component.tsx';
 import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
+import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -39,6 +40,7 @@ const Settings: React.FC = () => {
     const currentEnvironment = useEnvironment();
 
     const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
+    const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
     const [open, setOpen] = useState(false);
@@ -96,6 +98,7 @@ const Settings: React.FC = () => {
                 invoke('set_user_inactivity_timeout', {
                     timeout: Number(data[FormFields.IDLE_TIMEOUT]),
                 });
+                invoke('set_auto_mining', { autoMining: false });
                 handleClose();
             },
             (error) => {
@@ -104,6 +107,10 @@ const Settings: React.FC = () => {
         )();
     };
 
+    const now = new Date();
+    const lastBlockTime = calculateTimeSince(blockTime || 0, now.getTime());
+    const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
+    const displayTime = `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
     return (
         <>
             <IconButton onClick={handleClickOpen}>
@@ -124,51 +131,40 @@ const Settings: React.FC = () => {
                             <Stack flexDirection="row" alignItems="center" gap={1}>
                                 <Typography variant="body2">
                                     {showSeedWords
-                                        ? truncateString(seedWords.join(','), 50)
+                                        ? truncateString(seedWords.join(' '), 50)
                                         : '****************************************************'}
                                 </Typography>
                                 {seedWordsFetching ? (
                                     <CircularProgress size="34px" />
                                 ) : (
-                                    <>
-                                        <IconButton onClick={toggleSeedWordsVisibility}>
-                                            {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                                    <IconButton onClick={toggleSeedWordsVisibility}>
+                                        {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                                    </IconButton>
+                                )}
+                                {showSeedWords && seedWordsFetched && (
+                                    <Tooltip
+                                        title="Copied!"
+                                        placement="top"
+                                        open={!isCopyTooltipHidden}
+                                        disableFocusListener
+                                        disableHoverListener
+                                        disableTouchListener
+                                        PopperProps={{ disablePortal: true }}
+                                    >
+                                        <IconButton onClick={copySeedWords}>
+                                            <IoCopyOutline size={18} />
                                         </IconButton>
-                                        <Tooltip
-                                            title="Copied!"
-                                            placement="top"
-                                            open={!isCopyTooltipHidden}
-                                            disableFocusListener
-                                            disableHoverListener
-                                            disableTouchListener
-                                            PopperProps={{ disablePortal: true }}
-                                        >
-                                            <IconButton onClick={copySeedWords}>
-                                                <IoCopyOutline size={18} />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </>
+                                    </Tooltip>
                                 )}
                             </Stack>
                         </Stack>
-                        <Divider />
-                        <HorisontalBox>
-                            <Typography variant="h6">Logs</Typography>
-                            <RightHandColumn>
-                                <Button onClick={openLogsDirectory} variant="text">
-                                    Open logs directory
-                                </Button>
-                            </RightHandColumn>
-                        </HorisontalBox>
-                        <Divider />
                         <form onSubmit={onSubmit}>
                             <Box my={1}>
-                                <Typography variant="h5">Random</Typography>
                                 <Stack spacing={1} pt={1}>
                                     <ControlledNumberInput
                                         name={FormFields.IDLE_TIMEOUT}
                                         control={control}
-                                        title="Idle Timeout"
+                                        title="Time after which machine is considered idle"
                                         endAdornment="seconds"
                                         placeholder="Enter idle timeout in seconds"
                                         type="int"
@@ -196,48 +192,23 @@ const Settings: React.FC = () => {
                             </Box>
                         </form>
                         <Divider />
-                        {applicationsVersions && (
-                            <>
-                                <HorisontalBox>
-                                    <Typography variant="h6">Versions</Typography>
-                                    <RightHandColumn>
-                                        {currentEnvironment === Environment.Development && (
-                                            <Button onClick={getApplicationsVersions} variant="text">
-                                                Update Versions
-                                            </Button>
-                                        )}
-                                        <Button onClick={getApplicationsVersions} variant="text">
-                                            Refresh Versions
-                                        </Button>
-                                    </RightHandColumn>
-                                </HorisontalBox>
-                                <Stack spacing={0}>
-                                    <CardContainer>
-                                        <CardComponent
-                                            heading="Tari App"
-                                            labels={[
-                                                {
-                                                    labelText: 'Version',
-                                                    labelValue: mainAppVersion || 'Unknown',
-                                                },
-                                            ]}
-                                        />
-                                        {Object.entries(applicationsVersions).map(([key, value]) => (
-                                            <CardComponent
-                                                key={key}
-                                                heading={key}
-                                                labels={[
-                                                    {
-                                                        labelText: 'Version',
-                                                        labelValue: value || 'Unknown',
-                                                    },
-                                                ]}
-                                            />
-                                        ))}
-                                    </CardContainer>
-                                </Stack>
-                            </>
-                        )}
+                        <HorisontalBox>
+                            <Typography variant="h6">Logs</Typography>
+                            <RightHandColumn>
+                                <Button onClick={openLogsDirectory} variant="text">
+                                    Open logs directory
+                                </Button>
+                            </RightHandColumn>
+                        </HorisontalBox>
+                        <Divider />
+                        <HorisontalBox>
+                            <Typography variant="h6">Debug Info:</Typography>
+                        </HorisontalBox>
+                        <CardComponent
+                            heading="Blocks"
+                            labels={[{ labelText: 'Last block added to chain time', labelValue: displayTime }]}
+                        />
+                        <Divider />
                         {
                             <>
                                 <HorisontalBox>
@@ -275,6 +246,49 @@ const Settings: React.FC = () => {
                                 </CardContainer>
                             </>
                         }
+                        <Divider />
+                        {applicationsVersions && (
+                            <>
+                                <HorisontalBox>
+                                    <Typography variant="h6">Versions</Typography>
+                                    <RightHandColumn>
+                                        {currentEnvironment === Environment.Development && (
+                                            <Button onClick={getApplicationsVersions} variant="text">
+                                                Update Versions
+                                            </Button>
+                                        )}
+                                        <Button onClick={getApplicationsVersions} variant="text">
+                                            Refresh Versions
+                                        </Button>
+                                    </RightHandColumn>
+                                </HorisontalBox>
+                                <Stack spacing={0}>
+                                    <CardContainer>
+                                        <CardComponent
+                                            heading="Tari App"
+                                            labels={[
+                                                {
+                                                    labelText: 'Version',
+                                                    labelValue: mainAppVersion || 'Unknown',
+                                                },
+                                            ]}
+                                        />
+                                        {Object.entries(applicationsVersions).map(([key, value]) => (
+                                            <CardComponent
+                                                key={`${key}-${value}`}
+                                                heading={key}
+                                                labels={[
+                                                    {
+                                                        labelText: 'Version',
+                                                        labelValue: value || 'Unknown',
+                                                    },
+                                                ]}
+                                            />
+                                        ))}
+                                    </CardContainer>
+                                </Stack>
+                            </>
+                        )}
                         <Divider />
                         <HorisontalBox>
                             <VisualMode />

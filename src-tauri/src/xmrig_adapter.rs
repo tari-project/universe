@@ -1,15 +1,13 @@
-use crate::cpu_miner::CpuMinerEvent;
 use crate::download_utils::{download_file, extract};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
-use crate::ProgressTracker;
+use crate::{process_utils, ProgressTracker};
 use anyhow::Error;
 use log::{info, warn};
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::fs;
-use tokio::sync::mpsc::Receiver;
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -63,7 +61,7 @@ impl XmrigAdapter {
             node_connection: xmrig_node_connection,
             monero_address,
             http_api_token: http_api_token.clone(),
-            http_api_port: http_api_port.clone(),
+            http_api_port: http_api_port,
             cache_dir,
             cpu_max_percentage,
             progress_tracker,
@@ -140,15 +138,13 @@ impl ProcessAdapter for XmrigAdapter {
         let mut args = self.node_connection.generate_args();
         let xmrig_log_file = log_dir.join("xmrig.log");
         std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
+
         args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push(format!("--donate-level=1"));
         args.push(format!("--user={}", self.monero_address));
-        args.push(format!(
-            "--cpu-max-threads-hint={}",
-            self.cpu_max_percentage
-        ));
+        args.push(format!("--threads={}", self.cpu_max_percentage));
 
         Ok((
             ProcessInstance {
@@ -167,16 +163,11 @@ impl ProcessAdapter for XmrigAdapter {
                         .join(&version)
                         .join(format!("xmrig-{}", version));
                     let xmrig_bin = xmrig_dir.join("xmrig");
-                    let mut xmrig = tokio::process::Command::new(xmrig_bin)
-                        .args(args)
-                        .kill_on_drop(true)
-                        .spawn()?;
-
+                    let mut xmrig = process_utils::launch_child_process(&xmrig_bin, &args)?;
                     if let Some(id) = xmrig.id() {
                         std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
                     }
                     shutdown_signal.wait().await;
-                    println!("Stopping xmrig");
 
                     xmrig.kill().await?;
 

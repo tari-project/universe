@@ -1,24 +1,28 @@
 import { styled } from '@mui/system';
-import { Typography } from '@mui/material';
 import { motion } from 'framer-motion';
 export const EarningsContainer = styled('div')`
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    height: 60%;
-`;
-
-export const EarningsText = styled(Typography)`
-    font-family: 'DrukWideLCGBold', sans-serif;
-    font-size: 60px;
-    line-height: 1.1;
+    width: 100%;
+    height: 100%;
+    position: relative;
 `;
 
 export const EarningsWrapper = styled(motion.div)`
-    font-family: 'DrukWideLCGBold', sans-serif;
     display: flex;
-    width: 100%;
-    align-items: center;
+    align-items: flex-end;
+    flex-direction: row;
     justify-content: center;
-    gap: 10px;
+    span {
+        display: flex;
+        font-family: 'DrukWideLCGBold', sans-serif;
+        font-size: 14px;
+        letter-spacing: -0.1px;
+    }
+
+    @media (max-width: 920px) {
+        flex-direction: column;
+        align-items: center;
+    }
 `;
