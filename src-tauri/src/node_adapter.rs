@@ -180,16 +180,20 @@ impl MinotariNodeStatusMonitor {
             res.metadata.as_ref().unwrap().best_block_hash.clone(),
             res.metadata.unwrap().timestamp,
         );
+        // Unfortunately have to use 100 blocks to ensure that there are both randomx and sha blocks included
+        // otherwise the hashrate is 0 for one of them.
         let res = client
             .get_network_difficulty(HeightRequest {
-                from_tip: 1,
+                from_tip: 100,
                 start_height: 0,
                 end_height: 0,
             })
             .await?;
         let mut res = res.into_inner();
+        // Get the last one.
+        let mut result = Err(anyhow::anyhow!("No difficulty found"));
         if let Some(difficulty) = res.message().await? {
-            return Ok((
+            result = Ok((
                 difficulty.sha3x_estimated_hash_rate,
                 difficulty.randomx_estimated_hash_rate,
                 MicroMinotari(reward),
@@ -198,8 +202,8 @@ impl MinotariNodeStatusMonitor {
                 sync_achieved,
             ));
         }
-        // Really unlikely to arrive here
-        Err(anyhow::anyhow!("No difficulty found"))
+
+        result
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
