@@ -42,10 +42,21 @@ function Miner() {
             <TileContainer>
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
-                <Tile title="Hashrate" stats={hash_rate + ' H/s'} isLoading={isWaitingForHashRate} />
-                <Tile title="CPU Utilization" stats={(cpuHardwareStatus?.usage_percentage || 0).toString() + '%'} />
-                <Tile title="CHIP/GPU" stats={truncateString(cpuHardwareStatus?.label || 'Unknown', 10)} />
-                <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' XTM/24h'} />
+                <Tile
+                    title="Hashrate"
+                    stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''} H/s`}
+                    isLoading={isWaitingForHashRate}
+                />
+                <Tile
+                    title="CPU Utilization"
+                    stats={
+                        (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                        }) + '%'
+                    }
+                />
+                <Tile title="CHIP/GPU" stats={truncateString(hardwareVal || 'Unknown', 10)} />
+                <Tile title="Est Earnings" stats={formatNumber(estimated_earnings / 1000000) + ' tXTM/24h'} />
             </TileContainer>
         </MinerContainer>
     );
