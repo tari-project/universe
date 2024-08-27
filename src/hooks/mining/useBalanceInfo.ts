@@ -4,7 +4,7 @@ import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
-const TIMER_VALUE = 10 * 1000; //10s
+const TIMER_VALUE = 15 * 1000; // 15s
 export default function useBalanceInfo() {
     const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
     const handleVisual = useVisualisation();
@@ -59,11 +59,12 @@ export default function useBalanceInfo() {
             const blockTimeout = setTimeout(() => {
                 setPostBlockAnimation(false);
                 setDisplayBlockHeight(blockHeightRef.current);
+                setEarnings(undefined);
             }, 1000);
 
             return () => {
                 clearTimeout(blockTimeout);
             };
         }
-    }, [postBlockAnimation, setDisplayBlockHeight, setPostBlockAnimation, timerPaused]);
+    }, [postBlockAnimation, setDisplayBlockHeight, setEarnings, setPostBlockAnimation, timerPaused]);
 }

@@ -47,12 +47,13 @@ export default function Earnings() {
                         variants={variants}
                         animate="visible"
                         exit="hidden"
-                        onAnimationComplete={() => {
+                        onAnimationComplete={(s) => {
+                            console.log(s);
                             handleComplete();
                         }}
                     >
                         <span>YOUR REWARD IS</span>
-                        <CharSpinner value={formatted.toString()} fontSize={75} />
+                        <CharSpinner value={formatted.toString()} fontSize={72} />
                     </EarningsWrapper>
                 ) : null}
             </AnimatePresence>
