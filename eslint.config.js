@@ -9,9 +9,9 @@ import globals from 'globals';
 import tsParser from '@typescript-eslint/parser';
 
 export default [
-    eslint.configs.recommended,
     react.configs.flat.recommended,
     react.configs.flat['jsx-runtime'],
+    eslint.configs.recommended,
     ...tseslint.configs.recommended,
     {
         settings: {
@@ -30,14 +30,13 @@ export default [
         rules: {
             ...react.configs.recommended.rules,
             ...hooksPlugin.configs.recommended.rules,
-            ...prettierConfig.rules,
             'react/jsx-uses-react': 'off',
             'react/react-in-jsx-scope': 'off',
             'no-console': ['warn', { allow: ['info', 'warn', 'debug', 'error'] }],
             'react/prop-types': 'off',
             '@typescript-eslint/no-explicit-any': 'warn',
-            '@typescript-eslint/no-unused-vars': 'warn',
-            'no-irregular-whitespace': 'error',
+            '@typescript-eslint/no-unused-vars': 'warn'
         },
     },
+    prettierConfig.rules,
 ];
