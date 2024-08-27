@@ -4,7 +4,7 @@ authors = ["The Tari Development Community"]
 description = "Tari Universe"
 repository = "https://github.com/tari-project/universe"
 license = "BSD-3-Clause"
-version = "0.1.31"
+version = "0.1.39"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
