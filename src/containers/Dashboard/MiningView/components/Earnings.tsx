@@ -28,15 +28,13 @@ const variants = {
 
 export default function Earnings() {
     const earnings = useMiningStore((s) => s.earnings);
-    const setEarnings = useMiningStore((s) => s.setEarnings);
     const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
     const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
     const formatted = formatBalance(earnings || 0);
     const handleComplete = useCallback(() => {
-        setEarnings(undefined);
         setPostBlockAnimation(true);
         setTimerPaused(false);
-    }, [setEarnings, setPostBlockAnimation, setTimerPaused]);
+    }, [setPostBlockAnimation, setTimerPaused]);
 
     return (
         <EarningsContainer>
@@ -47,8 +45,7 @@ export default function Earnings() {
                         variants={variants}
                         animate="visible"
                         exit="hidden"
-                        onAnimationComplete={(s) => {
-                            console.log(s);
+                        onAnimationComplete={() => {
                             handleComplete();
                         }}
                     >
