@@ -214,6 +214,22 @@ async fn get_telemetry_data(
         0.0
     };
 
+    let resource_utilization = if hardware_status.cpu.is_some() && cpu.is_mining_enabled {
+        hardware_status.cpu.clone().map(|c| c.usage_percentage)
+    } else if hardware_status.gpu.is_some() {
+        hardware_status.gpu.clone().map(|g| g.usage_percentage)
+    } else {
+        None
+    };
+
+    let resource_make = if hardware_status.cpu.clone().is_some() && cpu.is_mining_enabled {
+        hardware_status.cpu.map(|c| c.label.clone())
+    } else if hardware_status.gpu.is_some() {
+        hardware_status.gpu.clone().map(|g| g.label)
+    } else {
+        None
+    };
+
     Ok(TelemetryData {
         app_id: "minotari".to_string(),
         block_height,
@@ -222,8 +238,8 @@ async fn get_telemetry_data(
         hash_rate,
         mode: config_guard.mode.clone().into(),
         resource: TelemetryResource::Cpu,
-        resource_utilization: hardware_status.get_utilization(),
-        resource_make: hardware_status.get_label(),
+        resource_utilization,
+        resource_make,
     })
 }
 

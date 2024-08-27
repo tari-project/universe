@@ -18,39 +18,18 @@ enum CurrentOperatingSystem {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct HardwareParameters {
-    label: String,
-    usage_percentage: f32,
-    current_temperature: f32,
-    max_temperature: f32,
+    pub label: String,
+    pub usage_percentage: f32,
+    pub current_temperature: f32,
+    pub max_temperature: f32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct HardwareStatus {
-    cpu: Option<HardwareParameters>,
-    gpu: Option<HardwareParameters>,
+    pub cpu: Option<HardwareParameters>,
+    pub gpu: Option<HardwareParameters>,
 }
 
-impl HardwareStatus {
-    pub fn get_utilization(&self) -> Option<f32> {
-        match self.cpu {
-            Some(ref cpu) => Some(cpu.usage_percentage),
-            None => match self.gpu {
-                Some(ref gpu) => Some(gpu.usage_percentage),
-                None => None {},
-            },
-        }
-    }
-
-    pub fn get_label(&self) -> Option<String> {
-        match self.cpu {
-            Some(ref cpu) => Some(cpu.label.clone()),
-            None => match self.gpu {
-                Some(ref gpu) => Some(gpu.label.clone()),
-                None => None {},
-            },
-        }
-    }
-}
 trait HardwareMonitorImpl: Send + Sync + 'static {
     fn get_implementation_name(&self) -> String;
     fn read_cpu_parameters(
