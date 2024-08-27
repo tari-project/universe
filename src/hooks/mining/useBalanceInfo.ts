@@ -19,6 +19,7 @@ export default function useBalanceInfo() {
     const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
     const postBlockAnimation = useMiningStore((s) => s.postBlockAnimation);
     const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
+    const setShowFailAnimation = useMiningStore((s) => s.setShowFailAnimation);
     const timerPaused = useMiningStore((s) => s.timerPaused);
     const blockHeightRef = useRef(block_height);
     const prevBalanceRef = useRef(previousBalance);
@@ -30,10 +31,12 @@ export default function useBalanceInfo() {
         const hasEarnings = Boolean(diff && diff > 0);
         if (hasEarnings) {
             setEarnings(diff);
+        } else {
+            setShowFailAnimation(true);
         }
         handleVisual(!hasEarnings ? 'fail' : 'success');
         prevBalanceRef.current = previousBalance;
-    }, [balance, handleVisual, previousBalance, setEarnings, setTimerPaused]);
+    }, [balance, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
 
     useEffect(() => {
         if (prevBalanceRef.current !== previousBalance) {
@@ -42,10 +45,12 @@ export default function useBalanceInfo() {
     }, [previousBalance, block_height]);
 
     const resetStates = useCallback(() => {
+        console.log(`hi?`);
         setPostBlockAnimation(false);
         setDisplayBlockHeight(blockHeightRef.current);
+        setShowFailAnimation(false);
         setEarnings(undefined);
-    }, [setDisplayBlockHeight, setEarnings, setPostBlockAnimation]);
+    }, [setDisplayBlockHeight, setEarnings, setPostBlockAnimation, setShowFailAnimation]);
 
     useEffect(() => {
         if ((block_height && block_height !== blockHeightRef.current) || !!balanceChangeBlock) {
