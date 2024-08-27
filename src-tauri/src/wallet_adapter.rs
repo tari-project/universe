@@ -1,20 +1,18 @@
-use std::fs;
-use std::path::PathBuf;
-
+use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_utils;
 use anyhow::Error;
-use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetBalanceRequest;
 use serde::Serialize;
+use std::fs;
+use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
 use tokio::select;
-
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -89,6 +87,10 @@ impl ProcessAdapter for WalletAdapter {
             args.push("wallet.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
             args.push("wallet.p2p.public_addresses=/ip4/172.2.3.4/tcp/18188".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
             args.push("-p".to_string());
             args.push(
                 "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
@@ -106,13 +108,7 @@ impl ProcessAdapter for WalletAdapter {
                         .resolve_path(Binaries::Wallet)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(file_path)
-                        .args(args)
-                        // .stdout(std::process::Stdio::piped())
-                        // .stderr(std::process::Stdio::piped())
-                        .kill_on_drop(true)
-                        .spawn()?;
-
+                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
                     }

@@ -8,7 +8,6 @@ import { Typography } from '@mui/material';
 import { TileItem } from '../styles';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { Theme, useTheme } from '@mui/material/styles';
-import { useUIStore } from '@app/store/useUIStore';
 
 const CustomSelect = styled(Select)(({ theme }: { theme: Theme }) => ({
     '& .MuiSelect-select': {
@@ -26,10 +25,8 @@ const CustomSelect = styled(Select)(({ theme }: { theme: Theme }) => ({
 function ModeSelect() {
     const mode = useAppStatusStore((s) => s.mode);
     const setConfigMode = useAppStatusStore((s) => s.setConfigMode);
-    const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
-    
+
     const handleChange = (event: SelectChangeEvent<unknown>) => {
-        setMiningInitiated(true);
         setConfigMode(event.target.value as modeType);
     };
     const theme = useTheme();

@@ -8,6 +8,7 @@ export interface AppStatus {
     applications_versions?: ApplicationsVersions;
     main_app_version?: string;
     user_inactivity_timeout?: number;
+    current_user_inactivity_duration?: number;
     mode: modeType;
     auto_mining: boolean;
     p2pool_enabled: boolean;

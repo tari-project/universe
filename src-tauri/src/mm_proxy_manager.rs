@@ -100,6 +100,23 @@ impl MmProxyManager {
         Ok(())
     }
 
+    /**
+    TODO: check!
+    pub async fn start(
+        &self,
+        app_shutdown: ShutdownSignal,
+        base_path: PathBuf,
+        log_path: PathBuf,
+        tari_address: TariAddress,
+        base_node_grpc_port: u16,
+        coinbase_extra: String,
+    ) -> Result<(), anyhow::Error> {
+        let mut process_watcher = self.watcher.write().await;
+        process_watcher.adapter.tari_address = tari_address;
+        process_watcher.adapter.base_node_grpc_port = base_node_grpc_port;
+        process_watcher.adapter.coinbase_extra = coinbase_extra;
+    */
+
     pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());

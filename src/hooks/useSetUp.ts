@@ -16,6 +16,7 @@ export function useSetUp() {
 
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const setCurrentUserInactivityDuration = useAppStatusStore((s) => s.setCurrentUserInactivityDuration);
     // TODO: set up separate auto-miner listener
     const autoMiningEnabled = useAppStatusStore((s) => s.auto_mining);
     const { startMining, stopMining } = useMiningControls();
@@ -28,6 +29,7 @@ export function useSetUp() {
                     console.info('Setup status:', p.title, p.progress);
                     setSetupDetails(p.title, p.progress);
                     if (p.progress >= 1) {
+                        if (autoMiningEnabled) invoke('set_auto_mining', { autoMining: true });
                         settingUpFinished();
                         setView('mining');
                     }
@@ -45,6 +47,9 @@ export function useSetUp() {
                         console.debug('Mining stopped');
                     });
                     break;
+                case 'current_timeout_duration':
+                    setCurrentUserInactivityDuration(p.duration);
+                    break;
                 default:
                     console.warn('Unknown tauri event: ', { e, p });
                     break;
@@ -59,7 +64,15 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [autoMiningEnabled, setSetupDetails, setView, settingUpFinished, startMining, stopMining]);
+    }, [
+        autoMiningEnabled,
+        setCurrentUserInactivityDuration,
+        setSetupDetails,
+        setView,
+        settingUpFinished,
+        startMining,
+        stopMining,
+    ]);
 
     useGetApplicationsVersions();
 }

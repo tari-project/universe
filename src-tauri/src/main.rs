@@ -1,43 +1,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::future::Future;
-use std::sync::Arc;
-use std::thread::sleep;
-use std::time::{Duration, SystemTime};
-use std::{panic, process};
-
-use anyhow::Error;
-use log::{debug, error, info, warn};
-use serde::Serialize;
-use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_shutdown::Shutdown;
-use tauri::{Manager, RunEvent, UpdaterEvent};
-use tokio::sync::RwLock;
-
-use app_config::{AppConfig, MiningMode};
-use binary_resolver::{Binaries, BinaryResolver};
-use progress_tracker::ProgressTracker;
-use setup_status_event::SetupStatusEvent;
-use xmrig_adapter::XmrigNodeConnection;
-
-use crate::cpu_miner::CpuMiner;
-use crate::gpu_miner::GpuMiner;
-use crate::hardware_monitor::{HardwareMonitor, HardwareStatus};
-use crate::internal_wallet::InternalWallet;
-use crate::mm_proxy_adapter::MergeMiningProxyConfig;
-use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
-use crate::node_manager::{NodeManager, NodeManagerError};
-use crate::p2pool::models::Stats;
-use crate::p2pool_manager::{P2poolConfig, P2poolManager};
-use crate::user_listener::UserListener;
-use crate::wallet_adapter::WalletBalance;
-use crate::wallet_manager::{WalletManager, WalletManagerError};
-use crate::xmrig_adapter::XmrigAdapter;
-
+mod analytics;
 mod app_config;
 mod binary_resolver;
+mod consts;
+mod cpu_miner;
 mod download_utils;
 mod github;
 mod gpu_miner;
@@ -45,22 +13,51 @@ mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
+mod network_utils;
 mod node_adapter;
 mod node_manager;
 mod process_adapter;
+mod process_killer;
+mod process_utils;
 mod process_watcher;
 mod user_listener;
+mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
-mod process_killer;
-mod wallet_adapter;
 
-mod cpu_miner;
+use crate::cpu_miner::CpuMiner;
+use crate::gpu_miner::GpuMiner;
+use crate::internal_wallet::InternalWallet;
+use crate::mm_proxy_manager::MmProxyManager;
+use crate::node_manager::NodeManager;
+use crate::user_listener::UserListener;
+use crate::wallet_adapter::WalletBalance;
+use crate::wallet_manager::WalletManager;
+use crate::xmrig_adapter::XmrigAdapter;
+use analytics::AnalyticsManager;
+use app_config::{AppConfig, MiningMode};
+use binary_resolver::{Binaries, BinaryResolver};
+use hardware_monitor::{HardwareMonitor, HardwareStatus};
+use log::{debug, error, info, warn};
+use node_manager::NodeManagerError;
+use progress_tracker::ProgressTracker;
+use serde::Serialize;
+use setup_status_event::SetupStatusEvent;
+use std::sync::Arc;
+use std::thread::sleep;
+use std::time::{Duration, SystemTime};
+use std::{panic, process};
+use tari_common_types::tari_address::TariAddress;
+use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_shutdown::Shutdown;
+use tauri::{Manager, RunEvent, UpdaterEvent};
+use tokio::sync::RwLock;
+use wallet_manager::WalletManagerError;
+
 mod progress_tracker;
 mod setup_status_event;
 
@@ -155,7 +152,8 @@ async fn setup_inner<'r>(
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60 * 60 * 6)
+        > Duration::from_secs(60 * 10)
+    // 10 minutes
     {
         state
             .config
@@ -219,15 +217,12 @@ async fn setup_inner<'r>(
         {
             Ok(_) => {}
             Err(e) => {
-                match e {
-                    NodeManagerError::ExitCode(code) => {
-                        if code == 114 {
-                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
-                            state.node_manager.clean_data_folder(&data_dir).await?;
-                            continue;
-                        }
+                if let NodeManagerError::ExitCode(code) = e {
+                    if code == 114 {
+                        warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
+                        state.node_manager.clean_data_folder(&data_dir).await?;
+                        continue;
                     }
-                    _ => {}
                 }
                 error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
 
@@ -263,14 +258,25 @@ async fn setup_inner<'r>(
         .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
         .await?;
 
-    progress.set_max(80).await;
-    progress.update("Starting MMProxy".to_string(), 0).await;
+    progress.set_max(75).await;
+    progress
+        .update("Starting merge mining proxy".to_string(), 0)
+        .await;
+
+    let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
+
+    let mut analytics_id = state.analytics_manager.get_unique_string().await;
+    if analytics_id.is_empty() {
+        analytics_id = "unknown_miner_tari_universe".to_string();
+    }
     mm_proxy_manager
         .start(StartConfig::new(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
             app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
+            base_node_grpc_port,
+            analytics_id,
         ))
         .await?;
     mm_proxy_manager.wait_ready().await?;
@@ -283,6 +289,7 @@ async fn setup_inner<'r>(
             progress: 1.0,
         },
     );
+
     Ok(())
 }
 
@@ -496,10 +503,13 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
             .node_manager
             .get_network_hash_rate_and_block_reward()
             .await
-            .unwrap_or({
-                //  warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
+            .unwrap_or_else(|e| {
+                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
+
+    info!(target: LOG_TARGET, "Network hash rate: {}", randomx_hash_rate);
+
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
@@ -561,7 +571,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         mode: config_guard.mode.clone(),
         p2pool_enabled: config_guard.p2pool_enabled,
         p2pool_stats,
-        auto_mining: config_guard.auto_mining.clone(),
+        auto_mining: config_guard.auto_mining,
         user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
     })
 }
@@ -628,6 +638,7 @@ struct UniverseAppState {
     node_manager: NodeManager,
     wallet_manager: WalletManager,
     p2pool_manager: P2poolManager,
+    analytics_manager: AnalyticsManager,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -660,6 +671,7 @@ fn main() {
     }));
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
+    let analytics = AnalyticsManager::new(app_config.clone());
     let mm_proxy_port = 18081u16;
     let mm_proxy_config = if app_config_raw.p2pool_enabled {
         MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port)
@@ -678,9 +690,8 @@ fn main() {
         node_manager,
         wallet_manager,
         p2pool_manager,
+        analytics_manager: analytics,
     };
-
-    let user_listener = app_state.user_listener.clone();
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
@@ -701,8 +712,6 @@ fn main() {
             )
             .expect("Could not set up logging");
 
-            let app_config_clone = app_config.clone();
-
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread_config = tauri::async_runtime::spawn(async move {
                 app_config.write().await.load_or_create(config_path).await
@@ -714,24 +723,6 @@ fn main() {
                     error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
                 }
             };
-
-            let app_window = app.get_window("main").unwrap().clone();
-            let auto_miner_thread = tauri::async_runtime::spawn(async move {
-                let auto_mining = app_config_clone.read().await.auto_mining;
-                let timeout = app_config_clone.read().await.get_user_inactivity_timeout();
-                let mut user_listener = user_listener.write().await;
-
-                if auto_mining {
-                    user_listener.start_listening_to_mouse_poisition_change(timeout, app_window);
-                }
-            });
-
-            match tauri::async_runtime::block_on(auto_miner_thread) {
-                Ok(_) => {}
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Error setting up auto mining: {:?}", e);
-                }
-            }
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread = tauri::async_runtime::spawn(async move {

@@ -1,8 +1,8 @@
-import {create} from 'zustand';
-import {ApplicationsVersions, AppStatus} from '../types/app-status.ts';
-import {modeType} from './types.ts';
-import {persist} from 'zustand/middleware';
-import {invoke} from '@tauri-apps/api/tauri';
+import { create } from 'zustand';
+import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
+import { modeType } from './types.ts';
+import { persist } from 'zustand/middleware';
+import { invoke } from '@tauri-apps/api/tauri';
 
 type State = Partial<AppStatus>;
 
@@ -13,6 +13,7 @@ interface Actions {
     setConfigMode: (mode: modeType) => void;
     setMainAppVersion: (mainAppVersion: string) => void;
     setP2poolEnabled: (p2poolEnabled: boolean) => void;
+    setCurrentUserInactivityDuration: (duration: number) => void;
 }
 
 type AppStatusStoreState = State & Actions;
@@ -26,8 +27,9 @@ const initialState: AppStatus = {
     wallet_balance: undefined,
     mode: 'Eco',
     auto_mining: false,
-    main_app_version: undefined,
     user_inactivity_timeout: undefined,
+    current_user_inactivity_duration: undefined,
+    main_app_version: undefined,
     applications_versions: undefined,
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
@@ -39,10 +41,16 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
             setMainAppVersion: (main_app_version) => set({main_app_version}),
             setMode: (mode) => set({mode}),
             setP2poolEnabled: (p2pool_enabled) => set({p2pool_enabled}),
+            setAppStatus: (appStatus) => set({ ...appStatus }),
+            setCurrentUserInactivityDuration: (current_user_inactivity_duration) =>
+                set({ current_user_inactivity_duration }),
+            setApplicationsVersions: (applications_versions) => set({ applications_versions }),
+            setMainAppVersion: (main_app_version) => set({ main_app_version }),
+            setMode: (mode) => set({ mode }),
             setConfigMode: async (mode) => {
                 try {
-                    await invoke('set_mode', {mode});
-                    set({mode});
+                    await invoke('set_mode', { mode });
+                    set({ mode });
                     console.info(`Mode changed to ${mode}`);
                 } catch (e) {
                     console.error('Could not change the mode', e);

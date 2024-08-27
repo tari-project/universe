@@ -1,38 +1,32 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
-    Box,
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    Divider,
-    FormGroup,
     IconButton,
+    Dialog,
+    DialogContent,
+    Button,
     Stack,
-    Switch,
-    Tooltip,
     Typography,
+    Divider,
+    CircularProgress,
+    Tooltip,
+    Box,
+    DialogActions,
 } from '@mui/material';
-import {IoClose, IoCopyOutline, IoEyeOffOutline, IoEyeOutline, IoSettingsOutline} from 'react-icons/io5';
-import {useGetSeedWords} from '../../../../hooks/useGetSeedWords';
+import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
+import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
 import truncateString from '../../../../utils/truncateString';
-import {invoke} from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/tauri';
 
-import {useAppStatusStore} from '@app/store/useAppStatusStore.ts';
-import {useGetApplicationsVersions} from '../../../../hooks/useGetApplicationsVersions.ts';
+import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
+import { useGetApplicationsVersions } from '../../../../hooks/useGetApplicationsVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import {CardContainer, HorisontalBox, RightHandColumn} from './Settings.styles';
-import {useHardwareStatus} from '@app/hooks/useHardwareStatus.ts';
-import {CardComponent} from './Card.component.tsx';
-import {ControlledNumberInput} from '@app/components/NumberInput/NumberInput.component.tsx';
-import {useForm} from 'react-hook-form';
-import {Environment, useEnvironment} from '@app/hooks/useEnvironment.ts';
-import {AutoMinerContainer} from "@app/containers/SideBar/Miner/styles.ts";
-import {useCPUStatusStore} from "@app/store/useCPUStatusStore.ts";
-import {useShallow} from "zustand/react/shallow";
-import useAppStateStore from "@app/store/appStateStore.ts";
-import {useUIStore} from "@app/store/useUIStore.ts";
+import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles';
+import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
+import { CardComponent } from './Card.component.tsx';
+import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
+import { useForm } from 'react-hook-form';
+import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
+import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -46,17 +40,18 @@ const Settings: React.FC = () => {
     const currentEnvironment = useEnvironment();
 
     const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
+    const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
-    const {getApplicationsVersions, applicationsVersions} = useGetApplicationsVersions();
+    const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
-    const {reset, handleSubmit, control} = useForm<FormState>({
-        defaultValues: {idleTimeout: userInActivityTimeout},
+    const { reset, handleSubmit, control } = useForm<FormState>({
+        defaultValues: { idleTimeout: userInActivityTimeout },
         mode: 'onSubmit',
     });
-    const {seedWords, getSeedWords, seedWordsFetched, seedWordsFetching} = useGetSeedWords();
-    const {cpu, gpu} = useHardwareStatus();
+    const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
+    const { cpu, gpu } = useHardwareStatus();
 
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
     const miningInitiated = useUIStore((s) => s.miningInitiated);
@@ -102,7 +97,7 @@ const Settings: React.FC = () => {
     };
 
     const handleCancel = () => {
-        reset({idleTimeout: userInActivityTimeout});
+        reset({ idleTimeout: userInActivityTimeout });
     };
 
     const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -114,6 +109,7 @@ const Settings: React.FC = () => {
                 invoke('set_user_inactivity_timeout', {
                     timeout: Number(data[FormFields.IDLE_TIMEOUT]),
                 });
+                invoke('set_auto_mining', { autoMining: false });
                 handleClose();
             },
             (error) => {
@@ -122,10 +118,14 @@ const Settings: React.FC = () => {
         )();
     };
 
+    const now = new Date();
+    const lastBlockTime = calculateTimeSince(blockTime || 0, now.getTime());
+    const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
+    const displayTime = `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
     return (
         <>
             <IconButton onClick={handleClickOpen}>
-                <IoSettingsOutline size={16}/>
+                <IoSettingsOutline size={16} />
             </IconButton>
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth={'sm'}>
                 <DialogContent>
@@ -133,10 +133,10 @@ const Settings: React.FC = () => {
                         <Stack direction="row" justifyContent="space-between" alignItems="center" pb={1}>
                             <Typography variant="h4">Settings</Typography>
                             <IconButton onClick={handleClose}>
-                                <IoClose size={20}/>
+                                <IoClose size={20} />
                             </IconButton>
                         </Stack>
-                        <Divider/>
+                        <Divider />
                         <Stack spacing={1} pt={1} pb={1} direction="column">
                             <Typography variant="h6">Seed Words</Typography>
                             <Stack flexDirection="row" alignItems="center" gap={1}>
@@ -146,47 +146,36 @@ const Settings: React.FC = () => {
                                         : '****************************************************'}
                                 </Typography>
                                 {seedWordsFetching ? (
-                                    <CircularProgress size="34px"/>
+                                    <CircularProgress size="34px" />
                                 ) : (
-                                    <>
-                                        <IconButton onClick={toggleSeedWordsVisibility}>
-                                            {showSeedWords ? <IoEyeOffOutline size={18}/> : <IoEyeOutline size={18}/>}
+                                    <IconButton onClick={toggleSeedWordsVisibility}>
+                                        {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                                    </IconButton>
+                                )}
+                                {showSeedWords && seedWordsFetched && (
+                                    <Tooltip
+                                        title="Copied!"
+                                        placement="top"
+                                        open={!isCopyTooltipHidden}
+                                        disableFocusListener
+                                        disableHoverListener
+                                        disableTouchListener
+                                        PopperProps={{ disablePortal: true }}
+                                    >
+                                        <IconButton onClick={copySeedWords}>
+                                            <IoCopyOutline size={18} />
                                         </IconButton>
-                                        <Tooltip
-                                            title="Copied!"
-                                            placement="top"
-                                            open={!isCopyTooltipHidden}
-                                            disableFocusListener
-                                            disableHoverListener
-                                            disableTouchListener
-                                            PopperProps={{disablePortal: true}}
-                                        >
-                                            <IconButton onClick={copySeedWords}>
-                                                <IoCopyOutline size={18}/>
-                                            </IconButton>
-                                        </Tooltip>
-                                    </>
+                                    </Tooltip>
                                 )}
                             </Stack>
                         </Stack>
-                        <Divider/>
-                        <HorisontalBox>
-                            <Typography variant="h6">Logs</Typography>
-                            <RightHandColumn>
-                                <Button onClick={openLogsDirectory} variant="text">
-                                    Open logs directory
-                                </Button>
-                            </RightHandColumn>
-                        </HorisontalBox>
-                        <Divider/>
                         <form onSubmit={onSubmit}>
                             <Box my={1}>
-                                <Typography variant="h5">Random</Typography>
                                 <Stack spacing={1} pt={1}>
                                     <ControlledNumberInput
                                         name={FormFields.IDLE_TIMEOUT}
                                         control={control}
-                                        title="Idle Timeout"
+                                        title="Time after which machine is considered idle"
                                         endAdornment="seconds"
                                         placeholder="Enter idle timeout in seconds"
                                         type="int"
@@ -202,7 +191,7 @@ const Settings: React.FC = () => {
                                         }}
                                     />
                                 </Stack>
-                                <Divider/>
+                                <Divider />
                                 <DialogActions>
                                     <Button onClick={handleCancel} variant="outlined">
                                         Cancel
@@ -231,7 +220,62 @@ const Settings: React.FC = () => {
                                 />
                             </FormGroup>
                         </AutoMinerContainer>
-                        <Divider/>
+                        <Divider />
+                        <HorisontalBox>
+                            <Typography variant="h6">Logs</Typography>
+                            <RightHandColumn>
+                                <Button onClick={openLogsDirectory} variant="text">
+                                    Open logs directory
+                                </Button>
+                            </RightHandColumn>
+                        </HorisontalBox>
+                        <Divider />
+                        <HorisontalBox>
+                            <Typography variant="h6">Debug Info:</Typography>
+                        </HorisontalBox>
+                        <CardComponent
+                            heading="Blocks"
+                            labels={[{ labelText: 'Last block added to chain time', labelValue: displayTime }]}
+                        />
+                        <Divider />
+                        {
+                            <>
+                                <HorisontalBox>
+                                    <Typography variant="h6">Hardware Status:</Typography>
+                                </HorisontalBox>
+                                <CardContainer>
+                                    <CardComponent
+                                        heading={cpu?.label || 'Unknown CPU'}
+                                        labels={[
+                                            { labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%` },
+                                            {
+                                                labelText: 'Temperature',
+                                                labelValue: `${cpu?.current_temperature || 0}°C`,
+                                            },
+                                            {
+                                                labelText: 'Max Temperature',
+                                                labelValue: `${cpu?.max_temperature || 0}°C`,
+                                            },
+                                        ]}
+                                    />
+                                    <CardComponent
+                                        heading={gpu?.label || 'Unknown GPU'}
+                                        labels={[
+                                            { labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%` },
+                                            {
+                                                labelText: 'Temperature',
+                                                labelValue: `${gpu?.current_temperature || 0}°C`,
+                                            },
+                                            {
+                                                labelText: 'Max Temperature',
+                                                labelValue: `${gpu?.max_temperature || 0}°C`,
+                                            },
+                                        ]}
+                                    />
+                                </CardContainer>
+                            </>
+                        }
+                        <Divider />
                         {applicationsVersions && (
                             <>
                                 <HorisontalBox>
@@ -260,7 +304,7 @@ const Settings: React.FC = () => {
                                         />
                                         {Object.entries(applicationsVersions).map(([key, value]) => (
                                             <CardComponent
-                                                key={key}
+                                                key={`${key}-${value}`}
                                                 heading={key}
                                                 labels={[
                                                     {
@@ -274,46 +318,9 @@ const Settings: React.FC = () => {
                                 </Stack>
                             </>
                         )}
-                        {
-                            <>
-                                <HorisontalBox>
-                                    <Typography variant="h6">Hardware Status:</Typography>
-                                </HorisontalBox>
-                                <CardContainer>
-                                    <CardComponent
-                                        heading={cpu?.label || 'Unknown CPU'}
-                                        labels={[
-                                            {labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%`},
-                                            {
-                                                labelText: 'Temperature',
-                                                labelValue: `${cpu?.current_temperature || 0}°C`,
-                                            },
-                                            {
-                                                labelText: 'Max Temperature',
-                                                labelValue: `${cpu?.max_temperature || 0}°C`,
-                                            },
-                                        ]}
-                                    />
-                                    <CardComponent
-                                        heading={gpu?.label || 'Unknown GPU'}
-                                        labels={[
-                                            {labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%`},
-                                            {
-                                                labelText: 'Temperature',
-                                                labelValue: `${gpu?.current_temperature || 0}°C`,
-                                            },
-                                            {
-                                                labelText: 'Max Temperature',
-                                                labelValue: `${gpu?.max_temperature || 0}°C`,
-                                            },
-                                        ]}
-                                    />
-                                </CardContainer>
-                            </>
-                        }
-                        <Divider/>
+                        <Divider />
                         <HorisontalBox>
-                            <VisualMode/>
+                            <VisualMode />
                         </HorisontalBox>
                     </Stack>
                 </DialogContent>

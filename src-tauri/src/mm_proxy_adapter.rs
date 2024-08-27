@@ -1,6 +1,10 @@
 use std::fs;
 use std::path::PathBuf;
 
+use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::consts::PROCESS_CREATION_NO_WINDOW;
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_utils;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, warn};
@@ -21,24 +25,28 @@ pub struct MergeMiningProxyConfig {
     pub p2pool_enabled: bool,
     pub p2pool_grpc_port: u16,
     pub base_node_grpc_port: u16,
+    pub coinbase_extra: String,
 }
 
+// TODO: "tari_universe_mmproxy".to_string() should be the default coinbase_extra
 impl MergeMiningProxyConfig {
-    pub fn new(port: u16, base_node_grpc_port: u16) -> Self {
+    pub fn new(port: u16, base_node_grpc_port: u16, coinbase_extra: String) -> Self {
         Self {
             port,
             p2pool_enabled: false,
             p2pool_grpc_port: 0,
             base_node_grpc_port,
+            coinbase_extra,
         }
     }
 
-    pub fn new_with_p2pool(port: u16, p2pool_grpc_port: u16) -> Self {
+    pub fn new_with_p2pool(port: u16, p2pool_grpc_port: u16, coinbase_extra: String) -> Self {
         Self {
             port,
             p2pool_enabled: true,
             p2pool_grpc_port,
             base_node_grpc_port: 0,
+            coinbase_extra,
         }
     }
 }
@@ -94,6 +102,8 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                 self.config.port
             ),
             "-p".to_string(),
+            format!("merge_mining_proxy.coinbase_extra={}", self.coinbase_extra),
+            "-p".to_string(),
             // TODO: If you leave this out, it does not start. It just halts. Probably an error on the mmproxy noninteractive
             format!(
                 "merge_mining_proxy.wallet_payment_address={}",
@@ -116,10 +126,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                         .resolve_path(Binaries::MergeMiningProxy)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(file_path)
-                        .args(args)
-                        .kill_on_drop(true)
-                        .spawn()?;
+                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;
