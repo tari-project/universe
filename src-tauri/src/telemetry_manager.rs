@@ -129,7 +129,7 @@ impl TelemetryManager {
         info!("Starting telemetry manager");
         let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         self.is_collecting_telemetry = telemetry_collection_enabled;
-        let _ = self.start_telemetry_process(Duration::from_secs(1)).await;
+        let _ = self.start_telemetry_process(Duration::from_secs(60)).await;
         Ok(())
     }
 
