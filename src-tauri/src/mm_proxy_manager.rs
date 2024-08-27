@@ -19,6 +19,8 @@ pub struct StartConfig {
     pub base_path: PathBuf,
     pub log_path: PathBuf,
     pub tari_address: TariAddress,
+    pub base_node_grpc_port: u16,
+    pub analytics_id: String,
 }
 
 impl PartialEq for StartConfig {
@@ -26,6 +28,8 @@ impl PartialEq for StartConfig {
         self.base_path == other.base_path
             && self.log_path == other.log_path
             && self.tari_address == other.tari_address
+            && self.base_node_grpc_port == other.base_node_grpc_port
+            && self.analytics_id == other.analytics_id
     }
 }
 
@@ -35,12 +39,16 @@ impl StartConfig {
         base_path: PathBuf,
         log_path: PathBuf,
         tari_address: TariAddress,
+        base_node_grpc_port: u16,
+        analytics_id: String,
     ) -> Self {
         Self {
             app_shutdown,
             base_path,
             log_path,
             tari_address,
+            base_node_grpc_port,
+            analytics_id,
         }
     }
 }
@@ -75,6 +83,7 @@ impl MmProxyManager {
         lock.adapter.config.clone()
     }
 
+    // TODO: check why fails to start again
     pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
         let sidecar_adapter = MergeMiningProxyAdapter::new(config);
         let process_watcher = ProcessWatcher::new(sidecar_adapter);
@@ -100,28 +109,13 @@ impl MmProxyManager {
         Ok(())
     }
 
-    /**
-    TODO: check!
-    pub async fn start(
-        &self,
-        app_shutdown: ShutdownSignal,
-        base_path: PathBuf,
-        log_path: PathBuf,
-        tari_address: TariAddress,
-        base_node_grpc_port: u16,
-        coinbase_extra: String,
-    ) -> Result<(), anyhow::Error> {
-        let mut process_watcher = self.watcher.write().await;
-        process_watcher.adapter.tari_address = tari_address;
-        process_watcher.adapter.base_node_grpc_port = base_node_grpc_port;
-        process_watcher.adapter.coinbase_extra = coinbase_extra;
-    */
-
     pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = config.tari_address;
+        process_watcher.adapter.config.base_node_grpc_port = config.base_node_grpc_port;
+        process_watcher.adapter.config.coinbase_extra = config.analytics_id;
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher
             .start(config.app_shutdown, config.base_path, config.log_path)

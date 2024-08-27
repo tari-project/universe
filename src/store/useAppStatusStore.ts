@@ -36,17 +36,13 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(
         (set) => ({
             ...initialState,
-            setAppStatus: (appStatus) => set({...appStatus}),
-            setApplicationsVersions: (applications_versions) => set({applications_versions}),
-            setMainAppVersion: (main_app_version) => set({main_app_version}),
-            setMode: (mode) => set({mode}),
-            setP2poolEnabled: (p2pool_enabled) => set({p2pool_enabled}),
             setAppStatus: (appStatus) => set({ ...appStatus }),
-            setCurrentUserInactivityDuration: (current_user_inactivity_duration) =>
-                set({ current_user_inactivity_duration }),
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMainAppVersion: (main_app_version) => set({ main_app_version }),
             setMode: (mode) => set({ mode }),
+            setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
+            setCurrentUserInactivityDuration: (current_user_inactivity_duration) =>
+                set({ current_user_inactivity_duration }),
             setConfigMode: async (mode) => {
                 try {
                     await invoke('set_mode', { mode });
@@ -59,6 +55,6 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         }),
         {
             name: 'status-store',
-        }
-    )
+        },
+    ),
 );

@@ -14,9 +14,6 @@ use tokio::select;
 use tokio::sync::{broadcast, mpsc};
 use tokio::task::JoinHandle;
 
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
 #[derive(Clone, PartialEq)]
@@ -28,25 +25,28 @@ pub struct MergeMiningProxyConfig {
     pub coinbase_extra: String,
 }
 
-// TODO: "tari_universe_mmproxy".to_string() should be the default coinbase_extra
 impl MergeMiningProxyConfig {
-    pub fn new(port: u16, base_node_grpc_port: u16, coinbase_extra: String) -> Self {
+    pub fn new(port: u16, base_node_grpc_port: u16, coinbase_extra: Option<String>) -> Self {
         Self {
             port,
             p2pool_enabled: false,
             p2pool_grpc_port: 0,
             base_node_grpc_port,
-            coinbase_extra,
+            coinbase_extra: coinbase_extra.unwrap_or("tari_universe_mmproxy".to_string()),
         }
     }
 
-    pub fn new_with_p2pool(port: u16, p2pool_grpc_port: u16, coinbase_extra: String) -> Self {
+    pub fn new_with_p2pool(
+        port: u16,
+        p2pool_grpc_port: u16,
+        coinbase_extra: Option<String>,
+    ) -> Self {
         Self {
             port,
             p2pool_enabled: true,
             p2pool_grpc_port,
             base_node_grpc_port: 0,
-            coinbase_extra,
+            coinbase_extra: coinbase_extra.unwrap_or("tari_universe_mmproxy".to_string()),
         }
     }
 }
@@ -102,7 +102,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                 self.config.port
             ),
             "-p".to_string(),
-            format!("merge_mining_proxy.coinbase_extra={}", self.coinbase_extra),
+            format!(
+                "merge_mining_proxy.coinbase_extra={}",
+                self.config.coinbase_extra
+            ),
             "-p".to_string(),
             // TODO: If you leave this out, it does not start. It just halts. Probably an error on the mmproxy noninteractive
             format!(

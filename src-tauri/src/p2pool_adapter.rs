@@ -65,6 +65,8 @@ impl ProcessAdapter for P2poolAdapter {
             self.config.grpc_port.to_string(),
             "--stats-server-port".to_string(),
             self.config.stats_server_port.to_string(),
+            "--base-node-address".to_string(),
+            self.config.base_node_address.clone(),
             "-b".to_string(),
             log_path.join("sha-p2pool").to_str().unwrap().to_string(),
         ];

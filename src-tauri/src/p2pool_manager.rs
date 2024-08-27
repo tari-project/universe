@@ -16,6 +16,34 @@ use crate::process_watcher::ProcessWatcher;
 pub struct P2poolConfig {
     pub grpc_port: u16,
     pub stats_server_port: u16,
+    pub base_node_address: String,
+}
+
+pub struct P2poolConfigBuilder {
+    config: P2poolConfig,
+}
+
+impl P2poolConfigBuilder {
+    pub fn new() -> Self {
+        Self {
+            config: P2poolConfig::default(),
+        }
+    }
+
+    pub fn with_base_node_address(&mut self, base_node_address: String) -> &mut Self {
+        self.config.base_node_address = base_node_address;
+        self
+    }
+
+    pub fn build(&self) -> P2poolConfig {
+        self.config.clone()
+    }
+}
+
+impl P2poolConfig {
+    pub fn builder() -> P2poolConfigBuilder {
+        P2poolConfigBuilder::new()
+    }
 }
 
 impl Default for P2poolConfig {
@@ -23,6 +51,7 @@ impl Default for P2poolConfig {
         Self {
             grpc_port: 18145,
             stats_server_port: 19000,
+            base_node_address: String::from("http://127.0.0.1:18142"),
         }
     }
 }

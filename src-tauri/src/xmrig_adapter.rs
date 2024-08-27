@@ -13,12 +13,6 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig::latest_release::fetch_latest_release;
 use crate::{process_utils, ProgressTracker};
-use anyhow::Error;
-use log::{info, warn};
-use std::path::PathBuf;
-use tari_shutdown::Shutdown;
-use tokio::fs;
-use crate::ProgressTracker;
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -72,7 +66,7 @@ impl XmrigAdapter {
             node_connection: xmrig_node_connection,
             monero_address,
             http_api_token: http_api_token.clone(),
-            http_api_port: http_api_port,
+            http_api_port,
             cache_dir,
             cpu_max_percentage,
             progress_tracker,

@@ -2,6 +2,7 @@ use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
 use anyhow::Error;
+use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetBalanceRequest;

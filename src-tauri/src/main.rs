@@ -16,6 +16,9 @@ mod mm_proxy_manager;
 mod network_utils;
 mod node_adapter;
 mod node_manager;
+mod p2pool;
+mod p2pool_adapter;
+mod p2pool_manager;
 mod process_adapter;
 mod process_killer;
 mod process_utils;
@@ -25,15 +28,15 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-mod p2pool;
-mod p2pool_adapter;
-mod p2pool_manager;
 
 use crate::cpu_miner::CpuMiner;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
-use crate::mm_proxy_manager::MmProxyManager;
+use crate::mm_proxy_adapter::MergeMiningProxyConfig;
+use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
+use crate::p2pool::models::Stats;
+use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
@@ -41,6 +44,7 @@ use crate::xmrig_adapter::XmrigAdapter;
 use analytics::AnalyticsManager;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
+use futures_lite::future::block_on;
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use node_manager::NodeManagerError;
@@ -55,6 +59,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
+use tokio::runtime::Handle;
 use tokio::sync::RwLock;
 use wallet_manager::WalletManagerError;
 
@@ -309,10 +314,18 @@ async fn set_p2pool_enabled<'r>(
     let p2pool_config = state.p2pool_manager.config();
     if origin_config.p2pool_enabled != p2pool_enabled {
         let config = if p2pool_enabled {
-            MergeMiningProxyConfig::new_with_p2pool(origin_config.port, p2pool_config.grpc_port)
+            MergeMiningProxyConfig::new_with_p2pool(
+                origin_config.port,
+                p2pool_config.grpc_port,
+                None,
+            )
         } else {
-            // TODO: get base node grpc port from base node manager config
-            MergeMiningProxyConfig::new(origin_config.port, 18142)
+            let base_node_grpc_port = state
+                .node_manager
+                .get_grpc_port()
+                .await
+                .map_err(|error| error.to_string())?;
+            MergeMiningProxyConfig::new(origin_config.port, base_node_grpc_port, None)
         };
         state
             .mm_proxy_manager
@@ -657,12 +670,15 @@ fn main() {
     }));
     let mut shutdown = Shutdown::new();
 
-    // TODO: pass this to node_manager
-    let base_node_grpc_port = 18142u16;
     let node_manager = NodeManager::new();
+    let base_node_grpc_port = block_on(node_manager.get_grpc_port()).unwrap();
     let wallet_manager = WalletManager::new(node_manager.clone());
     let wallet_manager2 = wallet_manager.clone();
-    let p2pool_config = Arc::new(P2poolConfig::default());
+    let p2pool_config = Arc::new(
+        P2poolConfig::builder()
+            .with_base_node_address(format!("http://127.0.0.1:{base_node_grpc_port}"))
+            .build(),
+    );
     let p2pool_manager = P2poolManager::new(p2pool_config.clone());
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
@@ -674,9 +690,9 @@ fn main() {
     let analytics = AnalyticsManager::new(app_config.clone());
     let mm_proxy_port = 18081u16;
     let mm_proxy_config = if app_config_raw.p2pool_enabled {
-        MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port)
+        MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     } else {
-        MergeMiningProxyConfig::new(mm_proxy_port, base_node_grpc_port)
+        MergeMiningProxyConfig::new(mm_proxy_port, base_node_grpc_port, None)
     };
     let mm_proxy_manager = MmProxyManager::new(mm_proxy_config);
     let app_state = UniverseAppState {
