@@ -39,11 +39,13 @@ impl InternalWallet {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
             match serde_json::from_str::<WalletConfig>(&config) {
-                Ok(config) => {
-                    return Ok(Self {
-                        tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
-                        config,
-                    })
+                Ok(config) => {         
+                    if InternalWallet::check_view_key(config.clone()).await? {
+                        return Ok(Self {
+                            tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
+                            config,
+                        })
+                    }
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse wallet config: {}", e.to_string());
@@ -139,6 +141,19 @@ impl InternalWallet {
     }
     pub fn get_spend_key(&self) -> String {
         self.config.spend_public_key_hex.clone()
+    }
+
+    async fn check_view_key(config: WalletConfig) -> Result<bool, anyhow::Error> {
+        let entry = Entry::new("com.tari.universe", "internal_wallet")?;
+        let passphrase = SafePassword::from(entry.get_password()?);
+        let seed_binary = Vec::<u8>::from_base58(&config.seed_words_encrypted_base58)
+            .map_err(|e| anyhow!(e.to_string()))?;
+        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, Some(passphrase))?;
+        let tx_key_manager = create_memory_db_key_manager_from_seed(seed.clone(), 64)?;
+        let view_key = tx_key_manager.get_view_key().await?;
+        let view_key_private = tx_key_manager.get_private_key(&view_key.key_id).await?;
+
+        Ok(view_key_private.to_hex() == config.view_key_private_hex)
     }
 }
 
