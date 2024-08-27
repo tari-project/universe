@@ -10,23 +10,18 @@ export function useVisualisation() {
     const setShowFailAnimation = useMiningStore((s) => s.setShowFailAnimation);
 
     useEffect(() => {
-        if (showFailAnimation) {
-            const failTimeout = setTimeout(() => {
+        const failTimeout = setTimeout(
+            () => {
                 setPostBlockAnimation(true);
                 setTimerPaused(false);
                 setShowFailAnimation(false);
-            }, 1500);
-            return () => clearTimeout(failTimeout);
-        }
+            },
+            showFailAnimation ? 1500 : 1
+        );
+        return () => clearTimeout(failTimeout);
     }, [showFailAnimation, setPostBlockAnimation, setTimerPaused, setShowFailAnimation]);
 
-    return useCallback(
-        (state: GlAppState) => {
-            if (state === 'fail' && !showFailAnimation) {
-                return;
-            }
-            setAnimationState(state);
-        },
-        [showFailAnimation]
-    );
+    return useCallback((state: GlAppState) => {
+        setAnimationState(state);
+    }, []);
 }

@@ -31,11 +31,10 @@ export default function useBalanceInfo() {
         const hasEarnings = Boolean(diff && diff > 0);
         if (hasEarnings) {
             setEarnings(diff);
-        } else {
-            setShowFailAnimation(true);
         }
-        handleVisual(!hasEarnings ? 'fail' : 'success');
+        setShowFailAnimation(!hasEarnings);
         prevBalanceRef.current = previousBalance;
+        handleVisual(!hasEarnings ? 'fail' : 'success');
     }, [balance, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
 
     useEffect(() => {
@@ -80,11 +79,12 @@ export default function useBalanceInfo() {
 
     useEffect(() => {
         const ulp = appWindow.listen('tauri://focus', () => {
+            handleVisual('start');
             resetStates();
         });
 
         return () => {
             ulp.then((ul) => ul());
         };
-    }, [resetStates]);
+    }, [handleVisual, resetStates]);
 }
