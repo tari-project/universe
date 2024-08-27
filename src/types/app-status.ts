@@ -26,7 +26,6 @@ export interface HardwareStatus {
 }
 
 export interface CpuMinerStatus {
-    is_mining_enabled: boolean;
     is_mining: boolean;
     hash_rate: number;
     estimated_earnings: number;

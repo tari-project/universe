@@ -49,7 +49,11 @@ function Miner() {
                     }
                 />
                 <Tile title="CHIP/GPU" stats={hardwareVal || 'Unknown'} />
-                <Tile title="Est tXTM/day" stats={formatNumber(estimated_earnings / 1000000)} />
+                <Tile
+                    title="Est tXTM/day"
+                    stats={formatNumber(estimated_earnings / 1000000)}
+                    isLoading={isWaitingForHashRate}
+                />
             </TileContainer>
         </MinerContainer>
     );
