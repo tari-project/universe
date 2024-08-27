@@ -36,7 +36,7 @@ function Miner() {
                 <Tile title="Resources" stats="CPU" />
                 <ModeSelect />
                 <Tile
-                    title="Hashrate H/s"
+                    title="Hashrate (H/s)"
                     stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''}`}
                     isLoading={isWaitingForHashRate}
                 />
