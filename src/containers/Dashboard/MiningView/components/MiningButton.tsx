@@ -22,14 +22,6 @@ function MiningButton() {
     } = useMiningControls();
 
     const handleClick = useCallback(() => {
-        // if (connectionToMinerLost && isMiningInProgress.current) {
-        //     return stopMining();
-        // }
-
-        // if (connectionToMinerLost && !isMiningInProgress.current) {
-        //     return startMining();
-        // }
-
         if (isConnectionLostDuringMining) {
             return cancelMining();
         }
@@ -48,8 +40,6 @@ function MiningButton() {
         size: 'large',
         endIcon: isMining ? <GiPauseButton /> : <IoChevronForwardOutline />,
     };
-
-    console.log('MiningButton', { isMining, isLoading, shouldMiningControlsBeEnabled });
 
     return (
         <Stack gap={1}>
