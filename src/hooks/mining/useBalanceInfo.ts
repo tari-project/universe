@@ -45,7 +45,6 @@ export default function useBalanceInfo() {
     }, [previousBalance, block_height]);
 
     const resetStates = useCallback(() => {
-        console.log(`hi?`);
         setPostBlockAnimation(false);
         setDisplayBlockHeight(blockHeightRef.current);
         setShowFailAnimation(false);

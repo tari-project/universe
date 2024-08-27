@@ -51,7 +51,7 @@ export function useMiningControls() {
 
         if (progress >= 1 && !isAutoMining) return true;
         return false;
-    }, [isAutoMining, isWaitingForHashRate, isMining, progress, isMiningEnabled, isConnectionLostDuringMining]);
+    }, [isAutoMining, isMining, progress, isMiningEnabled, isConnectionLostDuringMining]);
 
     const shouldAutoMiningControlsBeEnabled = useMemo(() => {
         if (isMiningEnabled && !isAutoMining) return false;
@@ -70,7 +70,7 @@ export function useMiningControls() {
             .catch(() => {
                 setIsMiningEnabled(false);
             });
-    }, []);
+    }, [setIsMiningEnabled]);
 
     const stopMining = useCallback(async () => {
         setIsMiningEnabled(false);
@@ -82,7 +82,7 @@ export function useMiningControls() {
             .catch(() => {
                 setIsMiningEnabled(true);
             });
-    }, [handleVisual]);
+    }, [handleVisual, setIsMiningEnabled]);
 
     const cancelMining = useCallback(async () => {
         setIsMiningEnabled(false);
@@ -91,29 +91,29 @@ export function useMiningControls() {
             handleVisual('start');
             handleVisual('stop');
         });
-    }, []);
+    }, [handleVisual, setIsMiningEnabled]);
 
     useEffect(() => {
         if (isMining && isMiningEnabled) {
             if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
-            console.log('Useffect: handleVisual start');
+            console.info('Useffect: handleVisual start');
             handleVisual('start');
             isMiningInProgress.current = true;
         }
 
         if (!isMining && !isMiningEnabled) {
             if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
-            console.log('Useffect: handleVisual stop');
+            console.info('Useffect: handleVisual stop');
             handleVisual('stop');
             isMiningInProgress.current = false;
         }
 
         if (!isMining && isMiningInProgress.current) {
-            console.log('Useffect: handleVisual pause');
+            console.info('Useffect: handleVisual pause');
             setIsConnectionLostDuringMining(true);
             handleVisual('pause');
         }
-    }, [handleVisual, isMining, isMiningEnabled, isConnectionLostDuringMining]);
+    }, [handleVisual, isMining, isMiningEnabled, isConnectionLostDuringMining, setIsConnectionLostDuringMining]);
 
     const getMiningButtonStateText = useCallback(() => {
         if (isConnectionLostDuringMining) {
@@ -137,7 +137,7 @@ export function useMiningControls() {
         }
 
         return MiningButtonStateText.START;
-    }, [isAutoMining, isMining, isWaitingForHashRate, isMiningEnabled, isConnectionLostDuringMining]);
+    }, [isAutoMining, isMining, isMiningEnabled, isConnectionLostDuringMining]);
 
     return {
         cancelMining,
