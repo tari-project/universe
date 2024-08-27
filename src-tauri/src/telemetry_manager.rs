@@ -91,7 +91,6 @@ impl From<MiningMode> for TelemetryMiningMode {
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryData {
     pub app_id: String,
-    pub user_id: Option<String>,
     pub block_height: u64,
     pub is_mining_active: bool,
     pub network: Option<TelemetryNetwork>,
@@ -165,8 +164,7 @@ impl TelemetryManager {
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.telemetry_collection;
 
-                        let airdrop_access_token_clone = airdrop_access_token.clone().read().await.clone();
-                        let parsed_access_token = airdrop_access_token.read().await.clone().and_then(|t| {
+                        let airdrop_access_token_clone = airdrop_access_token.read().await.clone().and_then(|t| {
                             let key = DecodingKey::from_secret(&[]);
                             let mut validation = Validation::new(Algorithm::HS256);
                             validation.insecure_disable_signature_validation();
@@ -180,14 +178,14 @@ impl TelemetryManager {
                             };
                             
                             let now = std::time::SystemTime::now();
-                            let token_expiration = now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
+                            let now_unix = now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
 
                             if let Some(claims) = claims {
-                                if claims.exp < token_expiration {
+                                if claims.exp < now_unix {
                                     error!("Access token has expired");
                                     None
                                 } else {
-                                    Some(claims)
+                                    Some(t)
                                 }
                             } else {
                                 None
@@ -195,7 +193,7 @@ impl TelemetryManager {
                         });
 
                         if telemetry_collection_enabled {
-                            let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network, parsed_access_token).await;
+                            let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
                             match telemetry {
                                 Ok(telemetry) => {
                                     send_telemetry_data(telemetry, airdrop_access_token_clone).await;
@@ -223,7 +221,6 @@ async fn get_telemetry_data(
     node_manager: NodeManager,
     config: Arc<RwLock<AppConfig>>,
     network: Option<Network>,
-    parsed_access_token: Option<AirdropAccessToken>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
     let mut cpu_miner = cpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, _block_time, is_synced) =
@@ -285,7 +282,6 @@ async fn get_telemetry_data(
         resource: TelemetryResource::Cpu,
         resource_utilization,
         resource_make,
-        user_id: parsed_access_token.map(|t| t.id.clone()),
     })
 }
 

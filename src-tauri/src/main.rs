@@ -123,8 +123,8 @@ async fn set_airdrop_access_token<'r>(
     state: tauri::State<'r, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<(), String> {
-     let mut write_lock = state.airdrop_access_token.write().await;
-     *write_lock = Some(token);
+    let mut write_lock = state.airdrop_access_token.write().await;
+    *write_lock = Some(token);
     Ok(())
 }
 
