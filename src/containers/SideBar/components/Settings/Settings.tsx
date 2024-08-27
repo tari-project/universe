@@ -27,6 +27,7 @@ import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.c
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
+import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -40,6 +41,7 @@ const Settings: React.FC = () => {
     const currentEnvironment = useEnvironment();
 
     const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
+    const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
     const [open, setOpen] = useState(false);
@@ -106,6 +108,10 @@ const Settings: React.FC = () => {
         )();
     };
 
+    const now = new Date();
+    const lastBlockTime = calculateTimeSince(blockTime || 0, now.getTime());
+    const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
+    const displayTime = `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
     return (
         <>
             <IconButton onClick={handleClickOpen}>
@@ -132,24 +138,24 @@ const Settings: React.FC = () => {
                                 {seedWordsFetching ? (
                                     <CircularProgress size="34px" />
                                 ) : (
-                                    <>
-                                        <IconButton onClick={toggleSeedWordsVisibility}>
-                                            {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                                    <IconButton onClick={toggleSeedWordsVisibility}>
+                                        {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
+                                    </IconButton>
+                                )}
+                                {showSeedWords && seedWordsFetched && (
+                                    <Tooltip
+                                        title="Copied!"
+                                        placement="top"
+                                        open={!isCopyTooltipHidden}
+                                        disableFocusListener
+                                        disableHoverListener
+                                        disableTouchListener
+                                        PopperProps={{ disablePortal: true }}
+                                    >
+                                        <IconButton onClick={copySeedWords}>
+                                            <IoCopyOutline size={18} />
                                         </IconButton>
-                                        <Tooltip
-                                            title="Copied!"
-                                            placement="top"
-                                            open={!isCopyTooltipHidden}
-                                            disableFocusListener
-                                            disableHoverListener
-                                            disableTouchListener
-                                            PopperProps={{ disablePortal: true }}
-                                        >
-                                            <IconButton onClick={copySeedWords}>
-                                                <IoCopyOutline size={18} />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </>
+                                    </Tooltip>
                                 )}
                             </Stack>
                         </Stack>
@@ -195,6 +201,14 @@ const Settings: React.FC = () => {
                                 </Button>
                             </RightHandColumn>
                         </HorisontalBox>
+                        <Divider />
+                        <HorisontalBox>
+                            <Typography variant="h6">Debug Info:</Typography>
+                        </HorisontalBox>
+                        <CardComponent
+                            heading="Blocks"
+                            labels={[{ labelText: 'Last block added to chain time', labelValue: displayTime }]}
+                        />
                         <Divider />
                         {
                             <>
@@ -262,7 +276,7 @@ const Settings: React.FC = () => {
                                         />
                                         {Object.entries(applicationsVersions).map(([key, value]) => (
                                             <CardComponent
-                                                key={key}
+                                                key={`${key}-${value}`}
                                                 heading={key}
                                                 labels={[
                                                     {

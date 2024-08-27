@@ -30,3 +30,9 @@ export const ScheduleButton = styled(Button)(({ theme }) => ({
         backgroundColor: `${theme.palette.divider} !important`,
     },
 }));
+
+export const StatWrapper = styled('div')`
+    display: flex;
+    gap: 2px;
+    align-items: baseline;
+`;
