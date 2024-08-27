@@ -43,14 +43,6 @@ export const VisualModeContainer = styled(Box)(({ theme }) => ({
     paddingBottom: theme.spacing(1),
 }));
 
-export const InfoContainer = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    width: '100%',
-    gap: theme.spacing(2),
-}));
-
 export const SetupDescription = styled(Typography)(({ theme }) => ({
     color: `${theme.palette.text.primary} !important`,
     fontFamily: '"PoppinsRegular", sans-serif',
@@ -64,11 +56,3 @@ export const SetupPercentage = styled(Typography)(({ theme }) => ({
     fontSize: '15px',
     textAlign: 'center',
 }));
-
-export const SetupGradient = styled('div')`
-    position: absolute;
-    z-index: 0;
-    background-image: radial-gradient(circle 1000px at 50% 100%, rgb(255, 255, 255, 1), rgba(255, 255, 255, 0));
-    width: 100%;
-    height: 100vh;
-`;

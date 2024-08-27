@@ -10,7 +10,7 @@ import { WalletBalance } from './Wallet.styles.ts';
 function Wallet() {
     const balance = useWalletStore((state) => state.balance);
     const formatted = formatBalance(balance);
-    const balanceFontSize = formatted.length <= 5 ? 60 : formatted.length <= 8 ? 45 : 30;
+    const balanceFontSize = formatted.length <= 6 ? 60 : formatted.length <= 8 ? 44 : 32;
 
     return (
         <ThemeProvider theme={darkTheme}>

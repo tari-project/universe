@@ -25,7 +25,7 @@ export function useGetStatus() {
             invoke('status')
                 .then((status) => {
                     if (status) {
-                        console.info('Status:', status);
+                        // console.info('Status:', status);
 
                         setAppStatus(status);
                         setCPUStatus(status.cpu);
