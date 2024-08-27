@@ -39,12 +39,12 @@ impl InternalWallet {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
             match serde_json::from_str::<WalletConfig>(&config) {
-                Ok(config) => {         
+                Ok(config) => {
                     if InternalWallet::check_view_key(config.clone()).await? {
                         return Ok(Self {
                             tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
                             config,
-                        })
+                        });
                     }
                 }
                 Err(e) => {
