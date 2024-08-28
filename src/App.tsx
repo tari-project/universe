@@ -16,7 +16,7 @@ import { useAirdropTokensRefresh } from './hooks/airdrop/useAirdropTokensRefresh
 import { SplashScreen } from './containers/SplashScreen';
 
 function App() {
-    useAirdropTokensRefresh()
+    useAirdropTokensRefresh();
     useSetUp();
     useGetStatus();
     useEnvironment();

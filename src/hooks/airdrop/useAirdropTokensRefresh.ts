@@ -1,6 +1,6 @@
-import { useAirdropStore } from "@app/store/useAirdropStore";
+import { useAirdropStore } from '@app/store/useAirdropStore';
 // import { useInterval } from "../useInterval";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 
 export function useAirdropTokensRefresh() {
@@ -9,7 +9,7 @@ export function useAirdropTokensRefresh() {
     // Handle refreshing the access token
     const handleRefresh = useCallback(() => {
         // 5 hours from now
-        const expirationLimit = new Date((new Date()).getTime() + 1000 * 60 * 60 * 5);
+        const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
         const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
 
         const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
@@ -20,10 +20,10 @@ export function useAirdropTokensRefresh() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    refreshToken: airdropTokens.refreshToken
-                })
+                    refreshToken: airdropTokens.refreshToken,
+                }),
             })
-                .then(response => response.json())
+                .then((response) => response.json())
                 .then((data) => {
                     setAirdropTokens(data);
                 });
@@ -38,9 +38,8 @@ export function useAirdropTokensRefresh() {
     // Handle setting the access token
     useEffect(() => {
         if (!airdropTokens) return;
-        invoke('set_airdrop_access_token', {token: airdropTokens?.token})
-            .catch((error) => {
-                console.error('Error getting airdrop tokens', error);
-            });
+        invoke('set_airdrop_access_token', { token: airdropTokens?.token }).catch((error) => {
+            console.error('Error getting airdrop tokens', error);
+        });
     }, [airdropTokens]);
 }

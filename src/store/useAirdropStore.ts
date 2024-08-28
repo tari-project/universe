@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-
 interface TokenResponse {
     exp: number;
     iat: number;
@@ -11,12 +10,18 @@ interface TokenResponse {
     scope: string;
 }
 
-function parseJwt (token:string): TokenResponse {
+function parseJwt(token: string): TokenResponse {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
+    const jsonPayload = decodeURIComponent(
+        window
+            .atob(base64)
+            .split('')
+            .map(function (c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join('')
+    );
 
     return JSON.parse(jsonPayload);
 }
@@ -37,19 +42,19 @@ interface AirdropStore extends AirdropState {
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
 }
 
-export const useAirdropStore= create<AirdropStore>()(
+export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
             setAuthUuid: (authUuid) => set({ authUuid }),
-            setAirdropTokens: (airdropTokens) => set({
-                airdropTokens: {
-                    ...airdropTokens,
-                    expiresAt: parseJwt(airdropTokens.token).exp
-                }
-            }),
+            setAirdropTokens: (airdropTokens) =>
+                set({
+                    airdropTokens: {
+                        ...airdropTokens,
+                        expiresAt: parseJwt(airdropTokens.token).exp,
+                    },
+                }),
         }),
-        { name: 'airdrop-store', }
+        { name: 'airdrop-store' }
     )
 );
-
