@@ -145,7 +145,10 @@ impl TelemetryManager {
         self.node_network = network;
     }
 
-    pub async fn initialize(&mut self, airdrop_access_token: Option<String>) -> Result<()> {
+    pub async fn initialize(
+        &mut self,
+        airdrop_access_token: Arc<RwLock<Option<String>>>,
+    ) -> Result<()> {
         info!("Starting telemetry manager");
         let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         self.is_collecting_telemetry = telemetry_collection_enabled;
@@ -158,7 +161,7 @@ impl TelemetryManager {
     async fn start_telemetry_process(
         &mut self,
         timeout: Duration,
-        airdrop_access_token: Option<String>,
+        airdrop_access_token: Arc<RwLock<Option<String>>>,
     ) -> Result<(), TelemetryManagerError> {
         let node_manager = self.node_manager.clone();
         let cpu_miner = self.cpu_miner.clone();
@@ -175,7 +178,8 @@ impl TelemetryManager {
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.telemetry_collection;
 
-                        let airdrop_access_token_clone = airdrop_access_token.clone().and_then(|t| {
+                        let airdrop_access_token_internal = airdrop_access_token.read().await.clone();
+                        let airdrop_access_token_validated = airdrop_access_token_internal.clone().and_then(|t| {
                             let key = DecodingKey::from_secret(&[]);
                             let mut validation = Validation::new(Algorithm::HS256);
                             validation.insecure_disable_signature_validation();
@@ -207,7 +211,7 @@ impl TelemetryManager {
                             let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
                             match telemetry {
                                 Ok(telemetry) => {
-                                    send_telemetry_data(telemetry, airdrop_access_token_clone).await;
+                                    send_telemetry_data(telemetry, airdrop_access_token_validated).await;
                                 },
                                 Err(e) => {
                                     error!("Error getting telemetry data: {:?}", e);
@@ -238,10 +242,7 @@ async fn get_telemetry_data(
         node_manager
             .get_network_hash_rate_and_block_reward()
             .await
-            .unwrap_or({
-                //  warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {:?}", e);
-                (0, 0, MicroMinotari(0), 0, 0, false)
-            });
+            .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
