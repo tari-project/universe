@@ -61,7 +61,7 @@ const Settings: React.FC = () => {
     const { cpu, gpu } = useHardwareStatus();
 
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
-    const miningInitiated = useUIStore((s) => s.miningInitiated);
+    const miningInitiated = useUIStore((s) => s.isMiningSwitchingState);
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
     const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
