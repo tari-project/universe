@@ -9,6 +9,7 @@ const topHeight = 115;
 const bottomHeight = 115;
 
 export const RulerAbsoluteWrapper = styled(Box)(() => ({
+    zIndex: 100,
     position: 'absolute',
     right: 0,
     height: `calc(100vh - ${topHeight}px - ${bottomHeight}px)`,
