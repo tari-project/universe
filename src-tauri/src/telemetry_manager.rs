@@ -10,7 +10,13 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation, TokenData};
 use jsonwebtoken::errors::Error as JwtError;
 
 use crate::{
-    app_config::{AppConfig, MiningMode}, cpu_miner::CpuMiner, gpu_miner::GpuMiner, hardware_monitor::HardwareMonitor, node_manager::NodeManager, UniverseAppState, LOG_TARGET
+    app_config::{AppConfig, MiningMode},
+    cpu_miner::CpuMiner,
+    gpu_miner::GpuMiner,
+    hardware_monitor::HardwareMonitor,
+    node_manager::NodeManager,
+    UniverseAppState,
+    LOG_TARGET
 };
 
 #[derive(Debug, Deserialize, Serialize)]

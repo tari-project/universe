@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 
 interface TokenResponse {
@@ -36,14 +37,19 @@ interface AirdropStore extends AirdropState {
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
 }
 
-export const useAirdropStore= create<AirdropStore>()((set) => ({
-    authUuid: '',
-    setAuthUuid: (authUuid) => set({ authUuid }),
-    setAirdropTokens: (airdropTokens) => set({
-        airdropTokens: {
-            ...airdropTokens,
-            expiresAt: parseJwt(airdropTokens.token).exp
-        }
-    }),
-}));
+export const useAirdropStore= create<AirdropStore>()(
+    persist(
+        (set) => ({
+            authUuid: '',
+            setAuthUuid: (authUuid) => set({ authUuid }),
+            setAirdropTokens: (airdropTokens) => set({
+                airdropTokens: {
+                    ...airdropTokens,
+                    expiresAt: parseJwt(airdropTokens.token).exp
+                }
+            }),
+        }),
+        { name: 'airdrop-store', }
+    )
+);
 
