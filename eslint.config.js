@@ -7,6 +7,7 @@ import prettierConfig from 'eslint-config-prettier';
 import globals from 'globals';
 
 import tsParser from '@typescript-eslint/parser';
+import { lintConfigStyle } from './lint/style.js';
 
 export default [
     react.configs.flat.recommended,
@@ -39,4 +40,5 @@ export default [
         },
     },
     prettierConfig,
+    lintConfigStyle,
 ];
