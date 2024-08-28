@@ -21,7 +21,7 @@ export const lintConfigStyle = {
         'brace-style': ['error', '1tbs', { allowSingleLine: true }],
 
         // require camel case names
-        camelcase: ['warn', { properties: 'never', ignoreDestructuring: false }],
+        camelcase: ['off', { properties: 'never', ignoreDestructuring: false }],
 
         // enforce or disallow capitalization of the first letter of a comment
         // https://eslint.org/docs/rules/capitalized-comments
