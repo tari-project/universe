@@ -2,11 +2,11 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import {
     BlockHeightLrg,
     BlockHeightSml,
-    BlockHeightContainer,
     RulerContainer,
     RulerMarkContainer,
     RulerMark,
     BlockHeightBg,
+    RulerAbsoluteWrapper,
 } from './BlockHeight.styles';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
@@ -35,17 +35,15 @@ function BlockHeight() {
         return marks;
     };
 
-    return (
+    return displayBlockHeight > 0 ? (
         <>
-            {displayBlockHeight > 0 ? (
-                <BlockHeightContainer>
-                    <BlockHeightBg length={formattedBlockHeight.length}>{formattedBlockHeight}</BlockHeightBg>
-                    <RulerContainer>{renderRulerMarks()}</RulerContainer>
-                    <BlockHeightLrg>{formattedBlockHeight}</BlockHeightLrg>
-                </BlockHeightContainer>
-            ) : null}
+            <BlockHeightBg id="BlockHeightBg" length={formattedBlockHeight.length}>{formattedBlockHeight}</BlockHeightBg>
+            <RulerAbsoluteWrapper id="RulerAbsoluteWrapper">
+                <RulerContainer id="RulerContainer">{renderRulerMarks()}</RulerContainer>
+            </RulerAbsoluteWrapper>
+            <BlockHeightLrg>{formattedBlockHeight}</BlockHeightLrg>
         </>
-    );
+    ) : <></>;
 }
 
 export default BlockHeight;

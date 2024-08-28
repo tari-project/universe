@@ -8,15 +8,12 @@ interface BlockHeightBgProps {
 const topHeight = 115;
 const bottomHeight = 115;
 
-export const BlockHeightContainer = styled(Box)(() => ({
-    zIndex: 100,
+export const RulerAbsoluteWrapper = styled(Box)(() => ({
     position: 'absolute',
-    right: '20px',
+    right: 0,
     height: `calc(100vh - ${topHeight}px - ${bottomHeight}px)`,
-    display: 'flex',
-    flexDirection: 'column',
-    top: `${topHeight}px`,
-    overflow: 'visible',
+    top: '50%',
+    transform: 'translateY(-50%)',
 }));
 
 export const RulerContainer = styled(Box)(() => ({
@@ -50,11 +47,9 @@ export const BlockHeightLrg = styled(Box)(({ theme }) => ({
     letterSpacing: '1px',
     color: `${theme.palette.text.primary}`,
     position: 'absolute',
-    top: 'calc(50% - 12px)',
+    top: '50%',
+    transform: 'translateY(-50%)',
     right: '15px',
-    height: '30px',
-    display: 'flex',
-    alignItems: 'center',
     zIndex: 2,
 }));
 
@@ -68,20 +63,16 @@ export const BlockHeightSml = styled(Box)(({ theme }) => ({
 
 export const BlockHeightBg = styled(Box)<BlockHeightBgProps>(({ length }) => ({
     fontFamily: '"DrukWideLCGBold", sans-serif',
+    right: 0,
+    top: "50%",
+    transform: "translate(50%, calc(24px - 100%))",
+    fontSize: `min(calc((100vh - ${topHeight + bottomHeight}px) / ${length}), 152px)`,
+    lineHeight: `min(calc((100vh - ${topHeight + bottomHeight}px) / ${length}), 152px)`,
     letterSpacing: '1px',
     color: `rgba(255,255,255,0.4)`,
     textTransform: 'uppercase',
     position: 'absolute',
-    width: `calc(100vh - ${topHeight}px - ${bottomHeight}px)`,
-    top: '0',
     rotate: '270deg',
     zIndex: 1,
     transformOrigin: 'top right',
-    display: 'flex',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    fontSize: `calc(${length > 5 ? 0.2 - (length / 100) : 0.2} * 100vh)`,
-    lineHeight: `calc(${length > 5 ? 0.2 - (length / 100) : 0.2} * 100vh)`,
-    right: `calc((${length > 5 ? 0.2 - (length / 100) : 0.2} * 100vh) - 36px)`,
-    height: `calc(${length > 5 ? 0.2 - (length / 100) : 0.2} * 100vh)`,
 }));
