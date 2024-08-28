@@ -3,12 +3,12 @@ import type { Control, ControllerProps, FieldError, FieldPath, FieldValues } fro
 
 export type NumberInputType = 'float' | 'int' | 'percentage';
 
-export type ControlledInputType<FormValues extends FieldValues> = {
+export interface ControlledInputType<FormValues extends FieldValues> {
     name: FieldPath<FormValues>;
     control: Control<FormValues>;
     rules?: ControllerProps['rules'];
     type?: NumberInputType;
-};
+}
 
 export type NumberInputProps = Partial<Omit<InputProps, 'error'>> & {
     title?: string;
