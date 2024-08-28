@@ -82,8 +82,7 @@ impl MmProxyManager {
         let lock = self.watcher.read().await;
         lock.adapter.config.clone()
     }
-
-    // TODO: check why fails to start again
+    
     pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
         let sidecar_adapter = MergeMiningProxyAdapter::new(config);
         let process_watcher = ProcessWatcher::new(sidecar_adapter);
