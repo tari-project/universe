@@ -1,11 +1,5 @@
 import type { InputProps, TypographyProps } from '@mui/material';
-import type {
-    Control,
-    ControllerProps,
-    FieldError,
-    FieldPath,
-    FieldValues,
-} from 'react-hook-form';
+import type { Control, ControllerProps, FieldError, FieldPath, FieldValues } from 'react-hook-form';
 
 export type NumberInputType = 'float' | 'int' | 'percentage';
 

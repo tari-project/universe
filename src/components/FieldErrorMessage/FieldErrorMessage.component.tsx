@@ -15,14 +15,8 @@ export const getFieldError = (error: FieldError | undefined) => {
     return 'Field Invalid';
 };
 
-export const FieldErrorMessage: React.FC<FieldErrorMessageProps> = ({
-    error,
-}) => (
-    <Typography
-        color="error"
-        variant="body1"
-        sx={{ width: '100%', display: 'inline-block' }}
-    >
+export const FieldErrorMessage: React.FC<FieldErrorMessageProps> = ({ error }) => (
+    <Typography color="error" variant="body1" sx={{ width: '100%', display: 'inline-block' }}>
         {getFieldError(error)}
     </Typography>
 );
