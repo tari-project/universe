@@ -304,7 +304,8 @@ const Settings: React.FC = () => {
                                             labels={[
                                                 {
                                                     labelText: 'Version',
-                                                    labelValue: mainAppVersion || 'Unknown',
+                                                    //labelValue: mainAppVersion || 'Unknown',
+                                                    labelValue: 'Unknown',
                                                 },
                                             ]}
                                         />
