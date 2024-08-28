@@ -162,6 +162,13 @@ impl BinaryResolver {
                 owner: "tari-project".to_string(),
             }),
         );
+        adapters.insert(
+            Binaries::ShaP2pool,
+            Box::new(GithubReleasesAdapter {
+                repo: "sha-p2pool".to_string(),
+                owner: "tari-project".to_string(),
+            }),
+        );
         Self {
             adapters,
             download_mutex: Mutex::new(()),
@@ -183,24 +190,7 @@ impl BinaryResolver {
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
         let base_dir = adapter.get_binary_folder().join(version.to_string());
-        match binary {
-            Binaries::Xmrig => {
-                let xmrig_bin = base_dir.join("xmrig");
-                Ok(xmrig_bin)
-            }
-            Binaries::MergeMiningProxy => {
-                let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
-                Ok(mmproxy_bin)
-            }
-            Binaries::MinotariNode => {
-                let minotari_node_bin = base_dir.join("minotari_node");
-                Ok(minotari_node_bin)
-            }
-            Binaries::Wallet => {
-                let wallet_bin = base_dir.join("minotari_console_wallet");
-                Ok(wallet_bin)
-            }
-        }
+        get_binary_name(binary, base_dir)
     }
 
     pub async fn ensure_latest(
@@ -303,6 +293,18 @@ impl BinaryResolver {
             };
             let path = entry.path();
             if path.is_dir() {
+                // Check for actual binary existing. It can happen that the folder is there,
+                // for in_progress downloads or perhaps the antivirus has quarantined the file
+                let mut executable_name = get_binary_name(binary, path.clone())?;
+
+                if cfg!(target_os = "windows") {
+                    executable_name = executable_name.with_extension("exe");
+                }
+
+                if !executable_name.exists() {
+                    continue;
+                }
+
                 let version = path.file_name().unwrap().to_str().unwrap();
                 versions.push(Version::parse(version).unwrap());
             }
@@ -346,12 +348,38 @@ impl BinaryResolver {
     }
 }
 
+fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error> {
+    match binary {
+        Binaries::Xmrig => {
+            let xmrig_bin = base_dir.join("xmrig");
+            Ok(xmrig_bin)
+        }
+        Binaries::MergeMiningProxy => {
+            let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
+            Ok(mmproxy_bin)
+        }
+        Binaries::MinotariNode => {
+            let minotari_node_bin = base_dir.join("minotari_node");
+            Ok(minotari_node_bin)
+        }
+        Binaries::Wallet => {
+            let wallet_bin = base_dir.join("minotari_console_wallet");
+            Ok(wallet_bin)
+        }
+        Binaries::ShaP2pool => {
+            let sha_p2pool_bin = base_dir.join("sha_p2pool");
+            Ok(sha_p2pool_bin)
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Binaries {
     Xmrig,
     MergeMiningProxy,
     MinotariNode,
     Wallet,
+    ShaP2pool,
 }
 
 impl Binaries {
@@ -361,6 +389,7 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
+            Binaries::ShaP2pool => "sha-p2pool",
         }
     }
 }

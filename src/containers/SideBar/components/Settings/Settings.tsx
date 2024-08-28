@@ -1,24 +1,25 @@
 import React, { useState } from 'react';
 import {
-    IconButton,
-    Dialog,
-    DialogContent,
-    Button,
-    Stack,
-    Typography,
-    Divider,
-    CircularProgress,
-    Tooltip,
     Box,
+    Button,
+    CircularProgress,
+    Dialog,
     DialogActions,
+    DialogContent,
+    Divider,
+    IconButton,
+    Stack,
+    Switch,
+    Tooltip,
+    Typography,
 } from '@mui/material';
-import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
-import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
+import { IoClose, IoCopyOutline, IoEyeOffOutline, IoEyeOutline, IoSettingsOutline } from 'react-icons/io5';
+import { useGetSeedWords } from '@app/hooks/useGetSeedWords.ts';
 import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useGetApplicationsVersions } from '../../../../hooks/useGetApplicationsVersions.ts';
+import { useGetApplicationsVersions } from '@app/hooks/useGetApplicationsVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
 import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles';
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
@@ -27,6 +28,11 @@ import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.c
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
+import useAppStateStore from '@app/store/appStateStore.ts';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { MinerContainer } from '../../Miner/styles.ts';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -52,6 +58,17 @@ const Settings: React.FC = () => {
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const { cpu, gpu } = useHardwareStatus();
+
+    const { isLoading } = useMiningControls();
+    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        invoke('set_p2pool_enabled', { p2poolEnabled: isChecked }).then(() => {
+            console.info('P2pool enabled checked', isChecked);
+        });
+    };
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -103,7 +120,7 @@ const Settings: React.FC = () => {
             },
             (error) => {
                 console.error(error);
-            }
+            },
         )();
     };
 
@@ -131,7 +148,7 @@ const Settings: React.FC = () => {
                             <Stack flexDirection="row" alignItems="center" gap={1}>
                                 <Typography variant="body2">
                                     {showSeedWords
-                                        ? truncateString(seedWords.join(','), 50)
+                                        ? truncateString(seedWords.join(' '), 50)
                                         : '****************************************************'}
                                 </Typography>
                                 {seedWordsFetching ? (
@@ -191,6 +208,22 @@ const Settings: React.FC = () => {
                                 </DialogActions>
                             </Box>
                         </form>
+                        <Divider />
+                        <MinerContainer>
+                            <Stack direction="column" spacing={0}>
+                                <Typography variant="h6">Pool Mining</Typography>
+                                <Typography variant="body2">
+                                    When enabled, you will be mining in a pool.
+                                </Typography>
+                            </Stack>
+                            <Switch
+                                focusVisibleClassName=".Mui-focusVisible"
+                                disableRipple
+                                checked={isP2poolEnabled}
+                                onChange={handleP2poolEnabled}
+                                disabled={isMining || !miningAllowed || isLoading}
+                            />
+                        </MinerContainer>
                         <Divider />
                         <HorisontalBox>
                             <Typography variant="h6">Logs</Typography>

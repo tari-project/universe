@@ -8,7 +8,6 @@ interface Actions {
 type CPUStatusStoreState = CpuMinerStatus & Actions;
 
 const initialState: CpuMinerStatus = {
-    is_mining_enabled: false,
     is_mining: false,
     hash_rate: 0,
     estimated_earnings: 0,
