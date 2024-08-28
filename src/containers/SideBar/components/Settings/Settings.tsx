@@ -7,7 +7,6 @@ import {
     DialogActions,
     DialogContent,
     Divider,
-    FormGroup,
     IconButton,
     Stack,
     Switch,
@@ -30,10 +29,10 @@ import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 import useAppStateStore from '@app/store/appStateStore.ts';
-import { useUIStore } from '@app/store/useUIStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { MinerContainer } from '../../Miner/styles.ts';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -60,8 +59,8 @@ const Settings: React.FC = () => {
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const { cpu, gpu } = useHardwareStatus();
 
+    const { isLoading } = useMiningControls();
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
-    const miningInitiated = useUIStore((s) => s.isMiningSwitchingState);
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
     const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -217,15 +216,13 @@ const Settings: React.FC = () => {
                                     When enabled, you will be mining in a pool.
                                 </Typography>
                             </Stack>
-                            <FormGroup>
-                                <Switch
-                                    focusVisibleClassName=".Mui-focusVisible"
-                                    disableRipple
-                                    checked={isP2poolEnabled}
-                                    onChange={handleP2poolEnabled}
-                                    disabled={isMining || miningInitiated || !miningAllowed}
-                                />
-                            </FormGroup>
+                            <Switch
+                                focusVisibleClassName=".Mui-focusVisible"
+                                disableRipple
+                                checked={isP2poolEnabled}
+                                onChange={handleP2poolEnabled}
+                                disabled={isMining || !miningAllowed || isLoading}
+                            />
                         </MinerContainer>
                         <Divider />
                         <HorisontalBox>
