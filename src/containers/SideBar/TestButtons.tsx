@@ -35,25 +35,19 @@ function TestButtons() {
             <Typography variant="body2">For testing:</Typography>
             <ButtonGroup variant="outlined" fullWidth>
                 <Button
-                    variant={
-                        selectedView === 'setup' ? 'contained' : 'outlined'
-                    }
+                    variant={selectedView === 'setup' ? 'contained' : 'outlined'}
                     onClick={() => handleSetView('setup')}
                 >
                     Setup
                 </Button>
                 <Button
-                    variant={
-                        selectedView === 'tribes' ? 'contained' : 'outlined'
-                    }
+                    variant={selectedView === 'tribes' ? 'contained' : 'outlined'}
                     onClick={() => handleSetView('tribes')}
                 >
                     Tribes
                 </Button>
                 <Button
-                    variant={
-                        selectedView === 'mining' ? 'contained' : 'outlined'
-                    }
+                    variant={selectedView === 'mining' ? 'contained' : 'outlined'}
                     onClick={() => handleSetView('mining')}
                 >
                     Mining

@@ -93,7 +93,7 @@ export function useMiningControls() {
     useEffect(() => {
         if (isMining && isMiningEnabled) {
             if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
-            console.info('UseEffect: handleVisual start');
+            console.info('useEffect: handleVisual start');
             handleVisual('start').then(() => {
                 isMiningInProgress.current = true;
             });
@@ -101,14 +101,15 @@ export function useMiningControls() {
 
         if (!isMining && !isMiningEnabled) {
             if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
-            console.info('UseEffect: handleVisual stop');
+            console.info('useEffect: handleVisual stop');
             handleVisual('stop').then(() => {
                 isMiningInProgress.current = false;
             });
         }
 
         if (!isMining && isMiningInProgress.current) {
-            console.info('UseEffect: handleVisual pause');
+            console.info('useEffect: handleVisual pause');
+            console.info('useEffect: handleVisual pause');
             setIsConnectionLostDuringMining(true);
             void handleVisual('pause');
         }
