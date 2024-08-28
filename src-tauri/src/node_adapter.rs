@@ -192,10 +192,25 @@ impl MinotariNodeStatusMonitor {
         let mut res = res.into_inner();
         // Get the last one.
         let mut result = Err(anyhow::anyhow!("No difficulty found"));
+        // base node returns 0 for hashrate when the algo doesn't match, so we need to keep track of last one.
+        let mut last_sha3_estimated_hashrate = 0;
+        let mut last_randomx_estimated_hashrate = 0;
         if let Some(difficulty) = res.message().await? {
-            result = Ok((
+            if difficulty.sha3x_estimated_hash_rate != 0 {
+                last_sha3_estimated_hashrate = difficulty.sha3x_estimated_hash_rate;
+            }
+            if difficulty.randomx_estimated_hash_rate != 0 {
+                last_randomx_estimated_hashrate = difficulty.randomx_estimated_hash_rate;
+            }
+            dbg!(
+                last_sha3_estimated_hashrate,
+                last_randomx_estimated_hashrate,
                 difficulty.sha3x_estimated_hash_rate,
-                difficulty.randomx_estimated_hash_rate,
+                difficulty.randomx_estimated_hash_rate
+            );
+            result = Ok((
+                last_sha3_estimated_hashrate,
+                last_randomx_estimated_hashrate,
                 MicroMinotari(reward),
                 block_height,
                 block_time,
