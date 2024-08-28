@@ -97,6 +97,23 @@ async fn set_user_inactivity_timeout<'r>(
 }
 
 #[tauri::command]
+async fn set_log_mining_activity_permission<'r>(
+    is_allowed: bool,
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_log_mining_activity_permission(is_allowed)
+        .await;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -502,6 +519,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         mode: config_guard.mode.clone(),
         auto_mining: config_guard.auto_mining,
         user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
+        log_mining_activity_permission: config_guard.log_mining_activity_permission,
     })
 }
 
@@ -514,6 +532,7 @@ pub struct AppStatus {
     mode: MiningMode,
     auto_mining: bool,
     user_inactivity_timeout: u64,
+    log_mining_activity_permission: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -677,7 +696,8 @@ fn main() {
             get_seed_words,
             get_applications_versions,
             set_user_inactivity_timeout,
-            update_applications
+            update_applications,
+            set_log_mining_activity_permission
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
