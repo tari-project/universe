@@ -102,14 +102,14 @@ export function useMiningControls() {
 
     const changeMode = useCallback(
         async (mode: string) => {
-            if (isAutoMining) {
+            const hasBeenMining = isMiningInProgress;
+
+            if (!hasBeenMining || isAutoMining) {
                 await invoke('set_mode', { mode });
                 return;
             }
 
             setIsChangingMode(true);
-            const hasBeenMining = isMiningInProgress;
-
             if (hasBeenMining) {
                 await stopMining();
             }
