@@ -35,17 +35,15 @@ export default function useBalanceInfo() {
             setEarnings(diff);
         }
         setShowFailAnimation(!hasEarnings);
-        handleVisual(!hasEarnings ? 'fail' : 'success').then(() => {
-            prevBalanceRef.current = previousBalance;
-        });
+        void handleVisual(!hasEarnings ? 'fail' : 'success');
+        prevBalanceRef.current = previousBalance;
     }, [balance, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
 
     const resetStates = useCallback(() => {
         setPostBlockAnimation(false);
         setDisplayBlockHeight(blockHeightRef.current);
-        setShowFailAnimation(false);
         setEarnings(undefined);
-    }, [setDisplayBlockHeight, setEarnings, setPostBlockAnimation, setShowFailAnimation]);
+    }, [setDisplayBlockHeight, setEarnings, setPostBlockAnimation]);
 
     useEffect(() => {
         if (prevBalanceRef.current !== previousBalance) {

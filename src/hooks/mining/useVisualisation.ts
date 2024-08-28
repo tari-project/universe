@@ -11,23 +11,26 @@ export function useVisualisation() {
     const setShowFailAnimation = useMiningStore((s) => s.setShowFailAnimation);
 
     useEffect(() => {
-        const failTimeout = setTimeout(
-            () => {
-                setPostBlockAnimation(true);
+        if (showFailAnimation) {
+            const failTimeout = setTimeout(() => {
                 setTimerPaused(false);
                 setShowFailAnimation(false);
-            },
-            showFailAnimation ? 1500 : 1
-        );
-        return () => clearTimeout(failTimeout);
+                setPostBlockAnimation(true);
+            }, 1000);
+            return () => clearTimeout(failTimeout);
+        }
     }, [showFailAnimation, setPostBlockAnimation, setTimerPaused, setShowFailAnimation]);
 
     return useCallback(async (state: GlAppState) => {
-        const visible = await appWindow.isVisible();
-        console.log(visible);
-        if (!visible && (state == 'fail' || state == 'success')) {
+        const documentIsVisible = document.visibilityState === 'visible';
+        const focused = await appWindow.isFocused();
+        const minimized = await appWindow.isMinimized();
+
+        const canAnimate = !minimized && (focused || documentIsVisible);
+        if (!canAnimate && (state == 'fail' || state == 'success')) {
             return;
+        } else {
+            setAnimationState(state);
         }
-        setAnimationState(state);
     }, []);
 }
