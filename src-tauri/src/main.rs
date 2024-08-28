@@ -164,12 +164,13 @@ async fn setup_inner<'r>(
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
     let now = SystemTime::now();
+    let airdrop_access_token = state.airdrop_access_token.read().await.clone();
 
     state
         .telemetry_manager
         .write()
         .await
-        .initialize(state.clone())
+        .initialize(airdrop_access_token)
         .await?;
 
     BinaryResolver::current()

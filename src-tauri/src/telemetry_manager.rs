@@ -147,13 +147,13 @@ impl TelemetryManager {
 
     pub async fn initialize(
         &mut self,
-        app_state: tauri::State<'_, UniverseAppState>,
+        airdrop_access_token: Option<String>,
     ) -> Result<()> {
         info!("Starting telemetry manager");
         let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         self.is_collecting_telemetry = telemetry_collection_enabled;
         let _ = self
-            .start_telemetry_process(Duration::from_secs(60), app_state)
+            .start_telemetry_process(Duration::from_secs(60), airdrop_access_token)
             .await;
         Ok(())
     }
@@ -161,7 +161,7 @@ impl TelemetryManager {
     async fn start_telemetry_process(
         &mut self,
         timeout: Duration,
-        app_state: tauri::State<'_, UniverseAppState>,
+        airdrop_access_token: Option<String>,
     ) -> Result<(), TelemetryManagerError> {
         let node_manager = self.node_manager.clone();
         let cpu_miner = self.cpu_miner.clone();
@@ -170,7 +170,6 @@ impl TelemetryManager {
         let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
         let config_cloned = self.config.clone();
-        let airdrop_access_token = app_state.airdrop_access_token.clone();
 
         tokio::spawn(async move {
             tokio::select! {
@@ -179,7 +178,7 @@ impl TelemetryManager {
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.telemetry_collection;
 
-                        let airdrop_access_token_clone = airdrop_access_token.read().await.clone().and_then(|t| {
+                        let airdrop_access_token_clone = airdrop_access_token.clone().and_then(|t| {
                             let key = DecodingKey::from_secret(&[]);
                             let mut validation = Validation::new(Algorithm::HS256);
                             validation.insecure_disable_signature_validation();
@@ -187,7 +186,7 @@ impl TelemetryManager {
                             let claims = match decode::<AirdropAccessToken>(&t, &key, &validation) {
                                 Ok(data) => Some(data.claims),
                                 Err(e) => {
-                                    error!("Error decoding access token: {:?}", e);
+                                    warn!("Error decoding access token: {:?}", e);
                                     None
                                 }
                             };
@@ -197,7 +196,7 @@ impl TelemetryManager {
 
                             if let Some(claims) = claims {
                                 if claims.exp < now_unix {
-                                    error!("Access token has expired");
+                                    warn!("Access token has expired");
                                     None
                                 } else {
                                     Some(t)

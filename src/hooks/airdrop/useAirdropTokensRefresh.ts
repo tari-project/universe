@@ -8,8 +8,12 @@ export function useAirdropTokensRefresh() {
 
     // Handle refreshing the access token
     const handleRefresh = useCallback(() => {
-        const expired = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000) > new Date();
-        if (airdropTokens && expired) {
+        // 5 hours from now
+        const expirationLimit = new Date((new Date()).getTime() + 1000 * 60 * 60 * 5);
+        const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
+
+        const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
+        if (airdropTokens && tokenHasExpired) {
             fetch('https://airdrop.tari.com/api/auth/local/refresh', {
                 method: 'POST',
                 headers: {
