@@ -13,7 +13,7 @@ import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 export function useSetUp() {
     const startupInitiated = useRef(false);
     const setView = useUIStore((s) => s.setView);
-
+    const setShowSplash = useUIStore((s) => s.setShowSplash);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setCurrentUserInactivityDuration = useAppStatusStore((s) => s.setCurrentUserInactivityDuration);
@@ -22,6 +22,9 @@ export function useSetUp() {
     const { startMining, stopMining } = useMiningControls();
 
     useEffect(() => {
+        setTimeout(() => {
+            setShowSplash(false);
+        }, 3500);
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
             console.info('Setup Event:', e, p);
             switch (p.event_type) {
@@ -72,6 +75,7 @@ export function useSetUp() {
         settingUpFinished,
         startMining,
         stopMining,
+        setShowSplash,
     ]);
 
     useGetApplicationsVersions();

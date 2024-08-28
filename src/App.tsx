@@ -10,10 +10,10 @@ import { AppBackground } from './containers/AppBackground';
 import ErrorSnackbar from './containers/Error/ErrorSnackbar';
 import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
-
 import { useSetUp } from './hooks/useSetUp.ts';
 import { useEnvironment } from './hooks/useEnvironment.ts';
 import { useAirdropTokensRefresh } from './hooks/airdrop/useAirdropTokensRefresh.ts';
+import { SplashScreen } from './containers/SplashScreen';
 
 function App() {
     useAirdropTokensRefresh()
@@ -22,18 +22,22 @@ function App() {
     useEnvironment();
 
     const view = useUIStore((s) => s.view);
+    const showSplash = useUIStore((s) => s.showSplash);
 
     return (
         <StrictMode>
             <ThemeProvider theme={lightTheme}>
                 <CssBaseline enableColorScheme />
                 <AppBackground />
-                <DashboardContainer>
-                    <ContainerInner>
-                        <SideBar />
-                        <Dashboard status={view} />
-                    </ContainerInner>
-                </DashboardContainer>
+                <SplashScreen />
+                {!showSplash && (
+                    <DashboardContainer>
+                        <ContainerInner>
+                            <SideBar />
+                            <Dashboard status={view} />
+                        </ContainerInner>
+                    </DashboardContainer>
+                )}
                 <ErrorSnackbar />
             </ThemeProvider>
         </StrictMode>

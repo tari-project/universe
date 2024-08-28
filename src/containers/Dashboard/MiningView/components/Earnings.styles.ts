@@ -12,10 +12,17 @@ export const EarningsContainer = styled('div')`
 export const EarningsWrapper = styled(motion.div)`
     display: flex;
     align-items: flex-end;
+    flex-direction: row;
     justify-content: center;
     span {
+        display: flex;
         font-family: 'DrukWideLCGBold', sans-serif;
         font-size: 14px;
         letter-spacing: -0.1px;
+    }
+
+    @media (max-width: 920px) {
+        flex-direction: column;
+        align-items: center;
     }
 `;
