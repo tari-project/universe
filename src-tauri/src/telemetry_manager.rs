@@ -21,6 +21,8 @@ use crate::{
 pub enum TelemetryResource {
     Cpu,
     Gpu,
+    #[serde(rename(serialize = "cpu-gpu"))]
+    CpuGpu,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -84,10 +86,13 @@ pub struct TelemetryData {
     pub block_height: u64,
     pub is_mining_active: bool,
     pub network: Option<TelemetryNetwork>,
-    pub hash_rate: f64,
-    pub resource: TelemetryResource,
-    pub resource_utilization: Option<f32>,
-    pub resource_make: Option<String>,
+    pub resource_used: TelemetryResource,
+    pub cpu_hash_rate: Option<f64>,
+    pub cpu_utilization: Option<f32>,
+    pub cpu_make: Option<String>,
+    pub gpu_hash_rate: Option<f64>,
+    pub gpu_utilization: Option<f32>,
+    pub gpu_make: Option<String>,
     pub mode: TelemetryMiningMode,
 }
 
@@ -208,38 +213,26 @@ async fn get_telemetry_data(
 
     let config_guard = config.read().await;
     let is_mining_active = is_synced && cpu.is_mining;
-    let hash_rate = if cpu.is_mining && cpu.is_mining_enabled {
-        cpu.hash_rate
-    } else {
-        0.0
-    };
-
-    let resource_utilization = if hardware_status.cpu.is_some() && cpu.is_mining_enabled {
-        hardware_status.cpu.clone().map(|c| c.usage_percentage)
-    } else if hardware_status.gpu.is_some() {
-        hardware_status.gpu.clone().map(|g| g.usage_percentage)
-    } else {
-        None
-    };
-
-    let resource_make = if hardware_status.cpu.clone().is_some() && cpu.is_mining_enabled {
-        hardware_status.cpu.map(|c| c.label.clone())
-    } else if hardware_status.gpu.is_some() {
-        hardware_status.gpu.clone().map(|g| g.label)
-    } else {
-        None
-    };
+    let cpu_hash_rate = Some(cpu.hash_rate);
+    let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
+    let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
+    let gpu_hash_rate = None;
+    let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
+    let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id.clone(),
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
-        hash_rate,
         mode: config_guard.mode.clone().into(),
-        resource: TelemetryResource::Cpu,
-        resource_utilization,
-        resource_make,
+        cpu_hash_rate,
+        cpu_utilization,
+        cpu_make,
+        gpu_make,
+        gpu_hash_rate,
+        gpu_utilization,
+        resource_used: TelemetryResource::Cpu,
     })
 }
 
