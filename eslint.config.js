@@ -38,7 +38,7 @@ export default [
             'react/prop-types': 'off',
             '@typescript-eslint/no-explicit-any': 'warn',
             '@typescript-eslint/no-unused-vars': 'warn',
-            '@stylistic/indent': ['error', 2],
+            '@stylistic/indent': ['error', 4],
         },
     },
 ];
