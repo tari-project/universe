@@ -1,5 +1,5 @@
 import type { FieldError } from 'react-hook-form';
 
-export type FieldErrorMessageProps = {
+export interface FieldErrorMessageProps {
     error?: FieldError;
-};
+}

@@ -14,6 +14,7 @@ export default [
     react.configs.flat['jsx-runtime'],
     eslint.configs.recommended,
     ...tseslint.configs.recommended,
+    ...tseslint.configs.stylistic,
     prettierConfig,
     prettierPluginConfig,
     {
