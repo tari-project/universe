@@ -1,18 +1,14 @@
-import { appWindow } from '@tauri-apps/api/window';
-
 import { useCallback, useEffect, useRef, useState } from 'react';
 import useWalletStore from '@app/store/walletStore.ts';
 import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
-import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 
 const TIMER_VALUE = 15 * 1000; // 15s
 export default function useBalanceInfo() {
     const handleVisual = useVisualisation();
     const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
 
-    const isMining = useCPUStatusStore((s) => s.is_mining);
     const balance = useWalletStore((state) => state.balance);
     const previousBalance = useWalletStore((state) => state.previousBalance);
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
@@ -39,9 +35,11 @@ export default function useBalanceInfo() {
             setEarnings(diff);
         }
         setShowFailAnimation(!hasEarnings);
-        prevBalanceRef.current = previousBalance;
-        handleVisual(!hasEarnings ? 'fail' : 'success');
+        handleVisual(!hasEarnings ? 'fail' : 'success').then(() => {
+            prevBalanceRef.current = previousBalance;
+        });
     }, [balance, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
+
     const resetStates = useCallback(() => {
         setPostBlockAnimation(false);
         setDisplayBlockHeight(blockHeightRef.current);
@@ -81,13 +79,4 @@ export default function useBalanceInfo() {
             };
         }
     }, [postBlockAnimation, resetStates, timerPaused]);
-
-    useEffect(() => {
-        const ulp = appWindow.listen('tauri://focus', () => {
-            resetStates();
-        });
-        return () => {
-            ulp.then((ul) => ul());
-        };
-    }, [handleVisual, isMining, resetStates]);
 }

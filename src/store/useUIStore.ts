@@ -11,12 +11,10 @@ interface State {
     isMiningSwitchingState: boolean;
     isMiningEnabled: boolean;
     isConnectionLostDuringMining: boolean;
-    shouldAnimate: boolean;
 }
 interface Actions {
     setShowSplash: (showSplash: boolean) => void;
     setBackground: (background: State['background']) => void;
-    setShouldAnimate: (shouldAnimate: State['shouldAnimate']) => void;
     setView: (view: State['view']) => void;
     toggleVisualMode: () => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
@@ -35,7 +33,6 @@ const initialState: State = {
     sidebarOpen: false,
     isMiningSwitchingState: false,
     isMiningEnabled: false,
-    shouldAnimate: false,
     isConnectionLostDuringMining: false,
 };
 
@@ -44,7 +41,6 @@ export const useUIStore = create<UIStoreState>()(
         (set) => ({
             ...initialState,
             setShowSplash: (showSplash) => set({ showSplash }),
-            setShouldAnimate: (shouldAnimate) => ({ shouldAnimate }),
             setBackground: (background) => set({ background }),
             setView: (view) => set({ view }),
             toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
@@ -58,7 +54,6 @@ export const useUIStore = create<UIStoreState>()(
             storage: createJSONStorage(() => sessionStorage),
             partialize: (s) => ({
                 isMiningEnabled: s.isMiningEnabled,
-                shouldAnimate: s.shouldAnimate,
                 isConnectionLostDuringMining: s.isConnectionLostDuringMining,
             }),
         }
