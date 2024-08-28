@@ -28,4 +28,4 @@ export type NumberInputProps = Partial<Omit<InputProps, 'error'>> & {
 
 export interface ControlledNumberInputProps<FormValues extends FieldValues>
     extends ControlledInputType<FormValues>,
-        Omit<NumberInputProps, 'error' | 'name'> {}
+    Omit<NumberInputProps, 'error' | 'name'> {}
