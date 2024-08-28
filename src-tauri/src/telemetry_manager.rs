@@ -237,7 +237,7 @@ async fn get_telemetry_data(
 }
 
 fn get_airdrop_url() -> String {
-    "http://localhost:3004".to_string()
+    "https://rwa.y.at".to_string()
 }
 
 async fn send_telemetry_data(data: TelemetryData) {
