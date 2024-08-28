@@ -54,10 +54,10 @@ export default function useBalanceInfo() {
     useEffect(() => {
         if ((block_height && block_height !== blockHeightRef.current) || !!balanceChangeBlock) {
             const timer = balanceChangeBlock === block_height ? 1 : TIMER_VALUE;
+            blockHeightRef.current = block_height;
             const timeout = setTimeout(() => {
                 handleEarnings();
                 setBalanceChangeBlock(null);
-                blockHeightRef.current = block_height;
             }, timer);
 
             return () => {
