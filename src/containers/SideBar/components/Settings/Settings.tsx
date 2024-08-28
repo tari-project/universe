@@ -149,7 +149,7 @@ const Settings: React.FC = () => {
                             <Stack flexDirection="row" alignItems="center" gap={1}>
                                 <Typography variant="body2">
                                     {showSeedWords
-                                        ? truncateString(seedWords.join(','), 50)
+                                        ? truncateString(seedWords.join(' '), 50)
                                         : '****************************************************'}
                                 </Typography>
                                 {seedWordsFetching ? (
