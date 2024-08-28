@@ -89,7 +89,8 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "-b".to_string(),
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
-            format!("--log-path={}", log_dir.to_str().unwrap()),
+            "--log-path".to_string(),
+            log_dir.to_str().unwrap().to_string(),
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
