@@ -20,7 +20,6 @@ pub struct AppConfigFromFile {
     pub last_binaries_update_timestamp: SystemTime,
     pub allow_analytics: bool,
     pub anon_id: String,
-    pub log_mining_activity_permission: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -56,7 +55,6 @@ pub struct AppConfig {
     pub last_binaries_update_timestamp: SystemTime,
     pub allow_analytics: bool,
     pub anon_id: String,
-    pub log_mining_activity_permission: bool,
 }
 
 impl AppConfig {
@@ -70,7 +68,6 @@ impl AppConfig {
             last_binaries_update_timestamp: SystemTime::now(),
             allow_analytics: true,
             anon_id: generate_password(20),
-            log_mining_activity_permission: false,
         }
     }
 
@@ -90,11 +87,10 @@ impl AppConfig {
                     self.allow_analytics = config.allow_analytics;
                     self.anon_id = config.anon_id;
                     self.version = config.version;
-                    self.log_mining_activity_permission = config.log_mining_activity_permission;
                     if self.version == 0 {
                         // migrate
                         self.version = 1;
-                        self.allow_analytics = true;
+                        self.allow_analytics = false;
                         self.anon_id = generate_password(20);
                     }
                 }
@@ -112,7 +108,6 @@ impl AppConfig {
             version: self.version,
             allow_analytics: self.allow_analytics,
             anon_id: self.anon_id.clone(),
-            log_mining_activity_permission: self.log_mining_activity_permission,
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -157,15 +152,8 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn get_log_mining_activity_permission(&self) -> bool {
-        self.log_mining_activity_permission
-    }
-
-    pub async fn set_log_mining_activity_permission(
-        &mut self,
-        is_allowed: bool,
-    ) -> Result<(), anyhow::Error> {
-        self.log_mining_activity_permission = is_allowed;
+    pub async fn set_analytics_allowance(&mut self, is_allowed: bool) -> Result<(), anyhow::Error> {
+        self.allow_analytics = is_allowed;
         self.update_config_file().await?;
         Ok(())
     }
@@ -193,7 +181,6 @@ impl AppConfig {
             version: self.version,
             allow_analytics: self.allow_analytics,
             anon_id: self.anon_id.clone(),
-            log_mining_activity_permission: self.log_mining_activity_permission,
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
