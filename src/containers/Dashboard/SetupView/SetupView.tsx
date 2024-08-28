@@ -6,7 +6,7 @@ import { FloatingImage } from './styles';
 function SetupView({ title, progressPercentage }: { title: string; progressPercentage: number }) {
     return (
         <Stack spacing={0} alignItems="center" sx={{ position: 'relative', zIndex: '1' }}>
-            <FloatingImage src={setup} alt="Setup" style={{ maxWidth: '260px', height: 'auto' }} />
+            <FloatingImage src={setup} alt="Soon Meditating" />
             <Typography variant="h3" fontSize={21} mt={3.4}>
                 Setting up the Tari truth machine...
             </Typography>
