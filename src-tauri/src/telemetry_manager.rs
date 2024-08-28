@@ -1,4 +1,6 @@
 use anyhow::Result;
+use jsonwebtoken::errors::Error as JwtError;
+use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, thread::sleep, time::Duration};
@@ -6,8 +8,6 @@ use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation, TokenData};
-use jsonwebtoken::errors::Error as JwtError;
 
 use crate::{
     app_config::{AppConfig, MiningMode},
@@ -15,8 +15,7 @@ use crate::{
     gpu_miner::GpuMiner,
     hardware_monitor::HardwareMonitor,
     node_manager::NodeManager,
-    UniverseAppState,
-    LOG_TARGET
+    UniverseAppState, LOG_TARGET,
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -146,11 +145,16 @@ impl TelemetryManager {
         self.node_network = network;
     }
 
-    pub async fn initialize(&mut self, app_state: tauri::State<'_, UniverseAppState>) -> Result<()> {
+    pub async fn initialize(
+        &mut self,
+        app_state: tauri::State<'_, UniverseAppState>,
+    ) -> Result<()> {
         info!("Starting telemetry manager");
         let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         self.is_collecting_telemetry = telemetry_collection_enabled;
-        let _ = self.start_telemetry_process(Duration::from_secs(60), app_state).await;
+        let _ = self
+            .start_telemetry_process(Duration::from_secs(60), app_state)
+            .await;
         Ok(())
     }
 
@@ -167,7 +171,7 @@ impl TelemetryManager {
         let network = self.node_network;
         let config_cloned = self.config.clone();
         let airdrop_access_token = app_state.airdrop_access_token.clone();
-        
+
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
@@ -187,7 +191,7 @@ impl TelemetryManager {
                                     None
                                 }
                             };
-                            
+
                             let now = std::time::SystemTime::now();
                             let now_unix = now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
 
@@ -291,8 +295,8 @@ fn get_airdrop_url() -> String {
 async fn send_telemetry_data(data: TelemetryData, airdrop_access_token: Option<String>) {
     debug!("Telemetry data being sent: {:?}", data);
 
-     let request = reqwest::Client::new();
-     let mut request_builder = request
+    let request = reqwest::Client::new();
+    let mut request_builder = request
         .post(format!("{}/miner/heartbeat", get_airdrop_url()))
         .json(&data);
 
@@ -300,7 +304,10 @@ async fn send_telemetry_data(data: TelemetryData, airdrop_access_token: Option<S
         request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
     }
 
-    let result = request_builder.send().await.map_err(TelemetryManagerError::ReqwestError);
+    let result = request_builder
+        .send()
+        .await
+        .map_err(TelemetryManagerError::ReqwestError);
 
     match result {
         Ok(response) => {

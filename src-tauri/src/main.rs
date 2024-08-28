@@ -165,7 +165,12 @@ async fn setup_inner<'r>(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
     let now = SystemTime::now();
 
-    state.telemetry_manager.write().await.initialize(state.clone()).await?;
+    state
+        .telemetry_manager
+        .write()
+        .await
+        .initialize(state.clone())
+        .await?;
 
     BinaryResolver::current()
         .read_current_highest_version(Binaries::MinotariNode, progress.clone())
