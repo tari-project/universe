@@ -9,7 +9,7 @@
         "preview": "vite preview",
         "tauri": "tauri",
         "lint": "eslint src/",
-        "lint:fix": "eslint --fix src/"
+        "lint:fix": "eslint src/ --fix"
     },
     "dependencies": {
         "@emotion/react": "^11.13.3",
