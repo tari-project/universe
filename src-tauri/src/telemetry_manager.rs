@@ -145,10 +145,7 @@ impl TelemetryManager {
         self.node_network = network;
     }
 
-    pub async fn initialize(
-        &mut self,
-        airdrop_access_token: Option<String>,
-    ) -> Result<()> {
+    pub async fn initialize(&mut self, airdrop_access_token: Option<String>) -> Result<()> {
         info!("Starting telemetry manager");
         let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
         self.is_collecting_telemetry = telemetry_collection_enabled;
