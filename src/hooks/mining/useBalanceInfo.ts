@@ -5,22 +5,28 @@ import useWalletStore from '@app/store/walletStore.ts';
 import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 
 const TIMER_VALUE = 15 * 1000; // 15s
 export default function useBalanceInfo() {
-    const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
     const handleVisual = useVisualisation();
+    const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
 
+    const isMining = useCPUStatusStore((s) => s.is_mining);
     const balance = useWalletStore((state) => state.balance);
     const previousBalance = useWalletStore((state) => state.previousBalance);
-    const setEarnings = useMiningStore((s) => s.setEarnings);
-    const setDisplayBlockHeight = useMiningStore((s) => s.setDisplayBlockHeight);
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
-    const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
-    const postBlockAnimation = useMiningStore((s) => s.postBlockAnimation);
-    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
-    const setShowFailAnimation = useMiningStore((s) => s.setShowFailAnimation);
-    const timerPaused = useMiningStore((s) => s.timerPaused);
+
+    const {
+        setEarnings,
+        setDisplayBlockHeight,
+        setTimerPaused,
+        postBlockAnimation,
+        setPostBlockAnimation,
+        setShowFailAnimation,
+        timerPaused,
+    } = useMiningStore((s) => s);
+
     const blockHeightRef = useRef(block_height);
     const prevBalanceRef = useRef(previousBalance);
 
@@ -36,19 +42,18 @@ export default function useBalanceInfo() {
         prevBalanceRef.current = previousBalance;
         handleVisual(!hasEarnings ? 'fail' : 'success');
     }, [balance, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
-
-    useEffect(() => {
-        if (prevBalanceRef.current !== previousBalance) {
-            setBalanceChangeBlock(block_height);
-        }
-    }, [previousBalance, block_height]);
-
     const resetStates = useCallback(() => {
         setPostBlockAnimation(false);
         setDisplayBlockHeight(blockHeightRef.current);
         setShowFailAnimation(false);
         setEarnings(undefined);
     }, [setDisplayBlockHeight, setEarnings, setPostBlockAnimation, setShowFailAnimation]);
+
+    useEffect(() => {
+        if (prevBalanceRef.current !== previousBalance) {
+            setBalanceChangeBlock(block_height);
+        }
+    }, [block_height, previousBalance]);
 
     useEffect(() => {
         if ((block_height && block_height !== blockHeightRef.current) || !!balanceChangeBlock) {
@@ -75,16 +80,14 @@ export default function useBalanceInfo() {
                 clearTimeout(blockTimeout);
             };
         }
-    }, [postBlockAnimation, resetStates, setDisplayBlockHeight, setEarnings, setPostBlockAnimation, timerPaused]);
+    }, [postBlockAnimation, resetStates, timerPaused]);
 
     useEffect(() => {
         const ulp = appWindow.listen('tauri://focus', () => {
-            handleVisual('start');
             resetStates();
         });
-
         return () => {
             ulp.then((ul) => ul());
         };
-    }, [handleVisual, resetStates]);
+    }, [handleVisual, isMining, resetStates]);
 }
