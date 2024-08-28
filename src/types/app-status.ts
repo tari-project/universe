@@ -6,7 +6,6 @@ export interface AppStatus {
     hardware_status?: HardwareStatus;
     wallet_balance?: WalletBalance;
     applications_versions?: ApplicationsVersions;
-    main_app_version?: string;
     user_inactivity_timeout?: number;
     current_user_inactivity_duration?: number;
     mode: modeType;
@@ -26,7 +25,6 @@ export interface HardwareStatus {
 }
 
 export interface CpuMinerStatus {
-    is_mining_enabled: boolean;
     is_mining: boolean;
     hash_rate: number;
     estimated_earnings: number;
@@ -50,6 +48,7 @@ export interface WalletBalance {
 }
 
 export interface ApplicationsVersions {
+    tari_universe: string;
     xmrig: string;
     minotari_node: string;
     mm_proxy: string;

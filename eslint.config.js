@@ -4,6 +4,7 @@ import react from 'eslint-plugin-react';
 import hooksPlugin from 'eslint-plugin-react-hooks';
 
 import prettierConfig from 'eslint-config-prettier';
+import prettierPluginConfig from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 
 import tsParser from '@typescript-eslint/parser';
@@ -13,6 +14,9 @@ export default [
     react.configs.flat['jsx-runtime'],
     eslint.configs.recommended,
     ...tseslint.configs.recommended,
+    ...tseslint.configs.stylistic,
+    prettierConfig,
+    prettierPluginConfig,
     {
         settings: {
             react: {
@@ -38,5 +42,4 @@ export default [
             '@typescript-eslint/no-unused-vars': 'warn',
         },
     },
-    prettierConfig,
 ];

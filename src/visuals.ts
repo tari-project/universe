@@ -6,6 +6,7 @@ export function setAnimationState(state: GlAppState) {
     if (sM.isPaused && state == 'start') {
         newState = 'resume';
     }
+
     sM.set(newState);
 
     if (state == 'pause') {

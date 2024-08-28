@@ -240,14 +240,7 @@ impl MinotariNodeStatusMonitor {
                 break;
             }
             progress_tracker
-                .update(
-                    format!(
-                        "Waiting for initial sync. Tip height: {} Behind:{}",
-                        metadata.best_block_height,
-                        format_duration(time_behind)
-                    ),
-                    1,
-                )
+                .update("Waiting for initial sync".to_string(), 1)
                 .await;
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
