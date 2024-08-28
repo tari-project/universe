@@ -13,11 +13,13 @@ import { useGetStatus } from './hooks/useGetStatus.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 import { useEnvironment } from './hooks/useEnvironment.ts';
 import { SplashScreen } from './containers/SplashScreen';
+import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 
 function App() {
     useSetUp();
     useGetStatus();
     useEnvironment();
+    useMiningEffects();
 
     const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
