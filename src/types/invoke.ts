@@ -13,5 +13,5 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'set_mode', payload: { mode: modeType }): Promise<void>;
     function invoke(param: 'get_seed_words'): Promise<string[]>;
     function invoke(param: 'get_applications_versions'): Promise<ApplicationsVersions>;
-    function invoke(param: 'set_log_mining_activity_permission', payload: { isAllowed: boolean }): Promise<void>;    
+    function invoke(param: 'set_analytics_allowance', payload: { isAllowed: boolean }): Promise<void>;    
 }
