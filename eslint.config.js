@@ -34,7 +34,6 @@ export default [
         rules: {
             ...react.configs.recommended.rules,
             ...hooksPlugin.configs.recommended.rules,
-            ...prettierConfig.rules,
             'react/jsx-uses-react': 'off',
             'react/react-in-jsx-scope': 'off',
             'no-console': ['warn', { allow: ['info', 'warn', 'debug', 'error'] }],
