@@ -110,18 +110,27 @@ export function useMiningControls() {
             }
 
             setIsChangingMode(true);
-            if (hasBeenMining) {
+            if (hasBeenMining && !isConnectionLostDuringMining) {
                 await stopMining();
             }
+
+            if (isConnectionLostDuringMining) {
+                await cancelMining();
+            }
+
             await invoke('set_mode', { mode });
 
-            if (hasBeenMining) {
+            if (hasBeenMining && !isConnectionLostDuringMining) {
                 setTimeout(async () => {
                     await startMining();
                 }, 2000);
             }
+
+            if (isConnectionLostDuringMining) {
+                setIsChangingMode(false);
+            }
         },
-        [isMiningInProgress]
+        [isMiningInProgress, isConnectionLostDuringMining, isAutoMining]
     );
 
     const getMiningButtonStateText = useCallback(() => {
