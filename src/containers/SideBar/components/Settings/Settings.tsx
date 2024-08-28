@@ -41,7 +41,6 @@ interface FormState {
 const Settings: React.FC = () => {
     const currentEnvironment = useEnvironment();
 
-    const mainAppVersion = useAppStatusStore((state) => state.main_app_version);
     const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
@@ -266,15 +265,6 @@ const Settings: React.FC = () => {
                                 </HorisontalBox>
                                 <Stack spacing={0}>
                                     <CardContainer>
-                                        <CardComponent
-                                            heading="Tari App"
-                                            labels={[
-                                                {
-                                                    labelText: 'Version',
-                                                    labelValue: mainAppVersion || 'Unknown',
-                                                },
-                                            ]}
-                                        />
                                         {Object.entries(applicationsVersions).map(([key, value]) => (
                                             <CardComponent
                                                 key={`${key}-${value}`}

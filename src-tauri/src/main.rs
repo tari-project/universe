@@ -413,6 +413,8 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
     let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
 
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+
+    let tari_universe_version = app.package_info().version.clone();
     let xmrig_version: String =
         XmrigAdapter::ensure_latest(cache_dir, false, progress_tracker.clone())
             .await
@@ -429,6 +431,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
         .await;
 
     Ok(ApplicationsVersions {
+        tari_universe: tari_universe_version.to_string(),
         xmrig: xmrig_version,
         minotari_node: minotari_node_version.to_string(),
         mm_proxy: mm_proxy_version.to_string(),
@@ -557,6 +560,7 @@ pub struct AppStatus {
 
 #[derive(Debug, Serialize)]
 pub struct ApplicationsVersions {
+    tari_universe: String,
     xmrig: String,
     minotari_node: String,
     mm_proxy: String,
@@ -571,7 +575,6 @@ pub struct BaseNodeStatus {
 }
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
-    pub is_mining_enabled: bool,
     pub is_mining: bool,
     pub hash_rate: f64,
     pub estimated_earnings: u64,
