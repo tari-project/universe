@@ -1,5 +1,6 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_utils;
 use anyhow::Error;
 use log::{debug, warn};
 use std::fs;
@@ -12,12 +13,16 @@ const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
 pub struct MergeMiningProxyAdapter {
     pub(crate) tari_address: TariAddress,
+    pub(crate) base_node_grpc_port: u16,
+    pub(crate) coinbase_extra: String,
 }
 
 impl MergeMiningProxyAdapter {
     pub fn new() -> Self {
         Self {
             tari_address: TariAddress::default(),
+            base_node_grpc_port: 18142,
+            coinbase_extra: "tari_universe_mmproxy".to_string(),
         }
     }
 }
@@ -42,7 +47,12 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             format!("--log-path={}", log_dir.to_str().unwrap()),
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
-            "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/18142".to_string(),
+            format!(
+                "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
+                self.base_node_grpc_port
+            ),
+            "-p".to_string(),
+            format!("merge_mining_proxy.coinbase_extra={}", self.coinbase_extra),
             "-p".to_string(),
             // TODO: If you leave this out, it does not start. It just halts. Probably an error on the mmproxy noninteractive
             format!(
@@ -60,12 +70,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                         .resolve_path(Binaries::MergeMiningProxy)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(file_path)
-                        .args(args)
-                        .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::null())
-                        .kill_on_drop(true)
-                        .spawn()?;
+                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;

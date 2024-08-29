@@ -3,17 +3,9 @@ import { Control, Controller, FieldValues } from 'react-hook-form';
 
 import { FieldErrorMessage } from '../FieldErrorMessage/FieldErrorMessage.component';
 
-import {
-    decimalRegex,
-    integerRegex,
-    percentageRegex,
-} from './NumberInput.constants';
+import { decimalRegex, integerRegex, percentageRegex } from './NumberInput.constants';
 import { NumberInputTypography } from './NumberInput.styles';
-import type {
-    ControlledNumberInputProps,
-    NumberInputProps,
-    NumberInputType,
-} from './NumberInput.types';
+import type { ControlledNumberInputProps, NumberInputProps, NumberInputType } from './NumberInput.types';
 
 const valueParses: Record<NumberInputType, RegExp> = {
     int: integerRegex,
@@ -35,8 +27,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
     const validateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.value;
 
-        if (onChange && (valueParses[type].test(newValue) || newValue === ''))
-            onChange(event);
+        if (onChange && (valueParses[type].test(newValue) || newValue === '')) onChange(event);
     };
 
     return (
@@ -51,11 +42,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
             }}
         >
             {title && (
-                <NumberInputTypography
-                    variant="body1"
-                    component="label"
-                    sx={labelSx}
-                >
+                <NumberInputTypography variant="body1" component="label" sx={labelSx}>
                     {title}
                 </NumberInputTypography>
             )}
@@ -76,14 +63,10 @@ export const NumberInput: React.FC<NumberInputProps> = ({
                                     } as React.ChangeEvent<HTMLInputElement>)
                                 }
                             >
-                                MAXIMUM
+                                MAX
                             </InputAdornment>
                         ) : (
-                            symbol && (
-                                <InputAdornment position="end">
-                                    {symbol}
-                                </InputAdornment>
-                            )
+                            symbol && <InputAdornment position="end">{symbol}</InputAdornment>
                         )
                     }
                     {...inputProps}

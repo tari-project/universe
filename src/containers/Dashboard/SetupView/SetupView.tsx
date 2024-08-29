@@ -1,24 +1,28 @@
 import setup from '@app/assets/setup.png';
 import { Stack, Typography } from '@mui/material';
 import { StyledLinearProgress, ProgressBox, SetupDescription, SetupPercentage } from '../styles';
+import { FloatingImage } from './styles';
+import { useTranslation } from 'react-i18next';
 
 function SetupView({ title, progressPercentage }: { title: string; progressPercentage: number }) {
+    const { t } = useTranslation('setup-view', { useSuspense: false });
+
     return (
-        <Stack spacing={0} alignItems="center" marginBottom={5}>
-            <img src={setup} alt="Setup" style={{ maxWidth: '260px', height: 'auto' }} />
+        <Stack spacing={0} alignItems="center" sx={{ position: 'relative', zIndex: '1' }}>
+            <FloatingImage src={setup} alt="Soon Meditating" />
             <Typography variant="h3" fontSize={21} mt={3.4}>
-                Setting up the Tari truth machine...
+                {t('setting-up')}
             </Typography>
             <SetupDescription mt={0.4} mb={4}>
-                This might take a few minutes.
+                {t('this-might-take-a-few-minutes')}
                 <br />
-                Don’t worry you’ll only need to do this once.
+                {t('dont-worry')}
             </SetupDescription>
             <ProgressBox>
                 <StyledLinearProgress variant="determinate" value={progressPercentage} />
             </ProgressBox>
             <SetupPercentage mt={2.2}>{`${progressPercentage}%`}</SetupPercentage>
-            <SetupDescription>{title}</SetupDescription>
+            <SetupDescription>{t(`title.${title}`)}</SetupDescription>
         </Stack>
     );
 }

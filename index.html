@@ -31,7 +31,7 @@
               ASSETS_PATH: '/assets/',
             },
             () => {
-              init();
+              setTimeout(init, 1000); // added a timeout so it doesn't flash the canvas before the splash screen loads
             }
         );
       }
@@ -40,8 +40,7 @@
         glApp.init();
         time = performance.now() / 1000;
         window.addEventListener('resize', onResize);
-        glApp.properties.cameraOffsetX = (348 + 36) / window.innerWidth; // 348 is sidebar width with some padding
-        glApp.properties.resultAnimationSpeed = 2;
+        glApp.properties.cameraOffsetX = (348 + 16) / window.innerWidth; // 348 is sidebar width with some padding
         onResize();
         animate();
       }
@@ -63,6 +62,16 @@
       function update(dt) {
         glApp.render(dt);
       }
+
+      document.addEventListener('contextmenu', e => {
+        if (window.location.hostname !== 'tauri.localhost') {
+          return;
+        }
+        e.preventDefault();
+        return false;
+      }, { capture: true })
+
+
       document.addEventListener("DOMContentLoaded", preload);
     </script>
   </main>

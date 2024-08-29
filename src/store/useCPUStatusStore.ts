@@ -8,7 +8,6 @@ interface Actions {
 type CPUStatusStoreState = CpuMinerStatus & Actions;
 
 const initialState: CpuMinerStatus = {
-    is_mining_enabled: false,
     is_mining: false,
     hash_rate: 0,
     estimated_earnings: 0,
@@ -23,6 +22,10 @@ export const useCPUStatusStore = create<CPUStatusStoreState>()(
         {
             name: 'cpu',
             storage: createJSONStorage(() => sessionStorage),
+            partialize: (s) => ({
+                hash_rate: s.hash_rate,
+                is_mining: s.is_mining,
+            }),
         }
     )
 );

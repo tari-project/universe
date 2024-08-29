@@ -4,7 +4,7 @@ authors = ["The Tari Development Community"]
 description = "Tari Universe"
 repository = "https://github.com/tari-project/universe"
 license = "BSD-3-Clause"
-version = "0.1.31"
+version = "0.1.40"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -13,6 +13,7 @@ edition = "2021"
 tauri-build = { version = "1", features = ["isolation"] }
 
 [dependencies]
+jsonwebtoken = "9.3.0"
 tari_common = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_common_types = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
@@ -24,7 +25,6 @@ tari_core = { git = "https://github.com/tari-project/tari.git", branch = "develo
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_utilities = "0.7.0"
 tari_crypto = "0.20.3"
-
 anyhow = "1"
 dirs-next = "2.0.0"
 reqwest = { version = "0.12.5", features = ["stream", "json"] }
@@ -43,9 +43,7 @@ tauri = { version = "1", features = [
     "shell-open",
     "process-command-api",
 ] }
-
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
-
 tokio = { version = "1", features = ["full"] }
 semver = "1.0.23"
 serde = { version = "1", features = ["derive"] }
@@ -66,6 +64,9 @@ keyring = { version = "3.0.5", features = [
     "linux-native",
 ] }
 nix = { version = "0.29.0", features = ["signal"] }
+sha2 = "0.10.8"
+regex = "1.10.5"
+
 # static bind lzma
 xz2 = { version = "0.1.7", features = ["static"] }
 humantime = "2.1.0"
@@ -75,11 +76,11 @@ regex = "1.10.6"
 
 # needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
 libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
-
 log = "0.4.22"
 rand = "0.8.5"
 device_query = "2.1.0"
 nvml-wrapper = "0.10.0"
+tonic = "0.12.0"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

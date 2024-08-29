@@ -1,3 +1,4 @@
+use crate::download_utils::validate_checksum;
 use crate::download_utils::{download_file, extract};
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
@@ -204,29 +205,7 @@ impl BinaryResolver {
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
         let base_dir = adapter.get_binary_folder().join(version.to_string());
-        match binary {
-            Binaries::Xmrig => {
-                let xmrig_bin = base_dir.join("xmrig");
-                Ok(xmrig_bin)
-            }
-            Binaries::MergeMiningProxy => {
-                let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
-                Ok(mmproxy_bin)
-            }
-            Binaries::MinotariNode => {
-                let minotari_node_bin = base_dir.join("minotari_node");
-                Ok(minotari_node_bin)
-            }
-            Binaries::Wallet => {
-                let wallet_bin = base_dir.join("minotari_console_wallet");
-                Ok(wallet_bin)
-            }
-            Binaries::GpuMiner => {
-                let xtrgpu_bin = base_dir.join("xtrgpuminer");
-
-                Ok(xtrgpu_bin)
-            }
-        }
+        get_binary_name(binary, base_dir)
     }
 
     pub async fn ensure_latest(
@@ -288,15 +267,40 @@ impl BinaryResolver {
             info!(target: LOG_TARGET, "Downloading file");
             info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
-            let in_progress_file = in_progress_dir.join(&asset.name);
-            download_file(&asset.url, &in_progress_file, progress_tracker).await?;
+            let in_progress_file_zip = in_progress_dir.join(&asset.name);
+            download_file(&asset.url, &in_progress_file_zip, progress_tracker.clone()).await?;
             info!(target: LOG_TARGET, "Renaming file");
             info!(target: LOG_TARGET, "Extracting file");
-            let bin_dir = adapter
-                .get_binary_folder()
-                .join(latest_release.version.to_string());
-            extract(&in_progress_file, &bin_dir).await?;
 
+            let in_progress_file_sha256 = in_progress_dir
+                .clone()
+                .join(format!("{}.sha256", asset.name));
+            let asset_sha256_url = format!("{}.sha256", asset.url.clone());
+            download_file(
+                &asset_sha256_url,
+                &in_progress_file_sha256,
+                progress_tracker.clone(),
+            )
+            .await?;
+
+            let is_sha_validated = validate_checksum(
+                in_progress_file_zip.clone(),
+                in_progress_file_sha256.clone(),
+                asset.name.clone(),
+            )
+            .await?;
+            if is_sha_validated {
+                println!("Renaming & Extracting file");
+                let bin_dir = adapter
+                    .get_binary_folder()
+                    .join(&latest_release.version.to_string());
+                dbg!(&bin_dir);
+
+                extract(&in_progress_file_zip, &bin_dir).await?;
+                println!("ZIP file integrity verified successfully!");
+            } else {
+                return Err(anyhow!("ZIP file integrity verification failed!"));
+            }
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
@@ -329,6 +333,18 @@ impl BinaryResolver {
             };
             let path = entry.path();
             if path.is_dir() {
+                // Check for actual binary existing. It can happen that the folder is there,
+                // for in_progress downloads or perhaps the antivirus has quarantined the file
+                let mut executable_name = get_binary_name(binary, path.clone())?;
+
+                if cfg!(target_os = "windows") {
+                    executable_name = executable_name.with_extension("exe");
+                }
+
+                if !executable_name.exists() {
+                    continue;
+                }
+
                 let version = path.file_name().unwrap().to_str().unwrap();
                 versions.push(Version::parse(version).unwrap());
             }
@@ -369,6 +385,32 @@ impl BinaryResolver {
     pub async fn get_latest_version(&self, binary: Binaries) -> Version {
         let guard = self.latest_versions.read().await;
         guard.get(&binary).cloned().unwrap_or(Version::new(0, 0, 0))
+    }
+}
+
+fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error> {
+    match binary {
+        Binaries::Xmrig => {
+            let xmrig_bin = base_dir.join("xmrig");
+            Ok(xmrig_bin)
+        }
+        Binaries::MergeMiningProxy => {
+            let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
+            Ok(mmproxy_bin)
+        }
+        Binaries::MinotariNode => {
+            let minotari_node_bin = base_dir.join("minotari_node");
+            Ok(minotari_node_bin)
+        }
+        Binaries::Wallet => {
+            let wallet_bin = base_dir.join("minotari_console_wallet");
+            Ok(wallet_bin)
+        }
+        Binaries::GpuMiner => {
+            let xtrgpu_bin = base_dir.join("xtrgpuminer");
+
+            Ok(xtrgpu_bin)
+        }
     }
 }
 

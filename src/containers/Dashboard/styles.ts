@@ -9,6 +9,8 @@ export const DashboardContainer = styled(Box)(() => ({
     justifyContent: 'center',
     height: '100%',
     flexGrow: '1',
+    position: 'relative',
+    zIndex: '1',
 }));
 
 export const ProgressBox = styled(Box)(() => ({
@@ -39,14 +41,6 @@ export const VisualModeContainer = styled(Box)(({ theme }) => ({
     gap: theme.spacing(1),
     paddingTop: theme.spacing(1),
     paddingBottom: theme.spacing(1),
-}));
-
-export const InfoContainer = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    width: '100%',
-    gap: theme.spacing(2),
 }));
 
 export const SetupDescription = styled(Typography)(({ theme }) => ({

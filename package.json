@@ -1,14 +1,15 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.0.0",
+    "version": "0.1.40",
     "type": "module",
     "scripts": {
         "dev": "vite dev --mode development",
         "build": "tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
-        "lint": "eslint src/"
+        "lint": "eslint src/",
+        "lint:fix": "eslint src/ --fix"
     },
     "dependencies": {
         "@emotion/react": "^11.13.3",
@@ -17,10 +18,17 @@
         "@tauri-apps/api": "^1",
         "framer-motion": "^11.3.29",
         "globals": "^15.9.0",
+        "i18next": "^23.14.0",
+        "i18next-browser-languagedetector": "^8.0.0",
+        "i18next-http-backend": "^2.6.1",
+        "lottie-react": "^2.4.0",
         "react": "^18.3.1",
         "react-dom": "^18.2.0",
         "react-hook-form": "^7.52.2",
+        "react-i18next": "^15.0.1",
         "react-icons": "^5.3.0",
+        "uuid": "^10.0.0",
+        "react-transition-group": "^4.4.5",
         "vite-tsconfig-paths": "^5.0.1",
         "zustand": "^4.5.5"
     },
@@ -29,18 +37,21 @@
         "@nabla/vite-plugin-eslint": "^2.0.4",
         "@tauri-apps/cli": "^1",
         "@types/eslint__js": "^8.42.3",
-        "@types/node": "^22.5.0",
+        "@types/node": "^22.5.1",
         "@types/react": "^18.3.4",
         "@types/react-dom": "^18.2.7",
-        "@typescript-eslint/parser": "^8.1.0",
+        "@types/uuid": "^10.0.0",
+        "@typescript-eslint/parser": "8.2.0",
         "@vitejs/plugin-react": "^4.2.1",
         "eslint": "^9.9.0",
         "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.2.1",
         "eslint-plugin-react": "^7.35.0",
         "eslint-plugin-react-hooks": "^5.1.0-rc-d48603a5-20240813",
         "prettier": "3.3.3",
+        "prettier-eslint": "^16.3.0",
         "typescript": "^5.5.4",
-        "typescript-eslint": "^8.2.0",
+        "typescript-eslint": "^8.3.0",
         "vite": "^5.4.2"
     }
 }

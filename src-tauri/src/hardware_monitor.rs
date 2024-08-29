@@ -18,16 +18,16 @@ enum CurrentOperatingSystem {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct HardwareParameters {
-    label: String,
-    usage_percentage: f32,
-    current_temperature: f32,
-    max_temperature: f32,
+    pub label: String,
+    pub usage_percentage: f32,
+    pub current_temperature: f32,
+    pub max_temperature: f32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct HardwareStatus {
-    cpu: Option<HardwareParameters>,
-    gpu: Option<HardwareParameters>,
+    pub cpu: Option<HardwareParameters>,
+    pub gpu: Option<HardwareParameters>,
 }
 
 trait HardwareMonitorImpl: Send + Sync + 'static {
@@ -88,11 +88,11 @@ impl HardwareMonitor {
 
     fn detect_current_os() -> CurrentOperatingSystem {
         if cfg!(target_os = "windows") {
-            return CurrentOperatingSystem::Windows;
+            CurrentOperatingSystem::Windows
         } else if cfg!(target_os = "linux") {
-            return CurrentOperatingSystem::Linux;
+            CurrentOperatingSystem::Linux
         } else if cfg!(target_os = "macos") {
-            return CurrentOperatingSystem::MacOS;
+            CurrentOperatingSystem::MacOS
         } else {
             panic!("Unsupported OS");
         }
@@ -158,7 +158,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         system.refresh_cpu_all();
 
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().get(0).unwrap().brand().to_string();
+        let label: String = system.cpus().first().unwrap().brand().to_string();
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -262,7 +262,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             .filter(|c| c.label().contains("k10temp Tctl"))
             .collect();
 
-        let available_cpu_components = if amd_cpu_component.len() > 0 {
+        let available_cpu_components = if !amd_cpu_component.is_empty() {
             amd_cpu_component
         } else {
             intel_cpu_component
@@ -280,7 +280,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
 
         let usage = system.global_cpu_usage();
 
-        let label: String = system.cpus().get(0).unwrap().brand().to_string();
+        let label: String = system.cpus().first().unwrap().brand().to_string();
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -382,7 +382,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             .filter(|c| c.label().contains("MTR"))
             .collect();
 
-        let available_cpu_components = if silicon_cpu_components.len() > 0 {
+        let available_cpu_components = if !silicon_cpu_components.is_empty() {
             silicon_cpu_components
         } else {
             intel_cpu_components
@@ -399,7 +399,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         system.refresh_cpu_all();
 
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().get(0).unwrap().brand().to_string() + " CPU";
+        let label: String = system.cpus().first().unwrap().brand().to_string() + " CPU";
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -432,7 +432,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             / gpu_components.len() as f32;
         //TODO: Implement GPU usage for MacOS
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().get(0).unwrap().brand().to_string() + " GPU";
+        let label: String = system.cpus().first().unwrap().brand().to_string() + " GPU";
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {

@@ -20,12 +20,12 @@ pub async fn download_file(
     // Stream the response body directly to the file
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
-        let _ = progress_tracker.update("Downloading".to_string(), 10).await;
+        let _ = progress_tracker.update("downloading".to_string(), 10).await;
         dest.write_all(&item?).await?;
     }
 
     progress_tracker
-        .update("Download completed".to_string(), 100)
+        .update("download-completed".to_string(), 100)
         .await;
     info!(target: LOG_TARGET, "Done downloading");
 
@@ -63,15 +63,18 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
 }
 
 use crate::ProgressTracker;
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use log::info;
+use regex::Regex;
+use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tar::Archive;
 use tokio::fs;
 use tokio::fs::{File, OpenOptions};
+use tokio::io::AsyncReadExt;
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
@@ -124,7 +127,6 @@ pub async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::E
     Ok(())
 }
 
-#[allow(unused_variables)]
 pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
     #[cfg(unix)]
     {
@@ -135,4 +137,35 @@ pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
         fs::set_permissions(file_path, perms).await?;
     }
     Ok(())
+}
+
+pub async fn validate_checksum(
+    file_path: PathBuf,
+    file_sha256_path: PathBuf,
+    asset_name: String,
+) -> Result<bool, Error> {
+    let mut file_sha256 = File::open(file_sha256_path.clone()).await?;
+    let mut buffer_sha256 = Vec::new();
+    file_sha256.read_to_end(&mut buffer_sha256).await?;
+    let contents = String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+
+    // Extract the expected hash for the corresponding asset name
+    let mut expected_hash = "";
+    let re = Regex::new(&format!(r"([a-f0-9]+)\s+{}", asset_name)).unwrap();
+    for line in contents.lines() {
+        if let Some(caps) = re.captures(line) {
+            expected_hash = caps.get(1).unwrap().as_str();
+        }
+    }
+
+    let mut file = File::open(file_path.clone()).await?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer).await?;
+
+    let mut hasher = Sha256::new();
+    hasher.update(&buffer);
+    let hash = hasher.finalize();
+    let hash_hex = format!("{:x}", hash);
+
+    Ok(hash_hex == expected_hash)
 }

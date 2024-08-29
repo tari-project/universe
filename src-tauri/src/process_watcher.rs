@@ -89,11 +89,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             }
                       },
                     _ = inner_shutdown.wait() => {
-                        return Ok(child.stop().await?);
+                        return child.stop().await;
 
                     },
                     _ = app_shutdown.wait() => {
-                        return Ok(child.stop().await?);
+                        return child.stop().await;
                     }
                 }
             }
