@@ -9,8 +9,11 @@ import { Divider } from '@mui/material';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { formatNumber } from '@app/utils/formatNumber.ts';
+import { useTranslation } from 'react-i18next';
 
 function Miner() {
+    const { t } = useTranslation('common', { useSuspense: false });
+
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
     const { isWaitingForHashRate } = useMiningControls();
 
@@ -33,22 +36,22 @@ function Miner() {
             <AutoMiner />
             <Divider />
             <TileContainer>
-                <Tile title="Resources" stats="CPU" />
+                <Tile title={t('resources')} stats="CPU" />
                 <ModeSelect />
                 <Tile
-                    title="Hashrate (H/s)"
+                    title={`${t('hashrate')} (H/s)`}
                     stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''}`}
                     isLoading={isWaitingForHashRate}
                 />
                 <Tile
-                    title="CPU Utilization"
+                    title={`CPU ${t('utilization')}`}
                     stats={
                         (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
                             maximumFractionDigits: 0,
                         }) + '%'
                     }
                 />
-                <Tile title="CHIP/GPU" stats={hardwareVal || 'Unknown'} />
+                <Tile title="CHIP/GPU" stats={hardwareVal || t('unknown')} />
                 <Tile
                     title="Est tXTM/day"
                     stats={formatNumber(estimated_earnings / 1000000)}

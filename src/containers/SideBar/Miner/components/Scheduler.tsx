@@ -13,8 +13,11 @@ import {
 import { IoClose } from 'react-icons/io5';
 import { IoCalendar } from 'react-icons/io5';
 import { ScheduleButton } from '../styles';
+import { useTranslation } from 'react-i18next';
 
 function Scheduler() {
+    const { t } = useTranslation(['sidebar', 'common'], { useSuspense: false });
+
     const [open, setOpen] = useState(false);
 
     const handleClickOpen = () => setOpen(true);
@@ -32,7 +35,7 @@ function Scheduler() {
     return (
         <>
             <ScheduleButton variant="contained" startIcon={<IoCalendar size="16" />} onClick={handleClickOpen}>
-                Setup scheduler
+                {t('setup-scheduler', { ns: 'sidebar' })}
             </ScheduleButton>
             <Dialog open={open} onClose={handleClose}>
                 <DialogContent
@@ -42,7 +45,7 @@ function Scheduler() {
                     }}
                 >
                     <Stack direction="row" justifyContent="space-between" alignItems="center" pb={1}>
-                        <Typography variant="h4">Mining Schedules</Typography>
+                        <Typography variant="h4">{t('mining-schedules', { ns: 'sidebar' })}</Typography>
                         <IconButton onClick={handleClose}>
                             <IoClose size={20} />
                         </IconButton>
@@ -50,16 +53,16 @@ function Scheduler() {
                     <Divider />
                     <Box>
                         <Typography variant="body2" mt={2}>
-                            Schedule your mining activity
+                            {t('mining-schedules-description', { ns: 'sidebar' })}
                         </Typography>
                     </Box>
                     <Box component="form" onSubmit={handleSubmit}>
                         <DialogActions>
                             <Button onClick={handleCancel} variant="outlined">
-                                Cancel
+                                {t('cancel', { ns: 'common' })}
                             </Button>
                             <Button type="submit" variant="contained">
-                                Submit
+                                {t('submit', { ns: 'common' })}
                             </Button>
                         </DialogActions>
                     </Box>
