@@ -1,4 +1,10 @@
 {
     "submit": "Wyślij",
-    "cancel": "Anuluj"
+    "cancel": "Anuluj",
+    "temperature": "Temperatura",
+    "max-temperature": "Maksymalna temperatura",
+    "usage": "Użycie",
+    "seconds": "sekundy",
+    "copied": "Skopiowano",
+    "unknown": "Nieznany"
 }

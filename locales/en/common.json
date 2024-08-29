@@ -5,5 +5,6 @@
     "max-temperature": "Max temperature",
     "usage": "Usage",
     "seconds": "seconds",
-    "copied": "Copied"
+    "copied": "Copied",
+    "unknown": "Unknown"
 }

@@ -236,7 +236,9 @@ const Settings: React.FC = () => {
                         </HorisontalBox>
                         <CardComponent
                             heading="Blocks"
-                            labels={[{ labelText: 'Last block added to chain time', labelValue: displayTime }]}
+                            labels={[
+                                { labelText: t('last-block-added-time', { ns: 'settings' }), labelValue: displayTime },
+                            ]}
                         />
                         <Divider />
                         {
@@ -246,29 +248,35 @@ const Settings: React.FC = () => {
                                 </HorisontalBox>
                                 <CardContainer>
                                     <CardComponent
-                                        heading={cpu?.label || 'Unknown CPU'}
+                                        heading={cpu?.label || `${t('unknown', { ns: 'common' })} CPU`}
                                         labels={[
-                                            { labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%` },
                                             {
-                                                labelText: 'Temperature',
+                                                labelText: t('usage', { ns: 'common' }),
+                                                labelValue: `${cpu?.usage_percentage || 0}%`,
+                                            },
+                                            {
+                                                labelText: t('temperature', { ns: 'common' }),
                                                 labelValue: `${cpu?.current_temperature || 0}°C`,
                                             },
                                             {
-                                                labelText: 'Max Temperature',
+                                                labelText: t('usage', { ns: 'common' }),
                                                 labelValue: `${cpu?.max_temperature || 0}°C`,
                                             },
                                         ]}
                                     />
                                     <CardComponent
-                                        heading={gpu?.label || 'Unknown GPU'}
+                                        heading={gpu?.label || `${t('unknown', { ns: 'common' })} GPU`}
                                         labels={[
-                                            { labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%` },
                                             {
-                                                labelText: 'Temperature',
+                                                labelText: t('usage', { ns: 'common' }),
+                                                labelValue: `${gpu?.usage_percentage || 0}%`,
+                                            },
+                                            {
+                                                labelText: t('temperature', { ns: 'common' }),
                                                 labelValue: `${gpu?.current_temperature || 0}°C`,
                                             },
                                             {
-                                                labelText: 'Max Temperature',
+                                                labelText: t('max-temperature', { ns: 'common' }),
                                                 labelValue: `${gpu?.max_temperature || 0}°C`,
                                             },
                                         ]}
@@ -300,8 +308,8 @@ const Settings: React.FC = () => {
                                                 heading={key}
                                                 labels={[
                                                     {
-                                                        labelText: 'Version',
-                                                        labelValue: value || 'Unknown',
+                                                        labelText: t('version', { ns: 'common' }),
+                                                        labelValue: value || t('unknown', { ns: 'common' }),
                                                     },
                                                 ]}
                                             />

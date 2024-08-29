@@ -15,5 +15,6 @@
         "placeholder": "Enter idle timeout in seconds",
         "max": "Maximum is 21600 seconds",
         "min": "Minimum is 1 second"
-    }
+    },
+    "last-block-added-time": "Last block added to chain time"
 }
