@@ -42,3 +42,30 @@ export const useGetApplicationsVersions = () => {
 
     return { applicationsVersions, getApplicationsVersions, updateApplicationsVersions };
 };
+
+export function useApplicationsVersions() {
+    const setApplicationsVersions = useAppStatusStore((state) => state.setApplicationsVersions);
+
+    const refreshApplicationsVersions = useCallback(() => {
+        invoke('update_applications')
+            .then((r) => {
+                console.log(r);
+            })
+            .catch((error) => {
+                console.error('Error updating applications versions', error);
+            });
+    }, []);
+
+    const getApplicationsVersions = useCallback(() => {
+        invoke('get_applications_versions')
+            .then((applicationsVersions) => {
+                console.log(applicationsVersions);
+                setApplicationsVersions(applicationsVersions);
+            })
+            .catch((error) => {
+                console.error('Error getting applications versions', error);
+            });
+    }, [setApplicationsVersions]);
+
+    return { refreshApplicationsVersions, getApplicationsVersions };
+}
