@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod analytics;
 mod app_config;
 mod binary_resolver;
 mod consts;
@@ -20,6 +19,7 @@ mod process_adapter;
 mod process_killer;
 mod process_utils;
 mod process_watcher;
+mod telemetry_manager;
 mod user_listener;
 mod wallet_adapter;
 mod wallet_manager;
@@ -35,7 +35,6 @@ use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
-use analytics::AnalyticsManager;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
@@ -48,10 +47,12 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use std::{panic, process};
+use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
+use telemetry_manager::TelemetryManager;
 use tokio::sync::RwLock;
 use wallet_manager::WalletManagerError;
 
@@ -81,6 +82,35 @@ async fn set_user_inactivity_timeout<'r>(
         .set_user_inactivity_timeout(Duration::from_secs(timeout))
         .await;
 
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_telemetry_mode<'r>(
+    telemetry_mode: bool,
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_allow_telemetry(telemetry_mode)
+        .await
+        .map_err(|e| e.to_string());
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_airdrop_access_token<'r>(
+    token: String,
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+    let mut write_lock = state.airdrop_access_token.write().await;
+    *write_lock = Some(token);
     Ok(())
 }
 
@@ -120,6 +150,13 @@ async fn setup_inner<'r>(
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
     let now = SystemTime::now();
+
+    state
+        .telemetry_manager
+        .write()
+        .await
+        .initialize(state.airdrop_access_token.clone())
+        .await?;
 
     BinaryResolver::current()
         .read_current_highest_version(Binaries::MinotariNode, progress.clone())
@@ -223,10 +260,16 @@ async fn setup_inner<'r>(
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
 
-    let mut analytics_id = state.analytics_manager.get_unique_string().await;
-    if analytics_id.is_empty() {
-        analytics_id = "unknown_miner_tari_universe".to_string();
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
+    if telemetry_id.is_empty() {
+        telemetry_id = "unknown_miner_tari_universe".to_string();
     }
+
     mm_proxy_manager
         .start(
             state.shutdown.to_signal().clone(),
@@ -234,7 +277,7 @@ async fn setup_inner<'r>(
             app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
-            analytics_id,
+            telemetry_id,
         )
         .await?;
     mm_proxy_manager.wait_ready().await?;
@@ -423,7 +466,7 @@ async fn update_applications(
 #[tauri::command]
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
-    let gpu_miner = state.gpu_miner.write().await;
+    let _gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -548,17 +591,19 @@ struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
 }
+
 struct UniverseAppState {
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
-    cpu_miner: RwLock<CpuMiner>,
-    gpu_miner: RwLock<GpuMiner>,
+    cpu_miner: Arc<RwLock<CpuMiner>>,
+    gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
-    analytics_manager: AnalyticsManager,
+    telemetry_manager: Arc<RwLock<TelemetryManager>>,
+    airdrop_access_token: Arc<RwLock<Option<String>>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -587,19 +632,32 @@ fn main() {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
     }));
+
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
-    let analytics = AnalyticsManager::new(app_config.clone());
+
+    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
+
+    let telemetry_manager: TelemetryManager = TelemetryManager::new(
+        node_manager.clone(),
+        cpu_miner.clone(),
+        gpu_miner.clone(),
+        app_config.clone(),
+        Some(Network::default()),
+    );
+
     let app_state = UniverseAppState {
         config: app_config.clone(),
         shutdown: shutdown.clone(),
-        cpu_miner: CpuMiner::new().into(),
-        gpu_miner: GpuMiner::new().into(),
+        cpu_miner: cpu_miner.clone(),
+        gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
         user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
-        analytics_manager: analytics,
+        telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
+        airdrop_access_token: Arc::new(RwLock::new(None)),
     };
 
     let app = tauri::Builder::default()
@@ -676,6 +734,8 @@ fn main() {
             set_user_inactivity_timeout,
             update_applications,
             log_web_message,
+            set_telemetry_mode,
+            set_airdrop_access_token
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

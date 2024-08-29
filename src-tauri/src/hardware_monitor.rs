@@ -18,16 +18,16 @@ enum CurrentOperatingSystem {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct HardwareParameters {
-    label: String,
-    usage_percentage: f32,
-    current_temperature: f32,
-    max_temperature: f32,
+    pub label: String,
+    pub usage_percentage: f32,
+    pub current_temperature: f32,
+    pub max_temperature: f32,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct HardwareStatus {
-    cpu: Option<HardwareParameters>,
-    gpu: Option<HardwareParameters>,
+    pub cpu: Option<HardwareParameters>,
+    pub gpu: Option<HardwareParameters>,
 }
 
 trait HardwareMonitorImpl: Send + Sync + 'static {
