@@ -253,13 +253,13 @@ async fn setup_inner<'r>(
 
     progress.set_max(80).await;
     progress
-        .update("Waiting for node to sync".to_string(), 0)
+        .update("preparing-for-initial-sync".to_string(), 0)
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
     
     progress.set_max(100).await;
     progress
-        .update("Starting merge mining proxy".to_string(), 0)
+        .update("starting-merge-mining-proxy".to_string(), 0)
         .await;
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;

@@ -230,10 +230,10 @@ impl MinotariNodeStatusMonitor {
                 break;
             }
             info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
-
+            
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
-                    .update("Preparing for initial sync..".to_string(), 10)
+                    .update("preparing-for-initial-sync".to_string(), 10)
                     .await;
             } else if sync_progress.state == SyncState::Header as i32 {
                 if sync_util.syncing_type != SyncingType::Headers {
