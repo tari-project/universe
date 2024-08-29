@@ -4,7 +4,7 @@ import AutoMiner from './components/AutoMiner/AutoMiner.tsx';
 
 import ModeSelect from './components/ModeSelect.tsx';
 import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
-import { Box, Divider, Fade, Grow, Slide, Stack } from '@mui/material';
+import { Box, Divider, Fade, Slide, Stack } from '@mui/material';
 
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
