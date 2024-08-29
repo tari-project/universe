@@ -12,5 +12,6 @@
     "resources": "Zasoby",
     "hashrate": "Prędkość ( hashrate )",
     "utilization": "Wykorzystanie",
-    "mode": "Tryb"
+    "mode": "Tryb",
+    "day": "Dzień"
 }
