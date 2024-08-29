@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { backgroundType, viewType } from './types.ts';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 interface State {
     showSplash: boolean;
@@ -38,15 +39,28 @@ const initialState: State = {
     isConnectionLostDuringMining: false,
 };
 
-export const useUIStore = create<UIStoreState>()((set) => ({
-    ...initialState,
-    setShowSplash: (showSplash) => set({ showSplash }),
-    setBackground: (background) => set({ background }),
-    setView: (view) => set({ view }),
-    toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
-    toggleTelemetryMode: () => set((state) => ({ telemetryMode: !state.telemetryMode })),
-    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    setIsMiningSwitchingState: (isMiningSwitchingState) => set({ isMiningSwitchingState }),
-    setIsMiningEnabled: (isMiningEnabled) => set({ isMiningEnabled }),
-    setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
-}));
+export const useUIStore = create<UIStoreState>()(
+    persist(
+        (set) => ({
+            ...initialState,
+            setShowSplash: (showSplash) => set({ showSplash }),
+            setBackground: (background) => set({ background }),
+            setView: (view) => set({ view }),
+            toggleTelemetryMode: () => set((state) => ({ telemetryMode: !state.telemetryMode })),
+            toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
+            setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+            setIsMiningSwitchingState: (isMiningSwitchingState) => set({ isMiningSwitchingState }),
+            setIsMiningEnabled: (isMiningEnabled) => set({ isMiningEnabled }),
+            setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
+        }),
+        {
+            name: 'ui-store',
+            storage: createJSONStorage(() => sessionStorage),
+            partialize: (s) => ({
+                isMiningEnabled: s.isMiningEnabled,
+                isConnectionLostDuringMining: s.isConnectionLostDuringMining,
+                telemetryMode: s.telemetryMode,
+            }),
+        }
+    )
+);

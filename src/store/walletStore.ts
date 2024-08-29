@@ -46,6 +46,10 @@ const useWalletStore = create<WalletStore>()(
         {
             name: 'wallet_balance',
             storage: createJSONStorage(() => sessionStorage),
+            partialize: (s) => ({
+                balance: s.balance,
+                previousBalance: s.previousBalance,
+            }),
             version: 1,
         }
     )

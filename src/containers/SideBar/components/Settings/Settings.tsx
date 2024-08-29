@@ -18,7 +18,7 @@ import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useGetApplicationsVersions } from '../../../../hooks/useGetApplicationsVersions.ts';
+import { useApplicationsVersions } from '../../../../hooks/useVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
 import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles';
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
@@ -29,6 +29,9 @@ import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
+import { Language, LanguageList } from '../../../../i18initializer.ts';
+import { changeLanguage } from 'i18next';
+import { useTranslation } from 'react-i18next';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -40,10 +43,12 @@ interface FormState {
 
 const Settings: React.FC = () => {
     const currentEnvironment = useEnvironment();
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
     const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
-    const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
+    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const { refreshApplicationsVersions, getApplicationsVersions } = useApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
@@ -108,6 +113,15 @@ const Settings: React.FC = () => {
         )();
     };
 
+    const handleLanguageChange = React.useCallback(
+        (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, language: Language) => {
+            event.preventDefault();
+            event.stopPropagation();
+            changeLanguage(language);
+        },
+        []
+    );
+
     const now = new Date();
     const lastBlockTime = calculateTimeSince(blockTime || 0, now.getTime());
     const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
@@ -121,14 +135,14 @@ const Settings: React.FC = () => {
                 <DialogContent>
                     <Stack spacing={1}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center" pb={1}>
-                            <Typography variant="h4">Settings</Typography>
+                            <Typography variant="h4">{t('settings', { ns: 'settings' })}</Typography>
                             <IconButton onClick={handleClose}>
                                 <IoClose size={20} />
                             </IconButton>
                         </Stack>
                         <Divider />
                         <Stack spacing={1} pt={1} pb={1} direction="column">
-                            <Typography variant="h6">Seed Words</Typography>
+                            <Typography variant="h6">{t('seed-words', { ns: 'settings' })}</Typography>
                             <Stack flexDirection="row" alignItems="center" gap={1}>
                                 <Typography variant="body2">
                                     {showSeedWords
@@ -144,7 +158,7 @@ const Settings: React.FC = () => {
                                 )}
                                 {showSeedWords && seedWordsFetched && (
                                     <Tooltip
-                                        title="Copied!"
+                                        title={`${t('copied', { ns: 'common' })}!`}
                                         placement="top"
                                         open={!isCopyTooltipHidden}
                                         disableFocusListener
@@ -165,18 +179,18 @@ const Settings: React.FC = () => {
                                     <ControlledNumberInput
                                         name={FormFields.IDLE_TIMEOUT}
                                         control={control}
-                                        title="Time after which machine is considered idle"
-                                        endAdornment="seconds"
-                                        placeholder="Enter idle timeout in seconds"
+                                        title={t('idle-timeout.title', { ns: 'settings' })}
+                                        endAdornment={t('seconds', { ns: 'common' })}
+                                        placeholder={t('idle-timeout.placeholder', { ns: 'settings' })}
                                         type="int"
                                         rules={{
                                             max: {
                                                 value: 21600,
-                                                message: 'Maximum is 21600 seconds',
+                                                message: t('idle-timeout.max', { ns: 'settings' }),
                                             },
                                             min: {
                                                 value: 1,
-                                                message: 'Minimum is 1 second',
+                                                message: t('idle-timeout.min', { ns: 'settings' }),
                                             },
                                         }}
                                     />
@@ -184,62 +198,87 @@ const Settings: React.FC = () => {
                                 <Divider />
                                 <DialogActions>
                                     <Button onClick={handleCancel} variant="outlined">
-                                        Cancel
+                                        {t('cancel', { ns: 'common' })}
                                     </Button>
                                     <Button type="submit" variant="contained">
-                                        Submit
+                                        {t('submit', { ns: 'common' })}
                                     </Button>
                                 </DialogActions>
                             </Box>
                         </form>
                         <Divider />
                         <HorisontalBox>
-                            <Typography variant="h6">Logs</Typography>
+                            <Typography variant="h6">{t('change-language', { ns: 'settings' })}</Typography>
+                            <RightHandColumn>
+                                <Stack direction="row" justifyContent="flex-end" gap={2} gridArea="1 / 5 / 2 / 6">
+                                    {LanguageList.map((langauge) => (
+                                        <Button
+                                            key={langauge}
+                                            sx={{ alignSelf: 'center' }}
+                                            onClick={(event) => handleLanguageChange(event, langauge)}
+                                        >
+                                            {langauge}
+                                        </Button>
+                                    ))}
+                                </Stack>
+                            </RightHandColumn>
+                        </HorisontalBox>
+                        <Divider />
+                        <HorisontalBox>
+                            <Typography variant="h6">{t('logs', { ns: 'settings' })}</Typography>
                             <RightHandColumn>
                                 <Button onClick={openLogsDirectory} variant="text">
-                                    Open logs directory
+                                    {t('open-logs-directory', { ns: 'settings' })}
                                 </Button>
                             </RightHandColumn>
                         </HorisontalBox>
                         <Divider />
                         <HorisontalBox>
-                            <Typography variant="h6">Debug Info:</Typography>
+                            <Typography variant="h6">{t('debug-info', { ns: 'settings' })}:</Typography>
                         </HorisontalBox>
                         <CardComponent
                             heading="Blocks"
-                            labels={[{ labelText: 'Last block added to chain time', labelValue: displayTime }]}
+                            labels={[
+                                { labelText: t('last-block-added-time', { ns: 'settings' }), labelValue: displayTime },
+                            ]}
                         />
                         <Divider />
                         {
                             <>
                                 <HorisontalBox>
-                                    <Typography variant="h6">Hardware Status:</Typography>
+                                    <Typography variant="h6">{t('hardware-status', { ns: 'settings' })}:</Typography>
                                 </HorisontalBox>
                                 <CardContainer>
                                     <CardComponent
-                                        heading={cpu?.label || 'Unknown CPU'}
+                                        heading={cpu?.label || `${t('unknown', { ns: 'common' })} CPU`}
                                         labels={[
-                                            { labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%` },
                                             {
-                                                labelText: 'Temperature',
+                                                labelText: t('usage', { ns: 'common' }),
+                                                labelValue: `${cpu?.usage_percentage || 0}%`,
+                                            },
+                                            {
+                                                labelText: t('temperature', { ns: 'common' }),
                                                 labelValue: `${cpu?.current_temperature || 0}°C`,
                                             },
                                             {
-                                                labelText: 'Max Temperature',
+                                                labelText: t('max-temperature', { ns: 'common' }),
                                                 labelValue: `${cpu?.max_temperature || 0}°C`,
                                             },
                                         ]}
                                     />
                                     <CardComponent
-                                        heading={gpu?.label || 'Unknown GPU'}
+                                        heading={gpu?.label || `${t('unknown', { ns: 'common' })} GPU`}
                                         labels={[
-                                            { labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%` },
                                             {
-                                                labelText: 'Temperature',
+                                                labelText: t('usage', { ns: 'common' }),
+                                                labelValue: `${gpu?.usage_percentage || 0}%`,
+                                            },
+                                            {
+                                                labelText: t('temperature', { ns: 'common' }),
                                                 labelValue: `${gpu?.current_temperature || 0}°C`,
                                             },
                                             {
-                                                labelText: 'Max Temperature',
+                                                labelText: t('max-temperature', { ns: 'common' }),
                                                 labelValue: `${gpu?.max_temperature || 0}°C`,
                                             },
                                         ]}
@@ -251,15 +290,15 @@ const Settings: React.FC = () => {
                         {applicationsVersions && (
                             <>
                                 <HorisontalBox>
-                                    <Typography variant="h6">Versions</Typography>
+                                    <Typography variant="h6">{t('versions', { ns: 'common' })}</Typography>
                                     <RightHandColumn>
                                         {currentEnvironment === Environment.Development && (
-                                            <Button onClick={getApplicationsVersions} variant="text">
-                                                Update Versions
+                                            <Button onClick={refreshApplicationsVersions} variant="text">
+                                                {t('refresh-versions', { ns: 'settings' })}
                                             </Button>
                                         )}
                                         <Button onClick={getApplicationsVersions} variant="text">
-                                            Refresh Versions
+                                            {t('update-versions', { ns: 'settings' })}
                                         </Button>
                                     </RightHandColumn>
                                 </HorisontalBox>
@@ -271,8 +310,8 @@ const Settings: React.FC = () => {
                                                 heading={key}
                                                 labels={[
                                                     {
-                                                        labelText: 'Version',
-                                                        labelValue: value || 'Unknown',
+                                                        labelText: t('version', { ns: 'common' }),
+                                                        labelValue: value || t('unknown', { ns: 'common' }),
                                                     },
                                                 ]}
                                             />
