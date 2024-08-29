@@ -235,7 +235,7 @@ impl MinotariNodeStatusMonitor {
                 break;
             }
             progress_tracker
-                .update("Waiting for initial sync".to_string(), 1)
+                .update("waiting-for-initial-sync".to_string(), 1)
                 .await;
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }

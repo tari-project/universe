@@ -1,9 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import VisualMode from '../components/VisualMode';
 
 function TribesView() {
+    const { t } = useTranslation('tribes-view', { useSuspense: false });
+
     return (
         <>
-            <div>TribesView</div>
+            <div>{t('title')}</div>
             <VisualMode />
         </>
     );

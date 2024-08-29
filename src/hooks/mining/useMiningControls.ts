@@ -8,12 +8,12 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 
 export enum MiningButtonStateText {
-    STARTING = 'Starting mining',
-    STARTED = 'Pause mining',
-    CONNECTION_LOST = 'Cancel mining',
-    START = 'Start mining',
-    AUTO_MINING = 'Waiting for idle',
-    AUTO_MINING_STARTED = 'Started auto mining',
+    STARTING = 'starting-mining',
+    STARTED = 'pause-mining',
+    CONNECTION_LOST = 'cancel-mining',
+    START = 'start-mining',
+    AUTO_MINING = 'waiting-for-idle',
+    AUTO_MINING_STARTED = 'started-auto-mining',
 }
 
 export function useMiningControls() {

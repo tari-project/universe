@@ -1,8 +1,8 @@
 export const FieldsErrors = {
-    Required: 'Field Required',
-    PasswordTooShort: 'Password must have at least 8 characters',
-    InvalidUrl: 'Must be a valid URL address',
-    InvalidEmail: 'Enter a valid email address',
-    InvalidDate: 'Date is invalid',
-    IntegersOnly: 'Only Integers Allowed',
+    Required: 'field-error-message.required',
+    PasswordTooShort: 'field-error-message.password-too-short',
+    InvalidUrl: 'field-error-message.invalid-url',
+    InvalidEmail: 'field-error-message.invalid-email',
+    InvalidDate: 'field-error-message.invalid-date',
+    IntegersOnly: 'field-error-message.integers-only',
 };
