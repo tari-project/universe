@@ -7,6 +7,7 @@
         "starting-mining": "Starting Mining",
         "start-mining": "Start Mining",
         "pause-mining": "Pause Mining",
+        "changing-mode": "Changing mode",
         "cancel-mining": "Cancel Mining",
         "waiting-for-idle": "Waiting for Idle",
         "started-auto-mining": "Auto Mining Started"

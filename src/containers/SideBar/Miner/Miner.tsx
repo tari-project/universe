@@ -43,13 +43,13 @@ function Miner() {
                 <TileContainer>
                     <ModeSelect />
                     <Tile
-                        title="Hashrate (H/s)"
+                        title={`${t('hashrate')} (H/s)`}
                         stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''}`}
                         isLoading={isWaitingForHashRate}
                     />
-                    <Tile title="CHIP/GPU" stats={hardwareVal || 'Unknown'} />
+                    <Tile title="CHIP/GPU" stats={hardwareVal || t('unknown')} />
                     <Tile
-                        title="Est tXTM/day"
+                        title={`Est tXTM/${t('day')}`}
                         stats={formatNumber(estimated_earnings / 1000000)}
                         isLoading={isWaitingForHashRate}
                     />
@@ -65,7 +65,7 @@ function Miner() {
                             <Fade in={isMiningEnabled || isChangingMode} timeout={450}>
                                 <TileContainer sx={{ zIndex: -199 }}>
                                     <Tile
-                                        title="CPU Utilization"
+                                        title={`CPU ${t('utilization')}`}
                                         stats={
                                             (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
                                                 maximumFractionDigits: 0,
@@ -73,7 +73,7 @@ function Miner() {
                                         }
                                     />
                                     <Tile
-                                        title="CPU Temperature"
+                                        title={`CPU ${t('temperature')}`}
                                         stats={`${cpuHardwareStatus?.current_temperature || 0}°C`}
                                     />
                                 </TileContainer>
