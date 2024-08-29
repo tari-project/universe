@@ -282,50 +282,6 @@ const Settings: React.FC = () => {
                             </>
                         )}
                         <Divider />
-                        {applicationsVersions && (
-                            <>
-                                <HorisontalBox>
-                                    <Typography variant="h6">Versions</Typography>
-                                    <RightHandColumn>
-                                        {currentEnvironment === Environment.Development && (
-                                            <Button onClick={getApplicationsVersions} variant="text">
-                                                Update Versions
-                                            </Button>
-                                        )}
-                                        <Button onClick={getApplicationsVersions} variant="text">
-                                            Refresh Versions
-                                        </Button>
-                                    </RightHandColumn>
-                                </HorisontalBox>
-                                <Stack spacing={0}>
-                                    <CardContainer>
-                                        <CardComponent
-                                            heading="Tari App"
-                                            labels={[
-                                                {
-                                                    labelText: 'Version',
-                                                    //labelValue: mainAppVersion || 'Unknown',
-                                                    labelValue: 'Unknown',
-                                                },
-                                            ]}
-                                        />
-                                        {Object.entries(applicationsVersions).map(([key, value]) => (
-                                            <CardComponent
-                                                key={`${key}-${value}`}
-                                                heading={key}
-                                                labels={[
-                                                    {
-                                                        labelText: 'Version',
-                                                        labelValue: value || 'Unknown',
-                                                    },
-                                                ]}
-                                            />
-                                        ))}
-                                    </CardContainer>
-                                </Stack>
-                            </>
-                        )}
-                        <Divider />
                         <HorisontalBox>
                             <VisualMode />
                             <TelemetryMode />
