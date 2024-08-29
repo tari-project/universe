@@ -114,7 +114,7 @@ jobs:
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
         with:
-          tagName: tari_universe-v__VERSION__
+          tagName: v__VERSION__
           releaseName: 'Tari Universe v__VERSION__'
           releaseBody: 'Tari Universe - See the assets to download this version and install'
           releaseDraft: true
