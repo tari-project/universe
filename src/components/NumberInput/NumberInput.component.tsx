@@ -63,7 +63,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
                                     } as React.ChangeEvent<HTMLInputElement>)
                                 }
                             >
-                                MAXIMUM
+                                MAX
                             </InputAdornment>
                         ) : (
                             symbol && <InputAdornment position="end">{symbol}</InputAdornment>

@@ -20,12 +20,12 @@ pub async fn download_file(
     // Stream the response body directly to the file
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
-        let _ = progress_tracker.update("Downloading".to_string(), 10).await;
+        let _ = progress_tracker.update("downloading".to_string(), 10).await;
         dest.write_all(&item?).await?;
     }
 
     progress_tracker
-        .update("Download completed".to_string(), 100)
+        .update("download-completed".to_string(), 100)
         .await;
     info!(target: LOG_TARGET, "Done downloading");
 

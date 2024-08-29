@@ -117,7 +117,7 @@ async fn setup_inner<'r>(
         "message",
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
-            title: "Starting up".to_string(),
+            title: "starting-up".to_string(),
             progress: 0.0,
         },
     );
@@ -158,7 +158,7 @@ async fn setup_inner<'r>(
 
         progress.set_max(10).await;
         progress
-            .update("Checking for latest version of node".to_string(), 0)
+            .update("checking-latest-version-node".to_string(), 0)
             .await;
         BinaryResolver::current()
             .ensure_latest(Binaries::MinotariNode, progress.clone())
@@ -167,7 +167,7 @@ async fn setup_inner<'r>(
 
         progress.set_max(15).await;
         progress
-            .update("Checking for latest version of mmproxy".to_string(), 0)
+            .update("checking-latest-version-mmproxy".to_string(), 0)
             .await;
         sleep(Duration::from_secs(1));
         BinaryResolver::current()
@@ -175,7 +175,7 @@ async fn setup_inner<'r>(
             .await?;
         progress.set_max(20).await;
         progress
-            .update("Checking for latest version of wallet".to_string(), 0)
+            .update("checking-latest-version-wallet".to_string(), 0)
             .await;
         sleep(Duration::from_secs(1));
         BinaryResolver::current()
@@ -184,7 +184,7 @@ async fn setup_inner<'r>(
 
         progress.set_max(30).await;
         progress
-            .update("Checking for latest version of xmrig".to_string(), 0)
+            .update("checking-latest-version-xmrig".to_string(), 0)
             .await;
         sleep(Duration::from_secs(1));
         XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
@@ -220,7 +220,7 @@ async fn setup_inner<'r>(
     info!(target: LOG_TARGET, "Node has started and is ready");
 
     progress.set_max(40).await;
-    progress.update("Waiting for wallet".to_string(), 0).await;
+    progress.update("waiting-for-wallet".to_string(), 0).await;
     state
         .wallet_manager
         .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
@@ -228,13 +228,13 @@ async fn setup_inner<'r>(
 
     progress.set_max(55).await;
     progress
-        .update("Waiting for node to sync".to_string(), 0)
+        .update("waiting-for-node".to_string(), 0)
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
     progress.set_max(75).await;
     progress
-        .update("Starting merge mining proxy".to_string(), 0)
+        .update("starting-mmproxy".to_string(), 0)
         .await;
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
@@ -259,7 +259,7 @@ async fn setup_inner<'r>(
         "message",
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
-            title: "Applications started".to_string(),
+            title: "application-started".to_string(),
             progress: 1.0,
         },
     );

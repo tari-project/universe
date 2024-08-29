@@ -6,5 +6,11 @@
     "usage": "Użycie",
     "seconds": "sekundy",
     "copied": "Skopiowano",
-    "unknown": "Nieznany"
+    "unknown": "Nieznany",
+    "versions": "Wersje",
+    "version": "Wersja",
+    "resources": "Zasoby",
+    "hashrate": "Prędkość ( hashrate )",
+    "utilization": "Wykorzystanie",
+    "mode": "Tryb"
 }

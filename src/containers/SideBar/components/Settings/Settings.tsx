@@ -27,7 +27,7 @@ import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.c
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
-import { Language, LanguageList } from '@app/i18initializer.ts';
+import { Language, LanguageList } from '../../../../i18initializer.ts';
 import { changeLanguage } from 'i18next';
 import { useTranslation } from 'react-i18next';
 
@@ -41,7 +41,7 @@ interface FormState {
 
 const Settings: React.FC = () => {
     const currentEnvironment = useEnvironment();
-    const { t } = useTranslation(['common', 'settings']);
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
     const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
@@ -259,7 +259,7 @@ const Settings: React.FC = () => {
                                                 labelValue: `${cpu?.current_temperature || 0}°C`,
                                             },
                                             {
-                                                labelText: t('usage', { ns: 'common' }),
+                                                labelText: t('max-temperature', { ns: 'common' }),
                                                 labelValue: `${cpu?.max_temperature || 0}°C`,
                                             },
                                         ]}
@@ -288,7 +288,7 @@ const Settings: React.FC = () => {
                         {applicationsVersions && (
                             <>
                                 <HorisontalBox>
-                                    <Typography variant="h6">{t('versions', { ns: 'settings' })}</Typography>
+                                    <Typography variant="h6">{t('versions', { ns: 'common' })}</Typography>
                                     <RightHandColumn>
                                         {currentEnvironment === Environment.Development && (
                                             <Button onClick={refreshApplicationsVersions} variant="text">

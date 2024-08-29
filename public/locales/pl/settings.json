@@ -1,0 +1,19 @@
+{
+    "settings": "Ustawienia",
+    "seed-words": "Słowa kluczowe",
+    "change-language": "Zmień język",
+    "logs": "Logi",
+    "open-logs-directory": "Otwórz katalog logów",
+    "debug-info": "Informacje debugowania",
+    "hardware-status": "Status sprzętu",
+    "update-versions": "Aktualizuj wersje",
+    "refresh-versions": "Odśwież wersje",
+    "idle-timeout": {
+        "title": "Czas po którym urządzenie jest uważane za bezczynne",
+        "placeholder": "Wprowadź czas bezczynności w sekundach",
+        "max": "Maksymalny czas to 21600 sekund",
+        "min": "Minimalny czas to 1 sekunda"
+    },
+    "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
+    "visual-mode": "Tryb wizualny"
+}

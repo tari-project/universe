@@ -7,8 +7,10 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { IoChevronForwardOutline, IoWarningOutline } from 'react-icons/io5';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { useTranslation } from 'react-i18next';
 
 function MiningButton() {
+    const { t } = useTranslation('mining-view', { useSuspense: false });
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
 
     const {
@@ -56,7 +58,7 @@ function MiningButton() {
                     },
                 }}
             >
-                <span>{getMiningButtonStateText()}</span>
+                <span>{t(`mining-button-text.${getMiningButtonStateText()}`)}</span>
             </StyledButton>
             {isConnectionLostDuringMining && (
                 <Stack
@@ -72,7 +74,7 @@ function MiningButton() {
                 >
                     <IoWarningOutline size={32} />
                     <Typography variant="body2" textAlign="left">
-                        Connection to miner lost. Please wait for the miner to reconnect or restart the miner.
+                        {t('connection-to-node-lost')}
                     </Typography>
                 </Stack>
             )}
