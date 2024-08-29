@@ -8,6 +8,8 @@ import { Typography } from '@mui/material';
 import { TileItem } from '../styles';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { Theme, useTheme } from '@mui/material/styles';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls';
+import { StyledIcon } from '@app/containers/Dashboard/MiningView/components/MiningButton.styles';
 import { useTranslation } from 'react-i18next';
 
 const CustomSelect = styled(Select)(({ theme }: { theme: Theme }) => ({
@@ -27,10 +29,10 @@ function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
 
     const mode = useAppStatusStore((s) => s.mode);
-    const setConfigMode = useAppStatusStore((s) => s.setConfigMode);
+    const { changeMode, isChangingMode } = useMiningControls();
 
     const handleChange = (event: SelectChangeEvent<unknown>) => {
-        setConfigMode(event.target.value as modeType);
+        changeMode(event.target.value as modeType);
     };
     const theme = useTheme();
     return (
@@ -43,7 +45,8 @@ function ModeSelect() {
                     theme={theme}
                     value={mode}
                     onChange={handleChange}
-                    IconComponent={IoCode}
+                    disabled={isChangingMode}
+                    IconComponent={isChangingMode ? StyledIcon : IoCode}
                     sx={{
                         '& .MuiSelect-icon': {
                             transform: 'rotate(90deg)',

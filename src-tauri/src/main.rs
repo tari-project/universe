@@ -62,21 +62,9 @@ mod setup_status_event;
 #[tauri::command]
 async fn set_mode<'r>(
     mode: String,
-    window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
-    app: tauri::AppHandle,
 ) -> Result<(), String> {
-    match stop_mining(state.clone()).await {
-        Ok(_) => {
-            let _ = state.config.write().await.set_mode(mode).await;
-            match start_mining(window, state.clone(), app).await {
-                Ok(_) => {}
-                Err(e) => warn!(target: LOG_TARGET, "Failed to start mining: {}", e.to_string()),
-            };
-        }
-        Err(e) => warn!(target: LOG_TARGET, "Failed to stop mining: {}", e.to_string()),
-    };
-
+    let _ = state.config.write().await.set_mode(mode).await;
     Ok(())
 }
 

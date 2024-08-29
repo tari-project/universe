@@ -12,5 +12,6 @@
     "resources": "Resources",
     "hashrate": "Hashrate",
     "utilization": "Utilization",
-    "mode": "Mode"
+    "mode": "Mode",
+    "day": "Day"
 }
