@@ -109,7 +109,6 @@ export function useMiningControls() {
 
         if (!isMining && isMiningInProgress.current) {
             console.info('useEffect: handleVisual pause');
-            console.info('useEffect: handleVisual pause');
             setIsConnectionLostDuringMining(true);
             void handleVisual('pause');
         }
