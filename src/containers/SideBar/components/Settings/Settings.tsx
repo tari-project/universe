@@ -18,7 +18,7 @@ import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useGetApplicationsVersions } from '../../../../hooks/useGetApplicationsVersions.ts';
+import { useApplicationsVersions } from '../../../../hooks/useVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
 import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles';
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
@@ -41,7 +41,8 @@ const Settings: React.FC = () => {
 
     const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
-    const { getApplicationsVersions, applicationsVersions } = useGetApplicationsVersions();
+    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const { refreshApplicationsVersions, getApplicationsVersions } = useApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
@@ -252,7 +253,7 @@ const Settings: React.FC = () => {
                                     <Typography variant="h6">Versions</Typography>
                                     <RightHandColumn>
                                         {currentEnvironment === Environment.Development && (
-                                            <Button onClick={getApplicationsVersions} variant="text">
+                                            <Button onClick={refreshApplicationsVersions} variant="text">
                                                 Update Versions
                                             </Button>
                                         )}
