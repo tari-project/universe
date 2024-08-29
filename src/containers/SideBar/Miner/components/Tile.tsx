@@ -16,7 +16,7 @@ function Tile({ title, stats, isLoading, unit }: TileProps) {
         <TileItem>
             <Typography variant="body2">{title}</Typography>
             {isLoading ? (
-                <StyledIcon sx={{ height: 24, width: 24 }} />
+                <StyledIcon sx={{ height: 20, width: 20 }} />
             ) : (
                 <StatWrapper>
                     <Typography variant="h5" fontSize={18} title={stats}>

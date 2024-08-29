@@ -7,6 +7,7 @@
         "starting-mining": "Uruchamianie kopania",
         "start-mining": "Uruchom kopanie",
         "pause-mining": "Wstrzymaj kopanie",
+        "changing-mode": "Zmiana trybu",
         "cancel-mining": "Anuluj kopanie",
         "waiting-for-idle": "Oczekiwanie na bezczynność",
         "started-auto-mining": "Automatyczne kopanie uruchomione"

@@ -10,6 +10,8 @@ interface State {
     sidebarOpen: boolean;
     isMiningSwitchingState: boolean;
     isMiningEnabled: boolean;
+    isMiningInProgress: boolean;
+    isChangingMode: boolean;
     isConnectionLostDuringMining: boolean;
 }
 interface Actions {
@@ -21,6 +23,8 @@ interface Actions {
     setIsMiningSwitchingState: (isMiningSwitchingState: State['isMiningSwitchingState']) => void;
     setIsMiningEnabled: (isMiningEnabled: State['isMiningEnabled']) => void;
     setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
+    setIsMiningInProgress: (isMiningInProgress: State['isMiningInProgress']) => void;
+    setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -33,6 +37,8 @@ const initialState: State = {
     sidebarOpen: false,
     isMiningSwitchingState: false,
     isMiningEnabled: false,
+    isMiningInProgress: false,
+    isChangingMode: false,
     isConnectionLostDuringMining: false,
 };
 
@@ -48,6 +54,8 @@ export const useUIStore = create<UIStoreState>()(
             setIsMiningSwitchingState: (isMiningSwitchingState) => set({ isMiningSwitchingState }),
             setIsMiningEnabled: (isMiningEnabled) => set({ isMiningEnabled }),
             setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
+            setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
+            setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
         }),
         {
             name: 'ui-store',
