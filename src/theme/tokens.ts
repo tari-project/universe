@@ -41,13 +41,6 @@ export const componentSettings: ThemeOptions = {
             fontSize: '12px',
             lineHeight: '18px',
         },
-        button: {
-            fontSize: '13px',
-            lineHeight: '1.1',
-            fontFamily: '"Poppins", sans-serif',
-            textTransform: 'none',
-            fontWeight: '700',
-        },
         h1: {
             fontSize: '30px',
             lineHeight: '42px',
