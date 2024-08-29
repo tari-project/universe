@@ -535,6 +535,14 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
     })
 }
 
+#[tauri::command]
+fn log_web_message(level: String, message: Vec<String>) {
+    match level.as_str() {
+        "error" => error!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
+        _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
     cpu: CpuMinerStatus,
@@ -605,6 +613,7 @@ struct Payload {
 }
 
 pub const LOG_TARGET: &str = "tari::universe::main";
+pub const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 fn main() {
     let default_hook = panic::take_hook();
@@ -724,6 +733,7 @@ fn main() {
             get_applications_versions,
             set_user_inactivity_timeout,
             update_applications,
+            log_web_message,
             set_telemetry_mode,
             set_airdrop_access_token
         ])

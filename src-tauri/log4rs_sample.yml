@@ -20,7 +20,22 @@ appenders:
       - kind: threshold
         level: warn
 
-
+  # An appender named "web" that writes to a file with a custom pattern encoder
+  web:
+    kind: rolling_file
+    path: "{{log_dir}}/universe/universe-web.log"
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 10mb
+      roller:
+        kind: fixed_window
+        base: 1
+        count: 5
+        pattern: "{{log_dir}}/universe/universe-web.{}.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m}{n} "
 
   # An appender named "base_layer" that writes to a file with a custom pattern encoder
   default:
@@ -68,4 +83,7 @@ loggers:
     level: debug
     appenders:
       - default
-
+  tari::universe::web:
+    level: info
+    appenders:
+      - web

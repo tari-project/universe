@@ -1,5 +1,5 @@
 import './theme/theme.css';
-import { StrictMode } from 'react';
+import { StrictMode, useEffect } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from './theme/themes';
@@ -15,6 +15,7 @@ import { useEnvironment } from './hooks/useEnvironment.ts';
 import { useAirdropTokensRefresh } from './hooks/airdrop/useAirdropTokensRefresh.ts';
 import { SplashScreen } from './containers/SplashScreen';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
+import { setupLogger } from './utils/logger.ts';
 
 function App() {
     useAirdropTokensRefresh();
@@ -25,6 +26,10 @@ function App() {
 
     const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
+
+    useEffect(() => {
+        setupLogger();
+    }, []);
 
     return (
         <StrictMode>
