@@ -1,5 +1,4 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::consts::PROCESS_CREATION_NO_WINDOW;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
 use anyhow::Error;
