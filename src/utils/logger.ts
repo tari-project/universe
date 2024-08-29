@@ -11,7 +11,7 @@ const parseArgument = (a: any) => {
     } catch (e) {
         return String(a);
     }
-}
+};
 
 export const setupLogger = () => {
     // Override console.log

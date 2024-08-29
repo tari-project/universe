@@ -26,8 +26,8 @@ function App() {
     const showSplash = useUIStore((s) => s.showSplash);
 
     useEffect(() => {
-        setupLogger()
-    }, [])
+        setupLogger();
+    }, []);
 
     return (
         <StrictMode>
