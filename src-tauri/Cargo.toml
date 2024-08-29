@@ -13,6 +13,7 @@ edition = "2021"
 tauri-build = { version = "1", features = ["isolation"] }
 
 [dependencies]
+jsonwebtoken = "9.3.0"
 tari_common = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_common_types = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
