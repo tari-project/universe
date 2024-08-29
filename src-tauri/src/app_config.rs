@@ -18,10 +18,8 @@ pub struct AppConfigFromFile {
     pub auto_mining: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
-    pub allow_analytics: bool,
+    pub allow_telemetry: bool,
     pub anon_id: String,
-    pub telemetry_collection: bool,
-    pub airdrop_user_refresh_token: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -55,10 +53,8 @@ pub struct AppConfig {
     pub auto_mining: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
-    pub allow_analytics: bool,
+    pub allow_telemetry: bool,
     pub anon_id: String,
-    pub telemetry_collection: bool,
-    pub airdrop_user_refresh_token: Option<String>,
 }
 
 impl AppConfig {
@@ -70,10 +66,8 @@ impl AppConfig {
             auto_mining: false,
             user_inactivity_timeout: Duration::from_secs(60),
             last_binaries_update_timestamp: SystemTime::now(),
-            allow_analytics: true,
+            allow_telemetry: true,
             anon_id: generate_password(20),
-            telemetry_collection: true,
-            airdrop_user_refresh_token: None,
         }
     }
 
@@ -90,17 +84,15 @@ impl AppConfig {
                     self.auto_mining = config.auto_mining;
                     self.user_inactivity_timeout = config.user_inactivity_timeout;
                     self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
-                    self.allow_analytics = config.allow_analytics;
+                    self.allow_telemetry = config.allow_telemetry;
                     self.anon_id = config.anon_id;
                     self.version = config.version;
                     if self.version == 0 {
                         // migrate
                         self.version = 1;
-                        self.allow_analytics = true;
+                        self.allow_telemetry = true;
                         self.anon_id = generate_password(20);
                     }
-                    self.telemetry_collection = config.telemetry_collection;
-                    self.airdrop_user_refresh_token = config.airdrop_user_refresh_token;
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -114,10 +106,8 @@ impl AppConfig {
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             version: self.version,
-            allow_analytics: self.allow_analytics,
+            allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
-            telemetry_collection: true,
-            airdrop_user_refresh_token: None,
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -149,30 +139,17 @@ impl AppConfig {
         self.auto_mining
     }
 
-    pub async fn set_telemetry_collection(
+    pub async fn set_allow_telemetry(
         &mut self,
-        telemetry_collection: bool,
+        allow_telemetry: bool,
     ) -> Result<(), anyhow::Error> {
-        self.telemetry_collection = telemetry_collection;
+        self.allow_telemetry = allow_telemetry;
         self.update_config_file().await?;
         Ok(())
     }
 
-    pub fn get_telemetry_collection(&self) -> bool {
-        self.telemetry_collection
-    }
-
-    pub async fn set_airdrop_user_refresh_token(
-        &mut self,
-        airdrop_user_refresh_token: Option<String>,
-    ) -> Result<(), anyhow::Error> {
-        self.airdrop_user_refresh_token = airdrop_user_refresh_token;
-        self.update_config_file().await?;
-        Ok(())
-    }
-
-    pub fn get_airdrop_user_refresh_token(&self) -> Option<String> {
-        self.airdrop_user_refresh_token.clone()
+    pub fn get_allow_telemetry(&self) -> bool {
+        self.allow_telemetry
     }
 
     pub fn get_user_inactivity_timeout(&self) -> Duration {
@@ -209,10 +186,8 @@ impl AppConfig {
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             version: self.version,
-            allow_analytics: self.allow_analytics,
+            allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
-            telemetry_collection: self.telemetry_collection,
-            airdrop_user_refresh_token: self.airdrop_user_refresh_token.clone(),
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

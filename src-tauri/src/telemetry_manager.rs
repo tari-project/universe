@@ -1,6 +1,6 @@
 use anyhow::Result;
 use jsonwebtoken::errors::Error as JwtError;
-use jsonwebtoken::{decode, Algorithm, DecodingKey, TokenData, Validation};
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, thread::sleep, time::Duration};
@@ -15,8 +15,9 @@ use crate::{
     gpu_miner::GpuMiner,
     hardware_monitor::HardwareMonitor,
     node_manager::NodeManager,
-    UniverseAppState, LOG_TARGET,
 };
+
+const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
 #[derive(Debug, Deserialize, Serialize)]
 struct AirdropAccessToken {
@@ -38,26 +39,18 @@ pub enum TelemetryResource {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum TelemetryNetwork {
-    #[serde(rename(serialize = "mainnet"))]
-    Main,
-    #[serde(rename(serialize = "stagenet"))]
-    Stage,
-    #[serde(rename(serialize = "nextnet"))]
-    Next,
-    #[serde(rename(serialize = "localnet"))]
-    Local,
-    #[serde(rename(serialize = "igor"))]
+    MainNet,
+    StageNet,
+    NextNet,
+    LocalNet,
     Igor,
-    #[serde(rename(serialize = "esmeralda"))]
     Esmeralda,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum TelemetryManagerError {
-    #[error("telemetry data could not be sent because of an error: {0}")]
-    ReqwestError(#[from] reqwest::Error),
-
     #[error("Other error: {0}")]
     Other(#[from] anyhow::Error),
 
@@ -68,10 +61,10 @@ pub enum TelemetryManagerError {
 impl From<Network> for TelemetryNetwork {
     fn from(value: Network) -> Self {
         match value {
-            Network::MainNet => TelemetryNetwork::Main,
-            Network::StageNet => TelemetryNetwork::Stage,
-            Network::NextNet => TelemetryNetwork::Next,
-            Network::LocalNet => TelemetryNetwork::Local,
+            Network::MainNet => TelemetryNetwork::MainNet,
+            Network::StageNet => TelemetryNetwork::StageNet,
+            Network::NextNet => TelemetryNetwork::NextNet,
+            Network::LocalNet => TelemetryNetwork::LocalNet,
             Network::Igor => TelemetryNetwork::Igor,
             Network::Esmeralda => TelemetryNetwork::Esmeralda,
         }
@@ -117,7 +110,6 @@ pub struct TelemetryManager {
     gpu_miner: Arc<RwLock<GpuMiner>>,
     config: Arc<RwLock<AppConfig>>,
     pub cancellation_token: CancellationToken,
-    pub is_collecting_telemetry: bool,
     node_network: Option<Network>,
 }
 
@@ -136,9 +128,22 @@ impl TelemetryManager {
             gpu_miner,
             config,
             cancellation_token,
-            is_collecting_telemetry: false,
             node_network: network,
         }
+    }
+
+    pub async fn get_unique_string(&self) -> String {
+        let config = self.config.read().await;
+        if !config.allow_telemetry {
+            return "".to_string();
+        }
+        let os = std::env::consts::OS;
+        let anon_id = config.anon_id.clone();
+        let version = env!("CARGO_PKG_VERSION");
+        let mode = MiningMode::to_str(config.mode.clone());
+        let auto_mining = config.auto_mining;
+        let unique_string = format!("v0,{},{},{},{},{}", anon_id, mode, auto_mining, os, version,);
+        unique_string
     }
 
     pub fn update_network(&mut self, network: Option<Network>) {
@@ -149,9 +154,7 @@ impl TelemetryManager {
         &mut self,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
     ) -> Result<()> {
-        info!("Starting telemetry manager");
-        let telemetry_collection_enabled = self.config.read().await.telemetry_collection;
-        self.is_collecting_telemetry = telemetry_collection_enabled;
+        info!(target: LOG_TARGET, "Starting telemetry manager");
         let _ = self
             .start_telemetry_process(Duration::from_secs(60), airdrop_access_token)
             .await;
@@ -174,47 +177,19 @@ impl TelemetryManager {
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
-                    info!("TelemetryManager::start_telemetry_process has  been started");
+                    info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
-                        let telemetry_collection_enabled = config_cloned.read().await.telemetry_collection;
-
-                        let airdrop_access_token_internal = airdrop_access_token.read().await.clone();
-                        let airdrop_access_token_validated = airdrop_access_token_internal.clone().and_then(|t| {
-                            let key = DecodingKey::from_secret(&[]);
-                            let mut validation = Validation::new(Algorithm::HS256);
-                            validation.insecure_disable_signature_validation();
-
-                            let claims = match decode::<AirdropAccessToken>(&t, &key, &validation) {
-                                Ok(data) => Some(data.claims),
-                                Err(e) => {
-                                    warn!("Error decoding access token: {:?}", e);
-                                    None
-                                }
-                            };
-
-                            let now = std::time::SystemTime::now();
-                            let now_unix = now.duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
-
-                            if let Some(claims) = claims {
-                                if claims.exp < now_unix {
-                                    warn!("Access token has expired");
-                                    None
-                                } else {
-                                    Some(t)
-                                }
-                            } else {
-                                None
-                            }
-                        });
+                        let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry;
 
                         if telemetry_collection_enabled {
+                            let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
                             let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
                             match telemetry {
                                 Ok(telemetry) => {
                                     send_telemetry_data(telemetry, airdrop_access_token_validated).await;
                                 },
                                 Err(e) => {
-                                    error!("Error getting telemetry data: {:?}", e);
+                                    error!(target: LOG_TARGET,"Error getting telemetry data: {:?}", e);
                                 }
                             }
                         }
@@ -222,12 +197,46 @@ impl TelemetryManager {
                     }
                 } => {},
                 _ = cancellation_token.cancelled() => {
-                    info!("TelemetryManager::start_telemetry_process has been cancelled");
+                    info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
                 }
             }
         });
         Ok(())
     }
+}
+
+async fn validate_jwt(airdrop_access_token: Arc<RwLock<Option<String>>>) -> Option<String> {
+    let airdrop_access_token_internal = airdrop_access_token.read().await.clone();
+    airdrop_access_token_internal.clone().and_then(|t| {
+        let key = DecodingKey::from_secret(&[]);
+        let mut validation = Validation::new(Algorithm::HS256);
+        validation.insecure_disable_signature_validation();
+
+        let claims = match decode::<AirdropAccessToken>(&t, &key, &validation) {
+            Ok(data) => Some(data.claims),
+            Err(e) => {
+                warn!(target: LOG_TARGET,"Error decoding access token: {:?}", e);
+                None
+            }
+        };
+
+        let now = std::time::SystemTime::now();
+        let now_unix = now
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        if let Some(claims) = claims {
+            if claims.exp < now_unix {
+                warn!(target: LOG_TARGET,"Access token has expired");
+                None
+            } else {
+                Some(t)
+            }
+        } else {
+            None
+        }
+    })
 }
 
 async fn get_telemetry_data(
@@ -290,7 +299,7 @@ fn get_airdrop_url() -> String {
 }
 
 async fn send_telemetry_data(data: TelemetryData, airdrop_access_token: Option<String>) {
-    debug!("Telemetry data being sent: {:?}", data);
+    debug!(target:LOG_TARGET, "Telemetry data being sent: {:?}", data);
 
     let request = reqwest::Client::new();
     let mut request_builder = request
@@ -301,21 +310,18 @@ async fn send_telemetry_data(data: TelemetryData, airdrop_access_token: Option<S
         request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
     }
 
-    let result = request_builder
-        .send()
-        .await
-        .map_err(TelemetryManagerError::ReqwestError);
+    let result = request_builder.send().await;
 
     match result {
         Ok(response) => {
             if response.status().is_success() {
-                info!("Telemetry data sent");
+                info!(target: LOG_TARGET,"Telemetry data sent");
             } else {
-                warn!("Error sending telemetry data: {:#?}", response);
+                warn!(target: LOG_TARGET,"Error sending telemetry data: {:#?}", response);
             }
         }
         Err(e) => {
-            error!("Error sending telemetry data: {:#?}", e);
+            error!(target: LOG_TARGET,"Error sending telemetry data: {:#?}", e);
         }
     }
 }
