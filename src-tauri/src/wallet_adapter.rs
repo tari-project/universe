@@ -108,12 +108,7 @@ impl ProcessAdapter for WalletAdapter {
                         .resolve_path(Binaries::Wallet)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(file_path)
-                        .args(args)
-                        .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::null())
-                        .kill_on_drop(true)
-                        .spawn()?;
+                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
 
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
