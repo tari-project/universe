@@ -18,7 +18,7 @@ import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useApplicationsVersions } from '../../../../hooks/useGetApplicationsVersions.ts';
+import { useApplicationsVersions } from '../../../../hooks/useVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
 import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles';
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
