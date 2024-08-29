@@ -130,7 +130,15 @@ export function useMiningControls() {
                 setIsChangingMode(false);
             }
         },
-        [isMiningInProgress, isConnectionLostDuringMining, isAutoMining]
+        [
+            isMiningInProgress,
+            isConnectionLostDuringMining,
+            isAutoMining,
+            cancelMining,
+            setIsChangingMode,
+            startMining,
+            stopMining,
+        ]
     );
 
     const getMiningButtonStateText = useCallback(() => {
@@ -159,7 +167,7 @@ export function useMiningControls() {
         }
 
         return MiningButtonStateText.START;
-    }, [isAutoMining, isMining, isWaitingForHashRate, isMiningEnabled, isConnectionLostDuringMining, isChangingMode]);
+    }, [isAutoMining, isMining, isMiningEnabled, isConnectionLostDuringMining, isChangingMode]);
 
     return {
         isMiningEnabled,

@@ -48,5 +48,15 @@ export const useMiningEffects = () => {
             handleVisual('pause');
             return;
         }
-    }, [handleVisual, isMining, isMiningEnabled, isConnectionLostDuringMining, isChangingMode, isMiningInProgress]);
+    }, [
+        handleVisual,
+        isMining,
+        isMiningEnabled,
+        isConnectionLostDuringMining,
+        isChangingMode,
+        isMiningInProgress,
+        setIsChangingMode,
+        setIsConnectionLostDuringMining,
+        setIsMiningInProgress,
+    ]);
 };
