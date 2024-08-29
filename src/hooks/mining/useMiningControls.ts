@@ -9,7 +9,7 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 
 export enum MiningButtonStateText {
     STARTING = 'starting-mining',
-    STARTED = 'start-mining',
+    STARTED = 'pause-mining',
     CONNECTION_LOST = 'cancel-mining',
     START = 'start-mining',
     AUTO_MINING = 'waiting-for-idle',
