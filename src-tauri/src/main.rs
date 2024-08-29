@@ -292,7 +292,7 @@ async fn setup_inner<'r>(
 
     progress.set_max(75).await;
     progress
-        .update("Waiting for node to sync".to_string(), 0)
+        .update("preparing-for-initial-sync".to_string(), 0)
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
