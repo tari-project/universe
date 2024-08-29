@@ -54,7 +54,6 @@ export function useMiningControls() {
 
     const shouldAutoMiningControlsBeEnabled = useMemo(() => {
         if (isMiningEnabled && !isAutoMining) return false;
-
         if (isMining && progress < 1) return true;
         return progress >= 1;
     }, [isAutoMining, isMining, progress, isMiningEnabled]);
@@ -75,7 +74,7 @@ export function useMiningControls() {
         await invoke('stop_mining', {})
             .then(async () => {
                 console.info(`mining stopped`);
-                handleVisual('stop');
+                await handleVisual('stop');
             })
             .catch(() => {
                 setIsMiningEnabled(true);
@@ -86,8 +85,8 @@ export function useMiningControls() {
         setIsMiningEnabled(false);
         await invoke('stop_mining', {}).then(async () => {
             console.info(`mining canceled`);
-            handleVisual('start');
-            handleVisual('stop');
+            await handleVisual('start');
+            await handleVisual('stop');
         });
     }, [handleVisual, setIsMiningEnabled]);
 
@@ -95,21 +94,23 @@ export function useMiningControls() {
         if (isMining && isMiningEnabled) {
             if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
             console.info('useEffect: handleVisual start');
-            handleVisual('start');
-            isMiningInProgress.current = true;
+            handleVisual('start').then(() => {
+                isMiningInProgress.current = true;
+            });
         }
 
         if (!isMining && !isMiningEnabled) {
             if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
             console.info('useEffect: handleVisual stop');
-            handleVisual('stop');
-            isMiningInProgress.current = false;
+            handleVisual('stop').then(() => {
+                isMiningInProgress.current = false;
+            });
         }
 
         if (!isMining && isMiningInProgress.current) {
             console.info('useEffect: handleVisual pause');
             setIsConnectionLostDuringMining(true);
-            handleVisual('pause');
+            void handleVisual('pause');
         }
     }, [handleVisual, isMining, isMiningEnabled, isConnectionLostDuringMining, setIsConnectionLostDuringMining]);
 
