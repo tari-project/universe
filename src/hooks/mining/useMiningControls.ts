@@ -162,6 +162,7 @@ export function useMiningControls() {
     }, [isAutoMining, isMining, isWaitingForHashRate, isMiningEnabled, isConnectionLostDuringMining, isChangingMode]);
 
     return {
+        isMiningEnabled,
         cancelMining,
         changeMode,
         isConnectionLostDuringMining,
