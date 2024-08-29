@@ -7,17 +7,21 @@ function SetupView({ title, progressPercentage }: { title: string; progressPerce
     return (
         <Stack spacing={0} alignItems="center" sx={{ position: 'relative', zIndex: '1' }}>
             <FloatingImage src={setup} alt="Soon Meditating" />
+
             <Typography variant="h3" fontSize={21} mt={3.4}>
                 Setting up the Tari truth machine...
             </Typography>
+
             <SetupDescription mt={0.4} mb={4}>
                 This might take a few minutes.
                 <br />
                 Don’t worry you’ll only need to do this once.
             </SetupDescription>
+
             <ProgressBox>
                 <StyledLinearProgress variant="determinate" value={progressPercentage} />
             </ProgressBox>
+
             <SetupPercentage mt={2.2}>{`${progressPercentage}%`}</SetupPercentage>
             <SetupDescription>{title}</SetupDescription>
         </Stack>
