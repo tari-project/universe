@@ -35,6 +35,8 @@ export default function UserInfo() {
         console.log('Log out');
     };
 
+    const showNotificationButton = false;
+
     return (
         <Wrapper>
             <StatsGroup>
@@ -54,10 +56,12 @@ export default function UserInfo() {
 
             <Divider />
 
-            <NotificationsButton>
-                <FaBell className="NotificationsButtonIcon" />
-                <Dot $color="green" />
-            </NotificationsButton>
+            {showNotificationButton && (
+                <NotificationsButton>
+                    <FaBell className="NotificationsButtonIcon" />
+                    <Dot $color="green" />
+                </NotificationsButton>
+            )}
 
             <StyledAvatar src={avatarImage} onClick={handleClick} alt="User Avatar" sx={{ width: 36, height: 36 }} />
 
