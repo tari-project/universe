@@ -14,24 +14,24 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { CardContainer, DialogContent, Form, HorisontalBox, RightHandColumn } from './Settings.styles';
-import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
-import { CardComponent } from './Card.component.tsx';
+import { DialogContent, Form, HorisontalBox } from './Settings.styles';
+
 import { useForm } from 'react-hook-form';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
-import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
+
 import { Button, IconButton } from '@app/components/elements/Button.tsx';
 import Dialog from '@app/components/elements/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
-import { useTranslation } from 'react-i18next';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
 import LanguageSettings from '@app/containers/SideBar/components/Settings/LanguageSettings.tsx';
 import HardwareStatus from '@app/containers/SideBar/components/Settings/HardwareStatus.tsx';
+
+import DebugSettings from '@app/containers/SideBar/components/Settings/DebugSettings.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -42,34 +42,21 @@ interface FormState {
 }
 
 export default function Settings() {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-
-    const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
+
     const [open, setOpen] = useState(true);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
-    const { reset, handleSubmit, control } = useForm<FormState>({
+    const { reset, handleSubmit } = useForm<FormState>({
         defaultValues: { idleTimeout: userInActivityTimeout },
         mode: 'onSubmit',
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
-    const { cpu, gpu } = useHardwareStatus();
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
         setShowSeedWords(false);
-    };
-
-    const openLogsDirectory = () => {
-        invoke('open_log_dir')
-            .then(() => {
-                console.info('Opening logs directory');
-            })
-            .catch((error) => {
-                console.error(error);
-            });
     };
 
     const toggleSeedWordsVisibility = async () => {
@@ -110,14 +97,9 @@ export default function Settings() {
         )();
     };
 
-    const now = new Date();
-    const lastBlockTime = calculateTimeSince(blockTime || 0, now.getTime());
-    const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
-    const displayTime = `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
-
     const seedWordMarkup = (
         <Stack>
-            <Stack direction="row" justifyContent="space-between" style={{ height: 50 }}>
+            <Stack direction="row" justifyContent="space-between" style={{ height: 40 }}>
                 <Typography variant="h6">Seed Words</Typography>
                 {showSeedWords && seedWordsFetched && (
                     <IconButton onClick={copySeedWords}>
@@ -131,13 +113,15 @@ export default function Settings() {
                         ? truncateString(seedWords.join(' '), 50)
                         : '****************************************************'}
                 </Typography>
-                {seedWordsFetching ? (
-                    <CircularProgress />
-                ) : (
-                    <IconButton onClick={toggleSeedWordsVisibility}>
-                        {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
-                    </IconButton>
-                )}
+                <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
+                    {seedWordsFetching ? (
+                        <CircularProgress />
+                    ) : showSeedWords ? (
+                        <IoEyeOffOutline size={18} />
+                    ) : (
+                        <IoEyeOutline size={18} />
+                    )}
+                </IconButton>
             </Stack>
         </Stack>
     );
@@ -156,6 +140,7 @@ export default function Settings() {
             </Stack>
         </Form>
     );
+
     return (
         <>
             <IconButton onClick={handleClickOpen}>
@@ -175,35 +160,19 @@ export default function Settings() {
                     {idleTimerMarkup}
                     <Divider />
                     <LanguageSettings />
-                    <HorisontalBox>
-                        <Typography variant="h6">Logs</Typography>
-                        <RightHandColumn>
-                            <Button onClick={openLogsDirectory} variant="text">
-                                Open logs directory
-                            </Button>
-                        </RightHandColumn>
-                    </HorisontalBox>
                     <Divider />
-                    <HorisontalBox>
-                        <Typography variant="h6">Debug Info:</Typography>
-                    </HorisontalBox>
-                    <CardComponent
-                        heading="Blocks"
-                        labels={[{ labelText: 'Last block added to chain time', labelValue: displayTime }]}
-                    />
-                    <Divider />
+                    <DebugSettings />
                     <Divider />
                     <HardwareStatus />
                     <Divider />
                     <AppVersions />
                     <Divider />
-                    <HorisontalBox>
+                    <Stack direction="row" justifyContent="space-between">
                         <VisualMode />
                         <TelemetryMode />
-                    </HorisontalBox>
-                    <HorisontalBox>
-                        <ConnectButton />
-                    </HorisontalBox>
+                    </Stack>
+                    <Divider />
+                    <ConnectButton />
                 </DialogContent>
             </Dialog>
         </>

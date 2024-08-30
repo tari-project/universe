@@ -5,7 +5,7 @@ export const HorisontalBox = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     justify-items: start;
     width: 100%;
 `;
@@ -16,7 +16,7 @@ export const DialogContent = styled.div`
     flex-direction: column;
     width: 100%;
     height: 100%;
-    gap: 8px;
+    gap: 4px;
 `;
 export const RightHandColumn = styled.div`
     justify-self: end;
