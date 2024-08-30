@@ -29,7 +29,7 @@ interface TokenResponse {
     scope: string;
 }
 
-interface UserDetails {
+interface User {
     is_bot: boolean;
     twitter_followers: number;
     id: string;
@@ -38,6 +38,16 @@ interface UserDetails {
     name: string;
     role: string;
     profileimageurl: string;
+    rank: {
+        gems: number;
+        shells: number;
+        hammers: number;
+        totalScore: number;
+    };
+}
+
+interface UserDetails {
+    user: User;
 }
 
 interface AirdropTokens {

@@ -15,11 +15,18 @@ import { Menu, MenuItem, Grow } from '@mui/material';
 import gemImage from './images/gems.png';
 import shellImage from './images/shells.png';
 import hammerImage from './images/hammers.png';
-import avatarImage from './images/avatar.png';
 import { FaBell } from 'react-icons/fa6';
 import { useState } from 'react';
+import { useAirdropStore } from '@app/store/useAirdropStore';
 
 export default function UserInfo() {
+    const { logout, userDetails } = useAirdropStore();
+
+    const profileimageurl = userDetails?.user.profileimageurl;
+    const gems = userDetails?.user.rank.gems;
+    const shells = userDetails?.user.rank.shells;
+    const hammers = userDetails?.user.rank.hammers;
+
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -32,7 +39,7 @@ export default function UserInfo() {
 
     const handleLogout = () => {
         setAnchorEl(null);
-        console.log('Log out');
+        logout();
     };
 
     const showNotificationButton = false;
@@ -41,15 +48,15 @@ export default function UserInfo() {
         <Wrapper>
             <StatsGroup>
                 <StatsPill>
-                    <StatsNumber>350</StatsNumber>
+                    <StatsNumber>{gems}</StatsNumber>
                     <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" />
                 </StatsPill>
                 <StatsPill>
-                    <StatsNumber>28</StatsNumber>
+                    <StatsNumber>{shells}</StatsNumber>
                     <StatsIcon src={shellImage} alt="Shells" className="StatsIcon-shells" />
                 </StatsPill>
                 <StatsPill>
-                    <StatsNumber>2</StatsNumber>
+                    <StatsNumber>{hammers}</StatsNumber>
                     <StatsIcon src={hammerImage} alt="Hammers" className="StatsIcon-hammers" />
                 </StatsPill>
             </StatsGroup>
@@ -63,7 +70,12 @@ export default function UserInfo() {
                 </NotificationsButton>
             )}
 
-            <StyledAvatar src={avatarImage} onClick={handleClick} alt="User Avatar" sx={{ width: 36, height: 36 }} />
+            <StyledAvatar
+                src={profileimageurl}
+                onClick={handleClick}
+                alt="User Avatar"
+                sx={{ width: 36, height: 36 }}
+            />
 
             <Menu
                 anchorEl={anchorEl}
