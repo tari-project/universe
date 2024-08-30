@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 
 const Content = styled.div`
-    max-height: 600px;
+    max-height: 90%;
     min-height: 300px;
     min-width: 640px;
     max-width: 840px;
@@ -13,6 +13,15 @@ const Content = styled.div`
     display: flex;
     padding: 20px;
     overflow-y: scroll;
+    z-index: 1;
+    position: relative;
+`;
+const Backdrop = styled.div`
+    width: 100%;
+    position: absolute;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 0;
+    height: 100%;
 `;
 const Wrapper = styled.div`
     width: 100vw;
@@ -51,6 +60,7 @@ function ModalContent({ onClose, children }: Props) {
     }, [escFunction]);
     return (
         <Wrapper>
+            <Backdrop />
             <Content>{children}</Content>
         </Wrapper>
     );

@@ -29,7 +29,7 @@ export const light = {
         contrast: '#000000',
         primary: {
             main: tariPurple[600],
-            dark: tariPurple[700],
+            dark: tariPurple[800],
             light: tariPurple[500],
             shadow: tariPurpleAlpha[10],
         },

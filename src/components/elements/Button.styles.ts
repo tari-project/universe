@@ -24,7 +24,7 @@ const SQUARED_BASE_STYLES = css`
 `;
 
 const TEXT_BASE_STYLES = css`
-    color: ${({ theme }) => theme.palette.text.primary.dark};
+    color: ${({ theme }) => theme.palette.text.primary.main};
     height: unset;
     font-size: 16px;
     padding: 4px;
@@ -59,8 +59,8 @@ const BASE_STYLES = css`
 `;
 
 export const BaseButton = styled.button<Props>`
-    background: ${({ theme, $outlined }) => ($outlined ? theme.palette.background.paper : theme.palette.primary.dark)};
-    color: ${({ theme, $outlined }) => ($outlined ? theme.palette.primary.dark : theme.palette.text.contrast)};
+    background: ${({ theme, $outlined }) => ($outlined ? theme.palette.background.paper : theme.palette.primary.main)};
+    color: ${({ theme, $outlined }) => ($outlined ? theme.palette.primary.main : theme.palette.text.contrast)};
     ${BASE_STYLES}
     ${({ $variant }) => {
         switch ($variant) {

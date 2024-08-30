@@ -30,7 +30,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
                     {title}
                 </NumberInputTypography>
             )}
-            <Stack flexDirection="row" gap={1}>
+            <Stack>
                 {/*<Input*/}
                 {/*    error={Boolean(error)}*/}
                 {/*    fullWidth*/}
