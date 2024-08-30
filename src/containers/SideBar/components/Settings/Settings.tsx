@@ -87,7 +87,7 @@ const Settings: React.FC = () => {
             await getSeedWords();
         }
         setIsCopyTooltipHidden(false);
-        await navigator.clipboard.writeText(seedWords.join(','));
+        await navigator.clipboard.writeText(seedWords.join(' '));
         setTimeout(() => setIsCopyTooltipHidden(true), 1000);
     };
 
