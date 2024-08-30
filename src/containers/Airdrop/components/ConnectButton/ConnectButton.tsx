@@ -1,9 +1,11 @@
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
-import { StyledButton, StyledXIcon, StyledXIconWrapper } from './styles.ts';
-import { Typography } from '@mui/material';
+import { NumberPill, StyledButton, XIcon, IconCircle, Text, Gem1, Gem2, Gem3 } from './styles.ts';
 import { useCallback, useEffect } from 'react';
 import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
+import gem1Image from './images/gem-1.png';
+import gem2Image from './images/gem-2.png';
+import gem3Image from './images/gem-3.png';
 
 export default function ConnectButton() {
     const { authUuid, setAuthUuid, setAirdropTokens } = useAirdropStore();
@@ -49,23 +51,18 @@ export default function ConnectButton() {
     }, [authUuid, setAirdropTokens, setAuthUuid]);
 
     return (
-        <StyledButton
-            onClick={handleAuth}
-            size="medium"
-            endIcon={
-                <StyledXIconWrapper>
-                    <StyledXIcon />
-                </StyledXIconWrapper>
-            }
-            sx={{
-                position: 'relative',
-                '& .MuiButton-endIcon': {
-                    position: 'absolute',
-                    right: '1em',
-                },
-            }}
-        >
-            <Typography variant="button">Log in to claim gems</Typography>
+        <StyledButton onClick={handleAuth} size="medium">
+            <Gem1 src={gem1Image} alt="" className="ConnectButton-Gem1" />
+            <Gem2 src={gem2Image} alt="" className="ConnectButton-Gem2" />
+            <Gem3 src={gem3Image} alt="" className="ConnectButton-Gem3" />
+
+            <NumberPill>+200</NumberPill>
+
+            <Text>Log in to claim gems</Text>
+
+            <IconCircle>
+                <XIcon />
+            </IconCircle>
         </StyledButton>
     );
 }
