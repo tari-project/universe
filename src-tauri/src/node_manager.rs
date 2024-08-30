@@ -1,13 +1,15 @@
-use crate::node_adapter::MinotariNodeAdapter;
-use crate::process_watcher::ProcessWatcher;
-use crate::ProgressTracker;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tokio::fs;
 use tokio::sync::RwLock;
+
+use crate::node_adapter::MinotariNodeAdapter;
+use crate::process_watcher::ProcessWatcher;
+use crate::ProgressTracker;
 
 #[derive(Debug, thiserror::Error)]
 pub enum NodeManagerError {

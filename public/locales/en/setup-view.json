@@ -12,6 +12,7 @@
         "waiting-for-node": "Waiting for node to sync",
         "waiting-for-initial-sync": "Waiting for initial sync",
         "starting-mmproxy": "Starting merge mining proxy",
+        "starting-p2pool": "Starting P2Pool",
         "application-started": "Applications started",
         "downloading": "Downloading",
         "download-completed": "Download completed"
