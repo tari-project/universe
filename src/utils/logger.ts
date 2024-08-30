@@ -1,6 +1,8 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars  */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+// disabling eslint rules as this is a logger
 
 import { invoke } from '@tauri-apps/api';
 
@@ -13,6 +15,7 @@ const parseArgument = (a: any) => {
     try {
         return JSON.stringify(a, null, 2);
     } catch (_e) {
+        // should we not return this err?
         return String(a);
     }
 };
