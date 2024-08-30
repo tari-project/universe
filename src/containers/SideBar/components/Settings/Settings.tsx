@@ -26,7 +26,6 @@ import { CardComponent } from './Card.component.tsx';
 import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
-import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
 import { Language, LanguageList } from '../../../../i18initializer.ts';
@@ -324,9 +323,6 @@ const Settings: React.FC = () => {
                         <HorisontalBox>
                             <VisualMode />
                             <TelemetryMode />
-                        </HorisontalBox>
-                        <HorisontalBox>
-                            <ConnectButton />
                         </HorisontalBox>
                     </Stack>
                 </DialogContent>

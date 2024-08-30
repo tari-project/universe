@@ -15,6 +15,7 @@ import { useEnvironment } from './hooks/useEnvironment.ts';
 import { SplashScreen } from './containers/SplashScreen';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 import { setupLogger } from './utils/logger.ts';
+import AirdropLogin from './containers/Airdrop/AirdropLogin.tsx';
 import { useAirdropSyncState } from './hooks/airdrop/useAirdropSyncState.ts';
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
                     <DashboardContainer>
                         <ContainerInner>
                             <SideBar />
+                            <AirdropLogin />
                             <Dashboard status={view} />
                         </ContainerInner>
                     </DashboardContainer>
