@@ -52,6 +52,6 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         }),
         {
             name: 'status-store',
-        },
-    ),
+        }
+    )
 );

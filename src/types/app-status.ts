@@ -26,19 +26,19 @@ export interface P2poolStats {
     pool_total_estimated_earnings: P2poolEstimatedEarnings;
     total_earnings: Map<string, number>;
     estimated_earnings: Map<string, P2poolEstimatedEarnings>;
-    miner_block_stats: P2poolBlockStats,
-    p2pool_block_stats: P2poolBlockStats,
+    miner_block_stats: P2poolBlockStats;
+    p2pool_block_stats: P2poolBlockStats;
 }
 
 export interface P2poolTribeDetails {
-    id: string,
-    name: string,
+    id: string;
+    name: string;
 }
 
 export interface P2poolBlockStats {
-    accepted: number,
-    rejected: number,
-    submitted: number,
+    accepted: number;
+    rejected: number;
+    submitted: number;
 }
 
 export interface P2poolEstimatedEarnings {
@@ -50,10 +50,10 @@ export interface P2poolEstimatedEarnings {
 }
 
 export interface P2poolStatsBlock {
-    hash: string,
-    height: number,
-    timestamp: number,
-    miner_wallet_address?: string,
+    hash: string;
+    height: number;
+    timestamp: number;
+    miner_wallet_address?: string;
 }
 
 export interface HardwareParameters {
