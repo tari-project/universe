@@ -1,10 +1,9 @@
 import ConnectButton from './components/ConnectButton/ConnectButton';
+import UserInfo from './components/UserInfo/UserInfo';
 import { AirdropLoginPosition } from './styles';
 
 export default function AirdropLogin() {
-    return (
-        <AirdropLoginPosition>
-            <ConnectButton />
-        </AirdropLoginPosition>
-    );
+    const isLoggedIn = false;
+
+    return <AirdropLoginPosition>{!isLoggedIn ? <ConnectButton /> : <UserInfo />}</AirdropLoginPosition>;
 }

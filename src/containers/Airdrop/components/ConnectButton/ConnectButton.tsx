@@ -57,7 +57,9 @@ export default function ConnectButton() {
             <Gem3 src={gem3Image} alt="" className="ConnectButton-Gem3" />
 
             <NumberPill>+200</NumberPill>
+
             <Text>Log in to claim gems</Text>
+
             <IconCircle>
                 <XIcon />
             </IconCircle>
