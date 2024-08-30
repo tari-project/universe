@@ -1,14 +1,13 @@
-import { createTheme } from '@mui/material/styles';
 import { light, dark, componentSettings } from './tokens';
 
-const lightTheme = createTheme({
+const lightTheme = {
     ...light,
     ...componentSettings,
-});
+};
 
-const darkTheme = createTheme({
+const darkTheme = {
     ...dark,
     ...componentSettings,
-});
+};
 
 export { lightTheme, darkTheme };

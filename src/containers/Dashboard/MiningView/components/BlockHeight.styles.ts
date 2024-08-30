@@ -1,5 +1,4 @@
-import { styled } from '@mui/material/styles';
-import { Box } from '@mui/material';
+import styled from 'styled-components';
 
 interface BlockHeightBgProps {
     length: number;
@@ -8,72 +7,78 @@ interface BlockHeightBgProps {
 const topHeight = 115;
 const bottomHeight = 115;
 
-export const RulerAbsoluteWrapper = styled(Box)(() => ({
-    zIndex: 100,
-    position: 'absolute',
-    right: 0,
-    height: `calc(100vh - ${topHeight}px - ${bottomHeight}px)`,
-    top: '50%',
-    transform: 'translateY(-50%)',
-}));
+export const RulerAbsoluteWrapper = styled.div`
+    z-index: 100;
+    position: absolute;
+    right: 0;
+    height: calc(100vh - ${topHeight}px - ${bottomHeight}px);
+    flex-direction: column;
+    top: 50%;
+    transform: translateY(-50%);
+`;
 
-export const RulerContainer = styled(Box)(() => ({
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    height: '100%',
-    zIndex: 2,
-}));
+export const RulerContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    z-index: 2;
+`;
 
-export const RulerMarkContainer = styled(Box)(() => ({
-    display: 'flex',
-    flexDirection: 'row',
-    minWidth: '50px',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    height: '3px',
-    overflow: 'visible',
-    gap: '10px',
-}));
+export const RulerMarkContainer = styled.div`
+    display: flex;
+    flex-direction: row;
+    min-width: 50px;
+    align-items: center;
+    justify-content: flex-end;
+    height: 3px;
+    overflow: visible;
+    gap: 10px;
+`;
 
-export const RulerMark = styled('div')(({ theme }) => ({
-    width: '10px',
-    height: '1px',
-    backgroundColor: theme.palette.text.primary,
-}));
+export const RulerMark = styled('div')`
+    width: 10px;
+    height: 1px;
+    background-color: ${({ theme }) => theme.palette.text.primary};
+`;
 
-export const BlockHeightLrg = styled(Box)(({ theme }) => ({
-    fontFamily: '"DrukWideLCGBold", sans-serif',
-    fontSize: '25px',
-    letterSpacing: '1px',
-    color: `${theme.palette.text.primary}`,
-    position: 'absolute',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    right: '15px',
-    zIndex: 2,
-}));
+export const BlockHeightLrg = styled.div`
+    font-family: 'DrukWideLCGBold', sans-serif;
+    font-size: 25px;
+    letter-spacing: 1px;
+    color: ${({ theme }) => theme.palette.text.primary};
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    display: flex;
+    z-index: 2;
+    transform: translateY(-50%);
+`;
 
-export const BlockHeightSml = styled(Box)(({ theme }) => ({
-    fontFamily: '"PoppinsBold", sans-serif',
-    fontVariantNumeric: 'tabular-nums',
-    fontSize: '11px',
-    color: `${theme.palette.text.primary}`,
-    opacity: 0.2,
-}));
+export const BlockHeightSml = styled.div`
+    font-family: 'PoppinsBold', sans-serif;
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    color: ${({ theme }) => theme.palette.text.primary};
+    opacity: 0.2;
+`;
 
-export const BlockHeightBg = styled(Box)<BlockHeightBgProps>(({ length }) => ({
-    fontFamily: '"DrukWideLCGBold", sans-serif',
-    right: 0,
-    top: '50%',
-    transform: 'translate(50%, calc(20px - 100%))',
-    fontSize: `min(calc((100vh - ${topHeight + bottomHeight}px) / ${length}), 152px)`,
-    lineHeight: 1,
-    letterSpacing: '1px',
-    color: `rgba(255,255,255,0.4)`,
-    textTransform: 'uppercase',
-    position: 'absolute',
-    rotate: '270deg',
-    zIndex: 1,
-    transformOrigin: 'top right',
-}));
+export const BlockHeightBg = styled.div<BlockHeightBgProps>`
+    font-family: 'DrukWideLCGBold', sans-serif;
+    font-size: ${({ length }) => (length > 5 ? '100px' : '152px')};
+    line-height: ${({ length }) => (length > 5 ? '100px' : '152px')};
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    position: absolute;
+    width: calc(100vh - ${topHeight}px - ${bottomHeight}px);
+    top: 0;
+    right: ${({ length }) => (length > 5 ? '100px' : '125px')};
+    height: ${({ length }) => (length > 5 ? '100px' : '152px')};
+    rotate: 270deg;
+    z-index: 1;
+    transform-origin: top right;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+`;

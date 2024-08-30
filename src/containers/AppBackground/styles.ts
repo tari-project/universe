@@ -1,14 +1,13 @@
-import { styled, type Theme } from '@mui/material/styles';
-import { Box } from '@mui/material';
 import clouds from '../../assets/backgrounds/clouds.png';
+import styled from 'styled-components';
 
-export const BackgroundImage = styled(Box)(({ theme }: { theme: Theme }) => ({
-    backgroundColor: theme.palette.background.default,
-    backgroundSize: 'cover',
-    pointerEvents: 'none',
-    backgroundImage: `url(${clouds})`,
-    backgroundPosition: 'center',
-    position: 'absolute',
-    height: '100%',
-    width: '100%',
-}));
+export const BackgroundImage = styled.div`
+    background-color: ${(props) => props.theme.palette.background.default};
+    background-size: cover;
+    //pointer-events: none;
+    background-image: url(${clouds});
+    background-position: center;
+    position: absolute;
+    height: 100%;
+    width: 100%;
+`;

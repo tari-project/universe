@@ -197,3 +197,36 @@ export const darkAlpha = {
     80: 'rgba(0,0,0,0.8)',
     90: 'rgba(0,0,0,0.9)',
 };
+
+export const tariPurpleAlpha = {
+    5: 'rgba(147,48,255,0.05)',
+    10: 'rgba(147,48,255,0.1)',
+    20: 'rgba(147,48,255,0.2)',
+    30: 'rgba(147,48,255,0.3)',
+    40: 'rgba(147,48,255,0.4)',
+    50: 'rgba(147,48,255,0.5)',
+    60: 'rgba(147,48,255,0.6)',
+    70: 'rgba(147,48,255,0.7)',
+    80: 'rgba(147,48,255,0.8)',
+    90: 'rgba(147,48,255,0.9)',
+};
+
+export const colors = {
+    blue,
+    orange,
+    green,
+    red,
+    lightAlpha,
+    darkAlpha,
+    teal,
+    gothic,
+    tariPurple,
+    grey,
+    success,
+    info,
+    warning,
+    error,
+    backgrounds,
+    brightGreen,
+    tariPurpleAlpha,
+};

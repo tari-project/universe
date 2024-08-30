@@ -1,5 +1,4 @@
-import { styled } from '@mui/material/styles';
-import { IconButton } from '@mui/material';
+import styled from 'styled-components';
 
 const buttonSize = '14px';
 const colors = {
@@ -12,65 +11,60 @@ const colors = {
     icon: '#000',
 };
 
-export const MinMaxStyle = {
-    transform: 'rotate(135deg)',
-};
-
-export const CloseButton = styled(IconButton)({
-    backgroundColor: colors.close,
-    border: `1px solid ${colors.closeDark}`,
-    height: buttonSize,
-    width: buttonSize,
-    boxShadow: 'none',
-    padding: 0,
-    color: colors.close,
+export const CloseButton = styled.div`
+    background-color: ${colors.close};
+    border: 1px solid ${colors.closeDark};
+    height: ${buttonSize};
+    width: ${buttonSize};
+    box-shadow: none;
+    padding: 0;
+    color: ${colors.close};
     '&:hover': {
-        backgroundColor: colors.close,
-        borderColor: colors.closeDark,
-        color: colors.icon,
-    },
-});
+        background-color: ${colors.close};
+        border-color: ${colors.closeDark};
+        color: ${colors.icon};
+    }
+`;
 
-export const TitleBarContainer = styled('div')({
-    height: '40px',
-    userSelect: 'none',
-    pointerEvents: 'visible',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-});
+export const TitleBarContainer = styled('div')`
+    height: 40px;
+    user-select: none;
+    pointer-events: visible;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+`;
 
-export const MinimizeButton = styled(IconButton)({
-    backgroundColor: colors.minMax,
-    border: `1px solid ${colors.minMaxDark}`,
-    height: buttonSize,
-    width: buttonSize,
-    boxShadow: 'none',
-    padding: 0,
-    color: colors.minMax,
+export const MinimizeButton = styled.button`
+    background-color: ${colors.minMax};
+    border: 1px solid ${colors.minMaxDark};
+    height: ${buttonSize};
+    width: ${buttonSize};
+    box-shadow: none;
+    padding: 0;
+    color: ${colors.minMax};
     '&:hover': {
-        backgroundColor: colors.minMax,
-        borderColor: colors.minMaxDark,
-        color: colors.icon,
-    },
-});
+        background-color: ${colors.minMax};
+        border-color: ${colors.minMaxDark};
+        color: ${colors.icon};
+    }
+`;
 
-export const ToggleButton = styled(IconButton)({
-    backgroundColor: colors.maximize,
-    border: `1px solid ${colors.maximizeDark}`,
-    height: buttonSize,
-    width: buttonSize,
-    boxShadow: 'none',
-    padding: 0,
-    color: colors.maximize,
+export const ToggleButton = styled.button`
+    border: 1px solid ${colors.maximizeDark};
+    height: ${buttonSize};
+    width: ${buttonSize};
+    box-shadow: none;
+    padding: 0;
+    color: ${colors.maximize};
     '&:hover': {
-        backgroundColor: colors.maximize,
-        borderColor: colors.maximizeDark,
-        color: colors.icon,
+        background-color: ${colors.maximize};
+        border-color: ${colors.maximizeDark};
+        color: ${colors.icon};
     },
-});
+`;

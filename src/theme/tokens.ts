@@ -20,196 +20,18 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { ThemeOptions } from '@mui/material/styles';
-import { tariPurple, grey, success, info, warning, error, brightGreen } from './colors';
+import { tariPurple, grey, success, info, warning, error, brightGreen, colors, tariPurpleAlpha } from './colors';
 
-export const appBorderRadius = '0px'; // if this changes, please update the #canvas styling in index.html - can't import there
-
-export const componentSettings: ThemeOptions = {
-    shape: {
-        borderRadius: 10,
-    },
-    spacing: 10,
-    typography: {
-        fontFamily: '"PoppinsMedium", sans-serif',
-        fontSize: 14,
-        body1: {
-            fontSize: '14px',
-            lineHeight: '20px',
-        },
-        body2: {
-            fontSize: '12px',
-            lineHeight: '18px',
-        },
-        h1: {
-            fontSize: '30px',
-            lineHeight: '42px',
-            fontFamily: '"PoppinsSemiBold", sans-serif',
-            letterSpacing: '-0.4px',
-        },
-        h2: {
-            fontSize: '26px',
-            lineHeight: '36px',
-            fontFamily: '"PoppinsSemiBold", sans-serif',
-            letterSpacing: '-1.2px',
-        },
-        h3: {
-            fontSize: '24px',
-            lineHeight: '32px',
-            fontFamily: '"PoppinsSemiBold", sans-serif',
-            letterSpacing: '-0.4px',
-        },
-        h4: {
-            fontSize: '20px',
-            lineHeight: '28px',
-            fontFamily: '"PoppinsSemiBold", sans-serif',
-            letterSpacing: '-1.6px',
-        },
-        h5: {
-            fontSize: '16px',
-            lineHeight: '26px',
-            fontFamily: '"PoppinsMedium", sans-serif',
-            letterSpacing: '-0.4px',
-        },
-        h6: {
-            fontSize: '14px',
-            lineHeight: '20px',
-            fontFamily: '"PoppinsMedium", sans-serif',
-            letterSpacing: '-0.4px',
-        },
-    },
-    components: {
-        MuiTypography: {
-            defaultProps: {
-                sx: {
-                    color: (theme) => theme.palette.text.primary,
-                    boxShadow: 'none',
-                    '&.MuiTypography-body1': {
-                        color: (theme) => theme.palette.text.secondary,
-                    },
-                    '&.MuiTypography-body2': {
-                        color: (theme) => theme.palette.text.secondary,
-                    },
-                },
-            },
-        },
-        MuiPaper: {
-            defaultProps: {
-                elevation: 0,
-                sx: {
-                    background: (theme) => theme.palette.background.paper,
-                },
-            },
-        },
-        MuiDivider: {
-            defaultProps: {
-                sx: {
-                    borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
-                },
-            },
-        },
-        MuiIconButton: {
-            defaultProps: {
-                sx: {
-                    padding: 0.5,
-                    boxShadow: 'none',
-                    color: (theme) => theme.palette.text.primary,
-                },
-            },
-        },
-        MuiButton: {
-            defaultProps: {
-                size: 'medium',
-                disableElevation: true,
-                disableRipple: true,
-                sx: {
-                    textTransform: 'none',
-                    letterSpacing: '-0.4px',
-                },
-            },
-        },
-        MuiDialog: {
-            defaultProps: {
-                sx: {
-                    '& .MuiBackdrop-root': {
-                        borderRadius: appBorderRadius,
-                    },
-                },
-            },
-        },
-        MuiLinearProgress: {
-            defaultProps: {
-                sx: {
-                    borderRadius: 10,
-                    height: 10,
-                    '& .MuiLinearProgress-bar': {
-                        borderRadius: 10,
-                    },
-                },
-            },
-        },
-        MuiSwitch: {
-            defaultProps: {
-                disableRipple: true,
-                sx: {
-                    width: '36px',
-                    height: '20px',
-                    padding: 0,
-                    '& .MuiSwitch-switchBase': {
-                        padding: 0,
-                        margin: '2px',
-                        transitionDuration: '300ms',
-                        '&.Mui-checked': {
-                            transform: 'translateX(16px)',
-                            color: '#fff',
-                            '& + .MuiSwitch-track': {
-                                backgroundColor: (theme) => (theme.palette.mode === 'dark' ? '#2ECA45' : '#06C983'),
-                                opacity: 1,
-                                border: 0,
-                            },
-                            '&.Mui-disabled + .MuiSwitch-track': {
-                                opacity: 0.5,
-                            },
-                        },
-                        '&.Mui-focusVisible .MuiSwitch-thumb': {
-                            color: '#33cf4d',
-                            border: '6px solid #fff',
-                        },
-                        '&.Mui-disabled .MuiSwitch-thumb': {
-                            color: (theme) =>
-                                theme.palette.mode === 'light' ? theme.palette.grey[100] : theme.palette.grey[600],
-                        },
-                        '&.Mui-disabled + .MuiSwitch-track': {
-                            opacity: (theme) => (theme.palette.mode === 'light' ? 0.7 : 0.3),
-                        },
-                    },
-                    '& .MuiSwitch-thumb': {
-                        boxSizing: 'border-box',
-                        width: '16px',
-                        height: '16px',
-                    },
-                    '& .MuiSwitch-track': {
-                        borderRadius: 20 / 2,
-                        backgroundColor: 'black',
-                        opacity: 1,
-                        transition: (theme) =>
-                            theme.transitions.create(['background-color'], {
-                                duration: 500,
-                            }),
-                    },
-                },
-            },
-        },
-    },
-};
-
-export const light: ThemeOptions = {
+export const light = {
     palette: {
         mode: 'light',
+        base: '#fff',
+        contrast: '#000000',
         primary: {
             main: tariPurple[600],
-            dark: tariPurple[800],
+            dark: tariPurple[700],
             light: tariPurple[500],
+            shadow: tariPurpleAlpha[10],
         },
         secondary: {
             main: brightGreen[600],
@@ -221,6 +43,7 @@ export const light: ThemeOptions = {
             primary: '#000000',
             secondary: '#797979',
             disabled: grey[400],
+            contrast: '#FFFFFF',
         },
         background: {
             default: grey[50],
@@ -250,16 +73,20 @@ export const light: ThemeOptions = {
             light: info[100],
             contrastText: info[300],
         },
+        colors,
     },
 };
 
-export const dark: ThemeOptions = {
+export const dark = {
     palette: {
         mode: 'dark',
+        base: '#000',
+        contrast: '#fff',
         primary: {
             main: tariPurple[500],
             dark: tariPurple[200],
             light: tariPurple[50],
+            shadow: tariPurpleAlpha[80],
         },
         secondary: {
             main: brightGreen[500],
@@ -271,6 +98,7 @@ export const dark: ThemeOptions = {
             primary: '#FFFFFF',
             secondary: grey[300],
             disabled: 'rgba(255,255,255,0.4)',
+            contrast: '#000000',
         },
         background: {
             default: '#1D1D1D',
@@ -299,6 +127,70 @@ export const dark: ThemeOptions = {
             dark: info[100],
             light: info[300],
             contrastText: info[100],
+        },
+        colors,
+    },
+};
+
+export const componentSettings = {
+    shape: {
+        borderRadius: {
+            app: '10px',
+            button: '30px',
+            buttonSquared: '8px',
+        },
+    },
+    typography: {
+        fontFamily: '"Poppins", sans-serif',
+        fontSize: 14,
+        fontWeight: 400,
+        p: {
+            fontSize: '14px',
+            lineHeight: '20px',
+            letterSpacing: '-1px',
+            fontWeight: 400,
+        },
+        h1: {
+            fontSize: '30px',
+            lineHeight: '42px',
+            fontFamily: '"Poppins", sans-serif',
+            letterSpacing: '-0.4px',
+            fontWeight: 600,
+        },
+        h2: {
+            fontSize: '26px',
+            lineHeight: '36px',
+            fontWeight: 600,
+            fontFamily: '"Poppins", sans-serif',
+            letterSpacing: '-1.2px',
+        },
+        h3: {
+            fontSize: '24px',
+            lineHeight: '32px',
+            fontFamily: '"Poppins", sans-serif',
+            letterSpacing: '-0.4px',
+            fontWeight: 600,
+        },
+        h4: {
+            fontSize: '20px',
+            lineHeight: '28px',
+            fontFamily: '"Poppins", sans-serif',
+            fontWeight: 600,
+            letterSpacing: '-1.6px',
+        },
+        h5: {
+            fontSize: '16px',
+            lineHeight: '1.05',
+            fontFamily: '"Poppins", sans-serif',
+            letterSpacing: '-0.4px',
+            fontWeight: 600,
+        },
+        h6: {
+            fontSize: '14px',
+            lineHeight: '20px',
+            fontFamily: '"Poppins", sans-serif',
+            letterSpacing: '-0.4px',
+            fontWeight: 500,
         },
     },
 };

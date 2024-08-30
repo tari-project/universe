@@ -1,36 +1,34 @@
-import { styled } from '@mui/material/styles';
-import { Button, Box } from '@mui/material';
+import styled from 'styled-components';
+import { Button } from '@app/components/elements/Button.tsx';
 
-export const MinerContainer = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    flexDirection: 'column',
-    gap: theme.spacing(2),
-}));
+export const MinerContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+`;
 
-export const TileContainer = styled(Box)(({ theme }) => ({
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: theme.spacing(0.6),
-}));
+export const TileContainer = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+`;
 
-export const TileItem = styled(Box)(({ theme }) => ({
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
-    paddingLeft: theme.spacing(1.5),
-    paddingRight: theme.spacing(1.5),
-    backgroundColor: theme.palette.background.paper,
-    borderRadius: theme.shape.borderRadius,
-    boxShadow: '0px 4px 45px 0px rgba(0, 0, 0, 0.08)',
-    maxWidth: '152px',
-}));
+export const TileItem = styled.div`
+    padding: 10px 15px;
+    background-color: ${({ theme }) => theme.palette.background.paper};
+    border-radius: ${({ theme }) => theme.shape.borderRadius.app};
+    box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
+    max-width: 152px;
+`;
 
-export const ScheduleButton = styled(Button)(({ theme }) => ({
-    backgroundColor: `${theme.palette.background.default} !important`,
-    color: theme.palette.text.secondary,
+export const ScheduleButton = styled(Button)`
+    background-color: ${({ theme }) => theme.palette.background.default};
+    color: ${({ theme }) => theme.palette.text.secondary};
     '&:hover': {
-        backgroundColor: `${theme.palette.divider} !important`,
-    },
-}));
+        background-color: ${({ theme }) => theme.palette.divider};
+    }
+`;
 
 export const StatWrapper = styled('div')`
     display: flex;

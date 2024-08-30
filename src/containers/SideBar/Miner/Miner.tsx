@@ -4,11 +4,11 @@ import AutoMiner from './components/AutoMiner/AutoMiner.tsx';
 
 import ModeSelect from './components/ModeSelect.tsx';
 import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
-import { Box, Divider, Fade, Slide, Stack } from '@mui/material';
 
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { formatNumber } from '@app/utils/formatNumber.ts';
+import { Divider } from '@app/components/elements/Divider.tsx';
 import { useRef } from 'react';
 import { TransitionGroup } from 'react-transition-group';
 import { useTranslation } from 'react-i18next';
@@ -54,33 +54,33 @@ function Miner() {
                         isLoading={isWaitingForHashRate}
                     />
                 </TileContainer>
-                <Stack ref={containerRef} my={0.6}>
-                    <Slide
-                        direction="up"
-                        in={isMiningEnabled || isChangingMode}
-                        container={containerRef.current}
-                        timeout={450}
-                    >
-                        <Box>
-                            <Fade in={isMiningEnabled || isChangingMode} timeout={450}>
-                                <TileContainer sx={{ zIndex: -199 }}>
-                                    <Tile
-                                        title={`CPU ${t('utilization')}`}
-                                        stats={
-                                            (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
-                                                maximumFractionDigits: 0,
-                                            }) + '%'
-                                        }
-                                    />
-                                    <Tile
-                                        title={`CPU ${t('temperature')}`}
-                                        stats={`${cpuHardwareStatus?.current_temperature || 0}°C`}
-                                    />
-                                </TileContainer>
-                            </Fade>
-                        </Box>
-                    </Slide>
-                </Stack>
+                {/*<Stack ref={containerRef} my={0.6}>*/}
+                {/*    <Slide*/}
+                {/*        direction="up"*/}
+                {/*        in={isMiningEnabled || isChangingMode}*/}
+                {/*        container={containerRef.current}*/}
+                {/*        timeout={450}*/}
+                {/*    >*/}
+                {/*        <Box>*/}
+                {/*            <Fade in={isMiningEnabled || isChangingMode} timeout={450}>*/}
+                {/*                <TileContainer sx={{ zIndex: -199 }}>*/}
+                {/*                    <Tile*/}
+                {/*                        title={`CPU ${t('utilization')}`}*/}
+                {/*                        stats={*/}
+                {/*                            (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {*/}
+                {/*                                maximumFractionDigits: 0,*/}
+                {/*                            }) + '%'*/}
+                {/*                        }*/}
+                {/*                    />*/}
+                {/*                    <Tile*/}
+                {/*                        title={`CPU ${t('temperature')}`}*/}
+                {/*                        stats={`${cpuHardwareStatus?.current_temperature || 0}°C`}*/}
+                {/*                    />*/}
+                {/*                </TileContainer>*/}
+                {/*            </Fade>*/}
+                {/*        </Box>*/}
+                {/*    </Slide>*/}
+                {/*</Stack>*/}
             </TransitionGroup>
         </MinerContainer>
     );
