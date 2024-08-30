@@ -78,6 +78,7 @@ export function useSetUp() {
         startMining,
         stopMining,
         setShowSplash,
+        setError,
     ]);
 
     useVersions();
