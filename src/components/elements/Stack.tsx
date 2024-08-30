@@ -15,7 +15,7 @@ const StyledStack = styled.div<{
     justify-content: ${({ $justifyContent }) => $justifyContent};
     align-items: ${({ $direction }) => ($direction === 'row' ? 'center' : 'stretch')};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    gap: 4px;
+    gap: 2px;
 `;
 
 export function Stack({ children, direction = 'column', justifyContent = 'center', ...props }: StackProps) {

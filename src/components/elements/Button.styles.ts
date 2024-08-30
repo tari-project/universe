@@ -7,6 +7,7 @@ const PADDING = '1rem';
 interface Props {
     $variant?: ButtonProps['variant'];
     $outlined?: boolean;
+    $simple?: boolean;
 }
 
 const ROUNDED_BASE_STYLES = css`
@@ -23,25 +24,14 @@ const SQUARED_BASE_STYLES = css`
     border-radius: ${({ theme }) => theme.shape.borderRadius.buttonSquared};
 `;
 
-const TEXT_BASE_STYLES = css`
-    color: ${({ theme }) => theme.palette.text.primary.main};
-    height: unset;
-    background: ${({ theme }) => theme.palette.background.paper};
-    &:hover {
-        background: ${({ theme }) => theme.palette.primary.wisp};
-        border-radius: ${({ theme }) => theme.shape.borderRadius.buttonSquared};
-    }
-`;
-
 const BASE_STYLES = css`
     cursor: pointer;
     display: inline-flex;
-    padding: 10px ${PADDING};
     transition: all 0.2s ease-in-out;
     align-items: center;
     justify-content: center;
     position: relative;
-
+    padding: 10px ${PADDING};
     font-family: ${({ theme }) => theme.typography.fontFamily};
     font-size: ${({ theme }) => theme.typography.h6.fontSize};
     line-height: ${({ theme }) => theme.typography.h6.lineHeight};
@@ -63,21 +53,30 @@ export const BaseButton = styled.button<Props>`
         background: ${({ theme, $outlined }) => ($outlined ? theme.palette.primary.wisp : theme.palette.primary.dark)};
     }
     ${BASE_STYLES}
-    ${({ $variant }) => {
+
+    ${({ $variant, $simple, theme }) => {
         switch ($variant) {
             case 'text':
-                return TEXT_BASE_STYLES;
+                return css`
+                    background: ${theme.palette.background.paper};
+                    color: ${theme.palette.primary.main};
+                    height: unset;
+                    padding: ${$simple ? '0 4px' : `10px ${PADDING}`};
+                    &:hover {
+                        background: ${$simple ? 'none' : theme.palette.primary.wisp};
+                        color: ${$simple ? theme.palette.primary.dark : theme.palette.primary.main};
+                        border-radius: ${theme.shape.borderRadius.buttonSquared};
+                    }
+                `;
             case 'rounded':
                 return ROUNDED_BASE_STYLES;
-
             case 'squared':
             default:
                 return SQUARED_BASE_STYLES;
         }
-    }}        
-}
+    }}
 
-`;
+}`;
 
 export const ChildrenWrapper = styled.div`
     display: flex;
