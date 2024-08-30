@@ -18,4 +18,5 @@ export const DynamicTypography = styled(({ variant = 'p', children, ...props }: 
     font-weight: ${({ theme, variant }) => theme.typography[variant].fontWeight || 400};
     margin: 0;
     display: flex;
+    color: ${({ theme, variant }) => (variant == 'p' ? theme.palette.text.secondary : theme.palette.text.primary)};
 `;

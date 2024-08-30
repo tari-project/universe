@@ -49,12 +49,7 @@ function AutoMiner() {
                 {isAutoMining && shouldAutoMiningControlsBeEnabled && (
                     <Stack>
                         <Typography variant="p">{currentUserInactivityDuration?.toFixed(2)}s</Typography>
-                        <div>
-                            <AutoMinerProgressBar
-                                value={percentage}
-                                //variant="determinate"
-                            />
-                        </div>
+                        <AutoMinerProgressBar value={percentage} />
                     </Stack>
                 )}
             </AutoMinerContainer>

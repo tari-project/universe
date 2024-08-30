@@ -146,9 +146,9 @@ export const componentSettings = {
         fontSize: 14,
         fontWeight: 400,
         p: {
-            fontSize: '14px',
-            lineHeight: '20px',
-            letterSpacing: '-1px',
+            fontSize: '12px',
+            lineHeight: 1.1,
+            letterSpacing: '-0.1px',
             fontWeight: 400,
         },
         h1: {

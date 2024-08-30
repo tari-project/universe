@@ -25,6 +25,7 @@ import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.ts
 import { Language, LanguageList } from '../../../../i18initializer.ts';
 import { changeLanguage } from 'i18next';
 import { useTranslation } from 'react-i18next';
+import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -129,8 +130,9 @@ export default function Settings() {
                         ? truncateString(seedWords.join(' '), 50)
                         : '****************************************************'}
                 </Typography>
+                <CircularProgress />
                 {seedWordsFetching ? (
-                    <div>loader</div>
+                    <CircularProgress />
                 ) : (
                     <IconButton onClick={toggleSeedWordsVisibility}>
                         {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}

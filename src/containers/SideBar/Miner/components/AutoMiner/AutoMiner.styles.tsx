@@ -12,6 +12,4 @@ export const AutoMinerContainer = styled(Stack)<{ percentage: number }>`
 export const AutoMinerProgressBar = styled(LinearProgress)`
     background-color: #18875044;
     height: 4px;
-    //background-color: '#188750';
-    //height: '4px';
 `;
