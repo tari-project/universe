@@ -12,14 +12,14 @@ import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 import { useEnvironment } from './hooks/useEnvironment.ts';
-import { useAirdropTokensRefresh } from './hooks/airdrop/useAirdropTokensRefresh.ts';
 import { SplashScreen } from './containers/SplashScreen';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 import { setupLogger } from './utils/logger.ts';
 import AirdropLogin from './containers/Airdrop/AirdropLogin.tsx';
+import { useAirdropSyncState } from './hooks/airdrop/useAirdropSyncState.ts';
 
 function App() {
-    useAirdropTokensRefresh();
+    useAirdropSyncState();
     useSetUp();
     useGetStatus();
     useEnvironment();
