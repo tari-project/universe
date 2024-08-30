@@ -1,6 +1,8 @@
-import { ReactNode, useCallback, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
+import { useKeyboardEvent } from '@app/hooks/helpers/useKeyboardEvent.ts';
+import { useClickOutside } from '@app/hooks/helpers/useClickOutside.ts';
 
 const Content = styled.div`
     max-height: 90%;
@@ -42,26 +44,12 @@ interface Props {
 }
 
 function ModalContent({ onClose, children }: Props) {
-    const escFunction = useCallback(
-        (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
-                onClose();
-            }
-        },
-        [onClose]
-    );
-
-    useEffect(() => {
-        document.addEventListener('keydown', escFunction, false);
-
-        return () => {
-            document.removeEventListener('keydown', escFunction, false);
-        };
-    }, [escFunction]);
+    useKeyboardEvent({ keys: ['Escape', 'Backspace'], callback: onClose });
+    const clickRef = useClickOutside(onClose);
     return (
         <Wrapper>
             <Backdrop />
-            <Content>{children}</Content>
+            <Content ref={clickRef}>{children}</Content>
         </Wrapper>
     );
 }

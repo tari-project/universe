@@ -30,8 +30,9 @@ export const light = {
         primary: {
             main: tariPurple[600],
             dark: tariPurple[800],
-            light: tariPurple[500],
+            light: tariPurple[400],
             shadow: tariPurpleAlpha[10],
+            wisp: tariPurpleAlpha[5],
         },
         secondary: {
             main: brightGreen[600],
@@ -137,7 +138,7 @@ export const componentSettings = {
         borderRadius: {
             app: '10px',
             button: '30px',
-            buttonSquared: '8px',
+            buttonSquared: '10px',
         },
     },
     typography: {

@@ -18,18 +18,17 @@ const ROUNDED_BASE_STYLES = css`
 `;
 
 const SQUARED_BASE_STYLES = css`
-    height: 40px;
-    border: 1px solid ${({ theme }) => theme.palette.primary.main};
+    height: 36px;
+    border: 1px solid ${({ theme }) => theme.palette.primary.light};
     border-radius: ${({ theme }) => theme.shape.borderRadius.buttonSquared};
 `;
 
 const TEXT_BASE_STYLES = css`
     color: ${({ theme }) => theme.palette.text.primary.main};
     height: unset;
-    font-size: 16px;
-    padding: 4px;
+    background: ${({ theme }) => theme.palette.background.paper};
     &:hover {
-        background: ${({ theme }) => theme.palette.primary.shadow};
+        background: ${({ theme }) => theme.palette.primary.wisp};
         border-radius: ${({ theme }) => theme.shape.borderRadius.buttonSquared};
     }
 `;
@@ -37,21 +36,20 @@ const TEXT_BASE_STYLES = css`
 const BASE_STYLES = css`
     cursor: pointer;
     display: inline-flex;
-    font-size: 17px;
     padding: 10px ${PADDING};
-    font-weight: 600;
-    line-height: 1.1;
-    letter-spacing: -0.3px;
     transition: all 0.2s ease-in-out;
     align-items: center;
     justify-content: center;
     position: relative;
 
+    font-family: ${({ theme }) => theme.typography.fontFamily};
+    font-size: ${({ theme }) => theme.typography.h6.fontSize};
+    line-height: ${({ theme }) => theme.typography.h6.lineHeight};
+    letter-spacing: ${({ theme }) => theme.typography.h6.letterSpacing};
+    font-weight: ${({ theme }) => theme.typography.h6.fontWeight};
+
     &:active {
         opacity: 0.9;
-    }
-    &:hover {
-        opacity: 0.8;
     }
     &:disabled {
         opacity: 0.5;
@@ -61,6 +59,9 @@ const BASE_STYLES = css`
 export const BaseButton = styled.button<Props>`
     background: ${({ theme, $outlined }) => ($outlined ? theme.palette.background.paper : theme.palette.primary.main)};
     color: ${({ theme, $outlined }) => ($outlined ? theme.palette.primary.main : theme.palette.text.contrast)};
+    &:hover {
+        background: ${({ theme, $outlined }) => ($outlined ? theme.palette.primary.wisp : theme.palette.primary.dark)};
+    }
     ${BASE_STYLES}
     ${({ $variant }) => {
         switch ($variant) {
@@ -114,7 +115,11 @@ export const BaseIconButton = styled.button`
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 34px;
+    width: 34px;
+    border-radius: 100%;
+    transition: background-color 0.2s ease-in-out;
     &:hover {
-        opacity: 0.7;
+        background-color: ${({ theme }) => theme.palette.primary.wisp};
     }
 `;

@@ -34,20 +34,19 @@ const Switch = styled.div<{ $isSolid?: boolean }>`
 
     border-radius: 24px;
     transition: 300ms all;
-
-    width: 50px;
-    height: 27px;
-    padding: 3px 4px;
+    width: 36px;
+    height: 20px;
+    padding: 3px 2px;
     gap: 10px;
 
     &:before {
         content: '';
         position: absolute;
-        width: 20px;
-        height: 20px;
+        width: 16px;
+        height: 16px;
         border-radius: 100%;
         top: 50%;
-        left: 4px;
+        left: 2px;
         background: ${({ theme }) => theme.palette.base};
         transform: translate(0, -50%);
         transition: 300ms all;
@@ -67,8 +66,8 @@ const Input = styled.input<{ $isSolid?: boolean }>`
                 : `linear-gradient(90deg, ${theme.palette.base} 0%, ${theme.palette.colors.grey[200]} 100%)`};
         &:before {
             background: ${({ $isSolid, theme }) => ($isSolid ? theme.palette.base : theme.palette.contrast)};
-            box-shadow: ${({ $isSolid }) => ($isSolid ? '0 4px 4px 0 rgba(0, 0, 0, 0.25)' : 'none')};
-            transform: translate(20px, -50%);
+            box-shadow: ${({ $isSolid }) => ($isSolid ? '0 3px 3px 0 rgba(0, 0, 0, 0.25)' : 'none')};
+            transform: translate(16px, -50%);
         }
     }
 `;
