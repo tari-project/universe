@@ -250,7 +250,8 @@ impl BinaryResolver {
             info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
             let in_progress_file_zip = in_progress_dir.join(&asset.name);
-            download_file_with_retries(&asset.url, &in_progress_file_zip, progress_tracker.clone()).await?;
+            download_file_with_retries(&asset.url, &in_progress_file_zip, progress_tracker.clone())
+                .await?;
             info!(target: LOG_TARGET, "Renaming file");
             info!(target: LOG_TARGET, "Extracting file");
 

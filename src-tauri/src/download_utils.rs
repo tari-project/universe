@@ -91,7 +91,6 @@ use futures_util::StreamExt;
 use log::info;
 use regex::Regex;
 use sha2::{Digest, Sha256};
-use tokio::time::sleep;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tar::Archive;
@@ -99,6 +98,7 @@ use tokio::fs;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::AsyncReadExt;
 use tokio::io::{AsyncWriteExt, BufReader};
+use tokio::time::sleep;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 // Taken from async_zip example
