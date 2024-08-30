@@ -259,7 +259,7 @@ async fn setup_inner<'r>(
     
     progress.set_max(100).await;
     progress
-        .update("starting-merge-mining-proxy".to_string(), 0)
+        .update("starting-mmproxy".to_string(), 0)
         .await;
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
