@@ -12,6 +12,7 @@
         "waiting-for-node": "Oczekiwanie na synchronizację węzła",
         "waiting-for-initial-sync": "Oczekiwanie na początkową synchronizację",
         "starting-mmproxy": "Uruchamianie mmproxy",
+        "starting-p2pool": "Uruchamianie P2Pool",
         "application-started": "Aplikacje uruchomione",
         "downloading": "Pobieranie",
         "download-completed": "Pobieranie zakończone"

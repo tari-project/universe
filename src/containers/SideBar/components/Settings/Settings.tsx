@@ -1,24 +1,26 @@
 import React, { useState } from 'react';
 import {
-    IconButton,
-    Dialog,
-    DialogContent,
-    Button,
-    Stack,
-    Typography,
-    Divider,
-    CircularProgress,
-    Tooltip,
     Box,
+    Button,
+    CircularProgress,
+    Dialog,
     DialogActions,
+    DialogContent,
+    Divider,
+    IconButton,
+    Stack,
+    Switch,
+    Tooltip,
+    Typography,
 } from '@mui/material';
-import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
-import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
+import { IoClose, IoCopyOutline, IoEyeOffOutline, IoEyeOutline, IoSettingsOutline } from 'react-icons/io5';
+import { useGetSeedWords } from '@app/hooks/useGetSeedWords.ts';
 import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { useApplicationsVersions } from '../../../../hooks/useVersions.ts';
+import { useGetApplicationsVersions } from '@app/hooks/useGetApplicationsVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
 import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles';
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
@@ -32,6 +34,11 @@ import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.ts
 import { Language, LanguageList } from '../../../../i18initializer.ts';
 import { changeLanguage } from 'i18next';
 import { useTranslation } from 'react-i18next';
+import useAppStateStore from '@app/store/appStateStore.ts';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { MinerContainer } from '../../Miner/styles.ts';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -58,6 +65,17 @@ const Settings: React.FC = () => {
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const { cpu, gpu } = useHardwareStatus();
+
+    const { isLoading } = useMiningControls();
+    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        invoke('set_p2pool_enabled', { p2poolEnabled: isChecked }).then(() => {
+            console.info('P2pool enabled checked', isChecked);
+        });
+    };
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -109,7 +127,7 @@ const Settings: React.FC = () => {
             },
             (error) => {
                 console.error(error);
-            }
+            },
         )();
     };
 
@@ -206,6 +224,22 @@ const Settings: React.FC = () => {
                                 </DialogActions>
                             </Box>
                         </form>
+                        <Divider />
+                        <MinerContainer>
+                            <Stack direction="column" spacing={0}>
+                                <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
+                                <Typography variant="body2">
+                                    {t('pool-mining-description', { ns: 'settings' })}
+                                </Typography>
+                            </Stack>
+                            <Switch
+                                focusVisibleClassName=".Mui-focusVisible"
+                                disableRipple
+                                checked={isP2poolEnabled}
+                                onChange={handleP2poolEnabled}
+                                disabled={isMining || !miningAllowed || isLoading}
+                            />
+                        </MinerContainer>
                         <Divider />
                         <HorisontalBox>
                             <Typography variant="h6">{t('change-language', { ns: 'settings' })}</Typography>

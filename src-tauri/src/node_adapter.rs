@@ -4,6 +4,7 @@ use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
+use async_trait::async_trait;
 use humantime::format_duration;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
@@ -153,7 +154,14 @@ pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
 }
 
-impl StatusMonitor for MinotariNodeStatusMonitor {}
+#[async_trait]
+impl StatusMonitor for MinotariNodeStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
+        todo!()
+    }
+}
 
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
