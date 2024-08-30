@@ -163,6 +163,13 @@ impl BinaryResolver {
                 owner: "tari-project".to_string(),
             }),
         );
+        adapters.insert(
+            Binaries::ShaP2pool,
+            Box::new(GithubReleasesAdapter {
+                repo: "sha-p2pool".to_string(),
+                owner: "tari-project".to_string(),
+            }),
+        );
         Self {
             adapters,
             download_mutex: Mutex::new(()),
@@ -385,6 +392,10 @@ fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error
             let wallet_bin = base_dir.join("minotari_console_wallet");
             Ok(wallet_bin)
         }
+        Binaries::ShaP2pool => {
+            let sha_p2pool_bin = base_dir.join("sha_p2pool");
+            Ok(sha_p2pool_bin)
+        }
     }
 }
 
@@ -394,6 +405,7 @@ pub enum Binaries {
     MergeMiningProxy,
     MinotariNode,
     Wallet,
+    ShaP2pool,
 }
 
 impl Binaries {
@@ -403,6 +415,7 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
+            Binaries::ShaP2pool => "sha-p2pool",
         }
     }
 }

@@ -1,28 +1,65 @@
+use std::fs;
+use std::path::PathBuf;
+
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
 use anyhow::Error;
+use async_trait::async_trait;
 use log::{debug, warn};
-use std::fs;
-use std::path::PathBuf;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::select;
+use tokio::sync::{broadcast, mpsc};
+use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
+#[derive(Clone, PartialEq)]
+pub struct MergeMiningProxyConfig {
+    pub port: u16,
+    pub p2pool_enabled: bool,
+    pub p2pool_grpc_port: u16,
+    pub base_node_grpc_port: u16,
+    pub coinbase_extra: String,
+}
+
+impl MergeMiningProxyConfig {
+    pub fn new(port: u16, base_node_grpc_port: u16, coinbase_extra: Option<String>) -> Self {
+        Self {
+            port,
+            p2pool_enabled: false,
+            p2pool_grpc_port: 0,
+            base_node_grpc_port,
+            coinbase_extra: coinbase_extra.unwrap_or("tari_universe_mmproxy".to_string()),
+        }
+    }
+
+    pub fn new_with_p2pool(
+        port: u16,
+        p2pool_grpc_port: u16,
+        coinbase_extra: Option<String>,
+    ) -> Self {
+        Self {
+            port,
+            p2pool_enabled: true,
+            p2pool_grpc_port,
+            base_node_grpc_port: 0,
+            coinbase_extra: coinbase_extra.unwrap_or("tari_universe_mmproxy".to_string()),
+        }
+    }
+}
+
 pub struct MergeMiningProxyAdapter {
     pub(crate) tari_address: TariAddress,
-    pub(crate) base_node_grpc_port: u16,
-    pub(crate) coinbase_extra: String,
+    pub config: MergeMiningProxyConfig,
 }
 
 impl MergeMiningProxyAdapter {
-    pub fn new() -> Self {
+    pub fn new(config: MergeMiningProxyConfig) -> Self {
         Self {
             tari_address: TariAddress::default(),
-            base_node_grpc_port: 18142,
-            coinbase_extra: "tari_universe_mmproxy".to_string(),
+            config,
         }
     }
 }
@@ -40,19 +77,35 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
         let working_dir = data_dir.join("mmproxy");
         std::fs::create_dir_all(&working_dir)?;
-        let args: Vec<String> = vec![
+
+        let base_node_port = if self.config.p2pool_enabled {
+            self.config.p2pool_grpc_port
+        } else {
+            self.config.base_node_grpc_port
+        };
+
+        let mut args: Vec<String> = vec![
             "-b".to_string(),
             working_dir.to_str().unwrap().to_string(),
             "--non-interactive-mode".to_string(),
-            format!("--log-path={}", log_dir.to_str().unwrap()),
+            "--log-path".to_string(),
+            log_dir.to_str().unwrap().to_string(),
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
                 "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
-                self.base_node_grpc_port
+                base_node_port
             ),
             "-p".to_string(),
-            format!("merge_mining_proxy.coinbase_extra={}", self.coinbase_extra),
+            format!(
+                "merge_mining_proxy.listener_address=/ip4/127.0.0.1/tcp/{}",
+                self.config.port
+            ),
+            "-p".to_string(),
+            format!(
+                "merge_mining_proxy.coinbase_extra={}",
+                self.config.coinbase_extra
+            ),
             "-p".to_string(),
             // TODO: If you leave this out, it does not start. It just halts. Probably an error on the mmproxy noninteractive
             format!(
@@ -62,6 +115,12 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
         ];
+
+        if self.config.p2pool_enabled {
+            args.push("-p".to_string());
+            args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
+        }
+
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
@@ -122,4 +181,11 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
 pub struct MergeMiningProxyStatusMonitor {}
 
-impl StatusMonitor for MergeMiningProxyStatusMonitor {}
+#[async_trait]
+impl StatusMonitor for MergeMiningProxyStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
+        todo!()
+    }
+}

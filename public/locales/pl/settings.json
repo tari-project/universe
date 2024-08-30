@@ -15,5 +15,7 @@
         "min": "Minimalny czas to 1 sekunda"
     },
     "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
-    "visual-mode": "Tryb wizualny"
+    "visual-mode": "Tryb wizualny",
+    "pool-mining": "Pool Mining",
+    "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia)."
 }
