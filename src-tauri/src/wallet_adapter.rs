@@ -110,6 +110,7 @@ impl ProcessAdapter for WalletAdapter {
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, &args)?;
+
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
                     }

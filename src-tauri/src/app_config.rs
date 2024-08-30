@@ -20,7 +20,7 @@ pub struct AppConfigFromFile {
     pub p2pool_enabled: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
-    pub allow_analytics: bool,
+    pub allow_telemetry: bool,
     pub anon_id: String,
 }
 
@@ -56,7 +56,7 @@ pub struct AppConfig {
     pub p2pool_enabled: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
-    pub allow_analytics: bool,
+    pub allow_telemetry: bool,
     pub anon_id: String,
 }
 
@@ -70,7 +70,7 @@ impl AppConfig {
             p2pool_enabled: false,
             user_inactivity_timeout: Duration::from_secs(60),
             last_binaries_update_timestamp: SystemTime::now(),
-            allow_analytics: true,
+            allow_telemetry: true,
             anon_id: generate_password(20),
         }
     }
@@ -89,13 +89,13 @@ impl AppConfig {
                     self.p2pool_enabled = config.p2pool_enabled;
                     self.user_inactivity_timeout = config.user_inactivity_timeout;
                     self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
-                    self.allow_analytics = config.allow_analytics;
+                    self.allow_telemetry = config.allow_telemetry;
                     self.anon_id = config.anon_id;
                     self.version = config.version;
                     if self.version == 0 {
                         // migrate
                         self.version = 1;
-                        self.allow_analytics = true;
+                        self.allow_telemetry = true;
                         self.anon_id = generate_password(20);
                     }
                 }
@@ -112,7 +112,7 @@ impl AppConfig {
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             version: self.version,
-            allow_analytics: self.allow_analytics,
+            allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
         };
         let config = serde_json::to_string(&config)?;
@@ -151,6 +151,19 @@ impl AppConfig {
         self.auto_mining
     }
 
+    pub async fn set_allow_telemetry(
+        &mut self,
+        allow_telemetry: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.allow_telemetry = allow_telemetry;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn get_allow_telemetry(&self) -> bool {
+        self.allow_telemetry
+    }
+
     pub fn get_user_inactivity_timeout(&self) -> Duration {
         self.user_inactivity_timeout
     }
@@ -186,7 +199,7 @@ impl AppConfig {
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             version: self.version,
-            allow_analytics: self.allow_analytics,
+            allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
         };
         let config = serde_json::to_string(config)?;

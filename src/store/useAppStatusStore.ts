@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
 import { persist } from 'zustand/middleware';
-import { invoke } from '@tauri-apps/api/tauri';
 
 type State = Partial<AppStatus>;
 
@@ -29,7 +28,6 @@ const initialState: AppStatus = {
     auto_mining: false,
     user_inactivity_timeout: undefined,
     current_user_inactivity_duration: undefined,
-    main_app_version: undefined,
     applications_versions: undefined,
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
@@ -38,7 +36,6 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
             ...initialState,
             setAppStatus: (appStatus) => set({ ...appStatus }),
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
-            setMainAppVersion: (main_app_version) => set({ main_app_version }),
             setMode: (mode) => set({ mode }),
             setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
             setCurrentUserInactivityDuration: (current_user_inactivity_duration) =>

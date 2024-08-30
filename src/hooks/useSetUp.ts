@@ -7,7 +7,7 @@ import { useUIStore } from '../store/useUIStore.ts';
 import useAppStateStore from '../store/appStateStore.ts';
 
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
-import { useGetApplicationsVersions } from '@app/hooks/useGetApplicationsVersions.ts';
+import { useVersions } from '@app/hooks/useVersions.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 export function useSetUp() {
@@ -78,5 +78,5 @@ export function useSetUp() {
         setShowSplash,
     ]);
 
-    useGetApplicationsVersions();
+    useVersions();
 }

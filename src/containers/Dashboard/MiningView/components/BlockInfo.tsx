@@ -1,12 +1,16 @@
 import {Divider, Stack, Typography} from '@mui/material';
 import {useAppStatusStore} from "@app/store/useAppStatusStore.ts";
 import {useMiningStore} from '@app/store/useMiningStore.ts';
+import { Stack, Typography } from '@mui/material';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useTranslation } from 'react-i18next';
 
 function BlockInfo() {
     const p2pool = useAppStatusStore((s) => s.p2pool_stats);
     const tribe = p2pool?.tribe.name;
     const minersCount = p2pool?.num_of_miners;
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const { t } = useTranslation('mining-view', { useSuspense: false });
     const displayBlockHeight = useMiningStore((s) => s.displayBlockHeight);
 
     const p2poolStats = isP2poolEnabled ? (
@@ -30,7 +34,7 @@ function BlockInfo() {
             {displayBlockHeight ? (
                 <Stack alignItems="flex-end">
                     <Typography variant="h6">#{displayBlockHeight}</Typography>
-                    <Typography variant="body2">Floor</Typography>
+                    <Typography variant="body2">{t('floor')}</Typography>
                 </Stack>
             ) : null}
         </Stack>
