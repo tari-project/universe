@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
 import { persist } from 'zustand/middleware';
+import { invoke } from '@tauri-apps/api/tauri';
 
 type State = Partial<AppStatus>;
 
@@ -10,7 +11,6 @@ interface Actions {
     setApplicationsVersions: (applicationsVersions: ApplicationsVersions) => void;
     setMode: (mode: modeType) => void;
     setConfigMode: (mode: modeType) => void;
-    setMainAppVersion: (mainAppVersion: string) => void;
     setP2poolEnabled: (p2poolEnabled: boolean) => void;
     setCurrentUserInactivityDuration: (duration: number) => void;
 }
@@ -35,11 +35,11 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         (set) => ({
             ...initialState,
             setAppStatus: (appStatus) => set({ ...appStatus }),
+            setCurrentUserInactivityDuration: (current_user_inactivity_duration) =>
+                set({ current_user_inactivity_duration }),
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMode: (mode) => set({ mode }),
             setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
-            setCurrentUserInactivityDuration: (current_user_inactivity_duration) =>
-                set({ current_user_inactivity_duration }),
             setConfigMode: async (mode) => {
                 try {
                     await invoke('set_mode', { mode });

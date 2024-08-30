@@ -20,7 +20,7 @@ pub struct StartConfig {
     pub log_path: PathBuf,
     pub tari_address: TariAddress,
     pub base_node_grpc_port: u16,
-    pub analytics_id: String,
+    pub coinbase_extra: String,
 }
 
 impl PartialEq for StartConfig {
@@ -29,7 +29,7 @@ impl PartialEq for StartConfig {
             && self.log_path == other.log_path
             && self.tari_address == other.tari_address
             && self.base_node_grpc_port == other.base_node_grpc_port
-            && self.analytics_id == other.analytics_id
+            && self.coinbase_extra == other.coinbase_extra
     }
 }
 
@@ -40,7 +40,7 @@ impl StartConfig {
         log_path: PathBuf,
         tari_address: TariAddress,
         base_node_grpc_port: u16,
-        analytics_id: String,
+        coinbase_extra: String,
     ) -> Self {
         Self {
             app_shutdown,
@@ -48,7 +48,7 @@ impl StartConfig {
             log_path,
             tari_address,
             base_node_grpc_port,
-            analytics_id,
+            coinbase_extra,
         }
     }
 }
@@ -114,7 +114,7 @@ impl MmProxyManager {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = config.tari_address;
         process_watcher.adapter.config.base_node_grpc_port = config.base_node_grpc_port;
-        process_watcher.adapter.config.coinbase_extra = config.analytics_id;
+        process_watcher.adapter.config.coinbase_extra = config.coinbase_extra;
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher
             .start(config.app_shutdown, config.base_path, config.log_path)

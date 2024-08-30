@@ -15,5 +15,7 @@
         "min": "Minimum is 1 second"
     },
     "last-block-added-time": "Last block added to chain time",
-    "visual-mode": "Visual mode"
+    "visual-mode": "Visual mode",
+    "pool-mining": "Pool Mining",
+    "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners (tribe)."
 }

@@ -59,8 +59,8 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
-use tokio::runtime::Handle;
 use telemetry_manager::TelemetryManager;
+use tokio::runtime::Handle;
 use tokio::sync::RwLock;
 use wallet_manager::WalletManagerError;
 
@@ -308,7 +308,6 @@ async fn setup_inner<'r>(
             app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
-            analytics_id,
             telemetry_id,
         ))
         .await?;
