@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
 
-import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
+import {
+    IoSettingsOutline,
+    IoClose,
+    IoCopyOutline,
+    IoEyeOutline,
+    IoEyeOffOutline,
+    IoCheckmarkOutline,
+} from 'react-icons/io5';
 import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
 import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useApplicationsVersions } from '../../../../hooks/useVersions.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
 import { CardContainer, DialogContent, Form, HorisontalBox, RightHandColumn } from './Settings.styles';
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
 import { CardComponent } from './Card.component.tsx';
-import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
 import { useForm } from 'react-hook-form';
-import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 import { Button, IconButton } from '@app/components/elements/Button.tsx';
@@ -22,10 +26,12 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
-import { Language, LanguageList } from '../../../../i18initializer.ts';
-import { changeLanguage } from 'i18next';
 import { useTranslation } from 'react-i18next';
+
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
+import LanguageSettings from '@app/containers/SideBar/components/Settings/LanguageSettings.tsx';
+import HardwareStatus from '@app/containers/SideBar/components/Settings/HardwareStatus.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -36,14 +42,11 @@ interface FormState {
 }
 
 export default function Settings() {
-    const currentEnvironment = useEnvironment();
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
     const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
-    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
-    const { refreshApplicationsVersions, getApplicationsVersions } = useApplicationsVersions();
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(true);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const { reset, handleSubmit, control } = useForm<FormState>({
@@ -107,15 +110,6 @@ export default function Settings() {
         )();
     };
 
-    const handleLanguageChange = React.useCallback(
-        (event: React.MouseEvent<HTMLButtonElement, MouseEvent>, language: Language) => {
-            event.preventDefault();
-            event.stopPropagation();
-            changeLanguage(language);
-        },
-        []
-    );
-
     const now = new Date();
     const lastBlockTime = calculateTimeSince(blockTime || 0, now.getTime());
     const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
@@ -123,14 +117,20 @@ export default function Settings() {
 
     const seedWordMarkup = (
         <Stack>
-            <Typography variant="h6">Seed Words</Typography>
+            <Stack direction="row" justifyContent="space-between" style={{ height: 50 }}>
+                <Typography variant="h6">Seed Words</Typography>
+                {showSeedWords && seedWordsFetched && (
+                    <IconButton onClick={copySeedWords}>
+                        {isCopyTooltipHidden ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+                    </IconButton>
+                )}
+            </Stack>
             <Stack direction="row" justifyContent="space-between">
                 <Typography variant="p">
                     {showSeedWords
                         ? truncateString(seedWords.join(' '), 50)
                         : '****************************************************'}
                 </Typography>
-                <CircularProgress />
                 {seedWordsFetching ? (
                     <CircularProgress />
                 ) : (
@@ -138,7 +138,6 @@ export default function Settings() {
                         {showSeedWords ? <IoEyeOffOutline size={18} /> : <IoEyeOutline size={18} />}
                     </IconButton>
                 )}
-                {showSeedWords && seedWordsFetched && <div>copy</div>}
             </Stack>
         </Stack>
     );
@@ -175,6 +174,7 @@ export default function Settings() {
                     <Divider />
                     {idleTimerMarkup}
                     <Divider />
+                    <LanguageSettings />
                     <HorisontalBox>
                         <Typography variant="h6">Logs</Typography>
                         <RightHandColumn>
@@ -193,77 +193,9 @@ export default function Settings() {
                     />
                     <Divider />
                     <Divider />
-                    {
-                        <>
-                            <HorisontalBox>
-                                <Typography variant="h6">Hardware Status:</Typography>
-                            </HorisontalBox>
-                            <CardContainer>
-                                <CardComponent
-                                    heading={cpu?.label || 'Unknown CPU'}
-                                    labels={[
-                                        { labelText: 'Usage', labelValue: `${cpu?.usage_percentage || 0}%` },
-                                        {
-                                            labelText: 'Temperature',
-                                            labelValue: `${cpu?.current_temperature || 0}°C`,
-                                        },
-                                        {
-                                            labelText: 'Max Temperature',
-                                            labelValue: `${cpu?.max_temperature || 0}°C`,
-                                        },
-                                    ]}
-                                />
-                                <CardComponent
-                                    heading={gpu?.label || 'Unknown GPU'}
-                                    labels={[
-                                        { labelText: 'Usage', labelValue: `${gpu?.usage_percentage || 0}%` },
-                                        {
-                                            labelText: 'Temperature',
-                                            labelValue: `${gpu?.current_temperature || 0}°C`,
-                                        },
-                                        {
-                                            labelText: 'Max Temperature',
-                                            labelValue: `${gpu?.max_temperature || 0}°C`,
-                                        },
-                                    ]}
-                                />
-                            </CardContainer>
-                        </>
-                    }
+                    <HardwareStatus />
                     <Divider />
-                    {applicationsVersions && (
-                        <>
-                            <HorisontalBox>
-                                <Typography variant="h6">Versions</Typography>
-                                <RightHandColumn>
-                                    {currentEnvironment === Environment.Development && (
-                                        <Button variant="text" onClick={refreshApplicationsVersions}>
-                                            Update Versions
-                                        </Button>
-                                    )}
-                                    <Button variant="text" onClick={getApplicationsVersions}>
-                                        Refresh Versions
-                                    </Button>
-                                </RightHandColumn>
-                            </HorisontalBox>
-                            <Stack>
-                                <CardContainer>
-                                    {Object.entries(applicationsVersions).map(([key, value]) => (
-                                        <CardComponent
-                                            key={`${key}-${value}`}
-                                            heading={key}
-                                            labels={[
-                                                {
-                                                    labelText: 'Version',
-                                                    labelValue: value || 'Unknown',
-                                                },
-                                            ]}
-                                        />
-                                    ))}
-                                </CardContainer>
-                            </Stack>
-                        </>
-                    )}
+                    <AppVersions />
                     <Divider />
                     <HorisontalBox>
                         <VisualMode />

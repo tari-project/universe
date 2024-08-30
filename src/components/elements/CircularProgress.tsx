@@ -23,8 +23,9 @@ export function CircularProgress() {
                     stroke="currentcolor"
                     fill="none"
                     strokeWidth={4}
-                    animate={{ pathLength: [0, 0.8], rotate: [0, 180] }}
-                    transition={{ repeat: Infinity, duration: 0.2 }}
+                    strokeLinecap="round"
+                    animate={{ pathLength: [0, 0, 0.8, 0.95], rotate: [0, 270, 360], opacity: [0.2, 0.8, 0.9, 1] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
                 />
             </motion.svg>
         </Wrapper>

@@ -13,9 +13,11 @@ export const CardComponent = ({ heading, labels }: CardComponentProps) => {
             <Typography variant="h6">{heading}</Typography>
             <Stack>
                 {labels.map(({ labelText, labelValue }) => (
-                    <Stack key={labelText}>
+                    <Stack key={labelText} direction="row" justifyContent="flex-start">
                         <Typography key={labelText}>{labelText}:</Typography>
-                        <Typography key={labelValue}>{labelValue}</Typography>
+                        <Typography key={labelValue} style={{ color: '#000' }}>
+                            {labelValue}
+                        </Typography>
                     </Stack>
                 ))}
             </Stack>
