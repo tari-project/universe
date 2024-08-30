@@ -21,13 +21,14 @@ import { useAirdropStore } from '@app/store/useAirdropStore';
 
 export default function UserInfo() {
     const { logout, userDetails } = useAirdropStore();
-
-    const profileimageurl = userDetails?.user.profileimageurl;
-    const gems = userDetails?.user.rank.gems;
-    const shells = userDetails?.user.rank.shells;
-    const hammers = userDetails?.user.rank.hammers;
-
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+    if (!userDetails || !userDetails?.user) return null;
+
+    const profileimageurl = userDetails?.user?.profileimageurl;
+    const gems = userDetails?.user?.rank.gems;
+    const shells = userDetails?.user?.rank.shells;
+    const hammers = userDetails?.user?.rank.hammers;
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
