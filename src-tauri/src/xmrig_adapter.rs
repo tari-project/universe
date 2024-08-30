@@ -1,4 +1,4 @@
-use crate::download_utils::{download_file, extract};
+use crate::download_utils::{download_file_with_retries, extract};
 use std::path::PathBuf;
 
 use anyhow::Error;
@@ -113,7 +113,7 @@ impl XmrigAdapter {
             println!("Downloading file from {}", &platform.url);
 
             let in_progress_file = in_progress_dir.join(&platform.name);
-            download_file(&platform.url, &in_progress_file, progress_tracker).await?;
+            download_file_with_retries(&platform.url, &in_progress_file, progress_tracker).await?;
 
             println!("Renaming file");
             println!("Extracting file");
