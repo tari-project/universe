@@ -127,8 +127,8 @@ async fn set_monero_address<'r>(
     monero_address: String,
     state: tauri::State<'r, UniverseAppState>,
 ) -> Result<(), String> {
-    let mut cpu_miner_config = state.cpu_miner_config.write().await;
-    cpu_miner_config.monero_address = monero_address;
+    let mut cpu_miner_config = state.config.write().await;
+    cpu_miner_config.set_monero_address(monero_address).await.map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -691,7 +691,6 @@ pub enum CpuMinerConnection {
 struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
-    monero_address: String,
 }
 
 struct UniverseAppState {
@@ -740,7 +739,6 @@ fn main() {
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
-        monero_address: "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
     }));
 
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
