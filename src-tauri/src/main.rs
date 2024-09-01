@@ -97,6 +97,16 @@ async fn set_user_inactivity_timeout<'r>(
 }
 
 #[tauri::command]
+async fn set_monero_address<'r>(
+    monero_address: String,
+    state: tauri::State<'r, UniverseAppState>,
+) -> Result<(), String> {
+    let mut cpu_miner_config = state.cpu_miner_config.write().await;
+    cpu_miner_config.monero_address = monero_address;
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -314,6 +324,7 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.cpu_miner_config.read().await;
+    let monero_address = state.config.read().await.monero_address.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
     state
         .cpu_miner
@@ -322,6 +333,7 @@ async fn start_mining<'r>(
         .start(
             state.shutdown.to_signal(),
             &config,
+            monero_address,
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
@@ -505,6 +517,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         mode: config_guard.mode.clone(),
         auto_mining: config_guard.auto_mining,
         user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
+        monero_address: config_guard.monero_address.clone(),
     })
 }
 
@@ -517,6 +530,7 @@ pub struct AppStatus {
     mode: MiningMode,
     auto_mining: bool,
     user_inactivity_timeout: u64,
+    monero_address: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -555,6 +569,7 @@ pub enum CpuMinerConnection {
 struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
+    monero_address: String,
 }
 struct UniverseAppState {
     config: Arc<RwLock<AppConfig>>,
@@ -593,6 +608,7 @@ fn main() {
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
+        monero_address: "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
     }));
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
     let analytics = AnalyticsManager::new(app_config.clone());
@@ -681,6 +697,7 @@ fn main() {
             get_seed_words,
             get_applications_versions,
             set_user_inactivity_timeout,
+            set_monero_address,
             update_applications
         ])
         .build(tauri::generate_context!())

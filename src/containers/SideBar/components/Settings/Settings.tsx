@@ -24,16 +24,19 @@ import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
 import { CardComponent } from './Card.component.tsx';
 import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
+import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput/MoneroAddressInput.component.tsx';
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
+    MONERO_ADDRESS = 'moneroAddress',
 }
 
 interface FormState {
     [FormFields.IDLE_TIMEOUT]: number;
+    [FormFields.MONERO_ADDRESS]: string;
 }
 
 const Settings: React.FC = () => {
@@ -42,12 +45,13 @@ const Settings: React.FC = () => {
     const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const moneroAddress = useAppStatusStore((state) => state.monero_address);
     const { refreshApplicationsVersions, getApplicationsVersions } = useApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const { reset, handleSubmit, control } = useForm<FormState>({
-        defaultValues: { idleTimeout: userInActivityTimeout },
+        defaultValues: { idleTimeout: userInActivityTimeout, moneroAddress },
         mode: 'onSubmit',
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
@@ -178,6 +182,12 @@ const Settings: React.FC = () => {
                                                 message: 'Minimum is 1 second',
                                             },
                                         }}
+                                    />
+                                    <ControlledMoneroAddressInput
+                                        name={FormFields.MONERO_ADDRESS}
+                                        control={control}
+                                        title="Monero Address"
+                                        placeholder="Enter Monero Address"
                                     />
                                 </Stack>
                                 <Divider />
