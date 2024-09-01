@@ -4,12 +4,14 @@ import { AutoMinerContainer, AutoMinerProgressBar } from './AutoMiner.styles';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useAppStatusStore } from '@app/store/useAppStatusStore';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls';
+import { useTranslation } from 'react-i18next';
 
 const calculatePercentageLeftToMine = (userInactivityTimeout: number, currentUserInactivityDuration: number) => {
     return (currentUserInactivityDuration / userInactivityTimeout) * 100;
 };
 
 function AutoMiner() {
+    const { t } = useTranslation('sidebar', { useSuspense: false });
     const isAutoMining = useAppStatusStore((state) => state.auto_mining);
     const userInactivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const currentUserInactivityDuration = useAppStatusStore((state) => state.current_user_inactivity_duration);
@@ -33,10 +35,8 @@ function AutoMiner() {
             <AutoMinerContainer percentage={percentage}>
                 <Stack direction="row" gap={1}>
                     <Stack direction="column" spacing={0}>
-                        <Typography variant="h6">Auto Miner</Typography>
-                        <Typography variant="body2">
-                            Auto miner will turn on your miner when your machine is idle
-                        </Typography>
+                        <Typography variant="h6">{t('auto-miner')}</Typography>
+                        <Typography variant="body2">{t('auto-miner-description')}</Typography>
                     </Stack>
                     <FormGroup>
                         <Switch

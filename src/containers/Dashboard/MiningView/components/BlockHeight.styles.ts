@@ -65,8 +65,8 @@ export const BlockHeightSml = styled(Box)(({ theme }) => ({
 export const BlockHeightBg = styled(Box)<BlockHeightBgProps>(({ length }) => ({
     fontFamily: '"DrukWideLCGBold", sans-serif',
     right: 0,
-    top: "50%",
-    transform: "translate(50%, calc(20px - 100%))",
+    top: '50%',
+    transform: 'translate(50%, calc(20px - 100%))',
     fontSize: `min(calc((100vh - ${topHeight + bottomHeight}px) / ${length}), 152px)`,
     lineHeight: 1,
     letterSpacing: '1px',
