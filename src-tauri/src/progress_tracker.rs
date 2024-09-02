@@ -62,9 +62,9 @@ impl ProgressTrackerInner {
             SetupStatusEvent {
                 event_type: "setup_status".to_string(),
                 title,
-                progress: (self.min
-                    + ((self.next_max - self.min) as f64 * (progress as f64 / 100.0)) as u64)
-                    as f64
+                progress: ((self.min
+                    + ((((self.next_max - self.min) as f64) * ((progress as f64) / 100.0)) as u64))
+                    as f64)
                     / 100.0,
             },
         );

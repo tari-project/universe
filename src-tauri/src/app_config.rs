@@ -1,13 +1,14 @@
-use anyhow::anyhow;
-use log::{info, warn};
-use serde::{Deserialize, Serialize};
 use std::{
     path::PathBuf,
     time::{Duration, SystemTime},
 };
+
+use anyhow::anyhow;
+use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use tokio::fs;
 
-use crate::internal_wallet::generate_password;
+use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -16,10 +17,12 @@ pub struct AppConfigFromFile {
     pub version: u32,
     pub mode: String,
     pub auto_mining: bool,
+    pub p2pool_enabled: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
     pub allow_telemetry: bool,
     pub anon_id: String,
+    pub monero_address: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -51,10 +54,12 @@ pub struct AppConfig {
     pub version: u32,
     pub mode: MiningMode,
     pub auto_mining: bool,
+    pub p2pool_enabled: bool,
     pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
     pub allow_telemetry: bool,
     pub anon_id: String,
+    pub monero_address: String,
 }
 
 impl AppConfig {
@@ -64,10 +69,12 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: false,
+            p2pool_enabled: false,
             user_inactivity_timeout: Duration::from_secs(60),
             last_binaries_update_timestamp: SystemTime::now(),
             allow_telemetry: true,
             anon_id: generate_password(20),
+            monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
         }
     }
 
@@ -82,6 +89,7 @@ impl AppConfig {
                 Ok(config) => {
                     self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                     self.auto_mining = config.auto_mining;
+                    self.p2pool_enabled = config.p2pool_enabled;
                     self.user_inactivity_timeout = config.user_inactivity_timeout;
                     self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                     self.allow_telemetry = config.allow_telemetry;
@@ -103,11 +111,13 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
+            p2pool_enabled: self.p2pool_enabled,
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             version: self.version,
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
+            monero_address: self.monero_address.clone(),
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -131,6 +141,12 @@ impl AppConfig {
 
     pub async fn set_auto_mining(&mut self, auto_mining: bool) -> Result<(), anyhow::Error> {
         self.auto_mining = auto_mining;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_p2pool_enabled(&mut self, p2pool_enabled: bool) -> Result<(), anyhow::Error> {
+        self.p2pool_enabled = p2pool_enabled;
         self.update_config_file().await?;
         Ok(())
     }
@@ -165,6 +181,12 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_monero_address(&mut self, address: String) -> Result<(), anyhow::Error> {
+        self.monero_address = address;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub fn get_last_binaries_update_timestamp(&self) -> SystemTime {
         self.last_binaries_update_timestamp
     }
@@ -183,11 +205,13 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
+            p2pool_enabled: self.p2pool_enabled,
             user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             version: self.version,
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
+            monero_address: self.monero_address.clone(),
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

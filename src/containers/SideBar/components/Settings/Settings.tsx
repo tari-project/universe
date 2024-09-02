@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
 import {
-    IconButton,
-    Dialog,
-    DialogContent,
-    Button,
-    Stack,
-    Typography,
-    Divider,
-    CircularProgress,
-    Tooltip,
     Box,
+    Button,
+    CircularProgress,
+    Dialog,
     DialogActions,
+    DialogContent,
+    Divider,
+    IconButton,
+    Stack,
+    Switch,
+    Tooltip,
+    Typography,
 } from '@mui/material';
-import { IoSettingsOutline, IoClose, IoCopyOutline, IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
-import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
+import { IoClose, IoCopyOutline, IoEyeOffOutline, IoEyeOutline, IoSettingsOutline } from 'react-icons/io5';
+import { useGetSeedWords } from '@app/hooks/useGetSeedWords.ts';
 import truncateString from '../../../../utils/truncateString';
 import { invoke } from '@tauri-apps/api/tauri';
 
@@ -24,6 +25,7 @@ import { CardContainer, HorisontalBox, RightHandColumn } from './Settings.styles
 import { useHardwareStatus } from '@app/hooks/useHardwareStatus.ts';
 import { CardComponent } from './Card.component.tsx';
 import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.component.tsx';
+import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput/MoneroAddressInput.component.tsx';
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
@@ -32,13 +34,21 @@ import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.ts
 import { Language, LanguageList } from '../../../../i18initializer.ts';
 import { changeLanguage } from 'i18next';
 import { useTranslation } from 'react-i18next';
+import useAppStateStore from '@app/store/appStateStore.ts';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { MinerContainer } from '../../Miner/styles.ts';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { ResetSettingsButton } from './ResetSettingsButton.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
+    MONERO_ADDRESS = 'moneroAddress',
 }
 
 interface FormState {
     [FormFields.IDLE_TIMEOUT]: number;
+    [FormFields.MONERO_ADDRESS]: string;
 }
 
 const Settings: React.FC = () => {
@@ -48,16 +58,28 @@ const Settings: React.FC = () => {
     const blockTime = useAppStatusStore((state) => state.base_node?.block_time);
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const moneroAddress = useAppStatusStore((state) => state.monero_address);
     const { refreshApplicationsVersions, getApplicationsVersions } = useApplicationsVersions();
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const { reset, handleSubmit, control } = useForm<FormState>({
-        defaultValues: { idleTimeout: userInActivityTimeout },
+        defaultValues: { idleTimeout: userInActivityTimeout, moneroAddress },
         mode: 'onSubmit',
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const { cpu, gpu } = useHardwareStatus();
+
+    const { isLoading } = useMiningControls();
+    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        invoke('set_p2pool_enabled', { p2poolEnabled: isChecked }).then(() => {
+            console.info('P2pool enabled checked', isChecked);
+        });
+    };
 
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -87,7 +109,7 @@ const Settings: React.FC = () => {
             await getSeedWords();
         }
         setIsCopyTooltipHidden(false);
-        await navigator.clipboard.writeText(seedWords.join(','));
+        await navigator.clipboard.writeText(seedWords.join(' '));
         setTimeout(() => setIsCopyTooltipHidden(true), 1000);
     };
 
@@ -104,6 +126,7 @@ const Settings: React.FC = () => {
                 invoke('set_user_inactivity_timeout', {
                     timeout: Number(data[FormFields.IDLE_TIMEOUT]),
                 });
+                invoke('set_monero_address', { moneroAddress: data[FormFields.MONERO_ADDRESS] });
                 invoke('set_auto_mining', { autoMining: false });
                 handleClose();
             },
@@ -194,6 +217,12 @@ const Settings: React.FC = () => {
                                             },
                                         }}
                                     />
+                                    <ControlledMoneroAddressInput
+                                        name={FormFields.MONERO_ADDRESS}
+                                        control={control}
+                                        title={t('monero-address.title', { ns: 'settings' })}
+                                        placeholder={t('monero-address.placeholder', { ns: 'settings' })}
+                                    />
                                 </Stack>
                                 <Divider />
                                 <DialogActions>
@@ -206,6 +235,22 @@ const Settings: React.FC = () => {
                                 </DialogActions>
                             </Box>
                         </form>
+                        <Divider />
+                        <MinerContainer>
+                            <Stack direction="column" spacing={0}>
+                                <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
+                                <Typography variant="body2">
+                                    {t('pool-mining-description', { ns: 'settings' })}
+                                </Typography>
+                            </Stack>
+                            <Switch
+                                focusVisibleClassName=".Mui-focusVisible"
+                                disableRipple
+                                checked={isP2poolEnabled}
+                                onChange={handleP2poolEnabled}
+                                disabled={isMining || !miningAllowed || isLoading}
+                            />
+                        </MinerContainer>
                         <Divider />
                         <HorisontalBox>
                             <Typography variant="h6">{t('change-language', { ns: 'settings' })}</Typography>
@@ -327,6 +372,10 @@ const Settings: React.FC = () => {
                         </HorisontalBox>
                         <HorisontalBox>
                             <ConnectButton />
+                        </HorisontalBox>
+                        <Divider />
+                        <HorisontalBox>
+                            <ResetSettingsButton />
                         </HorisontalBox>
                     </Stack>
                 </DialogContent>
