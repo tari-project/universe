@@ -188,42 +188,44 @@ impl MinotariNodeStatusMonitor {
             res.metadata.as_ref().unwrap().best_block_hash.clone(),
             res.metadata.unwrap().timestamp,
         );
-        // Unfortunately have to use 100 blocks to ensure that there are both randomx and sha blocks included
-        // otherwise the hashrate is 0 for one of them.
-        let res = client
-            .get_network_difficulty(HeightRequest {
-                from_tip: 100,
-                start_height: 0,
-                end_height: 0,
-            })
-            .await?;
-        let mut res = res.into_inner();
-        // Get the last one.
+        // First try with 10 blocks
+        let blocks = [10, 100];
         let mut result = Err(anyhow::anyhow!("No difficulty found"));
-        // base node returns 0 for hashrate when the algo doesn't match, so we need to keep track of last one.
-        let mut last_sha3_estimated_hashrate = 0;
-        let mut last_randomx_estimated_hashrate = 0;
-        if let Some(difficulty) = res.message().await? {
-            if difficulty.sha3x_estimated_hash_rate != 0 {
-                last_sha3_estimated_hashrate = difficulty.sha3x_estimated_hash_rate;
+        for i in 0..blocks.len() {
+            // Unfortunately have to use 100 blocks to ensure that there are both randomx and sha blocks included
+            // otherwise the hashrate is 0 for one of them.
+            let res = client
+                .get_network_difficulty(HeightRequest {
+                    from_tip: blocks[i],
+                    start_height: 0,
+                    end_height: 0,
+                })
+                .await?;
+            let mut res = res.into_inner();
+            // Get the last one.
+            // base node returns 0 for hashrate when the algo doesn't match, so we need to keep track of last one.
+            let mut last_sha3_estimated_hashrate = 0;
+            let mut last_randomx_estimated_hashrate = 0;
+            while let Some(difficulty) = res.message().await? {
+                if difficulty.sha3x_estimated_hash_rate != 0 {
+                    last_sha3_estimated_hashrate = difficulty.sha3x_estimated_hash_rate;
+                }
+                if difficulty.randomx_estimated_hash_rate != 0 {
+                    last_randomx_estimated_hashrate = difficulty.randomx_estimated_hash_rate;
+                }
+
+                result = Ok((
+                    last_sha3_estimated_hashrate,
+                    last_randomx_estimated_hashrate,
+                    MicroMinotari(reward),
+                    block_height,
+                    block_time,
+                    sync_achieved,
+                ));
             }
-            if difficulty.randomx_estimated_hash_rate != 0 {
-                last_randomx_estimated_hashrate = difficulty.randomx_estimated_hash_rate;
+            if last_randomx_estimated_hashrate != 0 && last_sha3_estimated_hashrate != 0 {
+                break;
             }
-            dbg!(
-                last_sha3_estimated_hashrate,
-                last_randomx_estimated_hashrate,
-                difficulty.sha3x_estimated_hash_rate,
-                difficulty.randomx_estimated_hash_rate
-            );
-            result = Ok((
-                last_sha3_estimated_hashrate,
-                last_randomx_estimated_hashrate,
-                MicroMinotari(reward),
-                block_height,
-                block_time,
-                sync_achieved,
-            ));
         }
 
         result
