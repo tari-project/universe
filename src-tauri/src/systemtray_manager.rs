@@ -4,7 +4,7 @@ use tauri::{AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMen
 
 use crate::hardware_monitor::HardwareStatus;
 
-const LOG_TARGET: &str = "tari::universe::notification_manager";
+const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 static INSTANCE: LazyLock<SystemtrayManager> = LazyLock::new(SystemtrayManager::new);
 
 pub enum SystrayItemId {
