@@ -5,6 +5,7 @@ import { useVisualisation } from './useVisualisation.ts';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 export enum MiningButtonStateText {
     STARTING = 'starting-mining',
