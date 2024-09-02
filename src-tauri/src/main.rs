@@ -22,13 +22,13 @@ mod process_adapter;
 mod process_killer;
 mod process_utils;
 mod process_watcher;
+mod systemtray_manager;
 mod telemetry_manager;
 mod user_listener;
 mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-mod systemtray_manager;
 
 use crate::cpu_miner::CpuMiner;
 use crate::gpu_miner::GpuMiner;
@@ -48,7 +48,6 @@ use futures_lite::future::block_on;
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use node_manager::NodeManagerError;
-use systemtray_manager::{SystemtrayManager, SystrayData};
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
@@ -56,6 +55,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use std::{panic, process};
+use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -540,7 +540,10 @@ async fn update_applications(
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-async fn status(state: tauri::State<'_, UniverseAppState>,app: tauri::AppHandle,) -> Result<AppStatus, String> {
+async fn status(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
     let _gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
@@ -610,7 +613,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>,app: tauri::AppHandle,
         hardware_status.clone(),
         cpu.estimated_earnings as f64,
     );
-    
+
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
     Ok(AppStatus {
@@ -776,8 +779,9 @@ fn main() {
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
-    
-    let app = tauri::Builder::default().system_tray(systray)
+
+    let app = tauri::Builder::default()
+        .system_tray(systray)
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
