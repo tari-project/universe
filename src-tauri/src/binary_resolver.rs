@@ -1,4 +1,4 @@
-use crate::download_utils::{download_file, extract};
+use crate::download_utils::{download_file_with_retries, extract, validate_checksum};
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -162,6 +162,13 @@ impl BinaryResolver {
                 owner: "tari-project".to_string(),
             }),
         );
+        adapters.insert(
+            Binaries::ShaP2pool,
+            Box::new(GithubReleasesAdapter {
+                repo: "sha-p2pool".to_string(),
+                owner: "tari-project".to_string(),
+            }),
+        );
         Self {
             adapters,
             download_mutex: Mutex::new(()),
@@ -239,21 +246,44 @@ impl BinaryResolver {
             }
 
             let asset = adapter.find_version_for_platform(&latest_release)?;
-            // let platform = latest_release
-            //     .get_asset(&::get_os_string())
-            //     .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
             info!(target: LOG_TARGET, "Downloading file");
             info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
-            let in_progress_file = in_progress_dir.join(&asset.name);
-            download_file(&asset.url, &in_progress_file, progress_tracker).await?;
+            let in_progress_file_zip = in_progress_dir.join(&asset.name);
+            download_file_with_retries(&asset.url, &in_progress_file_zip, progress_tracker.clone())
+                .await?;
             info!(target: LOG_TARGET, "Renaming file");
             info!(target: LOG_TARGET, "Extracting file");
-            let bin_dir = adapter
-                .get_binary_folder()
-                .join(latest_release.version.to_string());
-            extract(&in_progress_file, &bin_dir).await?;
 
+            let in_progress_file_sha256 = in_progress_dir
+                .clone()
+                .join(format!("{}.sha256", asset.name));
+            let asset_sha256_url = format!("{}.sha256", asset.url.clone());
+            download_file_with_retries(
+                &asset_sha256_url,
+                &in_progress_file_sha256,
+                progress_tracker.clone(),
+            )
+            .await?;
+
+            let is_sha_validated = validate_checksum(
+                in_progress_file_zip.clone(),
+                in_progress_file_sha256.clone(),
+                asset.name.clone(),
+            )
+            .await?;
+            if is_sha_validated {
+                println!("ZIP file integrity verified successfully!");
+                println!("Renaming & Extracting file");
+                let bin_dir = adapter
+                    .get_binary_folder()
+                    .join(&latest_release.version.to_string());
+                dbg!(&bin_dir);
+
+                extract(&in_progress_file_zip, &bin_dir).await?;
+            } else {
+                return Err(anyhow!("ZIP file integrity verification failed!"));
+            }
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
@@ -359,6 +389,10 @@ fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error
             let wallet_bin = base_dir.join("minotari_console_wallet");
             Ok(wallet_bin)
         }
+        Binaries::ShaP2pool => {
+            let sha_p2pool_bin = base_dir.join("sha_p2pool");
+            Ok(sha_p2pool_bin)
+        }
     }
 }
 
@@ -368,6 +402,7 @@ pub enum Binaries {
     MergeMiningProxy,
     MinotariNode,
     Wallet,
+    ShaP2pool,
 }
 
 impl Binaries {
@@ -377,6 +412,7 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
+            Binaries::ShaP2pool => "sha-p2pool",
         }
     }
 }

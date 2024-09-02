@@ -1,28 +1,36 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { setAnimationState } from '../../visuals';
 import { GlAppState } from '@app/glApp';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { appWindow } from '@tauri-apps/api/window';
 
 export function useVisualisation() {
-    const [failure, setFailure] = useState(false);
     const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
     const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
+    const showFailAnimation = useMiningStore((s) => s.showFailAnimation);
+    const setShowFailAnimation = useMiningStore((s) => s.setShowFailAnimation);
 
     useEffect(() => {
-        if (failure) {
+        if (showFailAnimation) {
             const failTimeout = setTimeout(() => {
-                setPostBlockAnimation(true);
                 setTimerPaused(false);
-                setFailure(false);
-            }, 1500);
+                setShowFailAnimation(false);
+                setPostBlockAnimation(true);
+            }, 1000);
             return () => clearTimeout(failTimeout);
         }
-    }, [failure, setPostBlockAnimation, setTimerPaused]);
+    }, [showFailAnimation, setPostBlockAnimation, setTimerPaused, setShowFailAnimation]);
 
-    return useCallback((state: GlAppState) => {
-        setAnimationState(state);
-        if (state === 'fail') {
-            setFailure(true);
+    return useCallback(async (state: GlAppState) => {
+        const documentIsVisible = document.visibilityState === 'visible';
+        const focused = await appWindow.isFocused();
+        const minimized = await appWindow.isMinimized();
+
+        const canAnimate = !minimized && (focused || documentIsVisible);
+        if (!canAnimate && (state == 'fail' || state == 'success')) {
+            return;
+        } else {
+            setAnimationState(state);
         }
     }, []);
 }

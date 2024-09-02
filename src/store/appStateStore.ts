@@ -28,8 +28,7 @@ const useAppStateStore = create<AppState>()((set) => ({
     isSettingUp: true,
     setupTitle: '',
     setupProgress: 0,
-    setSetupDetails: (setupTitle: string, setupProgress: number) =>
-        set({ setupTitle, setupProgress }),
+    setSetupDetails: (setupTitle: string, setupProgress: number) => set({ setupTitle, setupProgress }),
 
     // functions
     settingUpFinished: () => set({ isSettingUp: false }),
