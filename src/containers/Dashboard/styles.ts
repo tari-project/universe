@@ -18,13 +18,10 @@ export const ProgressBox = styled.div`
     background-color: #fff;
     padding: 3px;
     border-radius: 10px;
-    //overflow: hidden;
     width: 400px;
     box-sizing: content-box;
 `;
 export const StyledLinearProgress = styled(LinearProgress)`
-    //background-color: #000;
-    //border-radius: 5px;
     background-color: #fff;
 `;
 export const VisualModeContainer = styled.div`

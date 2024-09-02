@@ -44,7 +44,7 @@ interface Props {
 }
 
 function ModalContent({ onClose, children }: Props) {
-    useKeyboardEvent({ keys: ['Escape', 'Backspace'], callback: onClose });
+    useKeyboardEvent({ keys: ['Escape'], callback: onClose });
     const clickRef = useClickOutside(onClose);
     return (
         <Wrapper>

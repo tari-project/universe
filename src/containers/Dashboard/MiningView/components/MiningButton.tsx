@@ -23,7 +23,6 @@ function MiningButton() {
         isConnectionLostDuringMining,
         cancelMining,
     } = useMiningControls();
-
     const handleClick = useCallback(() => {
         if (isConnectionLostDuringMining) {
             return cancelMining();
@@ -50,17 +49,7 @@ function MiningButton() {
                 <span>{t(`mining-button-text.${getMiningButtonStateText()}`)}</span>
             </StyledButton>
             {isConnectionLostDuringMining && (
-                <Stack
-                    direction="row"
-                    // gap={1}
-                    // sx={{
-                    //     border: '1px solid #d6a463',
-                    //     background: '#d6a46322',
-                    //     color: '#d6a463',
-                    //     border-radius: '8px',
-                    //     padding: '4px 8px',
-                    // }}
-                >
+                <Stack direction="row">
                     <IoWarningOutline size={32} />
                     <Typography variant="p">{t('connection-to-node-lost')}</Typography>
                 </Stack>

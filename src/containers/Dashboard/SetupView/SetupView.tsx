@@ -10,7 +10,7 @@ function SetupView({ title, progressPercentage }: { title: string; progressPerce
     const { t } = useTranslation('setup-view', { useSuspense: false });
 
     return (
-        <Stack>
+        <Stack justifyContent="center" alignItems="center">
             <FloatingImage src={setup} alt="Soon Meditating" />
             <Typography variant="h3">{t('setting-up')}</Typography>
             <SetupDescription>

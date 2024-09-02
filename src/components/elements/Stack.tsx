@@ -1,26 +1,43 @@
-import { HTMLAttributes } from 'react';
+import { CSSProperties, HTMLAttributes } from 'react';
 import styled from 'styled-components';
 
 interface StackProps extends HTMLAttributes<HTMLDivElement> {
     direction?: 'column' | 'row';
     justifyContent?: 'space-between' | 'center' | 'flex-start' | 'flex-end';
+    alignItems?: CSSProperties['alignItems'];
+    gap?: CSSProperties['gap'];
 }
 
 const StyledStack = styled.div<{
     $direction?: StackProps['direction'];
     $justifyContent?: StackProps['justifyContent'];
+    $alignItems?: StackProps['alignItems'];
+    $gap?: StackProps['gap'];
 }>`
     display: flex;
     flex-direction: ${({ $direction }) => $direction};
     justify-content: ${({ $justifyContent }) => $justifyContent};
-    align-items: ${({ $direction }) => ($direction === 'row' ? 'center' : 'stretch')};
+    align-items: ${({ $alignItems }) => $alignItems};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    gap: 2px;
+    gap: ${({ $gap }) => $gap};
 `;
 
-export function Stack({ children, direction = 'column', justifyContent = 'center', ...props }: StackProps) {
+export function Stack({
+    children,
+    direction = 'column',
+    justifyContent = 'center',
+    alignItems,
+    gap,
+    ...props
+}: StackProps) {
     return (
-        <StyledStack $direction={direction} $justifyContent={justifyContent} {...props}>
+        <StyledStack
+            $direction={direction}
+            $justifyContent={justifyContent}
+            $alignItems={alignItems}
+            $gap={gap}
+            {...props}
+        >
             {children}
         </StyledStack>
     );

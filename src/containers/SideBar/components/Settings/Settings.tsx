@@ -39,6 +39,7 @@ import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { Input } from '@app/components/elements/inputs/Input.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -140,7 +141,7 @@ export default function Settings() {
         <Form onSubmit={onSubmit}>
             <Stack>
                 <Typography variant="h6">Time after which machine is considered idle</Typography>
-                <input name="idle" placeholder="Enter idle timeout in seconds" type="int" />
+                <Input name="idle" placeholder="Enter idle timeout in seconds" type="number" min={1} max={1000} />
             </Stack>
             <Stack direction="row" justifyContent="flex-end">
                 <Button onClick={handleCancel}>Cancel</Button>

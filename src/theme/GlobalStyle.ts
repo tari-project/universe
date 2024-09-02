@@ -13,6 +13,20 @@ export const GlobalReset = createGlobalStyle`
         color: inherit;
         font: inherit;
     }
+    input{
+        all: unset;
+        /* Chrome, Safari, Edge, Opera */
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Firefox */
+        &[type=number] {
+            -moz-appearance: textfield;
+        }
+    }
 `;
 export const GlobalStyle = createGlobalStyle`
     @font-face {
@@ -142,7 +156,8 @@ export const GlobalStyle = createGlobalStyle`
         }
         -ms-overflow-style: none;  /* IE and Edge */
         scrollbar-width: none;  /* Firefox */
-
+        letter-spacing: -.02px;
+        font-weight: 400;
         * {
             box-sizing: border-box;
             ::-webkit-scrollbar {
