@@ -67,15 +67,13 @@
         glApp.render(dt);
       }
 
-      // document.addEventListener('contextmenu', e => {
-      //   if (window.location.hostname !== 'tauri.localhost') {
-      //     return;
-      //   }
-      //   e.preventDefault();
-      //   return false;
-      // }, { capture: true })
-
-
+      document.addEventListener('contextmenu', e => {
+        if (window.location.hostname !== 'tauri.localhost') {
+          return;
+        }
+        e.preventDefault();
+        return false;
+      }, { capture: true })
       document.addEventListener("DOMContentLoaded", preload);
     </script>
   </main>
