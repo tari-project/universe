@@ -93,7 +93,29 @@ impl SystemtrayManager {
     }
 
     fn internal_create_tooltip_from_data(data: SystrayData) -> String {
-        format!("CPU Hashrate: {:.2} H/s\nGPU Hashrate: {:.2} H/s\nCPU Usage: {:.2}%\nGPU Usage: {:.2}%\nEstimated Earning: {:.2} tXTM/Day", data.cpu_hashrate, data.gpu_hashrate, data.cpu_usage, data.gpu_usage, data.estimated_earning)
+        let current_os = SystemtrayManager::detect_current_os();
+
+        match current_os {
+            CurrentOperatingSystem::Windows => {
+                return format!(
+                    "CPU: {:.0} H/s, {:.0}%\nGPU: {:.0} H/s, {:.0}%\nEarn: {:.2} tXTM/Day",
+                    data.cpu_hashrate,
+                    data.gpu_hashrate,
+                    data.cpu_usage,
+                    data.gpu_usage,
+                    data.estimated_earning
+                );
+            }
+            CurrentOperatingSystem::Linux => {
+                return "Not supported".to_string();
+            }
+            CurrentOperatingSystem::MacOS => {
+                return format!(
+                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEstimated Earning: {:.2} tXTM/Day",
+                    data.cpu_hashrate, data.gpu_hashrate, data.cpu_usage, data.gpu_usage, data.estimated_earning
+                );
+            }
+        }
     }
 
     fn initialize_menu() -> SystemTrayMenu {
