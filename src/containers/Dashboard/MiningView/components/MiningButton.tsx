@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+
     const {
         startMining,
         stopMining,
