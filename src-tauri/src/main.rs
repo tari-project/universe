@@ -661,7 +661,7 @@ fn log_web_message(level: String, message: Vec<String>) {
 #[tauri::command]
 async fn reset_settings<'r>(
     _window: tauri::Window,
-    _state: tauri::State<'r, UniverseAppState>,
+    state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle
 ) -> Result<(), String> {
     let app_config_dir = app.path_resolver().app_config_dir();
@@ -684,6 +684,10 @@ async fn reset_settings<'r>(
             remove_dir_all(dir.clone().unwrap()).unwrap();
         }
     });
+
+    state.shutdown.clone().trigger();
+    // TODO: Find a better way of knowing that all miners have stopped
+    sleep(std::time::Duration::from_secs(5));
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
