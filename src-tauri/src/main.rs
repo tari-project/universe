@@ -28,6 +28,7 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
+mod notification_manager;
 
 use crate::cpu_miner::CpuMiner;
 use crate::gpu_miner::GpuMiner;
@@ -47,6 +48,7 @@ use futures_lite::future::block_on;
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use node_manager::NodeManagerError;
+use notification_manager::{NotificationManager, SystrayData, SystrayItemId};
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
@@ -538,7 +540,7 @@ async fn update_applications(
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
+async fn status(state: tauri::State<'_, UniverseAppState>,app: tauri::AppHandle,) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
     let _gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
@@ -602,9 +604,19 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 
     let config_guard = state.config.read().await;
 
+    let new_tray_data: SystrayData = SystrayData {
+        cpu_hashrate: cpu.hash_rate,
+        gpu_hashrate: 0.0,
+        cpu_usage: hardware_status.clone().cpu.unwrap().usage_percentage as f64,
+        gpu_usage: hardware_status.clone().gpu.unwrap().usage_percentage as f64,
+        estimated_earning: cpu.estimated_earnings as f64,
+    };
+    
+    NotificationManager::current().update_systray(app, new_tray_data);
+
     Ok(AppStatus {
         cpu,
-        hardware_status,
+        hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,
             block_time,
@@ -764,7 +776,9 @@ fn main() {
         airdrop_access_token: Arc::new(RwLock::new(None)),
     };
 
-    let app = tauri::Builder::default()
+    let systray = NotificationManager::current().get_systray().clone();
+    
+    let app = tauri::Builder::default().system_tray(systray)
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 

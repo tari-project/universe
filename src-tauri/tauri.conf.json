@@ -10,6 +10,10 @@
         "version": "0.1.40"
     },
     "tauri": {
+        "systemTray": {
+          "iconPath": "icons/icon.png",
+          "iconAsTemplate": true
+        },
         "updater": {
             "active": true,
             "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"],
