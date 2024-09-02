@@ -6,6 +6,7 @@ import { useCallback } from 'react';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
+import { useTranslation } from 'react-i18next';
 
 const variants = {
     visible: {
@@ -27,6 +28,7 @@ const variants = {
 };
 
 export default function Earnings() {
+    const { t } = useTranslation('mining-view', { useSuspense: false });
     const earnings = useMiningStore((s) => s.earnings);
     const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
     const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
@@ -49,7 +51,7 @@ export default function Earnings() {
                             handleComplete();
                         }}
                     >
-                        <span>YOUR REWARD IS</span>
+                        <span>{t('your-reward-is')}</span>
                         <CharSpinner value={formatted.toString()} fontSize={72} />
                     </EarningsWrapper>
                 ) : null}

@@ -21,6 +21,9 @@ export const useBaseNodeStatusStore = create<BaseNodeStatusStoreState>()(
         {
             name: 'base_node',
             storage: createJSONStorage(() => sessionStorage),
+            partialize: (s) => ({
+                block_height: s.block_height,
+            }),
         }
     )
 );

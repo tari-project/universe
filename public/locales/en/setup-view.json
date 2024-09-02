@@ -1,0 +1,21 @@
+{
+    "setting-up": "Setting up the Tari truth machine...",
+    "this-might-take-a-few-minutes": "This might take a few minutes",
+    "dont-worry": "Don’t worry you’ll only need to do this once.",
+    "title": {
+        "starting-up": "Starting up",
+        "checking-latest-version-node": "Checking for latest version of node",
+        "checking-latest-version-mmproxy": "Checking for latest version of mmproxy",
+        "checking-latest-version-wallet": "Checking for latest version of wallet",
+        "checking-latest-version-xmrig": "Checking for latest version of xmrig",
+        "waiting-for-wallet": "Waiting for wallet",
+        "waiting-for-node": "Waiting for node to sync",
+        "preparing-for-initial-sync": "Preparing for initial sync",
+        "starting-mmproxy": "Starting merge mining proxy",
+        "starting-p2pool": "Starting P2Pool",
+        "application-started": "Applications started",
+        "downloading": "Downloading",
+        "download-completed": "Download completed"
+    }
+
+}

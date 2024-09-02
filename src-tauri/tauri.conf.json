@@ -7,9 +7,12 @@
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.1.40"
+        "version": "0.2.0"
     },
     "tauri": {
+        "systemTray": {
+            "iconPath": "icons/icon.ico"
+        },
         "updater": {
             "active": true,
             "endpoints": [
