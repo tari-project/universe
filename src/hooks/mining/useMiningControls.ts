@@ -75,11 +75,13 @@ export function useMiningControls() {
 
     const startMining = useCallback(async () => {
         setIsMiningEnabled(true);
-        await invoke('start_mining', {}).then(() => {
-            console.info(`mining started`);
-        }).catch((e) => {
-            setError(e);
-        });
+        await invoke('start_mining', {})
+            .then(() => {
+                console.info(`mining started`);
+            })
+            .catch((e) => {
+                setError(e);
+            });
     }, [setIsMiningEnabled, setError]);
 
     const stopMining = useCallback(async () => {

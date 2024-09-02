@@ -84,7 +84,7 @@ impl CpuMiner {
             monero_address.clone(),
             cache_dir,
             cpu_max_percentage,
-            xmrig_version
+            xmrig_version,
         );
         let (mut xmrig_child, _xmrig_status_monitor) =
             xmrig.spawn_inner(base_path.clone(), log_dir.clone())?;
