@@ -4,14 +4,13 @@ use std::path::PathBuf;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
+use semver::Version;
 use tari_shutdown::Shutdown;
 use tokio::fs;
-use tokio::sync::mpsc::Receiver;
 
-use crate::cpu_miner::CpuMinerEvent;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::xmrig::http_api::XmrigHttpApiClient;
-use crate::xmrig::latest_release::fetch_latest_release;
+use crate::xmrig::latest_release::{fetch_latest_release, XmrigRelease};
 use crate::{process_utils, ProgressTracker};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
@@ -80,7 +79,51 @@ impl XmrigAdapter {
         force_download: bool,
         progress_tracker: ProgressTracker,
     ) -> Result<String, Error> {
-        let latest_release = fetch_latest_release().await?;
+        let latest_release_res = fetch_latest_release().await;
+
+        let latest_release: XmrigRelease;
+        if latest_release_res.is_err() {
+            let mut latest_version = None;
+            let xmrig_dir = cache_dir.join("xmrig");
+            if !xmrig_dir.exists() {
+                return Err(anyhow::anyhow!(
+                    "Failed to get latest release and no local version for xmrig found"
+                ));
+            }
+            let mut read_dir = fs::read_dir(xmrig_dir).await?;
+
+            while let Some(entry) = read_dir.next_entry().await? {
+                let path = entry.path();
+                if path.is_dir() {
+                    let dir_name = path.file_name().unwrap().to_str().unwrap();
+                    match Version::parse(dir_name) {
+                        Ok(version) => {
+                            if latest_version.clone().is_none()
+                                || version > latest_version.clone().unwrap()
+                            {
+                                latest_version = Some(version);
+                            }
+                        }
+                        Err(_) => {
+                            // Ignore directories that don't have a valid version name
+                        }
+                    }
+                }
+            }
+
+            match latest_version.clone() {
+                Some(version) => {
+                    return Ok(version.to_string());
+                }
+                None => {
+                    return Err(anyhow::anyhow!("Failed to get latest release for xmrig"));
+                }
+            }
+        } else {
+            // fetched properly so it can be unwrapped
+            latest_release = latest_release_res.unwrap();
+        }
+
         let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
         if force_download {
             println!("Cleaning up xmrig dir");
