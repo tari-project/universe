@@ -1,9 +1,12 @@
 use std::sync::LazyLock;
+use log::{error, info};
 use tauri::{AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
+
+use crate::hardware_monitor::HardwareStatus;
 
 
 const LOG_TARGET: &str = "tari::universe::notification_manager";
-static INSTANCE: LazyLock<NotificationManager> = LazyLock::new(NotificationManager::new);
+static INSTANCE: LazyLock<SystemtrayManager> = LazyLock::new(SystemtrayManager::new);
 
 pub enum SystrayItemId {
     CpuHashrate,
@@ -51,14 +54,14 @@ pub struct SystrayData {
     pub estimated_earning: f64,
 }
 
-pub struct NotificationManager {
+pub struct SystemtrayManager {
     pub systray: SystemTray,
 }
 
-impl NotificationManager {
+impl SystemtrayManager {
 
     pub fn new() -> Self {
-        let systray = NotificationManager::initialize_systray();
+        let systray = SystemtrayManager::initialize_systray();
 
 
         Self {
@@ -66,12 +69,25 @@ impl NotificationManager {
         }
     }
 
+    pub fn create_systemtray_data(&self,cpu_hashrate: f64, gpu_hashrate: f64, hardware_status:HardwareStatus, estimated_earning: f64) -> SystrayData {
+
+        SystrayData {
+            cpu_hashrate,
+            gpu_hashrate,
+            cpu_usage: hardware_status.cpu.unwrap_or_default().usage_percentage as f64,
+            gpu_usage: hardware_status.gpu.unwrap_or_default().usage_percentage as f64,
+            estimated_earning,
+        }
+    }
+
     pub fn update_menu_field(&self, app: AppHandle, item_id: SystrayItemId, value: f64 ) {
-        app.tray_handle().get_item(item_id.to_str()).set_title(item_id.get_title(value)).unwrap();
+        app.tray_handle().get_item(item_id.to_str()).set_title(item_id.get_title(value)).unwrap_or_else(|e| {
+            error!(target: LOG_TARGET, "Failed to update menu field: {}", e);
+        });
     }
 
     pub fn create_tooltip_from_data(&self,data: SystrayData) -> String {
-        NotificationManager::internal_create_tooltip_from_data(data)
+        SystemtrayManager::internal_create_tooltip_from_data(data)
     }
 
     fn internal_create_tooltip_from_data(data: SystrayData) -> String {
@@ -79,6 +95,7 @@ impl NotificationManager {
     }
 
     fn initialize_menu() -> SystemTrayMenu {
+        info!(target: LOG_TARGET, "Initializing system tray menu");
         let cpu_hashrate = CustomMenuItem::new(SystrayItemId::CpuHashrate.to_str(), SystrayItemId::CpuHashrate.get_title(0.0)).disabled();
         let gpu_hashrate = CustomMenuItem::new(SystrayItemId::GpuHashrate.to_str(), SystrayItemId::GpuHashrate.get_title(0.0)).disabled();
         let cpu_usage = CustomMenuItem::new(SystrayItemId::CpuUsage.to_str(), SystrayItemId::CpuUsage.get_title(0.0)).disabled();
@@ -96,7 +113,8 @@ impl NotificationManager {
     }
 
     fn initialize_systray() -> SystemTray {
-        let current_os = NotificationManager::detect_current_os();
+        info!(target: LOG_TARGET, "Initializing system tray");
+        let current_os = SystemtrayManager::detect_current_os();
         let systray = SystemTray::new();
 
         let empty_data = SystrayData {
@@ -106,8 +124,8 @@ impl NotificationManager {
             gpu_usage: 0.0,
             estimated_earning: 0.0,
         };
-        let tray_menu = NotificationManager::initialize_menu();
-        let tooltip = NotificationManager::internal_create_tooltip_from_data(empty_data.clone());
+        let tray_menu = SystemtrayManager::initialize_menu();
+        let tooltip = SystemtrayManager::internal_create_tooltip_from_data(empty_data.clone());
 
 
         match current_os {
@@ -136,8 +154,8 @@ impl NotificationManager {
     }
 
     pub fn update_systray(&self, app: AppHandle, data: SystrayData) {
-        let current_os = NotificationManager::detect_current_os();
-        let tooltip = NotificationManager::internal_create_tooltip_from_data(data.clone());
+        let current_os = SystemtrayManager::detect_current_os();
+        let tooltip = SystemtrayManager::internal_create_tooltip_from_data(data.clone());
 
         match current_os {
             CurrentOperatingSystem::Windows => {
@@ -151,7 +169,9 @@ impl NotificationManager {
                 self.update_menu_field(app.clone(), SystrayItemId::EstimatedEarning, data.estimated_earning);
             }
             CurrentOperatingSystem::MacOS => {
-                app.tray_handle().set_tooltip(tooltip.as_str()).unwrap();
+                app.tray_handle().set_tooltip(tooltip.as_str()).unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
+                });
             }
         }
 
@@ -161,7 +181,7 @@ impl NotificationManager {
         &self.systray
     }
 
-    pub fn current() -> &'static NotificationManager{
+    pub fn current() -> &'static SystemtrayManager{
         &INSTANCE
     }
 }

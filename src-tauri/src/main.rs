@@ -28,7 +28,7 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-mod notification_manager;
+mod systemtray_manager;
 
 use crate::cpu_miner::CpuMiner;
 use crate::gpu_miner::GpuMiner;
@@ -48,7 +48,7 @@ use futures_lite::future::block_on;
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use node_manager::NodeManagerError;
-use notification_manager::{NotificationManager, SystrayData, SystrayItemId};
+use systemtray_manager::{SystemtrayManager, SystrayData};
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
@@ -604,15 +604,14 @@ async fn status(state: tauri::State<'_, UniverseAppState>,app: tauri::AppHandle,
 
     let config_guard = state.config.read().await;
 
-    let new_tray_data: SystrayData = SystrayData {
-        cpu_hashrate: cpu.hash_rate,
-        gpu_hashrate: 0.0,
-        cpu_usage: hardware_status.clone().cpu.unwrap().usage_percentage as f64,
-        gpu_usage: hardware_status.clone().gpu.unwrap().usage_percentage as f64,
-        estimated_earning: cpu.estimated_earnings as f64,
-    };
+    let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
+        cpu.hash_rate,
+        0.0,
+        hardware_status.clone(),
+        cpu.estimated_earnings as f64,
+    );
     
-    NotificationManager::current().update_systray(app, new_tray_data);
+    SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
     Ok(AppStatus {
         cpu,
@@ -776,7 +775,7 @@ fn main() {
         airdrop_access_token: Arc::new(RwLock::new(None)),
     };
 
-    let systray = NotificationManager::current().get_systray().clone();
+    let systray = SystemtrayManager::current().get_systray().clone();
     
     let app = tauri::Builder::default().system_tray(systray)
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
