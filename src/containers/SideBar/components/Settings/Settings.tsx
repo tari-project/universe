@@ -39,6 +39,7 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { MinerContainer } from '../../Miner/styles.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { ResetSettingsButton } from './ResetSettingsButton.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -371,6 +372,10 @@ const Settings: React.FC = () => {
                         </HorisontalBox>
                         <HorisontalBox>
                             <ConnectButton />
+                        </HorisontalBox>
+                        <Divider />
+                        <HorisontalBox>
+                            <ResetSettingsButton />
                         </HorisontalBox>
                     </Stack>
                 </DialogContent>
