@@ -662,7 +662,7 @@ fn log_web_message(level: String, message: Vec<String>) {
 async fn reset_settings<'r>(
     _window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
-    app: tauri::AppHandle
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
     state.shutdown.clone().trigger();
     // TODO: Find a better way of knowing that all miners have stopped
@@ -673,8 +673,17 @@ async fn reset_settings<'r>(
     let app_data_dir = app.path_resolver().app_data_dir();
     let app_local_data_dir = app.path_resolver().app_local_data_dir();
 
-    let dirs_to_remove = vec![app_config_dir, app_cache_dir, app_data_dir, app_local_data_dir];
-    let missing_dirs: Vec<String> = dirs_to_remove.iter().filter(|dir| dir.is_none()).map(|dir| dir.clone().unwrap().to_str().unwrap().to_string()).collect();
+    let dirs_to_remove = vec![
+        app_config_dir,
+        app_cache_dir,
+        app_data_dir,
+        app_local_data_dir,
+    ];
+    let missing_dirs: Vec<String> = dirs_to_remove
+        .iter()
+        .filter(|dir| dir.is_none())
+        .map(|dir| dir.clone().unwrap().to_str().unwrap().to_string())
+        .collect();
 
     if missing_dirs.clone().len() > 0 {
         error!("Could not get app directories for {:?}", missing_dirs);
