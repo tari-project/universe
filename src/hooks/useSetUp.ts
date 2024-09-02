@@ -16,7 +16,7 @@ export function useSetUp() {
     const setShowSplash = useUIStore((s) => s.setShowSplash);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
-    const setError = useAppStateStore((state) => state.setError);
+    const setError = useAppStateStore((s) => s.setError);
     const setCurrentUserInactivityDuration = useAppStatusStore((s) => s.setCurrentUserInactivityDuration);
     // TODO: set up separate auto-miner listener
     const autoMiningEnabled = useAppStatusStore((s) => s.auto_mining);
@@ -63,6 +63,7 @@ export function useSetUp() {
             startupInitiated.current = true;
             invoke('setup_application').catch((e) => {
                 setError(`Failed to setup application: ${e}`);
+                settingUpFinished();
                 setView('mining');
             });
         }
