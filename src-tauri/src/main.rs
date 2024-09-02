@@ -664,6 +664,10 @@ async fn reset_settings<'r>(
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle
 ) -> Result<(), String> {
+    state.shutdown.clone().trigger();
+    // TODO: Find a better way of knowing that all miners have stopped
+    sleep(std::time::Duration::from_secs(5));
+
     let app_config_dir = app.path_resolver().app_config_dir();
     let app_cache_dir = app.path_resolver().app_cache_dir();
     let app_data_dir = app.path_resolver().app_data_dir();
@@ -684,10 +688,6 @@ async fn reset_settings<'r>(
             remove_dir_all(dir.clone().unwrap()).unwrap();
         }
     });
-
-    state.shutdown.clone().trigger();
-    // TODO: Find a better way of knowing that all miners have stopped
-    sleep(std::time::Duration::from_secs(5));
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
