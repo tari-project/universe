@@ -44,7 +44,7 @@ jobs:
         if: ${{ ! startsWith(github.ref, 'refs/heads/build-') }}
         shell: bash
         run: |
-          echo "tagName='tari_universe-v__VERSION__'" >> $GITHUB_ENV
+          echo "tagName='v__VERSION__'" >> $GITHUB_ENV
           echo "releaseName='Tari Universe v__VERSION__'" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
 
