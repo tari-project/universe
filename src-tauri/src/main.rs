@@ -969,6 +969,7 @@ fn main() {
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
+
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
         }
