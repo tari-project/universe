@@ -16,7 +16,10 @@ export function useGetStatus() {
     const setBalanceData = useWalletStore((state) => state.setBalanceData);
     const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
-    const setError = useAppStateStore((s) => s.setError);
+    const { error, setError } = useAppStateStore((s) => ({
+        error: s.error,
+        setError: s.setError,
+    }));
     const setMode = useAppStatusStore((s) => s.setMode);
 
     useMainAppVersion();
@@ -31,6 +34,13 @@ export function useGetStatus() {
                         setCPUStatus(status.cpu);
                         setBaseNodeStatus(status.base_node);
 
+                        if (status.cpu?.is_mining) {
+                            if (!status.cpu?.connection.is_connected) {
+                                setError('Xmrig connection lost!');
+                            } else if (error === 'Xmrig connection lost!') {
+                                setError('');
+                            }
+                        }
                         const wallet_balance = status.wallet_balance;
 
                         setBalanceData(wallet_balance);
