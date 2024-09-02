@@ -17,7 +17,7 @@ export const Button = ({
     variant = 'squared',
     children,
     styleVariant = 'outline',
-    iconPosition = 'start',
+    iconPosition = 'end',
     icon,
     ...props
 }: ButtonProps) => {

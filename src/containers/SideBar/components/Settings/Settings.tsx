@@ -14,7 +14,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { DialogContent, Form, HorisontalBox } from './Settings.styles';
+import { DialogContent, Form } from './Settings.styles';
 
 import { useForm } from 'react-hook-form';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
@@ -32,6 +32,13 @@ import LanguageSettings from '@app/containers/SideBar/components/Settings/Langua
 import HardwareStatus from '@app/containers/SideBar/components/Settings/HardwareStatus.tsx';
 
 import DebugSettings from '@app/containers/SideBar/components/Settings/DebugSettings.tsx';
+import { MinerContainer } from '../../Miner/styles';
+import { useTranslation } from 'react-i18next';
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import useAppStateStore from '@app/store/appStateStore.ts';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -42,9 +49,10 @@ interface FormState {
 }
 
 export default function Settings() {
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
-
-    const [open, setOpen] = useState(true);
+    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const { reset, handleSubmit } = useForm<FormState>({
@@ -52,7 +60,9 @@ export default function Settings() {
         mode: 'onSubmit',
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
-
+    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const { isLoading } = useMiningControls();
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
@@ -140,6 +150,26 @@ export default function Settings() {
             </Stack>
         </Form>
     );
+    const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        invoke('set_p2pool_enabled', { p2poolEnabled: isChecked }).then(() => {
+            console.info('P2pool enabled checked', isChecked);
+        });
+    };
+
+    const p2pMarkup = (
+        <MinerContainer>
+            <Stack>
+                <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
+                <Typography>{t('pool-mining-description', { ns: 'settings' })}</Typography>
+            </Stack>
+            <ToggleSwitch
+                checked={isP2poolEnabled}
+                disabled={isMining || !miningAllowed || isLoading}
+                onChange={handleP2poolEnabled}
+            />
+        </MinerContainer>
+    );
 
     return (
         <>
@@ -158,6 +188,8 @@ export default function Settings() {
                     {seedWordMarkup}
                     <Divider />
                     {idleTimerMarkup}
+                    <Divider />
+                    {p2pMarkup}
                     <Divider />
                     <LanguageSettings />
                     <Divider />

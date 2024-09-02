@@ -37,41 +37,29 @@ function MiningButton() {
         }
     }, [isMining, startMining, stopMining, cancelMining, isConnectionLostDuringMining]);
 
-    const btnProps = {
-        variant: 'contained',
-        color: 'primary',
-        size: 'large',
-        endIcon: isMining ? <GiPauseButton /> : <IoChevronForwardOutline />,
-    };
-
+    const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
     return (
         <Stack>
             <StyledButton
                 variant="rounded"
-                $hasStarted={!!isMining || isConnectionLostDuringMining}
+                $hasStarted={isMining || isConnectionLostDuringMining}
                 onClick={handleClick}
-                // disabled={!shouldMiningControlsBeEnabled}
-                // endIcon={<IconWrapper>{isLoading ? <StyledIcon /> : btnProps.endIcon}</IconWrapper>}
-                // sx={{
-                //     '& .MuiButton-endIcon': {
-                //         position: 'absolute',
-                //         right: '1rem',
-                //     },
-                // }}
+                icon={<IconWrapper>{isLoading ? <StyledIcon /> : icon}</IconWrapper>}
+                disabled={!shouldMiningControlsBeEnabled}
             >
                 <span>{t(`mining-button-text.${getMiningButtonStateText()}`)}</span>
             </StyledButton>
             {isConnectionLostDuringMining && (
                 <Stack
-                // direction="row"
-                // gap={1}
-                // sx={{
-                //     border: '1px solid #d6a463',
-                //     background: '#d6a46322',
-                //     color: '#d6a463',
-                //     border-radius: '8px',
-                //     padding: '4px 8px',
-                // }}
+                    direction="row"
+                    // gap={1}
+                    // sx={{
+                    //     border: '1px solid #d6a463',
+                    //     background: '#d6a46322',
+                    //     color: '#d6a463',
+                    //     border-radius: '8px',
+                    //     padding: '4px 8px',
+                    // }}
                 >
                     <IoWarningOutline size={32} />
                     <Typography variant="p">{t('connection-to-node-lost')}</Typography>

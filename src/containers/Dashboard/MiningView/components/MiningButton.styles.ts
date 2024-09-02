@@ -29,20 +29,18 @@ export const IconWrapper = styled('div')`
 `;
 
 export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
-    // padding: 10px 18px;
-    // border-radius: 30px;
-    // display: flex;
-    // align-items: center;
-    // background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
-    // border: 1px solid ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
-    // transition: all 0.2s ease-in-out;
-    // &:hover {
-    //     background: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(17,110,64,0.96)')};
-    //     border-color: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(28,150,88,0.9)')};
-    //     transform: scale(1.01);
-    // }
-    // &:disabled {
-    //     border-color: rgba(0, 0, 0, 0.3);
-    //     background: rgba(0, 0, 0, 0.01);
-    // }
+    display: flex;
+    align-items: center;
+    background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
+    border: 1px solid ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
+    transition: all 0.2s ease-in-out;
+    &:hover {
+        background: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(17,110,64,0.96)')};
+        border-color: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(28,150,88,0.9)')};
+        transform: scale(1.01);
+    }
+    &:disabled {
+        border-color: rgba(0, 0, 0, 0.3);
+        background: rgba(0, 0, 0, 0.01);
+    }
 `;

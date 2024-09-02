@@ -52,19 +52,11 @@ export default function ConnectButton() {
     return (
         <StyledButton
             onClick={handleAuth}
-            size="medium"
-            endIcon={
+            icon={
                 <StyledXIconWrapper>
                     <StyledXIcon />
                 </StyledXIconWrapper>
             }
-            sx={{
-                position: 'relative',
-                '& .MuiButton-endIcon': {
-                    position: 'absolute',
-                    right: '1em',
-                },
-            }}
         >
             <Typography>Log in to claim gems</Typography>
         </StyledButton>
