@@ -22,6 +22,7 @@ mod process_adapter;
 mod process_killer;
 mod process_utils;
 mod process_watcher;
+mod systemtray_manager;
 mod telemetry_manager;
 mod user_listener;
 mod wallet_adapter;
@@ -54,6 +55,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use std::{panic, process};
+use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -538,7 +540,10 @@ async fn update_applications(
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
+async fn status(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
     let _gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
@@ -602,9 +607,18 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 
     let config_guard = state.config.read().await;
 
+    let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
+        cpu.hash_rate,
+        0.0,
+        hardware_status.clone(),
+        cpu.estimated_earnings as f64,
+    );
+
+    SystemtrayManager::current().update_systray(app, new_systemtray_data);
+
     Ok(AppStatus {
         cpu,
-        hardware_status,
+        hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,
             block_time,
@@ -764,7 +778,10 @@ fn main() {
         airdrop_access_token: Arc::new(RwLock::new(None)),
     };
 
+    let systray = SystemtrayManager::current().get_systray().clone();
+
     let app = tauri::Builder::default()
+        .system_tray(systray)
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
