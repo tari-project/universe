@@ -128,7 +128,10 @@ async fn set_monero_address<'r>(
     state: tauri::State<'r, UniverseAppState>,
 ) -> Result<(), String> {
     let mut cpu_miner_config = state.config.write().await;
-    cpu_miner_config.set_monero_address(monero_address).await.map_err(|e| e.to_string())?;
+    cpu_miner_config
+        .set_monero_address(monero_address)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
