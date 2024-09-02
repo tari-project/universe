@@ -74,6 +74,45 @@ impl XmrigAdapter {
         }
     }
 
+    async fn get_latest_local_version(cache_dir: PathBuf) -> Result<String, Error> {
+        let mut latest_version = None;
+        let xmrig_dir = cache_dir.join("xmrig");
+        if !xmrig_dir.exists() {
+            return Err(anyhow::anyhow!(
+                "Failed to get latest release and no local version for xmrig found"
+            ));
+        }
+        let mut read_dir = fs::read_dir(xmrig_dir).await?;
+
+        while let Some(entry) = read_dir.next_entry().await? {
+            let path = entry.path();
+            if path.is_dir() {
+                let dir_name = path.file_name().unwrap().to_str().unwrap();
+                match Version::parse(dir_name) {
+                    Ok(version) => {
+                        if latest_version.clone().is_none()
+                            || version > latest_version.clone().unwrap()
+                        {
+                            latest_version = Some(version);
+                        }
+                    }
+                    Err(_) => {
+                        // Ignore directories that don't have a valid version name
+                    }
+                }
+            }
+        }
+
+        match latest_version.clone() {
+            Some(version) => {
+                return Ok(version.to_string());
+            }
+            None => {
+                return Err(anyhow::anyhow!("Failed to get latest release for xmrig"));
+            }
+        }
+    }
+
     pub async fn ensure_latest(
         cache_dir: PathBuf,
         force_download: bool,
@@ -83,42 +122,7 @@ impl XmrigAdapter {
 
         let latest_release: XmrigRelease;
         if latest_release_res.is_err() {
-            let mut latest_version = None;
-            let xmrig_dir = cache_dir.join("xmrig");
-            if !xmrig_dir.exists() {
-                return Err(anyhow::anyhow!(
-                    "Failed to get latest release and no local version for xmrig found"
-                ));
-            }
-            let mut read_dir = fs::read_dir(xmrig_dir).await?;
-
-            while let Some(entry) = read_dir.next_entry().await? {
-                let path = entry.path();
-                if path.is_dir() {
-                    let dir_name = path.file_name().unwrap().to_str().unwrap();
-                    match Version::parse(dir_name) {
-                        Ok(version) => {
-                            if latest_version.clone().is_none()
-                                || version > latest_version.clone().unwrap()
-                            {
-                                latest_version = Some(version);
-                            }
-                        }
-                        Err(_) => {
-                            // Ignore directories that don't have a valid version name
-                        }
-                    }
-                }
-            }
-
-            match latest_version.clone() {
-                Some(version) => {
-                    return Ok(version.to_string());
-                }
-                None => {
-                    return Err(anyhow::anyhow!("Failed to get latest release for xmrig"));
-                }
-            }
+            return XmrigAdapter::get_latest_local_version(cache_dir.clone()).await;
         } else {
             // fetched properly so it can be unwrapped
             latest_release = latest_release_res.unwrap();
@@ -153,7 +157,22 @@ impl XmrigAdapter {
             println!("Downloading file from {}", &platform.url);
 
             let in_progress_file = in_progress_dir.join(&platform.name);
-            download_file_with_retries(&platform.url, &in_progress_file, progress_tracker).await?;
+            match download_file_with_retries(&platform.url, &in_progress_file, progress_tracker)
+                .await
+            {
+                Ok(_) => {}
+                Err(_) => match XmrigAdapter::get_latest_local_version(cache_dir.clone()).await {
+                    Ok(local_version) => {
+                        info!(target: LOG_TARGET, "Failed to download latest release for xmrig, used local: {:?}", local_version);
+                        return Ok(local_version);
+                    }
+                    Err(_) => {
+                        return Err(anyhow::anyhow!(
+                            "Failed to download latest release for xmrig, couldn't use local one"
+                        ))
+                    }
+                },
+            };
 
             println!("Renaming file");
             println!("Extracting file");
