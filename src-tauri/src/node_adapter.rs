@@ -238,7 +238,7 @@ impl MinotariNodeStatusMonitor {
                 break;
             }
             info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
-            
+
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
                     .update("preparing-for-initial-sync".to_string(), 10)
