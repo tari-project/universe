@@ -15,7 +15,7 @@ name: Release
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' || github.ref != 'refs/heads/release' }}
 
 permissions: {}
 
@@ -31,14 +31,22 @@ jobs:
         #  - platform: 'ubuntu-20.04'
         #    args: ''
           - platform: 'windows-2019'
-            args: ''
+            args: '--bundles msi'
           - platform: 'macos-latest'
-            args: '--verbose --target universal-apple-darwin'
+            args: '--target universal-apple-darwin'
 
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set environment variables
+        if: ${{ ! startsWith(github.ref, 'refs/heads/build-') }}
+        shell: bash
+        run: |
+          echo "tagName='v__VERSION__'" >> $GITHUB_ENV
+          echo "releaseName='Tari Universe v__VERSION__'" >> $GITHUB_ENV
+          #echo "releaseId=" >> $GITHUB_ENV
 
       - name: Node.js setup
         uses: actions/setup-node@v4
@@ -101,6 +109,7 @@ jobs:
           npm install
 
       - name: Build Tauri apps
+        id: build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -114,11 +123,19 @@ jobs:
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'Tari Universe v__VERSION__'
+          tagName: ${{ env.tagName }}
+          releaseName: ${{ env.releaseName }}
           releaseBody: 'Tari Universe - See the assets to download this version and install'
+          #releaseId: ${{ env.releaseId }}
           releaseDraft: true
           prerelease: true
           includeDebug: false
           includeRelease: true
           args: ${{ matrix.args }}
+
+      - name: Upload
+        if: ${{ startsWith(github.ref, 'refs/heads/build-') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
+          path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
