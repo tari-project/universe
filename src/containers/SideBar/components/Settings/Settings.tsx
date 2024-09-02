@@ -219,8 +219,8 @@ const Settings: React.FC = () => {
                                     <ControlledMoneroAddressInput
                                         name={FormFields.MONERO_ADDRESS}
                                         control={control}
-                                        title="Monero Address"
-                                        placeholder="Enter Monero Address"
+                                        title={t('monero-address.title', { ns: 'settings' })}
+                                        placeholder={t('monero-address.placeholder', { ns: 'settings' })}
                                     />
                                 </Stack>
                                 <Divider />
