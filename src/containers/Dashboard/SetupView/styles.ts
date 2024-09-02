@@ -1,5 +1,14 @@
 import { keyframes, styled } from '@mui/material/styles';
 
+export const Wrapper = styled('div')`
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+`;
+
 const float = keyframes`
   0% {
     transform: translateY(0);
