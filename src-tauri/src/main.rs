@@ -125,6 +125,19 @@ async fn set_airdrop_access_token<'r>(
 }
 
 #[tauri::command]
+async fn set_monero_address<'r>(
+    monero_address: String,
+    state: tauri::State<'r, UniverseAppState>,
+) -> Result<(), String> {
+    let mut cpu_miner_config = state.config.write().await;
+    cpu_miner_config
+        .set_monero_address(monero_address)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -413,6 +426,7 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.cpu_miner_config.read().await;
+    let monero_address = state.config.read().await.monero_address.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
     state
         .cpu_miner
@@ -421,6 +435,7 @@ async fn start_mining<'r>(
         .start(
             state.shutdown.to_signal(),
             &config,
+            monero_address,
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
@@ -630,6 +645,7 @@ async fn status(
         p2pool_stats,
         auto_mining: config_guard.auto_mining,
         user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
+        monero_address: config_guard.monero_address.clone(),
     })
 }
 
@@ -652,6 +668,7 @@ pub struct AppStatus {
     p2pool_enabled: bool,
     p2pool_stats: Stats,
     user_inactivity_timeout: u64,
+    monero_address: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -857,7 +874,9 @@ fn main() {
             update_applications,
             log_web_message,
             set_telemetry_mode,
-            set_airdrop_access_token
+            set_airdrop_access_token,
+            set_monero_address,
+            update_applications
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

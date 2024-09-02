@@ -8,7 +8,7 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
-use crate::internal_wallet::generate_password;
+use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -22,6 +22,7 @@ pub struct AppConfigFromFile {
     pub last_binaries_update_timestamp: SystemTime,
     pub allow_telemetry: bool,
     pub anon_id: String,
+    pub monero_address: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -58,6 +59,7 @@ pub struct AppConfig {
     pub last_binaries_update_timestamp: SystemTime,
     pub allow_telemetry: bool,
     pub anon_id: String,
+    pub monero_address: String,
 }
 
 impl AppConfig {
@@ -72,6 +74,7 @@ impl AppConfig {
             last_binaries_update_timestamp: SystemTime::now(),
             allow_telemetry: true,
             anon_id: generate_password(20),
+            monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
         }
     }
 
@@ -114,6 +117,7 @@ impl AppConfig {
             version: self.version,
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
+            monero_address: self.monero_address.clone(),
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -177,6 +181,12 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_monero_address(&mut self, address: String) -> Result<(), anyhow::Error> {
+        self.monero_address = address;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub fn get_last_binaries_update_timestamp(&self) -> SystemTime {
         self.last_binaries_update_timestamp
     }
@@ -201,6 +211,7 @@ impl AppConfig {
             version: self.version,
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
+            monero_address: self.monero_address.clone(),
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
