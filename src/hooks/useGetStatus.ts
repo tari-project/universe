@@ -7,6 +7,7 @@ import { useInterval } from './useInterval.ts';
 import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
 import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import useMining from '@app/hooks/mining/useMining.ts';
+import { useMainAppVersion } from '@app/hooks/useVersions.ts';
 
 const INTERVAL = 1000;
 
@@ -18,6 +19,7 @@ export function useGetStatus() {
     const setError = useAppStateStore((s) => s.setError);
     const setMode = useAppStatusStore((s) => s.setMode);
 
+    useMainAppVersion();
     useMining();
 
     useInterval(
@@ -25,8 +27,6 @@ export function useGetStatus() {
             invoke('status')
                 .then((status) => {
                     if (status) {
-                        // console.info('Status:', status);
-
                         setAppStatus(status);
                         setCPUStatus(status.cpu);
                         setBaseNodeStatus(status.base_node);

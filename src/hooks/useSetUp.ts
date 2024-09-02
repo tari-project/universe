@@ -7,7 +7,7 @@ import { useUIStore } from '../store/useUIStore.ts';
 import useAppStateStore from '../store/appStateStore.ts';
 
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
-import { useGetApplicationsVersions } from '@app/hooks/useGetApplicationsVersions.ts';
+import { useVersions } from '@app/hooks/useVersions.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 export function useSetUp() {
@@ -16,6 +16,7 @@ export function useSetUp() {
     const setShowSplash = useUIStore((s) => s.setShowSplash);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const setError = useAppStateStore((s) => s.setError);
     const setCurrentUserInactivityDuration = useAppStatusStore((s) => s.setCurrentUserInactivityDuration);
     // TODO: set up separate auto-miner listener
     const autoMiningEnabled = useAppStatusStore((s) => s.auto_mining);
@@ -61,7 +62,9 @@ export function useSetUp() {
         if (!startupInitiated.current) {
             startupInitiated.current = true;
             invoke('setup_application').catch((e) => {
-                console.error('Failed to setup application:', e);
+                setError(`Failed to setup application: ${e}`);
+                settingUpFinished();
+                setView('mining');
             });
         }
         return () => {
@@ -76,7 +79,8 @@ export function useSetUp() {
         startMining,
         stopMining,
         setShowSplash,
+        setError,
     ]);
 
-    useGetApplicationsVersions();
+    useVersions();
 }

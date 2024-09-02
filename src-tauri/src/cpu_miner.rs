@@ -38,6 +38,7 @@ impl CpuMiner {
         &mut self,
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
+        monero_address: String,
         base_path: PathBuf,
         cache_dir: PathBuf,
         log_dir: PathBuf,
@@ -76,12 +77,14 @@ impl CpuMiner {
             MiningMode::Eco => (30 * max_cpu_available) / 100,
             MiningMode::Ludicrous => max_cpu_available,
         };
+        let xmrig_version =
+            XmrigAdapter::ensure_latest(cache_dir.clone(), false, progress_tracker.clone()).await?;
         let xmrig = XmrigAdapter::new(
             xmrig_node_connection,
-            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
+            monero_address.clone(),
             cache_dir,
-            progress_tracker,
             cpu_max_percentage,
+            xmrig_version,
         );
         let (mut xmrig_child, _xmrig_status_monitor) =
             xmrig.spawn_inner(base_path.clone(), log_dir.clone())?;
@@ -104,6 +107,7 @@ impl CpuMiner {
                                            }
                                            Err(e) => {
                                               error!(target: LOG_TARGET, "xmrig exited with error: {}", e);
+                                              return Err(e)
                                            }
                                        }
                                        break;
@@ -163,7 +167,6 @@ impl CpuMiner {
                 let (hash_rate, hashrate_sum, estimated_earnings, is_connected) =
                     match client.summary().await {
                         Ok(xmrig_status) => {
-                            println!("xmrig status: {:?}", xmrig_status.hashrate.total[0]);
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
                             let estimated_earnings = if network_hash_rate == 0 {
                                 0

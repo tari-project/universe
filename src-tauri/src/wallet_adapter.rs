@@ -2,6 +2,7 @@ use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
 use anyhow::Error;
+use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetBalanceRequest;
@@ -109,6 +110,7 @@ impl ProcessAdapter for WalletAdapter {
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, &args)?;
+
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
                     }
@@ -158,7 +160,14 @@ impl ProcessAdapter for WalletAdapter {
 
 pub struct WalletStatusMonitor {}
 
-impl StatusMonitor for WalletStatusMonitor {}
+#[async_trait]
+impl StatusMonitor for WalletStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
+        todo!()
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct WalletBalance {
