@@ -175,9 +175,11 @@ impl SystemtrayManager {
 
         match current_os {
             CurrentOperatingSystem::Windows => {
-                app.tray_handle().set_tooltip(tooltip.as_str()).unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
-                });
+                app.tray_handle()
+                    .set_tooltip(tooltip.as_str())
+                    .unwrap_or_else(|e| {
+                        error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
+                    });
             }
             CurrentOperatingSystem::Linux => {
                 self.update_menu_field(app.clone(), SystrayItemId::CpuHashrate, data.cpu_hashrate);
