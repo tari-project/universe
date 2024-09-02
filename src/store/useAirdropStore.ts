@@ -29,6 +29,12 @@ interface TokenResponse {
     scope: string;
 }
 
+export interface UserPoints {
+    gems: number;
+    shells: number;
+    hammers: number;
+}
+
 interface User {
     is_bot: boolean;
     twitter_followers: number;
@@ -62,12 +68,14 @@ interface AirdropState {
     authUuid: string;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
+    userPoints?: UserPoints;
 }
 
 interface AirdropStore extends AirdropState {
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
+    setUserPoints: (userPoints?: UserPoints) => void;
     logout: () => void;
 }
 
@@ -85,7 +93,12 @@ export const useAirdropStore = create<AirdropStore>()(
                         expiresAt: parseJwt(airdropTokens.token).exp,
                     },
                 }),
+            setUserPoints: (userPoints) => set({ userPoints }),
         }),
-        { name: 'airdrop-store' }
+        {
+            name: 'airdrop-store',
+            partialize: (state) =>
+                Object.fromEntries(Object.entries(state).filter(([key]) => !['userPoints'].includes(key))),
+        }
     )
 );

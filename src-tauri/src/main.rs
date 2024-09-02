@@ -103,6 +103,15 @@ async fn set_telemetry_mode<'r>(
 }
 
 #[tauri::command]
+async fn get_app_id(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<String, ()> {
+    Ok(state.config.read().await.anon_id.clone())
+}
+
+#[tauri::command]
 async fn set_airdrop_access_token<'r>(
     token: String,
     _window: tauri::Window,
@@ -735,7 +744,8 @@ fn main() {
             update_applications,
             log_web_message,
             set_telemetry_mode,
-            set_airdrop_access_token
+            set_airdrop_access_token,
+            get_app_id
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
