@@ -36,10 +36,10 @@ export function useGetStatus() {
 
                         if (status.cpu?.is_mining) {
                             if (!status.cpu?.connection.is_connected) {
-                                setError('Xmrig connection lost!')
-                            } else if (error === "Xmrig connection lost!") {
+                                setError('Xmrig connection lost!');
+                            } else if (error === 'Xmrig connection lost!') {
                                 setError('');
-                            } 
+                            }
                         }
                         const wallet_balance = status.wallet_balance;
 
