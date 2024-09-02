@@ -290,18 +290,20 @@ async fn setup_inner<'r>(
         )
         .await?;
 
-    progress.set_max(55).await;
-    progress.update("waiting-for-node".to_string(), 0).await;
+    progress.set_max(75).await;
+    progress
+        .update("preparing-for-initial-sync".to_string(), 0)
+        .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    progress.set_max(70).await;
+    progress.set_max(85).await;
     progress.update("starting-p2pool".to_string(), 0).await;
     state
         .p2pool_manager
         .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
         .await?;
 
-    progress.set_max(75).await;
+    progress.set_max(100).await;
     progress.update("starting-mmproxy".to_string(), 0).await;
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
