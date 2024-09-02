@@ -34,7 +34,7 @@ function AutoMiner() {
 
     return (
         <Stack>
-            <AutoMinerContainer percentage={percentage}>
+            <AutoMinerContainer $percentage={percentage}>
                 <Stack>
                     <Stack direction="row" justifyContent="space-between">
                         <Typography variant="h6">{t('auto-miner')}</Typography>

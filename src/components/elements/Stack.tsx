@@ -1,10 +1,12 @@
 import { CSSProperties, HTMLAttributes } from 'react';
 import styled from 'styled-components';
 
-interface StackProps extends HTMLAttributes<HTMLDivElement> {
-    direction?: 'column' | 'row';
-    justifyContent?: 'space-between' | 'center' | 'flex-start' | 'flex-end';
-    alignItems?: CSSProperties['alignItems'];
+type StackFlexProps = Partial<
+    Pick<CSSProperties, 'justifyContent' | 'justifyItems' | 'alignItems' | 'alignContent' | 'flexDirection'>
+>;
+
+interface StackProps extends HTMLAttributes<HTMLDivElement>, StackFlexProps {
+    direction?: StackFlexProps['flexDirection'];
     gap?: number;
 }
 

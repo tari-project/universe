@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 
-export const AutoMinerContainer = styled(Stack)<{ percentage: number }>`
+export const AutoMinerContainer = styled(Stack)<{ $percentage: number }>`
     background-color: ${({ theme }) => theme.palette.colors.backgrounds.medGrey};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     padding: 10px 15px;

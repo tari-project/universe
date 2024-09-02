@@ -15,7 +15,11 @@ const valueParses: Record<NumberInputType, RegExp> = {
 };
 
 function InputAdornment({ children, onClick }: { children?: ReactNode; onClick?: () => void }) {
-    return <div onClick={onClick}>{children}</div>;
+    return (
+        <div onClick={onClick} style={{ height: 60 }}>
+            {children}
+        </div>
+    );
 }
 
 export const NumberInput = ({
@@ -40,9 +44,9 @@ export const NumberInput = ({
                     {title}
                 </NumberInputTypography>
             )}
-            <Stack>
+            <Stack style={{ height: 30 }} justifyContent="flex-start" gap={8}>
                 <Input
-                    error={Boolean(error)}
+                    hasError={Boolean(error)}
                     value={value}
                     onChange={validateChange}
                     endAdornment={
@@ -62,8 +66,8 @@ export const NumberInput = ({
                     }
                     {...inputProps}
                 />
+                {error ? <FieldErrorMessage error={error} /> : null}
             </Stack>
-            {error && <FieldErrorMessage error={error} />}
         </Stack>
     );
 };

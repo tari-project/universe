@@ -7,30 +7,38 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     labelText?: string;
     patternType?: InputPattern;
     endAdornment?: ReactNode;
-    error?: boolean;
+    hasError?: boolean;
 }
 
-export function Input({ labelText, endAdornment, ...props }: InputProps) {
+export function Input({ labelText, endAdornment, hasError, ...props }: InputProps) {
     const isNumber = props.type == 'number';
     const [value, setValue] = useState(isNumber ? 0 : '');
     const inputName = props.name || 'input-x';
 
     const handleChange = useCallback(
         (e) => {
-            const canShowNumber = !isNaN(parseFloat(e.target.value));
+            const canShowNumber = !isNaN(parseFloat(e?.target?.value));
             if (isNumber && !canShowNumber) {
                 return;
             } else {
                 setValue(e.target.value);
             }
+            props.onChange?.(e);
         },
-        [isNumber]
+        [isNumber, props]
     );
 
     return (
         <InputWrapper>
             {labelText ? <StyledInputLabel htmlFor={inputName}>{labelText}</StyledInputLabel> : null}
-            <StyledInput id={inputName} name={inputName} onChange={handleChange} value={value} {...props} />
+            <StyledInput
+                id={inputName}
+                name={inputName}
+                onChange={handleChange}
+                value={value}
+                $hasError={hasError}
+                {...props}
+            />
             <div>{endAdornment}</div>
         </InputWrapper>
     );
