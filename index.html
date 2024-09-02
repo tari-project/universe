@@ -23,27 +23,31 @@
     <div id="root"></div>
     <script type="module" src="src/main.tsx"></script>
     <script>
+      let time;
+
       function preload() {
-        glApp?.preload(
+        glApp.preload(
             {
-              canvas: document.getElementById('canvas'),
-              orbitTarget: document.getElementById('canvas'),
-              ASSETS_PATH: '/assets/',
+              canvas: document.getElementById("canvas"),
+              orbitTarget: document.getElementById("canvas"),
+              ASSETS_PATH: "/assets/",
             },
             () => {
-              setTimeout(init, 1000); // added a timeout so it doesn't flash the canvas before the splash screen loads
-            }
+              init();
+            },
         );
       }
 
       function init() {
         glApp.init();
         time = performance.now() / 1000;
-        window.addEventListener('resize', onResize);
         glApp.properties.cameraOffsetX = (348 + 16) / window.innerWidth; // 348 is sidebar width with some padding
+
+        window.addEventListener("resize", onResize);
         onResize();
         animate();
       }
+
 
       function onResize() {
         glApp.setSize(window.innerWidth, window.innerHeight);
