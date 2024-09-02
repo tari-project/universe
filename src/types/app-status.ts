@@ -10,6 +10,7 @@ export interface AppStatus {
     current_user_inactivity_duration?: number;
     mode: modeType;
     auto_mining: boolean;
+    monero_address?: string;
     p2pool_enabled: boolean;
     p2pool_stats?: P2poolStats;
 }
