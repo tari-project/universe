@@ -97,8 +97,7 @@ export const useAirdropStore = create<AirdropStore>()(
         }),
         {
             name: 'airdrop-store',
-            partialize: (state) =>
-                Object.fromEntries(Object.entries(state).filter(([key]) => key !== 'userPoints')),
+            partialize: (state) => Object.fromEntries(Object.entries(state).filter(([key]) => key !== 'userPoints')),
         }
     )
 );
