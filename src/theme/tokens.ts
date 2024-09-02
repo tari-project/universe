@@ -195,3 +195,7 @@ export const componentSettings = {
         },
     },
 };
+
+export type ThemeComponents = typeof componentSettings;
+
+export type Palette = typeof dark.palette | typeof light.palette;

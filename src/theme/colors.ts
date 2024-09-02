@@ -230,3 +230,5 @@ export const colors = {
     brightGreen,
     tariPurpleAlpha,
 };
+
+export type Colours = typeof colors;
