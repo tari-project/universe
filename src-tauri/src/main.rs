@@ -447,6 +447,7 @@ async fn start_mining<'r>(
     match res {
         Ok(_) => return Ok(()),
         Err(e) => {
+            error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
             let _ = state.cpu_miner.write().await.stop().await;
             return Err(e.to_string());
         }
