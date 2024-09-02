@@ -82,7 +82,6 @@ impl XmrigAdapter {
         force_download: bool,
         progress_tracker: ProgressTracker,
     ) -> Result<String, Error> {
-        dbg!(&cache_dir);
         let latest_release = fetch_latest_release().await?;
         let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
         if force_download {
