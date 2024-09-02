@@ -1,6 +1,7 @@
 import { ImSpinner3 } from 'react-icons/im';
 import styled, { keyframes } from 'styled-components';
 import { Button } from '@app/components/elements/Button.tsx';
+import { motion } from 'framer-motion';
 export const spin = keyframes`
   from {
   transform:rotate(0deg)
@@ -28,12 +29,21 @@ export const IconWrapper = styled('div')`
     }
 `;
 
+export const ButtonWrapper = styled.div`
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    width: 100%;
+`;
+
 export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
     display: flex;
+    width: 100%;
     align-items: center;
     background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
     border: 1px solid ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
-    color: ${({ theme, $hasStarted }) => ($hasStarted ? theme.palette.contrast : theme.palette.base)};
+    color: ${({ theme }) => theme.palette.base};
     transition: all 0.2s ease-in-out;
     &:hover {
         background: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(17,110,64,0.96)')};
@@ -45,4 +55,20 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
         border-color: rgba(0, 0, 0, 0.3);
         background: rgba(0, 0, 0, 0.01);
     }
+`;
+
+export const AnimatedBg = styled(motion.div)`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid pink;
+    z-index: 2;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+`;
+export const AnimatedCube = styled(motion.div)`
+    color: #fff;
+    position: relative;
 `;

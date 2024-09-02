@@ -82,6 +82,7 @@ export const BaseButton = styled.button<Props>`
 
 export const ChildrenWrapper = styled.div`
     display: flex;
+    position: relative;
 `;
 export const IconWrapper = styled.div<{ $position?: ButtonProps['iconPosition'] }>`
     display: flex;

@@ -40,6 +40,7 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { ControlledNumberInput } from '@app/components/NumberInput';
+import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -162,13 +163,13 @@ export default function Settings() {
                         },
                     }}
                 />
-            <ControlledMoneroAddressInput
-                                        name={FormFields.MONERO_ADDRESS}
-                                        control={control}
-                                        title={t('monero-address.title', { ns: 'settings' })}
-                                        placeholder={t('monero-address.placeholder', { ns: 'settings' })}
-                                    />
-                                </Stack>
+                <ControlledMoneroAddressInput
+                    name={FormFields.MONERO_ADDRESS}
+                    control={control}
+                    title={t('monero-address.title', { ns: 'settings' })}
+                    placeholder={t('monero-address.placeholder', { ns: 'settings' })}
+                />
+            </Stack>
             <Stack direction="row" justifyContent="flex-end">
                 <Button onClick={handleCancel}>Cancel</Button>
                 <Button type="submit" styleVariant="contained">

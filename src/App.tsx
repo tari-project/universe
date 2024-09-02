@@ -15,7 +15,6 @@ import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 import { setupLogger } from './utils/logger.ts';
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
-import useAppStateStore from '@app/store/appStateStore.ts';
 
 function App() {
     useAirdropTokensRefresh();
@@ -26,8 +25,6 @@ function App() {
 
     const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
-
-    const setError = useAppStateStore((s) => s.setError);
 
     useEffect(() => {
         setupLogger();
@@ -41,7 +38,6 @@ function App() {
             <SplashScreen />
             {!showSplash && (
                 <DashboardContainer>
-                    <button onClick={() => setError('this is fdkfjsdhkdsh')}>err!</button>
                     <ContainerInner>
                         <SideBar />
                         <Dashboard status={view} />
