@@ -168,10 +168,14 @@ impl CpuMiner {
                     match client.summary().await {
                         Ok(xmrig_status) => {
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                            let estimated_earnings = ((block_reward.as_u64() as f64)
-                                * ((hash_rate / (network_hash_rate as f64))
-                                    * (RANDOMX_BLOCKS_PER_DAY as f64)))
-                                as u64;
+                            let estimated_earnings = if network_hash_rate == 0 {
+                                0
+                            } else {
+                                ((block_reward.as_u64() as f64)
+                                    * ((hash_rate / (network_hash_rate as f64))
+                                        * (RANDOMX_BLOCKS_PER_DAY as f64)))
+                                    as u64
+                            };
                             // Can't be more than the max reward for a day
                             let estimated_earnings = std::cmp::min(
                                 estimated_earnings,
