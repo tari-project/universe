@@ -43,21 +43,24 @@ import { ControlledNumberInput } from '@app/components/NumberInput';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
+    MONERO_ADDRESS = 'moneroAddress',
 }
 
 interface FormState {
     [FormFields.IDLE_TIMEOUT]: number;
+    [FormFields.MONERO_ADDRESS]: string;
 }
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
+    const moneroAddress = useAppStatusStore((state) => state.monero_address);
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const { reset, handleSubmit, control } = useForm<FormState>({
-        defaultValues: { idleTimeout: userInActivityTimeout },
+        defaultValues: { idleTimeout: userInActivityTimeout, moneroAddress },
         mode: 'onSubmit',
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
@@ -99,6 +102,7 @@ export default function Settings() {
                 invoke('set_user_inactivity_timeout', {
                     timeout: Number(data[FormFields.IDLE_TIMEOUT]),
                 });
+                invoke('set_monero_address', { moneroAddress: data[FormFields.MONERO_ADDRESS] });
                 invoke('set_auto_mining', { autoMining: false });
                 handleClose();
             },
@@ -158,7 +162,13 @@ export default function Settings() {
                         },
                     }}
                 />
-            </Stack>
+            <ControlledMoneroAddressInput
+                                        name={FormFields.MONERO_ADDRESS}
+                                        control={control}
+                                        title={t('monero-address.title', { ns: 'settings' })}
+                                        placeholder={t('monero-address.placeholder', { ns: 'settings' })}
+                                    />
+                                </Stack>
             <Stack direction="row" justifyContent="flex-end">
                 <Button onClick={handleCancel}>Cancel</Button>
                 <Button type="submit" styleVariant="contained">

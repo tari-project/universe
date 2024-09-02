@@ -38,6 +38,7 @@ impl CpuMiner {
         &mut self,
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
+        monero_address: String,
         base_path: PathBuf,
         cache_dir: PathBuf,
         log_dir: PathBuf,
@@ -78,7 +79,7 @@ impl CpuMiner {
         };
         let xmrig = XmrigAdapter::new(
             xmrig_node_connection,
-            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
+            monero_address.clone(),
             cache_dir,
             progress_tracker,
             cpu_max_percentage,
