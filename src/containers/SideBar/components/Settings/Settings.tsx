@@ -39,7 +39,7 @@ import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
-import { Input } from '@app/components/elements/inputs/Input.tsx';
+import { ControlledNumberInput } from '@app/components/NumberInput';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -56,7 +56,7 @@ export default function Settings() {
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
-    const { reset, handleSubmit } = useForm<FormState>({
+    const { reset, handleSubmit, control } = useForm<FormState>({
         defaultValues: { idleTimeout: userInActivityTimeout },
         mode: 'onSubmit',
     });
@@ -140,8 +140,24 @@ export default function Settings() {
     const idleTimerMarkup = (
         <Form onSubmit={onSubmit}>
             <Stack>
-                <Typography variant="h6">Time after which machine is considered idle</Typography>
-                <Input name="idle" placeholder="Enter idle timeout in seconds" type="number" min={1} max={1000} />
+                <ControlledNumberInput
+                    name={FormFields.IDLE_TIMEOUT}
+                    endAdornment={t('seconds', { ns: 'common' })}
+                    title={t('idle-timeout.title', { ns: 'settings' })}
+                    placeholder={t('idle-timeout.placeholder', { ns: 'settings' })}
+                    control={control}
+                    type="int"
+                    rules={{
+                        max: {
+                            value: 21600,
+                            message: t('idle-timeout.max', { ns: 'settings' }),
+                        },
+                        min: {
+                            value: 1,
+                            message: t('idle-timeout.min', { ns: 'settings' }),
+                        },
+                    }}
+                />
             </Stack>
             <Stack direction="row" justifyContent="flex-end">
                 <Button onClick={handleCancel}>Cancel</Button>

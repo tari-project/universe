@@ -5,7 +5,7 @@ interface StackProps extends HTMLAttributes<HTMLDivElement> {
     direction?: 'column' | 'row';
     justifyContent?: 'space-between' | 'center' | 'flex-start' | 'flex-end';
     alignItems?: CSSProperties['alignItems'];
-    gap?: CSSProperties['gap'];
+    gap?: number;
 }
 
 const StyledStack = styled.div<{
@@ -19,7 +19,7 @@ const StyledStack = styled.div<{
     justify-content: ${({ $justifyContent }) => $justifyContent};
     align-items: ${({ $alignItems }) => $alignItems};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    gap: ${({ $gap }) => $gap};
+    gap: ${({ $gap }) => `${$gap}px`};
 `;
 
 export function Stack({
@@ -27,7 +27,7 @@ export function Stack({
     direction = 'column',
     justifyContent = 'center',
     alignItems,
-    gap,
+    gap = 4,
     ...props
 }: StackProps) {
     return (

@@ -6,14 +6,19 @@ import { decimalRegex, integerRegex, percentageRegex } from './NumberInput.const
 import { NumberInputTypography } from './NumberInput.styles';
 import type { ControlledNumberInputProps, NumberInputProps, NumberInputType } from './NumberInput.types';
 import { Stack } from '@app/components/elements/Stack.tsx';
-
+import { Input } from '@app/components/elements/inputs/Input.tsx';
+import { ChangeEvent, ReactNode } from 'react';
 const valueParses: Record<NumberInputType, RegExp> = {
     int: integerRegex,
     float: decimalRegex,
     percentage: percentageRegex,
 };
 
-export const NumberInput: React.FC<NumberInputProps> = ({
+function InputAdornment({ children, onClick }: { children?: ReactNode; onClick?: () => void }) {
+    return <div onClick={onClick}>{children}</div>;
+}
+
+export const NumberInput = ({
     title,
     value,
     onChange,
@@ -22,7 +27,12 @@ export const NumberInput: React.FC<NumberInputProps> = ({
     type = 'float',
     maximum,
     ...inputProps
-}) => {
+}: NumberInputProps) => {
+    const validateChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const newValue = event.target.value;
+
+        if (onChange && (valueParses[type].test(newValue) || newValue === '')) onChange(event);
+    };
     return (
         <Stack>
             {title && (
@@ -31,42 +41,32 @@ export const NumberInput: React.FC<NumberInputProps> = ({
                 </NumberInputTypography>
             )}
             <Stack>
-                {/*<Input*/}
-                {/*    error={Boolean(error)}*/}
-                {/*    fullWidth*/}
-                {/*    value={value}*/}
-                {/*    onChange={validateChange}*/}
-                {/*    endAdornment={*/}
-                {/*        maximum !== undefined ? (*/}
-                {/*            <InputAdornment*/}
-                {/*                position="end"*/}
-                {/*                sx={{ cursor: 'pointer' }}*/}
-                {/*                onClick={() =>*/}
-                {/*                    validateChange({*/}
-                {/*                        target: { value: String(maximum) },*/}
-                {/*                    } as React.ChangeEvent<HTMLInputElement>)*/}
-                {/*                }*/}
-                {/*            >*/}
-                {/*                MAX*/}
-                {/*            </InputAdornment>*/}
-                {/*        ) : (*/}
-                {/*            symbol && <InputAdornment position="end">{symbol}</InputAdornment>*/}
-                {/*        )*/}
-                {/*    }*/}
-                {/*    {...inputProps}*/}
-                {/*/>*/}
+                <Input
+                    error={Boolean(error)}
+                    value={value}
+                    onChange={validateChange}
+                    endAdornment={
+                        maximum !== undefined ? (
+                            <InputAdornment
+                                onClick={() =>
+                                    validateChange({
+                                        target: { value: String(maximum) },
+                                    } as ChangeEvent<HTMLInputElement>)
+                                }
+                            >
+                                MAX
+                            </InputAdornment>
+                        ) : (
+                            symbol && <InputAdornment>{symbol}</InputAdornment>
+                        )
+                    }
+                    {...inputProps}
+                />
             </Stack>
             {error && <FieldErrorMessage error={error} />}
         </Stack>
     );
-
-    const validateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = event.target.value;
-
-        if (onChange && (valueParses[type].test(newValue) || newValue === '')) onChange(event);
-    };
 };
-
 export const ControlledNumberInput = <FormValues extends FieldValues>({
     name,
     rules,
@@ -88,7 +88,7 @@ export const ControlledNumberInput = <FormValues extends FieldValues>({
             />
         )}
         name={name}
-        control={control as Control<FieldValues>}
+        control={control as Control}
         rules={rules}
     />
 );
