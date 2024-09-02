@@ -98,7 +98,7 @@ impl SystemtrayManager {
         match current_os {
             CurrentOperatingSystem::Windows => {
                 return format!(
-                    "CPU: {:.0} H/s, {:.0}%\nGPU: {:.0} H/s, {:.0}%\nEarn: {:.2} tXTM/Day",
+                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEarn: {:.2} tXTM/Day",
                     data.cpu_hashrate,
                     data.cpu_usage,
                     data.gpu_hashrate,
