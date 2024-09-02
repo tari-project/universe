@@ -93,7 +93,7 @@ impl SystemtrayManager {
     }
 
     fn internal_create_tooltip_from_data(data: SystrayData) -> String {
-        format!("CPU Hashrate: {:.2} H/s\nGPU Hashrate: {:.2} H/s\nCPU Usage: {:.2}%\nGPU Usage: {:.2}%\nEstimated Earning: {:.2} Tari", data.cpu_hashrate, data.gpu_hashrate, data.cpu_usage, data.gpu_usage, data.estimated_earning)
+        format!("CPU Hashrate: {:.2} H/s\nGPU Hashrate: {:.2} H/s\nCPU Usage: {:.2}%\nGPU Usage: {:.2}%\nEstimated Earning: {:.2} tXTM/Day", data.cpu_hashrate, data.gpu_hashrate, data.cpu_usage, data.gpu_usage, data.estimated_earning)
     }
 
     fn initialize_menu() -> SystemTrayMenu {
@@ -175,7 +175,9 @@ impl SystemtrayManager {
 
         match current_os {
             CurrentOperatingSystem::Windows => {
-                app.tray_handle().set_tooltip(tooltip.as_str()).unwrap();
+                app.tray_handle().set_tooltip(tooltip.as_str()).unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
+                });
             }
             CurrentOperatingSystem::Linux => {
                 self.update_menu_field(app.clone(), SystrayItemId::CpuHashrate, data.cpu_hashrate);
