@@ -65,7 +65,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
             format!(
                 "base_node.grpc_address=/ip4/127.0.0.1/tcp/{}",
                 self.grpc_port
-            ), // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
+            ),
+            "-p".to_string(),
+            "base_node.report_grpc_error=true".to_string(),
+            "-p".to_string(),
+            "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
         ];
         if !self.use_tor {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
@@ -81,10 +85,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
             // args.push(
             //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
             // );
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
-            );
         } else {
             args.push("-p".to_string());
             args.push(
@@ -273,15 +273,15 @@ impl MinotariNodeStatusMonitor {
                 let progress =
                     sync_util.get_progress(sync_progress.tip_height, sync_progress.local_height);
 
-                progress_tracker.update(
-                    format!(
-                        "Waiting for block headers sync. Tip height: {} headers behind: {}. Syncing {} headers/sec",
-                        sync_progress.tip_height,
-                        blocks_behind,
-                        syncing_speed
-                    ),
-                    progress
-                ).await;
+                progress_tracker
+                    .update(
+                        format!(
+                            "Waiting for header sync. {}/{} headers synced",
+                            sync_progress.local_height, sync_progress.tip_height,
+                        ),
+                        progress,
+                    )
+                    .await;
             } else if sync_progress.state == SyncState::Block as i32 {
                 if sync_util.syncing_type != SyncingType::Blocks {
                     sync_util = SyncUtil::new(SyncingType::Blocks);
@@ -291,15 +291,15 @@ impl MinotariNodeStatusMonitor {
                 let progress =
                     sync_util.get_progress(sync_progress.tip_height, sync_progress.local_height);
 
-                progress_tracker.update(
-                    format!(
-                        "Waiting for blocks sync. Tip height: {} Blocks behind: {}. Syncing {} blocks/sec",
-                        sync_progress.tip_height,
-                        blocks_behind,
-                        syncing_speed
-                    ),
-                    progress
-                ).await;
+                progress_tracker
+                    .update(
+                        format!(
+                            "Waiting for block sync. {}/{} Blocks synced.",
+                            sync_progress.local_height, sync_progress.tip_height,
+                        ),
+                        progress,
+                    )
+                    .await;
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
