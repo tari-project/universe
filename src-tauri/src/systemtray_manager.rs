@@ -100,8 +100,8 @@ impl SystemtrayManager {
                 return format!(
                     "CPU: {:.0} H/s, {:.0}%\nGPU: {:.0} H/s, {:.0}%\nEarn: {:.2} tXTM/Day",
                     data.cpu_hashrate,
-                    data.gpu_hashrate,
                     data.cpu_usage,
+                    data.gpu_hashrate,
                     data.gpu_usage,
                     data.estimated_earning
                 );
@@ -112,7 +112,7 @@ impl SystemtrayManager {
             CurrentOperatingSystem::MacOS => {
                 return format!(
                     "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEstimated Earning: {:.2} tXTM/Day",
-                    data.cpu_hashrate, data.gpu_hashrate, data.cpu_usage, data.gpu_usage, data.estimated_earning
+                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, data.estimated_earning
                 );
             }
         }
