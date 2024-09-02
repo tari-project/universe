@@ -88,6 +88,7 @@ export const dark = {
             dark: tariPurple[200],
             light: tariPurple[50],
             shadow: tariPurpleAlpha[80],
+            wisp: tariPurpleAlpha[5],
         },
         secondary: {
             main: brightGreen[500],
@@ -143,8 +144,13 @@ export const componentSettings = {
     },
     typography: {
         fontFamily: '"Poppins", sans-serif',
-        fontSize: 14,
+        fontSize: '16px',
         fontWeight: 400,
+        span: {
+            lineHeight: 1.1,
+            letterSpacing: '-0.1px',
+            fontWeight: 400,
+        },
         p: {
             fontSize: '12px',
             lineHeight: 1.1,

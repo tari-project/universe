@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-export function useClickOutside<T extends HTMLDivElement = HTMLDivElement>(callback: () => void) {
+export function useClickOutside<T extends HTMLDivElement = HTMLDivElement>(callback: (props?: unknown) => void) {
     const ref = useRef<T | null>(null);
 
     const onClick = useCallback(

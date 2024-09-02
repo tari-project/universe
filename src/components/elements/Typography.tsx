@@ -9,7 +9,7 @@ export interface TypographyProps extends HTMLAttributes<HTMLDivElement> {
     children: ReactNode;
 }
 
-export const Typography = ({ variant = 'p', children, ...props }: TypographyProps & CSSProperties) => (
+export const Typography = ({ variant = 'span', children, ...props }: TypographyProps & CSSProperties) => (
     <DynamicTypography variant={variant} {...props}>
         {children}
     </DynamicTypography>

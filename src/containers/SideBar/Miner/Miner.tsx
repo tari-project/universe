@@ -10,7 +10,6 @@ import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { formatNumber } from '@app/utils/formatNumber.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { useRef } from 'react';
-import { TransitionGroup } from 'react-transition-group';
 import { useTranslation } from 'react-i18next';
 
 function Miner() {

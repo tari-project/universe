@@ -120,6 +120,7 @@ export const BaseIconButton = styled.button`
     width: 34px;
     border-radius: 100%;
     transition: background-color 0.2s ease-in-out;
+    cursor: pointer;
     &:hover {
         background-color: ${({ theme }) => theme.palette.primary.wisp};
     }
