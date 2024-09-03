@@ -43,9 +43,8 @@ export const Characters = styled(motion.div)<Props>`
     flex-direction: column;
     align-items: center;
     letter-spacing: -4px;
-    font-weight: 600;
-    font-family: ${({ $variant }) =>
-        $variant == 'simple' ? '"Poppins", sans-serif' : `"DrukWideLCGBold", sans-serif`};
+    font-weight: ${({ $variant }) => ($variant == 'simple' ? 600 : 700)};
+    font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'Druk')}, sans-serif;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
     line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
 `;
@@ -54,5 +53,5 @@ export const Character = styled('div')<Props>`
     display: flex;
     justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
-    letter-spacing: -0.1ch;
+    letter-spacing: -0.02ch;
 `;

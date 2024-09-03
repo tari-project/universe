@@ -9,6 +9,7 @@ export const StyledButton = styled(Button)`
     gap: 10px;
     border-radius: 70px;
     border: 1px solid #000;
+    color: #000;
     display: flex;
     text-transform: none;
 `;

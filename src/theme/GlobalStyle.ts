@@ -129,9 +129,18 @@ export const GlobalStyle = createGlobalStyle`
     }
 
     @font-face {
-        font-family: "DrukWideLCGBold";
-        src: url("/assets/fonts/Druk/DrukWideLCG-Bold.ttf") format("ttf");
+        font-family: "Druk";
+        src: url("/assets/fonts/Druk/DrukWideLCG-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-style: normal;
+        font-display: fallback;
+    }
+    
+    @font-face {
+        font-family: "Druk";
+        src: url("/assets/fonts/Druk/DrukWideLCG-Heavy.ttf") format("truetype");
         font-weight: 900;
+        font-style: normal;
         font-display: fallback;
     }
 
@@ -159,6 +168,7 @@ export const GlobalStyle = createGlobalStyle`
         scrollbar-width: none;  /* Firefox */
         letter-spacing: -.02px;
         font-weight: 400;
+        pointer-events: none;
         * {
             box-sizing: border-box;
             ::-webkit-scrollbar {

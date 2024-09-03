@@ -6,8 +6,7 @@ import { useClickOutside } from '@app/hooks/helpers/useClickOutside.ts';
 
 const Content = styled.div`
     max-height: 90%;
-    min-height: 300px;
-    min-width: 640px;
+    min-height: 160px;
     max-width: 840px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
@@ -26,6 +25,7 @@ const Backdrop = styled.div`
     height: 100%;
 `;
 const Wrapper = styled.div`
+    pointer-events: auto;
     width: 100vw;
     top: 0;
     left: 0;

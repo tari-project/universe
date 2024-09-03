@@ -6,7 +6,6 @@ export const DashboardContainer = styled.div`
     display: flex;
     align-items: center;
     flex-direction: column;
-    //pointer-events: none;
     justify-content: center;
     height: 100%;
     flex-grow: 1;
@@ -30,7 +29,7 @@ export const VisualModeContainer = styled.div`
     justify-content: center;
     background-color: rgba(255, 255, 255, 0.2);
     padding: 10px;
-    pointer-events: all;
+    pointer-events: auto;
     border-radius: 24px;
     gap: 10px;
 `;

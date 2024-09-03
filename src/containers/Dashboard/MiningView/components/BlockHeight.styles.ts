@@ -4,14 +4,10 @@ interface BlockHeightBgProps {
     length: number;
 }
 
-const topHeight = 115;
+const topHeight = 55;
 const bottomHeight = 115;
 
-export const Wrapper = styled.div`
-    * {
-        font-weight: 900;
-    }
-`;
+export const Wrapper = styled.div``;
 export const RulerAbsoluteWrapper = styled.div`
     z-index: 100;
     position: absolute;
@@ -48,10 +44,10 @@ export const RulerMark = styled('div')`
 `;
 
 export const BlockHeightLrg = styled.div`
-    font-family: DrukWideLCGBold, sans-serif;
-    font-weight: 900;
+    font-family: Druk, sans-serif;
+    font-weight: 700;
     font-size: 25px;
-    letter-spacing: -0.8px;
+    letter-spacing: -0.01px;
     color: ${({ theme }) => theme.palette.text.primary};
     position: absolute;
     top: 50%;
@@ -70,16 +66,17 @@ export const BlockHeightSml = styled.div`
 `;
 
 export const BlockHeightBg = styled.div<BlockHeightBgProps>`
-    font-family: DrukWideLCGBold, sans-serif;
+    font-family: Druk, sans-serif;
+    font-weight: 700;
     font-size: ${({ length }) => (length > 5 ? '100px' : '152px')};
     line-height: ${({ length }) => (length > 5 ? '100px' : '152px')};
-    letter-spacing: -3px;
+    letter-spacing: -1px;
     color: rgba(255, 255, 255, 0.4);
     text-transform: uppercase;
     position: absolute;
     width: calc(100vh - ${topHeight}px - ${bottomHeight}px);
     top: 0;
-    right: ${({ length }) => (length > 5 ? '100px' : '125px')};
+    right: ${({ length }) => (length > 5 ? '100px' : '130px')};
     height: ${({ length }) => (length > 5 ? '100px' : '152px')};
     rotate: 270deg;
     z-index: 1;

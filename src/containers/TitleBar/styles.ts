@@ -29,7 +29,7 @@ export const CloseButton = styled.div`
 export const TitleBarContainer = styled('div')`
     height: 40px;
     user-select: none;
-    pointer-events: visible;
+    pointer-events: auto;
     display: flex;
     justify-content: space-between;
     align-items: center;

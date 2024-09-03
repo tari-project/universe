@@ -14,6 +14,7 @@ export const SideBarContainer = styled.div<SideBarContainerProps>`
     height: 100%;
     width: ${({ $sidebarOpen }) => ($sidebarOpen ? `100%` : sidebarWidth)};
     transition: width 0.5s ease-in-out;
+    pointer-events: auto;
     display: flex;
     z-index: 10;
     flex-shrink: 0;

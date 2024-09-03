@@ -42,7 +42,7 @@ const Options = styled.div<{ $open?: boolean }>`
     z-index: 1;
     height: ${({ $open }) => ($open ? 'auto' : 0)};
     opacity: ${({ $open }) => ($open ? 1 : 0)};
-    pointer-events: ${({ $open }) => ($open ? 'all' : 'none')};
+    pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
     transition: all 0.1s ease-in;
 
     left: 0;
@@ -115,7 +115,7 @@ interface Props {
 type OnClickEvent = MouseEvent<HTMLDivElement>;
 
 export function Select({ options, selectedValue, disabled, loading, onChange, ...props }: Props) {
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(false);
     function toggleOpen(e: OnClickEvent) {
         e.stopPropagation();
         setExpanded((c) => !c);

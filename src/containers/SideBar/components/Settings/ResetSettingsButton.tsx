@@ -40,15 +40,15 @@ export const ResetSettingsButton = () => {
                 Reset Settings
             </Button>
             <Dialog open={open} onClose={handleClose}>
-                <Stack direction="column" style={{ width: '100%' }} alignItems="center">
+                <Stack direction="column" alignItems="center" justifyContent="space-between">
                     <Typography variant="h2">Reset Settings</Typography>
-                    <Typography>Are you sure you want to reset all settings permanently?</Typography>
+                    <Typography variant="p">Are you sure you want to reset all settings permanently?</Typography>
                     <Stack direction="row">
+                        <Button disabled={loading} onClick={handleClose} color="warning">
+                            Cancel
+                        </Button>
                         <Button disabled={loading} onClick={resetSettings}>
                             {loading ? <CircularProgress /> : 'Yes'}
-                        </Button>
-                        <Button disabled={loading} onClick={handleClose}>
-                            Cancel
                         </Button>
                     </Stack>
                 </Stack>

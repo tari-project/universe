@@ -233,7 +233,9 @@ export default function Settings() {
                         <TelemetryMode />
                     </Stack>
                     <Divider />
-                    <ConnectButton />
+                    <HorisontalBox>
+                        <ConnectButton />
+                    </HorisontalBox>
                     <Divider />
                     <HorisontalBox>
                         <ResetSettingsButton />

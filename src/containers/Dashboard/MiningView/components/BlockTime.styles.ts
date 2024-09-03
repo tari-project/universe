@@ -5,19 +5,21 @@ export const BlockTimeContainer = styled.div`
     z-index: 100;
     display: flex;
     flex-direction: column;
+    font-weight: 500;
     align-items: flex-end;
 `;
 
 export const TitleTypography = styled(Typography)`
-    font-family: 'PoppinsRegular', sans-serif;
     font-size: 13px;
-    color: theme.palette.text.secondary;
+    color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
 export const TimerTypography = styled.div`
-    font-family: 'DrukWideLCGBold', sans-serif;
+    font-family: Druk, sans-serif;
+
     font-variant-numeric: tabular-nums;
     font-size: 18px;
+    font-weight: 700;
     color: ${({ theme }) => theme.palette.text.primary};
     gap: 2px;
     display: flex;
