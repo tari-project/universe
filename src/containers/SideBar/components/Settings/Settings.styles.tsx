@@ -32,6 +32,7 @@ export const CardItem = styled(Stack)`
     padding: 15px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
+    color: ${({ theme }) => theme.palette.text.secondary};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
 `;
 

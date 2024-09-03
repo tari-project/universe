@@ -8,6 +8,7 @@
         "checking-latest-version-mmproxy": "Checking for latest version of mmproxy",
         "checking-latest-version-wallet": "Checking for latest version of wallet",
         "checking-latest-version-xmrig": "Checking for latest version of xmrig",
+        "checking-latest-version-sha-p2pool": "Checking for latest version of P2Pool",
         "waiting-for-wallet": "Waiting for wallet",
         "waiting-for-node": "Waiting for node to sync",
         "preparing-for-initial-sync": "Preparing for initial sync",
@@ -17,5 +18,4 @@
         "downloading": "Downloading",
         "download-completed": "Download completed"
     }
-
 }

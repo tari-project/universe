@@ -1,8 +1,4 @@
-import {
-    CardContainer,
-    HorisontalBox,
-    RightHandColumn,
-} from '@app/containers/SideBar/components/Settings/Settings.styles.tsx';
+import { CardContainer } from '@app/containers/SideBar/components/Settings/Settings.styles.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import { Button } from '@app/components/elements/Button.tsx';
@@ -18,20 +14,20 @@ export default function AppVersions() {
     const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
     const { refreshApplicationsVersions, getApplicationsVersions } = useApplicationsVersions();
     return applicationsVersions ? (
-        <>
-            <HorisontalBox>
+        <Stack>
+            <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="h6">{t('versions', { ns: 'common' })}</Typography>
-                <RightHandColumn>
+                <Stack direction="row" alignItems="center" justifyContent="space-between">
                     {currentEnvironment === Environment.Development && (
-                        <Button variant="text" onClick={refreshApplicationsVersions}>
+                        <Button variant="text" size="small" onClick={refreshApplicationsVersions}>
                             {t('update-versions', { ns: 'settings' })}
                         </Button>
                     )}
-                    <Button variant="text" onClick={getApplicationsVersions}>
+                    <Button variant="text" size="small" onClick={getApplicationsVersions}>
                         {t('refresh-versions', { ns: 'settings' })}
                     </Button>
-                </RightHandColumn>
-            </HorisontalBox>
+                </Stack>
+            </Stack>
             <Stack>
                 <CardContainer>
                     {Object.entries(applicationsVersions).map(([key, value]) => (
@@ -48,6 +44,6 @@ export default function AppVersions() {
                     ))}
                 </CardContainer>
             </Stack>
-        </>
+        </Stack>
     ) : null;
 }

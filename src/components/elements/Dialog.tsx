@@ -4,27 +4,27 @@ import styled from 'styled-components';
 import { useKeyboardEvent } from '@app/hooks/helpers/useKeyboardEvent.ts';
 import { useClickOutside } from '@app/hooks/helpers/useClickOutside.ts';
 
-const Content = styled.div`
+const Content = styled.div<{ $isNested?: boolean }>`
     max-height: 90%;
     min-height: 160px;
-    max-width: 840px;
+    min-width: min(70%, 400px);
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     display: flex;
     padding: 20px;
     overflow-y: scroll;
-    z-index: 1;
+    z-index: ${({ $isNested }) => ($isNested ? 2 : 1)};
     position: relative;
 `;
-const Backdrop = styled.div`
+const Backdrop = styled.div<{ $isNested?: boolean }>`
     width: 100%;
     position: absolute;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 0;
+    z-index: ${({ $isNested }) => ($isNested ? 1 : 0)};
     height: 100%;
 `;
-const Wrapper = styled.div`
+const Wrapper = styled.div<{ $isNested?: boolean }>`
     pointer-events: auto;
     width: 100vw;
     top: 0;
@@ -34,32 +34,35 @@ const Wrapper = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: ${({ $isNested }) => ($isNested ? 101 : 100)};
 `;
 
 interface Props {
     children: ReactNode;
-    onClose: () => void;
+    onClose: (e?) => void;
+    isNested?: boolean;
     open?: boolean;
 }
 
-function ModalContent({ onClose, children }: Props) {
+function ModalContent({ onClose, children, isNested }: Props) {
     useKeyboardEvent({ keys: ['Escape'], callback: onClose });
-    const clickRef = useClickOutside(onClose);
+    const clickRef = useClickOutside(onClose, isNested);
     return (
-        <Wrapper>
-            <Backdrop />
-            <Content ref={clickRef}>{children}</Content>
+        <Wrapper $isNested={isNested}>
+            <Backdrop $isNested={isNested} />
+            <Content ref={clickRef} $isNested={isNested}>
+                {children}
+            </Content>
         </Wrapper>
     );
 }
 
-export default function Dialog({ onClose, children, open = false }: Props) {
+export default function Dialog({ onClose, children, open = false, isNested = false }: Props) {
     return (
         <>
             {open &&
                 createPortal(
-                    <ModalContent onClose={onClose} open={open}>
+                    <ModalContent onClose={onClose} open={open} isNested={isNested}>
                         {children}
                     </ModalContent>,
                     document.body
