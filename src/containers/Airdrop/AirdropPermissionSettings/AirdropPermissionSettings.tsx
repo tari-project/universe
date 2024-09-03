@@ -2,15 +2,21 @@ import { Switch } from '@mui/material';
 import { BoxWrapper, Text, TextWrapper, Title, Wrapper } from './styles';
 import { useState, ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAirdropStore } from '@app/store/useAirdropStore';
 
 export default function AirdropPermissionSettings() {
     const [checked, setChecked] = useState(false);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
+    const { setShowLoginAlert } = useAirdropStore();
+
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
         setChecked(event.target.checked);
-    };
 
+        if (event.target.checked) {
+            setShowLoginAlert(true);
+        }
+    };
     return (
         <Wrapper>
             <BoxWrapper>

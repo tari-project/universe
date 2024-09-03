@@ -62,6 +62,7 @@ interface AirdropState {
     authUuid: string;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
+    showLoginAlert: boolean;
 }
 
 interface AirdropStore extends AirdropState {
@@ -69,13 +70,14 @@ interface AirdropStore extends AirdropState {
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
     logout: () => void;
+    setShowLoginAlert: (showLoginAlert: boolean) => void;
 }
 
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
-            logout: () => set({ airdropTokens: undefined }),
+            logout: () => set({ airdropTokens: undefined, authUuid: undefined }),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
             setAirdropTokens: (airdropTokens) =>
@@ -85,6 +87,8 @@ export const useAirdropStore = create<AirdropStore>()(
                         expiresAt: parseJwt(airdropTokens.token).exp,
                     },
                 }),
+            showLoginAlert: false,
+            setShowLoginAlert: (showLoginAlert) => set({ showLoginAlert }),
         }),
         { name: 'airdrop-store' }
     )

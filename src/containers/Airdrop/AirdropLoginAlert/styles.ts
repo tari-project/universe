@@ -1,12 +1,12 @@
 import { keyframes, styled } from '@mui/material/styles';
+import { IconCircle } from '../AirdropLogin/ConnectButton/styles';
+import { motion } from 'framer-motion';
 
-export const Wrapper = styled('div')`
+export const Wrapper = styled(motion.div)`
     padding-top: 14px;
-
     position: absolute;
     top: 100%;
     right: 0;
-
     width: 311px;
 `;
 
@@ -81,6 +81,8 @@ export const ConnectButton = styled('button')`
     line-height: 99.7%;
     text-transform: uppercase;
 
+    position: relative;
+
     span {
         display: inline-flex;
         transition: transform 0.2s ease;
@@ -91,6 +93,12 @@ export const ConnectButton = styled('button')`
             transform: scale(1.05);
         }
     }
+`;
+
+export const StyledIconCircle = styled(IconCircle)`
+    position: absolute;
+    top: 8px;
+    right: 8px;
 `;
 
 export const LaterButton = styled('button')`

@@ -11,12 +11,20 @@ import {
     Gem1,
     Gem2,
     Gem3,
+    StyledIconCircle,
 } from './styles';
 import gemImage from './images/gem.png';
+import { useAirdropStore } from '@app/store/useAirdropStore';
+import { XIcon } from '../AirdropLogin/ConnectButton/styles';
+import useAirdropConnect from '../hooks/useAirdropConnect';
 
 export default function AirdropLoginAlert() {
+    const { setShowLoginAlert } = useAirdropStore();
+
+    const { handleAuth } = useAirdropConnect();
+
     return (
-        <Wrapper>
+        <Wrapper initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
             <ContentBox>
                 <GemsWrapper>
                     <Gem1 src={gemImage} alt="" />
@@ -33,10 +41,15 @@ export default function AirdropLoginAlert() {
                 </TextWrapper>
 
                 <ButtonWrapper>
-                    <ConnectButton>
+                    <ConnectButton onClick={handleAuth}>
                         <span>Connect with X</span>
+
+                        <StyledIconCircle>
+                            <XIcon />
+                        </StyledIconCircle>
                     </ConnectButton>
-                    <LaterButton>I’ll do this later</LaterButton>
+
+                    <LaterButton onClick={() => setShowLoginAlert(false)}>I’ll do this later</LaterButton>
                 </ButtonWrapper>
             </ContentBox>
         </Wrapper>
