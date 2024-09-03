@@ -119,7 +119,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MinotariNode)
+                        .resolve_path_to_binary_files(Binaries::MinotariNode)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;

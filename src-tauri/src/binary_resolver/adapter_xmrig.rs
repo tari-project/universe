@@ -16,7 +16,7 @@ pub struct XmrigVersionApiAdapter {}
 
 #[async_trait]
 impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
-    async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
+    async fn fetch_releases_list(&self) -> Result<VersionDownloadInfo, Error> {
         let url = "https://api.xmrig.com/1/latest_release";
         let response = reqwest::get(url).await?;
         let latest_release: XmrigRelease = response.json().await?;

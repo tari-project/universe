@@ -110,7 +110,7 @@ impl ProcessAdapter for WalletAdapter {
         }
         Ok((
             ProcessInstance {
-                shutdown: inner_shutdown,
+                shutdown:resolve_path_to_binary_filesown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
                         .resolve_path(Binaries::Wallet)

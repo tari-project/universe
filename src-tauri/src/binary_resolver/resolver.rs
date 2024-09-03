@@ -18,11 +18,7 @@ use super::Binaries;
 pub const BINARY_RESOLVER_LOG_TARGET: &str = "tari::universe::binary_resolver";
 static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
 
-pub struct BinaryResolver {
-    download_mutex: Mutex<()>,
-    adapters: HashMap<Binaries, Box<dyn LatestVersionApiAdapter>>,
-    latest_versions: Arc<RwLock<HashMap<Binaries, Version>>>,
-}
+
 
 #[derive(Debug, Clone)]
 pub struct VersionDownloadInfo {
@@ -38,7 +34,7 @@ pub struct VersionAsset {
 
 #[async_trait]
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
-    async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error>;
+    async fn fetch_releases_list(&self) -> Result<VersionDownloadInfo, Error>;
 
     fn get_binary_folder(&self) -> PathBuf;
 
@@ -46,6 +42,12 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
         &self,
         version: &VersionDownloadInfo,
     ) -> Result<VersionAsset, Error>;
+}
+
+pub struct BinaryResolver {
+    download_mutex: Mutex<()>,
+    adapters: HashMap<Binaries, Box<dyn LatestVersionApiAdapter>>,
+    latest_versions: Arc<RwLock<HashMap<Binaries, Version>>>,
 }
 
 impl BinaryResolver {
@@ -93,7 +95,10 @@ impl BinaryResolver {
 
     // ================== Inner privet methods ================== //
 
-    pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, Error> {
+
+    // ================== Public methods ================== //
+
+    pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
         let adapter = self
             .adapters
             .get(&binary)
@@ -132,7 +137,7 @@ impl BinaryResolver {
             .adapters
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
-        let latest_release = adapter.fetch_latest_release().await?;
+        let latest_release = adapter.fetch_releases_list().await?;
         // TODO: validate that version doesn't have any ".." or "/" in it
 
         let bin_folder = adapter

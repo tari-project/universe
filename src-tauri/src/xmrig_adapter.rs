@@ -97,7 +97,7 @@ impl ProcessAdapter for XmrigAdapter {
                 shutdown: xmrig_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let xmrig_dir = BinaryResolver::current()
-                        .resolve_path(Binaries::Xmrig)
+                        .resolve_path_to_binary_files(Binaries::Xmrig)
                         .await
                         .unwrap_or_else(|_| panic!("Could not resolve xmrig path"));
                     let xmrig_bin = xmrig_dir.join("xmrig");

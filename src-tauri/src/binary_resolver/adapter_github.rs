@@ -18,7 +18,7 @@ pub struct GithubReleasesAdapter {
 
 #[async_trait]
 impl LatestVersionApiAdapter for GithubReleasesAdapter {
-    async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
+    async fn fetch_releases_list(&self) -> Result<VersionDownloadInfo, Error> {
         let releases = github::list_releases(&self.owner, &self.repo).await?;
         // dbg!(&releases);
         let network = "pre";
