@@ -1,6 +1,6 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
-import ConnectButton from './components/ConnectButton/ConnectButton';
-import UserInfo from './components/UserInfo/UserInfo';
+import ConnectButton from './ConnectButton/ConnectButton';
+import UserInfo from './UserInfo/UserInfo';
 import { AirdropLoginPosition } from './styles';
 
 export default function AirdropLogin() {
