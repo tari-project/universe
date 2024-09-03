@@ -6,6 +6,7 @@ const PADDING = '1rem';
 interface Props {
     $variant?: ButtonProps['variant'];
     $color?: ButtonProps['color'];
+    $size?: ButtonProps['size'];
     $outlined?: boolean;
     $simple?: boolean;
 }
@@ -31,13 +32,12 @@ const BASE_STYLES = css`
     align-items: center;
     justify-content: center;
     position: relative;
-    padding: 10px ${PADDING};
     font-family: ${({ theme }) => theme.typography.fontFamily};
-    font-size: ${({ theme }) => theme.typography.h6.fontSize};
     line-height: ${({ theme }) => theme.typography.h6.lineHeight};
     letter-spacing: ${({ theme }) => theme.typography.h6.letterSpacing};
     font-weight: ${({ theme }) => theme.typography.h6.fontWeight};
     border-width: 1px;
+    white-space: nowrap;
 
     &:active {
         opacity: 0.9;
@@ -52,19 +52,28 @@ export const BaseButton = styled.button<Props>`
     border-color: ${({ theme, $color }) => theme.palette[$color || 'primary'].light};
     background: ${({ theme, $outlined }) => ($outlined ? theme.palette.background.paper : theme.palette.primary.main)};
     color: ${({ theme, $outlined, $color }) => ($outlined ? theme.palette[$color || 'primary'].main : theme.palette.text.contrast)};
+    font-size: ${({ theme, $size }) => ($size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize)};
+    padding:  ${({ $size }) => ($size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`)};
+
     &:hover {
         background: ${({ theme, $outlined, $color }) => ($outlined ? theme.palette[$color || 'primary'].wisp : theme.palette[$color || 'primary'].dark)};
     }
     ${BASE_STYLES}
 
-    ${({ $variant, $simple, theme, $color }) => {
+    ${({ $variant, $simple, theme, $color, $size }) => {
         switch ($variant) {
             case 'text':
                 return css`
                     background: ${theme.palette.background.paper};
                     color: ${theme.palette[$color || 'primary'].main};
                     height: unset;
-                    padding: ${$simple ? '0 4px' : `10px ${PADDING}`};
+                    padding: ${$simple
+                        ? '0 4px'
+                        : $size === 'small'
+                          ? '4px 6px'
+                          : $size === 'large'
+                            ? `12px ${PADDING}`
+                            : `10px ${PADDING}`};
                     &:hover {
                         background: ${$simple ? 'none' : theme.palette.primary.wisp};
                         color: ${$simple ? theme.palette.primary.dark : theme.palette.primary.main};

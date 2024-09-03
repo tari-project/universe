@@ -39,7 +39,7 @@ export const ResetSettingsButton = () => {
             <Button onClick={resetSettings} styleVariant="outline" color="error">
                 Reset Settings
             </Button>
-            <Dialog open={open} onClose={handleClose}>
+            <Dialog open={open} onClose={handleClose} isNested>
                 <Stack direction="column" alignItems="center" justifyContent="space-between">
                     <Typography variant="h2">Reset Settings</Typography>
                     <Typography variant="p">Are you sure you want to reset all settings permanently?</Typography>
