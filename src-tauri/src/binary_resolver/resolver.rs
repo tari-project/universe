@@ -36,6 +36,8 @@ pub struct VersionAsset {
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
     async fn fetch_releases_list(&self) -> Result<VersionDownloadInfo, Error>;
 
+    async fn get_checksum_path(&self, version: &VersionDownloadInfo) -> PathBuf;
+
     fn get_binary_folder(&self) -> PathBuf;
 
     fn find_version_for_platform(
@@ -94,6 +96,7 @@ impl BinaryResolver {
     }
 
     // ================== Inner privet methods ================== //
+
 
 
     // ================== Public methods ================== //
@@ -211,7 +214,7 @@ impl BinaryResolver {
 
                 extract(&in_progress_file_zip, &bin_dir).await?;
             } else {
-                return Err(anyhow!("ZIP file integrity verification failed!"));
+                return Err(anyhow!("ZIP file integrity verification for {} failed!", asset.name));
             }
             fs::remove_dir_all(in_progress_dir).await?;
         }
@@ -228,6 +231,7 @@ impl BinaryResolver {
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
         let bin_folder = adapter.get_binary_folder();
+        println!("Reading current highest version for {}", bin_folder.to_string_lossy());
         let version_folders_list = match std::fs::read_dir(&bin_folder) {
             Ok(list) => list,
             Err(_) => match std::fs::create_dir_all(&bin_folder) {
@@ -243,6 +247,9 @@ impl BinaryResolver {
                 Ok(entry) => entry,
                 Err(_) => continue,
             };
+
+            dbg!(entry.path());
+
             let path = entry.path();
             if path.is_dir() {
                 // Check for actual binary existing. It can happen that the folder is there,
@@ -263,6 +270,7 @@ impl BinaryResolver {
         }
 
         if versions.is_empty() {
+            println!("No versions found for {}", binary.name());
             match self
                 .ensure_latest_inner(binary, true, progress_tracker)
                 .await

@@ -407,7 +407,7 @@ async fn setup_inner(
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60 * 10)
+        > Duration::from_secs(10 * 60)
     // 10 minutes
     {
         let _unused = state

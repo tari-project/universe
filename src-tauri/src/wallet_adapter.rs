@@ -110,10 +110,10 @@ impl ProcessAdapter for WalletAdapter {
         }
         Ok((
             ProcessInstance {
-                shutdown:resolve_path_to_binary_filesown,
+                shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::Wallet)
+                        .resolve_path_to_binary_files(Binaries::Wallet)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;

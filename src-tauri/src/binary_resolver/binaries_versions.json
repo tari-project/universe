@@ -1,3 +1,7 @@
 {
     "xmrig": "6.15.2",
+    "mmproxy": "1.0.2",
+    "minotari_node": "0.1.0",
+    "wallet": "0.1.0",
+    "sha-p2pool": "0.1.0"
 }

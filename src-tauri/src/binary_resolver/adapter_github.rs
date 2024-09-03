@@ -44,6 +44,12 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         Ok(info.clone())
     }
 
+    async fn get_checksum_path(&self, version: &VersionDownloadInfo) -> Result<PathBuf, Error> {
+        let platform = self.find_version_for_platform(version)?;
+        let checksum_path = self.get_binary_folder().join(format!("{}.sha256", platform.name));
+        Ok(checksum_path)
+    }
+
     fn get_binary_folder(&self) -> PathBuf {
         cache_dir()
             .unwrap()
