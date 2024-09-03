@@ -4,16 +4,26 @@ import AutoMiner from './components/AutoMiner/AutoMiner.tsx';
 
 import ModeSelect from './components/ModeSelect.tsx';
 import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
-import { Box, Divider, Fade, Slide, Stack } from '@mui/material';
 
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { formatNumber } from '@app/utils/formatNumber.ts';
-import { useRef } from 'react';
-import { TransitionGroup } from 'react-transition-group';
-import { useTranslation } from 'react-i18next';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
-function Miner() {
+import { useTranslation } from 'react-i18next';
+import { AnimatePresence, motion } from 'framer-motion';
+
+const variants = {
+    hidden: {
+        y: '150%',
+        opacity: 0,
+    },
+    visible: {
+        y: 0,
+        opacity: 1,
+    },
+};
+export default function Miner() {
     const { t } = useTranslation('common', { useSuspense: false });
 
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
@@ -33,57 +43,46 @@ function Miner() {
         })
         .replace(/,/g, '.');
 
-    const containerRef = useRef<HTMLDivElement>(null);
-
     return (
         <MinerContainer>
-            <TransitionGroup>
-                <AutoMiner />
-                <Divider sx={{ my: 2 }} />
-                <TileContainer>
-                    <ModeSelect />
-                    <Tile
-                        title={`${t('hashrate')} (H/s)`}
-                        stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''}`}
-                        isLoading={isWaitingForHashRate}
-                    />
-                    <Tile title="CHIP/GPU" stats={hardwareVal || t('unknown')} />
-                    <Tile
-                        title={`Est tXTM/${t('day')}`}
-                        stats={formatNumber(estimated_earnings / 1000000)}
-                        isLoading={isWaitingForHashRate}
-                    />
-                </TileContainer>
-                <Stack ref={containerRef} my={0.6}>
-                    <Slide
-                        direction="up"
-                        in={isMiningEnabled || isChangingMode}
-                        container={containerRef.current}
-                        timeout={450}
-                    >
-                        <Box>
-                            <Fade in={isMiningEnabled || isChangingMode} timeout={450}>
-                                <TileContainer sx={{ zIndex: -199 }}>
-                                    <Tile
-                                        title={`CPU ${t('utilization')}`}
-                                        stats={
-                                            (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
-                                                maximumFractionDigits: 0,
-                                            }) + '%'
-                                        }
-                                    />
-                                    <Tile
-                                        title={`CPU ${t('temperature')}`}
-                                        stats={`${cpuHardwareStatus?.current_temperature || 0}°C`}
-                                    />
-                                </TileContainer>
-                            </Fade>
-                        </Box>
-                    </Slide>
-                </Stack>
-            </TransitionGroup>
+            <AutoMiner />
+            <Divider />
+            <TileContainer>
+                <ModeSelect />
+                <Tile
+                    title={`${t('hashrate')} (H/s)`}
+                    stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''}`}
+                    isLoading={isWaitingForHashRate}
+                />
+                <Tile title="CHIP/GPU" stats={hardwareVal || t('unknown')} />
+                <Tile
+                    title={`Est tXTM/${t('day')}`}
+                    stats={formatNumber(estimated_earnings / 1000000)}
+                    isLoading={isWaitingForHashRate}
+                />
+                <AnimatePresence>
+                    {isMiningEnabled || isChangingMode ? (
+                        <>
+                            <motion.div variants={variants} initial="hidden" animate="visible" exit="hidden">
+                                <Tile
+                                    title={`CPU ${t('utilization')}`}
+                                    stats={
+                                        (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
+                                            maximumFractionDigits: 0,
+                                        }) + '%'
+                                    }
+                                />
+                            </motion.div>
+                            <motion.div variants={variants} initial="hidden" animate="visible" exit="hidden">
+                                <Tile
+                                    title={`CPU ${t('temperature')}`}
+                                    stats={`${cpuHardwareStatus?.current_temperature || 0}°C`}
+                                />
+                            </motion.div>
+                        </>
+                    ) : null}
+                </AnimatePresence>
+            </TileContainer>
         </MinerContainer>
     );
 }
-
-export default Miner;

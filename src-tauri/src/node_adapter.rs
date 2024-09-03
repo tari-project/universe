@@ -5,21 +5,19 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use humantime::format_duration;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{
     Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
 use tokio::select;
-use tonic::transport::Channel;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
@@ -251,7 +249,6 @@ impl MinotariNodeStatusMonitor {
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
-        let mut sync_util = SyncUtil::new(SyncingType::Headers);
 
         loop {
             let tip = client.get_tip_info(Empty {}).await?;
@@ -265,41 +262,51 @@ impl MinotariNodeStatusMonitor {
 
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
-                    .update("preparing-for-initial-sync".to_string(), 10)
+                    .update("preparing-for-initial-sync".to_string(), None, 10)
                     .await;
             } else if sync_progress.state == SyncState::Header as i32 {
-                if sync_util.syncing_type != SyncingType::Headers {
-                    sync_util = SyncUtil::new(SyncingType::Headers);
-                }
-                let syncing_speed = sync_util.get_syncing_speed(sync_progress.local_height);
-                let blocks_behind = sync_progress.tip_height - sync_progress.local_height;
-                let progress =
-                    sync_util.get_progress(sync_progress.tip_height, sync_progress.local_height);
+                let progress = if sync_progress.tip_height == 0 {
+                    10
+                } else {
+                    10 + (30 * sync_progress.local_height / sync_progress.tip_height)
+                };
 
                 progress_tracker
                     .update(
-                        format!(
-                            "Waiting for header sync. {}/{} headers synced",
-                            sync_progress.local_height, sync_progress.tip_height,
-                        ),
+                        "waiting-for-header-sync".to_string(),
+                        Some(HashMap::from([
+                            (
+                                "local_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                        ])),
                         progress,
                     )
                     .await;
             } else if sync_progress.state == SyncState::Block as i32 {
-                if sync_util.syncing_type != SyncingType::Blocks {
-                    sync_util = SyncUtil::new(SyncingType::Blocks);
-                }
-                let syncing_speed = sync_util.get_syncing_speed(sync_progress.local_height);
-                let blocks_behind = sync_progress.tip_height - sync_progress.local_height;
-                let progress =
-                    sync_util.get_progress(sync_progress.tip_height, sync_progress.local_height);
+                let progress = if sync_progress.tip_height == 0 {
+                    40
+                } else {
+                    40 + (60 * sync_progress.local_height / sync_progress.tip_height)
+                };
 
                 progress_tracker
                     .update(
-                        format!(
-                            "Waiting for block sync. {}/{} Blocks synced.",
-                            sync_progress.local_height, sync_progress.tip_height,
-                        ),
+                        "waiting-for-block-sync".to_string(),
+                        Some(HashMap::from([
+                            (
+                                "local_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                        ])),
                         progress,
                     )
                     .await;
@@ -307,73 +314,5 @@ impl MinotariNodeStatusMonitor {
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum SyncingType {
-    Headers,
-    Blocks,
-}
-
-pub struct SyncUtil {
-    sync_progress_history: Vec<(u64, u64)>,
-    syncing_type: SyncingType,
-}
-
-impl SyncUtil {
-    pub fn new(syncing_type: SyncingType) -> Self {
-        Self {
-            sync_progress_history: vec![],
-            syncing_type,
-        }
-    }
-
-    fn get_syncing_speed(&mut self, local_height: u64) -> u64 {
-        let time_now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        if self.sync_progress_history.len() >= 10 {
-            self.sync_progress_history.remove(0);
-        }
-
-        self.sync_progress_history.push((local_height, time_now));
-
-        let syncing_speed = self
-            .sync_progress_history
-            .first()
-            .and_then(|first| {
-                self.sync_progress_history.last().map(|last| {
-                    let denominator = (last.1 - first.1) as f64;
-
-                    if denominator != 0.0 {
-                        ((last.0 as f64) - (first.0 as f64)) / denominator
-                    } else {
-                        0.0
-                    }
-                })
-            })
-            .unwrap_or(0.0) as u64;
-
-        syncing_speed
-    }
-
-    fn get_progress(&self, tip_height: u64, local_height: u64) -> u64 {
-        if self.syncing_type == SyncingType::Headers {
-            // 10% -> 40% - Header
-            if tip_height == 0 {
-                10
-            } else {
-                10 + (30 * local_height / tip_height)
-            }
-        } else {
-            // 40% -> 100% - Block
-            if tip_height == 0 {
-                40
-            } else {
-                40 + (60 * local_height / tip_height)
-            }
-        }
     }
 }
