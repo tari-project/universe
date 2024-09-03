@@ -6,9 +6,12 @@ import { v4 as uuidv4 } from 'uuid';
 import gem1Image from './images/gem-1.png';
 import gem2Image from './images/gem-2.png';
 import gem3Image from './images/gem-3.png';
+import { useTranslation } from 'react-i18next';
 
 export default function ConnectButton() {
     const { authUuid, setAuthUuid, setAirdropTokens } = useAirdropStore();
+
+    const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const handleAuth = useCallback(() => {
         const token = uuidv4();
@@ -58,7 +61,7 @@ export default function ConnectButton() {
 
             <NumberPill>+200</NumberPill>
 
-            <Text>Log in to claim gems</Text>
+            <Text>{t('loginButton')}</Text>
 
             <IconCircle>
                 <XIcon />

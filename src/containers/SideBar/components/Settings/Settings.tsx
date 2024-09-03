@@ -31,6 +31,7 @@ import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.ts
 import { Language, LanguageList } from '../../../../i18initializer.ts';
 import { changeLanguage } from 'i18next';
 import { useTranslation } from 'react-i18next';
+import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -205,6 +206,7 @@ const Settings: React.FC = () => {
                                 </DialogActions>
                             </Box>
                         </form>
+                        <AirdropPermissionSettings />
                         <Divider />
                         <HorisontalBox>
                             <Typography variant="h6">{t('change-language', { ns: 'settings' })}</Typography>
