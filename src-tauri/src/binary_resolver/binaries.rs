@@ -19,9 +19,20 @@ impl Binaries {
             Binaries::ShaP2pool => "sha-p2pool",
         }
     }
+    pub fn iterator() -> impl Iterator<Item = Binaries> {
+        [
+            Binaries::Xmrig,
+            Binaries::MergeMiningProxy,
+            Binaries::MinotariNode,
+            Binaries::Wallet,
+            Binaries::ShaP2pool,
+        ]
+        .iter()
+        .copied()
+    }
 }
 
-pub fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, anyhow::Error> {
+pub fn get_binary_path(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, anyhow::Error> {
     match binary {
         Binaries::Xmrig => {
             let xmrig_bin = base_dir.join("xmrig");

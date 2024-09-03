@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{info, warn};
+use log::info;
 use tauri::api::path::cache_dir;
 
 use crate::github;

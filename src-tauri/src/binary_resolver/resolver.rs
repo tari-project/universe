@@ -12,7 +12,7 @@ use tokio::sync::{Mutex, RwLock};
 
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
-use super::binaries::get_binary_name;
+use super::binaries::get_binary_path;
 use super::Binaries;
 
 pub const BINARY_RESOLVER_LOG_TARGET: &str = "tari::universe::binary_resolver";
@@ -93,7 +93,7 @@ impl BinaryResolver {
 
     // ================== Inner privet methods ================== //
 
-    pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
+    pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, Error> {
         let adapter = self
             .adapters
             .get(&binary)
@@ -103,7 +103,7 @@ impl BinaryResolver {
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
         let base_dir = adapter.get_binary_folder().join(version.to_string());
-        get_binary_name(binary, base_dir)
+        get_binary_path(binary, base_dir)
     }
 
     pub async fn ensure_latest(
@@ -242,7 +242,7 @@ impl BinaryResolver {
             if path.is_dir() {
                 // Check for actual binary existing. It can happen that the folder is there,
                 // for in_progress downloads or perhaps the antivirus has quarantined the file
-                let mut executable_name = get_binary_name(binary, path.clone())?;
+                let mut executable_name = get_binary_path(binary, path.clone())?;
 
                 if cfg!(target_os = "windows") {
                     executable_name = executable_name.with_extension("exe");

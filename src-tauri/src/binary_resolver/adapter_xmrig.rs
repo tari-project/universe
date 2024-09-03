@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 use async_trait::async_trait;
 use log::info;
 use semver::Version;
