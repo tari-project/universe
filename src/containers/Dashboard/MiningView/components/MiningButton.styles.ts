@@ -44,31 +44,32 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
     background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
     border: 1px solid ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
     color: ${({ theme }) => theme.palette.base};
-    transition: all 0.2s ease-in-out;
+    transition: all 0.2s ease-in;
     &:hover {
         background: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(17,110,64,0.96)')};
         border-color: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(28,150,88,0.9)')};
         transform: scale(1.01);
     }
     &:disabled {
-        color: ${({ theme, $hasStarted }) => (!$hasStarted ? theme.palette.contrast : theme.palette.base)};
         border-color: rgba(0, 0, 0, 0.3);
-        background: rgba(0, 0, 0, 0.01);
+        background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
     }
 `;
 
+// TODO make fancy mining button bg
 export const AnimatedBg = styled(motion.div)`
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    border: 1px solid pink;
     z-index: 2;
+    pointer-events: none;
     overflow: hidden;
     width: 100%;
     height: 100%;
 `;
 export const AnimatedCube = styled(motion.div)`
-    color: #fff;
     position: relative;
+    pointer-events: none;
+    color: rgba(255, 255, 255, 0.2);
 `;

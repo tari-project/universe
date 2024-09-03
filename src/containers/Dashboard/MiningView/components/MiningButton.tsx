@@ -1,14 +1,7 @@
 import { useCallback } from 'react';
 import { GiPauseButton } from 'react-icons/gi';
 
-import {
-    AnimatedBg,
-    AnimatedCube,
-    IconWrapper,
-    StyledButton,
-    StyledIcon,
-    ButtonWrapper,
-} from './MiningButton.styles.ts';
+import { IconWrapper, StyledButton, StyledIcon, ButtonWrapper } from './MiningButton.styles.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { IoChevronForwardOutline, IoWarningOutline } from 'react-icons/io5';
@@ -17,30 +10,6 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 
-import CubeSvg from '@app/components/svgs/CubeSvg.tsx';
-
-const containerVariants = {
-    hidden: {
-        opacity: 0,
-        scale: 0.5,
-        rotate: '20deg',
-        x: 200,
-    },
-    visible: {
-        opacity: 1,
-        scale: 1,
-        rotate: 0,
-        x: 0,
-        transition: { delay: 1, duration: 1.5 },
-    },
-    exit: {
-        opacity: 0,
-        scale: 0.5,
-        rotate: '-20deg',
-        x: -200,
-        transition: { duration: 1 },
-    },
-};
 function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
@@ -69,28 +38,6 @@ function MiningButton() {
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
 
-    const cubeMarkup = (
-        <AnimatedBg variants={containerVariants} transition={{ staggerChildren: 0.2 }}>
-            <AnimatedCube animate={containerVariants.visible}>
-                <CubeSvg />
-            </AnimatedCube>
-            <AnimatedCube animate={containerVariants.visible}>
-                <CubeSvg />
-            </AnimatedCube>
-            <AnimatedCube animate={containerVariants.visible}>
-                <CubeSvg />
-            </AnimatedCube>
-            <AnimatedCube animate={containerVariants.visible}>
-                <CubeSvg />
-            </AnimatedCube>
-            <AnimatedCube animate={containerVariants.visible}>
-                <CubeSvg />
-            </AnimatedCube>
-            <AnimatedCube animate={containerVariants.visible}>
-                <CubeSvg />
-            </AnimatedCube>
-        </AnimatedBg>
-    );
     return (
         <Stack>
             <ButtonWrapper>
@@ -103,7 +50,6 @@ function MiningButton() {
                 >
                     <span>{t(`mining-button-text.${getMiningButtonStateText()}`)}</span>
                 </StyledButton>
-                {cubeMarkup}
             </ButtonWrapper>
 
             {isConnectionLostDuringMining && (

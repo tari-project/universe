@@ -1,7 +1,5 @@
 import styled, { css } from 'styled-components';
 import { ButtonProps } from '@app/components/elements/Button.tsx';
-// import buttonBg from '@app/assets/backgrounds/button-bg.png';
-import soon from '@app/assets/images/tiny-soon.png';
 
 const PADDING = '1rem';
 
@@ -46,7 +44,7 @@ const BASE_STYLES = css`
     }
     &:disabled {
         opacity: 0.5;
-        cursor: url(${soon}), wait;
+        cursor: inherit;
     }
 `;
 
