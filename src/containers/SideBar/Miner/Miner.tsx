@@ -6,6 +6,7 @@ import ModeSelect from './components/ModeSelect.tsx';
 import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
 
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { formatNumber } from '@app/utils/formatNumber.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
@@ -30,7 +31,9 @@ export default function Miner() {
     const { isWaitingForHashRate, isMiningEnabled, isChangingMode } = useMiningControls();
 
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
+    const gpu_hash_rate = useGPUStatusStore((s) => s.gpu_hash_rate);
     const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
+    const gpu_estimated_earnings = useGPUStatusStore((s) => s.gpu_estimated_earnings);
 
     const hardwareValSplit = cpuHardwareStatus?.label?.split(' ');
     const hardwareVal = hardwareValSplit?.[0] + ' ' + hardwareValSplit?.[1];
@@ -38,6 +41,15 @@ export default function Miner() {
     const hashRateOver1k = hash_rate > 1000; // TODO: add proper generic number format helper
     const hashRateVal = hashRateOver1k ? hash_rate / 1000 : hash_rate;
     const hashRateStr = hashRateVal
+        .toLocaleString(undefined, {
+            maximumFractionDigits: 2,
+        })
+        .replace(/,/g, '.');
+
+
+    const gpuHashRateOver1k = hash_rate > 1000; // TODO: add proper generic number format helper
+    const gpuHashRateVal = gpuHashRateOver1k ? gpu_hash_rate / 1000 : gpu_hash_rate;
+    const gpuHashRateStr = gpuHashRateVal
         .toLocaleString(undefined, {
             maximumFractionDigits: 2,
         })
@@ -58,6 +70,16 @@ export default function Miner() {
                 <Tile
                     title={`Est tXTM/${t('day')}`}
                     stats={formatNumber(estimated_earnings / 1000000)}
+                    isLoading={isWaitingForHashRate}
+                />
+                <Tile
+                    title={`${t('gpu-hashrate')} (H/s)`}
+                    stats={`${gpuHashRateStr}${gpuHashRateOver1k ? 'k' : ''}`}
+                    isLoading={isWaitingForHashRate}
+                />
+                <Tile
+                    title={`GPU Est tXTM/${t('day')}`}
+                    stats={formatNumber(gpu_estimated_earnings / 1000000)}
                     isLoading={isWaitingForHashRate}
                 />
                 <AnimatePresence>

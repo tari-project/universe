@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use libsqlite3_sys::SQLITE_CONFIG_PAGECACHE;
 use log::info;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
@@ -17,6 +18,7 @@ const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
 pub struct StartConfig {
     pub app_shutdown: ShutdownSignal,
     pub base_path: PathBuf,
+    pub config_path: PathBuf,
     pub log_path: PathBuf,
     pub tari_address: TariAddress,
     pub base_node_grpc_port: u16,
@@ -26,6 +28,7 @@ pub struct StartConfig {
 impl PartialEq for StartConfig {
     fn eq(&self, other: &Self) -> bool {
         self.base_path == other.base_path
+            && self.config_path == other.config_path
             && self.log_path == other.log_path
             && self.tari_address == other.tari_address
             && self.base_node_grpc_port == other.base_node_grpc_port
@@ -37,6 +40,7 @@ impl StartConfig {
     pub fn new(
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        config_path: PathBuf,
         log_path: PathBuf,
         tari_address: TariAddress,
         base_node_grpc_port: u16,
@@ -45,6 +49,7 @@ impl StartConfig {
         Self {
             app_shutdown,
             base_path,
+            config_path,
             log_path,
             tari_address,
             base_node_grpc_port,
@@ -117,7 +122,12 @@ impl MmProxyManager {
         process_watcher.adapter.config.coinbase_extra = config.coinbase_extra;
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher
-            .start(config.app_shutdown, config.base_path, config.log_path)
+            .start(
+                config.app_shutdown,
+                config.base_path,
+                config.config_path,
+                config.log_path,
+            )
             .await?;
 
         Ok(())

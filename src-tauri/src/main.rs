@@ -167,6 +167,7 @@ async fn setup_inner<'r>(
     );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+    let config_dir = app.path_resolver().app_config_dir().unwrap();
     let log_dir = app.path_resolver().app_log_dir().unwrap();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -239,7 +240,11 @@ async fn setup_inner<'r>(
         sleep(Duration::from_secs(1));
         progress.set_max(25).await;
         progress
-            .update("Checking for latest version of gpu miner".to_string(), 0)
+            .update(
+                "Checking for latest version of gpu miner".to_string(),
+                None,
+                0,
+            )
             .await;
         BinaryResolver::current()
             .ensure_latest(Binaries::GpuMiner, progress.clone())
@@ -268,6 +273,7 @@ async fn setup_inner<'r>(
             .ensure_started(
                 state.shutdown.to_signal(),
                 data_dir.clone(),
+                config_dir.clone(),
                 log_dir.clone(),
             )
             .await
@@ -300,6 +306,7 @@ async fn setup_inner<'r>(
         .ensure_started(
             state.shutdown.to_signal(),
             data_dir.clone(),
+            config_dir.clone(),
             log_dir.clone(),
         )
         .await?;
@@ -316,7 +323,7 @@ async fn setup_inner<'r>(
         .await;
     state
         .p2pool_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
+        .ensure_started(state.shutdown.to_signal(), data_dir, config_dir, log_dir)
         .await?;
 
     progress.set_max(100).await;
@@ -340,6 +347,7 @@ async fn setup_inner<'r>(
         .start(StartConfig::new(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
+            app.path_resolver().app_config_dir().unwrap().clone(),
             app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
@@ -459,20 +467,47 @@ async fn start_mining<'r>(
             monero_address,
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
+            app.path_resolver().app_config_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
             progress_tracker,
             state.config.read().await.get_mode(),
         )
         .await;
 
-    match res {
-        Ok(_) => return Ok(()),
-        Err(e) => {
-            error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
-            let _ = state.cpu_miner.write().await.stop().await;
-            return Err(e.to_string());
-        }
+    if let Err(e) = res {
+        error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
+        let _ = state.cpu_miner.write().await.stop().await;
+        return Err(e.to_string());
     }
+
+    let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
+    let grpc_port = state
+        .node_manager
+        .get_grpc_port()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let res = state
+        .gpu_miner
+        .write()
+        .await
+        .start(
+            state.shutdown.to_signal(),
+            tari_address,
+            grpc_port,
+            app.path_resolver().app_local_data_dir().unwrap(),
+            app.path_resolver().app_config_dir().unwrap(),
+            app.path_resolver().app_log_dir().unwrap(),
+        )
+        .await;
+
+    if let Err(e) = res {
+        error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
+        let _ = state.cpu_miner.write().await.stop().await;
+        return Err(e.to_string());
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -597,8 +632,8 @@ async fn status(
     app: tauri::AppHandle,
 ) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
-    let _gpu_miner = state.gpu_miner.write().await;
-    let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
+    let mut gpu_miner = state.gpu_miner.write().await;
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
             .get_network_hash_rate_and_block_reward()
@@ -619,6 +654,14 @@ async fn status(
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
             return Err(e);
+        }
+    };
+
+    let gpu_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
+        Ok(gpu) => gpu,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
+            return Err(e.to_string());
         }
     };
 

@@ -56,6 +56,7 @@ impl WalletManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), WalletManagerError> {
         self.node_manager.wait_ready().await?;
@@ -65,7 +66,7 @@ impl WalletManager {
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
         process_watcher.adapter.base_node_address = Some("/ip4/127.0.0.1/tcp/9998".to_string());
         process_watcher
-            .start(app_shutdown, base_path, log_path)
+            .start(app_shutdown, base_path, config_path, log_path)
             .await?;
         process_watcher.wait_ready().await?;
         Ok(())
