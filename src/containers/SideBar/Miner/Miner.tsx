@@ -31,7 +31,8 @@ export default function Miner() {
     const { isWaitingForHashRate, isMiningEnabled, isChangingMode } = useMiningControls();
 
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
-    const gpu_hash_rate = useGPUStatusStore((s) => s.gpu_hash_rate);
+    const gpu_hash_rate = useGPUStatusStore((s) => s.gpu_hash_rate) || 0;
+    console.log('gpu_hash_rate', gpu_hash_rate);
     const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
     const gpu_estimated_earnings = useGPUStatusStore((s) => s.gpu_estimated_earnings);
 
@@ -46,8 +47,7 @@ export default function Miner() {
         })
         .replace(/,/g, '.');
 
-
-    const gpuHashRateOver1k = hash_rate > 1000; // TODO: add proper generic number format helper
+    const gpuHashRateOver1k = gpu_hash_rate > 1000; // TODO: add proper generic number format helper
     const gpuHashRateVal = gpuHashRateOver1k ? gpu_hash_rate / 1000 : gpu_hash_rate;
     const gpuHashRateStr = gpuHashRateVal
         .toLocaleString(undefined, {
@@ -62,7 +62,7 @@ export default function Miner() {
             <TileContainer>
                 <ModeSelect />
                 <Tile
-                    title={`${t('hashrate')} (H/s)`}
+                    title={`CPU ${t('hashrate')} (H/s)`}
                     stats={`${hashRateStr}${hashRateOver1k ? 'k' : ''}`}
                     isLoading={isWaitingForHashRate}
                 />
@@ -73,7 +73,7 @@ export default function Miner() {
                     isLoading={isWaitingForHashRate}
                 />
                 <Tile
-                    title={`${t('gpu-hashrate')} (H/s)`}
+                    title={`GPU ${t('hashrate')} (H/s)`}
                     stats={`${gpuHashRateStr}${gpuHashRateOver1k ? 'k' : ''}`}
                     isLoading={isWaitingForHashRate}
                 />

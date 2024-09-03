@@ -8,8 +8,9 @@ interface Actions {
 type GPUStatusStoreState = GpuMinerStatus & Actions;
 
 const initialState: GpuMinerStatus = {
-    gpu_hash_rate: 0,
-    gpu_estimated_earnings: 0,
+    is_mining: false,
+    hash_rate: 0,
+    estimated_earnings: 0,
 };
 export const useGPUStatusStore = create<GPUStatusStoreState>()(
     persist(

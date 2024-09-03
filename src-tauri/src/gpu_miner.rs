@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use log::info;
+use serde::Serialize;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
@@ -11,8 +12,8 @@ use crate::{
     process_adapter::StatusMonitor,
     process_watcher::{self, ProcessWatcher},
 };
-
-const LOG_TARGET: &str = "tari::universe::cpu_miner";
+const SHA_BLOCKS_PER_DAY: u64 = 360;
+const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
@@ -57,17 +58,32 @@ impl GpuMiner {
         &mut self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
-    ) -> Result<(Option<GpuMinerStatus>, EstimatedEarnings), anyhow::Error> {
+    ) -> Result<GpuMinerStatus, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         match &process_watcher.status_monitor {
             Some(status_monitor) => {
-                let status = status_monitor.status().await?;
-                let estimated_earnings = EstimatedEarnings {};
-                Ok((Some(status), estimated_earnings))
+                let mut status = status_monitor.status().await?;
+                let hash_rate = status.hash_rate;
+                let estimated_earnings = if network_hash_rate == 0 {
+                    0
+                } else {
+                    ((block_reward.as_u64() as f64)
+                        * (hash_rate as f64 / network_hash_rate as f64)
+                        * (SHA_BLOCKS_PER_DAY as f64)) as u64
+                };
+                // Can't be more than the max reward for a day
+                let estimated_earnings = std::cmp::min(
+                    estimated_earnings,
+                    block_reward.as_u64() * SHA_BLOCKS_PER_DAY,
+                );
+                status.estimated_earnings = estimated_earnings;
+                Ok(status)
             }
-            None => Ok((None, EstimatedEarnings {})),
+            None => Ok(GpuMinerStatus {
+                hash_rate: 0,
+                estimated_earnings: 0,
+                is_mining: false,
+            }),
         }
     }
 }
-
-pub struct EstimatedEarnings {}

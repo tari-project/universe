@@ -1,6 +1,7 @@
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, warn};
+use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -43,6 +44,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         let http_api_port = get_free_port().unwrap_or(18000);
         let working_dir = data_dir.join("gpuminer");
         std::fs::create_dir_all(&working_dir)?;
+        std::fs::create_dir_all(config_dir.join("gpuminer"))?;
         let args: Vec<String> = vec![
             "--tari-address".to_string(),
             self.tari_address.to_string(),
@@ -144,7 +146,49 @@ impl StatusMonitor for GpuMinerStatusMonitor {
     type Status = GpuMinerStatus;
 
     async fn status(&self) -> Result<Self::Status, anyhow::Error> {
-        todo!()
+        let client = reqwest::Client::new();
+        let response = match client
+            .get(format!("http://127.0.0.1:{}", self.http_api_port))
+            .send()
+            .await
+        {
+            Ok(response) => response,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
+                return Ok(GpuMinerStatus {
+                    is_mining: false,
+                    hash_rate: 0,
+                    estimated_earnings: 0,
+                });
+            }
+        };
+        let body: XtrGpuminerHttpApiStatus = match response.json().await {
+            Ok(body) => body,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {}", e);
+                return Ok(GpuMinerStatus {
+                    is_mining: false,
+                    hash_rate: 0,
+                    estimated_earnings: 0,
+                });
+            }
+        };
+        Ok(GpuMinerStatus {
+            is_mining: true,
+            hash_rate: body.hash_rate,
+            estimated_earnings: 0,
+        })
     }
 }
-pub struct GpuMinerStatus {}
+
+#[derive(Debug, Deserialize)]
+struct XtrGpuminerHttpApiStatus {
+    hash_rate: u64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GpuMinerStatus {
+    pub is_mining: bool,
+    pub hash_rate: u64,
+    pub estimated_earnings: u64,
+}

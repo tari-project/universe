@@ -14,7 +14,7 @@ use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
 
-const RANDOMX_BLOCKS_PER_DAY: u64 = 350;
+const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 pub enum CpuMinerEvent {}
 

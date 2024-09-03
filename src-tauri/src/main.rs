@@ -45,6 +45,7 @@ use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use futures_lite::future::block_on;
+use gpu_miner_adapter::GpuMinerStatus;
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use node_manager::NodeManagerError;
@@ -695,7 +696,7 @@ async fn status(
     let p2pool_stats = match state.p2pool_manager.stats().await {
         Ok(stats) => stats,
         Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
+            // warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
             Stats::default()
         }
     };
@@ -713,6 +714,7 @@ async fn status(
 
     Ok(AppStatus {
         cpu,
+        gpu: gpu_status,
         hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,
@@ -786,6 +788,7 @@ async fn reset_settings<'r>(
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
     cpu: CpuMinerStatus,
+    gpu: GpuMinerStatus,
     hardware_status: HardwareStatus,
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
