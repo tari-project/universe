@@ -102,7 +102,7 @@ const collectInstallReward = async (authToken: string, setUserPoints: (userPoint
             return;
         }
 
-        if (body.userPoints !== null || body.userPoints !== undefined) {
+        if (body.userPoints !== null || body.userPoints) {
             setUserPoints(body.userPoints as UserPoints);
         }
     } catch (error) {

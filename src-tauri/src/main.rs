@@ -164,7 +164,7 @@ async fn setup_inner<'r>(
         .telemetry_manager
         .write()
         .await
-        .initialize(state.airdrop_access_token.clone())
+        .initialize(app.clone(), state.airdrop_access_token.clone())
         .await?;
 
     BinaryResolver::current()
