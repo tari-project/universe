@@ -1,87 +1,64 @@
 import styled from 'styled-components';
 
-interface BlockHeightBgProps {
-    length: number;
-}
-
-const topHeight = 55;
-const bottomHeight = 115;
-
-export const Wrapper = styled.div``;
-export const RulerAbsoluteWrapper = styled.div`
-    z-index: 100;
+export const Wrapper = styled.div`
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
     position: absolute;
     right: 0;
-    height: calc(100vh - ${topHeight}px - ${bottomHeight}px);
-    flex-direction: column;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
 `;
 
 export const RulerContainer = styled.div`
+    top: 50%;
+    position: absolute;
+    height: 100%;
+    transform: translateY(-50%);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    z-index: 2;
+    align-items: end;
+    justify-content: center;
 `;
 
 export const RulerMarkContainer = styled.div`
-    display: flex;
-    flex-direction: row;
-    min-width: 50px;
+    display: grid;
+    position: relative;
+    grid-template-areas: 'number line';
+    grid-template-columns: auto 10px;
+    grid-template-rows: 7px;
+    justify-items: end;
     align-items: center;
-    justify-content: flex-end;
-    height: 3px;
-    overflow: visible;
-    gap: 10px;
+    column-gap: 20px;
+    row-gap: 0;
 `;
 
 export const RulerMark = styled('div')`
     width: 10px;
     height: 1px;
     background-color: ${({ theme }) => theme.palette.text.primary};
+    grid-area: line;
 `;
 
-export const BlockHeightLrg = styled.div`
-    font-family: Druk, sans-serif;
-    font-weight: 700;
-    font-size: 25px;
-    letter-spacing: -0.01px;
-    color: ${({ theme }) => theme.palette.text.primary};
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    display: flex;
-    z-index: 2;
-    transform: translateY(-50%);
-`;
-
-export const BlockHeightSml = styled.div`
+export const RulerNumber = styled.div`
     font-family: Poppins, sans-serif;
     font-variant-numeric: tabular-nums;
     font-size: 11px;
     color: ${({ theme }) => theme.palette.text.primary};
     opacity: 0.2;
+    text-align: right;
+    font-weight: 700;
+    line-height: 1.1;
+    grid-area: number;
 `;
 
-export const BlockHeightBg = styled.div<BlockHeightBgProps>`
+export const BlockHeightText = styled.div`
+    color: #000;
+    text-align: right;
     font-family: Druk, sans-serif;
+    font-size: 25px;
     font-weight: 700;
-    font-size: ${({ length }) => (length > 5 ? '100px' : '152px')};
-    line-height: ${({ length }) => (length > 5 ? '100px' : '152px')};
-    letter-spacing: -1px;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    position: absolute;
-    width: calc(100vh - ${topHeight}px - ${bottomHeight}px);
-    top: 0;
-    right: ${({ length }) => (length > 5 ? '100px' : '130px')};
-    height: ${({ length }) => (length > 5 ? '100px' : '152px')};
-    rotate: 270deg;
-    z-index: 1;
-    transform-origin: top right;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
+    line-height: normal;
 `;
