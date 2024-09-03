@@ -8,8 +8,9 @@ interface AppState {
     errorOpen: boolean;
     setErrorOpen: (value: boolean) => void;
     setupTitle: string;
+    setupTitleParams: Record<string, string>;
     setupProgress: number;
-    setSetupDetails: (setupTitle: string, setupProgress: number) => void;
+    setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) => void;
 
     // gui
     isSettingUp: boolean;
@@ -27,8 +28,10 @@ const useAppStateStore = create<AppState>()((set) => ({
     setErrorOpen: (value) => set({ errorOpen: value }),
     isSettingUp: true,
     setupTitle: '',
+    setupTitleParams: {},
     setupProgress: 0,
-    setSetupDetails: (setupTitle: string, setupProgress: number) => set({ setupTitle, setupProgress }),
+    setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
+        set({ setupTitle, setupTitleParams, setupProgress }),
 
     // functions
     settingUpFinished: () => set({ isSettingUp: false }),
