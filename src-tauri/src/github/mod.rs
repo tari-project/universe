@@ -1,10 +1,9 @@
-use crate::binary_resolver::{VersionAsset, VersionDownloadInfo};
 use anyhow::anyhow;
 use log::{debug, info};
 use reqwest::Client;
 use serde::Deserialize;
 
-const LOG_TARGET: &str = "tari::universe::github";
+use crate::binary_resolver::resolver::{VersionAsset, VersionDownloadInfo};
 
 #[derive(Deserialize)]
 struct Release {
