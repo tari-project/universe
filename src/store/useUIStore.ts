@@ -36,7 +36,7 @@ const initialState: State = {
     background: 'onboarding',
     view: 'setup',
     visualMode: true,
-    telemetryMode: true,
+    telemetryMode: false,
     sidebarOpen: false,
     isMiningSwitchingState: false,
     isMiningEnabled: false,
