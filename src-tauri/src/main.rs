@@ -51,6 +51,7 @@ use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
+use std::fs::remove_dir_all;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -290,18 +291,20 @@ async fn setup_inner<'r>(
         )
         .await?;
 
-    progress.set_max(55).await;
-    progress.update("waiting-for-node".to_string(), 0).await;
+    progress.set_max(75).await;
+    progress
+        .update("preparing-for-initial-sync".to_string(), 0)
+        .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    progress.set_max(70).await;
+    progress.set_max(85).await;
     progress.update("starting-p2pool".to_string(), 0).await;
     state
         .p2pool_manager
         .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
         .await?;
 
-    progress.set_max(75).await;
+    progress.set_max(100).await;
     progress.update("starting-mmproxy".to_string(), 0).await;
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
@@ -660,6 +663,52 @@ fn log_web_message(level: String, message: Vec<String>) {
     }
 }
 
+#[tauri::command]
+async fn reset_settings<'r>(
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    state.shutdown.clone().trigger();
+    // TODO: Find a better way of knowing that all miners have stopped
+    sleep(std::time::Duration::from_secs(5));
+
+    let app_config_dir = app.path_resolver().app_config_dir();
+    let app_cache_dir = app.path_resolver().app_cache_dir();
+    let app_data_dir = app.path_resolver().app_data_dir();
+    let app_local_data_dir = app.path_resolver().app_local_data_dir();
+
+    let dirs_to_remove = vec![
+        app_config_dir,
+        app_cache_dir,
+        app_data_dir,
+        app_local_data_dir,
+    ];
+    let missing_dirs: Vec<String> = dirs_to_remove
+        .iter()
+        .filter(|dir| dir.is_none())
+        .map(|dir| dir.clone().unwrap().to_str().unwrap().to_string())
+        .collect();
+
+    if missing_dirs.clone().len() > 0 {
+        error!("Could not get app directories for {:?}", missing_dirs);
+        return Err("Could not get app directories".to_string());
+    }
+
+    dirs_to_remove.iter().for_each(|dir| {
+        // check if dir exists
+        if dir.clone().unwrap().exists() {
+            info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
+            remove_dir_all(dir.clone().unwrap()).unwrap();
+        }
+    });
+
+    info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
+    app.restart();
+
+    Ok(())
+}
+
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
     cpu: CpuMinerStatus,
@@ -879,7 +928,8 @@ fn main() {
             set_telemetry_mode,
             set_airdrop_access_token,
             set_monero_address,
-            update_applications
+            update_applications,
+            reset_settings
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -918,6 +968,7 @@ fn main() {
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
+
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
         }

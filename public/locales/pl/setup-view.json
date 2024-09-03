@@ -10,7 +10,7 @@
         "checking-latest-version-xmrig": "Sprawdzanie najnowszej wersji xmrig",
         "waiting-for-wallet": "Oczekiwanie na portfel",
         "waiting-for-node": "Oczekiwanie na synchronizację węzła",
-        "waiting-for-initial-sync": "Oczekiwanie na początkową synchronizację",
+        "preparing-for-initial-sync": "Przygotowywanie do początkowej synchronizacji",
         "starting-mmproxy": "Uruchamianie mmproxy",
         "starting-p2pool": "Uruchamianie P2Pool",
         "application-started": "Aplikacje uruchomione",
