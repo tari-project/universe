@@ -194,7 +194,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
             Err(e) => {
-                println!("Failed to get main GPU: {}", e);
+                // println!("Failed to get main GPU: {}", e);
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
@@ -304,7 +304,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let nvml: &Nvml = match &self.nvml {
             Some(nvml) => nvml,
             None => {
-                println!("Failed to get NVML");
+                // println!("Failed to get NVML");
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
@@ -317,7 +317,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
             Err(e) => {
-                println!("Failed to get main GPU: {}", e);
+                // println!("Failed to get main GPU: {}", e);
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,

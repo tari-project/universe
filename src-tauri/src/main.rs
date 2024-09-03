@@ -541,15 +541,12 @@ async fn update_applications(
 async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
     let _gpu_miner = state.gpu_miner.write().await;
-    let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
-        state
-            .node_manager
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .unwrap_or_else(|e| {
-                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
-                (0, 0, MicroMinotari(0), 0, 0, false)
-            });
+    let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
+        .get_network_hash_rate_and_block_reward().await
+        .unwrap_or_else(|e| {
+            warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+            (0, 0, MicroMinotari(0), 0, 0, false)
+        });
 
     info!(target: LOG_TARGET, "Network hash rate: {}", randomx_hash_rate);
 
@@ -793,7 +790,7 @@ fn main() {
                 Err(e) => {
                     error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
                 }
-            };
+            }
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread = tauri::async_runtime::spawn(async move {
@@ -856,31 +853,33 @@ fn main() {
         app.path_resolver().app_log_dir().unwrap()
     );
 
-    app.run(move |_app_handle, event| match event {
-        tauri::RunEvent::Updater(updater_event) => match updater_event {
-            UpdaterEvent::Error(e) => {
-                error!(target: LOG_TARGET, "Updater error: {:?}", e);
-            }
-            UpdaterEvent::Downloaded => {
+    app.run(move |_app_handle, event| {
+        match event {
+            tauri::RunEvent::Updater(updater_event) => match updater_event {
+                UpdaterEvent::Error(e) => {
+                    error!(target: LOG_TARGET, "Updater error: {:?}", e);
+                }
+                UpdaterEvent::Downloaded => {
+                    shutdown.trigger();
+                }
+                _ => {
+                    info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
+                }
+            },
+            tauri::RunEvent::ExitRequested { api: _, .. } | tauri::RunEvent::Exit => {
+                // api.prevent_exit();
+                info!(target: LOG_TARGET, "App shutdown caught");
                 shutdown.trigger();
+                // TODO: Find a better way of knowing that all miners have stopped
+                sleep(std::time::Duration::from_secs(5));
+                info!(target: LOG_TARGET, "App shutdown complete");
+            }
+            RunEvent::MainEventsCleared => {
+                // no need to handle
             }
             _ => {
-                info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
+                debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
             }
-        },
-        tauri::RunEvent::ExitRequested { api: _, .. } | tauri::RunEvent::Exit => {
-            // api.prevent_exit();
-            info!(target: LOG_TARGET, "App shutdown caught");
-            shutdown.trigger();
-            // TODO: Find a better way of knowing that all miners have stopped
-            sleep(std::time::Duration::from_secs(5));
-            info!(target: LOG_TARGET, "App shutdown complete");
-        }
-        RunEvent::MainEventsCleared => {
-            // no need to handle
-        }
-        _ => {
-            debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
         }
     });
 }

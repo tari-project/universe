@@ -8,6 +8,7 @@
         "checking-latest-version-mmproxy": "Sprawdzanie najnowszej wersji mmproxy",
         "checking-latest-version-wallet": "Sprawdzanie najnowszej wersji portfela",
         "checking-latest-version-xmrig": "Sprawdzanie najnowszej wersji xmrig",
+        "checking-latest-version-sha-p2pool": "Sprawdzanie najnowszej wersji sha-p2pool",
         "waiting-for-wallet": "Oczekiwanie na portfel",
         "waiting-for-node": "Oczekiwanie na synchronizację węzła",
         "waiting-for-initial-sync": "Oczekiwanie na początkową synchronizację",
