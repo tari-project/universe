@@ -45,6 +45,7 @@ use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use futures_lite::future::block_on;
+use gpu_miner_adapter::GpuMinerStatus;
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
 use node_manager::NodeManagerError;
@@ -67,6 +68,7 @@ use tokio::runtime::Handle;
 use tokio::sync::RwLock;
 use wallet_manager::WalletManagerError;
 
+mod gpu_miner_adapter;
 mod progress_tracker;
 mod setup_status_event;
 
@@ -166,6 +168,7 @@ async fn setup_inner<'r>(
     );
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+    let config_dir = app.path_resolver().app_config_dir().unwrap();
     let log_dir = app.path_resolver().app_log_dir().unwrap();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -195,11 +198,14 @@ async fn setup_inner<'r>(
     BinaryResolver::current()
         .read_current_highest_version(Binaries::ShaP2pool, progress.clone())
         .await?;
+    BinaryResolver::current()
+        .read_current_highest_version(Binaries::GpuMiner, progress.clone())
+        .await?;
 
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(10)
+        > Duration::from_secs(60 * 10)
     // 10 minutes
     {
         state
@@ -235,6 +241,19 @@ async fn setup_inner<'r>(
             .ensure_latest(Binaries::Wallet, progress.clone())
             .await?;
 
+        sleep(Duration::from_secs(1));
+        progress.set_max(25).await;
+        progress
+            .update(
+                "Checking for latest version of gpu miner".to_string(),
+                None,
+                0,
+            )
+            .await;
+        BinaryResolver::current()
+            .ensure_latest(Binaries::GpuMiner, progress.clone())
+            .await?;
+
         progress.set_max(30).await;
         progress
             .update("checking-latest-version-xmrig".to_string(), None, 0)
@@ -258,6 +277,7 @@ async fn setup_inner<'r>(
             .ensure_started(
                 state.shutdown.to_signal(),
                 data_dir.clone(),
+                config_dir.clone(),
                 log_dir.clone(),
             )
             .await
@@ -290,6 +310,7 @@ async fn setup_inner<'r>(
         .ensure_started(
             state.shutdown.to_signal(),
             data_dir.clone(),
+            config_dir.clone(),
             log_dir.clone(),
         )
         .await?;
@@ -304,10 +325,10 @@ async fn setup_inner<'r>(
     progress
         .update("starting-p2pool".to_string(), None, 0)
         .await;
-    state
-        .p2pool_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
-        .await?;
+    // state
+    //     .p2pool_manager
+    //     .ensure_started(state.shutdown.to_signal(), data_dir, config_dir, log_dir)
+    //     .await?;
 
     progress.set_max(100).await;
     progress
@@ -330,6 +351,7 @@ async fn setup_inner<'r>(
         .start(StartConfig::new(
             state.shutdown.to_signal().clone(),
             app.path_resolver().app_local_data_dir().unwrap().clone(),
+            app.path_resolver().app_config_dir().unwrap().clone(),
             app.path_resolver().app_log_dir().unwrap().clone(),
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
@@ -449,20 +471,47 @@ async fn start_mining<'r>(
             monero_address,
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
+            app.path_resolver().app_config_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
             progress_tracker,
             state.config.read().await.get_mode(),
         )
         .await;
 
-    match res {
-        Ok(_) => return Ok(()),
-        Err(e) => {
-            error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
-            let _ = state.cpu_miner.write().await.stop().await;
-            return Err(e.to_string());
-        }
+    if let Err(e) = res {
+        error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
+        let _ = state.cpu_miner.write().await.stop().await;
+        return Err(e.to_string());
     }
+
+    let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
+    let grpc_port = state
+        .node_manager
+        .get_grpc_port()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let res = state
+        .gpu_miner
+        .write()
+        .await
+        .start(
+            state.shutdown.to_signal(),
+            tari_address,
+            grpc_port,
+            app.path_resolver().app_local_data_dir().unwrap(),
+            app.path_resolver().app_config_dir().unwrap(),
+            app.path_resolver().app_log_dir().unwrap(),
+        )
+        .await;
+
+    if let Err(e) = res {
+        error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
+        let _ = state.cpu_miner.write().await.stop().await;
+        return Err(e.to_string());
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -475,6 +524,13 @@ async fn stop_mining<'r>(state: tauri::State<'r, UniverseAppState>) -> Result<()
         .await
         .map_err(|e| e.to_string())?;
 
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
     // stop the mmproxy. TODO: change it so that the cpu miner stops this dependency.
     // state
     //     .mm_proxy_manager
@@ -565,6 +621,11 @@ async fn update_applications(
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
+    BinaryResolver::current()
+        .ensure_latest(Binaries::GpuMiner, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
     Ok(())
 }
 
@@ -575,8 +636,8 @@ async fn status(
     app: tauri::AppHandle,
 ) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
-    let _gpu_miner = state.gpu_miner.write().await;
-    let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
+    let mut gpu_miner = state.gpu_miner.write().await;
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
             .get_network_hash_rate_and_block_reward()
@@ -599,6 +660,16 @@ async fn status(
             return Err(e);
         }
     };
+
+    let gpu_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
+        Ok(gpu) => gpu,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
+
+    dbg!(&gpu_status);
 
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
@@ -630,7 +701,7 @@ async fn status(
     let p2pool_stats = match state.p2pool_manager.stats().await {
         Ok(stats) => stats,
         Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
+            // warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
             Stats::default()
         }
     };
@@ -648,6 +719,7 @@ async fn status(
 
     Ok(AppStatus {
         cpu,
+        gpu: gpu_status,
         hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,
@@ -721,6 +793,7 @@ async fn reset_settings<'r>(
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
     cpu: CpuMinerStatus,
+    gpu: GpuMinerStatus,
     hardware_status: HardwareStatus,
     base_node: BaseNodeStatus,
     wallet_balance: WalletBalance,
