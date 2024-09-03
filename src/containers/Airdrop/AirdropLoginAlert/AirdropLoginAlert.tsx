@@ -17,11 +17,12 @@ import gemImage from './images/gem.png';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { XIcon } from '../AirdropLogin/ConnectButton/styles';
 import useAirdropConnect from '../hooks/useAirdropConnect';
+import { useTranslation } from 'react-i18next';
 
 export default function AirdropLoginAlert() {
     const { setShowLoginAlert } = useAirdropStore();
-
     const { handleAuth } = useAirdropConnect();
+    const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     return (
         <Wrapper initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
@@ -33,23 +34,20 @@ export default function AirdropLoginAlert() {
                 </GemsWrapper>
 
                 <TextWrapper>
-                    <Title>Earn rewards for Mining on Testnet</Title>
-                    <Text>
-                        Earn gems while mining to increase your airdrop reward during testnet! Connect your airdrop
-                        account to start earning.
-                    </Text>
+                    <Title>{t('alert.title')}</Title>
+                    <Text>{t('alert.text')}</Text>
                 </TextWrapper>
 
                 <ButtonWrapper>
                     <ConnectButton onClick={handleAuth}>
-                        <span>Connect with X</span>
+                        <span>{t('alert.button')}</span>
 
                         <StyledIconCircle>
                             <XIcon />
                         </StyledIconCircle>
                     </ConnectButton>
 
-                    <LaterButton onClick={() => setShowLoginAlert(false)}>I’ll do this later</LaterButton>
+                    <LaterButton onClick={() => setShowLoginAlert(false)}>{t('alert.later')}</LaterButton>
                 </ButtonWrapper>
             </ContentBox>
         </Wrapper>

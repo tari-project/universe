@@ -4,5 +4,11 @@
     "permission": {
         "title": "Earn Gems & make Tari Universe better",
         "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining."
+    },
+    "alert": {
+        "title": "Earn rewards for Mining on Testnet",
+        "text": "Earn gems while mining to increase your airdrop reward during testnet! Connect your airdrop account to start earning.",
+        "button": "Connect with X",
+        "later": "I’ll do this later"
     }
 }
