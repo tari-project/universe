@@ -5,22 +5,29 @@ use log::info;
 use regex::Regex;
 
 const LOG_TARGET: &str = "tari::universe::xmrig::latest_release";
+#[derive(Debug, Deserialize)]
+pub struct Asset {
+    id: String,
+    pub(crate) name: String,
+    pub url: String,
+}
 
-pub async fn fetch_xmrig_latest_release() -> Result<VersionDownloadInfo, Error> {
-    let releases = github::list_releases("xmrig", "xmrig").await?;
-    let version = releases
-        .iter()
-        .map(|v| &v.version)
-        .max()
-        .ok_or_else(|| anyhow!("No release found"))?;
+#[derive(Debug, Deserialize)]
+pub struct XmrigRelease {
+    pub(crate) version: String,
+    pub(crate) assets: Vec<Asset>,
+}
 
-    info!(target: LOG_TARGET, "Selected version: {}", version);
-    let info = releases
-        .iter()
-        .find(|v| &v.version == version)
-        .ok_or_else(|| anyhow!("No version found"))?;
-
-    Ok(info.clone())
+impl XmrigRelease {
+    pub fn get_asset(&self, id: &str) -> Option<&Asset> {
+        for asset in &self.assets {
+            info!(target: LOG_TARGET, "Checking asset {:?}", asset);
+            if asset.id == id {
+                return Some(asset);
+            }
+        }
+        None
+    }
 }
 
 pub fn find_version_for_platform(version: &VersionDownloadInfo) -> Result<VersionAsset, Error> {

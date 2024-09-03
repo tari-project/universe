@@ -360,7 +360,6 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
-    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
     let config_dir = app.path_resolver().app_config_dir().unwrap();
     let log_dir = app.path_resolver().app_log_dir().unwrap();
 
@@ -390,6 +389,9 @@ async fn setup_inner(
         .await?;
     BinaryResolver::current()
         .read_current_highest_version(Binaries::ShaP2pool, progress.clone())
+        .await?;
+    BinaryResolver::current()
+        .read_current_highest_version(Binaries::Xmrig, progress.clone())
         .await?;
     BinaryResolver::current()
         .read_current_highest_version(Binaries::GpuMiner, progress.clone())
@@ -456,11 +458,17 @@ async fn setup_inner(
             .update("checking-latest-version-xmrig".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
+<<<<<<< HEAD
         let _unused = XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
             .await
             .inspect_err(
                 |e| error!(target: LOG_TARGET, "Could not ensure latest version of Xmrig: {:?}", e),
             );
+=======
+        BinaryResolver::current()
+            .ensure_latest(Binaries::Xmrig, progress.clone())
+            .await?;
+>>>>>>> f06f4e1 (move xmrig to binary resolver)
 
         progress.set_max(35).await;
         progress
@@ -741,11 +749,9 @@ async fn start_mining<'r>(
                 monero_address.to_string(),
                 mm_proxy_port,
                 app.path_resolver().app_local_data_dir().unwrap(),
-                app.path_resolver().app_cache_dir().unwrap(),
-                app.path_resolver().app_config_dir().unwrap(),
+                    app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
-                progress_tracker,
-                mode,
+                    mode,
             )
             .await;
 
@@ -859,16 +865,11 @@ fn open_log_dir(app: tauri::AppHandle) {
 #[tauri::command]
 async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
-    //TODO could be move to status command when XmrigAdapter will be implemented in BinaryResolver
-
-    let default_message = "Failed to read version".to_string();
-
-    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
     let tari_universe_version = app.package_info().version.clone();
-    let xmrig_version: String = XmrigAdapter::get_latest_local_version(cache_dir.clone())
-        .await
-        .unwrap_or(default_message);
+    let xmrig_version: semver::Version = BinaryResolver::current()
+        .get_latest_version(Binaries::Xmrig)
+        .await;
 
     let minotari_node_version: semver::Version = BinaryResolver::current()
         .get_latest_version(Binaries::MinotariNode)
@@ -892,7 +893,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 
     Ok(ApplicationsVersions {
         tari_universe: tari_universe_version.to_string(),
-        xmrig: xmrig_version,
+        xmrig: xmrig_version.to_string(),
         minotari_node: minotari_node_version.to_string(),
         mm_proxy: mm_proxy_version.to_string(),
         wallet: wallet_version.to_string(),
@@ -917,8 +918,8 @@ async fn update_applications(
         )
         .map_err(|e| e.to_string())?;
     let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
-    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
-    XmrigAdapter::ensure_latest(cache_dir, true, progress_tracker.clone())
+    BinaryResolver::current()
+        .ensure_latest(Binaries::Xmrig, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
@@ -934,6 +935,10 @@ async fn update_applications(
     sleep(Duration::from_secs(1));
     BinaryResolver::current()
         .ensure_latest(Binaries::Wallet, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    BinaryResolver::current()
+        .ensure_latest(Binaries::ShaP2pool, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
