@@ -1,0 +1,25 @@
+{
+    "settings": "Ayarlar",
+    "seed-words": "Seed Kelimeleri",
+    "change-language": "Dil Değiştir",
+    "logs": "Günlükler",
+    "open-logs-directory": "Günlükler dizinini açın",
+    "debug-info": "Hata Ayıklama",
+    "hardware-status": "Donanım durumu",
+    "update-versions": "Güncelleme sürümleri",
+    "refresh-versions": "Sürümleri yenileyin",
+    "idle-timeout": {
+        "title": "Makinenin boşta sayılacağı süre",
+        "placeholder": "Boşta kalma zaman aşımını saniye cinsinden girin",
+        "max": "Maks. 21600 saniye",
+        "min": "Min. 1 saniye"
+    },
+    "monero-address": {
+        "title": "Monero Adresi",
+        "placeholder": "Monero adresini girin"
+    },
+    "last-block-added-time": "Zincir zamanına eklenen son blok",
+    "visual-mode": "Görsel mod",
+    "pool-mining": "Havuz Madenciliği",
+    "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kadroya) katılacaksınız."
+}
