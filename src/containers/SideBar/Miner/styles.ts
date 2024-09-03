@@ -17,7 +17,7 @@ export const TileItem = styled.div`
     padding: 10px 15px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
+    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     max-width: 152px;
     gap: 6px;
     display: flex;

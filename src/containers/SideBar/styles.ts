@@ -30,6 +30,7 @@ export const SideBarContainer = styled.div<SideBarContainerProps>`
 
 export const SideBarInner = styled.div`
     display: flex;
+    background: ${({ theme }) => theme.palette.background.paper};
     flex-direction: column;
     position: relative;
     gap: 10px;
@@ -94,8 +95,6 @@ export const ProgressBox = styled.div`
 `;
 
 export const StyledLinearProgress = styled(LinearProgress)`
-    //background: linear-gradient(90deg, #FF7D45 0%, #FFB660 99.49%);
-    //border-radius: 5px;
     background-color: transparent;
     padding: 3px;
     border-radius: 10px;

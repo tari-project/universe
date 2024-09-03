@@ -9,10 +9,21 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { formatNumber } from '@app/utils/formatNumber.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
-import { useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 
-function Miner() {
+import { useTranslation } from 'react-i18next';
+import { AnimatePresence, motion } from 'framer-motion';
+
+const variants = {
+    hidden: {
+        y: '150%',
+        opacity: 0,
+    },
+    visible: {
+        y: 0,
+        opacity: 1,
+    },
+};
+export default function Miner() {
     const { t } = useTranslation('common', { useSuspense: false });
 
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
@@ -32,11 +43,8 @@ function Miner() {
         })
         .replace(/,/g, '.');
 
-    const containerRef = useRef<HTMLDivElement>(null);
-
     return (
         <MinerContainer>
-            {/*<TransitionGroup>*/}
             <AutoMiner />
             <Divider />
             <TileContainer>
@@ -52,19 +60,10 @@ function Miner() {
                     stats={formatNumber(estimated_earnings / 1000000)}
                     isLoading={isWaitingForHashRate}
                 />
-            </TileContainer>
-            <div ref={containerRef}>
-                <div
-                // direction="up"
-                // in={isMiningEnabled || isChangingMode}
-                // container={containerRef.current}
-                // timeout={450}
-                >
-                    <div>
-                        <div
-                        // in={isMiningEnabled || isChangingMode} timeout={450}
-                        >
-                            <TileContainer>
+                <AnimatePresence>
+                    {isMiningEnabled || isChangingMode ? (
+                        <>
+                            <motion.div variants={variants} initial="hidden" animate="visible" exit="hidden">
                                 <Tile
                                     title={`CPU ${t('utilization')}`}
                                     stats={
@@ -73,18 +72,17 @@ function Miner() {
                                         }) + '%'
                                     }
                                 />
+                            </motion.div>
+                            <motion.div variants={variants} initial="hidden" animate="visible" exit="hidden">
                                 <Tile
                                     title={`CPU ${t('temperature')}`}
                                     stats={`${cpuHardwareStatus?.current_temperature || 0}°C`}
                                 />
-                            </TileContainer>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {/*</TransitionGroup>*/}
+                            </motion.div>
+                        </>
+                    ) : null}
+                </AnimatePresence>
+            </TileContainer>
         </MinerContainer>
     );
 }
-
-export default Miner;
