@@ -14,7 +14,7 @@ use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::time::MissedTickBehavior;
 
-const RANDOMX_BLOCKS_PER_DAY: u64 = 350;
+const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 pub enum CpuMinerEvent {}
 
@@ -43,6 +43,7 @@ impl CpuMiner {
         monero_address: String,
         base_path: PathBuf,
         cache_dir: PathBuf,
+        config_path: PathBuf,
         log_dir: PathBuf,
         progress_tracker: ProgressTracker,
         mode: MiningMode,
@@ -89,7 +90,7 @@ impl CpuMiner {
             xmrig_version,
         );
         let (mut xmrig_child, _xmrig_status_monitor) =
-            xmrig.spawn_inner(base_path.clone(), log_dir.clone())?;
+            xmrig.spawn_inner(base_path.clone(), config_path.clone(), log_dir.clone())?;
         self.api_client = Some(xmrig.client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
