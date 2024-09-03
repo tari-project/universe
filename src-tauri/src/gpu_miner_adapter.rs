@@ -155,7 +155,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
     async fn status(&self) -> Result<Self::Status, anyhow::Error> {
         let client = reqwest::Client::new();
         let response = match client
-            .get(format!("http://127.0.0.1:{}", self.http_api_port))
+            .get(format!("http://127.0.0.1:{}/stats", self.http_api_port))
             .send()
             .await
         {
@@ -169,7 +169,9 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                 });
             }
         };
-        let body: XtrGpuminerHttpApiStatus = match response.json().await {
+        let text = response.text().await?;
+        dbg!(&text);
+        let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
             Ok(body) => body,
             Err(e) => {
                 warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {}", e);
@@ -182,7 +184,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         };
         Ok(GpuMinerStatus {
             is_mining: true,
-            hash_rate: body.hash_rate,
+            hash_rate: body.hashes_per_second,
             estimated_earnings: 0,
         })
     }
@@ -190,7 +192,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
 
 #[derive(Debug, Deserialize)]
 struct XtrGpuminerHttpApiStatus {
-    hash_rate: u64,
+    hashes_per_second: u64,
 }
 
 #[derive(Debug, Serialize)]

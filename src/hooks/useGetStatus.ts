@@ -36,10 +36,11 @@ export function useGetStatus() {
                         setAppStatus(status);
                         setCPUStatus(status.cpu);
                         setBaseNodeStatus(status.base_node);
+                        console.log('status', status.gpu);
                         const gpuStatus: GpuMinerStatus = {
                             is_mining: status.gpu === undefined ? false : true,
                             hash_rate: status.gpu?.hash_rate || 0,
-                            estimated_earnings: status.gpu_earnings?.estimated_earnings || 0,
+                            estimated_earnings: status.gpu?.estimated_earnings || 0,
                         };
                         setGPUStatus(gpuStatus);
 

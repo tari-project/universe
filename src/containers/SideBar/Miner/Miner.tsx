@@ -31,10 +31,10 @@ export default function Miner() {
     const { isWaitingForHashRate, isMiningEnabled, isChangingMode } = useMiningControls();
 
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
-    const gpu_hash_rate = useGPUStatusStore((s) => s.gpu_hash_rate) || 0;
+    const gpu_hash_rate = useGPUStatusStore((s) => s.hash_rate) || 0;
     console.log('gpu_hash_rate', gpu_hash_rate);
     const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
-    const gpu_estimated_earnings = useGPUStatusStore((s) => s.gpu_estimated_earnings);
+    const gpu_estimated_earnings = useGPUStatusStore((s) => s.estimated_earnings);
 
     const hardwareValSplit = cpuHardwareStatus?.label?.split(' ');
     const hardwareVal = hardwareValSplit?.[0] + ' ' + hardwareValSplit?.[1];

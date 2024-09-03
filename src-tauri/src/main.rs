@@ -198,11 +198,14 @@ async fn setup_inner<'r>(
     BinaryResolver::current()
         .read_current_highest_version(Binaries::ShaP2pool, progress.clone())
         .await?;
+    BinaryResolver::current()
+        .read_current_highest_version(Binaries::GpuMiner, progress.clone())
+        .await?;
 
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(10)
+        > Duration::from_secs(60 * 10)
     // 10 minutes
     {
         state
@@ -322,10 +325,10 @@ async fn setup_inner<'r>(
     progress
         .update("starting-p2pool".to_string(), None, 0)
         .await;
-    state
-        .p2pool_manager
-        .ensure_started(state.shutdown.to_signal(), data_dir, config_dir, log_dir)
-        .await?;
+    // state
+    //     .p2pool_manager
+    //     .ensure_started(state.shutdown.to_signal(), data_dir, config_dir, log_dir)
+    //     .await?;
 
     progress.set_max(100).await;
     progress
@@ -665,6 +668,8 @@ async fn status(
             return Err(e.to_string());
         }
     };
+
+    dbg!(&gpu_status);
 
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
