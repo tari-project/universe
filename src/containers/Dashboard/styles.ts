@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const DashboardContainer = styled.div`
@@ -13,15 +13,10 @@ export const DashboardContainer = styled.div`
     z-index: 1;
 `;
 
-export const ProgressBox = styled.div`
-    background-color: #fff;
-    padding: 3px;
-    border-radius: 10px;
-    width: 400px;
-    box-sizing: content-box;
-`;
-export const StyledLinearProgress = styled(LinearProgress)`
-    background-color: #fff;
+export const ProgressWrapper = styled.div`
+    margin: 30px 0 20px 0;
+    display: flex;
+    width: 100%;
 `;
 export const VisualModeContainer = styled.div`
     display: flex;
@@ -35,14 +30,15 @@ export const VisualModeContainer = styled.div`
 `;
 export const SetupDescription = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
-    font-family: 'PoppinsRegular', sans-serif;
     font-size: 15px;
     text-align: center;
+    font-weight: 400;
 `;
 
 export const SetupPercentage = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
-    font-family: 'PoppinsBold', sans-serif;
+
+    font-weight: 700;
     font-size: 15px;
     text-align: center;
 `;

@@ -1,16 +1,17 @@
 import setup from '@app/assets/setup.png';
 
-import { StyledLinearProgress, ProgressBox, SetupDescription, SetupPercentage } from '../styles';
+import { SetupDescription, SetupPercentage, ProgressWrapper } from '../styles';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { FloatingImage } from './styles';
 import { useTranslation } from 'react-i18next';
+import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 
 function SetupView({ title, progressPercentage }: { title: string; progressPercentage: number }) {
     const { t } = useTranslation('setup-view', { useSuspense: false });
 
     return (
-        <Stack justifyContent="center" alignItems="center">
+        <Stack justifyContent="center" alignItems="center" gap={8}>
             <FloatingImage src={setup} alt="Soon Meditating" />
             <Typography variant="h3">{t('setting-up')}</Typography>
             <SetupDescription>
@@ -18,11 +19,12 @@ function SetupView({ title, progressPercentage }: { title: string; progressPerce
                 <br />
                 {t('dont-worry')}
             </SetupDescription>
-            <ProgressBox>
-                <StyledLinearProgress value={progressPercentage} />
-            </ProgressBox>
+
+            <ProgressWrapper>
+                <LinearProgress value={progressPercentage} variant="secondary" />
+            </ProgressWrapper>
             <SetupPercentage>{`${progressPercentage}%`}</SetupPercentage>
-            <SetupDescription>{t(`title.${title}`)}</SetupDescription>
+            <SetupDescription>{title ? t(`title.${title}`) : ''}</SetupDescription>
         </Stack>
     );
 }
