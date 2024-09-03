@@ -28,8 +28,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        #  - platform: 'ubuntu-20.04'
-        #    args: ''
+          - platform: 'ubuntu-20.04'
+            args: ''
           - platform: 'windows-2019'
             args: '--bundles msi'
           - platform: 'macos-latest'
@@ -90,6 +90,12 @@ jobs:
         run: |
           # openssl, cmake and autoconf already installed
           brew install zip coreutils automake protobuf libtool
+          # force install rust OSX multi-arch components
+          cd src-tauri
+          rustup target add x86_64-apple-darwin
+          rustup target add aarch64-apple-darwin
+          rustup toolchain install stable-x86_64-apple-darwin --force-non-host
+          rustup toolchain install stable-aarch64-apple-darwin --force-non-host
 
       - name: Install dependencies (Windows)
         if: startsWith(runner.os,'Windows')

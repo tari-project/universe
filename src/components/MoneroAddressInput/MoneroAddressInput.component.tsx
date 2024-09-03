@@ -1,4 +1,3 @@
-import { Input, Stack } from '@mui/material';
 import { Control, Controller, FieldValues } from 'react-hook-form';
 
 import { FieldErrorMessage } from '../FieldErrorMessage/FieldErrorMessage.component';
@@ -10,44 +9,32 @@ import type {
     MoneroAddressInputProps,
     MoneroAddressInputType,
 } from './MoneroAddressInput.types';
+import { Stack } from '@app/components/elements/Stack.tsx';
+import { Input } from '@app/components/elements/inputs/Input.tsx';
+import { ChangeEvent } from 'react';
 
 const valueParses: Record<MoneroAddressInputType, RegExp> = {
     string: moneroAddressRegex,
 };
 
-export const MoneroAddressInput: React.FC<MoneroAddressInputProps> = ({
+export const MoneroAddressInput = ({
     title,
     value,
     onChange,
-    labelSx,
     error,
     type = 'string',
     ...inputProps
-}) => {
-    const validateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+}: MoneroAddressInputProps) => {
+    const validateChange = (event: ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.value;
-
         if (onChange && (valueParses[type].test(newValue) || newValue === '')) onChange(event);
     };
 
     return (
-        <Stack
-            gap={1}
-            sx={{
-                width: 'auto',
-                flexDirection: 'column',
-                justifyContent: 'flex-end',
-                position: 'relative',
-                ...inputProps.sx,
-            }}
-        >
-            {title && (
-                <MoneroAddressInputTypography variant="body1" component="label" sx={labelSx}>
-                    {title}
-                </MoneroAddressInputTypography>
-            )}
-            <Stack flexDirection="row" gap={1}>
-                <Input error={Boolean(error)} fullWidth value={value} onChange={validateChange} {...inputProps} />
+        <Stack gap={1}>
+            {title && <MoneroAddressInputTypography variant="p">{title}</MoneroAddressInputTypography>}
+            <Stack direction="row" gap={1}>
+                <Input hasError={Boolean(error)} value={value} onChange={validateChange} {...inputProps} />
             </Stack>
             {error && <FieldErrorMessage error={error} />}
         </Stack>
@@ -74,7 +61,7 @@ export const ControlledMoneroAddressInput = <FormValues extends FieldValues>({
             />
         )}
         name={name}
-        control={control as Control<FieldValues>}
+        control={control as Control}
         rules={rules}
     />
 );

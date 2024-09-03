@@ -1,6 +1,6 @@
-import { styled } from '@mui/system';
 import { motion } from 'framer-motion';
-export const EarningsContainer = styled('div')`
+import styled from 'styled-components';
+export const EarningsContainer = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
@@ -16,7 +16,8 @@ export const EarningsWrapper = styled(motion.div)`
     justify-content: center;
     span {
         display: flex;
-        font-family: 'DrukWideLCGBold', sans-serif;
+        font-family: Druk, sans-serif;
+        font-weight: 700;
         font-size: 14px;
         letter-spacing: -0.1px;
     }

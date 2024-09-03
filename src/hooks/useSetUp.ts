@@ -31,8 +31,8 @@ export function useSetUp() {
             console.info('Setup Event:', e, p);
             switch (p.event_type) {
                 case 'setup_status':
-                    console.info('Setup status:', p.title, p.progress);
-                    setSetupDetails(p.title, p.progress);
+                    console.info('Setup status:', p.title, p.title_params, p.progress);
+                    setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         if (autoMiningEnabled) invoke('set_auto_mining', { autoMining: true });
                         settingUpFinished();
