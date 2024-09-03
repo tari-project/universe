@@ -16,6 +16,7 @@ import { useAirdropTokensRefresh } from './hooks/airdrop/useAirdropTokensRefresh
 import { SplashScreen } from './containers/SplashScreen';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 import { setupLogger } from './utils/logger.ts';
+import { listen } from '@tauri-apps/api/event';
 
 function App() {
     useAirdropTokensRefresh();
@@ -30,6 +31,26 @@ function App() {
     useEffect(() => {
         setupLogger();
     }, []);
+
+    listen('tauri://update', () => {
+        console.log('Update received');
+    });
+
+    listen('tauri://update-available', () => {
+        console.log('Update available');
+    });
+
+    listen('tauri://update-install', () => {
+        console.log('Update install');
+    });
+
+    listen('tauri://update-status', (status) => {
+        console.log('Update status: ', status);
+    });
+
+    listen('tauri://update-download-progress', (progress) => {
+        console.log('Update download progress:', progress);
+    });
 
     return (
         <StrictMode>
