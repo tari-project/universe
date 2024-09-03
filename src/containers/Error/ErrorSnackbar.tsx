@@ -34,11 +34,10 @@ export default function ErrorSnackbar() {
         setError(undefined);
     }, [setError]);
 
-    const clickRef = useClickOutside(handleClose);
-
     useEffect(() => {
         setShow(Boolean(error && error?.length));
     }, [error]);
+    const clickRef = useClickOutside(handleClose, show);
 
     useEffect(() => {
         if (show) {

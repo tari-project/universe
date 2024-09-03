@@ -7,7 +7,7 @@ import { useClickOutside } from '@app/hooks/helpers/useClickOutside.ts';
 const Content = styled.div<{ $isNested?: boolean }>`
     max-height: 90%;
     min-height: 160px;
-    min-width: min(70%, 400px);
+    min-width: ${({ $isNested }) => ($isNested ? 'max-content' : '60%')};
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
@@ -34,7 +34,7 @@ const Wrapper = styled.div<{ $isNested?: boolean }>`
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: ${({ $isNested }) => ($isNested ? 101 : 100)};
+    z-index: 10;
 `;
 
 interface Props {
@@ -44,9 +44,9 @@ interface Props {
     open?: boolean;
 }
 
-function ModalContent({ onClose, children, isNested }: Props) {
+function ModalContent({ onClose, children, isNested, open }: Props) {
     useKeyboardEvent({ keys: ['Escape'], callback: onClose });
-    const clickRef = useClickOutside(onClose, isNested);
+    const clickRef = useClickOutside(onClose, open, isNested);
     return (
         <Wrapper $isNested={isNested}>
             <Backdrop $isNested={isNested} />

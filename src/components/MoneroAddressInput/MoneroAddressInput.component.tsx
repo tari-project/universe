@@ -33,7 +33,7 @@ export const MoneroAddressInput = ({
     return (
         <Stack gap={1}>
             {title && <MoneroAddressInputTypography variant="p">{title}</MoneroAddressInputTypography>}
-            <Stack flexDirection="row" gap={1}>
+            <Stack direction="row" gap={1}>
                 <Input hasError={Boolean(error)} value={value} onChange={validateChange} {...inputProps} />
             </Stack>
             {error && <FieldErrorMessage error={error} />}
