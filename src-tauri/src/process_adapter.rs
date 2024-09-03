@@ -38,10 +38,11 @@ pub trait ProcessAdapter {
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
             Ok(pid) => {
                 let pid = pid.trim().parse::<u32>()?;
+                warn!(target: LOG_TARGET, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
                 kill_process(pid)?;
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Could not read {} pid file: {}", self.pid_file_name(), e);
+                warn!(target: LOG_TARGET, "Error while killing {}: {}", self.name(), e);
             }
         }
         Ok(())
