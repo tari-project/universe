@@ -1,7 +1,7 @@
 use anyhow::Result;
 use jsonwebtoken::errors::Error as JwtError;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
@@ -10,6 +10,7 @@ use tauri::Manager;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
+use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
@@ -128,6 +129,7 @@ pub struct TelemetryManager {
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     config: Arc<RwLock<AppConfig>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     pub cancellation_token: CancellationToken,
     node_network: Option<Network>,
 }
@@ -138,6 +140,7 @@ impl TelemetryManager {
         cpu_miner: Arc<RwLock<CpuMiner>>,
         gpu_miner: Arc<RwLock<GpuMiner>>,
         config: Arc<RwLock<AppConfig>>,
+        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         network: Option<Network>,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
@@ -148,6 +151,7 @@ impl TelemetryManager {
             config,
             cancellation_token,
             node_network: network,
+            in_memory_config,
         }
     }
 
@@ -195,6 +199,7 @@ impl TelemetryManager {
         let network = self.node_network;
         let config_cloned = self.config.clone();
         let app_cloned = app.clone();
+        let in_memory_config_cloned = self.in_memory_config.clone();
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
@@ -206,7 +211,8 @@ impl TelemetryManager {
                             let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
                             match telemetry {
                                 Ok(telemetry) => {
-                                    let telemetry_response = send_telemetry_data(telemetry, airdrop_access_token_validated).await;
+                                    let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
+                                    let telemetry_response = send_telemetry_data(telemetry, airdrop_access_token_validated, airdrop_api_url).await;
                                     match telemetry_response {
                                         Ok(response) => {
                                             if let Some(response_inner) = response {
@@ -329,17 +335,14 @@ async fn get_telemetry_data(
     })
 }
 
-fn get_airdrop_url() -> String {
-    "https://airdrop.tari.com".to_string()
-}
-
 async fn send_telemetry_data(
     data: TelemetryData,
     airdrop_access_token: Option<String>,
+    airdrop_api_url: String,
 ) -> Result<Option<TelemetryDataResponse>, TelemetryManagerError> {
     let request = reqwest::Client::new();
     let mut request_builder = request
-        .post(format!("{}/miner/heartbeat", get_airdrop_url()))
+        .post(format!("{}/miner/heartbeat", airdrop_api_url))
         .json(&data);
 
     if let Some(token) = airdrop_access_token.clone() {

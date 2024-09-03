@@ -4,7 +4,7 @@ import { useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 
 export function useAirdropTokensRefresh() {
-    const { airdropTokens, setAirdropTokens } = useAirdropStore();
+    const { airdropTokens, setAirdropTokens, backendInMemoryConfig } = useAirdropStore();
 
     // Handle refreshing the access token
     const handleRefresh = useCallback(() => {
@@ -14,7 +14,7 @@ export function useAirdropTokensRefresh() {
 
         const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
         if (airdropTokens && tokenHasExpired) {
-            fetch('https://airdrop.tari.com/api/auth/local/refresh', {
+            fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/local/refresh`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ export function useAirdropTokensRefresh() {
                     setAirdropTokens(data);
                 });
         }
-    }, [airdropTokens, setAirdropTokens]);
+    }, [airdropTokens, setAirdropTokens, backendInMemoryConfig]);
 
     useEffect(() => {
         const interval = setInterval(handleRefresh, 1000 * 60 * 60);
