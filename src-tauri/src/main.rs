@@ -20,7 +20,7 @@ use tokio::sync::RwLock;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
-use binary_resolver::{Binaries, BinaryResolver};
+use binaries::{Binaries, BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
@@ -40,11 +40,9 @@ use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
-use crate::xmrig_adapter::XmrigAdapter;
 
 mod app_config;
 mod app_in_memory_config;
-mod binary_resolver;
 mod consts;
 mod cpu_miner;
 mod download_utils;
@@ -77,6 +75,7 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
+mod binaries;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
@@ -458,17 +457,9 @@ async fn setup_inner(
             .update("checking-latest-version-xmrig".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-<<<<<<< HEAD
-        let _unused = XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
-            .await
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not ensure latest version of Xmrig: {:?}", e),
-            );
-=======
         BinaryResolver::current()
             .ensure_latest(Binaries::Xmrig, progress.clone())
             .await?;
->>>>>>> f06f4e1 (move xmrig to binary resolver)
 
         progress.set_max(35).await;
         progress
