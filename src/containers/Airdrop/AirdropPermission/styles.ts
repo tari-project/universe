@@ -9,6 +9,10 @@ export const Position = styled(Box)`
     left: 50%;
     z-index: 2;
     transform: translateX(-50%);
+
+    @media (max-height: 914px) {
+        display: none;
+    }
 `;
 
 export const BoxWrapper = styled(Box)`
@@ -27,8 +31,11 @@ export const BoxWrapper = styled(Box)`
         0 15px 50px -25px rgba(0, 0, 0, 0.035);
 
     pointer-events: all;
-    width: 100%;
-    max-width: 460px;
+    width: 460px;
+
+    @media (max-width: 974px) {
+        width: 380px;
+    }
 `;
 
 export const TextWrapper = styled(Box)`
