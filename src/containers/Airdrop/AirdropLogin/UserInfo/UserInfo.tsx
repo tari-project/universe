@@ -18,10 +18,13 @@ import hammerImage from './images/hammers.png';
 import { FaBell } from 'react-icons/fa6';
 import { useState } from 'react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
+import { useTranslation } from 'react-i18next';
 
 export default function UserInfo() {
     const { logout, userDetails } = useAirdropStore();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+    const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     if (!userDetails || !userDetails?.user) return null;
 
@@ -87,7 +90,7 @@ export default function UserInfo() {
                 sx={{ width: 180 }}
             >
                 <MenuItem onClick={handleLogout} sx={{ width: 180 }}>
-                    Logout
+                    {t('logout')}
                 </MenuItem>
             </Menu>
         </Wrapper>

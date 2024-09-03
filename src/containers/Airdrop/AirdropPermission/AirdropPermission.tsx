@@ -2,9 +2,11 @@ import { Switch } from '@mui/material';
 import { BoxWrapper, Gem1, Gem2, Gem3, Gem4, Position, Text, TextWrapper, Title } from './styles';
 import { useState, ChangeEvent } from 'react';
 import gemImage from './images/gem.png';
+import { useTranslation } from 'react-i18next';
 
 export default function AirdropPermission() {
     const [checked, setChecked] = useState(false);
+    const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
         setChecked(event.target.checked);
@@ -19,11 +21,8 @@ export default function AirdropPermission() {
                 <Gem4 src={gemImage} alt="" />
 
                 <TextWrapper>
-                    <Title>Earn Gems & make Tari Universe better</Title>
-                    <Text>
-                        Tari Universe would like to use analytics to improve your experience and reward you with gems
-                        for mining.
-                    </Text>
+                    <Title>{t('permission.title')}</Title>
+                    <Text>{t('permission.text')}</Text>
                 </TextWrapper>
                 <Switch checked={checked} onChange={handleChange} color="primary" size="medium" />
             </BoxWrapper>
