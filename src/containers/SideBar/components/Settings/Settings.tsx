@@ -97,6 +97,7 @@ export default function Settings() {
 
     const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        event.stopPropagation();
         console.info('submitting');
         handleSubmit(
             (data) => {
@@ -190,7 +191,7 @@ export default function Settings() {
         <MinerContainer>
             <Stack>
                 <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
-                <Typography>{t('pool-mining-description', { ns: 'settings' })}</Typography>
+                <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
             </Stack>
             <ToggleSwitch
                 checked={isP2poolEnabled}

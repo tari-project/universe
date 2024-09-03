@@ -27,14 +27,13 @@ export const MoneroAddressInput = ({
 }: MoneroAddressInputProps) => {
     const validateChange = (event: ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.value;
-
         if (onChange && (valueParses[type].test(newValue) || newValue === '')) onChange(event);
     };
 
     return (
         <Stack gap={1}>
-            {title && <MoneroAddressInputTypography>{title}</MoneroAddressInputTypography>}
-            <Stack flexDirection="row" gap={1}>
+            {title && <MoneroAddressInputTypography variant="p">{title}</MoneroAddressInputTypography>}
+            <Stack direction="row" gap={1}>
                 <Input hasError={Boolean(error)} value={value} onChange={validateChange} {...inputProps} />
             </Stack>
             {error && <FieldErrorMessage error={error} />}

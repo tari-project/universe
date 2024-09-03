@@ -65,10 +65,6 @@ export const WalletContainer = styled.div`
     width: 100%;
     position: relative;
     box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
-    transition: height 0.8s ease-in-out;
-    &:hover {
-        height: 178px;
-    }
 `;
 
 export const Handle = styled.div`

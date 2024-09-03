@@ -126,7 +126,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, ..
         onChange(value);
         setExpanded(false);
     }
-    const clickRef = useClickOutside(() => setExpanded(false));
+    const clickRef = useClickOutside(() => setExpanded(false), expanded);
     const selectedOption = selectedValue ? options.find((o) => o.value === selectedValue) : options[0];
     const selectedLabel = selectedOption?.selectedLabel || selectedOption?.label;
     return (
