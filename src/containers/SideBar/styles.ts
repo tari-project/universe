@@ -3,6 +3,7 @@ import { Box, LinearProgress, Chip, Button } from '@mui/material';
 import { headerHeight, sidebarWidth } from '../../theme/styles';
 import cardbg from '../../assets/images/card.png';
 import { keyframes } from '@emotion/react';
+import gem from '../../assets/images/gem-sml.png';
 
 interface SideBarContainerProps {
     sidebaropen: boolean;
@@ -17,39 +18,34 @@ export const SideBarContainer = styled(Box, {
     shouldForwardProp: (prop) => prop !== 'sidebaropen',
 })<SideBarContainerProps>(({ theme, sidebaropen }) => ({
     backgroundColor: theme.palette.background.paper,
-    borderRadius: theme.shape.borderRadius,
-    marginLeft: theme.spacing(1),
-    marginRight: theme.spacing(1),
-    marginBottom: theme.spacing(1),
-    marginTop: 0,
-    position: 'absolute',
-    top: headerHeight,
-    left: 0,
-    height: `calc(100vh - ${headerHeight} - ${theme.spacing(1)})`,
-    width: sidebaropen ? `calc(100% - ${theme.spacing(2)})` : sidebarWidth,
+    borderRadius: 20,
+    pointerEvents: 'all',
+    height: `calc(100vh - ${headerHeight} - ${theme.spacing(2)})`,
+    width: sidebaropen ? `calc(100% - ${theme.spacing(4)})` : sidebarWidth,
     zIndex: 100,
     transition: 'width 0.5s ease-in-out',
     display: 'flex',
+    flexShrink: '0',
     flexDirection: 'column',
-    gap: theme.spacing(2),
     justifyContent: 'flex-start',
     overflow: 'hidden',
+    boxShadow: '0px 0px 45px 0px rgba(0, 0, 0, 0.15)',
 }));
 
 export const SideBarInner = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'column',
-    gap: theme.spacing(2),
+    gap: theme.spacing(1),
     height: '100%',
     overflowY: 'auto',
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
+    paddingLeft: theme.spacing(1.6),
+    paddingRight: theme.spacing(1.6),
+    paddingTop: theme.spacing(2.5),
+    paddingBottom: theme.spacing(2.5),
 }));
 
 export const BottomContainer = styled(Box)(({ theme }) => ({
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
-    paddingBottom: theme.spacing(2),
+    padding: theme.spacing(1),
     display: 'flex',
     flexDirection: 'column',
     gap: theme.spacing(1),
@@ -58,7 +54,7 @@ export const BottomContainer = styled(Box)(({ theme }) => ({
 export const HeadingContainer = styled(Box)(({ theme }) => ({
     paddingLeft: theme.spacing(2),
     paddingRight: theme.spacing(2),
-    paddingTop: theme.spacing(2),
+    paddingTop: theme.spacing(2.2),
 }));
 
 const fadeIn = keyframes`
@@ -95,7 +91,7 @@ export const WalletContainer = styled(Box)(({ theme }) => ({
     backgroundPosition: 'top left',
     padding: theme.spacing(1),
     borderRadius: '20px',
-    width: `calc(${sidebarWidth} - ${theme.spacing(4)})`,
+    width: `calc(${sidebarWidth} - ${theme.spacing(2)})`,
     boxShadow: '4px 4px 10px 0px rgba(0, 0, 0, 0.30)',
     '&:hover .hover-stack': {
         display: 'flex',
@@ -144,20 +140,14 @@ export const BalanceChangeChip = styled(Chip, {
 })<BalanceChangeProps>(({ theme, direction }) => ({
     backgroundColor: 'rgba(255,255,255,0.05)',
     border: `1px solid ${theme.palette.divider}`,
-    color:
-        direction === 'up'
-            ? theme.palette.success.main
-            : theme.palette.error.main,
+    color: direction === 'up' ? theme.palette.success.main : theme.palette.error.main,
     borderRadius: theme.spacing(2),
     display: 'flex',
     alignItems: 'center',
     gap: theme.spacing(0.5),
     transition: 'color 0.5s ease-in-out',
     '& .MuiChip-icon': {
-        color:
-            direction === 'up'
-                ? theme.palette.success.main
-                : theme.palette.error.main,
+        color: direction === 'up' ? theme.palette.success.main : theme.palette.error.main,
         transform: direction === 'up' ? 'rotate(0deg)' : 'rotate(180deg)',
         transition: 'color 0.5s ease-in-out, transform 0.5s ease-in-out',
     },
@@ -191,6 +181,7 @@ export const ProgressBox = styled(Box)(({ theme }) => ({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: theme.spacing(0.1),
+    position: 'relative',
 }));
 
 export const StyledLinearProgress = styled(LinearProgress)(() => ({
@@ -202,4 +193,17 @@ export const StyledLinearProgress = styled(LinearProgress)(() => ({
     padding: '3px',
     borderRadius: '10px',
     flexGrow: 1,
+}));
+
+export const GemBox = styled(Box)(() => ({
+    backgroundImage: `url(${gem})`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+    backgroundSize: '8px',
+    width: '14px',
+    height: '14px',
+    position: 'absolute',
+    right: '1px',
+    borderRadius: '50%',
+    border: `1px solid #D3D3D3`,
 }));

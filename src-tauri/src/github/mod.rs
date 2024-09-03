@@ -7,7 +7,6 @@ use serde::Deserialize;
 struct Release {
     name: String,
     draft: bool,
-    tag_name: String,
     assets: Vec<Asset>,
 }
 
@@ -15,19 +14,6 @@ struct Release {
 struct Asset {
     name: String,
     browser_download_url: String,
-}
-
-pub async fn get_latest_release(
-    _repo_owner: &str,
-    _repo_name: &str,
-    _tag: &str,
-) -> Result<String, anyhow::Error> {
-    // let client = Client::new();
-    // let url = format!(
-    //     "https://api.github.com/repos/{}/{}/releases/tags/{}",
-    //     repo_owner, repo_name, tag
-    // );
-    todo!("get_latest_release not implemented")
 }
 
 pub async fn list_releases(

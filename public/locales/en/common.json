@@ -1,0 +1,17 @@
+{
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "temperature": "Temperature",
+    "max-temperature": "Max temperature",
+    "usage": "Usage",
+    "seconds": "seconds",
+    "copied": "Copied",
+    "unknown": "Unknown",
+    "versions": "Versions",
+    "version": "Version",
+    "resources": "Resources",
+    "hashrate": "Hashrate",
+    "utilization": "Utilization",
+    "mode": "Mode",
+    "day": "Day"
+}

@@ -1,55 +1,13 @@
-import { ReactNode } from 'react';
 import { useTheme } from '@mui/material/styles';
-import clouds from '../../assets/backgrounds/clouds.png';
-import loading from '../../assets/backgrounds/loading.jpg';
-import determining from '../../assets/backgrounds/determining.jpg';
-import loser from '../../assets/backgrounds/loser.jpg';
-import winner from '../../assets/backgrounds/winner.jpg';
-import { backgroundType } from '../../store/types';
 
-import { AppContainer } from './styles';
-
-function AppBackground({
-    children,
-    status,
-}: {
-    children: ReactNode;
-    status: backgroundType;
-}) {
+import { BackgroundImage } from './styles';
+import { useUIStore } from '@app/store/useUIStore.ts';
+function AppBackground() {
     const theme = useTheme();
-    let bg: string;
+    const visualMode = useUIStore((s) => s.visualMode);
+    const view = useUIStore((s) => s.view);
 
-    switch (status) {
-        case 'onboarding':
-            bg = clouds;
-            break;
-        case 'determining':
-            bg = determining;
-            break;
-        case 'loading':
-            bg = loading;
-            break;
-        // case 'mining':
-        //     bg = mining;
-        //     break;
-        case 'loser':
-            bg = loser;
-            break;
-        case 'winner':
-            bg = winner;
-            break;
-        case 'mining':
-        case 'idle':
-        default:
-            bg = clouds;
-            break;
-    }
-
-    return (
-        <AppContainer theme={theme} status={bg || loading}>
-            {children}
-        </AppContainer>
-    );
+    return !visualMode || view === 'setup' ? <BackgroundImage theme={theme} /> : null;
 }
 
 export default AppBackground;

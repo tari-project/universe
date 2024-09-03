@@ -1,8 +1,7 @@
-use crate::download_utils::{download_file, extract};
+use crate::download_utils::{download_file_with_retries, extract, validate_checksum};
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use futures_util::FutureExt;
 use log::{info, warn};
 use semver::Version;
 use std::collections::HashMap;
@@ -13,7 +12,7 @@ use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
 
 const LOG_TARGET: &str = "tari::universe::binary_resolver";
-static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(|| BinaryResolver::new());
+static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
 
 pub struct BinaryResolver {
     download_mutex: Mutex<()>,
@@ -163,6 +162,13 @@ impl BinaryResolver {
                 owner: "tari-project".to_string(),
             }),
         );
+        adapters.insert(
+            Binaries::ShaP2pool,
+            Box::new(GithubReleasesAdapter {
+                repo: "sha-p2pool".to_string(),
+                owner: "tari-project".to_string(),
+            }),
+        );
         Self {
             adapters,
             download_mutex: Mutex::new(()),
@@ -171,11 +177,10 @@ impl BinaryResolver {
     }
 
     pub fn current() -> &'static Self {
-        &*INSTANCE
+        &INSTANCE
     }
 
     pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
-        dbg!(&self.latest_versions);
         let adapter = self
             .adapters
             .get(&binary)
@@ -184,25 +189,8 @@ impl BinaryResolver {
         let version = guard
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
-        let base_dir = adapter.get_binary_folder().join(&version.to_string());
-        match binary {
-            Binaries::Xmrig => {
-                let xmrig_bin = base_dir.join("xmrig");
-                Ok(xmrig_bin)
-            }
-            Binaries::MergeMiningProxy => {
-                let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
-                Ok(mmproxy_bin)
-            }
-            Binaries::MinotariNode => {
-                let minotari_node_bin = base_dir.join("minotari_node");
-                Ok(minotari_node_bin)
-            }
-            Binaries::Wallet => {
-                let wallet_bin = base_dir.join("minotari_console_wallet");
-                Ok(wallet_bin)
-            }
-        }
+        let base_dir = adapter.get_binary_folder().join(version.to_string());
+        get_binary_name(binary, base_dir)
     }
 
     pub async fn ensure_latest(
@@ -231,13 +219,12 @@ impl BinaryResolver {
             .adapters
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
-        let name = binary.name();
         let latest_release = adapter.fetch_latest_release().await?;
         // TODO: validate that version doesn't have any ".." or "/" in it
 
         let bin_folder = adapter
             .get_binary_folder()
-            .join(&latest_release.version.to_string());
+            .join(latest_release.version.to_string());
         let _lock = self.download_mutex.lock().await;
 
         if force_download {
@@ -259,29 +246,153 @@ impl BinaryResolver {
             }
 
             let asset = adapter.find_version_for_platform(&latest_release)?;
-            // let platform = latest_release
-            //     .get_asset(&::get_os_string())
-            //     .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
             info!(target: LOG_TARGET, "Downloading file");
             info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
-            let in_progress_file = in_progress_dir.join(&asset.name);
-            download_file(&asset.url, &in_progress_file, progress_tracker).await?;
+            let in_progress_file_zip = in_progress_dir.join(&asset.name);
+            download_file_with_retries(&asset.url, &in_progress_file_zip, progress_tracker.clone())
+                .await?;
             info!(target: LOG_TARGET, "Renaming file");
             info!(target: LOG_TARGET, "Extracting file");
-            let bin_dir = adapter
-                .get_binary_folder()
-                .join(&latest_release.version.to_string());
-            extract(&in_progress_file, &bin_dir).await?;
 
+            let in_progress_file_sha256 = in_progress_dir
+                .clone()
+                .join(format!("{}.sha256", asset.name));
+            let asset_sha256_url = format!("{}.sha256", asset.url.clone());
+            download_file_with_retries(
+                &asset_sha256_url,
+                &in_progress_file_sha256,
+                progress_tracker.clone(),
+            )
+            .await?;
+
+            let is_sha_validated = validate_checksum(
+                in_progress_file_zip.clone(),
+                in_progress_file_sha256.clone(),
+                asset.name.clone(),
+            )
+            .await?;
+            if is_sha_validated {
+                println!("ZIP file integrity verified successfully!");
+                println!("Renaming & Extracting file");
+                let bin_dir = adapter
+                    .get_binary_folder()
+                    .join(&latest_release.version.to_string());
+                dbg!(&bin_dir);
+
+                extract(&in_progress_file_zip, &bin_dir).await?;
+            } else {
+                return Err(anyhow!("ZIP file integrity verification failed!"));
+            }
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
     }
 
+    pub async fn read_current_highest_version(
+        &self,
+        binary: Binaries,
+        progress_tracker: ProgressTracker,
+    ) -> Result<Version, Error> {
+        let adapter = self
+            .adapters
+            .get(&binary)
+            .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
+        let bin_folder = adapter.get_binary_folder();
+        let version_folders_list = match std::fs::read_dir(&bin_folder) {
+            Ok(list) => list,
+            Err(_) => match std::fs::create_dir_all(&bin_folder) {
+                Ok(_) => std::fs::read_dir(&bin_folder).unwrap(),
+                Err(e) => {
+                    return Err(anyhow!("Failed to create dir: {}", e));
+                }
+            },
+        };
+        let mut versions = vec![];
+        for entry in version_folders_list {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(_) => continue,
+            };
+            let path = entry.path();
+            if path.is_dir() {
+                // Check for actual binary existing. It can happen that the folder is there,
+                // for in_progress downloads or perhaps the antivirus has quarantined the file
+                let mut executable_name = get_binary_name(binary, path.clone())?;
+
+                if cfg!(target_os = "windows") {
+                    executable_name = executable_name.with_extension("exe");
+                }
+
+                if !executable_name.exists() {
+                    continue;
+                }
+
+                let version = path.file_name().unwrap().to_str().unwrap();
+                versions.push(Version::parse(version).unwrap());
+            }
+        }
+
+        if versions.is_empty() {
+            match self
+                .ensure_latest_inner(binary, true, progress_tracker)
+                .await
+            {
+                Ok(version) => {
+                    self.latest_versions
+                        .write()
+                        .await
+                        .insert(binary, version.clone());
+                    return Ok(version);
+                }
+                Err(e) => {
+                    return Err(e);
+                }
+            }
+        }
+
+        versions.sort();
+        let cached_version = versions.pop().unwrap();
+        let current_version = self.get_latest_version(binary).await;
+
+        let highest_version = cached_version.max(current_version);
+
+        self.latest_versions
+            .write()
+            .await
+            .insert(binary, highest_version.clone());
+
+        Ok(highest_version.clone())
+    }
+
     pub async fn get_latest_version(&self, binary: Binaries) -> Version {
         let guard = self.latest_versions.read().await;
         guard.get(&binary).cloned().unwrap_or(Version::new(0, 0, 0))
+    }
+}
+
+fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error> {
+    match binary {
+        Binaries::Xmrig => {
+            let xmrig_bin = base_dir.join("xmrig");
+            Ok(xmrig_bin)
+        }
+        Binaries::MergeMiningProxy => {
+            let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
+            Ok(mmproxy_bin)
+        }
+        Binaries::MinotariNode => {
+            let minotari_node_bin = base_dir.join("minotari_node");
+            Ok(minotari_node_bin)
+        }
+        Binaries::Wallet => {
+            let wallet_bin = base_dir.join("minotari_console_wallet");
+            Ok(wallet_bin)
+        }
+        Binaries::ShaP2pool => {
+            let sha_p2pool_bin = base_dir.join("sha_p2pool");
+            Ok(sha_p2pool_bin)
+        }
     }
 }
 
@@ -291,6 +402,7 @@ pub enum Binaries {
     MergeMiningProxy,
     MinotariNode,
     Wallet,
+    ShaP2pool,
 }
 
 impl Binaries {
@@ -300,6 +412,7 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
+            Binaries::ShaP2pool => "sha-p2pool",
         }
     }
 }

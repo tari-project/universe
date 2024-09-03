@@ -1,0 +1,19 @@
+{
+    "settings": "Instellings",
+    "seed-words": "Saadwoorde",
+    "change-language": "Verander taal",
+    "logs": "Verslae",
+    "open-logs-directory": "Maak verslag lêer oop",
+    "debug-info": "Ontfoutingsinligting",
+    "hardware-status": "Hardeware status",
+    "update-versions": "Opdateer weergawes",
+    "refresh-versions": "Verfris weergawes",
+    "idle-timeout": {
+        "title": "Tyd waarna masjien as onaktief beskou word",
+        "placeholder": "Voer onaktiwiteitstyd in sekondes in",
+        "max": "Maksimum is 21600 sekondes",
+        "min": "Minimum is 1 sekonde"
+    },
+    "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
+    "visual-mode": "Visuele modus"
+}

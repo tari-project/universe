@@ -1,42 +1,49 @@
 import useAppStateStore from '../store/appStateStore.ts';
-import { useEffect } from 'react';
+
 import { invoke } from '@tauri-apps/api/tauri';
 import useWalletStore from '../store/walletStore.ts';
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
-import { useUIStore } from '../store/useUIStore.ts';
+import { useInterval } from './useInterval.ts';
+import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
+import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
+import useMining from '@app/hooks/mining/useMining.ts';
+import { useMainAppVersion } from '@app/hooks/useVersions.ts';
 
 const INTERVAL = 1000;
 
 export function useGetStatus() {
-    const setMiningInitiated = useUIStore((s) => s.setMiningInitiated);
-
-    const setBalance = useWalletStore((state) => state.setBalance);
-
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
-    const setError = useAppStateStore((s) => s.setError);
+    const setBalanceData = useWalletStore((state) => state.setBalanceData);
+    const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
+    const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
+    const { error, setError } = useAppStateStore((s) => ({
+        error: s.error,
+        setError: s.setError,
+    }));
     const setMode = useAppStatusStore((s) => s.setMode);
 
-    useEffect(() => {
-        const intervalId = setInterval(() => {
+    useMainAppVersion();
+    useMining();
+
+    useInterval(
+        () =>
             invoke('status')
                 .then((status) => {
                     if (status) {
                         setAppStatus(status);
+                        setCPUStatus(status.cpu);
+                        setBaseNodeStatus(status.base_node);
+
                         if (status.cpu?.is_mining) {
-                            setMiningInitiated(false);
+                            if (!status.cpu?.connection.is_connected) {
+                                setError('Xmrig connection lost!');
+                            } else if (error === 'Xmrig connection lost!') {
+                                setError('');
+                            }
                         }
                         const wallet_balance = status.wallet_balance;
-                        const {
-                            available_balance = 0,
-                            timelocked_balance = 0,
-                            pending_incoming_balance = 0,
-                        } = wallet_balance || {};
 
-                        setBalance(
-                            available_balance +
-                                timelocked_balance +
-                                pending_incoming_balance
-                        );
+                        setBalanceData(wallet_balance);
                         setMode(status.mode);
                     } else {
                         console.error('Could not get status');
@@ -45,10 +52,7 @@ export function useGetStatus() {
                 .catch((e) => {
                     console.error('Could not get status', e);
                     setError(e.toString());
-                });
-        }, INTERVAL);
-        return () => {
-            clearInterval(intervalId);
-        };
-    }, [setAppStatus, setBalance, setError, setMiningInitiated, setMode]);
+                }),
+        INTERVAL
+    );
 }

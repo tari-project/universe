@@ -3,15 +3,14 @@ use keyring::Entry;
 use log::{info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
+use tari_common_types::tari_address::{TariAddress, TariAddressError, TariAddressFeatures};
 use tari_crypto::keys::PublicKey;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_key_manager::cipher_seed::CipherSeed;
 use tari_key_manager::key_manager::KeyManager;
 use tari_key_manager::key_manager_service::KeyDigest;
-use tari_key_manager::key_manager_service::KeyManagerInterface;
 use tari_utilities::encoding::Base58;
 use tari_utilities::SafePassword;
 use tokio::fs;
@@ -141,12 +140,18 @@ impl InternalWallet {
     pub fn get_spend_key(&self) -> String {
         self.config.spend_public_key_hex.clone()
     }
+
+    pub fn get_network(&self) -> Result<Network, TariAddressError> {
+        let address = TariAddress::from_base58(&self.config.tari_address_base58);
+        address.map(|a| a.network())
+    }
 }
 
-fn generate_password(length: usize) -> String {
-    let charset: Vec<char> = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;:',.<>?/`~"
-        .chars()
-        .collect();
+pub fn generate_password(length: usize) -> String {
+    let charset: Vec<char> =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&"
+            .chars()
+            .collect();
 
     let mut rng = rand::thread_rng();
     let password: String = (0..length)

@@ -1,14 +1,23 @@
-use crate::minotari_node_adapter::MinotariNodeAdapter;
-use crate::process_watcher::ProcessWatcher;
-use crate::ProgressTracker;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
+use tokio::fs;
 use tokio::sync::RwLock;
 
-const LOG_TARGET: &str = "tari::universe::node_manager";
+use crate::node_adapter::MinotariNodeAdapter;
+use crate::process_watcher::ProcessWatcher;
+use crate::ProgressTracker;
+
+#[derive(Debug, thiserror::Error)]
+pub enum NodeManagerError {
+    #[error("Node failed to start and was stopped with exit code: {}", .0)]
+    ExitCode(i32),
+    #[error("Node failed with an unknown error: {0}")]
+    UnknownError(#[from] anyhow::Error),
+}
 
 pub struct NodeManager {
     watcher: Arc<RwLock<ProcessWatcher<MinotariNodeAdapter>>>,
@@ -41,14 +50,24 @@ impl NodeManager {
         }
     }
 
+    pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
+        fs::remove_dir_all(base_path.join("node")).await?;
+        Ok(())
+    }
+
     pub async fn ensure_started(
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-    ) -> Result<(), anyhow::Error> {
-        let mut process_watcher = self.watcher.write().await;
-        process_watcher.start(app_shutdown, base_path).await?;
-        process_watcher.wait_ready().await?;
+        log_path: PathBuf,
+    ) -> Result<(), NodeManagerError> {
+        {
+            let mut process_watcher = self.watcher.write().await;
+            process_watcher
+                .start(app_shutdown, base_path, log_path)
+                .await?;
+        }
+        self.wait_ready().await?;
         Ok(())
     }
 
@@ -56,11 +75,19 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.start(app_shutdown, base_path).await?;
+        process_watcher
+            .start(app_shutdown, base_path, log_path)
+            .await?;
 
         Ok(())
+    }
+
+    pub async fn get_grpc_port(&self) -> Result<u16, anyhow::Error> {
+        let lock = self.watcher.read().await;
+        Ok(lock.adapter.grpc_port)
     }
 
     pub async fn wait_synced(
@@ -75,8 +102,24 @@ impl NodeManager {
             .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
         status_monitor.wait_synced(progress_tracker).await
     }
-    pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
-        while true {
+
+    pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
+        loop {
+            let process_watcher = self.watcher.read().await;
+            match process_watcher.wait_ready().await {
+                Ok(_) => {}
+                Err(e) => {
+                    drop(process_watcher);
+                    let mut write_lock = self.watcher.write().await;
+                    let exit_code = write_lock.stop().await?;
+
+                    if exit_code != 0 {
+                        return Err(NodeManagerError::ExitCode(exit_code));
+                    }
+                    return Err(NodeManagerError::UnknownError(e));
+                }
+            }
+
             match self.get_identity().await {
                 Ok(_) => break,
                 Err(_) => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
@@ -122,5 +165,4 @@ impl NodeManager {
 
 pub struct NodeIdentity {
     pub public_key: RistrettoPublicKey,
-    pub public_addresses: Vec<String>,
 }

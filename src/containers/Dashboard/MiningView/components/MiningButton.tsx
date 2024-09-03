@@ -1,63 +1,84 @@
-import { IoChevronForwardCircle, IoPauseCircle } from 'react-icons/io5';
-import { useMining } from '../../../../hooks/useMining.ts';
-import { useCallback, useEffect, useState } from 'react';
-import { useAppStatusStore } from '../../../../store/useAppStatusStore.ts';
-import { StyledButton, StyledIcon } from '../MiningButton.styles.ts';
-import { ButtonProps } from '@mui/material';
-import { useUIStore } from '../../../../store/useUIStore.ts';
-import useAppStateStore from '../../../../store/appStateStore.ts';
+import { useCallback } from 'react';
+import { GiPauseButton } from 'react-icons/gi';
+
+import { IconWrapper, StyledButton, StyledIcon } from './MiningButton.styles.ts';
+import { ButtonProps, Stack, Typography } from '@mui/material';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { IoChevronForwardOutline, IoWarningOutline } from 'react-icons/io5';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { useTranslation } from 'react-i18next';
 
 function MiningButton() {
-    const [buttonLoading, setButtonLoading] = useState(false);
-    const isMining = useAppStatusStore((s) => s.cpu?.is_mining);
-    const miningInitiated = useUIStore((s) => s.miningInitiated);
-    const progress = useAppStateStore((s) => s.setupProgress);
-    const miningAllowed = progress >= 1;
+    const { t } = useTranslation('mining-view', { useSuspense: false });
+    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
 
-    const { startMining, stopMining, hasMiningBeenStopped } = useMining();
-
-    useEffect(() => {
-        const startLoad = !isMining && miningInitiated;
-        if (startLoad) {
-            setButtonLoading(true);
-        } else {
-            setButtonLoading(false);
-        }
-    }, [isMining, miningInitiated]);
+    const {
+        startMining,
+        stopMining,
+        getMiningButtonStateText,
+        isLoading,
+        shouldMiningControlsBeEnabled,
+        isConnectionLostDuringMining,
+        cancelMining,
+    } = useMiningControls();
 
     const handleClick = useCallback(() => {
-        setButtonLoading(true);
+        if (isConnectionLostDuringMining) {
+            return cancelMining();
+        }
+
         if (isMining) {
             return stopMining();
         }
         if (!isMining) {
             return startMining();
         }
-    }, [isMining, startMining, stopMining]);
+    }, [isMining, startMining, stopMining, cancelMining, isConnectionLostDuringMining]);
 
     const btnProps: ButtonProps = {
         variant: 'contained',
         color: 'primary',
         size: 'large',
-        endIcon: isMining ? <IoPauseCircle /> : <IoChevronForwardCircle />,
+        endIcon: isMining ? <GiPauseButton /> : <IoChevronForwardOutline />,
     };
 
-    const actionText = !isMining
-        ? hasMiningBeenStopped
-            ? 'Resume'
-            : 'Start'
-        : 'Stop';
-
     return (
-        <StyledButton
-            {...btnProps}
-            hasStarted={!!isMining}
-            onClick={handleClick}
-            disabled={!miningAllowed}
-            endIcon={buttonLoading ? <StyledIcon /> : btnProps.endIcon}
-        >
-            <span style={{ flexGrow: 1 }}>{`${actionText} mining`}</span>
-        </StyledButton>
+        <Stack gap={1}>
+            <StyledButton
+                {...btnProps}
+                hasStarted={!!isMining || isConnectionLostDuringMining}
+                onClick={handleClick}
+                disabled={!shouldMiningControlsBeEnabled}
+                endIcon={<IconWrapper>{isLoading ? <StyledIcon /> : btnProps.endIcon}</IconWrapper>}
+                sx={{
+                    '& .MuiButton-endIcon': {
+                        position: 'absolute',
+                        right: '1rem',
+                    },
+                }}
+            >
+                <span>{t(`mining-button-text.${getMiningButtonStateText()}`)}</span>
+            </StyledButton>
+            {isConnectionLostDuringMining && (
+                <Stack
+                    direction="row"
+                    gap={1}
+                    sx={{
+                        border: '1px solid #d6a463',
+                        background: '#d6a46322',
+                        color: '#d6a463',
+                        borderRadius: '8px',
+                        padding: '4px 8px',
+                    }}
+                >
+                    <IoWarningOutline size={32} />
+                    <Typography variant="body2" textAlign="left">
+                        {t('connection-to-node-lost')}
+                    </Typography>
+                </Stack>
+            )}
+        </Stack>
     );
 }
 

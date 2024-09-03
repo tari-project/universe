@@ -1,19 +1,18 @@
-import BlockInfo from './components/BlockInfo';
-import TopStatus from './components/TopStatus';
-import VisualMode from '../components/VisualMode';
-import MiningButton from './components/MiningButton';
-import { InfoContainer } from '../styles';
+import BlockTime from './components/BlockTime';
+import BlockHeight from './components/BlockHeight.tsx';
+
+import Earnings from '@app/containers/Dashboard/MiningView/components/Earnings.tsx';
+import { MiningViewContainer } from './MiningView.styles.ts';
+import P2pool from '@app/containers/Dashboard/MiningView/components/P2pool.tsx';
 
 function MiningView() {
     return (
-        <>
-            <InfoContainer>
-                <TopStatus />
-                <BlockInfo />
-            </InfoContainer>
-            <VisualMode />
-            <MiningButton />
-        </>
+        <MiningViewContainer>
+            <P2pool />
+            <Earnings />
+            <BlockHeight />
+            <BlockTime />
+        </MiningViewContainer>
     );
 }
 

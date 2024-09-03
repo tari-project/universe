@@ -7,9 +7,12 @@
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.1.32"
+        "version": "0.2.0"
     },
     "tauri": {
+        "systemTray": {
+            "iconPath": "icons/icon.ico"
+        },
         "updater": {
             "active": true,
             "endpoints": [
@@ -45,14 +48,16 @@
         },
         "windows": [
             {
-                "title": "tari-universe",
+                "title": "Tari Universe",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
+                "minWidth": 388,
+                "minHeight": 455,
                 "resizable": true,
                 "fullscreen": false,
-                "decorations": false,
-                "transparent": true
+                "decorations": true,
+                "transparent": false
             }
         ],
         "security": {
@@ -63,11 +68,11 @@
             "targets": "all",
             "identifier": "com.tari.universe",
             "icon": [
-                "icons/32x32.png",
-                "icons/128x128.png",
-                "icons/128x128@2x.png",
                 "icons/icon.icns",
-                "icons/icon.ico"
+                "icons/icon.ico",
+                "icons/icon.png",
+                "icons/StoreLogo.png",
+                "icons/tari.png"
             ]
         },
         "macOSPrivateApi": true

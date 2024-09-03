@@ -1,14 +1,11 @@
 use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::minotari_node_adapter::{MinotariNodeInstance, MinotariNodeStatusMonitor};
-use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use anyhow::{anyhow, Error};
+use crate::process_utils;
+use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::data_local_dir;
-use log::{info, warn};
+use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{Empty, GetBalanceRequest};
-use minotari_node_grpc_client::BaseNodeGrpcClient;
+use minotari_node_grpc_client::grpc::GetBalanceRequest;
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
@@ -16,9 +13,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::runtime::Handle;
 use tokio::select;
-use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -43,12 +38,13 @@ impl WalletAdapter {
 }
 
 impl ProcessAdapter for WalletAdapter {
-    type Instance = WalletInstance;
     type StatusMonitor = WalletStatusMonitor;
+
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-    ) -> Result<(Self::Instance, Self::StatusMonitor), Error> {
+        log_dir: PathBuf,
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -67,9 +63,12 @@ impl ProcessAdapter for WalletAdapter {
             "--spend-key".to_string(),
             self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
+            format!("--log-path={}", log_dir.to_str().unwrap()),
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             "/ip4/127.0.0.1/tcp/18141".to_string(),
+            "-p".to_string(),
+            "wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string(),
             "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
@@ -81,6 +80,8 @@ impl ProcessAdapter for WalletAdapter {
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
             ),
+            "-p".to_string(),
+            "wallet.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9999".to_string(),
         ];
         if !self.use_tor {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
@@ -89,51 +90,62 @@ impl ProcessAdapter for WalletAdapter {
             args.push("wallet.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
             args.push("wallet.p2p.public_addresses=/ip4/172.2.3.4/tcp/18188".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
             args.push("-p".to_string());
             args.push(
                 "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
             );
+
             // todo!()
         } else {
             args.push("-p".to_string());
-            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=false".to_string())
+            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         }
         Ok((
-            WalletInstance {
+            ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
                         .resolve_path(Binaries::Wallet)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = tokio::process::Command::new(file_path)
-                        .args(args)
-                        // .stdout(std::process::Stdio::piped())
-                        // .stderr(std::process::Stdio::piped())
-                        .kill_on_drop(true)
-                        .spawn()?;
+                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
 
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
                     }
-
+                    let exit_code;
                     select! {
                         _res = shutdown_signal =>{
                             child.kill().await?;
+                            exit_code = 0;
                             // res
                         },
                        res2 = child.wait() => {
-                            dbg!("Exited badly:", res2?);
+                        match res2
+                        {
+                           Ok(res) => {
+                               exit_code = res.code().unwrap_or(0)
+                               },
+                           Err(e) => {
+                               warn!(target: LOG_TARGET, "Error in NodeInstance: {}", e);
+                               return Err(e.into());
+                           }
+                       }
                         },
                     };
                     println!("Stopping minotari node");
+
                     match fs::remove_file(data_dir.join("wallet_pid")) {
                         Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear node's pid file");
+                        Err(_e) => {
+                            debug!(target: LOG_TARGET, "Could not clear wallet's pid file");
                         }
                     }
-                    Ok(())
+                    Ok(exit_code)
                 })),
             },
             WalletStatusMonitor {},
@@ -149,44 +161,13 @@ impl ProcessAdapter for WalletAdapter {
     }
 }
 
-pub struct WalletInstance {
-    pub shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
-}
-
-#[async_trait]
-impl ProcessInstance for WalletInstance {
-    fn ping(&self) -> bool {
-        self.handle
-            .as_ref()
-            .map(|m| !m.is_finished())
-            .unwrap_or_else(|| false)
-    }
-
-    async fn stop(&mut self) -> Result<(), Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        let res = handle.unwrap().await??;
-        Ok(res)
-    }
-}
-
-impl Drop for WalletInstance {
-    fn drop(&mut self) {
-        println!("Drop being called");
-        self.shutdown.trigger();
-        if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                handle.await.unwrap();
-            });
-        }
-    }
-}
-
 pub struct WalletStatusMonitor {}
 
+#[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
-    fn status(&self) -> Result<(), Error> {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
         todo!()
     }
 }

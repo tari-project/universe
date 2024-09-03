@@ -1,17 +1,17 @@
-use crate::cpu_miner::CpuMinerEvent;
-use crate::download_utils::{download_file, extract};
-use crate::process_killer::kill_process;
-use crate::xmrig::http_api::XmrigHttpApiClient;
-use crate::xmrig::latest_release::fetch_latest_release;
-use crate::ProgressTracker;
-use anyhow::Error;
-use log::{info, warn};
+use crate::download_utils::{download_file_with_retries, extract};
 use std::path::PathBuf;
+
+use anyhow::Error;
+use async_trait::async_trait;
+use log::{info, warn};
+use semver::Version;
 use tari_shutdown::Shutdown;
 use tokio::fs;
-use tokio::runtime::Handle;
-use tokio::sync::mpsc::Receiver;
-use tokio::task::JoinHandle;
+
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::xmrig::http_api::XmrigHttpApiClient;
+use crate::xmrig::latest_release::{fetch_latest_release, XmrigRelease};
+use crate::{process_utils, ProgressTracker};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -38,97 +38,79 @@ impl XmrigNodeConnection {
 }
 
 pub struct XmrigAdapter {
-    force_download: bool,
+    version: String,
     node_connection: XmrigNodeConnection,
     monero_address: String,
-    // TODO: secure
     http_api_token: String,
     http_api_port: u16,
-}
-
-pub struct XmrigInstance {
-    shutdown: Shutdown,
-    handle: Option<JoinHandle<Result<(), anyhow::Error>>>,
+    cache_dir: PathBuf,
+    cpu_max_percentage: usize,
+    pub client: XmrigHttpApiClient,
+    // TODO: secure
 }
 
 impl XmrigAdapter {
-    pub fn new(xmrig_node_connection: XmrigNodeConnection, monero_address: String) -> Self {
+    pub fn new(
+        xmrig_node_connection: XmrigNodeConnection,
+        monero_address: String,
+        cache_dir: PathBuf,
+        cpu_max_percentage: usize,
+        version: String,
+    ) -> Self {
+        let http_api_port = 9090;
+        let http_api_token = "pass".to_string();
         Self {
-            force_download: false,
             node_connection: xmrig_node_connection,
             monero_address,
-            http_api_token: "pass".to_string(),
-            http_api_port: 9090,
+            http_api_token: http_api_token.clone(),
+            http_api_port,
+            cache_dir,
+            cpu_max_percentage,
+            version,
+            client: XmrigHttpApiClient::new(
+                format!("http://127.0.0.1:{}", http_api_port).clone(),
+                http_api_token.clone(),
+            ),
         }
     }
-    pub fn spawn(
-        &self,
-        cache_dir: PathBuf,
-        logs_dir: PathBuf,
-        data_dir: PathBuf,
-        progress_tracker: ProgressTracker,
-        cpu_max_percentage: u16,
-    ) -> Result<(Receiver<CpuMinerEvent>, XmrigInstance, XmrigHttpApiClient), anyhow::Error> {
-        self.kill_previous_instances(data_dir.clone())?;
 
-        let (_tx, rx) = tokio::sync::mpsc::channel(100);
-        let force_download = self.force_download;
-        let xmrig_shutdown = Shutdown::new();
-        let mut shutdown_signal = xmrig_shutdown.to_signal();
-        let mut args = self.node_connection.generate_args();
-        let xmrig_log_file = logs_dir.join("xmrig.log");
-        std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
-        args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
-        args.push(format!("--http-port={}", self.http_api_port));
-        args.push(format!("--http-access-token={}", self.http_api_token));
-        args.push(format!("--donate-level=1"));
-        args.push(format!("--user={}", self.monero_address));
-        args.push(format!("--cpu-max-threads-hint={}", cpu_max_percentage));
+    async fn get_latest_local_version(cache_dir: PathBuf) -> Result<String, Error> {
+        let mut latest_version = None;
+        let xmrig_dir = cache_dir.join("xmrig");
+        if !xmrig_dir.exists() {
+            return Err(anyhow::anyhow!(
+                "Failed to get latest release and no local version for xmrig found"
+            ));
+        }
+        let mut read_dir = fs::read_dir(xmrig_dir).await?;
 
-        let client = XmrigHttpApiClient::new(
-            format!("http://127.0.0.1:{}", self.http_api_port),
-            self.http_api_token.clone(),
-        );
-
-        Ok((
-            rx,
-            XmrigInstance {
-                shutdown: xmrig_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    // TODO: Ensure version string is not malicious
-                    let version =
-                        Self::ensure_latest(cache_dir.clone(), force_download, progress_tracker)
-                            .await?;
-                    let xmrig_dir = cache_dir
-                        .join("xmrig")
-                        .join(&version)
-                        .join(format!("xmrig-{}", version));
-                    let xmrig_bin = xmrig_dir.join("xmrig");
-                    let mut xmrig = tokio::process::Command::new(xmrig_bin)
-                        .args(args)
-                        .kill_on_drop(true)
-                        .spawn()?;
-
-                    if let Some(id) = xmrig.id() {
-                        std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
-                    }
-                    shutdown_signal.wait().await;
-                    println!("Stopping xmrig");
-
-                    xmrig.kill().await?;
-
-                    match std::fs::remove_file(data_dir.join("xmrig_pid")) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file");
+        while let Some(entry) = read_dir.next_entry().await? {
+            let path = entry.path();
+            if path.is_dir() {
+                let dir_name = path.file_name().unwrap().to_str().unwrap();
+                match Version::parse(dir_name) {
+                    Ok(version) => {
+                        if latest_version.clone().is_none()
+                            || version > latest_version.clone().unwrap()
+                        {
+                            latest_version = Some(version);
                         }
                     }
+                    Err(_) => {
+                        // Ignore directories that don't have a valid version name
+                    }
+                }
+            }
+        }
 
-                    Ok(())
-                })),
-            },
-            client,
-        ))
+        match latest_version.clone() {
+            Some(version) => {
+                return Ok(version.to_string());
+            }
+            None => {
+                return Err(anyhow::anyhow!("Failed to get latest release for xmrig"));
+            }
+        }
     }
 
     pub async fn ensure_latest(
@@ -136,8 +118,16 @@ impl XmrigAdapter {
         force_download: bool,
         progress_tracker: ProgressTracker,
     ) -> Result<String, Error> {
-        dbg!(&cache_dir);
-        let latest_release = fetch_latest_release().await?;
+        let latest_release_res = fetch_latest_release().await;
+
+        let latest_release: XmrigRelease;
+        if latest_release_res.is_err() {
+            return XmrigAdapter::get_latest_local_version(cache_dir.clone()).await;
+        } else {
+            // fetched properly so it can be unwrapped
+            latest_release = latest_release_res.unwrap();
+        }
+
         let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
         if force_download {
             println!("Cleaning up xmrig dir");
@@ -167,7 +157,22 @@ impl XmrigAdapter {
             println!("Downloading file from {}", &platform.url);
 
             let in_progress_file = in_progress_dir.join(&platform.name);
-            download_file(&platform.url, &in_progress_file, progress_tracker).await?;
+            match download_file_with_retries(&platform.url, &in_progress_file, progress_tracker)
+                .await
+            {
+                Ok(_) => {}
+                Err(_) => match XmrigAdapter::get_latest_local_version(cache_dir.clone()).await {
+                    Ok(local_version) => {
+                        info!(target: LOG_TARGET, "Failed to download latest release for xmrig, used local: {:?}", local_version);
+                        return Ok(local_version);
+                    }
+                    Err(_) => {
+                        return Err(anyhow::anyhow!(
+                            "Failed to download latest release for xmrig, couldn't use local one"
+                        ))
+                    }
+                },
+            };
 
             println!("Renaming file");
             println!("Extracting file");
@@ -177,50 +182,84 @@ impl XmrigAdapter {
 
         Ok(latest_release.version)
     }
+}
 
-    fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
-        match std::fs::read_to_string(base_folder.join("xmrig_pid")) {
-            Ok(pid) => {
-                let pid = pid.trim().parse::<u32>()?;
-                kill_process(pid)?;
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Could not read xmrigs pid file: {}", e);
-            }
-        }
-        Ok(())
+impl ProcessAdapter for XmrigAdapter {
+    type StatusMonitor = XmrigStatusMonitor;
+
+    fn spawn_inner(
+        &self,
+        data_dir: PathBuf,
+        log_dir: PathBuf,
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+        self.kill_previous_instances(data_dir.clone())?;
+
+        let cache_dir = self.cache_dir.clone();
+        let xmrig_shutdown = Shutdown::new();
+        let mut shutdown_signal = xmrig_shutdown.to_signal();
+        let mut args = self.node_connection.generate_args();
+        let xmrig_log_file = log_dir.join("xmrig.log");
+        std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
+
+        args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
+        args.push(format!("--http-port={}", self.http_api_port));
+        args.push(format!("--http-access-token={}", self.http_api_token));
+        args.push(format!("--donate-level=1"));
+        args.push(format!("--user={}", self.monero_address));
+        args.push(format!("--threads={}", self.cpu_max_percentage));
+
+        let version = self.version.clone();
+
+        Ok((
+            ProcessInstance {
+                shutdown: xmrig_shutdown,
+                handle: Some(tokio::spawn(async move {
+                    let xmrig_dir = cache_dir
+                        .clone()
+                        .join("xmrig")
+                        .join(&version)
+                        .join(format!("xmrig-{}", version));
+                    let xmrig_bin = xmrig_dir.join("xmrig");
+                    let mut xmrig = process_utils::launch_child_process(&xmrig_bin, &args)?;
+
+                    if let Some(id) = xmrig.id() {
+                        std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
+                    }
+                    shutdown_signal.wait().await;
+
+                    xmrig.kill().await?;
+
+                    match std::fs::remove_file(data_dir.join("xmrig_pid")) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file -  {e}");
+                        }
+                    }
+
+                    Ok(0)
+                })),
+            },
+            XmrigStatusMonitor {},
+        ))
+    }
+
+    fn name(&self) -> &str {
+        "xmrig"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "xmrig_pid"
     }
 }
 
-impl XmrigInstance {
-    pub fn ping(&self) -> Result<bool, anyhow::Error> {
-        Ok(self
-            .handle
-            .as_ref()
-            .map(|m| !m.is_finished())
-            .unwrap_or_else(|| false))
-    }
+pub struct XmrigStatusMonitor {}
 
-    pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
-        self.shutdown.trigger();
-        let handle = self.handle.take();
-        handle.unwrap().await?
-    }
-    pub fn kill(&self) -> Result<(), anyhow::Error> {
+#[async_trait]
+impl StatusMonitor for XmrigStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
         todo!()
-        // Ok(())
-    }
-}
-
-impl Drop for XmrigInstance {
-    fn drop(&mut self) {
-        println!("Drop being called");
-        self.shutdown.trigger();
-        if let Some(handle) = self.handle.take() {
-            Handle::current().block_on(async move {
-                handle.await.unwrap();
-            });
-        }
     }
 }
 
