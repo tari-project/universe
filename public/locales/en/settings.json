@@ -4,7 +4,7 @@
     "change-language": "Change language",
     "logs": "Logs",
     "open-logs-directory": "Open logs directory",
-    "debug-info": "Debug info",
+    "debug-info": "Debug",
     "hardware-status": "Hardware status",
     "update-versions": "Update versions",
     "refresh-versions": "Refresh versions",
@@ -13,6 +13,10 @@
         "placeholder": "Enter idle timeout in seconds",
         "max": "Maximum is 21600 seconds",
         "min": "Minimum is 1 second"
+    },
+    "monero-address": {
+        "title": "Monero address",
+        "placeholder": "Enter Monero address"
     },
     "last-block-added-time": "Last block added to chain time",
     "visual-mode": "Visual mode",

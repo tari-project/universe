@@ -29,6 +29,7 @@ const initialState: AppStatus = {
     user_inactivity_timeout: undefined,
     current_user_inactivity_duration: undefined,
     applications_versions: undefined,
+    monero_address: undefined,
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(

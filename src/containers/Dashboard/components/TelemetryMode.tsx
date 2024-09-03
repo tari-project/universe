@@ -1,8 +1,9 @@
-import { Switch, Typography } from '@mui/material';
 import { VisualModeContainer } from '../styles';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
+
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 
 function TelemetryMode() {
     const telemetryMode = useUIStore((s) => s.telemetryMode);
@@ -20,13 +21,12 @@ function TelemetryMode() {
 
     return (
         <VisualModeContainer>
-            <Typography variant="h6">Telemetry collection</Typography>
-            <Switch
+            <ToggleSwitch
+                label="Telemetry collection"
                 checked={telemetryMode}
                 onChange={handleSwitch}
-                color="primary"
-                name="visualMode"
-                inputProps={{ 'aria-label': 'primary checkbox' }}
+                variant="gradient"
+                aria-label="primary checkbox"
             />
         </VisualModeContainer>
     );

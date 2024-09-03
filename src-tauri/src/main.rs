@@ -22,6 +22,7 @@ mod process_adapter;
 mod process_killer;
 mod process_utils;
 mod process_watcher;
+mod systemtray_manager;
 mod telemetry_manager;
 mod user_listener;
 mod wallet_adapter;
@@ -50,10 +51,12 @@ use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
+use std::fs::remove_dir_all;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use std::{panic, process};
+use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -123,6 +126,19 @@ async fn set_airdrop_access_token<'r>(
 }
 
 #[tauri::command]
+async fn set_monero_address<'r>(
+    monero_address: String,
+    state: tauri::State<'r, UniverseAppState>,
+) -> Result<(), String> {
+    let mut cpu_miner_config = state.config.write().await;
+    cpu_miner_config
+        .set_monero_address(monero_address)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application<'r>(
     window: tauri::Window,
     state: tauri::State<'r, UniverseAppState>,
@@ -144,6 +160,7 @@ async fn setup_inner<'r>(
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
             title: "starting-up".to_string(),
+            title_params: None,
             progress: 0.0,
         },
     );
@@ -182,7 +199,7 @@ async fn setup_inner<'r>(
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60 * 10)
+        > Duration::from_secs(10)
     // 10 minutes
     {
         state
@@ -194,7 +211,7 @@ async fn setup_inner<'r>(
 
         progress.set_max(10).await;
         progress
-            .update("checking-latest-version-node".to_string(), 0)
+            .update("checking-latest-version-node".to_string(), None, 0)
             .await;
         BinaryResolver::current()
             .ensure_latest(Binaries::MinotariNode, progress.clone())
@@ -203,7 +220,7 @@ async fn setup_inner<'r>(
 
         progress.set_max(15).await;
         progress
-            .update("checking-latest-version-mmproxy".to_string(), 0)
+            .update("checking-latest-version-mmproxy".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
         BinaryResolver::current()
@@ -211,7 +228,7 @@ async fn setup_inner<'r>(
             .await?;
         progress.set_max(20).await;
         progress
-            .update("checking-latest-version-wallet".to_string(), 0)
+            .update("checking-latest-version-wallet".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
         BinaryResolver::current()
@@ -220,14 +237,14 @@ async fn setup_inner<'r>(
 
         progress.set_max(30).await;
         progress
-            .update("checking-latest-version-xmrig".to_string(), 0)
+            .update("checking-latest-version-xmrig".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
         XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
 
         progress.set_max(35).await;
         progress
-            .update("checking-latest-version-sha-p2pool".to_string(), 0)
+            .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
         BinaryResolver::current()
@@ -265,7 +282,9 @@ async fn setup_inner<'r>(
     info!(target: LOG_TARGET, "Node has started and is ready");
 
     progress.set_max(40).await;
-    progress.update("waiting-for-wallet".to_string(), 0).await;
+    progress
+        .update("waiting-for-wallet".to_string(), None, 0)
+        .await;
     state
         .wallet_manager
         .ensure_started(
@@ -275,19 +294,25 @@ async fn setup_inner<'r>(
         )
         .await?;
 
-    progress.set_max(55).await;
-    progress.update("waiting-for-node".to_string(), 0).await;
+    progress.set_max(75).await;
+    progress
+        .update("preparing-for-initial-sync".to_string(), None, 0)
+        .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    progress.set_max(70).await;
-    progress.update("starting-p2pool".to_string(), 0).await;
+    progress.set_max(85).await;
+    progress
+        .update("starting-p2pool".to_string(), None, 0)
+        .await;
     state
         .p2pool_manager
         .ensure_started(state.shutdown.to_signal(), data_dir, log_dir)
         .await?;
 
-    progress.set_max(75).await;
-    progress.update("starting-mmproxy".to_string(), 0).await;
+    progress.set_max(100).await;
+    progress
+        .update("starting-mmproxy".to_string(), None, 0)
+        .await;
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
 
@@ -318,6 +343,7 @@ async fn setup_inner<'r>(
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
             title: "application-started".to_string(),
+            title_params: None,
             progress: 1.0,
         },
     );
@@ -411,26 +437,32 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.cpu_miner_config.read().await;
+    let monero_address = state.config.read().await.monero_address.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
-    state
+    let res = state
         .cpu_miner
         .write()
         .await
         .start(
             state.shutdown.to_signal(),
             &config,
+            monero_address,
             app.path_resolver().app_local_data_dir().unwrap(),
             app.path_resolver().app_cache_dir().unwrap(),
             app.path_resolver().app_log_dir().unwrap(),
             progress_tracker,
             state.config.read().await.get_mode(),
         )
-        .await
-        .map_err(|e| {
-            dbg!(e.to_string());
-            e.to_string()
-        })?;
-    Ok(())
+        .await;
+
+    match res {
+        Ok(_) => return Ok(()),
+        Err(e) => {
+            error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
+            let _ = state.cpu_miner.write().await.stop().await;
+            return Err(e.to_string());
+        }
+    }
 }
 
 #[tauri::command]
@@ -538,7 +570,10 @@ async fn update_applications(
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
-async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, String> {
+async fn status(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
     let _gpu_miner = state.gpu_miner.write().await;
     let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
@@ -602,9 +637,18 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
 
     let config_guard = state.config.read().await;
 
+    let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
+        cpu.hash_rate,
+        0.0,
+        hardware_status.clone(),
+        cpu.estimated_earnings as f64,
+    );
+
+    SystemtrayManager::current().update_systray(app, new_systemtray_data);
+
     Ok(AppStatus {
         cpu,
-        hardware_status,
+        hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,
             block_time,
@@ -616,6 +660,7 @@ async fn status(state: tauri::State<'_, UniverseAppState>) -> Result<AppStatus, 
         p2pool_stats,
         auto_mining: config_guard.auto_mining,
         user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
+        monero_address: config_guard.monero_address.clone(),
     })
 }
 
@@ -625,6 +670,52 @@ fn log_web_message(level: String, message: Vec<String>) {
         "error" => error!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
         _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
     }
+}
+
+#[tauri::command]
+async fn reset_settings<'r>(
+    _window: tauri::Window,
+    state: tauri::State<'r, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    state.shutdown.clone().trigger();
+    // TODO: Find a better way of knowing that all miners have stopped
+    sleep(std::time::Duration::from_secs(5));
+
+    let app_config_dir = app.path_resolver().app_config_dir();
+    let app_cache_dir = app.path_resolver().app_cache_dir();
+    let app_data_dir = app.path_resolver().app_data_dir();
+    let app_local_data_dir = app.path_resolver().app_local_data_dir();
+
+    let dirs_to_remove = vec![
+        app_config_dir,
+        app_cache_dir,
+        app_data_dir,
+        app_local_data_dir,
+    ];
+    let missing_dirs: Vec<String> = dirs_to_remove
+        .iter()
+        .filter(|dir| dir.is_none())
+        .map(|dir| dir.clone().unwrap().to_str().unwrap().to_string())
+        .collect();
+
+    if missing_dirs.clone().len() > 0 {
+        error!("Could not get app directories for {:?}", missing_dirs);
+        return Err("Could not get app directories".to_string());
+    }
+
+    dirs_to_remove.iter().for_each(|dir| {
+        // check if dir exists
+        if dir.clone().unwrap().exists() {
+            info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
+            remove_dir_all(dir.clone().unwrap()).unwrap();
+        }
+    });
+
+    info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
+    app.restart();
+
+    Ok(())
 }
 
 #[derive(Debug, Serialize)]
@@ -638,6 +729,7 @@ pub struct AppStatus {
     p2pool_enabled: bool,
     p2pool_stats: Stats,
     user_inactivity_timeout: u64,
+    monero_address: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -764,7 +856,10 @@ fn main() {
         airdrop_access_token: Arc::new(RwLock::new(None)),
     };
 
+    let systray = SystemtrayManager::current().get_systray().clone();
+
     let app = tauri::Builder::default()
+        .system_tray(systray)
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
@@ -840,7 +935,10 @@ fn main() {
             update_applications,
             log_web_message,
             set_telemetry_mode,
-            set_airdrop_access_token
+            set_airdrop_access_token,
+            set_monero_address,
+            update_applications,
+            reset_settings
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -868,7 +966,7 @@ fn main() {
                 info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
             }
         },
-        tauri::RunEvent::ExitRequested { api: _, .. } | tauri::RunEvent::Exit => {
+        tauri::RunEvent::ExitRequested { api: _, .. } => {
             // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown caught");
             shutdown.trigger();
@@ -876,9 +974,13 @@ fn main() {
             sleep(std::time::Duration::from_secs(5));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
+        tauri::RunEvent::Exit => {
+            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
+        }
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
+
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
         }
