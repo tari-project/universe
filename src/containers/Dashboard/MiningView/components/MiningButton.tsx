@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 
-import CubeSvg from '@app/components/elements/CubeSvg.tsx';
+import CubeSvg from '@app/components/svgs/CubeSvg.tsx';
 
 const containerVariants = {
     hidden: {

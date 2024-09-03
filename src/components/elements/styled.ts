@@ -15,7 +15,7 @@ export const DynamicTypography = styled(({ variant = 'span', children, ...props 
     font-size: ${({ theme, variant }) => (variant === 'span' ? 'inherit' : theme.typography[variant].fontSize)};
     line-height: ${({ theme, variant }) => theme.typography[variant].lineHeight};
     letter-spacing: ${({ theme, variant }) => theme.typography[variant].letterSpacing};
-    font-weight: ${({ theme, variant }) => theme.typography[variant].fontWeight || 400};
+    font-weight: ${({ theme, variant }) => theme.typography[variant].fontWeight || 'inherit'};
     margin: 0;
     display: flex;
     color: inherit;

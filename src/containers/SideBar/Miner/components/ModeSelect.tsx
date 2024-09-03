@@ -18,13 +18,15 @@ function ModeSelect() {
 
     return (
         <TileItem>
-            <Typography variant="p">{t('mode')}</Typography>
+            <Typography>{t('mode')}</Typography>
             <Select
+                disabled={isChangingMode}
+                loading={isChangingMode}
                 onChange={handleChange}
                 selectedValue={mode}
                 options={[
-                    { label: 'Eco ♻️', value: 'Eco' },
-                    { label: 'Ludicrous', value: 'Ludicrous' },
+                    { label: '♻️ ECO', value: 'Eco', selectedLabel: 'ECO ♻️' },
+                    { label: '🔥 Ludicrous', value: 'Ludicrous', selectedLabel: 'Ludicrous 🔥' },
                 ]}
             />
         </TileItem>

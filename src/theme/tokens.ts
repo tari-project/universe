@@ -167,7 +167,7 @@ export const componentSettings = {
         span: {
             lineHeight: 1.1,
             letterSpacing: '-0.1px',
-            fontWeight: 400,
+            fontWeight: 'inherit',
         },
         p: {
             fontSize: '12px',

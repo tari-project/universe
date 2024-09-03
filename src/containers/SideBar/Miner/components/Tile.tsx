@@ -12,7 +12,7 @@ interface TileProps {
 function Tile({ title, stats, isLoading }: TileProps) {
     return (
         <TileItem>
-            <Typography variant="p">{title}</Typography>
+            <Typography>{title}</Typography>
             {isLoading ? (
                 <StyledIcon />
             ) : (

@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { Button } from '@app/components/elements/Button.tsx';
 
 export const MinerContainer = styled.div`
     display: flex;
@@ -20,18 +19,17 @@ export const TileItem = styled.div`
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     max-width: 152px;
-`;
-
-export const ScheduleButton = styled(Button)`
-    background-color: ${({ theme }) => theme.palette.background.default};
+    gap: 6px;
+    display: flex;
+    flex-direction: column;
     color: ${({ theme }) => theme.palette.text.secondary};
-    '&:hover': {
-        background-color: ${({ theme }) => theme.palette.divider};
-    }
+    font-size: 12px;
+    font-weight: 500;
 `;
 
 export const StatWrapper = styled('div')`
     display: flex;
     gap: 2px;
     align-items: baseline;
+    color: ${({ theme }) => theme.palette.text.primary};
 `;

@@ -131,6 +131,7 @@ export const GlobalStyle = createGlobalStyle`
     @font-face {
         font-family: "DrukWideLCGBold";
         src: url("/assets/fonts/Druk/DrukWideLCG-Bold.ttf") format("ttf");
+        font-weight: 900;
         font-display: fallback;
     }
 

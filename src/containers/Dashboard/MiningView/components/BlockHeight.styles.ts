@@ -7,6 +7,11 @@ interface BlockHeightBgProps {
 const topHeight = 115;
 const bottomHeight = 115;
 
+export const Wrapper = styled.div`
+    * {
+        font-weight: 900;
+    }
+`;
 export const RulerAbsoluteWrapper = styled.div`
     z-index: 100;
     position: absolute;
@@ -43,9 +48,10 @@ export const RulerMark = styled('div')`
 `;
 
 export const BlockHeightLrg = styled.div`
-    font-family: 'DrukWideLCGBold', sans-serif;
+    font-family: DrukWideLCGBold, sans-serif;
+    font-weight: 900;
     font-size: 25px;
-    letter-spacing: 1px;
+    letter-spacing: -0.8px;
     color: ${({ theme }) => theme.palette.text.primary};
     position: absolute;
     top: 50%;
@@ -56,7 +62,7 @@ export const BlockHeightLrg = styled.div`
 `;
 
 export const BlockHeightSml = styled.div`
-    font-family: 'PoppinsBold', sans-serif;
+    font-family: Poppins, sans-serif;
     font-variant-numeric: tabular-nums;
     font-size: 11px;
     color: ${({ theme }) => theme.palette.text.primary};
@@ -64,10 +70,10 @@ export const BlockHeightSml = styled.div`
 `;
 
 export const BlockHeightBg = styled.div<BlockHeightBgProps>`
-    font-family: 'DrukWideLCGBold', sans-serif;
+    font-family: DrukWideLCGBold, sans-serif;
     font-size: ${({ length }) => (length > 5 ? '100px' : '152px')};
     line-height: ${({ length }) => (length > 5 ? '100px' : '152px')};
-    letter-spacing: 1px;
+    letter-spacing: -3px;
     color: rgba(255, 255, 255, 0.4);
     text-transform: uppercase;
     position: absolute;
