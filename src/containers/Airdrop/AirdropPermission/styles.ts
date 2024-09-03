@@ -10,7 +10,7 @@ export const Position = styled(Box)`
     z-index: 2;
     transform: translateX(-50%);
 
-    @media (max-height: 914px) {
+    @media (max-height: 672px) {
         display: none;
     }
 `;

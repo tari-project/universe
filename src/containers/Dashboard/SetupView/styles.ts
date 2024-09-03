@@ -7,6 +7,16 @@ export const Wrapper = styled('div')`
     display: flex;
     flex-direction: column;
     justify-content: center;
+
+    @media (max-height: 794px) {
+        justify-content: flex-start;
+        padding-top: 50px;
+    }
+
+    @media (max-height: 672px) {
+        justify-content: center;
+        padding-top: 0;
+    }
 `;
 
 const float = keyframes`
