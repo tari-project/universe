@@ -190,6 +190,7 @@ impl ProcessAdapter for XmrigAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        _config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         self.kill_previous_instances(data_dir.clone())?;
