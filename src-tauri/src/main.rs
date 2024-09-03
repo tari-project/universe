@@ -578,7 +578,6 @@ async fn status(
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
 
-
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
