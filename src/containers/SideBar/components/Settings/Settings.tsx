@@ -14,7 +14,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { DialogContent, Form } from './Settings.styles';
+import { DialogContent, Form, HorisontalBox } from './Settings.styles';
 
 import { useForm } from 'react-hook-form';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
@@ -41,6 +41,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { ControlledNumberInput } from '@app/components/NumberInput';
 import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput';
+import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -233,6 +234,10 @@ export default function Settings() {
                     </Stack>
                     <Divider />
                     <ConnectButton />
+                    <Divider />
+                    <HorisontalBox>
+                        <ResetSettingsButton />
+                    </HorisontalBox>
                 </DialogContent>
             </Dialog>
         </>

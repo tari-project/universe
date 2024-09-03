@@ -20,7 +20,19 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { tariPurple, grey, success, info, warning, error, brightGreen, colors, tariPurpleAlpha } from './colors';
+import {
+    tariPurple,
+    grey,
+    success,
+    info,
+    warning,
+    error,
+    brightGreen,
+    colors,
+    tariPurpleAlpha,
+    warningDarkAlpha,
+    errorDarkAlpha,
+} from './colors';
 
 export const light = {
     palette: {
@@ -38,6 +50,7 @@ export const light = {
             main: brightGreen[600],
             dark: brightGreen[700],
             light: brightGreen[500],
+            wisp: tariPurpleAlpha[5],
         },
         divider: 'rgba(0,0,0,0.06)',
         text: {
@@ -61,12 +74,14 @@ export const light = {
             dark: warning[300],
             light: warning[100],
             contrastText: warning[300],
+            wisp: warningDarkAlpha[5],
         },
         error: {
             main: error[200],
             dark: error[300],
             light: error[100],
             contrastText: error[300],
+            wisp: errorDarkAlpha[5],
         },
         info: {
             main: info[200],
@@ -94,6 +109,7 @@ export const dark = {
             main: brightGreen[500],
             dark: brightGreen[400],
             light: brightGreen[600],
+            wisp: tariPurpleAlpha[5],
         },
         divider: 'rgba(255,255,255,0.1)',
         text: {
@@ -117,12 +133,14 @@ export const dark = {
             dark: warning[100],
             light: warning[300],
             contrastText: warning[100],
+            wisp: warningDarkAlpha[5],
         },
         error: {
             main: error[200],
             dark: error[100],
             light: error[300],
             contrastText: error[100],
+            wisp: errorDarkAlpha[5],
         },
         info: {
             main: info[200],

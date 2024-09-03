@@ -3,6 +3,7 @@ import { ReactNode, ButtonHTMLAttributes } from 'react';
 import { BaseIconButton, BaseButton, IconWrapper, ChildrenWrapper } from './Button.styles.ts';
 
 type ButtonVariant = 'squared' | 'rounded' | 'text';
+type ButtonColor = 'error' | 'warning' | 'secondary' | 'primary';
 type ButtonStyleVariant = 'contained' | 'outline' | 'simple';
 type IconPosition = 'end' | 'start' | 'hug';
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,6 +12,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     icon?: ReactNode;
     iconPosition?: IconPosition;
     children: ReactNode;
+    color?: ButtonColor;
 }
 
 export const Button = ({
@@ -18,6 +20,7 @@ export const Button = ({
     children,
     styleVariant = 'outline',
     iconPosition = 'end',
+    color = 'primary',
     icon,
     ...props
 }: ButtonProps) => {
@@ -25,7 +28,7 @@ export const Button = ({
     const simple = styleVariant === 'simple';
 
     return (
-        <BaseButton $variant={variant} $outlined={outline} $simple={simple} {...props}>
+        <BaseButton $color={color} $variant={variant} $outlined={outline} $simple={simple} {...props}>
             <ChildrenWrapper>{children}</ChildrenWrapper>
             {icon ? <IconWrapper $position={iconPosition}>{icon}</IconWrapper> : null}
         </BaseButton>
