@@ -70,10 +70,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "-p".to_string(),
             "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
         ];
-        if cfg!(debug_assertions) {
-            args.push("--network".to_string());
-            args.push("localnet".to_string());
-        }
+        // if cfg!(debug_assertions) {
+        //     args.push("--network".to_string());
+        //     args.push("localnet".to_string());
+        // }
         if !self.use_tor {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address

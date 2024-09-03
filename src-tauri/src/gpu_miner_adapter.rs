@@ -70,23 +70,30 @@ impl ProcessAdapter for GpuMinerAdapter {
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child;
 
-                    if cfg!(debug_assertions) {
-                        child = tokio::process::Command::new(file_path)
-                            .args(args)
-                            .env("TARI_NETWORK", "localnet")
-                            // .stdout(std::process::Stdio::null())
-                            // .stderr(std::process::Stdio::null())
-                            .kill_on_drop(true)
-                            .spawn()?;
-                    } else {
-                        child = tokio::process::Command::new(file_path)
-                            .args(args)
-                            .env("TARI_NETWORK", "esme")
-                            // .stdout(std::process::Stdio::null())
-                            // .stderr(std::process::Stdio::null())
-                            .kill_on_drop(true)
-                            .spawn()?;
-                    }
+                    // if cfg!(debug_assertions) {
+                    //     child = tokio::process::Command::new(file_path)
+                    //         .args(args)
+                    //         .env("TARI_NETWORK", "localnet")
+                    //         // .stdout(std::process::Stdio::null())
+                    //         // .stderr(std::process::Stdio::null())
+                    //         .kill_on_drop(true)
+                    //         .spawn()?;
+                    // } else {
+                    //     child = tokio::process::Command::new(file_path)
+                    //         .args(args)
+                    //         .env("TARI_NETWORK", "esme")
+                    //         // .stdout(std::process::Stdio::null())
+                    //         // .stderr(std::process::Stdio::null())
+                    //         .kill_on_drop(true)
+                    //         .spawn()?;
+                    // }
+                    child = tokio::process::Command::new(file_path)
+                        .args(args)
+                        .env("TARI_NETWORK", "esme")
+                        // .stdout(std::process::Stdio::null())
+                        // .stderr(std::process::Stdio::null())
+                        .kill_on_drop(true)
+                        .spawn()?;
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("xtrgpuminer_pid"), id.to_string())?;
                     }
