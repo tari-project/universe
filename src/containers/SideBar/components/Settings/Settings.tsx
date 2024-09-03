@@ -27,7 +27,6 @@ import { ControlledNumberInput } from '@app/components/NumberInput/NumberInput.c
 import { useForm } from 'react-hook-form';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
-import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
 import { Language, LanguageList } from '../../../../i18initializer.ts';
 import { changeLanguage } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -324,7 +323,6 @@ const Settings: React.FC = () => {
                         <Divider />
                         <HorisontalBox>
                             <VisualMode />
-                            <TelemetryMode />
                         </HorisontalBox>
                     </Stack>
                 </DialogContent>

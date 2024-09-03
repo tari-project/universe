@@ -1,15 +1,18 @@
 import { Switch } from '@mui/material';
 import { BoxWrapper, Gem1, Gem2, Gem3, Gem4, Position, Text, TextWrapper, Title } from './styles';
-import { useState, ChangeEvent } from 'react';
 import gemImage from './images/gem.png';
 import { useTranslation } from 'react-i18next';
+import { invoke } from '@tauri-apps/api/tauri';
+import { useUIStore } from '@app/store/useUIStore';
 
 export default function AirdropPermission() {
-    const [checked, setChecked] = useState(false);
+    const telemetryMode = useUIStore((s) => s.telemetryMode);
+    const toggleTelemetryMode = useUIStore((s) => s.toggleTelemetryMode);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
-    const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-        setChecked(event.target.checked);
+    const handleChange = () => {
+        toggleTelemetryMode();
+        invoke('set_telemetry_mode', { telemetryMode: !telemetryMode });
     };
 
     return (
@@ -24,7 +27,7 @@ export default function AirdropPermission() {
                     <Title>{t('permission.title')}</Title>
                     <Text>{t('permission.text')}</Text>
                 </TextWrapper>
-                <Switch checked={checked} onChange={handleChange} color="primary" size="medium" />
+                <Switch checked={telemetryMode} onChange={handleChange} color="primary" size="medium" />
             </BoxWrapper>
         </Position>
     );
