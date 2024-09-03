@@ -1,58 +1,44 @@
-import { styled } from '@mui/material/styles';
-import { LinearProgress, Box, Typography } from '@mui/material';
+import styled from 'styled-components';
 
-export const DashboardContainer = styled(Box)(() => ({
-    display: 'flex',
-    alignItems: 'center',
-    flexDirection: 'column',
-    pointerEvents: 'none',
-    justifyContent: 'center',
-    height: '100%',
-    flexGrow: '1',
-    position: 'relative',
-    zIndex: '1',
-}));
+import { Typography } from '@app/components/elements/Typography.tsx';
 
-export const ProgressBox = styled(Box)(() => ({
-    backgroundColor: '#fff',
-    padding: '3px',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    width: '400px',
-    boxSizing: 'content-box',
-}));
+export const DashboardContainer = styled.div`
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    flex-grow: 1;
+    position: relative;
+    z-index: 1;
+`;
 
-export const StyledLinearProgress = styled(LinearProgress)(() => ({
-    '& .MuiLinearProgress-bar': {
-        backgroundColor: '#000',
-        borderRadius: '5px',
-    },
-    backgroundColor: '#fff',
-}));
+export const ProgressWrapper = styled.div`
+    margin: 30px 0 20px 0;
+    display: flex;
+    width: 100%;
+`;
+export const VisualModeContainer = styled.div`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 10px;
+    pointer-events: auto;
+    border-radius: 24px;
+    gap: 10px;
+`;
+export const SetupDescription = styled(Typography)`
+    color: ${({ theme }) => theme.palette.text.primary};
+    font-size: 15px;
+    text-align: center;
+    font-weight: 400;
+`;
 
-export const VisualModeContainer = styled(Box)(({ theme }) => ({
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    padding: theme.spacing(1),
-    pointerEvents: 'all',
-    borderRadius: '24px',
-    gap: theme.spacing(1),
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
-}));
+export const SetupPercentage = styled(Typography)`
+    color: ${({ theme }) => theme.palette.text.primary};
 
-export const SetupDescription = styled(Typography)(({ theme }) => ({
-    color: `${theme.palette.text.primary} !important`,
-    fontFamily: '"PoppinsRegular", sans-serif',
-    fontSize: '15px',
-    textAlign: 'center',
-}));
-
-export const SetupPercentage = styled(Typography)(({ theme }) => ({
-    color: `${theme.palette.text.primary} !important`,
-    fontFamily: '"PoppinsBold", sans-serif',
-    fontSize: '15px',
-    textAlign: 'center',
-}));
+    font-weight: 700;
+    font-size: 15px;
+    text-align: center;
+`;

@@ -1,9 +1,10 @@
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { StyledButton, StyledXIcon, StyledXIconWrapper } from './styles.ts';
-import { Typography } from '@mui/material';
+
 import { useCallback, useEffect } from 'react';
 import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export default function ConnectButton() {
     const { authUuid, setAuthUuid, setAirdropTokens } = useAirdropStore();
@@ -51,21 +52,13 @@ export default function ConnectButton() {
     return (
         <StyledButton
             onClick={handleAuth}
-            size="medium"
-            endIcon={
+            icon={
                 <StyledXIconWrapper>
                     <StyledXIcon />
                 </StyledXIconWrapper>
             }
-            sx={{
-                position: 'relative',
-                '& .MuiButton-endIcon': {
-                    position: 'absolute',
-                    right: '1em',
-                },
-            }}
         >
-            <Typography variant="button">Log in to claim gems</Typography>
+            <Typography>Log in to claim gems</Typography>
         </StyledButton>
     );
 }

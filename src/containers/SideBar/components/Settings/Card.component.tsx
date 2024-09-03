@@ -1,5 +1,6 @@
-import { Stack, Typography } from '@mui/material';
 import { CardItem } from './Settings.styles';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { Stack } from '@app/components/elements/Stack.tsx';
 
 export interface CardComponentProps {
     heading: string;
@@ -8,13 +9,13 @@ export interface CardComponentProps {
 
 export const CardComponent = ({ heading, labels }: CardComponentProps) => {
     return (
-        <CardItem gap={1}>
+        <CardItem>
             <Typography variant="h6">{heading}</Typography>
-            <Stack gap={0.5}>
+            <Stack>
                 {labels.map(({ labelText, labelValue }) => (
-                    <Stack direction="row" key={labelText} gap={1}>
+                    <Stack key={labelText} direction="row" justifyContent="flex-start">
                         <Typography key={labelText}>{labelText}:</Typography>
-                        <Typography sx={{ color: 'black' }} key={labelValue}>
+                        <Typography key={labelValue} style={{ color: '#000' }}>
                             {labelValue}
                         </Typography>
                     </Stack>

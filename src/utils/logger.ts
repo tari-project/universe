@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 // disabling eslint rules as this is a logger
 
@@ -11,12 +10,13 @@ const originalConsoleLog = console.log;
 const originalConsoleInfo = console.info;
 const originalConsoleError = console.error;
 
-const parseArgument = (a: any) => {
+const parseArgument = (a?: any) => {
     try {
-        return JSON.stringify(a, null, 2);
-    } catch (_e) {
+        const message = a || 'Log Item';
+        return JSON.stringify(message, null, 2);
+    } catch (e) {
         // should we not return this err?
-        return String(a);
+        return String(a || e);
     }
 };
 
@@ -25,7 +25,7 @@ export const setupLogger = () => {
     console.log = function (...args) {
         invoke('log_web_message', {
             level: 'log',
-            message: args.map(parseArgument),
+            message: args?.map(parseArgument),
         });
         originalConsoleLog(...args);
     };
@@ -34,7 +34,7 @@ export const setupLogger = () => {
     console.info = function (...args) {
         invoke('log_web_message', {
             level: 'info',
-            message: args.map(parseArgument),
+            message: args?.map(parseArgument),
         });
         originalConsoleInfo(...args);
     };
@@ -43,7 +43,7 @@ export const setupLogger = () => {
     console.error = function (...args) {
         invoke('log_web_message', {
             level: 'error',
-            message: args.map(parseArgument),
+            message: args?.map(parseArgument),
         });
         originalConsoleError(...args);
     };

@@ -1,6 +1,6 @@
-import { Button } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import { FaXTwitter } from 'react-icons/fa6';
+import styled from 'styled-components';
+import { Button } from '@app/components/elements/Button.tsx';
 
 export const StyledButton = styled(Button)`
     padding: 10px 60px;
@@ -9,6 +9,7 @@ export const StyledButton = styled(Button)`
     gap: 10px;
     border-radius: 70px;
     border: 1px solid #000;
+    color: #000;
     display: flex;
     text-transform: none;
 `;
