@@ -22,6 +22,7 @@ pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     miner_shutdown: Shutdown,
     api_client: Option<XmrigHttpApiClient>,
+    is_mining: bool,
 }
 
 impl CpuMiner {
@@ -30,6 +31,7 @@ impl CpuMiner {
             watcher_task: None,
             miner_shutdown: Shutdown::new(),
             api_client: None,
+            is_mining: false,
         }
     }
 
@@ -77,12 +79,14 @@ impl CpuMiner {
             MiningMode::Eco => (30 * max_cpu_available) / 100,
             MiningMode::Ludicrous => max_cpu_available,
         };
+        let xmrig_version =
+            XmrigAdapter::ensure_latest(cache_dir.clone(), false, progress_tracker.clone()).await?;
         let xmrig = XmrigAdapter::new(
             xmrig_node_connection,
             monero_address.clone(),
             cache_dir,
-            progress_tracker,
             cpu_max_percentage,
+            xmrig_version,
         );
         let (mut xmrig_child, _xmrig_status_monitor) =
             xmrig.spawn_inner(base_path.clone(), log_dir.clone())?;
@@ -105,6 +109,7 @@ impl CpuMiner {
                                            }
                                            Err(e) => {
                                               error!(target: LOG_TARGET, "xmrig exited with error: {}", e);
+                                              return Err(e)
                                            }
                                        }
                                        break;
@@ -150,6 +155,7 @@ impl CpuMiner {
             info!(target: LOG_TARGET, "Task finished");
         }
         // TODO: This doesn't seem to be called
+        self.is_mining = false;
 
         Ok(())
     }
@@ -165,10 +171,14 @@ impl CpuMiner {
                     match client.summary().await {
                         Ok(xmrig_status) => {
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                            let estimated_earnings = ((block_reward.as_u64() as f64)
-                                * ((hash_rate / (network_hash_rate as f64))
-                                    * (RANDOMX_BLOCKS_PER_DAY as f64)))
-                                as u64;
+                            let estimated_earnings = if network_hash_rate == 0 {
+                                0
+                            } else {
+                                ((block_reward.as_u64() as f64)
+                                    * ((hash_rate / (network_hash_rate as f64))
+                                        * (RANDOMX_BLOCKS_PER_DAY as f64)))
+                                    as u64
+                            };
                             // Can't be more than the max reward for a day
                             let estimated_earnings = std::cmp::min(
                                 estimated_earnings,
@@ -195,8 +205,12 @@ impl CpuMiner {
                         }
                     };
 
+                if !self.is_mining && is_connected {
+                    self.is_mining = true;
+                }
+
                 Ok(CpuMinerStatus {
-                    is_mining: is_connected,
+                    is_mining: self.is_mining,
                     hash_rate,
                     estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
                     connection: CpuMinerConnectionStatus {
