@@ -7,7 +7,15 @@ import { FloatingImage } from './styles';
 import { useTranslation } from 'react-i18next';
 import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 
-function SetupView({ title, progressPercentage }: { title: string; progressPercentage: number }) {
+function SetupView({
+    title,
+    titleParams,
+    progressPercentage,
+}: {
+    title: string;
+    titleParams: Record<string, string>;
+    progressPercentage: number;
+}) {
     const { t } = useTranslation('setup-view', { useSuspense: false });
 
     return (
@@ -24,7 +32,7 @@ function SetupView({ title, progressPercentage }: { title: string; progressPerce
                 <LinearProgress value={progressPercentage} variant="secondary" />
             </ProgressWrapper>
             <SetupPercentage>{`${progressPercentage}%`}</SetupPercentage>
-            <SetupDescription>{title ? t(`title.${title}`) : ''}</SetupDescription>
+            <SetupDescription>{title ? t(`title.${title}`, titleParams) : ''}</SetupDescription>
         </Stack>
     );
 }
