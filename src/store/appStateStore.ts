@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 interface AppState {
-    error: string;
-    setError: (value: string) => void;
+    error?: string;
+    setError: (value: string | undefined) => void;
     topStatus: string;
     setTopStatus: (value: string) => void;
     errorOpen: boolean;
@@ -19,8 +19,8 @@ interface AppState {
 }
 
 const useAppStateStore = create<AppState>()((set) => ({
-    error: '',
-    setError: (value) => set({ error: value }),
+    error: undefined,
+    setError: (error) => set({ error }),
     topStatus: 'Not mining',
     setTopStatus: (value) => set({ topStatus: value }),
     errorOpen: false,

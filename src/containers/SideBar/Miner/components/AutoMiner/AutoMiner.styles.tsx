@@ -1,27 +1,15 @@
-import { backgrounds } from '@app/theme/colors';
-import { LinearProgress, linearProgressClasses, Stack, styled } from '@mui/material';
+import styled from 'styled-components';
+import { Stack } from '@app/components/elements/Stack.tsx';
+import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 
-const AutoMinerContainerOptions = {
-    shouldForwardProp: (prop: string) => prop !== 'percentage',
-};
-export const AutoMinerContainer = styled(
-    Stack,
-    AutoMinerContainerOptions
-)<{ percentage: number }>(({ theme }) => ({
-    backgroundColor: backgrounds.medGrey,
-    borderRadius: theme.shape.borderRadius,
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
-    paddingLeft: theme.spacing(1.5),
-    paddingRight: theme.spacing(1.5),
-    gap: theme.spacing(1),
-}));
+export const AutoMinerContainer = styled(Stack)<{ $percentage: number }>`
+    background-color: ${({ theme }) => theme.palette.colors.backgrounds.medGrey};
+    border-radius: ${({ theme }) => theme.shape.borderRadius.app};
+    padding: 10px 15px;
+    gap: 10px;
+`;
 
-export const AutoMinerProgressBar = styled(LinearProgress)({
-    backgroundColor: '#18875044',
-    height: '4px',
-    [`& .${linearProgressClasses.barColorPrimary}`]: {
-        backgroundColor: '#188750',
-        height: '4px',
-    },
-});
+export const AutoMinerProgressBar = styled(LinearProgress)`
+    background-color: #18875044;
+    height: 4px;
+`;
