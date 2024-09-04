@@ -3,6 +3,7 @@ use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{info, warn};
+use regex::Regex;
 use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -67,6 +68,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 pub struct GithubReleasesAdapter {
     pub repo: String,
     pub owner: String,
+    pub specific_name: Option<Regex>,
 }
 
 #[async_trait]
@@ -111,26 +113,34 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let mut name_suffix = "";
         // TODO: add platform specific logic
         if cfg!(target_os = "windows") {
-            name_suffix = "windows-x64.exe.zip";
+            name_suffix = r"windows-x64.*\.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-            name_suffix = "macos-x86_64.zip";
+            name_suffix = r"macos-x86_64.*\.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            name_suffix = "macos-arm64.zip";
+            name_suffix = r"macos-arm64.*\.zip";
         }
         if cfg!(target_os = "linux") {
-            name_suffix = "linux-x86_64.zip";
+            name_suffix = r"linux-x86_64.*\.zip";
         }
 
         info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
 
+        let reg = Regex::new(name_suffix).unwrap();
+
         let platform = version
             .assets
             .iter()
-            .find(|a| a.name.ends_with(name_suffix))
+            .find(|a| {
+                if let Some(ref specific) = self.specific_name {
+                    specific.is_match(&a.name) && reg.is_match(&a.name)
+                } else {
+                    reg.is_match(&a.name)
+                }
+            })
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
         info!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
@@ -146,6 +156,7 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                specific_name: None,
             }),
         );
         adapters.insert(
@@ -153,6 +164,7 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                specific_name: None,
             }),
         );
         adapters.insert(
@@ -160,6 +172,15 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                specific_name: None,
+            }),
+        );
+        adapters.insert(
+            Binaries::GpuMiner,
+            Box::new(GithubReleasesAdapter {
+                repo: "tarigpuminer".to_string(),
+                owner: "stringhandler".to_string(),
+                specific_name: Some("opencl.*testnet".parse().expect("Bad regex string")),
             }),
         );
         adapters.insert(
@@ -167,8 +188,10 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "sha-p2pool".to_string(),
                 owner: "tari-project".to_string(),
+                specific_name: None,
             }),
         );
+
         Self {
             adapters,
             download_mutex: Mutex::new(()),
@@ -228,7 +251,7 @@ impl BinaryResolver {
         let _lock = self.download_mutex.lock().await;
 
         if force_download {
-            println!("Cleaning up existing dir");
+            info!(target: LOG_TARGET, "Cleaning up existing dir");
             let _ = fs::remove_dir_all(&bin_folder).await;
         }
         if !bin_folder.exists() || bin_folder.join("in_progress").exists() {
@@ -389,6 +412,11 @@ fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error
             let wallet_bin = base_dir.join("minotari_console_wallet");
             Ok(wallet_bin)
         }
+        Binaries::GpuMiner => {
+            let xtrgpu_bin = base_dir.join("xtrgpuminer");
+
+            Ok(xtrgpu_bin)
+        }
         Binaries::ShaP2pool => {
             let sha_p2pool_bin = base_dir.join("sha_p2pool");
             Ok(sha_p2pool_bin)
@@ -402,6 +430,7 @@ pub enum Binaries {
     MergeMiningProxy,
     MinotariNode,
     Wallet,
+    GpuMiner,
     ShaP2pool,
 }
 
@@ -412,6 +441,7 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
+            Binaries::GpuMiner => "xtrgpuminer",
             Binaries::ShaP2pool => "sha-p2pool",
         }
     }
