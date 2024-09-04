@@ -27,7 +27,7 @@ export default function AirdropPermission() {
                     <Title>{t('permission.title')}</Title>
                     <Text>{t('permission.text')}</Text>
                 </TextWrapper>
-                <ToggleSwitch checked={telemetryMode} onChange={handleChange} color="primary" size="medium" />
+                <ToggleSwitch checked={telemetryMode} onChange={handleChange} color="primary" />
             </BoxWrapper>
         </Position>
     );
