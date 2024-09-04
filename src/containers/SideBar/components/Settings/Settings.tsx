@@ -43,6 +43,7 @@ import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput
 import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
+import { SeedWords } from './SeedWords';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',
@@ -124,11 +125,7 @@ export default function Settings() {
                 )}
             </Stack>
             <Stack direction="row" justifyContent="space-between">
-                <Typography variant="p">
-                    {showSeedWords
-                        ? truncateString(seedWords.join(' '), 50)
-                        : '****************************************************'}
-                </Typography>
+                <SeedWords showSeedWords={showSeedWords} seedWords={seedWords} />
                 <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
                     {seedWordsFetching ? (
                         <CircularProgress />
