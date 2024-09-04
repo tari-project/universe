@@ -15,9 +15,7 @@
         },
         "updater": {
             "active": true,
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"],
             "dialog": true,
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
         },
@@ -48,7 +46,7 @@
         },
         "windows": [
             {
-                "title": "Tari Universe",
+                "title": "Tari Universe | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
@@ -67,13 +65,7 @@
             "active": true,
             "targets": "all",
             "identifier": "com.tari.universe",
-            "icon": [
-                "icons/icon.icns",
-                "icons/icon.ico",
-                "icons/icon.png",
-                "icons/StoreLogo.png",
-                "icons/tari.png"
-            ]
+            "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png", "icons/StoreLogo.png", "icons/tari.png"]
         },
         "macOSPrivateApi": true
     }
