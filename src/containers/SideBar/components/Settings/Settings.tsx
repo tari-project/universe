@@ -71,6 +71,7 @@ export default function Settings() {
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
     const isMining = isCPUMining || isGPUMining;
     const miningLoading = useMiningStore((s) => s.miningLoading);
+    const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
@@ -194,6 +195,10 @@ export default function Settings() {
         </MinerContainer>
     );
 
+    const toggleDisabledBase = !miningAllowed || miningLoading;
+    const cpuDisabled = isMiningInProgress && !isGpuMiningEnabled; // TODO: should we rather stop mining if they both get turned off from settings?
+    const gpuDisabled = isMiningInProgress && !isCpuMiningEnabled;
+
     const cpuEnabledMarkup = (
         <MinerContainer>
             <Stack>
@@ -201,7 +206,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isCpuMiningEnabled}
-                disabled={!miningAllowed || miningLoading}
+                disabled={toggleDisabledBase || cpuDisabled}
                 onChange={handleCpuMiningEnabled}
             />
         </MinerContainer>
@@ -214,7 +219,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isGpuMiningEnabled}
-                disabled={!miningAllowed || miningLoading}
+                disabled={toggleDisabledBase || gpuDisabled}
                 onChange={handleGpuMiningEnabled}
             />
         </MinerContainer>
