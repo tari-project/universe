@@ -39,7 +39,7 @@ const Options = styled.div<{ $open?: boolean }>`
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     background: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    z-index: 1;
+    z-index: 100;
     height: ${({ $open }) => ($open ? 'auto' : 0)};
     opacity: ${({ $open }) => ($open ? 1 : 0)};
     pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
@@ -116,8 +116,7 @@ type OnClickEvent = MouseEvent<HTMLDivElement>;
 
 export function Select({ options, selectedValue, disabled, loading, onChange, ...props }: Props) {
     const [expanded, setExpanded] = useState(false);
-    function toggleOpen(e: OnClickEvent) {
-        e.stopPropagation();
+    function toggleOpen() {
         setExpanded((c) => !c);
     }
 
@@ -130,7 +129,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, ..
     const selectedOption = selectedValue ? options.find((o) => o.value === selectedValue) : options[0];
     const selectedLabel = selectedOption?.selectedLabel || selectedOption?.label;
     return (
-        <Wrapper onClick={(e) => toggleOpen(e)} $disabled={disabled}>
+        <Wrapper onClick={() => toggleOpen()} $disabled={disabled}>
             <StyledSelect {...props}>
                 <SelectedOption $selected>
                     <Typography>{selectedLabel}</Typography>
