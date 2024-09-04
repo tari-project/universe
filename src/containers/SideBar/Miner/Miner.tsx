@@ -75,12 +75,12 @@ export default function Miner() {
                 <Tile
                     title={`GPU ${t('hashrate')} (H/s)`}
                     stats={`${gpuHashRateStr}${gpuHashRateOver1k ? 'k' : ''}`}
-                    isLoading={isWaitingForHashRate}
+                    isLoading={false}
                 />
                 <Tile
                     title={`GPU Est tXTM/${t('day')}`}
                     stats={formatNumber(gpu_estimated_earnings / 1000000)}
-                    isLoading={isWaitingForHashRate}
+                    isLoading={false}
                 />
                 <AnimatePresence>
                     {isMiningEnabled || isChangingMode ? (
