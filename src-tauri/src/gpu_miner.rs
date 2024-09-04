@@ -7,25 +7,29 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
+use crate::p2pool_manager::P2poolConfig;
 use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
     process_adapter::StatusMonitor,
     process_watcher::{self, ProcessWatcher},
 };
+
 const SHA_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
+    p2pool_config: Arc<P2poolConfig>,
 }
 
 impl GpuMiner {
-    pub fn new() -> Self {
+    pub fn new(p2pool_config: Arc<P2poolConfig>) -> Self {
         let adapter = GpuMinerAdapter::new();
         let process_watcher = ProcessWatcher::new(adapter);
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
+            p2pool_config,
         }
     }
 
@@ -34,6 +38,7 @@ impl GpuMiner {
         app_shutdown: ShutdownSignal,
         tari_address: TariAddress,
         node_grpc_port: u16,
+        p2pool_enabled: bool,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -43,6 +48,8 @@ impl GpuMiner {
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.node_grpc_port = node_grpc_port;
         process_watcher.adapter.set_mode(mining_mode);
+        process_watcher.adapter.p2pool_enabled = p2pool_enabled;
+        process_watcher.adapter.p2pool_grpc_port = self.p2pool_config.grpc_port;
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
             .start(app_shutdown, base_path, config_path, log_path)
