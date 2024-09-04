@@ -120,8 +120,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                     child = tokio::process::Command::new(file_path)
                         .args(args)
                         .env("TARI_NETWORK", "esme")
-                        // .stdout(std::process::Stdio::null())
-                        // .stderr(std::process::Stdio::null())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
                         .kill_on_drop(true)
                         .spawn()?;
                     if let Some(id) = child.id() {
@@ -191,6 +191,13 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
+                if e.is_connect() {
+                    return Ok(GpuMinerStatus {
+                        is_mining: false,
+                        hash_rate: 0,
+                        estimated_earnings: 0,
+                    });
+                }
                 warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
                 return Ok(GpuMinerStatus {
                     is_mining: false,
@@ -200,7 +207,6 @@ impl StatusMonitor for GpuMinerStatusMonitor {
             }
         };
         let text = response.text().await?;
-        dbg!(&text);
         let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
             Ok(body) => body,
             Err(e) => {

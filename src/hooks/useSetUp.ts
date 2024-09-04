@@ -6,10 +6,9 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
 import useAppStateStore from '../store/appStateStore.ts';
 
-import { useAppStatusStore } from '../store/useAppStatusStore.ts';
 import { useVersions } from '@app/hooks/useVersions.ts';
-import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
-import { setAnimationState } from '@app/visuals.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { setupLogger } from '@app/utils/logger.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
@@ -18,13 +17,13 @@ export function useSetUp() {
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setError = useAppStateStore((s) => s.setError);
-    const setCurrentUserInactivityDuration = useAppStatusStore((s) => s.setCurrentUserInactivityDuration);
-    // TODO: set up separate auto-miner listener
-    const autoMiningEnabled = useAppStatusStore((s) => s.auto_mining);
-    const { startMining, stopMining } = useMiningControls();
+    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+
+    useVersions();
 
     useEffect(() => {
-        setTimeout(() => {
+        setupLogger();
+        const splashTimeout = setTimeout(() => {
             setShowSplash(false);
         }, 3500);
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
@@ -34,27 +33,10 @@ export function useSetUp() {
                     console.info('Setup status:', p.title, p.title_params, p.progress);
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
-                        if (autoMiningEnabled) invoke('set_auto_mining', { autoMining: true });
                         settingUpFinished();
                         setView('mining');
-                        setAnimationState('showVisual');
+                        setMiningControlsEnabled(true);
                     }
-                    break;
-                //Auto Miner
-                case 'user_idle':
-                    if (!autoMiningEnabled) return;
-                    startMining().then(() => {
-                        console.debug('Mining started');
-                    });
-                    break;
-                case 'user_active':
-                    if (!autoMiningEnabled) return;
-                    stopMining().then(() => {
-                        console.debug('Mining stopped');
-                    });
-                    break;
-                case 'current_timeout_duration':
-                    setCurrentUserInactivityDuration(p.duration);
                     break;
                 default:
                     console.warn('Unknown tauri event: ', { e, p });
@@ -66,24 +48,12 @@ export function useSetUp() {
             invoke('setup_application').catch((e) => {
                 setError(`Failed to setup application: ${e}`);
                 settingUpFinished();
-                setAnimationState('showVisual');
                 setView('mining');
             });
         }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
+            clearTimeout(splashTimeout);
         };
-    }, [
-        autoMiningEnabled,
-        setCurrentUserInactivityDuration,
-        setSetupDetails,
-        setView,
-        settingUpFinished,
-        startMining,
-        stopMining,
-        setShowSplash,
-        setError,
-    ]);
-
-    useVersions();
+    }, [setError, setMiningControlsEnabled, setSetupDetails, setShowSplash, setView, settingUpFinished]);
 }
