@@ -42,7 +42,7 @@ const useWalletStore = create<WalletStore>()(
                         ...wallet_balance,
                         balance: newBalance,
                         previousBalance: prevValue,
-                        balanceDiff: newBalance - prevValue,
+                        balanceDiff: prevValue > 0 ? newBalance - prevValue : 0,
                     };
                 }),
         }),

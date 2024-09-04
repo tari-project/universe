@@ -8,6 +8,7 @@ import useAppStateStore from '../store/appStateStore.ts';
 
 import { useVersions } from '@app/hooks/useVersions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { setupLogger } from '@app/utils/logger.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
@@ -21,6 +22,7 @@ export function useSetUp() {
     useVersions();
 
     useEffect(() => {
+        setupLogger();
         const splashTimeout = setTimeout(() => {
             setShowSplash(false);
         }, 3500);
