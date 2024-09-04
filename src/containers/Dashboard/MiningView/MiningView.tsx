@@ -9,9 +9,9 @@ import P2pool from '@app/containers/Dashboard/MiningView/components/P2pool.tsx';
 export default function MiningView() {
     return (
         <MiningViewContainer>
+            <BlockHeight />
             <P2pool />
             <Earnings />
-            <BlockHeight />
             <BlockTime />
         </MiningViewContainer>
     );
