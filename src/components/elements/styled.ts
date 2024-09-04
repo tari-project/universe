@@ -19,4 +19,6 @@ export const DynamicTypography = styled(({ variant = 'span', children, ...props 
     margin: 0;
     display: flex;
     color: inherit;
+    white-space: pre-wrap; /* wrap text */
+    overflow-wrap: break-word; /* for older browsers */
 `;
