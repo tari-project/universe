@@ -18,7 +18,6 @@ pub struct AppConfigFromFile {
     pub mode: String,
     pub auto_mining: bool,
     pub p2pool_enabled: bool,
-    pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
     pub allow_telemetry: bool,
     pub anon_id: String,
@@ -57,7 +56,6 @@ pub struct AppConfig {
     pub mode: MiningMode,
     pub auto_mining: bool,
     pub p2pool_enabled: bool,
-    pub user_inactivity_timeout: Duration,
     pub last_binaries_update_timestamp: SystemTime,
     pub allow_telemetry: bool,
     pub anon_id: String,
@@ -74,7 +72,6 @@ impl AppConfig {
             mode: MiningMode::Eco,
             auto_mining: false,
             p2pool_enabled: false,
-            user_inactivity_timeout: Duration::from_secs(60),
             last_binaries_update_timestamp: SystemTime::now(),
             allow_telemetry: true,
             anon_id: generate_password(20),
@@ -96,7 +93,6 @@ impl AppConfig {
                     self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                     self.auto_mining = config.auto_mining;
                     self.p2pool_enabled = config.p2pool_enabled;
-                    self.user_inactivity_timeout = config.user_inactivity_timeout;
                     self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                     self.allow_telemetry = config.allow_telemetry;
                     self.anon_id = config.anon_id;
@@ -118,6 +114,11 @@ impl AppConfig {
                         self.gpu_mining_enabled = true;
                         self.cpu_mining_enabled = true;
                     }
+                    if self.version == 3 {
+                        // migrate
+                        self.version = 4;
+                        self.p2pool_enabled = true;
+                    }
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -129,7 +130,6 @@ impl AppConfig {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
             p2pool_enabled: self.p2pool_enabled,
-            user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             version: self.version,
             allow_telemetry: self.allow_telemetry,
@@ -207,19 +207,6 @@ impl AppConfig {
         self.allow_telemetry
     }
 
-    pub fn get_user_inactivity_timeout(&self) -> Duration {
-        self.user_inactivity_timeout
-    }
-
-    pub async fn set_user_inactivity_timeout(
-        &mut self,
-        timeout: Duration,
-    ) -> Result<(), anyhow::Error> {
-        self.user_inactivity_timeout = timeout;
-        self.update_config_file().await?;
-        Ok(())
-    }
-
     pub async fn set_monero_address(&mut self, address: String) -> Result<(), anyhow::Error> {
         self.monero_address = address;
         self.update_config_file().await?;
@@ -245,7 +232,6 @@ impl AppConfig {
             mode: MiningMode::to_str(self.mode.clone()),
             auto_mining: self.auto_mining,
             p2pool_enabled: self.p2pool_enabled,
-            user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             version: self.version,
             allow_telemetry: self.allow_telemetry,
