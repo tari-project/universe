@@ -119,9 +119,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let binary_resolver = BinaryResolver::current().read().await;
+
                     let file_path = binary_resolver
                         .resolve_path_to_binary_files(Binaries::MinotariNode)
-                        .await?;
+                        .await.unwrap();
+
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
@@ -280,6 +282,7 @@ impl MinotariNodeStatusMonitor {
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
 

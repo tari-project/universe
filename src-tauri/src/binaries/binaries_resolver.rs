@@ -165,7 +165,6 @@ impl BinaryResolver {
         should_check_for_update: bool,
     ) -> Result<(), Error> {
         let manager = self.managers.get_mut(&binary).unwrap();
-        let _lock = self.download_mutex.lock().await;
 
         manager.read_local_versions().await;
 
@@ -233,8 +232,14 @@ impl BinaryResolver {
         Ok(())
     }
 
-    pub async fn get_binary_version(&self, binary: Binaries) -> Version {
+    pub async fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
         let manager = self.managers.get(&binary).unwrap();
-        manager.get_selected_version().unwrap()
+        manager.get_selected_version()
+    }
+
+    pub async fn get_binary_version_string(&self, binary: Binaries) -> String {
+        let version = self.get_binary_version(binary).await;
+        version.map(|v| v.to_string())
+            .unwrap_or_else(|| "Not Installed".to_string())
     }
 }

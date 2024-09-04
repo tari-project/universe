@@ -462,6 +462,9 @@ async fn setup_inner(
             .await?;
     }
 
+    //drop binary resolver to release the lock
+    drop(binary_resolver);
+
     for _i in 0..2 {
         match state
             .node_manager
@@ -851,19 +854,20 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
     let binary_resolver = BinaryResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
-    let xmrig_version: semver::Version = binary_resolver.get_binary_version(Binaries::Xmrig).await;
+    let xmrig_version = binary_resolver.get_binary_version_string(Binaries::Xmrig).await;
 
-    let minotari_node_version: semver::Version = binary_resolver
-        .get_binary_version(Binaries::MinotariNode)
+    let minotari_node_version = binary_resolver
+        .get_binary_version_string(Binaries::MinotariNode)
         .await;
-    let mm_proxy_version: semver::Version = binary_resolver
-        .get_binary_version(Binaries::MergeMiningProxy)
+    let mm_proxy_version = binary_resolver
+        .get_binary_version_string(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version: semver::Version =
-        binary_resolver.get_binary_version(Binaries::Wallet).await;
-    let sha_p2pool_version: semver::Version = binary_resolver
-        .get_binary_version(Binaries::ShaP2pool)
+    let wallet_version =
+        binary_resolver.get_binary_version_string(Binaries::Wallet).await;
+    let sha_p2pool_version = binary_resolver
+        .get_binary_version_string(Binaries::ShaP2pool)
         .await;
+    let xtrgpuminer_version = binary_resolver.get_binary_version_string(Binaries::GpuMiner).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -874,11 +878,12 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 
     Ok(ApplicationsVersions {
         tari_universe: tari_universe_version.to_string(),
-        xmrig: xmrig_version.to_string(),
-        minotari_node: minotari_node_version.to_string(),
-        mm_proxy: mm_proxy_version.to_string(),
-        wallet: wallet_version.to_string(),
-        sha_p2pool: sha_p2pool_version.to_string(),
+        minotari_node: minotari_node_version,
+        xmrig: xmrig_version,
+        mm_proxy: mm_proxy_version,
+        wallet: wallet_version,
+        sha_p2pool: sha_p2pool_version,
+        xtrgpuminer: xtrgpuminer_version
     })
 }
 
@@ -1211,6 +1216,7 @@ pub struct ApplicationsVersions {
     mm_proxy: String,
     wallet: String,
     sha_p2pool: String,
+    xtrgpuminer: String,
 }
 
 #[derive(Debug, Serialize)]
