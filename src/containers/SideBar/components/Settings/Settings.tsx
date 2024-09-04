@@ -38,6 +38,7 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { MinerContainer } from '../../Miner/styles.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { listen } from '@tauri-apps/api/event';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -143,6 +144,34 @@ const Settings: React.FC = () => {
     const lastBlockTime = calculateTimeSince(blockTime || 0, now.getTime());
     const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
     const displayTime = `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
+
+    const [status, setStatus] = useState<unknown>();
+    const [downloaded, setDownloaded] = useState<number>(0);
+    const [totalContentLength, setTotalContentLength] = useState<number>(0);
+
+    listen('tauri://update', () => {
+        console.error('Update received');
+    });
+
+    listen('tauri://update-available', () => {
+        console.error('Update available');
+    });
+
+    listen('tauri://update-install', () => {
+        console.error('Update install');
+    });
+
+    listen('tauri://update-status', (status) => {
+        setStatus(status);
+    });
+
+    listen('tauri://update-download-progress', (progressEvent) => {
+        const contentLength = (progressEvent as any).payload.contentLength as number;
+        setTotalContentLength(contentLength);
+        const chunkLength = (progressEvent as any).payload.chunkLength as number;
+        setDownloaded((prev) => prev + chunkLength);
+    });
+
     return (
         <>
             <IconButton onClick={handleClickOpen}>
@@ -150,6 +179,16 @@ const Settings: React.FC = () => {
             </IconButton>
             <Dialog open={open} onClose={handleClose} fullWidth maxWidth={'sm'}>
                 <DialogContent>
+                    <Box width="300" height="300" bgcolor="red">
+                        {!!status && <Typography>Status: {JSON.stringify(status)}</Typography>}
+                        {!!totalContentLength && (
+                            <Typography>ContentLength: {JSON.stringify(totalContentLength)}</Typography>
+                        )}
+                        {!!downloaded && <Typography>Downloaded: {JSON.stringify(downloaded)}</Typography>}
+                        {!!downloaded && !!totalContentLength && (
+                            <Typography>Progress: {Math.floor((downloaded / totalContentLength) * 100)} </Typography>
+                        )}
+                    </Box>
                     <Stack spacing={1}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center" pb={1}>
                             <Typography variant="h4">{t('settings', { ns: 'settings' })}</Typography>

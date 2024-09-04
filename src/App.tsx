@@ -1,5 +1,5 @@
 import './theme/theme.css';
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useEffect } from 'react';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lightTheme } from './theme/themes';
@@ -16,8 +16,6 @@ import { useAirdropTokensRefresh } from './hooks/airdrop/useAirdropTokensRefresh
 import { SplashScreen } from './containers/SplashScreen';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 import { setupLogger } from './utils/logger.ts';
-import { listen } from '@tauri-apps/api/event';
-import { Typography } from '@mui/material';
 
 function App() {
     useAirdropTokensRefresh();
@@ -28,34 +26,10 @@ function App() {
 
     const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
-    const [status, setStatus] = useState<unknown>();
-    const [progress, setProgress] = useState<number>(0);
 
     useEffect(() => {
         setupLogger();
     }, []);
-
-    listen('tauri://update', () => {
-        console.error('Update received');
-    });
-
-    listen('tauri://update-available', () => {
-        console.error('Update available');
-    });
-
-    listen('tauri://update-install', () => {
-        console.error('Update install');
-    });
-
-    listen('tauri://update-status', (status) => {
-        console.error('Update status: ', status);
-        setStatus(status);
-    });
-
-    listen('tauri://update-download-progress', (progress) => {
-        const chunkLength = (progress as any).payload.chunkLength as number;
-        setProgress((prev) => prev + chunkLength);
-    });
 
     return (
         <StrictMode>
@@ -63,8 +37,6 @@ function App() {
                 <CssBaseline enableColorScheme />
                 <AppBackground />
                 <SplashScreen />
-                {!!status && <Typography>Status: {JSON.stringify(status)}</Typography>}
-                {!!progress && <Typography>Progress: {JSON.stringify(progress)}</Typography>}
                 {!showSplash && (
                     <DashboardContainer>
                         <ContainerInner>
