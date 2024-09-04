@@ -6,7 +6,6 @@ import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 interface State {
     displayBlockTime?: BlockTimeData;
     earnings?: number;
-    showFailAnimation?: boolean;
     postBlockAnimation?: boolean;
     timerPaused?: boolean;
     miningLoading?: boolean;
@@ -25,7 +24,7 @@ interface Actions {
     setEarnings: (earnings?: number) => void;
     setPostBlockAnimation: (postBlockAnimation: boolean) => void;
     setTimerPaused: (timerPaused: boolean) => void;
-    setShowFailAnimation: (showFailAnimation: boolean) => void;
+
     setMiningLoading: (miningLoading: boolean) => void;
     setHashrateReady: (hashrateReady: boolean) => void;
 
@@ -58,7 +57,6 @@ export const useMiningStore = create<MiningStoreState>()(
             setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
             setEarnings: (earnings) => set({ earnings }),
             setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
-            setShowFailAnimation: (showFailAnimation) => set({ showFailAnimation }),
             setTimerPaused: (timerPaused) => set({ timerPaused }),
             setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
             setHashrateReady: (hashrateReady) => set({ hashrateReady }),

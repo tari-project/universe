@@ -23,7 +23,7 @@ const initialState: State = {
     pending_outgoing_balance: 0,
 };
 
-const useWalletStore = create<WalletStore>()(
+export const useWalletStore = create<WalletStore>()(
     persist(
         (set) => ({
             ...initialState,
@@ -58,5 +58,3 @@ const useWalletStore = create<WalletStore>()(
         }
     )
 );
-
-export default useWalletStore;

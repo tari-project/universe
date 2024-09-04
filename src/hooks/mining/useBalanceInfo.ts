@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import useWalletStore from '@app/store/walletStore.ts';
+import { useWalletStore } from '@app/store/walletStore.ts';
 import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
@@ -21,7 +21,6 @@ export default function useBalanceInfo() {
         setTimerPaused,
         postBlockAnimation,
         setPostBlockAnimation,
-        setShowFailAnimation,
         timerPaused,
     } = useMiningStore((s) => s);
 
@@ -46,9 +45,8 @@ export default function useBalanceInfo() {
         if (hasEarnings) {
             setEarnings(diff);
         }
-        setShowFailAnimation(!hasEarnings);
         handleVisual(!hasEarnings ? 'fail' : 'success');
-    }, [balance, balanceDiff, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
+    }, [balance, balanceDiff, handleVisual, previousBalance, setEarnings, setTimerPaused]);
 
     const resetStates = useCallback(() => {
         setPostBlockAnimation(false);

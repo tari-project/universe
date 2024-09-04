@@ -1,7 +1,7 @@
 import useAppStateStore from '../store/appStateStore.ts';
 
 import { invoke } from '@tauri-apps/api/tauri';
-import useWalletStore from '../store/walletStore.ts';
+import { useWalletStore } from '../store/walletStore.ts';
 import { useAppStatusStore } from '../store/useAppStatusStore.ts';
 import { useInterval } from './useInterval.ts';
 import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
