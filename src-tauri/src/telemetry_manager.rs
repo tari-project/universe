@@ -1,14 +1,16 @@
 use anyhow::Result;
 use jsonwebtoken::errors::Error as JwtError;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tauri::Manager;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
+use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
@@ -56,6 +58,9 @@ pub enum TelemetryManagerError {
 
     #[error("Jwt decodeing error: {0}")]
     JwtDecodeError(#[from] JwtError),
+
+    #[error("Reqwest error: {0}")]
+    ReqwestError(#[from] reqwest::Error),
 }
 
 impl From<Network> for TelemetryNetwork {
@@ -87,6 +92,21 @@ impl From<MiningMode> for TelemetryMiningMode {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct UserPoints {
+    pub gems: f64,
+    pub shells: f64,
+    pub hammers: f64,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct TelemetryDataResponse {
+    pub success: bool,
+    pub user_points: Option<UserPoints>,
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryData {
@@ -109,6 +129,7 @@ pub struct TelemetryManager {
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     config: Arc<RwLock<AppConfig>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     pub cancellation_token: CancellationToken,
     node_network: Option<Network>,
 }
@@ -119,6 +140,7 @@ impl TelemetryManager {
         cpu_miner: Arc<RwLock<CpuMiner>>,
         gpu_miner: Arc<RwLock<GpuMiner>>,
         config: Arc<RwLock<AppConfig>>,
+        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         network: Option<Network>,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
@@ -129,6 +151,7 @@ impl TelemetryManager {
             config,
             cancellation_token,
             node_network: network,
+            in_memory_config,
         }
     }
 
@@ -152,17 +175,19 @@ impl TelemetryManager {
 
     pub async fn initialize(
         &mut self,
+        app: tauri::AppHandle,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
         let _ = self
-            .start_telemetry_process(Duration::from_secs(60), airdrop_access_token)
+            .start_telemetry_process(app, Duration::from_secs(60), airdrop_access_token)
             .await;
         Ok(())
     }
 
     async fn start_telemetry_process(
         &mut self,
+        app: tauri::AppHandle,
         timeout: Duration,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
     ) -> Result<(), TelemetryManagerError> {
@@ -173,20 +198,36 @@ impl TelemetryManager {
         let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
         let config_cloned = self.config.clone();
-
+        let app_cloned = app.clone();
+        let in_memory_config_cloned = self.in_memory_config.clone();
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
                     info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry;
-
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
                             let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
                             match telemetry {
                                 Ok(telemetry) => {
-                                    send_telemetry_data(telemetry, airdrop_access_token_validated).await;
+                                    let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
+                                    let telemetry_response = send_telemetry_data(telemetry, airdrop_access_token_validated, airdrop_api_url).await;
+                                    match telemetry_response {
+                                        Ok(response) => {
+                                            if let Some(response_inner) = response {
+                                                if response_inner.user_points.is_some() {
+                                                    info!(target: LOG_TARGET,"emitting UserPoints event{:?}",response_inner);
+                                                    app_cloned.emit_all("UserPoints", response_inner.user_points.unwrap())
+                                                    .map_err(|e| error!("could not send user points as an event: {:?}", e))
+                                                    .unwrap_or(());
+                                                }
+                                            }
+                                        },
+                                        Err(e) => {
+                                            error!(target: LOG_TARGET,"Error sending telemetry data: {:?}", e);
+                                        }
+                                    }
                                 },
                                 Err(e) => {
                                     error!(target: LOG_TARGET,"Error getting telemetry data: {:?}", e);
@@ -294,34 +335,27 @@ async fn get_telemetry_data(
     })
 }
 
-fn get_airdrop_url() -> String {
-    "https://rwa.y.at".to_string()
-}
-
-async fn send_telemetry_data(data: TelemetryData, airdrop_access_token: Option<String>) {
-    debug!(target:LOG_TARGET, "Telemetry data being sent: {:?}", data);
-
+async fn send_telemetry_data(
+    data: TelemetryData,
+    airdrop_access_token: Option<String>,
+    airdrop_api_url: String,
+) -> Result<Option<TelemetryDataResponse>, TelemetryManagerError> {
     let request = reqwest::Client::new();
     let mut request_builder = request
-        .post(format!("{}/miner/heartbeat", get_airdrop_url()))
+        .post(format!("{}/miner/heartbeat", airdrop_api_url))
         .json(&data);
 
-    if let Some(token) = airdrop_access_token {
+    if let Some(token) = airdrop_access_token.clone() {
         request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
     }
 
-    let result = request_builder.send().await;
+    let result = request_builder.send().await?;
+    let response = result.error_for_status()?;
+    info!(target: LOG_TARGET,"Telemetry data sent");
 
-    match result {
-        Ok(response) => {
-            if response.status().is_success() {
-                info!(target: LOG_TARGET,"Telemetry data sent");
-            } else {
-                warn!(target: LOG_TARGET,"Error sending telemetry data: {:#?}", response);
-            }
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET,"Error sending telemetry data: {:#?}", e);
-        }
+    if airdrop_access_token.is_some() {
+        let data: TelemetryDataResponse = response.json().await?;
+        return Ok(Some(data));
     }
+    Ok(None)
 }

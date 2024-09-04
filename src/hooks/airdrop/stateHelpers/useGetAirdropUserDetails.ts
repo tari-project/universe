@@ -4,9 +4,12 @@ import { useCallback, useEffect } from 'react';
 export const useGetAirdropUserDetails = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
+    const backendInMemoryConfig = useAirdropStore((state) => state.backendInMemoryConfig);
 
     const fetchUserDetails = useCallback(async () => {
-        const response = await fetch('https://airdrop.tari.com/api/user/details', {
+        if (!backendInMemoryConfig?.airdropApiUrl) return;
+
+        const response = await fetch(`${backendInMemoryConfig?.airdropApiUrl}/user/details`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -16,7 +19,7 @@ export const useGetAirdropUserDetails = () => {
         const data = await response.json();
         setUserDetails(data);
         return data;
-    }, [airdropToken, setUserDetails]);
+    }, [airdropToken, backendInMemoryConfig?.airdropApiUrl, setUserDetails]);
 
     useEffect(() => {
         fetchUserDetails();

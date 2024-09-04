@@ -10,21 +10,23 @@ import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api';
 
 export default function ConnectButton() {
-    const { authUuid, setAuthUuid, setAirdropTokens, setUserPoints } = useAirdropStore();
+    const { authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } = useAirdropStore();
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const handleAuth = useCallback(() => {
-        const token = uuidv4();
-        setAuthUuid(token);
-        open(`https://airdrop.tari.com?tari=${token}`);
-    }, [setAuthUuid]);
+        if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
+            const token = uuidv4();
+            setAuthUuid(token);
+            open(`${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}`);
+        }
+    }, [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]);
 
     useEffect(() => {
-        if (authUuid) {
+        if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
             const interval = setInterval(() => {
                 if (authUuid) {
-                    fetch(`https://airdrop.tari.com/api/auth/twitter/get-token/${authUuid}`, {
+                    fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/twitter/get-token/${authUuid}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -36,7 +38,11 @@ export default function ConnectButton() {
                                 clearInterval(interval);
                                 setAirdropTokens(data);
                                 if (data.token) {
-                                    collectInstallReward(data.token, setUserPoints)
+                                    collectInstallReward(
+                                        data.token,
+                                        setUserPoints,
+                                        backendInMemoryConfig?.airdropApiUrl || ''
+                                    )
                                         .catch(console.error)
                                         .then(() => {
                                             //do nothing
@@ -59,7 +65,7 @@ export default function ConnectButton() {
                 clearTimeout(timeout);
             };
         }
-    }, [authUuid, setAirdropTokens, setAuthUuid, setUserPoints]);
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setAirdropTokens, setAuthUuid, setUserPoints]);
 
     return (
         <StyledButton onClick={handleAuth} size="medium">
@@ -83,11 +89,15 @@ interface InstallRewardResponse {
     userPoints: UserPoints | null;
 }
 
-const collectInstallReward = async (authToken: string, setUserPoints: (userPoints?: UserPoints) => void) => {
+const collectInstallReward = async (
+    authToken: string,
+    setUserPoints: (userPoints?: UserPoints) => void,
+    airdropApiUrl: string
+) => {
     try {
         const appId = await invoke('get_app_id', {});
 
-        const result = await fetch(`https://airdrop.tari.com/api/miner/install-reward`, {
+        const result = await fetch(`${airdropApiUrl}/miner/install-reward`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -102,7 +112,7 @@ const collectInstallReward = async (authToken: string, setUserPoints: (userPoint
             return;
         }
 
-        if (body.userPoints !== null || body.userPoints !== undefined) {
+        if (body.userPoints !== null || body.userPoints) {
             setUserPoints(body.userPoints as UserPoints);
         }
     } catch (error) {

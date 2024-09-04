@@ -62,6 +62,12 @@ interface AirdropTokens {
     expiresAt?: number;
 }
 
+export interface BackendInMemoryConfig {
+    airdropUrl: string;
+    airdropApiUrl: string;
+    airdropTwitterAuthUrl: string;
+}
+
 //////////////////////////////////////////
 
 interface AirdropState {
@@ -69,6 +75,7 @@ interface AirdropState {
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
+    backendInMemoryConfig?: BackendInMemoryConfig;
 }
 
 interface AirdropStore extends AirdropState {
@@ -76,6 +83,7 @@ interface AirdropStore extends AirdropState {
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
     setUserPoints: (userPoints?: UserPoints) => void;
+    setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     logout: () => void;
 }
 
@@ -94,10 +102,14 @@ export const useAirdropStore = create<AirdropStore>()(
                     },
                 }),
             setUserPoints: (userPoints) => set({ userPoints }),
+            setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
         }),
         {
             name: 'airdrop-store',
-            partialize: (state) => Object.fromEntries(Object.entries(state).filter(([key]) => key !== 'userPoints')),
+            partialize: (state) =>
+                Object.fromEntries(
+                    Object.entries(state).filter(([key]) => !['userPoints', 'backendInMemoryConfig'].includes(key))
+                ),
         }
     )
 );
