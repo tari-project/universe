@@ -1,8 +1,6 @@
 import { Control, Controller, FieldValues } from 'react-hook-form';
 
 import { FieldErrorMessage } from '../FieldErrorMessage/FieldErrorMessage.component';
-
-import { moneroAddressRegex } from './MoneroAddressInput.constants';
 import { MoneroAddressInputTypography } from './MoneroAddressInput.styles';
 import type {
     ControlledMoneroAddressInputProps,
@@ -12,6 +10,8 @@ import type {
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input.tsx';
 import { ChangeEvent } from 'react';
+
+const moneroAddressRegex = /^[48].{0,93}$/;
 
 const valueParses: Record<MoneroAddressInputType, RegExp> = {
     string: moneroAddressRegex,

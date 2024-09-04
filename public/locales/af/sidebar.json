@@ -5,5 +5,9 @@
     "wallet-balance": "Beursie balans",
     "setup-scheduler": "Stel skeduleerder op",
     "mining-schedules": "Mynskedules",
-    "mining-schedules-description": "Skeduleer jou myn-aktiwiteit"
+    "mining-schedules-description": "Skeduleer jou myn-aktiwiteit",
+    "updating-title": "Opdateer",
+    "updating-downloading": "Laai die Tari Universe af na die nuutste weergawe",
+    "updating-downloading-done": "Die Tari Universe is na die nuutste weergawe afgelaai",
+    "updating-content-size": "Inhoudsgrootte: {{size}}"
 }

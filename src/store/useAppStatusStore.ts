@@ -30,6 +30,8 @@ const initialState: AppStatus = {
     current_user_inactivity_duration: undefined,
     applications_versions: undefined,
     monero_address: undefined,
+    gpu_mining_enabled: false,
+    cpu_mining_enabled: false,
 };
 export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(
