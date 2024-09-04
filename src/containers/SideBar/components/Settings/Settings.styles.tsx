@@ -42,3 +42,9 @@ export const Form = styled.form`
     width: 100%;
     gap: 6px;
 `;
+
+export const SeedWordsContainer = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+`;
