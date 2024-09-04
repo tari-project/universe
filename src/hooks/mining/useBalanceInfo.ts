@@ -24,11 +24,11 @@ export default function useBalanceInfo() {
     } = useMiningStore((s) => s);
 
     const blockHeightRef = useRef(block_height);
-    const prevBalanceRef = useRef(previousBalance);
+    const prevBalanceRef = useRef(balance);
 
     const handleEarnings = useCallback(() => {
         setTimerPaused(true);
-        const hasChanges = prevBalanceRef.current !== previousBalance;
+        const hasChanges = prevBalanceRef.current !== balance;
         const diff = hasChanges ? balance - previousBalance : 0;
         const hasEarnings = Boolean(diff && diff > 0);
         if (hasEarnings) {

@@ -9,7 +9,7 @@ import {
     IoCheckmarkOutline,
 } from 'react-icons/io5';
 import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
-import truncateString from '../../../../utils/truncateString';
+
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';

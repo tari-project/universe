@@ -67,7 +67,8 @@ export default function BlockHeight() {
             <BlockHeightAccent
                 $content={formattedBlockHeight ? `'${formattedBlockHeight}'` : ''}
                 $height={
-                    windowSize.height / ((formattedBlockHeight.length > 4 ? formattedBlockHeight.length : 4) * 100)
+                    (windowSize.height || window.innerHeight) /
+                    ((formattedBlockHeight.length > 4 ? formattedBlockHeight.length : 4) * 100)
                 }
             />
             {rulerMarkup}
