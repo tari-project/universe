@@ -115,7 +115,7 @@ impl NodeManager {
     }
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
-        loop {
+        loop {;
             let process_watcher = self.watcher.read().await;
             match process_watcher.wait_ready().await {
                 Ok(_) => {}

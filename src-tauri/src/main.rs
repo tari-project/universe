@@ -384,7 +384,7 @@ async fn setup_inner(
         > Duration::from_secs(10 * 60);
     binary_resolver
         .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
-        .await;
+        .await?;
     binary_resolver
         .initalize_binary(
             Binaries::GpuMiner,
@@ -399,24 +399,24 @@ async fn setup_inner(
             progress.clone(),
             should_check_for_update,
         )
-        .await;
+        .await?;
     binary_resolver
         .initalize_binary(
             Binaries::MinotariNode,
             progress.clone(),
             should_check_for_update,
         )
-        .await;
+        .await?;
+    binary_resolver
+        .initalize_binary(Binaries::Wallet, progress.clone(), should_check_for_update)
+        .await?;
     binary_resolver
         .initalize_binary(
             Binaries::ShaP2pool,
             progress.clone(),
             should_check_for_update,
         )
-        .await;
-    binary_resolver
-        .initalize_binary(Binaries::Wallet, progress.clone(), should_check_for_update)
-        .await;
+        .await?;
 
     if should_check_for_update {
         state
@@ -426,6 +426,8 @@ async fn setup_inner(
             .set_last_binaries_update_timestamp(now)
             .await?;
     }
+
+    println!("Starting node manage ==================================r");
 
     for _i in 0..2 {
         match state
@@ -438,8 +440,11 @@ async fn setup_inner(
             )
             .await
         {
-            Ok(_) => {}
+            Ok(_) => {
+                println!("Node manager started");
+            }
             Err(e) => {
+                println!("Node manager failed to start");
                 if let NodeManagerError::ExitCode(code) = e {
                     if code == 114 {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
@@ -456,6 +461,8 @@ async fn setup_inner(
     }
 
     info!(target: LOG_TARGET, "Node has started and is ready");
+
+    println!("dudaudioawudiwaud");
 
     progress.set_max(40).await;
     progress

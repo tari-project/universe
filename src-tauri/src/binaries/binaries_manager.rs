@@ -86,38 +86,6 @@ impl BinaryManager {
         }
     }
 
-    async fn read_local_versions(&mut self) {
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Reading local versions for binary: {:?}", self.binary_name);
-
-        let binary_folder = self.adapter.get_binary_folder();
-
-        // adapter.get_binary_folder() ensures that the folder exists so we can safely unwrap here
-        let version_folders_list = std::fs::read_dir(binary_folder).unwrap();
-
-        for version_folder in version_folders_list {
-            if version_folder.is_err() {
-                continue;
-            }
-            let version_folder = version_folder.unwrap();
-            let is_folder = version_folder.file_type().unwrap().is_dir();
-            if !is_folder {
-                continue;
-            }
-
-            let version_folder_name = version_folder.file_name();
-            match Version::from_str(version_folder_name.to_str().unwrap()) {
-                Ok(version) => {
-                    if self.version_requirements.matches(&version) {
-                        self.local_aviailable_versions_list.push(version);
-                    }
-                }
-                Err(e) => {
-                    warn!("Error parsing version folder name: {:?}", e);
-                }
-            }
-        }
-    }
-
     fn select_highest_local_version(&mut self) -> Option<Version> {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Selecting highest local version for binary: {:?}", self.binary_name);
 
@@ -284,7 +252,7 @@ impl BinaryManager {
         self.selected_version.clone()
     }
 
-    pub fn check_if_files_of_selected_version_exist(&self) -> bool {
+    pub fn check_if_files_of_selected_version_exist(&self, binary:Binaries) -> bool {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if files for selected version exist: {:?}", self.selected_version);
 
         if self.selected_version.is_none() {
@@ -293,8 +261,11 @@ impl BinaryManager {
         }
 
         let binary_folder = self.adapter.get_binary_folder();
+        println!("Binary folder: {:?}", binary_folder);
         let version_folder = binary_folder.join(self.selected_version.clone().unwrap().to_string());
-        let binary_file = version_folder.join(&self.binary_name);
+        println!("Version folder: {:?}", version_folder);
+        let binary_file = version_folder.join(&binary.binary_file_name(self.selected_version.clone().unwrap()));
+        println!("Binary file: {:?}", binary_file);
 
         let binary_file_exists = binary_file.exists();
 
@@ -319,6 +290,7 @@ impl BinaryManager {
         );
 
         for version_info in versions_info {
+            println!("Version: {:?}", version_info.version.to_string());
             if self.version_requirements.matches(&version_info.version) {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Adding version to online list: {:?}", version_info.version);
                 self.online_versions_list.push(version_info);
@@ -360,8 +332,9 @@ impl BinaryManager {
         {
             Ok(_) => {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloaded version: {:?}", self.selected_version);
-                println!("Destination dir: {:?}", destination_dir);
-                println!("In progress file zip: {:?}", in_progress_file_zip);
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Extracting version: {:?}", self.selected_version);
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Destination dir: {:?}", destination_dir);
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"In progress file: {:?}", in_progress_file_zip);
                 extract(&in_progress_file_zip, &destination_dir)
                     .await
                     .unwrap();
@@ -370,6 +343,38 @@ impl BinaryManager {
             Err(e) => {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", self.selected_version, e);
                 return None;
+            }
+        }
+    }
+
+    pub async fn read_local_versions(&mut self) {
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Reading local versions for binary: {:?}", self.binary_name);
+
+        let binary_folder = self.adapter.get_binary_folder();
+
+        // adapter.get_binary_folder() ensures that the folder exists so we can safely unwrap here
+        let version_folders_list = std::fs::read_dir(binary_folder).unwrap();
+
+        for version_folder in version_folders_list {
+            if version_folder.is_err() {
+                continue;
+            }
+            let version_folder = version_folder.unwrap();
+            let is_folder = version_folder.file_type().unwrap().is_dir();
+            if !is_folder {
+                continue;
+            }
+
+            let version_folder_name = version_folder.file_name();
+            match Version::from_str(version_folder_name.to_str().unwrap()) {
+                Ok(version) => {
+                    if self.version_requirements.matches(&version) {
+                        self.local_aviailable_versions_list.push(version);
+                    }
+                }
+                Err(e) => {
+                    warn!("Error parsing version folder name: {:?}", e);
+                }
             }
         }
     }

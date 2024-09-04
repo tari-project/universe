@@ -150,6 +150,8 @@ impl BinaryResolver {
         let manager = self.managers.get_mut(&binary).unwrap();
         let _lock = self.download_mutex.lock().await;
 
+        manager.read_local_versions().await;
+
         if should_check_for_update {
             // Will populate Vec of downloaded versions that meet the requirements
             manager.check_for_updates().await;
@@ -157,7 +159,10 @@ impl BinaryResolver {
 
         let mut highest_version = manager.select_highest_version();
 
-        if !should_check_for_update || highest_version.is_none() {
+        println!("Highest version for binary: {:?} is: {:?}", binary.name(), highest_version);
+
+        if !should_check_for_update && highest_version.is_none() {
+            println!("No version selected => downloading");
             manager.check_for_updates().await;
             highest_version = manager.select_highest_version();
             manager
@@ -166,19 +171,21 @@ impl BinaryResolver {
         }
 
         if highest_version.is_none() {
+            println!("No version selectedddd => downloading");
             manager
                 .download_selected_version(progress_tracker.clone())
                 .await;
         }
 
-        let check_if_files_exist = manager.check_if_files_of_selected_version_exist();
+        let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
         if !check_if_files_exist {
+            println!("Not existing => downloading");
             manager
                 .download_selected_version(progress_tracker.clone())
                 .await;
         }
 
-        let check_if_files_exist = manager.check_if_files_of_selected_version_exist();
+        let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
         if !check_if_files_exist {
             return Err(anyhow!("Failed to download binaries"));
         }
@@ -195,7 +202,7 @@ impl BinaryResolver {
         manager.check_for_updates().await;
         manager.select_highest_version();
 
-        let check_if_files_exist = manager.check_if_files_of_selected_version_exist();
+        let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
         if !check_if_files_exist {
             manager
                 .download_selected_version(progress_tracker.clone())
