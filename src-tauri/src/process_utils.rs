@@ -8,8 +8,8 @@ pub fn launch_child_process(
     {
         Ok(tokio::process::Command::new(file_path)
             .args(args)
-            // .stdout(std::process::Stdio::null()) // TODO: uncomment, only for testing
-            // .stderr(std::process::Stdio::null()) // TODO: uncomment, only for testing
+            .stdout(std::process::Stdio::null()) // TODO: uncomment, only for testing
+            .stderr(std::process::Stdio::null()) // TODO: uncomment, only for testing
             .kill_on_drop(true)
             .spawn()?)
     }
