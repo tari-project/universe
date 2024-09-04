@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/tari.svg" />
     <script type="module" crossorigin src="/assets/glApp.js"></script>
-    <title>Tari Universe</title>
+    <title>Tari Universe | Testnet</title>
     <style>
       #canvas {
         position: absolute;
@@ -20,6 +20,7 @@
   <div id="root"></div>
   <script type="module" src="src/main.tsx"></script>
   <script>
+    let time;
     function preload() {
       glApp?.preload(
           {
@@ -37,7 +38,6 @@
       glApp.init();
       time = performance.now() / 1000;
       window.addEventListener("resize", onResize);
-      glApp.properties.cameraOffsetX = (348 + 16) / window.innerWidth; // 348 is sidebar width with some padding
 
       onResize();
       animate();
@@ -45,6 +45,7 @@
 
     function onResize() {
       glApp.setSize(window.innerWidth, window.innerHeight);
+      glApp.properties.cameraOffsetX = (348 + 10) / window.innerWidth; // 348 is sidebar width with some padding
     }
 
     function animate() {

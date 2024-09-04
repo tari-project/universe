@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -72,7 +73,7 @@ impl P2poolManager {
         }
     }
 
-    pub async fn stats(&self) -> Result<Stats, anyhow::Error> {
+    pub async fn stats(&self) -> Result<HashMap<String, Stats>, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             return status_monitor.status().await;

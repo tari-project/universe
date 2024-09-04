@@ -42,6 +42,7 @@ import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { ControlledNumberInput } from '@app/components/NumberInput';
 import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput';
 import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
+import { SeedWords } from './SeedWords';
 
 enum FormFields {
     IDLE_TIMEOUT = 'idleTimeout',
@@ -58,6 +59,8 @@ export default function Settings() {
     const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const moneroAddress = useAppStatusStore((state) => state.monero_address);
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const isCpuMiningEnabled = useAppStatusStore((state) => state.cpu_mining_enabled);
+    const isGpuMiningEnabled = useAppStatusStore((state) => state.gpu_mining_enabled);
     const [open, setOpen] = useState(false);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
@@ -126,11 +129,7 @@ export default function Settings() {
                 )}
             </Stack>
             <Stack direction="row" justifyContent="space-between">
-                <Typography variant="p">
-                    {showSeedWords
-                        ? truncateString(seedWords.join(' '), 50)
-                        : '****************************************************'}
-                </Typography>
+                <SeedWords showSeedWords={showSeedWords} seedWords={seedWords} />
                 <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
                     {seedWordsFetching ? (
                         <CircularProgress />
@@ -187,6 +186,20 @@ export default function Settings() {
         });
     };
 
+    const handleCpuMiningEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        invoke('set_cpu_mining_enabled', { enabled: isChecked }).then(() => {
+            console.info('CPU mining enabled checked', isChecked);
+        });
+    };
+
+    const handleGpuMiningEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isChecked = event.target.checked;
+        invoke('set_gpu_mining_enabled', { enabled: isChecked }).then(() => {
+            console.info('GPU mining enabled checked', isChecked);
+        });
+    };
+
     const p2pMarkup = (
         <MinerContainer>
             <Stack>
@@ -197,6 +210,32 @@ export default function Settings() {
                 checked={isP2poolEnabled}
                 disabled={isMining || !miningAllowed || isLoading}
                 onChange={handleP2poolEnabled}
+            />
+        </MinerContainer>
+    );
+
+    const cpuEnabledMarkup = (
+        <MinerContainer>
+            <Stack>
+                <Typography variant="h6">{t('cpu-mining-enabled', { ns: 'settings' })}</Typography>
+            </Stack>
+            <ToggleSwitch
+                checked={isCpuMiningEnabled}
+                disabled={isMining || !miningAllowed || isLoading}
+                onChange={handleCpuMiningEnabled}
+            />
+        </MinerContainer>
+    );
+
+    const gpuEnabledMarkup = (
+        <MinerContainer>
+            <Stack>
+                <Typography variant="h6">{t('gpu-mining-enabled', { ns: 'settings' })}</Typography>
+            </Stack>
+            <ToggleSwitch
+                checked={isGpuMiningEnabled}
+                disabled={isMining || !miningAllowed || isLoading}
+                onChange={handleGpuMiningEnabled}
             />
         </MinerContainer>
     );
@@ -220,6 +259,10 @@ export default function Settings() {
                     {idleTimerMarkup}
                     <Divider />
                     {p2pMarkup}
+                    <Divider />
+                    {cpuEnabledMarkup}
+                    <Divider />
+                    {gpuEnabledMarkup}
                     <Divider />
                     <LanguageSettings />
                     <Divider />
