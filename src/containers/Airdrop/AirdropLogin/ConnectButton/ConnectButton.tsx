@@ -15,13 +15,15 @@ export default function ConnectButton() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const handleAuth = useCallback(() => {
-        const token = uuidv4();
-        setAuthUuid(token);
-        open(`${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}`);
+        if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
+            const token = uuidv4();
+            setAuthUuid(token);
+            open(`${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}`);
+        }
     }, [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]);
 
     useEffect(() => {
-        if (authUuid) {
+        if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
             const interval = setInterval(() => {
                 if (authUuid) {
                     fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/twitter/get-token/${authUuid}`, {

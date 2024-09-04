@@ -29,9 +29,9 @@ export default function UserInfo() {
     if (!userDetails || !userDetails?.user) return null;
 
     const profileimageurl = userDetails?.user?.profileimageurl;
-    const gems = userDetails?.user?.rank.gems;
-    const shells = userDetails?.user?.rank.shells;
-    const hammers = userDetails?.user?.rank.hammers;
+    const gems = userDetails?.user?.rank?.gems;
+    const shells = userDetails?.user?.rank?.shells;
+    const hammers = userDetails?.user?.rank?.hammers;
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);

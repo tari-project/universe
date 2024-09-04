@@ -7,6 +7,8 @@ export const useGetAirdropUserDetails = () => {
     const backendInMemoryConfig = useAirdropStore((state) => state.backendInMemoryConfig);
 
     const fetchUserDetails = useCallback(async () => {
+        if (!backendInMemoryConfig?.airdropApiUrl) return;
+
         const response = await fetch(`${backendInMemoryConfig?.airdropApiUrl}/user/details`, {
             method: 'GET',
             headers: {
