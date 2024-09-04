@@ -2,7 +2,7 @@ use crate::download_utils::{download_file_with_retries, extract, validate_checks
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{info, warn};
+use log::{debug, error, info, warn};
 use regex::Regex;
 use semver::Version;
 use std::collections::HashMap;
@@ -252,7 +252,12 @@ impl BinaryResolver {
 
         if force_download {
             info!(target: LOG_TARGET, "Cleaning up existing dir");
-            let _ = fs::remove_dir_all(&bin_folder).await;
+            fs::remove_dir_all(&bin_folder)
+                .await
+                .inspect_err(
+                    |e| error!(target: LOG_TARGET, "Could not remove existing dir: {:?}", e),
+                )
+                .ok();
         }
         if !bin_folder.exists() || bin_folder.join("in_progress").exists() {
             info!(target: LOG_TARGET, "Creating {} dir", binary.name());
@@ -300,8 +305,8 @@ impl BinaryResolver {
                 println!("Renaming & Extracting file");
                 let bin_dir = adapter
                     .get_binary_folder()
-                    .join(&latest_release.version.to_string());
-                dbg!(&bin_dir);
+                    .join(latest_release.version.to_string());
+                debug!(target:LOG_TARGET, "bin dir: {:?}", &bin_dir);
 
                 extract(&in_progress_file_zip, &bin_dir).await?;
             } else {

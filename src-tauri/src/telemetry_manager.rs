@@ -155,9 +155,8 @@ impl TelemetryManager {
         airdrop_access_token: Arc<RwLock<Option<String>>>,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
-        let _ = self
-            .start_telemetry_process(Duration::from_secs(60), airdrop_access_token)
-            .await;
+        self.start_telemetry_process(Duration::from_secs(60), airdrop_access_token)
+            .await?;
         Ok(())
     }
 

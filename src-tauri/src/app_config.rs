@@ -13,6 +13,7 @@ use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 const LOG_TARGET: &str = "tari::universe::app_config";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct AppConfigFromFile {
     pub version: u32,
     pub mode: String,
@@ -49,6 +50,7 @@ impl MiningMode {
     }
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     config_file: Option<PathBuf>,

@@ -1,7 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
 use log::info;
-use serde::Serialize;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
@@ -12,7 +11,7 @@ use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
     process_adapter::StatusMonitor,
-    process_watcher::{self, ProcessWatcher},
+    process_watcher::ProcessWatcher,
 };
 
 const SHA_BLOCKS_PER_DAY: u64 = 360;
@@ -77,9 +76,13 @@ impl GpuMiner {
                 let estimated_earnings = if network_hash_rate == 0 {
                     0
                 } else {
-                    ((block_reward.as_u64() as f64)
-                        * (hash_rate as f64 / network_hash_rate as f64)
-                        * (SHA_BLOCKS_PER_DAY as f64)) as u64
+                    #[allow(clippy::cast_possible_truncation)]
+                    {
+                        ((block_reward.as_u64() as f64)
+                            * (hash_rate as f64 / network_hash_rate as f64)
+                            * (SHA_BLOCKS_PER_DAY as f64))
+                            .floor() as u64
+                    }
                 };
                 // Can't be more than the max reward for a day
                 let estimated_earnings = std::cmp::min(

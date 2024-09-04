@@ -12,11 +12,11 @@ use tari_shutdown::Shutdown;
 use tokio::select;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
-use crate::{p2pool, process_utils};
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
