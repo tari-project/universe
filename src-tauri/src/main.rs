@@ -484,7 +484,7 @@ async fn start_mining<'r>(
     let cpu_mining_enabled = config.cpu_mining_enabled;
     let gpu_mining_enabled = config.gpu_mining_enabled;
 
-    let config = state.cpu_miner_config.read().await;
+    let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = state.config.read().await.monero_address.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
     if cpu_mining_enabled {
@@ -494,7 +494,7 @@ async fn start_mining<'r>(
             .await
             .start(
                 state.shutdown.to_signal(),
-                &config,
+                &cpu_miner_config,
                 monero_address,
                 app.path_resolver().app_local_data_dir().unwrap(),
                 app.path_resolver().app_cache_dir().unwrap(),
@@ -528,6 +528,7 @@ async fn start_mining<'r>(
                 state.shutdown.to_signal(),
                 tari_address,
                 grpc_port,
+                config.p2pool_enabled,
                 app.path_resolver().app_local_data_dir().unwrap(),
                 app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
@@ -920,7 +921,7 @@ fn main() {
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
-    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new(p2pool_config.clone()).into());
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         node_manager.clone(),
