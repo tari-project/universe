@@ -12,12 +12,11 @@ interface Actions {
     setMode: (mode: modeType) => void;
     setConfigMode: (mode: modeType) => void;
     setP2poolEnabled: (p2poolEnabled: boolean) => void;
-    setCurrentUserInactivityDuration: (duration: number) => void;
 }
 
 type AppStatusStoreState = State & Actions;
 
-const initialState: AppStatus = {
+const initialState: State = {
     cpu: undefined,
     hardware_status: undefined,
     base_node: undefined,
@@ -25,9 +24,6 @@ const initialState: AppStatus = {
     p2pool_stats: undefined,
     wallet_balance: undefined,
     mode: 'Eco',
-    auto_mining: false,
-    user_inactivity_timeout: undefined,
-    current_user_inactivity_duration: undefined,
     applications_versions: undefined,
     monero_address: undefined,
     cpu_mining_enabled: false,
@@ -38,8 +34,6 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         (set) => ({
             ...initialState,
             setAppStatus: (appStatus) => set({ ...appStatus }),
-            setCurrentUserInactivityDuration: (current_user_inactivity_duration) =>
-                set({ current_user_inactivity_duration }),
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMode: (mode) => set({ mode }),
             setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),

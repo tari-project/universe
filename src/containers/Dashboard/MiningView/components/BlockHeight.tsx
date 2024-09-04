@@ -13,9 +13,13 @@ import { useShallow } from 'zustand/react/shallow';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 import { useRef } from 'react';
 import useWindowSize from '@app/hooks/helpers/useWindowSize.ts';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 export default function BlockHeight() {
-    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isMining = isCPUMining || isGPUMining;
+
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const displayBlockHeight = useMiningStore((s) => s.displayBlockHeight) ?? 0;
     const height = isMining ? displayBlockHeight : block_height;
@@ -37,9 +41,10 @@ export default function BlockHeight() {
     let heightSegment = height;
     const heightSegments = [...Array(19)].map((_, i) => {
         return rulerMarks.map((_, idx) => {
-            const renderNumber = Boolean(idx == 0);
-            if (renderNumber && heightSegment > 10) {
-                heightSegment -= 10;
+            const diff = height > 50 ? 10 : 5;
+            const renderNumber = Boolean(idx == 0) && heightSegment > diff;
+            if (renderNumber) {
+                heightSegment -= diff;
             }
             return (
                 <RulerMarkContainer key={`ruler-${i}${idx}`}>
@@ -61,7 +66,10 @@ export default function BlockHeight() {
         <Wrapper>
             <BlockHeightAccent
                 $content={formattedBlockHeight ? `'${formattedBlockHeight}'` : ''}
-                $height={windowSize.height / (formattedBlockHeight.length * 100)}
+                $height={
+                    (windowSize.height || window.innerHeight) /
+                    ((formattedBlockHeight.length > 4 ? formattedBlockHeight.length : 4) * 100)
+                }
             />
             {rulerMarkup}
         </Wrapper>

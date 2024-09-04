@@ -4,10 +4,13 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useTranslation } from 'react-i18next';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isMining = isCPUMining || isGPUMining;
 
     const blockTime = useMiningStore((s) => s.displayBlockTime);
 

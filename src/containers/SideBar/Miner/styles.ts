@@ -27,9 +27,10 @@ export const TileItem = styled.div`
     font-weight: 500;
 `;
 
-export const StatWrapper = styled('div')`
+export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
     display: flex;
     gap: 2px;
     align-items: baseline;
     color: ${({ theme }) => theme.palette.text.primary};
+    text-transform: ${({ $useLowerCase }) => $useLowerCase && 'lowercase'};
 `;
