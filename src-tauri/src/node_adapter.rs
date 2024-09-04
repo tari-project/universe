@@ -24,6 +24,7 @@ const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 pub struct MinotariNodeAdapter {
     use_tor: bool,
     pub(crate) grpc_port: u16,
+    pub(crate) use_pruned_mode: bool,
 }
 
 impl MinotariNodeAdapter {
@@ -32,6 +33,7 @@ impl MinotariNodeAdapter {
         Self {
             use_tor,
             grpc_port: port,
+            use_pruned_mode: false,
         }
     }
 }
@@ -70,6 +72,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "-p".to_string(),
             "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
         ];
+        if self.use_pruned_mode {
+            args.push("-p".to_string());
+            args.push("base_node.storage.pruning_horizon=100".to_string());
+        }
         // if cfg!(debug_assertions) {
         //     args.push("--network".to_string());
         //     args.push("localnet".to_string());

@@ -481,6 +481,7 @@ async fn start_mining<'r>(
     let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled;
     let gpu_mining_enabled = config.gpu_mining_enabled;
+    let mode = config.mode;
 
     let config = state.cpu_miner_config.read().await;
     let monero_address = state.config.read().await.monero_address.clone();
@@ -499,7 +500,7 @@ async fn start_mining<'r>(
                 app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
                 progress_tracker,
-                state.config.read().await.get_mode(),
+                mode,
             )
             .await;
 
@@ -529,6 +530,7 @@ async fn start_mining<'r>(
                 app.path_resolver().app_local_data_dir().unwrap(),
                 app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
+                mode,
             )
             .await;
 
@@ -673,8 +675,6 @@ async fn status(
                 warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
-
-    info!(target: LOG_TARGET, "Network hash rate: {}", randomx_hash_rate);
 
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
