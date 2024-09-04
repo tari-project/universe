@@ -433,6 +433,26 @@ async fn set_auto_mining<'r>(
 }
 
 #[tauri::command]
+async fn set_cpu_mining_enabled<'r>(
+    enabled: bool,
+    state: tauri::State<'r, UniverseAppState>,
+) -> Result<(), String> {
+    let mut config = state.config.write().await;
+    let _ = config.set_cpu_mining_enabled(enabled).await;
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_gpu_mining_enabled<'r>(
+    enabled: bool,
+    state: tauri::State<'r, UniverseAppState>,
+) -> Result<(), String> {
+    let mut config = state.config.write().await;
+    let _ = config.set_gpu_mining_enabled(enabled).await;
+    Ok(())
+}
+
+#[tauri::command]
 async fn get_seed_words<'r>(
     _window: tauri::Window,
     _state: tauri::State<'r, UniverseAppState>,
@@ -458,59 +478,66 @@ async fn start_mining<'r>(
     state: tauri::State<'r, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let config = state.config.read().await;
+    let cpu_mining_enabled = config.cpu_mining_enabled;
+    let gpu_mining_enabled = config.gpu_mining_enabled;
+
     let config = state.cpu_miner_config.read().await;
     let monero_address = state.config.read().await.monero_address.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
-    let res = state
-        .cpu_miner
-        .write()
-        .await
-        .start(
-            state.shutdown.to_signal(),
-            &config,
-            monero_address,
-            app.path_resolver().app_local_data_dir().unwrap(),
-            app.path_resolver().app_cache_dir().unwrap(),
-            app.path_resolver().app_config_dir().unwrap(),
-            app.path_resolver().app_log_dir().unwrap(),
-            progress_tracker,
-            state.config.read().await.get_mode(),
-        )
-        .await;
+    if cpu_mining_enabled {
+        let res = state
+            .cpu_miner
+            .write()
+            .await
+            .start(
+                state.shutdown.to_signal(),
+                &config,
+                monero_address,
+                app.path_resolver().app_local_data_dir().unwrap(),
+                app.path_resolver().app_cache_dir().unwrap(),
+                app.path_resolver().app_config_dir().unwrap(),
+                app.path_resolver().app_log_dir().unwrap(),
+                progress_tracker,
+                state.config.read().await.get_mode(),
+            )
+            .await;
 
-    if let Err(e) = res {
-        error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
-        let _ = state.cpu_miner.write().await.stop().await;
-        return Err(e.to_string());
+        if let Err(e) = res {
+            error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
+            let _ = state.cpu_miner.write().await.stop().await;
+            return Err(e.to_string());
+        }
     }
 
-    let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
-    let grpc_port = state
-        .node_manager
-        .get_grpc_port()
-        .await
-        .map_err(|e| e.to_string())?;
+    if gpu_mining_enabled {
+        let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
+        let grpc_port = state
+            .node_manager
+            .get_grpc_port()
+            .await
+            .map_err(|e| e.to_string())?;
 
-    let res = state
-        .gpu_miner
-        .write()
-        .await
-        .start(
-            state.shutdown.to_signal(),
-            tari_address,
-            grpc_port,
-            app.path_resolver().app_local_data_dir().unwrap(),
-            app.path_resolver().app_config_dir().unwrap(),
-            app.path_resolver().app_log_dir().unwrap(),
-        )
-        .await;
+        let res = state
+            .gpu_miner
+            .write()
+            .await
+            .start(
+                state.shutdown.to_signal(),
+                tari_address,
+                grpc_port,
+                app.path_resolver().app_local_data_dir().unwrap(),
+                app.path_resolver().app_config_dir().unwrap(),
+                app.path_resolver().app_log_dir().unwrap(),
+            )
+            .await;
 
-    if let Err(e) = res {
-        error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
-        let _ = state.cpu_miner.write().await.stop().await;
-        return Err(e.to_string());
+        if let Err(e) = res {
+            error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
+            let _ = state.cpu_miner.write().await.stop().await;
+            return Err(e.to_string());
+        }
     }
-
     Ok(())
 }
 
@@ -669,8 +696,6 @@ async fn status(
         }
     };
 
-    dbg!(&gpu_status);
-
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
         Err(e) => {
@@ -733,6 +758,8 @@ async fn status(
         auto_mining: config_guard.auto_mining,
         user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
         monero_address: config_guard.monero_address.clone(),
+        cpu_mining_enabled: config_guard.cpu_mining_enabled,
+        gpu_mining_enabled: config_guard.gpu_mining_enabled,
     })
 }
 
@@ -803,6 +830,8 @@ pub struct AppStatus {
     p2pool_stats: Stats,
     user_inactivity_timeout: u64,
     monero_address: String,
+    cpu_mining_enabled: bool,
+    gpu_mining_enabled: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -1011,7 +1040,9 @@ fn main() {
             set_airdrop_access_token,
             set_monero_address,
             update_applications,
-            reset_settings
+            reset_settings,
+            set_gpu_mining_enabled,
+            set_cpu_mining_enabled
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
