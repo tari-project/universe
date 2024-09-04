@@ -1,21 +1,14 @@
-import { useState } from 'react';
 import useAppStateStore from '@app/store/appStateStore';
 import SetupView from './SetupView';
-import { useInterval } from '@app/hooks/useInterval.ts';
 
 function SetupViewContainer() {
     const setupTitle = useAppStateStore((s) => s.setupTitle);
+    const setupTitleParams = useAppStateStore((s) => s.setupTitleParams);
     const setupProgress = useAppStateStore((s) => s.setupProgress);
 
-    const [progress, setProgress] = useState(setupProgress || 0);
+    const progressPercentage = Math.floor(setupProgress * 100);
 
-    useInterval(() => {
-        setProgress((c) => (setupProgress + c) * 0.25);
-    }, 500);
-
-    const progressPercentage = Math.floor(progress * 100);
-
-    return <SetupView title={setupTitle} progressPercentage={progressPercentage} />;
+    return <SetupView title={setupTitle} titleParams={setupTitleParams} progressPercentage={progressPercentage} />;
 }
 
 export default SetupViewContainer;

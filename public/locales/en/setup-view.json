@@ -11,11 +11,13 @@
         "checking-latest-version-sha-p2pool": "Checking for latest version of sha-p2pool",
         "waiting-for-wallet": "Waiting for wallet",
         "waiting-for-node": "Waiting for node to sync",
-        "waiting-for-initial-sync": "Waiting for initial sync",
+        "preparing-for-initial-sync": "Preparing for initial sync",
         "starting-mmproxy": "Starting merge mining proxy",
         "starting-p2pool": "Starting P2Pool",
         "application-started": "Applications started",
         "downloading": "Downloading",
-        "download-completed": "Download completed"
+        "download-completed": "Download completed",
+        "waiting-for-header-sync": "Waiting for header sync. {{local_height}}/{{tip_height}} headers synced",
+        "waiting-for-block-sync": "Waiting for block sync. {{local_height}}/{{tip_height}} blocks synced"
     }
 }

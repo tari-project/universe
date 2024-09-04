@@ -5,25 +5,26 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use humantime::format_duration;
 use log::{debug, info, warn};
-use minotari_node_grpc_client::grpc::{Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo};
+use minotari_node_grpc_client::grpc::{
+    Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo, SyncState,
+};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
 use tokio::select;
-use tonic::transport::Channel;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub struct MinotariNodeAdapter {
     use_tor: bool,
     pub(crate) grpc_port: u16,
+    pub(crate) use_pruned_mode: bool,
 }
 
 impl MinotariNodeAdapter {
@@ -32,6 +33,7 @@ impl MinotariNodeAdapter {
         Self {
             use_tor,
             grpc_port: port,
+            use_pruned_mode: false,
         }
     }
 }
@@ -42,6 +44,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
@@ -63,14 +66,29 @@ impl ProcessAdapter for MinotariNodeAdapter {
             format!(
                 "base_node.grpc_address=/ip4/127.0.0.1/tcp/{}",
                 self.grpc_port
-            ), // "-p\"base_node.grpc_server_allow_methods\"=get_network_difficulty".to_string(),
+            ),
+            "-p".to_string(),
+            "base_node.report_grpc_error=true".to_string(),
+            "-p".to_string(),
+            "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
         ];
+        if self.use_pruned_mode {
+            args.push("-p".to_string());
+            args.push("base_node.storage.pruning_horizon=100".to_string());
+        }
+        // if cfg!(debug_assertions) {
+        //     args.push("--network".to_string());
+        //     args.push("localnet".to_string());
+        // }
         if !self.use_tor {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
+            // args.push("-p".to_string());
+            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
+            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
             args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
             // args.push("base_node.p2p.allow_test_addresses=true".to_string());
             // args.push("-p".to_string());
@@ -79,10 +97,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
             // args.push(
             //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
             // );
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
-            );
         } else {
             args.push("-p".to_string());
             args.push(
@@ -124,7 +138,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                             }
 
                         },
-                    };
+                    }
 
                     match fs::remove_file(data_dir.join("node_pid")) {
                         Ok(_) => {}
@@ -188,26 +202,47 @@ impl MinotariNodeStatusMonitor {
             res.metadata.as_ref().unwrap().best_block_hash.clone(),
             res.metadata.unwrap().timestamp,
         );
-        let res = client
-            .get_network_difficulty(HeightRequest {
-                from_tip: 1,
-                start_height: 0,
-                end_height: 0,
-            })
-            .await?;
-        let mut res = res.into_inner();
-        if let Some(difficulty) = res.message().await? {
-            return Ok((
-                difficulty.sha3x_estimated_hash_rate,
-                difficulty.randomx_estimated_hash_rate,
-                MicroMinotari(reward),
-                block_height,
-                block_time,
-                sync_achieved,
-            ));
+        // First try with 10 blocks
+        let blocks = [10, 100];
+        let mut result = Err(anyhow::anyhow!("No difficulty found"));
+        for i in 0..blocks.len() {
+            // Unfortunately have to use 100 blocks to ensure that there are both randomx and sha blocks included
+            // otherwise the hashrate is 0 for one of them.
+            let res = client
+                .get_network_difficulty(HeightRequest {
+                    from_tip: blocks[i],
+                    start_height: 0,
+                    end_height: 0,
+                })
+                .await?;
+            let mut res = res.into_inner();
+            // Get the last one.
+            // base node returns 0 for hashrate when the algo doesn't match, so we need to keep track of last one.
+            let mut last_sha3_estimated_hashrate = 0;
+            let mut last_randomx_estimated_hashrate = 0;
+            while let Some(difficulty) = res.message().await? {
+                if difficulty.sha3x_estimated_hash_rate != 0 {
+                    last_sha3_estimated_hashrate = difficulty.sha3x_estimated_hash_rate;
+                }
+                if difficulty.randomx_estimated_hash_rate != 0 {
+                    last_randomx_estimated_hashrate = difficulty.randomx_estimated_hash_rate;
+                }
+
+                result = Ok((
+                    last_sha3_estimated_hashrate,
+                    last_randomx_estimated_hashrate,
+                    MicroMinotari(reward),
+                    block_height,
+                    block_time,
+                    sync_achieved,
+                ));
+            }
+            if last_randomx_estimated_hashrate != 0 && last_sha3_estimated_hashrate != 0 {
+                break;
+            }
         }
-        // Really unlikely to arrive here
-        Err(anyhow::anyhow!("No difficulty found"))
+
+        result
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
@@ -225,27 +260,69 @@ impl MinotariNodeStatusMonitor {
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
         loop {
             let tip = client.get_tip_info(Empty {}).await?;
-            let res = tip.into_inner();
-            if res.initial_sync_achieved {
+            let sync_progress = client.get_sync_progress(Empty {}).await?;
+            let tip_res = tip.into_inner();
+            let sync_progress = sync_progress.into_inner();
+            if tip_res.initial_sync_achieved {
                 break;
             }
-            let metadata = res.metadata.as_ref().cloned().unwrap();
-            let time_behind = Duration::from_secs(
-                SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs()
-                    - metadata.timestamp,
-            );
-            if time_behind < Duration::from_secs(600) {
-                break;
+            info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
+
+            if sync_progress.state == SyncState::Startup as i32 {
+                progress_tracker
+                    .update("preparing-for-initial-sync".to_string(), None, 10)
+                    .await;
+            } else if sync_progress.state == SyncState::Header as i32 {
+                let progress = if sync_progress.tip_height == 0 {
+                    10
+                } else {
+                    10 + (30 * sync_progress.local_height / sync_progress.tip_height)
+                };
+
+                progress_tracker
+                    .update(
+                        "waiting-for-header-sync".to_string(),
+                        Some(HashMap::from([
+                            (
+                                "local_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                        ])),
+                        progress,
+                    )
+                    .await;
+            } else if sync_progress.state == SyncState::Block as i32 {
+                let progress = if sync_progress.tip_height == 0 {
+                    40
+                } else {
+                    40 + (60 * sync_progress.local_height / sync_progress.tip_height)
+                };
+
+                progress_tracker
+                    .update(
+                        "waiting-for-block-sync".to_string(),
+                        Some(HashMap::from([
+                            (
+                                "local_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                        ])),
+                        progress,
+                    )
+                    .await;
             }
-            progress_tracker
-                .update("waiting-for-initial-sync".to_string(), 1)
-                .await;
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Ok(())
     }
