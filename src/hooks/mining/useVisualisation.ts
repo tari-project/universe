@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useLayoutEffect } from 'react';
 import { setAnimationState } from '../../visuals';
 import { GlAppState } from '@app/glApp';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
@@ -10,7 +10,7 @@ export function useVisualisation() {
     const showFailAnimation = useMiningStore((s) => s.showFailAnimation);
     const setShowFailAnimation = useMiningStore((s) => s.setShowFailAnimation);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (showFailAnimation) {
             const failTimeout = setTimeout(() => {
                 setTimerPaused(false);
@@ -25,8 +25,9 @@ export function useVisualisation() {
         const documentIsVisible = document.visibilityState === 'visible';
         const focused = await appWindow.isFocused();
         const minimized = await appWindow.isMinimized();
-        console.log(`state= ${state}`);
+
         const canAnimate = !minimized && (focused || documentIsVisible);
+
         if (!canAnimate && (state == 'fail' || state == 'success')) {
             return;
         } else {

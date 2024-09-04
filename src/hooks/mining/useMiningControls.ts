@@ -42,16 +42,20 @@ export function useChangeMiningMode() {
 
     return useCallback(
         async (mode: string) => {
-            setIsChangingMode(true);
-            if (!isMiningInProgress) {
-                return await invoke('set_mode', { mode });
-            }
-
-            if (isMiningInProgress) {
-                await handleMining('pause');
-                await invoke('set_mode', { mode }).finally(() => {
-                    handleMining('start');
-                });
+            setIsChangingMode(true); // is is worth having this ? it's so quick...
+            try {
+                if (!isMiningInProgress) {
+                    await invoke('set_mode', { mode });
+                } else {
+                    await handleMining('pause');
+                    await invoke('set_mode', { mode }).then(() => {
+                        handleMining('start');
+                    });
+                }
+            } catch (e) {
+                console.error('Could not change the mode', e);
+            } finally {
+                setIsChangingMode(false);
             }
         },
         [setIsChangingMode, isMiningInProgress, handleMining]

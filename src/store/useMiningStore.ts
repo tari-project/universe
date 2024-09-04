@@ -83,6 +83,7 @@ export const useMiningStore = create<MiningStoreState>()(
                 miningInitiated: s.miningInitiated,
                 miningControlsEnabled: s.miningControlsEnabled,
                 isConnectionLostDuringMining: s.isConnectionLostDuringMining,
+                isChangingMode: s.isChangingMode,
             }),
             version: 3,
         }

@@ -29,10 +29,6 @@ function MiningButton() {
     const handleMining = useMiningControls();
 
     const miningButtonStateText = useMemo(() => {
-        console.log(`miningLoading= ${miningLoading}`);
-        console.log(`isMining= ${isMining}`);
-        console.log(`isChangingMode= ${isChangingMode}`);
-
         if (isConnectionLostDuringMining) {
             return MiningButtonStateText.CONNECTION_LOST;
         }
@@ -50,9 +46,11 @@ function MiningButton() {
 
     const handleClick = useCallback(() => {
         if (isConnectionLostDuringMining) {
-            return handleMining('stop');
+            handleMining('pause');
+            return;
+        } else {
+            handleMining(isMining ? 'stop' : 'start');
         }
-        return handleMining(isMining ? 'stop' : 'start');
     }, [isMining, handleMining, isConnectionLostDuringMining]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;

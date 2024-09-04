@@ -9,8 +9,8 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
-
     const mode = useAppStatusStore((s) => s.mode);
+
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const changeMode = useChangeMiningMode();
 
