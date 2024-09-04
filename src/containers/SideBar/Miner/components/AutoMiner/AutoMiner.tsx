@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
-import { FormGroup, Switch, Stack, Typography, Box } from '@mui/material';
 import { AutoMinerContainer, AutoMinerProgressBar } from './AutoMiner.styles';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useAppStatusStore } from '@app/store/useAppStatusStore';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls';
+import { Typography } from '@app/components/elements/Typography';
+import { Stack } from '@app/components/elements/Stack.tsx';
 import { useTranslation } from 'react-i18next';
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 
 const calculatePercentageLeftToMine = (userInactivityTimeout: number, currentUserInactivityDuration: number) => {
     return (currentUserInactivityDuration / userInactivityTimeout) * 100;
@@ -31,31 +33,23 @@ function AutoMiner() {
     }, [userInactivityTimeout, currentUserInactivityDuration, isAutoMining]);
 
     return (
-        <Stack direction="column" spacing={2}>
-            <AutoMinerContainer percentage={percentage}>
-                <Stack direction="row" gap={1}>
-                    <Stack direction="column" spacing={0}>
+        <Stack>
+            <AutoMinerContainer $percentage={percentage}>
+                <Stack>
+                    <Stack direction="row" justifyContent="space-between">
                         <Typography variant="h6">{t('auto-miner')}</Typography>
-                        <Typography variant="body2">{t('auto-miner-description')}</Typography>
-                    </Stack>
-                    <FormGroup>
-                        <Switch
-                            focusVisibleClassName=".Mui-focusVisible"
-                            disableRipple
+                        <ToggleSwitch
                             disabled={!shouldAutoMiningControlsBeEnabled}
                             checked={isAutoMining}
                             onChange={handleAutoMining}
                         />
-                    </FormGroup>
+                    </Stack>
+                    <Typography variant="p">{t('auto-miner-description')}</Typography>
                 </Stack>
                 {isAutoMining && shouldAutoMiningControlsBeEnabled && (
-                    <Stack direction="row" alignItems="center" gap={1} width="100%" height="100%">
-                        <Typography variant="body2" flex={1}>
-                            {currentUserInactivityDuration?.toFixed(2)}s
-                        </Typography>
-                        <Box flex={5}>
-                            <AutoMinerProgressBar variant="determinate" value={percentage} />
-                        </Box>
+                    <Stack>
+                        <Typography variant="p">{currentUserInactivityDuration?.toFixed(2)}s</Typography>
+                        <AutoMinerProgressBar value={percentage} />
                     </Stack>
                 )}
             </AutoMinerContainer>

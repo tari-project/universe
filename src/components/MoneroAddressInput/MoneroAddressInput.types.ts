@@ -1,5 +1,6 @@
-import type { InputProps, TypographyProps } from '@mui/material';
 import type { Control, ControllerProps, FieldError, FieldPath, FieldValues } from 'react-hook-form';
+import { InputProps } from '@app/components/elements/inputs/Input.tsx';
+import { ChangeEvent } from 'react';
 
 export type MoneroAddressInputType = 'string';
 
@@ -13,8 +14,7 @@ export interface ControlledInputType<FormValues extends FieldValues> {
 export type MoneroAddressInputProps = Partial<Omit<InputProps, 'error'>> & {
     title?: string;
     error?: FieldError;
-    labelSx?: TypographyProps['sx'];
-    onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
     type?: MoneroAddressInputType;
 };
 
