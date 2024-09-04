@@ -13,6 +13,8 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 const variants = {
     hidden: {
@@ -38,37 +40,50 @@ export default function Miner() {
     const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
     const gpu_estimated_earnings = useGPUStatusStore((s) => s.estimated_earnings);
 
+    const isCpuMiningEnabled = useAppStatusStore(useShallow((s) => s.cpu_mining_enabled));
+    const isGpuMiningEnabled = useAppStatusStore(useShallow((s) => s.gpu_mining_enabled));
+
     const hardwareValSplit = cpuHardwareStatus?.label?.split(' ');
     const hardwareVal = hardwareValSplit?.[0] + ' ' + hardwareValSplit?.[1];
 
-    const isWaitingForHashRate = !hashrateReady || hash_rate < 0;
+    const isWaitingForHashRate = miningInitiated && (!hashrateReady || hash_rate < 0);
 
     return (
         <MinerContainer>
             <Divider />
             <TileContainer>
                 <ModeSelect />
-                <Tile
-                    title={`CPU ${t('hashrate')} (H/s)`}
-                    stats={formatNumber(hash_rate)}
-                    isLoading={isWaitingForHashRate}
-                    useLowerCase
-                />
                 <Tile title="CHIP/GPU" stats={hardwareVal || t('unknown')} />
-                <Tile
-                    title={`Est tXTM/${t('day')}`}
-                    stats={formatNumber(estimated_earnings / 1000000)}
-                    isLoading={isWaitingForHashRate}
-                    useLowerCase
-                />
-                <Tile title={`GPU ${t('hashrate')} (H/s)`} stats={formatNumber(gpu_hash_rate)} useLowerCase />
-                <Tile
-                    title={`GPU Est tXTM/${t('day')}`}
-                    stats={formatNumber(gpu_estimated_earnings / 1000000)}
-                    useLowerCase
-                />
+
+                {isCpuMiningEnabled ? (
+                    <Tile
+                        title={`CPU ${t('hashrate')} (H/s)`}
+                        stats={formatNumber(hash_rate)}
+                        isLoading={isWaitingForHashRate}
+                        useLowerCase
+                    />
+                ) : null}
+
+                {isCpuMiningEnabled ? (
+                    <Tile
+                        title={`Est tXTM/${t('day')}`}
+                        stats={formatNumber(estimated_earnings / 1000000)}
+                        isLoading={isWaitingForHashRate}
+                        useLowerCase
+                    />
+                ) : null}
+                {isGpuMiningEnabled ? (
+                    <Tile title={`GPU ${t('hashrate')} (H/s)`} stats={formatNumber(gpu_hash_rate)} useLowerCase />
+                ) : null}
+                {isGpuMiningEnabled ? (
+                    <Tile
+                        title={`GPU Est tXTM/${t('day')}`}
+                        stats={formatNumber(gpu_estimated_earnings / 1000000)}
+                        useLowerCase
+                    />
+                ) : null}
                 <AnimatePresence>
-                    {miningInitiated || isChangingMode ? (
+                    {isCpuMiningEnabled && (miningInitiated || isChangingMode) ? (
                         <>
                             <motion.div variants={variants} initial="hidden" animate="visible" exit="hidden">
                                 <Tile

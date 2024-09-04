@@ -13,9 +13,13 @@ import { useShallow } from 'zustand/react/shallow';
 import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 import { useRef } from 'react';
 import useWindowSize from '@app/hooks/helpers/useWindowSize.ts';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 export default function BlockHeight() {
-    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isMining = isCPUMining || isGPUMining;
+
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
     const displayBlockHeight = useMiningStore((s) => s.displayBlockHeight) ?? 0;
     const height = isMining ? displayBlockHeight : block_height;

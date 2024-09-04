@@ -2,11 +2,16 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useLayoutEffect } from 'react';
 import { useVisualisation } from './useVisualisation';
+import { useShallow } from 'zustand/react/shallow';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 // THIS hook is only for the edge cases of mining status from  BE not being in sync with our UI mining state
 
 export const useMiningEffects = () => {
-    const isMining = useCPUStatusStore((s) => s.is_mining);
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isMining = isCPUMining || isGPUMining;
+
     const handleVisual = useVisualisation();
 
     const setIsConnectionLostDuringMining = useMiningStore((s) => s.setIsConnectionLostDuringMining);

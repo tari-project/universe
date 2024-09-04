@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 enum MiningButtonStateText {
     STARTING = 'starting-mining',
@@ -21,7 +22,9 @@ enum MiningButtonStateText {
 
 function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isMining = isCPUMining || isGPUMining;
     const miningLoading = useMiningStore((s) => s.miningLoading);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const miningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);

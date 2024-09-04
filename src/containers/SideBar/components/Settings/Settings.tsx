@@ -42,6 +42,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput';
 import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',
@@ -66,7 +67,9 @@ export default function Settings() {
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
-    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isMining = isCPUMining || isGPUMining;
     const miningLoading = useMiningStore((s) => s.miningLoading);
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
@@ -198,7 +201,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isCpuMiningEnabled}
-                disabled={isMining || !miningAllowed || miningLoading}
+                disabled={!miningAllowed || miningLoading}
                 onChange={handleCpuMiningEnabled}
             />
         </MinerContainer>
@@ -211,7 +214,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isGpuMiningEnabled}
-                disabled={isMining || !miningAllowed || miningLoading}
+                disabled={!miningAllowed || miningLoading}
                 onChange={handleGpuMiningEnabled}
             />
         </MinerContainer>
@@ -237,9 +240,10 @@ export default function Settings() {
                     <Divider />
                     {p2pMarkup}
                     <Divider />
-                    {cpuEnabledMarkup}
-                    <Divider />
-                    {gpuEnabledMarkup}
+                    <HorisontalBox>
+                        {cpuEnabledMarkup}
+                        {gpuEnabledMarkup}
+                    </HorisontalBox>
                     <Divider />
                     <LanguageSettings />
                     <Divider />

@@ -10,6 +10,7 @@ import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import useMining from '@app/hooks/mining/useMining.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
 import { GpuMinerStatus } from '@app/types/app-status.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 const INTERVAL = 1000;
 
@@ -19,6 +20,8 @@ export function useGetStatus() {
     const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
     const setGPUStatus = useGPUStatusStore((s) => s.setGPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
+    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+
     const { error, setError } = useAppStateStore((s) => ({
         error: s.error,
         setError: s.setError,
@@ -54,6 +57,8 @@ export function useGetStatus() {
 
                         setBalanceData(wallet_balance);
                         setMode(status.mode);
+
+                        setMiningControlsEnabled(status.cpu_mining_enabled || status.gpu_mining_enabled);
                     } else {
                         console.error('Could not get status');
                     }

@@ -23,6 +23,7 @@ export function useMiningControls() {
                 await invoke(invokeFn, {});
                 console.info(`mining ${isStart ? 'started' : 'stopped'}`);
                 await handleVisual(type);
+                setMiningInitiated(false);
             } catch (e) {
                 const error = e as string;
                 if (!isStart) {
