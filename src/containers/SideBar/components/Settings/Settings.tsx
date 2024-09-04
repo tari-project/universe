@@ -164,20 +164,14 @@ export default function Settings() {
         });
     };
 
-    const handleCpuMiningEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const isChecked = event.target.checked;
-        console.log(`isChecked= ${isChecked}`);
-        invoke('set_cpu_mining_enabled', { enabled: isChecked }).then(() => {
-            console.info('CPU mining enabled checked', isChecked);
-        });
+    const handleCpuMiningEnabled = () => {
+        console.log('?');
+        invoke('set_cpu_mining_enabled', { enabled: !isCpuMiningEnabled });
     };
 
-    const handleGpuMiningEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const isChecked = event.target.checked;
-        console.log(`isChecked= ${isChecked}`);
-        invoke('set_gpu_mining_enabled', { enabled: isChecked }).then(() => {
-            console.info('GPU mining enabled checked', isChecked);
-        });
+    const handleGpuMiningEnabled = () => {
+        console.log('???');
+        invoke('set_gpu_mining_enabled', { enabled: !isGpuMiningEnabled });
     };
 
     const p2pMarkup = (
@@ -200,12 +194,10 @@ export default function Settings() {
 
     const cpuEnabledMarkup = (
         <MinerContainer>
-            <Stack>
-                <Typography variant="h6">{t('cpu-mining-enabled', { ns: 'settings' })}</Typography>
-            </Stack>
+            <Typography variant="h6">{t('cpu-mining-enabled', { ns: 'settings' })}</Typography>
             <ToggleSwitch
                 checked={isCpuMiningEnabled}
-                disabled={toggleDisabledBase || cpuDisabled}
+                disabled={toggleDisabledBase}
                 onChange={handleCpuMiningEnabled}
             />
         </MinerContainer>
@@ -213,12 +205,10 @@ export default function Settings() {
 
     const gpuEnabledMarkup = (
         <MinerContainer>
-            <Stack>
-                <Typography variant="h6">{t('gpu-mining-enabled', { ns: 'settings' })}</Typography>
-            </Stack>
+            <Typography variant="h6">{t('gpu-mining-enabled', { ns: 'settings' })}</Typography>
             <ToggleSwitch
                 checked={isGpuMiningEnabled}
-                disabled={toggleDisabledBase || gpuDisabled}
+                disabled={toggleDisabledBase}
                 onChange={handleGpuMiningEnabled}
             />
         </MinerContainer>

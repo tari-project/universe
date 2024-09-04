@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 export function useInterval(callback: () => void, delay: number | null) {
     const storedCb = useRef(callback);
@@ -6,7 +6,7 @@ export function useInterval(callback: () => void, delay: number | null) {
         storedCb.current = callback;
     }, [callback]);
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         function fn() {
             storedCb.current?.();
         }
