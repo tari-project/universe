@@ -68,7 +68,7 @@ export default function ConnectButton() {
     }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setAirdropTokens, setAuthUuid, setUserPoints]);
 
     return (
-        <StyledButton onClick={handleAuth} size="medium">
+        <StyledButton onClick={handleAuth}>
             <Gem1 src={gem1Image} alt="" className="ConnectButton-Gem1" />
             <Gem2 src={gem2Image} alt="" className="ConnectButton-Gem2" />
             <Gem3 src={gem3Image} alt="" className="ConnectButton-Gem3" />

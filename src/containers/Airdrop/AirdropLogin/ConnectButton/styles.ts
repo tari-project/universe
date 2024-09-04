@@ -1,6 +1,5 @@
-import { Button, keyframes } from '@mui/material';
-import { styled } from '@mui/material/styles';
 import { FaXTwitter } from 'react-icons/fa6';
+import styled, { keyframes } from 'styled-components';
 
 const rotateGem1 = keyframes`
   0%, 100% {
@@ -29,7 +28,7 @@ const rotateGem3 = keyframes`
   }
 `;
 
-export const StyledButton = styled(Button)`
+export const StyledButton = styled('button')`
     padding: 0px 4px 0 8px;
 
     display: flex;

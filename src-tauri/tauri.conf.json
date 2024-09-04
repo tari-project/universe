@@ -7,9 +7,12 @@
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.1.40"
+        "version": "0.2.1"
     },
     "tauri": {
+        "systemTray": {
+            "iconPath": "icons/icon.ico"
+        },
         "updater": {
             "active": true,
             "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"],
@@ -43,12 +46,12 @@
         },
         "windows": [
             {
-                "title": "Tari Universe",
+                "title": "Tari Universe | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
-                "minWidth": 388,
-                "minHeight": 455,
+                "minWidth": 997,
+                "minHeight": 620,
                 "resizable": true,
                 "fullscreen": false,
                 "decorations": true,

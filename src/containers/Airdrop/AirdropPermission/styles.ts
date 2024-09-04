@@ -1,7 +1,6 @@
-import { Box, keyframes, Typography } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import styled, { keyframes } from 'styled-components';
 
-export const Position = styled(Box)`
+export const Position = styled('div')`
     pointer-events: none;
 
     position: absolute;
@@ -15,7 +14,7 @@ export const Position = styled(Box)`
     }
 `;
 
-export const BoxWrapper = styled(Box)`
+export const BoxWrapper = styled('div')`
     display: flex;
     justify-content: center;
     align-items: center;
@@ -27,7 +26,7 @@ export const BoxWrapper = styled(Box)`
     background: #fff;
     box-shadow:
         0 10px 25px -12.5px rgba(0, 0, 0, 0.07),
-        0 12.5px 33.333333333333336px -16.666666666666668px rgba(0, 0, 0, 0.04666666666666667),
+        0 12.5px 33.33px -16.66px rgba(0, 0, 0, 0.05),
         0 15px 50px -25px rgba(0, 0, 0, 0.035);
 
     pointer-events: all;
@@ -38,7 +37,7 @@ export const BoxWrapper = styled(Box)`
     }
 `;
 
-export const TextWrapper = styled(Box)`
+export const TextWrapper = styled('div')`
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -51,7 +50,7 @@ export const Title = styled('div')`
     line-height: 110%;
 `;
 
-export const Text = styled(Typography)`
+export const Text = styled('span')`
     color: #797979;
     font-size: 12px;
     font-weight: 500;

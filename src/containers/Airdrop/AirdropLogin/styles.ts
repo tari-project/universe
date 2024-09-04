@@ -1,7 +1,6 @@
-import { Box } from '@mui/material';
-import { styled } from '@mui/material/styles';
+import styled from 'styled-components';
 
-export const AirdropLoginPosition = styled(Box)`
+export const AirdropLoginPosition = styled('div')`
     position: fixed;
     top: 20px;
     right: 20px;
