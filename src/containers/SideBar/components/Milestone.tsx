@@ -1,6 +1,5 @@
-import { Stack } from '@app/components/elements/Stack';
+import { Stack, Typography } from '@mui/material';
 import { StyledLinearProgress, ProgressBox, GemBox } from '../styles';
-import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 
 function Milestones() {
@@ -8,13 +7,13 @@ function Milestones() {
 
     const progress = 70;
     return (
-        <Stack>
-            <Stack>
-                <Typography variant="p">{t('next-milestone')}</Typography>
-                <Typography variant="p">5 XTR</Typography>
+        <Stack spacing={0.5}>
+            <Stack direction="row" justifyContent="space-between" spacing={1}>
+                <Typography variant="body2">{t('next-milestone')}</Typography>
+                <Typography variant="body2">5 XTR</Typography>
             </Stack>
             <ProgressBox>
-                <StyledLinearProgress value={progress} />
+                <StyledLinearProgress variant="determinate" value={progress} />
                 <GemBox />
             </ProgressBox>
         </Stack>

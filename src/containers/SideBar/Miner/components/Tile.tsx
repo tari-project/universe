@@ -1,7 +1,7 @@
-import { StatWrapper, TileItem } from '../styles';
+import { Typography } from '@mui/material';
+import { TileItem } from '../styles';
 import truncateString from '@app/utils/truncateString.ts';
 import { StyledIcon } from '@app/containers/Dashboard/MiningView/components/MiningButton.styles';
-import { Typography } from '@app/components/elements/Typography.tsx';
 
 interface TileProps {
     title: string;
@@ -12,15 +12,13 @@ interface TileProps {
 function Tile({ title, stats, isLoading }: TileProps) {
     return (
         <TileItem>
-            <Typography>{title}</Typography>
+            <Typography variant="body2">{title}</Typography>
             {isLoading ? (
-                <StyledIcon />
+                <StyledIcon sx={{ height: 20, width: 20 }} />
             ) : (
-                <StatWrapper>
-                    <Typography variant="h5" title={stats}>
-                        {truncateString(stats, 8)}
-                    </Typography>
-                </StatWrapper>
+                <Typography variant="h5" fontSize={18}>
+                    {truncateString(stats, 10)}
+                </Typography>
             )}
         </TileItem>
     );

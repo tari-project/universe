@@ -1,7 +1,7 @@
+import { styled } from '@mui/material/styles';
 import loading from '@app/assets/backgrounds/white-bg.jpg';
-import styled from 'styled-components';
 
-export const SplashScreenContainer = styled.div`
+export const SplashScreenContainer = styled('div')`
     position: absolute;
     background: url(${loading}) no-repeat center center fixed;
     background-size: cover;
@@ -13,7 +13,7 @@ export const SplashScreenContainer = styled.div`
     align-items: center;
 `;
 
-export const LottieContainer = styled.div`
+export const LottieContainer = styled('div')`
     width: 600px;
     height: auto;
 `;

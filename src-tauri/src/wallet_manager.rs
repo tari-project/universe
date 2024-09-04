@@ -1,7 +1,6 @@
 use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
 use crate::process_watcher::ProcessWatcher;
-use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -56,7 +55,6 @@ impl WalletManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), WalletManagerError> {
         self.node_manager.wait_ready().await?;
@@ -66,7 +64,7 @@ impl WalletManager {
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
         process_watcher.adapter.base_node_address = Some("/ip4/127.0.0.1/tcp/9998".to_string());
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(app_shutdown, base_path, log_path)
             .await?;
         process_watcher.wait_ready().await?;
         Ok(())
@@ -89,10 +87,6 @@ impl WalletManager {
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
             .get_balance()
-            .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })?)
+            .await?)
     }
 }

@@ -1,9 +1,5 @@
 {
     "floor": "Floor",
-    "tribe": "Tribe",
-    "miners": "Miners",
-    "tribe-earnings": "Tribe earnings",
-    "tribe-pool-height": "Pool height",
     "current-block-time": "Current block time",
     "your-reward-is": "Your reward is",
     "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",

@@ -1,6 +1,5 @@
-import { ChangeEvent } from 'react';
+import type { InputProps, TypographyProps } from '@mui/material';
 import type { Control, ControllerProps, FieldError, FieldPath, FieldValues } from 'react-hook-form';
-import { InputProps } from '@app/components/elements/inputs/Input.tsx';
 
 export type NumberInputType = 'float' | 'int' | 'percentage';
 
@@ -14,8 +13,8 @@ export interface ControlledInputType<FormValues extends FieldValues> {
 export type NumberInputProps = Partial<Omit<InputProps, 'error'>> & {
     title?: string;
     error?: FieldError;
-
-    onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+    labelSx?: TypographyProps['sx'];
+    onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
     symbol?: string;
     maximum?: number;
     type?: NumberInputType;

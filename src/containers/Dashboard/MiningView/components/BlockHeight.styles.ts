@@ -1,101 +1,79 @@
-import styled from 'styled-components';
+import { styled } from '@mui/material/styles';
+import { Box } from '@mui/material';
 
-export const Wrapper = styled.div`
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-end;
-    position: absolute;
-    right: -10px;
-    top: 30px;
-    overflow: hidden;
-    width: 100%;
-    height: calc(100% - 60px);
-`;
+interface BlockHeightBgProps {
+    length: number;
+}
 
-export const RulerContainer = styled.div<{ $height?: number }>`
-    top: ${({ $height }) => ($height ? `calc(50% - ${$height / 2}px)` : '50%')};
-    position: absolute;
-    height: 100%;
-    transform: translateY(${({ $height }) => ($height ? `-calc(50% - ${$height / 2}px)` : '-50%')});
-    display: flex;
-    flex-direction: column;
-    align-items: end;
-    justify-content: center;
-    z-index: 0;
-`;
+const topHeight = 115;
+const bottomHeight = 115;
 
-export const RulerMarkContainer = styled.div`
-    display: grid;
-    grid-template-areas: 'number line';
-    grid-template-columns: auto 10px;
-    grid-template-rows: 7px;
-    justify-items: end;
-    align-items: center;
-    column-gap: 10px;
-    row-gap: 0;
-`;
+export const RulerAbsoluteWrapper = styled(Box)(() => ({
+    zIndex: 100,
+    position: 'absolute',
+    right: 0,
+    height: `calc(100vh - ${topHeight}px - ${bottomHeight}px)`,
+    top: '50%',
+    transform: 'translateY(-50%)',
+}));
 
-export const RulerMark = styled('div')`
-    width: 10px;
-    height: 1px;
-    background-color: ${({ theme }) => theme.palette.text.primary};
-    grid-area: line;
-`;
+export const RulerContainer = styled(Box)(() => ({
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    height: '100%',
+    zIndex: 2,
+}));
 
-export const RulerNumber = styled.div`
-    font-family: Poppins, sans-serif;
-    font-variant-numeric: tabular-nums;
-    font-size: 11px;
-    color: ${({ theme }) => theme.palette.text.primary};
-    opacity: 0.16;
-    text-align: right;
-    font-weight: 700;
-    line-height: 1.1;
-    grid-area: number;
-`;
+export const RulerMarkContainer = styled(Box)(() => ({
+    display: 'flex',
+    flexDirection: 'row',
+    minWidth: '50px',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    height: '3px',
+    overflow: 'visible',
+    gap: '10px',
+}));
 
-export const BlockHeightAccent = styled.div<{ $content: string; $height?: number }>`
-    width: 100vh;
-    height: 100%;
-    font-family: Druk, sans-serif;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
-    letter-spacing: -2px;
-    font-size: 105px;
-    transform: rotate(-90deg) translate(0, calc(100vh - ${({ $height = 100 }) => `${$height * 100 - 40}px`}));
-    position: fixed;
-    z-index: -1;
+export const RulerMark = styled('div')(({ theme }) => ({
+    width: '10px',
+    height: '1px',
+    backgroundColor: theme.palette.text.primary,
+}));
 
-    &:before {
-        content: ${({ $content }) => $content || ''};
-        position: absolute;
-        width: 100%;
-        color: ${({ theme }) => theme.palette.base};
-        opacity: 0.4;
-        transform: ${({ $height }) => ($height ? `scale(${$height})` : `scale(1.3)`)};
-        text-align: center;
-    }
+export const BlockHeightLrg = styled(Box)(({ theme }) => ({
+    fontFamily: '"DrukWideLCGBold", sans-serif',
+    fontSize: '25px',
+    letterSpacing: '1px',
+    color: `${theme.palette.text.primary}`,
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    right: '15px',
+    zIndex: 2,
+}));
 
-    @media (max-width: 1100px) {
-        transform: rotate(-90deg) translate(0, calc(100vh - ${({ $height = 100 }) => `${$height * 100 - 10}px`}));
-        &:before {
-            width: 95%;
-            transform: ${({ $height }) => ($height ? `scale(${$height})` : `scale(1.1)`)};
-        }
-    }
-`;
+export const BlockHeightSml = styled(Box)(({ theme }) => ({
+    fontFamily: '"PoppinsBold", sans-serif',
+    fontVariantNumeric: 'tabular-nums',
+    fontSize: '11px',
+    color: `${theme.palette.text.primary}`,
+    opacity: 0.2,
+}));
 
-export const BlockHeightText = styled.div`
-    position: absolute;
-    right: 20px;
-    color: #000;
-    text-align: right;
-    font-family: Druk, sans-serif;
-    font-size: 25px;
-    font-weight: 700;
-    line-height: normal;
-
-    @media (max-width: 1100px) {
-        font-size: 20px;
-    }
-`;
+export const BlockHeightBg = styled(Box)<BlockHeightBgProps>(({ length }) => ({
+    fontFamily: '"DrukWideLCGBold", sans-serif',
+    right: 0,
+    top: '50%',
+    transform: 'translate(50%, calc(20px - 100%))',
+    fontSize: `min(calc((100vh - ${topHeight + bottomHeight}px) / ${length}), 152px)`,
+    lineHeight: 1,
+    letterSpacing: '1px',
+    color: `rgba(255,255,255,0.4)`,
+    textTransform: 'uppercase',
+    position: 'absolute',
+    rotate: '270deg',
+    zIndex: 1,
+    transformOrigin: 'top right',
+}));

@@ -1,4 +1,4 @@
-import styled, { keyframes } from 'styled-components';
+import { keyframes, styled } from '@mui/material/styles';
 
 export const Wrapper = styled('div')`
     position: relative;
@@ -31,7 +31,7 @@ const float = keyframes`
   }
 `;
 
-export const FloatingImage = styled.img`
+export const FloatingImage = styled('img')`
     max-width: 260px;
     height: auto;
     animation: ${float} 3s ease-in-out infinite;

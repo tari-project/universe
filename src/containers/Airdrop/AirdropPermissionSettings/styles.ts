@@ -1,10 +1,11 @@
-import styled from 'styled-components';
+import { Box, Typography } from '@mui/material';
+import { styled } from '@mui/material/styles';
 
 export const Wrapper = styled('div')`
     padding: 0 0 0px 0;
 `;
 
-export const BoxWrapper = styled('div')`
+export const BoxWrapper = styled(Box)`
     display: flex;
     justify-content: center;
     align-items: center;
@@ -20,7 +21,7 @@ export const BoxWrapper = styled('div')`
     margin-bottom: 20px;
 `;
 
-export const TextWrapper = styled('div')`
+export const TextWrapper = styled(Box)`
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -33,7 +34,7 @@ export const Title = styled('div')`
     line-height: 110%;
 `;
 
-export const Text = styled('span')`
+export const Text = styled(Typography)`
     color: #797979;
     font-size: 12px;
     font-weight: 500;

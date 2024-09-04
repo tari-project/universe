@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use log::info;
 use tokio::sync::RwLock;
@@ -30,16 +30,8 @@ impl ProgressTracker {
         self.inner.write().await.set_next_max(max);
     }
 
-    pub async fn update(
-        &self,
-        title: String,
-        title_params: Option<HashMap<String, String>>,
-        progress: u64,
-    ) {
-        self.inner
-            .read()
-            .await
-            .update(title, title_params, progress);
+    pub async fn update(&self, title: String, progress: u64) {
+        self.inner.read().await.update(title, progress);
     }
 }
 
@@ -63,22 +55,16 @@ impl ProgressTrackerInner {
         self.next_max = max;
     }
 
-    pub fn update(
-        &self,
-        title: String,
-        title_params: Option<HashMap<String, String>>,
-        progress: u64,
-    ) {
+    pub fn update(&self, title: String, progress: u64) {
         info!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
         let _ = self.window.emit(
             "message",
             SetupStatusEvent {
                 event_type: "setup_status".to_string(),
                 title,
-                title_params,
-                progress: ((self.min
-                    + ((((self.next_max - self.min) as f64) * ((progress as f64) / 100.0)) as u64))
-                    as f64)
+                progress: (self.min
+                    + ((self.next_max - self.min) as f64 * (progress as f64 / 100.0)) as u64)
+                    as f64
                     / 100.0,
             },
         );
