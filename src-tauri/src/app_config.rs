@@ -27,7 +27,7 @@ pub struct AppConfigFromFile {
     pub cpu_mining_enabled: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum MiningMode {
     Eco,
     Ludicrous,
