@@ -727,8 +727,14 @@ async fn status(
         .read_hardware_parameters();
 
     let mut p2pool_stats = HashMap::with_capacity(2);
-    p2pool_stats.insert(PowAlgorithm::Sha3x.to_string().to_lowercase(), Stats::default());
-    p2pool_stats.insert(PowAlgorithm::RandomX.to_string().to_lowercase(), Stats::default());
+    p2pool_stats.insert(
+        PowAlgorithm::Sha3x.to_string().to_lowercase(),
+        Stats::default(),
+    );
+    p2pool_stats.insert(
+        PowAlgorithm::RandomX.to_string().to_lowercase(),
+        Stats::default(),
+    );
 
     let config_guard = state.config.read().await;
 
@@ -977,7 +983,7 @@ fn main() {
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
-                .expect("Could not set up logging");
+            .expect("Could not set up logging");
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread_config = tauri::async_runtime::spawn(async move {

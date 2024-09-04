@@ -72,7 +72,7 @@ impl ProcessAdapter for P2poolAdapter {
             self.config.base_node_address.clone(),
             "-b".to_string(),
             log_path.join("sha-p2pool").to_str().unwrap().to_string(),
-            "--no-default-seed-peers".to_string() // TODO: remove, just for testing
+            "--no-default-seed-peers".to_string(), // TODO: remove, just for testing
         ];
         let pid_file_name = self.pid_file_name().to_string();
         Ok((
@@ -86,20 +86,18 @@ impl ProcessAdapter for P2poolAdapter {
                     crate::download_utils::set_permissions(&file_path).await?;
 
                     // select tribe
-                    // let child = tokio::process::Command::new(file_path.clone())
-                    //     .args(vec!["list-tribes"])
-                    //     .stdout(std::process::Stdio::piped())
-                    //     .kill_on_drop(true)
-                    //     .spawn()?;
-                    // 
-                    // let output = child.wait_with_output().await?;
-                    // let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
-                    // let tribe = match tribes.choose(&mut rand::thread_rng()) {
-                    //     Some(tribe) => tribe.to_string(),
-                    //     None => String::from("default"), // TODO: generate name
-                    // };
-                    args.push("--tribe".to_string());
-                    args.push("test_randomx".to_string());
+                    let child = tokio::process::Command::new(file_path.clone())
+                        .args(vec!["list-tribes"])
+                        .stdout(std::process::Stdio::piped())
+                        .kill_on_drop(true)
+                        .spawn()?;
+
+                    let output = child.wait_with_output().await?;
+                    let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
+                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
+                        Some(tribe) => tribe.to_string(),
+                        None => String::from("default"), // TODO: generate name
+                    };
 
                     // start
                     let mut child = launch_child_process(&file_path, &args)?;
