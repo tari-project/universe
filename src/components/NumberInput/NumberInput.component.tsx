@@ -1,4 +1,3 @@
-import { InputAdornment, Input, Stack } from '@mui/material';
 import { Control, Controller, FieldValues } from 'react-hook-form';
 
 import { FieldErrorMessage } from '../FieldErrorMessage/FieldErrorMessage.component';
@@ -6,77 +5,72 @@ import { FieldErrorMessage } from '../FieldErrorMessage/FieldErrorMessage.compon
 import { decimalRegex, integerRegex, percentageRegex } from './NumberInput.constants';
 import { NumberInputTypography } from './NumberInput.styles';
 import type { ControlledNumberInputProps, NumberInputProps, NumberInputType } from './NumberInput.types';
-
+import { Stack } from '@app/components/elements/Stack.tsx';
+import { Input } from '@app/components/elements/inputs/Input.tsx';
+import { ChangeEvent, ReactNode } from 'react';
 const valueParses: Record<NumberInputType, RegExp> = {
     int: integerRegex,
     float: decimalRegex,
     percentage: percentageRegex,
 };
 
-export const NumberInput: React.FC<NumberInputProps> = ({
+function InputAdornment({ children, onClick }: { children?: ReactNode; onClick?: () => void }) {
+    return (
+        <div onClick={onClick} style={{ height: 60 }}>
+            {children}
+        </div>
+    );
+}
+
+export const NumberInput = ({
     title,
     value,
     onChange,
-    labelSx,
     error,
     symbol = '$',
     type = 'float',
     maximum,
     ...inputProps
-}) => {
-    const validateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+}: NumberInputProps) => {
+    const validateChange = (event: ChangeEvent<HTMLInputElement>) => {
         const newValue = event.target.value;
 
         if (onChange && (valueParses[type].test(newValue) || newValue === '')) onChange(event);
     };
-
     return (
-        <Stack
-            gap={1}
-            sx={{
-                width: 'auto',
-                flexDirection: 'column',
-                justifyContent: 'flex-end',
-                position: 'relative',
-                ...inputProps.sx,
-            }}
-        >
+        <Stack>
             {title && (
-                <NumberInputTypography variant="body1" component="label" sx={labelSx}>
+                <NumberInputTypography variant="p" component="label">
                     {title}
                 </NumberInputTypography>
             )}
-            <Stack flexDirection="row" gap={1}>
+            <Stack style={{ height: 30 }} justifyContent="flex-start" gap={8}>
                 <Input
-                    error={Boolean(error)}
-                    fullWidth
+                    hasError={Boolean(error)}
                     value={value}
                     onChange={validateChange}
                     endAdornment={
                         maximum !== undefined ? (
                             <InputAdornment
-                                position="end"
-                                sx={{ cursor: 'pointer' }}
                                 onClick={() =>
                                     validateChange({
                                         target: { value: String(maximum) },
-                                    } as React.ChangeEvent<HTMLInputElement>)
+                                    } as ChangeEvent<HTMLInputElement>)
                                 }
                             >
                                 MAX
                             </InputAdornment>
                         ) : (
-                            symbol && <InputAdornment position="end">{symbol}</InputAdornment>
+                            symbol && <InputAdornment>{symbol}</InputAdornment>
                         )
                     }
                     {...inputProps}
                 />
+                {error ? <FieldErrorMessage error={error} /> : null}
             </Stack>
-            {error && <FieldErrorMessage error={error} />}
         </Stack>
     );
 };
-
 export const ControlledNumberInput = <FormValues extends FieldValues>({
     name,
     rules,
@@ -98,7 +92,7 @@ export const ControlledNumberInput = <FormValues extends FieldValues>({
             />
         )}
         name={name}
-        control={control as Control<FieldValues>}
+        control={control as Control}
         rules={rules}
     />
 );
