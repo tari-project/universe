@@ -8,43 +8,59 @@ import {
     NotificationsButton,
     Dot,
     StyledAvatar,
+    Menu,
+    MenuItem,
+    MenuWrapper,
 } from './styles';
-
-import { Menu, MenuItem, Grow } from '@mui/material';
 
 import gemImage from './images/gems.png';
 import shellImage from './images/shells.png';
 import hammerImage from './images/hammers.png';
 import { FaBell } from 'react-icons/fa6';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useTranslation } from 'react-i18next';
+import { AnimatePresence } from 'framer-motion';
 
 export default function UserInfo() {
-    const { logout, userDetails } = useAirdropStore();
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const { logout, userDetails, airdropTokens } = useAirdropStore();
+    const [open, setOpen] = useState(false);
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-
-    if (!userDetails || !userDetails?.user) return null;
 
     const profileimageurl = userDetails?.user?.profileimageurl;
     const gems = userDetails?.user?.rank?.gems;
     const shells = userDetails?.user?.rank?.shells;
     const hammers = userDetails?.user?.rank?.hammers;
 
-    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-        setAnchorEl(event.currentTarget);
+    const handleClick = () => {
+        setOpen(true);
     };
 
     const handleClose = () => {
-        setAnchorEl(null);
+        setOpen(false);
     };
 
     const handleLogout = () => {
-        setAnchorEl(null);
         logout();
     };
+
+    const handleClickOutside = useCallback(
+        (event: MouseEvent) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if (open && (event.target as any)?.id !== 'avatar-wrapper') {
+                handleClose();
+            }
+        },
+        [open]
+    );
+
+    useEffect(() => {
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [handleClickOutside]);
+
+    if (!airdropTokens?.token) return null;
 
     const showNotificationButton = false;
 
@@ -74,25 +90,16 @@ export default function UserInfo() {
                 </NotificationsButton>
             )}
 
-            <StyledAvatar
-                src={profileimageurl}
-                onClick={handleClick}
-                alt="User Avatar"
-                sx={{ width: 36, height: 36 }}
-            />
-
-            <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-                TransitionComponent={Grow}
-                keepMounted
-                sx={{ width: 180 }}
-            >
-                <MenuItem onClick={handleLogout} sx={{ width: 180 }}>
-                    {t('logout')}
-                </MenuItem>
-            </Menu>
+            <MenuWrapper>
+                <StyledAvatar id="avatar-wrapper" $img={profileimageurl} onClick={handleClick} />
+                <AnimatePresence>
+                    {open && (
+                        <Menu>
+                            <MenuItem onClick={handleLogout}>{t('logout')}</MenuItem>
+                        </Menu>
+                    )}
+                </AnimatePresence>
+            </MenuWrapper>
         </Wrapper>
     );
 }

@@ -14,6 +14,12 @@
         "max": "Maksymalny czas to 21600 sekund",
         "min": "Minimalny czas to 1 sekunda"
     },
+    "monero-address": {
+        "title": "Address Monero",
+        "placeholder": "Wprowadź address Monero"
+    },
     "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
-    "visual-mode": "Tryb wizualny"
+    "visual-mode": "Tryb wizualny",
+    "pool-mining": "Pool Mining",
+    "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia)."
 }
