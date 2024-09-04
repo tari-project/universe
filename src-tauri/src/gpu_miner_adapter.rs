@@ -12,7 +12,7 @@ use tokio::select;
 
 use crate::{
     app_config::MiningMode,
-    binary_resolver::{Binaries, BinaryResolver},
+    binaries::{Binaries, BinaryResolver},
     network_utils::get_free_port,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
 };
@@ -119,10 +119,12 @@ impl ProcessAdapter for GpuMinerAdapter {
             ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::GpuMiner)
-                        .await?;
-                    crate::download_utils::set_permissions(&file_path).await?;
+                    let binary_resolver = BinaryResolver::current().read().await;
+                    let file_path = binary_resolver
+                        .resolve_path_to_binary_files(Binaries::GpuMiner)
+                        .await
+                        .unwrap();
+                    crate::download_utils::set_permissions(&file_path.clone()).await?;
                     let mut child;
 
                     // if cfg!(debug_assertions) {

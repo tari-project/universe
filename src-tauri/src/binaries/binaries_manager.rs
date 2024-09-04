@@ -252,7 +252,7 @@ impl BinaryManager {
         self.selected_version.clone()
     }
 
-    pub fn check_if_files_of_selected_version_exist(&self, binary:Binaries) -> bool {
+    pub fn check_if_files_of_selected_version_exist(&self, binary: Binaries) -> bool {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if files for selected version exist: {:?}", self.selected_version);
 
         if self.selected_version.is_none() {
@@ -264,7 +264,8 @@ impl BinaryManager {
         println!("Binary folder: {:?}", binary_folder);
         let version_folder = binary_folder.join(self.selected_version.clone().unwrap().to_string());
         println!("Version folder: {:?}", version_folder);
-        let binary_file = version_folder.join(&binary.binary_file_name(self.selected_version.clone().unwrap()));
+        let binary_file =
+            version_folder.join(&binary.binary_file_name(self.selected_version.clone().unwrap()));
         println!("Binary file: {:?}", binary_file);
 
         let binary_file_exists = binary_file.exists();

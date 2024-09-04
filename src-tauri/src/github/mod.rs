@@ -5,6 +5,8 @@ use serde::Deserialize;
 
 use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 
+const LOG_TARGET: &str = "tari::universe::github";
+
 #[derive(Deserialize)]
 struct Release {
     name: String,

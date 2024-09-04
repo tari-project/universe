@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::info;
+use regex::Regex;
 use tauri::{api::path::cache_dir, utils::platform};
 
 use crate::github;
@@ -14,6 +15,7 @@ use super::binaries_resolver::{
 pub struct GithubReleasesAdapter {
     pub repo: String,
     pub owner: String,
+    pub specific_name: Option<Regex>,
 }
 
 #[async_trait]
@@ -82,26 +84,35 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let mut name_suffix = "";
         // TODO: add platform specific logic
         if cfg!(target_os = "windows") {
-            name_suffix = "windows-x64.exe.zip";
+            name_suffix = r"windows-x64.*\.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-            name_suffix = "macos-x86_64.zip";
+            name_suffix = r"macos-x86_64.*\.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            name_suffix = "macos-arm64.zip";
+            name_suffix = r"macos-arm64.*\.zip";
         }
         if cfg!(target_os = "linux") {
-            name_suffix = "linux-x86_64.zip";
+            name_suffix = r"linux-x86_64.*\.zip";
         }
 
         info!(target: BINARY_RESOLVER_LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
 
+        let reg = Regex::new(name_suffix).unwrap();
+
         let platform = version
             .assets
             .iter()
-            .find(|a| a.name.ends_with(name_suffix))
+            .find(|a| {
+                println!("Asset name: {}", a.name);
+                if let Some(ref specific) = self.specific_name {
+                    specific.is_match(&a.name) && reg.is_match(&a.name)
+                } else {
+                    reg.is_match(&a.name)
+                }
+            })
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
         info!(target: BINARY_RESOLVER_LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())

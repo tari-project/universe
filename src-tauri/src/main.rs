@@ -382,24 +382,11 @@ async fn setup_inner(
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(10 * 60);
-    binary_resolver
-        .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
-        .await?;
-    binary_resolver
-        .initalize_binary(
-            Binaries::GpuMiner,
-            progress.clone(),
-            should_check_for_update,
-        )
-        .await;
 
-    binary_resolver
-        .initalize_binary(
-            Binaries::MergeMiningProxy,
-            progress.clone(),
-            should_check_for_update,
-        )
-        .await?;
+    progress.set_max(10).await;
+    progress
+        .update("checking-latest-version-node".to_string(), None, 0)
+        .await;
     binary_resolver
         .initalize_binary(
             Binaries::MinotariNode,
@@ -407,9 +394,57 @@ async fn setup_inner(
             should_check_for_update,
         )
         .await?;
+    sleep(Duration::from_secs(1));
+
+    progress.set_max(15).await;
+    progress
+        .update("checking-latest-version-mmproxy".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::MergeMiningProxy,
+            progress.clone(),
+            should_check_for_update,
+        )
+        .await?;
+    sleep(Duration::from_secs(1));
+    progress.set_max(20).await;
+    progress
+        .update("checking-latest-version-wallet".to_string(), None, 0)
+        .await;
     binary_resolver
         .initalize_binary(Binaries::Wallet, progress.clone(), should_check_for_update)
         .await?;
+
+    sleep(Duration::from_secs(1));
+    progress.set_max(25).await;
+    progress
+        .update(
+            "Checking for latest version of gpu miner".to_string(),
+            None,
+            0,
+        )
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::GpuMiner,
+            progress.clone(),
+            should_check_for_update,
+        )
+        .await?;
+    sleep(Duration::from_secs(1));
+    progress.set_max(30).await;
+    progress
+        .update("checking-latest-version-xmrig".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
+        .await?;
+    sleep(Duration::from_secs(1));
+    progress.set_max(35).await;
+    progress
+        .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
+        .await;
     binary_resolver
         .initalize_binary(
             Binaries::ShaP2pool,
@@ -417,7 +452,7 @@ async fn setup_inner(
             should_check_for_update,
         )
         .await?;
-
+    sleep(Duration::from_secs(1));
     if should_check_for_update {
         state
             .config
@@ -426,8 +461,6 @@ async fn setup_inner(
             .set_last_binaries_update_timestamp(now)
             .await?;
     }
-
-    println!("Starting node manage ==================================r");
 
     for _i in 0..2 {
         match state
@@ -440,11 +473,8 @@ async fn setup_inner(
             )
             .await
         {
-            Ok(_) => {
-                println!("Node manager started");
-            }
+            Ok(_) => {}
             Err(e) => {
-                println!("Node manager failed to start");
                 if let NodeManagerError::ExitCode(code) = e {
                     if code == 114 {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
@@ -461,8 +491,6 @@ async fn setup_inner(
     }
 
     info!(target: LOG_TARGET, "Node has started and is ready");
-
-    println!("dudaudioawudiwaud");
 
     progress.set_max(40).await;
     progress
@@ -703,9 +731,9 @@ async fn start_mining<'r>(
                 monero_address.to_string(),
                 mm_proxy_port,
                 app.path_resolver().app_local_data_dir().unwrap(),
-                    app.path_resolver().app_config_dir().unwrap(),
+                app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
-                    mode,
+                mode,
             )
             .await;
 

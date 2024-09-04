@@ -10,6 +10,7 @@ pub enum Binaries {
     MinotariNode,
     Wallet,
     ShaP2pool,
+    GpuMiner,
 }
 
 impl Binaries {
@@ -20,6 +21,7 @@ impl Binaries {
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
             Binaries::ShaP2pool => "sha-p2pool",
+            Binaries::GpuMiner => "xtrgpuminer",
         }
     }
 
@@ -45,6 +47,10 @@ impl Binaries {
                 let file_name = "sha_p2pool";
                 PathBuf::from(file_name)
             }
+            Binaries::GpuMiner => {
+                let file_name = "xtrgpuminer";
+                PathBuf::from(file_name)
+            }
         }
     }
 
@@ -55,6 +61,7 @@ impl Binaries {
             Binaries::MinotariNode,
             Binaries::Wallet,
             Binaries::ShaP2pool,
+            Binaries::GpuMiner,
         ]
         .iter()
         .copied()
@@ -86,6 +93,10 @@ pub fn get_binary_path(
         Binaries::ShaP2pool => {
             let sha_p2pool_bin = version_dir.join("sha_p2pool");
             Ok(sha_p2pool_bin)
+        }
+        Binaries::GpuMiner => {
+            let xtrgpuminer_bin = version_dir.join("xtrgpuminer");
+            Ok(xtrgpuminer_bin)
         }
     }
 }

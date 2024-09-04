@@ -69,12 +69,26 @@ impl BinaryResolver {
         );
 
         binary_manager.insert(
+            Binaries::GpuMiner,
+            BinaryManager::new(
+                Binaries::GpuMiner.name().to_string(),
+                Box::new(GithubReleasesAdapter {
+                    repo: "tarigpuminer".to_string(),
+                    owner: "stringhandler".to_string(),
+                    specific_name: Some("opencl.*testnet".parse().expect("Bad regex string")),
+                }),
+                versions_requirements_path.clone(),
+            ),
+        );
+
+        binary_manager.insert(
             Binaries::MergeMiningProxy,
             BinaryManager::new(
                 Binaries::MergeMiningProxy.name().to_string(),
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
+                    specific_name: None,
                 }),
                 versions_requirements_path.clone(),
             ),
@@ -87,6 +101,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
+                    specific_name: None,
                 }),
                 versions_requirements_path.clone(),
             ),
@@ -99,6 +114,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
+                    specific_name: None,
                 }),
                 versions_requirements_path.clone(),
             ),
@@ -111,6 +127,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "sha-p2pool".to_string(),
                     owner: "tari-project".to_string(),
+                    specific_name: None,
                 }),
                 versions_requirements_path.clone(),
             ),
@@ -159,7 +176,11 @@ impl BinaryResolver {
 
         let mut highest_version = manager.select_highest_version();
 
-        println!("Highest version for binary: {:?} is: {:?}", binary.name(), highest_version);
+        println!(
+            "Highest version for binary: {:?} is: {:?}",
+            binary.name(),
+            highest_version
+        );
 
         if !should_check_for_update && highest_version.is_none() {
             println!("No version selected => downloading");
