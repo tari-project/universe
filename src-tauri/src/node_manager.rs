@@ -7,7 +7,7 @@ use tari_shutdown::ShutdownSignal;
 use tokio::fs;
 use tokio::sync::RwLock;
 
-use crate::node_adapter::MinotariNodeAdapter;
+use crate::node_adapter::{MinotariNodeAdapter, MinotariNodeStatusMonitorError};
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
 
@@ -17,6 +17,8 @@ pub enum NodeManagerError {
     ExitCode(i32),
     #[error("Node failed with an unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
+    #[error("Node not started")]
+    NodeNotStarted,
 }
 
 pub struct NodeManager {
@@ -138,15 +140,22 @@ impl NodeManager {
     /// Returns Sha hashrate, Rx hashrate and block reward
     pub async fn get_network_hash_rate_and_block_reward(
         &self,
-    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), anyhow::Error> {
+    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), NodeManagerError> {
         let status_monitor_lock = self.watcher.read().await;
         let status_monitor = status_monitor_lock
             .status_monitor
             .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+            .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
         status_monitor
             .get_network_hash_rate_and_block_reward()
             .await
+            .map_err(|e| {
+                if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
+                    NodeManagerError::NodeNotStarted
+                } else {
+                    NodeManagerError::UnknownError(e.into())
+                }
+            })
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
