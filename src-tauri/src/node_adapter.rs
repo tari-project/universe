@@ -164,6 +164,14 @@ impl ProcessAdapter for MinotariNodeAdapter {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum MinotariNodeStatusMonitorError {
+    #[error("Unknown error: {0}")]
+    UnknownError(#[from] anyhow::Error),
+    #[error("Node not started")]
+    NodeNotStarted,
+}
+
 pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
 }
@@ -180,21 +188,27 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
         &self,
-    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), Error> {
+    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), MinotariNodeStatusMonitorError> {
         // TODO: use GRPC port returned from process
         let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
+                .await
+                .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
         let res = client
             .get_new_block_template(NewBlockTemplateRequest {
                 algo: Some(PowAlgo { pow_algo: 1 }),
                 max_weight: 0,
             })
-            .await?;
+            .await
+            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
         let reward = res.miner_data.unwrap().reward;
 
-        let res = client.get_tip_info(Empty {}).await?;
+        let res = client
+            .get_tip_info(Empty {})
+            .await
+            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
         let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
@@ -214,13 +228,18 @@ impl MinotariNodeStatusMonitor {
                     start_height: 0,
                     end_height: 0,
                 })
-                .await?;
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
             let mut res = res.into_inner();
             // Get the last one.
             // base node returns 0 for hashrate when the algo doesn't match, so we need to keep track of last one.
             let mut last_sha3_estimated_hashrate = 0;
             let mut last_randomx_estimated_hashrate = 0;
-            while let Some(difficulty) = res.message().await? {
+            while let Some(difficulty) = res
+                .message()
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?
+            {
                 if difficulty.sha3x_estimated_hash_rate != 0 {
                     last_sha3_estimated_hashrate = difficulty.sha3x_estimated_hash_rate;
                 }
@@ -242,7 +261,7 @@ impl MinotariNodeStatusMonitor {
             }
         }
 
-        result
+        Ok(result?)
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {

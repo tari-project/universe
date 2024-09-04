@@ -84,23 +84,6 @@ async fn set_mode<'r>(
 }
 
 #[tauri::command]
-async fn set_user_inactivity_timeout<'r>(
-    timeout: u64,
-    _window: tauri::Window,
-    state: tauri::State<'r, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
-    let _ = state
-        .config
-        .write()
-        .await
-        .set_user_inactivity_timeout(Duration::from_secs(timeout))
-        .await;
-
-    Ok(())
-}
-
-#[tauri::command]
 async fn set_telemetry_mode<'r>(
     telemetry_mode: bool,
     _window: tauri::Window,
@@ -415,26 +398,6 @@ async fn set_p2pool_enabled<'r>(
 }
 
 #[tauri::command]
-async fn set_auto_mining<'r>(
-    auto_mining: bool,
-    window: tauri::Window,
-    state: tauri::State<'r, UniverseAppState>,
-) -> Result<(), String> {
-    let mut config = state.config.write().await;
-    let _ = config.set_auto_mining(auto_mining).await;
-    let timeout = config.get_user_inactivity_timeout();
-    let mut user_listener = state.user_listener.write().await;
-
-    if auto_mining {
-        user_listener.start_listening_to_mouse_poisition_change(timeout, window);
-    } else {
-        user_listener.stop_listening_to_mouse_poisition_change();
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
 async fn set_cpu_mining_enabled<'r>(
     enabled: bool,
     state: tauri::State<'r, UniverseAppState>,
@@ -675,7 +638,9 @@ async fn status(
             .get_network_hash_rate_and_block_reward()
             .await
             .unwrap_or_else(|e| {
-                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+                if !matches!(e, NodeManagerError::NodeNotStarted) {
+                    warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+                }
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
 
@@ -761,7 +726,6 @@ async fn status(
         p2pool_enabled: config_guard.p2pool_enabled,
         p2pool_stats,
         auto_mining: config_guard.auto_mining,
-        user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
@@ -833,7 +797,6 @@ pub struct AppStatus {
     auto_mining: bool,
     p2pool_enabled: bool,
     p2pool_stats: HashMap<String, Stats>,
-    user_inactivity_timeout: u64,
     monero_address: String,
     cpu_mining_enabled: bool,
     gpu_mining_enabled: bool,
@@ -1032,13 +995,11 @@ fn main() {
             status,
             start_mining,
             stop_mining,
-            set_auto_mining,
             set_p2pool_enabled,
             set_mode,
             open_log_dir,
             get_seed_words,
             get_applications_versions,
-            set_user_inactivity_timeout,
             update_applications,
             log_web_message,
             set_telemetry_mode,

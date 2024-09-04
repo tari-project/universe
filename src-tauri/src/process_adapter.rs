@@ -78,7 +78,6 @@ impl ProcessInstance {
 
 impl Drop for ProcessInstance {
     fn drop(&mut self) {
-        println!("Drop being called");
         self.shutdown.trigger();
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
