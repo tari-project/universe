@@ -22,6 +22,7 @@ export function useGetStatus() {
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
     const setIsMiningInProgress = useMiningStore((s) => s.setIsMiningInProgress);
     const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
+    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
 
     const { error, setError } = useAppStateStore((s) => ({
         error: s.error,
@@ -51,7 +52,8 @@ export function useGetStatus() {
                         const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
                         const isMining = Boolean(status.cpu?.is_mining || status.gpu?.is_mining);
 
-                        setMiningControlsEnabled(miningEnabled);
+                        setMiningControlsEnabled(!isSettingUp && miningEnabled);
+
                         setIsMiningInProgress(isMining);
                         setMiningInitiated(isMining);
 
