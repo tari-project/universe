@@ -7,11 +7,13 @@ import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 const TIMER_VALUE = 15 * 1000; // 15s
 export default function useBalanceInfo() {
     const handleVisual = useVisualisation();
-    const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
 
     const balance = useWalletStore((state) => state.balance);
     const previousBalance = useWalletStore((state) => state.previousBalance);
+    const balanceDiff = useWalletStore((state) => state.balanceDiff);
     const block_height = useBaseNodeStatusStore((s) => s.block_height);
+
+    const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
 
     const {
         setEarnings,
@@ -29,15 +31,24 @@ export default function useBalanceInfo() {
     const handleEarnings = useCallback(() => {
         setTimerPaused(true);
         const hasChanges = prevBalanceRef.current !== balance;
+
+        if (hasChanges) {
+            console.info('New Balance:', balance);
+            console.info('Previous Balance:', previousBalance);
+            console.info('Diff/Earnings:', balanceDiff);
+
+            prevBalanceRef.current = balance;
+        }
+
         const diff = hasChanges ? balance - previousBalance : 0;
-        const hasEarnings = Boolean(diff && diff > 0);
+        const hasEarnings = Boolean(diff && diff > 0 && diff === balanceDiff);
+
         if (hasEarnings) {
             setEarnings(diff);
         }
         setShowFailAnimation(!hasEarnings);
         handleVisual(!hasEarnings ? 'fail' : 'success');
-        prevBalanceRef.current = previousBalance;
-    }, [balance, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
+    }, [balance, balanceDiff, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
 
     const resetStates = useCallback(() => {
         setPostBlockAnimation(false);
