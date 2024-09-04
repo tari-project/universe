@@ -18,8 +18,10 @@ export function useVisualisation() {
 
             if (canAnimate) {
                 setAnimationState(state);
-                setPostBlockAnimation(true);
-                setTimerPaused(false);
+                if (state === 'fail') {
+                    setPostBlockAnimation(true);
+                    setTimerPaused(false);
+                }
             }
         },
         [setPostBlockAnimation, setTimerPaused]
