@@ -7,16 +7,16 @@ use semver::Version;
 use tauri::api::path::cache_dir;
 
 use crate::{
-    binary_resolver::resolver::BINARY_RESOLVER_LOG_TARGET, xmrig::latest_release::XmrigRelease,
+    binaries::binaries_resolver::BINARY_RESOLVER_LOG_TARGET, xmrig::latest_release::XmrigRelease,
 };
 
-use super::resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
+use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
 
 pub struct XmrigVersionApiAdapter {}
 
 #[async_trait]
 impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
-    async fn fetch_releases_list(&self) -> Result<VersionDownloadInfo, Error> {
+    async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
         let url = "https://api.xmrig.com/1/latest_release";
         let response = reqwest::get(url).await?;
         let latest_release: XmrigRelease = response.json().await?;
@@ -32,11 +32,24 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             version: Version::parse(&latest_release.version).unwrap(),
         };
 
-        Ok(version_asset)
+        println!("Latest release dddddd: {:?}", version_asset);
+        dbg!(version_asset.clone());
+
+        Ok(Vec::from([version_asset.clone()]))
     }
 
+    // fn get_checksum_path(&self, _version: &VersionDownloadInfo) -> Option<PathBuf> {
+    //     let bin_folder = self.get_binary_folder().join(_version.version.to_string());
+    // }
+
     fn get_binary_folder(&self) -> PathBuf {
-        cache_dir().unwrap().join("com.tari.universe").join("xmrig")
+        let binary_folder_path = cache_dir().unwrap().join("com.tari.universe").join("xmrig");
+
+        if !binary_folder_path.exists() {
+            std::fs::create_dir_all(&binary_folder_path);
+        }
+
+        binary_folder_path
     }
 
     fn find_version_for_platform(

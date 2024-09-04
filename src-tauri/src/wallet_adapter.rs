@@ -1,4 +1,4 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
 use anyhow::Error;
@@ -112,7 +112,8 @@ impl ProcessAdapter for WalletAdapter {
             ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
+                    let binary_resolver = BinaryResolver::current().read().await;
+                    let file_path = binary_resolver
                         .resolve_path_to_binary_files(Binaries::Wallet)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;

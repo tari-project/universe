@@ -10,7 +10,7 @@ use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tokio::select;
 
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
@@ -75,7 +75,8 @@ impl ProcessAdapter for P2poolAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     // file details
-                    let file_path = BinaryResolver::current()
+                    let binary_resolver = BinaryResolver::current().read().await;
+                    let file_path = binary_resolver
                         .resolve_path_to_binary_files(Binaries::ShaP2pool)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;

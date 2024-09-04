@@ -3,7 +3,7 @@ use log::{debug, info};
 use reqwest::Client;
 use serde::Deserialize;
 
-use crate::binary_resolver::resolver::{VersionAsset, VersionDownloadInfo};
+use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 
 #[derive(Deserialize)]
 struct Release {

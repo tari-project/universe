@@ -20,7 +20,7 @@ use tokio::sync::RwLock;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
-use binaries::{Binaries, BinaryResolver};
+use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
@@ -43,6 +43,7 @@ use crate::wallet_manager::WalletManager;
 
 mod app_config;
 mod app_in_memory_config;
+mod binaries;
 mod consts;
 mod cpu_miner;
 mod download_utils;
@@ -75,7 +76,6 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-mod binaries;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
@@ -377,98 +377,54 @@ async fn setup_inner(
         .initialize(state.airdrop_access_token.clone(), window.clone())
         .await?;
 
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::MinotariNode, progress.clone())
-        .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::MergeMiningProxy, progress.clone())
-        .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::Wallet, progress.clone())
-        .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::ShaP2pool, progress.clone())
-        .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::Xmrig, progress.clone())
-        .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::GpuMiner, progress.clone())
-        .await?;
-
-    let _unused = state
-        .gpu_miner
-        .write()
-        .await
-        .detect()
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
-    if now
+    let mut binary_resolver = BinaryResolver::current().write().await;
+    let should_check_for_update = now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(10 * 60)
-    // 10 minutes
-    {
-        let _unused = state
+        > Duration::from_secs(10 * 60);
+    binary_resolver
+        .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::GpuMiner,
+            progress.clone(),
+            should_check_for_update,
+        )
+        .await;
+
+    binary_resolver
+        .initalize_binary(
+            Binaries::MergeMiningProxy,
+            progress.clone(),
+            should_check_for_update,
+        )
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::MinotariNode,
+            progress.clone(),
+            should_check_for_update,
+        )
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::ShaP2pool,
+            progress.clone(),
+            should_check_for_update,
+        )
+        .await;
+    binary_resolver
+        .initalize_binary(Binaries::Wallet, progress.clone(), should_check_for_update)
+        .await;
+
+    if should_check_for_update {
+        state
             .config
             .write()
             .await
             .set_last_binaries_update_timestamp(now)
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not set last binaries update timestamp: {:?}", e));
-
-        progress.set_max(10).await;
-        progress
-            .update("checking-latest-version-node".to_string(), None, 0)
-            .await;
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::MinotariNode, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of MinotariNode: {:?}", e));
-        sleep(Duration::from_secs(1));
-
-        progress.set_max(15).await;
-        progress
-            .update("checking-latest-version-mmproxy".to_string(), None, 0)
-            .await;
-        sleep(Duration::from_secs(1));
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of MergeMiningProxy: {:?}", e));
-        progress.set_max(20).await;
-        progress
-            .update("checking-latest-version-wallet".to_string(), None, 0)
-            .await;
-        sleep(Duration::from_secs(1));
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::Wallet, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of Wallet: {:?}", e));
-
-        sleep(Duration::from_secs(1));
-        progress.set_max(25).await;
-        progress
-            .update("checking-latest-version-gpuminer".to_string(), None, 0)
-            .await;
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::GpuMiner, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of GpuMiner: {:?}", e));
-
-        progress.set_max(30).await;
-        progress
-            .update("checking-latest-version-xmrig".to_string(), None, 0)
-            .await;
-        sleep(Duration::from_secs(1));
-        BinaryResolver::current()
-            .ensure_latest(Binaries::Xmrig, progress.clone())
             .await?;
-
-        progress.set_max(35).await;
-        progress
-            .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
-            .await;
-        sleep(Duration::from_secs(1));
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::ShaP2pool, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of ShaP2pool: {:?}", e));
     }
 
     for _i in 0..2 {
@@ -855,24 +811,23 @@ fn open_log_dir(app: tauri::AppHandle) {
 
 #[tauri::command]
 async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
+    
     let timer = Instant::now();
+    let binary_resolver = BinaryResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
-    let xmrig_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::Xmrig)
-        .await;
+    let xmrig_version: semver::Version = binary_resolver.get_binary_version(Binaries::Xmrig).await;
 
-    let minotari_node_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::MinotariNode)
+    let minotari_node_version: semver::Version = binary_resolver
+        .get_binary_version(Binaries::MinotariNode)
         .await;
-    let mm_proxy_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::MergeMiningProxy)
+    let mm_proxy_version: semver::Version = binary_resolver
+        .get_binary_version(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::Wallet)
-        .await;
-    let sha_p2pool_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::ShaP2pool)
+    let wallet_version: semver::Version =
+        binary_resolver.get_binary_version(Binaries::Wallet).await;
+    let sha_p2pool_version: semver::Version = binary_resolver
+        .get_binary_version(Binaries::ShaP2pool)
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -898,6 +853,8 @@ async fn update_applications(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    let mut binary_resolver = BinaryResolver::current().write().await;
+
     state
         .config
         .write()
@@ -909,32 +866,27 @@ async fn update_applications(
         )
         .map_err(|e| e.to_string())?;
     let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
-    BinaryResolver::current()
-        .ensure_latest(Binaries::Xmrig, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::Xmrig, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MinotariNode, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::MinotariNode, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MergeMiningProxy, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::MergeMiningProxy, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
-    BinaryResolver::current()
-        .ensure_latest(Binaries::Wallet, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::Wallet, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
-    BinaryResolver::current()
-        .ensure_latest(Binaries::ShaP2pool, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
-    BinaryResolver::current()
-        .ensure_latest(Binaries::GpuMiner, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::ShaP2pool, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));

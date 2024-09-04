@@ -1,4 +1,4 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
@@ -118,7 +118,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
             ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
+                    let binary_resolver = BinaryResolver::current().read().await;
+                    let file_path = binary_resolver
                         .resolve_path_to_binary_files(Binaries::MinotariNode)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;

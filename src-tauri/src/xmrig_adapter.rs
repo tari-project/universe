@@ -1,4 +1,4 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use std::path::PathBuf;
 
 use anyhow::Error;
@@ -96,7 +96,8 @@ impl ProcessAdapter for XmrigAdapter {
             ProcessInstance {
                 shutdown: xmrig_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let xmrig_dir = BinaryResolver::current()
+                    let binary_resolver = BinaryResolver::current().read().await;
+                    let xmrig_dir = binary_resolver
                         .resolve_path_to_binary_files(Binaries::Xmrig)
                         .await
                         .unwrap_or_else(|_| panic!("Could not resolve xmrig path"));
