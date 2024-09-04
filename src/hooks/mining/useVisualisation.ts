@@ -25,7 +25,7 @@ export function useVisualisation() {
         const documentIsVisible = document.visibilityState === 'visible';
         const focused = await appWindow.isFocused();
         const minimized = await appWindow.isMinimized();
-
+        console.log(`state= ${state}`);
         const canAnimate = !minimized && (focused || documentIsVisible);
         if (!canAnimate && (state == 'fail' || state == 'success')) {
             return;

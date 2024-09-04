@@ -29,9 +29,10 @@ function MiningButton() {
     const handleMining = useMiningControls();
 
     const miningButtonStateText = useMemo(() => {
-        if (isChangingMode) {
-            return MiningButtonStateText.CHANGING_MODE;
-        }
+        console.log(`miningLoading= ${miningLoading}`);
+        console.log(`isMining= ${isMining}`);
+        console.log(`isChangingMode= ${isChangingMode}`);
+
         if (isConnectionLostDuringMining) {
             return MiningButtonStateText.CONNECTION_LOST;
         }
@@ -39,6 +40,9 @@ function MiningButton() {
             return MiningButtonStateText.STARTING;
         }
         if (isMining) {
+            if (isChangingMode) {
+                return MiningButtonStateText.CHANGING_MODE;
+            }
             return MiningButtonStateText.STARTED;
         }
         return MiningButtonStateText.START;
@@ -58,7 +62,7 @@ function MiningButton() {
             <ButtonWrapper>
                 <StyledButton
                     variant="rounded"
-                    $hasStarted={isMining || isConnectionLostDuringMining}
+                    $hasStarted={isMining}
                     onClick={handleClick}
                     icon={<IconWrapper>{miningLoading ? <StyledIcon /> : icon}</IconWrapper>}
                     disabled={!miningControlsEnabled}

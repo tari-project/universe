@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef } from 'react';
 
 export function useClickOutside<T extends HTMLDivElement = HTMLDivElement>(
     callback: (props?: unknown) => void,
@@ -19,7 +19,7 @@ export function useClickOutside<T extends HTMLDivElement = HTMLDivElement>(
         [callback, isNested, isOpen]
     );
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         document.addEventListener('click', onClick, true);
         return () => {
             document.removeEventListener('click', onClick, true);

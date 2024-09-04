@@ -7,7 +7,6 @@ import { useUIStore } from '../store/useUIStore.ts';
 import useAppStateStore from '../store/appStateStore.ts';
 
 import { useVersions } from '@app/hooks/useVersions.ts';
-import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useSetUp() {
@@ -19,7 +18,7 @@ export function useSetUp() {
     const setError = useAppStateStore((s) => s.setError);
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
 
-    const handleVisual = useVisualisation();
+    useVersions();
 
     useEffect(() => {
         const splashTimeout = setTimeout(() => {
@@ -35,7 +34,6 @@ export function useSetUp() {
                         settingUpFinished();
                         setView('mining');
                         setMiningControlsEnabled(true);
-                        handleVisual('showVisual');
                     }
                     break;
                 default:
@@ -55,7 +53,5 @@ export function useSetUp() {
             unlistenPromise.then((unlisten) => unlisten());
             clearTimeout(splashTimeout);
         };
-    }, [handleVisual, setError, setMiningControlsEnabled, setSetupDetails, setShowSplash, setView, settingUpFinished]);
-
-    useVersions();
+    }, [setError, setMiningControlsEnabled, setSetupDetails, setShowSplash, setView, settingUpFinished]);
 }

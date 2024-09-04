@@ -13,25 +13,21 @@ export const useMiningEffects = () => {
     const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
+    const setMiningLoading = useMiningStore((s) => s.setMiningLoading);
 
     useLayoutEffect(() => {
         // shouldn't be needed any more, but in the case of the animation not starting when _actually_ starting to mine
         if (isMining && miningInitiated) {
-            return () => {
-                handleVisual('showVisual').then(() => {
-                    handleVisual('start');
-                });
-            };
+            handleVisual('start');
+            setMiningLoading(false);
         }
-    }, [handleVisual, isMining, miningInitiated]);
+    }, [handleVisual, isMining, miningInitiated, setMiningLoading]);
 
     useLayoutEffect(() => {
         // in the case of isMining == false but mining should be in progress, means connection is lost
         if (isMiningInProgress && !isMining && !isChangingMode) {
             setIsConnectionLostDuringMining(true);
-            return () => {
-                handleVisual('pause');
-            };
+            handleVisual('pause');
         }
     }, [handleVisual, isChangingMode, isMining, isMiningInProgress, setIsConnectionLostDuringMining]);
 };

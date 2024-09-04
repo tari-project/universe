@@ -38,6 +38,7 @@
       glApp.init();
       time = performance.now() / 1000;
       window.addEventListener("resize", onResize);
+      glApp.stateManager.set('showVisual')
       onResize();
       animate();
     }

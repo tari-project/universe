@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useLayoutEffect } from 'react';
 
 interface Props {
     keys: KeyboardEvent['key'][];
@@ -14,7 +14,7 @@ export function useKeyboardEvent({ keys, callback }: Props) {
         [callback, keys]
     );
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         document.addEventListener('keydown', keyDownFn);
         return () => {
             document.removeEventListener('keydown', keyDownFn);
