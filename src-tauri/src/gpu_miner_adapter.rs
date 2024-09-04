@@ -8,6 +8,7 @@ use tari_shutdown::Shutdown;
 use tokio::select;
 
 use crate::{
+    app_config::MiningMode,
     binary_resolver::{Binaries, BinaryResolver},
     network_utils::get_free_port,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
@@ -15,9 +16,13 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
+pub const ECO_MODE_GPU_PERCENTAGE: u8 = 1;
+pub const LUDICROUS_MODE_GPU_PERCENTAGE: u8 = 80; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
+
 pub struct GpuMinerAdapter {
     pub(crate) tari_address: TariAddress,
     pub(crate) node_grpc_port: u16,
+    pub(crate) gpu_percentage: u8,
     pub(crate) p2pool_enabled: bool,
     pub(crate) p2pool_grpc_port: u16,
 }
@@ -27,8 +32,16 @@ impl GpuMinerAdapter {
         Self {
             tari_address: TariAddress::default(),
             node_grpc_port: 0,
+            gpu_percentage: ECO_MODE_GPU_PERCENTAGE,
             p2pool_enabled: false,
             p2pool_grpc_port: 0,
+        }
+    }
+
+    pub fn set_mode(&mut self, mode: MiningMode) {
+        match mode {
+            MiningMode::Eco => self.gpu_percentage = ECO_MODE_GPU_PERCENTAGE,
+            MiningMode::Ludicrous => self.gpu_percentage = LUDICROUS_MODE_GPU_PERCENTAGE,
         }
     }
 }
@@ -69,6 +82,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                 .to_string(),
             "--http-server-port".to_string(),
             http_api_port.to_string(),
+            "--gpu-percentage".to_string(),
+            self.gpu_percentage.to_string(),
         ];
 
         if self.p2pool_enabled {

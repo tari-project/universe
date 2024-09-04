@@ -9,6 +9,7 @@ use tokio::sync::RwLock;
 
 use crate::p2pool_manager::P2poolConfig;
 use crate::{
+    app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
     process_adapter::StatusMonitor,
     process_watcher::{self, ProcessWatcher},
@@ -41,10 +42,12 @@ impl GpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        mining_mode: MiningMode,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.node_grpc_port = node_grpc_port;
+        process_watcher.adapter.set_mode(mining_mode);
         process_watcher.adapter.p2pool_enabled = p2pool_enabled;
         process_watcher.adapter.p2pool_grpc_port = self.p2pool_config.grpc_port;
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
