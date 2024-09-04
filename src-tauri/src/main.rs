@@ -52,6 +52,7 @@ use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
+use std::collections::HashMap;
 use std::fs::remove_dir_all;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -60,6 +61,7 @@ use std::{panic, process};
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
+use tari_core::proof_of_work::PowAlgorithm;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
@@ -325,10 +327,10 @@ async fn setup_inner<'r>(
     progress
         .update("starting-p2pool".to_string(), None, 0)
         .await;
-    // state
-    //     .p2pool_manager
-    //     .ensure_started(state.shutdown.to_signal(), data_dir, config_dir, log_dir)
-    //     .await?;
+    state
+        .p2pool_manager
+        .ensure_started(state.shutdown.to_signal(), data_dir, config_dir, log_dir)
+        .await?;
 
     progress.set_max(100).await;
     progress
@@ -721,13 +723,9 @@ async fn status(
         .await
         .read_hardware_parameters();
 
-    let p2pool_stats = match state.p2pool_manager.stats().await {
-        Ok(stats) => stats,
-        Err(e) => {
-            // warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
-            Stats::default()
-        }
-    };
+    let mut p2pool_stats = HashMap::with_capacity(2);
+    p2pool_stats.insert(PowAlgorithm::Sha3x.to_string().to_lowercase(), Stats::default());
+    p2pool_stats.insert(PowAlgorithm::RandomX.to_string().to_lowercase(), Stats::default());
 
     let config_guard = state.config.read().await;
 
@@ -825,7 +823,7 @@ pub struct AppStatus {
     mode: MiningMode,
     auto_mining: bool,
     p2pool_enabled: bool,
-    p2pool_stats: Stats,
+    p2pool_stats: HashMap<String, Stats>,
     user_inactivity_timeout: u64,
     monero_address: String,
     cpu_mining_enabled: bool,
@@ -976,7 +974,7 @@ fn main() {
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
-            .expect("Could not set up logging");
+                .expect("Could not set up logging");
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread_config = tauri::async_runtime::spawn(async move {
