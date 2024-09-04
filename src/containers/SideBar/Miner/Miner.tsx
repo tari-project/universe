@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useShallow } from 'zustand/react/shallow';
 
 const variants = {
     hidden: {
@@ -38,8 +37,8 @@ export default function Miner() {
     const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
     const gpu_estimated_earnings = useGPUStatusStore((s) => s.estimated_earnings);
 
-    const isCpuMiningEnabled = useAppStatusStore(useShallow((s) => s.cpu_mining_enabled));
-    const isGpuMiningEnabled = useAppStatusStore(useShallow((s) => s.gpu_mining_enabled));
+    const isCpuMiningEnabled = useAppStatusStore((s) => s.cpu_mining_enabled);
+    const isGpuMiningEnabled = useAppStatusStore((s) => s.gpu_mining_enabled);
 
     const hardwareValSplit = cpuHardwareStatus?.label?.split(' ');
     const hardwareVal = hardwareValSplit?.[0] + ' ' + hardwareValSplit?.[1];

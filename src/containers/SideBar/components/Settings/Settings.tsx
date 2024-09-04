@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 import {
     IoSettingsOutline,
@@ -164,15 +164,13 @@ export default function Settings() {
         });
     };
 
-    const handleCpuMiningEnabled = () => {
-        console.log('?');
-        invoke('set_cpu_mining_enabled', { enabled: !isCpuMiningEnabled });
-    };
+    const handleCpuMiningEnabled = useCallback(async () => {
+        await invoke('set_cpu_mining_enabled', { enabled: !isCpuMiningEnabled });
+    }, [isCpuMiningEnabled]);
 
-    const handleGpuMiningEnabled = () => {
-        console.log('???');
-        invoke('set_gpu_mining_enabled', { enabled: !isGpuMiningEnabled });
-    };
+    const handleGpuMiningEnabled = useCallback(async () => {
+        await invoke('set_gpu_mining_enabled', { enabled: !isGpuMiningEnabled });
+    }, [isGpuMiningEnabled]);
 
     const p2pMarkup = (
         <MinerContainer>
@@ -197,7 +195,7 @@ export default function Settings() {
             <Typography variant="h6">{t('cpu-mining-enabled', { ns: 'settings' })}</Typography>
             <ToggleSwitch
                 checked={isCpuMiningEnabled}
-                disabled={toggleDisabledBase}
+                disabled={toggleDisabledBase || cpuDisabled}
                 onChange={handleCpuMiningEnabled}
             />
         </MinerContainer>
@@ -208,7 +206,7 @@ export default function Settings() {
             <Typography variant="h6">{t('gpu-mining-enabled', { ns: 'settings' })}</Typography>
             <ToggleSwitch
                 checked={isGpuMiningEnabled}
-                disabled={toggleDisabledBase}
+                disabled={toggleDisabledBase || gpuDisabled}
                 onChange={handleGpuMiningEnabled}
             />
         </MinerContainer>

@@ -2,7 +2,7 @@ import styled, { css } from 'styled-components';
 import { InputHTMLAttributes } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-const Wrapper = styled.div<{ $disabled?: boolean }>`
+const Wrapper = styled.label<{ $disabled?: boolean }>`
     display: flex;
     cursor: ${({ $disabled }) => ($disabled ? 'default' : 'pointer')};
     ${({ $disabled }) =>
