@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -96,8 +97,6 @@ impl ProcessAdapter for P2poolAdapter {
                         Some(tribe) => tribe.to_string(),
                         None => String::from("default"), // TODO: generate name
                     };
-                    args.push("--tribe".to_string());
-                    args.push(tribe);
 
                     // start
                     let mut child = launch_child_process(&file_path, &args)?;
@@ -165,7 +164,7 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    type Status = Stats;
+    type Status = HashMap<String, Stats>;
 
     async fn status(&self) -> Result<Self::Status, Error> {
         self.stats_client.stats().await
