@@ -15,8 +15,8 @@ export interface AppStatus {
     monero_address?: string;
     p2pool_enabled: boolean;
     p2pool_stats?: P2poolStats;
-    cpu_mining_enabled: boolean;
-    gpu_mining_enabled: boolean;
+    cpu_mining_enabled?: boolean;
+    gpu_mining_enabled?: boolean;
 }
 
 export interface P2poolStats {
