@@ -39,23 +39,20 @@ import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
-import { ControlledNumberInput } from '@app/components/NumberInput';
+
 import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput';
 import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
 
 enum FormFields {
-    IDLE_TIMEOUT = 'idleTimeout',
     MONERO_ADDRESS = 'moneroAddress',
 }
 
 interface FormState {
-    [FormFields.IDLE_TIMEOUT]: number;
     [FormFields.MONERO_ADDRESS]: string;
 }
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const userInActivityTimeout = useAppStatusStore((state) => state.user_inactivity_timeout);
     const moneroAddress = useAppStatusStore((state) => state.monero_address);
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
     const isCpuMiningEnabled = useAppStatusStore((state) => state.cpu_mining_enabled);
@@ -64,7 +61,7 @@ export default function Settings() {
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const { reset, handleSubmit, control } = useForm<FormState>({
-        defaultValues: { idleTimeout: userInActivityTimeout, moneroAddress },
+        defaultValues: { moneroAddress },
         mode: 'onSubmit',
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
@@ -94,7 +91,7 @@ export default function Settings() {
     };
 
     const handleCancel = () => {
-        reset({ idleTimeout: userInActivityTimeout });
+        reset({ moneroAddress });
     };
 
     const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -103,12 +100,7 @@ export default function Settings() {
         console.info('submitting');
         handleSubmit(
             (data) => {
-                console.info(typeof data[FormFields.IDLE_TIMEOUT]);
-                invoke('set_user_inactivity_timeout', {
-                    timeout: Number(data[FormFields.IDLE_TIMEOUT]),
-                });
                 invoke('set_monero_address', { moneroAddress: data[FormFields.MONERO_ADDRESS] });
-                invoke('set_auto_mining', { autoMining: false });
                 handleClose();
             },
             (error) => {
@@ -146,27 +138,9 @@ export default function Settings() {
         </Stack>
     );
 
-    const idleTimerMarkup = (
+    const inputsMarkup = (
         <Form onSubmit={onSubmit}>
             <Stack>
-                <ControlledNumberInput
-                    name={FormFields.IDLE_TIMEOUT}
-                    endAdornment={t('seconds', { ns: 'common' })}
-                    title={t('idle-timeout.title', { ns: 'settings' })}
-                    placeholder={t('idle-timeout.placeholder', { ns: 'settings' })}
-                    control={control}
-                    type="int"
-                    rules={{
-                        max: {
-                            value: 21600,
-                            message: t('idle-timeout.max', { ns: 'settings' }),
-                        },
-                        min: {
-                            value: 1,
-                            message: t('idle-timeout.min', { ns: 'settings' }),
-                        },
-                    }}
-                />
                 <ControlledMoneroAddressInput
                     name={FormFields.MONERO_ADDRESS}
                     control={control}
@@ -259,7 +233,7 @@ export default function Settings() {
                     <Divider />
                     {seedWordMarkup}
                     <Divider />
-                    {idleTimerMarkup}
+                    {inputsMarkup}
                     <Divider />
                     {p2pMarkup}
                     <Divider />

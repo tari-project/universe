@@ -154,7 +154,6 @@ export const GlobalStyle = createGlobalStyle`
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         border-radius: 12px;
-        //overflow: hidden;
         height: 100%;
         min-height: 100vh;
         min-width: 100vw;
@@ -169,6 +168,7 @@ export const GlobalStyle = createGlobalStyle`
         letter-spacing: -.02px;
         font-weight: 400;
         pointer-events: none;
+        z-index: 1;
         * {
             box-sizing: border-box;
             ::-webkit-scrollbar {

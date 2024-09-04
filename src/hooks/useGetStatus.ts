@@ -33,12 +33,13 @@ export function useGetStatus() {
             invoke('status')
                 .then((status) => {
                     if (status) {
+                        console.info('status:', status);
+
                         setAppStatus(status);
                         setCPUStatus(status.cpu);
                         setBaseNodeStatus(status.base_node);
-                        console.info('status', status.gpu);
                         const gpuStatus: GpuMinerStatus = {
-                            is_mining: status.gpu === undefined ? false : true,
+                            is_mining: status.gpu !== undefined,
                             hash_rate: status.gpu?.hash_rate || 0,
                             estimated_earnings: status.gpu?.estimated_earnings || 0,
                         };

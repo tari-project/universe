@@ -2,7 +2,6 @@ import { useCallback, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 
 import { useVisualisation } from './useVisualisation.ts';
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
@@ -13,8 +12,6 @@ export enum MiningButtonStateText {
     CONNECTION_LOST = 'cancel-mining',
     CHANGING_MODE = 'changing-mode',
     START = 'start-mining',
-    AUTO_MINING = 'waiting-for-idle',
-    AUTO_MINING_STARTED = 'started-auto-mining',
 }
 
 export function useMiningControls() {
@@ -22,7 +19,7 @@ export function useMiningControls() {
     const progress = useAppStateStore((s) => s.setupProgress);
     const setError = useAppStateStore((s) => s.setError);
     const isMining = useCPUStatusStore((s) => s.is_mining);
-    const isAutoMining = useAppStatusStore((s) => s.auto_mining);
+
     const hashRate = useCPUStatusStore((s) => s.hash_rate);
     const { isMiningEnabled, setIsMiningEnabled } = useUIStore((s) => ({
         isMiningEnabled: s.isMiningEnabled,
@@ -61,17 +58,8 @@ export function useMiningControls() {
 
         if (isMining && progress < 1) return true;
 
-        return progress >= 1 && !isAutoMining;
-    }, [isAutoMining, isMining, progress, isMiningEnabled, isConnectionLostDuringMining, isChangingMode]);
-
-    const shouldAutoMiningControlsBeEnabled = useMemo(() => {
-        if (isMiningEnabled && !isAutoMining) return false;
-
-        if (isChangingMode) return false;
-
-        if (isMining && progress < 1) return true;
         return progress >= 1;
-    }, [isAutoMining, isMining, progress, isMiningEnabled, isChangingMode]);
+    }, [isMining, progress, isMiningEnabled, isConnectionLostDuringMining, isChangingMode]);
 
     const startMining = useCallback(async () => {
         setIsMiningEnabled(true);
@@ -109,7 +97,7 @@ export function useMiningControls() {
         async (mode: string) => {
             const hasBeenMining = isMiningInProgress;
 
-            if (!hasBeenMining || isAutoMining) {
+            if (!hasBeenMining) {
                 await invoke('set_mode', { mode });
                 return;
             }
@@ -135,15 +123,7 @@ export function useMiningControls() {
                 setIsChangingMode(false);
             }
         },
-        [
-            isMiningInProgress,
-            isConnectionLostDuringMining,
-            isAutoMining,
-            cancelMining,
-            setIsChangingMode,
-            startMining,
-            stopMining,
-        ]
+        [isMiningInProgress, isConnectionLostDuringMining, cancelMining, setIsChangingMode, startMining, stopMining]
     );
 
     const getMiningButtonStateText = useCallback(() => {
@@ -159,20 +139,12 @@ export function useMiningControls() {
             return MiningButtonStateText.STARTING;
         }
 
-        if (isAutoMining && isMining) {
-            return MiningButtonStateText.AUTO_MINING_STARTED;
-        }
-
-        if (isAutoMining) {
-            return MiningButtonStateText.AUTO_MINING;
-        }
-
         if (isMining) {
             return MiningButtonStateText.STARTED;
         }
 
         return MiningButtonStateText.START;
-    }, [isAutoMining, isMining, isMiningEnabled, isConnectionLostDuringMining, isChangingMode]);
+    }, [isChangingMode, isConnectionLostDuringMining, isMining, isMiningEnabled]);
 
     return {
         isMiningEnabled,
@@ -185,7 +157,6 @@ export function useMiningControls() {
         getMiningButtonStateText,
         isWaitingForHashRate,
         shouldMiningControlsBeEnabled,
-        shouldAutoMiningControlsBeEnabled,
         isChangingMode,
     };
 }

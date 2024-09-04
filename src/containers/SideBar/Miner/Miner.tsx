@@ -1,6 +1,5 @@
 import Tile from './components/Tile.tsx';
 import { MinerContainer, TileContainer } from './styles.ts';
-import AutoMiner from './components/AutoMiner/AutoMiner.tsx';
 
 import ModeSelect from './components/ModeSelect.tsx';
 import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
@@ -40,7 +39,6 @@ export default function Miner() {
 
     return (
         <MinerContainer>
-            <AutoMiner />
             <Divider />
             <TileContainer>
                 <ModeSelect />

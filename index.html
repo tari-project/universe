@@ -29,7 +29,7 @@
             ASSETS_PATH: "/assets/",
           },
           () => {
-            setTimeout(init, 1000); // added a timeout so it doesn't flash the canvas before the splash screen loads
+            init()
           },
       );
     }
@@ -38,7 +38,6 @@
       glApp.init();
       time = performance.now() / 1000;
       window.addEventListener("resize", onResize);
-
       onResize();
       animate();
     }
