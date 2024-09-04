@@ -46,7 +46,7 @@ export function useChangeMiningMode() {
             setIsChangingMode(true); // is is worth having this ? it's so quick...
             try {
                 if (!isMiningInProgress) {
-                    await invoke('set_mode', { mode });
+                    await invoke('set_mode', { mode }).then(() => setIsChangingMode(false));
                 } else {
                     await handleMining('pause');
                     await invoke('set_mode', { mode }).then(() => {

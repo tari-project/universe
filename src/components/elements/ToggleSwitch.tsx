@@ -1,10 +1,16 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { InputHTMLAttributes } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 const Wrapper = styled.div<{ $disabled?: boolean }>`
     display: flex;
     cursor: ${({ $disabled }) => ($disabled ? 'default' : 'pointer')};
+    ${({ $disabled }) =>
+        $disabled &&
+        css`
+            pointer-events: none;
+            opacity: 0.8;
+        `}
 `;
 const Label = styled.label`
     cursor: pointer;
@@ -82,7 +88,7 @@ export function ToggleSwitch({ label, variant = 'solid', ...props }: ToggleSwitc
 
     const switchMarkup = (
         <Wrapper $disabled={props.disabled}>
-            <Input checked={props.checked} type="checkbox" onChange={props.onChange} $isSolid={isSolid} {...props} />
+            <Input checked={props.checked} type="checkbox" onChange={props.onChange} $isSolid={isSolid} />
             <Switch $isSolid={isSolid} />
         </Wrapper>
     );

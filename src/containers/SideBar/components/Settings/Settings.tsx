@@ -166,6 +166,7 @@ export default function Settings() {
 
     const handleCpuMiningEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
         const isChecked = event.target.checked;
+        console.log(`isChecked= ${isChecked}`);
         invoke('set_cpu_mining_enabled', { enabled: isChecked }).then(() => {
             console.info('CPU mining enabled checked', isChecked);
         });
@@ -173,6 +174,7 @@ export default function Settings() {
 
     const handleGpuMiningEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
         const isChecked = event.target.checked;
+        console.log(`isChecked= ${isChecked}`);
         invoke('set_gpu_mining_enabled', { enabled: isChecked }).then(() => {
             console.info('GPU mining enabled checked', isChecked);
         });
