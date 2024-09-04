@@ -4,6 +4,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 
 const Wrapper = styled.label`
     display: flex;
+    cursor: pointer;
 `;
 const Label = styled.label`
     cursor: pointer;

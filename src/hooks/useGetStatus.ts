@@ -9,7 +9,6 @@ import { useGPUStatusStore } from '../store/useGPUStatusStore.ts';
 import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import useMining from '@app/hooks/mining/useMining.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
-import { GpuMinerStatus } from '@app/types/app-status.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 const INTERVAL = 1000;
@@ -21,6 +20,8 @@ export function useGetStatus() {
     const setGPUStatus = useGPUStatusStore((s) => s.setGPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+    const setIsMiningInProgress = useMiningStore((s) => s.setIsMiningInProgress);
+    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
 
     const { error, setError } = useAppStateStore((s) => ({
         error: s.error,
@@ -39,12 +40,7 @@ export function useGetStatus() {
                         setAppStatus(status);
                         setCPUStatus(status.cpu);
                         setBaseNodeStatus(status.base_node);
-                        const gpuStatus: GpuMinerStatus = {
-                            is_mining: status.gpu !== undefined,
-                            hash_rate: status.gpu?.hash_rate || 0,
-                            estimated_earnings: status.gpu?.estimated_earnings || 0,
-                        };
-                        setGPUStatus(gpuStatus);
+                        setGPUStatus(status.gpu);
 
                         if (status.cpu?.is_mining) {
                             if (!status.cpu?.connection.is_connected) {
@@ -58,7 +54,12 @@ export function useGetStatus() {
                         setBalanceData(wallet_balance);
                         setMode(status.mode);
 
-                        setMiningControlsEnabled(status.cpu_mining_enabled || status.gpu_mining_enabled);
+                        const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
+                        const isMining = Boolean(status.cpu?.is_mining || status.gpu?.is_mining);
+
+                        setMiningControlsEnabled(miningEnabled);
+                        setIsMiningInProgress(isMining);
+                        setMiningInitiated(isMining);
                     } else {
                         console.error('Could not get status');
                     }
