@@ -1,6 +1,5 @@
 use log::info;
 use serde::Deserialize;
-use tokio::time::sleep;
 
 const LOG_TARGET: &str = "tari::universe::xmrig::latest_release";
 #[derive(Debug, Deserialize)]
@@ -30,30 +29,7 @@ impl XmrigRelease {
 
 pub async fn fetch_latest_release() -> Result<XmrigRelease, anyhow::Error> {
     let url = "https://api.xmrig.com/1/latest_release";
-    let mut retries = 0;
-    loop {
-        match reqwest::get(url).await {
-            Ok(response) => match response.json().await {
-                Ok(latest_release) => return Ok(latest_release),
-                Err(_) => {
-                    retries += 1;
-                    if retries >= 3 {
-                        return Err(anyhow::anyhow!(
-                            "Couldn't fetch the latest version of Xmrig"
-                        ));
-                    }
-                    sleep(std::time::Duration::from_secs(1)).await;
-                }
-            },
-            Err(_) => {
-                retries += 1;
-                if retries >= 3 {
-                    return Err(anyhow::anyhow!(
-                        "Couldn't fetch the latest version of Xmrig"
-                    ));
-                }
-                sleep(std::time::Duration::from_secs(1)).await;
-            }
-        }
-    }
+    let response = reqwest::get(url).await?;
+    let latest_release: XmrigRelease = response.json().await?;
+    Ok(latest_release)
 }

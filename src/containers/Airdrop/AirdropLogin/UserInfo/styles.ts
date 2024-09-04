@@ -1,5 +1,5 @@
-import { motion } from 'framer-motion';
-import styled, { keyframes } from 'styled-components';
+import { Avatar } from '@mui/material';
+import { keyframes, styled } from '@mui/material/styles';
 
 const ring = keyframes`
   0%, 100% {
@@ -105,68 +105,7 @@ export const Dot = styled('div')<{ $color: 'green' | 'red' }>`
     background: ${(props) => (props.$color === 'green' ? '#47D85E' : '#FF0000')};
 `;
 
-export const MenuWrapper = styled('div')`
-    position: relative;
-`;
-
-export const StyledAvatar = styled('img')`
-    position: relative;
-    display: flex;
-    -webkit-box-align: center;
-    align-items: center;
-    -webkit-box-pack: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-size: 1.25rem;
-    line-height: 1;
-    border-radius: 50%;
-    overflow: hidden;
-    user-select: none;
-    color: rgb(18, 18, 18);
-    background-color: rgb(117, 117, 117);
+export const StyledAvatar = styled(Avatar)`
     pointer-events: all;
     cursor: pointer;
-    width: 36px;
-    height: 36px;
-`;
-
-export const Menu = styled(motion.div)`
-    position: absolute;
-    top: 100%;
-    right: 0;
-    z-index: 1000;
-    float: left;
-    min-width: 10rem;
-    margin: 0.125rem 0 0;
-    font-size: 1rem;
-    color: #212529;
-    text-align: left;
-    list-style: none;
-    background-color: #fff;
-    background-clip: padding-box;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    border-radius: 0.25rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.175);
-    padding: 0.5rem 0;
-`;
-
-export const MenuItem = styled('button')`
-    padding: 0.5rem 0;
-    pointer-events: all;
-    cursor: pointer;
-    display: block;
-    padding: 0.25rem 1.5rem;
-    clear: both;
-    font-weight: 400;
-    color: #212529;
-    text-align: inherit;
-    white-space: nowrap;
-    background-color: transparent;
-    border: 0;
-    width: 180px;
-    z-index: 1000;
-    transition: background-color 0.2s ease;
-    &:hover {
-        background-color: #f8f9fa;
-    }
 `;

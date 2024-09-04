@@ -13,7 +13,5 @@
     "hashrate": "Hashrate",
     "utilization": "Utilization",
     "mode": "Mode",
-    "day": "Day",
-    "tari-universe": "Tari Universe",
-    "testnet": "Testnet"
+    "day": "Day"
 }

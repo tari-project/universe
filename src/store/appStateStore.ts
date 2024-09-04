@@ -1,16 +1,15 @@
 import { create } from 'zustand';
 
 interface AppState {
-    error?: string;
-    setError: (value: string | undefined) => void;
+    error: string;
+    setError: (value: string) => void;
     topStatus: string;
     setTopStatus: (value: string) => void;
     errorOpen: boolean;
     setErrorOpen: (value: boolean) => void;
     setupTitle: string;
-    setupTitleParams: Record<string, string>;
     setupProgress: number;
-    setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) => void;
+    setSetupDetails: (setupTitle: string, setupProgress: number) => void;
 
     // gui
     isSettingUp: boolean;
@@ -20,18 +19,16 @@ interface AppState {
 }
 
 const useAppStateStore = create<AppState>()((set) => ({
-    error: undefined,
-    setError: (error) => set({ error }),
+    error: '',
+    setError: (value) => set({ error: value }),
     topStatus: 'Not mining',
     setTopStatus: (value) => set({ topStatus: value }),
     errorOpen: false,
     setErrorOpen: (value) => set({ errorOpen: value }),
     isSettingUp: true,
     setupTitle: '',
-    setupTitleParams: {},
     setupProgress: 0,
-    setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
-        set({ setupTitle, setupTitleParams, setupProgress }),
+    setSetupDetails: (setupTitle: string, setupProgress: number) => set({ setupTitle, setupProgress }),
 
     // functions
     settingUpFinished: () => set({ isSettingUp: false }),

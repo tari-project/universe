@@ -1,8 +1,6 @@
-import styled from 'styled-components';
+import { styled } from '@mui/system';
 
-export const WalletBalance = styled.div`
+export const WalletBalance = styled('div')`
     display: flex;
-    justify-content: flex-start;
     color: #fff;
-    width: 100%;
 `;

@@ -1,7 +1,7 @@
+import { styled } from '@mui/material/styles';
+import { Button } from '@mui/material';
+import { keyframes } from '@emotion/react';
 import { ImSpinner3 } from 'react-icons/im';
-import styled, { keyframes } from 'styled-components';
-import { Button } from '@app/components/elements/Button.tsx';
-import { motion } from 'framer-motion';
 export const spin = keyframes`
   from {
   transform:rotate(0deg)
@@ -10,10 +10,10 @@ export const spin = keyframes`
   transform:rotate(360deg)
   }
 `;
-export const StyledIcon = styled(ImSpinner3)`
-    animation: ${spin} 2s infinite;
-    animation-timing-function: cubic-bezier(0.76, 0.89, 0.95, 0.85);
-`;
+export const StyledIcon = styled(ImSpinner3)(() => ({
+    animation: `${spin} 2s infinite`,
+    animationTimingFunction: 'cubic-bezier(0.76, 0.89, 0.95, 0.85)',
+}));
 
 export const IconWrapper = styled('div')`
     width: 27px;
@@ -29,47 +29,24 @@ export const IconWrapper = styled('div')`
     }
 `;
 
-export const ButtonWrapper = styled.div`
-    position: relative;
-    display: flex;
-    align-items: stretch;
-    justify-content: stretch;
-    width: 100%;
-`;
-
-export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
-    display: flex;
-    width: 100%;
-    align-items: center;
-    background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
-    border: 1px solid ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
-    color: ${({ theme }) => theme.palette.base};
-    transition: all 0.2s ease-in;
-    &:hover {
-        background: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(17,110,64,0.96)')};
-        border-color: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(28,150,88,0.9)')};
-        transform: scale(1.01);
-    }
-    &:disabled {
-        border-color: rgba(0, 0, 0, 0.3);
-        background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
-    }
-`;
-
-// TODO make fancy mining button bg
-export const AnimatedBg = styled(motion.div)`
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 2;
-    pointer-events: none;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-`;
-export const AnimatedCube = styled(motion.div)`
-    position: relative;
-    pointer-events: none;
-    color: rgba(255, 255, 255, 0.2);
-`;
+export const StyledButton = styled(Button, {
+    shouldForwardProp: (prop) => prop != 'hasStarted',
+})<{ hasStarted: boolean }>(({ hasStarted }) => ({
+    padding: '10px 18px',
+    borderRadius: '30px',
+    display: 'flex',
+    alignItems: 'center',
+    background: hasStarted ? '#000' : '#188750',
+    border: '1px solid',
+    borderColor: hasStarted ? '#000' : '#188750',
+    transition: 'all 0.2s ease-in-out',
+    '&:hover': {
+        background: hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(17,110,64,0.96)',
+        borderColor: hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(28,150,88,0.9)',
+        transform: 'scale(1.01)',
+    },
+    '&:disabled': {
+        borderColor: 'rgba(0,0,0,0.3)',
+        background: 'rgba(0,0,0,0.01)',
+    },
+}));

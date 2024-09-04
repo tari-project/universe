@@ -24,17 +24,6 @@ pub struct HardwareParameters {
     pub max_temperature: f32,
 }
 
-impl Default for HardwareParameters {
-    fn default() -> Self {
-        HardwareParameters {
-            label: "N/A".to_string(),
-            usage_percentage: 0.0,
-            current_temperature: 0.0,
-            max_temperature: 0.0,
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Clone)]
 pub struct HardwareStatus {
     pub cpu: Option<HardwareParameters>,

@@ -5,77 +5,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/tari.svg" />
     <script type="module" crossorigin src="/assets/glApp.js"></script>
-    <title>Tari Universe | Testnet</title>
+    <title>Tari Universe</title>
     <style>
       #canvas {
         position: absolute;
-        pointer-events: auto;
+        /* border-radius: 12px; */
         z-index: 0;
       }
-  </style>
-</head>
-<body>
-<main>
-  <canvas id="canvas"></canvas>
-  <div id="root"></div>
-  <script type="module" src="src/main.tsx"></script>
-  <script>
-    let time;
-    function preload() {
-      glApp?.preload(
-          {
-            canvas: document.getElementById("canvas"),
-            orbitTarget: document.getElementById("canvas"),
-            ASSETS_PATH: "/assets/",
-          },
-          () => {
-            setTimeout(init, 1000); // added a timeout so it doesn't flash the canvas before the splash screen loads
-          },
-      );
-    }
+      #root {
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+  <main>
+    <canvas id="canvas"></canvas>
+    <div id="root"></div>
+    <script type="module" src="src/main.tsx"></script>
+    <script>
+      function preload() {
+        glApp?.preload(
+            {
+              canvas: document.getElementById('canvas'),
+              orbitTarget: document.getElementById('canvas'),
+              ASSETS_PATH: '/assets/',
+            },
+            () => {
+              setTimeout(init, 1000); // added a timeout so it doesn't flash the canvas before the splash screen loads
+            }
+        );
+      }
 
-    function init() {
-      glApp.init();
-      time = performance.now() / 1000;
-      window.addEventListener("resize", onResize);
+      function init() {
+        glApp.init();
+        time = performance.now() / 1000;
+        window.addEventListener('resize', onResize);
+        glApp.properties.cameraOffsetX = (348 + 16) / window.innerWidth; // 348 is sidebar width with some padding
+        onResize();
+        animate();
+      }
 
-      onResize();
-      animate();
-    }
+      function onResize() {
+        glApp.setSize(window.innerWidth, window.innerHeight);
+      }
 
-    function onResize() {
-      glApp.setSize(window.innerWidth, window.innerHeight);
-      glApp.properties.cameraOffsetX = (348 + 10) / window.innerWidth; // 348 is sidebar width with some padding
-    }
+      function animate() {
+        requestAnimationFrame(animate);
 
-    function animate() {
-      requestAnimationFrame(animate);
+        let newTime = performance.now() / 1000;
+        let dt = newTime - time;
+        time = newTime;
 
-      let newTime = performance.now() / 1000;
-      let dt = newTime - time;
-      time = newTime;
+        update(dt);
+      }
 
-      update(dt);
-    }
+      function update(dt) {
+        glApp.render(dt);
+      }
 
-    function update(dt) {
-      glApp.render(dt);
-    }
+      document.addEventListener('contextmenu', e => {
+        if (window.location.hostname !== 'tauri.localhost') {
+          return;
+        }
+        e.preventDefault();
+        return false;
+      }, { capture: true })
 
-    document.addEventListener(
-        "contextmenu",
-        (e) => {
-          if (window.location.hostname !== "tauri.localhost") {
-            return;
-          }
-          e.preventDefault();
-          return false;
-        },
-        { capture: true },
-    );
 
-    document.addEventListener("DOMContentLoaded", preload);
-  </script>
-</main>
-</body>
+      document.addEventListener("DOMContentLoaded", preload);
+    </script>
+  </main>
+  </body>
 </html>

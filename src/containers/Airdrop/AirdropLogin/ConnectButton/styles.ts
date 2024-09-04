@@ -1,5 +1,6 @@
+import { Button, keyframes } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { FaXTwitter } from 'react-icons/fa6';
-import styled, { keyframes } from 'styled-components';
 
 const rotateGem1 = keyframes`
   0%, 100% {
@@ -28,7 +29,7 @@ const rotateGem3 = keyframes`
   }
 `;
 
-export const StyledButton = styled('button')`
+export const StyledButton = styled(Button)`
     padding: 0px 4px 0 8px;
 
     display: flex;
@@ -47,15 +48,10 @@ export const StyledButton = styled('button')`
     text-transform: unset;
     position: relative;
 
-    /* antialiasing */
-    outline: 1px solid transparent;
-    -webkit-backface-visibility: hidden;
-    will-change: transform;
-
     &:hover {
         border: 1px solid #000;
         background: #000;
-        transform: scale(1.01);
+        transform: scale(1.05);
 
         .ConnectButton-Gem1 {
             animation: ${rotateGem1} 0.4s ease-in-out;

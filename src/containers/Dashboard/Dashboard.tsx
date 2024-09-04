@@ -1,8 +1,8 @@
-import { viewType } from '../../store/types';
+import { DashboardContainer } from './styles';
 import MiningView from './MiningView/MiningView';
 import TribesView from './TribesView/TribesView';
+import { viewType } from '../../store/types';
 import SetupViewContainer from './SetupView/SetupViewContainer';
-import { DashboardContainer } from './styles';
 
 function Dashboard({ status }: { status: viewType }) {
     const viewMarkup =

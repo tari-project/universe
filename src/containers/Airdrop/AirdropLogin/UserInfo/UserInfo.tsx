@@ -7,44 +7,24 @@ import {
     StatsGroup,
     NotificationsButton,
     Dot,
-    Menu,
-    MenuItem,
     StyledAvatar,
-    MenuWrapper,
 } from './styles';
+
+import { Menu, MenuItem, Grow } from '@mui/material';
 
 import gemImage from './images/gems.png';
 import shellImage from './images/shells.png';
 import hammerImage from './images/hammers.png';
 import { FaBell } from 'react-icons/fa6';
+import { useState } from 'react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence } from 'framer-motion';
-import { useCallback, useEffect, useState } from 'react';
 
 export default function UserInfo() {
     const { logout, userDetails } = useAirdropStore();
-
-    const [open, setOpen] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-
-    const handleClickOutside = useCallback(
-        (event: MouseEvent) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const targetId = (event.target as any)?.id;
-            if (targetId === 'avatar-button' || !open) return;
-            handleClose();
-        },
-        [open]
-    );
-
-    useEffect(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [handleClickOutside]);
 
     if (!userDetails || !userDetails?.user) return null;
 
@@ -53,10 +33,16 @@ export default function UserInfo() {
     const shells = userDetails?.user?.rank?.shells;
     const hammers = userDetails?.user?.rank?.hammers;
 
-    const handleClose = () => setOpen(false);
-    const handleOpen = () => setOpen(true);
+    const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
 
     const handleLogout = () => {
+        setAnchorEl(null);
         logout();
     };
 
@@ -87,17 +73,26 @@ export default function UserInfo() {
                     <Dot $color="green" />
                 </NotificationsButton>
             )}
-            <MenuWrapper>
-                <StyledAvatar id="avatar-button" onClick={handleOpen} src={profileimageurl} alt="User Avatar" />
 
-                <AnimatePresence>
-                    {open && (
-                        <Menu animate={{ opacity: 1 }} exit={{ opacity: 0 }} id="menu-button" onClick={handleClose}>
-                            <MenuItem onClick={handleLogout}>{t('logout')}</MenuItem>
-                        </Menu>
-                    )}
-                </AnimatePresence>
-            </MenuWrapper>
+            <StyledAvatar
+                src={profileimageurl}
+                onClick={handleClick}
+                alt="User Avatar"
+                sx={{ width: 36, height: 36 }}
+            />
+
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+                TransitionComponent={Grow}
+                keepMounted
+                sx={{ width: 180 }}
+            >
+                <MenuItem onClick={handleLogout} sx={{ width: 180 }}>
+                    {t('logout')}
+                </MenuItem>
+            </Menu>
         </Wrapper>
     );
 }

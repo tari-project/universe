@@ -1,7 +1,6 @@
 // glApp.d.ts
 
 export type GlAppState =
-    | 'showVisual'
     | 'start'
     | 'free'
     | 'pause'

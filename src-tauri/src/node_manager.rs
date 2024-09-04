@@ -1,15 +1,13 @@
+use crate::node_adapter::MinotariNodeAdapter;
+use crate::process_watcher::ProcessWatcher;
+use crate::ProgressTracker;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tokio::fs;
 use tokio::sync::RwLock;
-
-use crate::node_adapter::MinotariNodeAdapter;
-use crate::process_watcher::ProcessWatcher;
-use crate::ProgressTracker;
 
 #[derive(Debug, thiserror::Error)]
 pub enum NodeManagerError {
@@ -59,13 +57,12 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
             process_watcher
-                .start(app_shutdown, base_path, config_path, log_path)
+                .start(app_shutdown, base_path, log_path)
                 .await?;
         }
         self.wait_ready().await?;
@@ -76,12 +73,11 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
-        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(app_shutdown, base_path, log_path)
             .await?;
 
         Ok(())
