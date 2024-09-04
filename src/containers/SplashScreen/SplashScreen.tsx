@@ -1,11 +1,10 @@
-import React from 'react';
 import universeAnimation from './splashscreen.json';
 import { useLottie } from 'lottie-react';
 import { SplashScreenContainer, LottieContainer } from './SplashScreen.styles';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@app/store/useUIStore';
 
-const SplashScreen: React.FC = () => {
+const SplashScreen = () => {
     const showSplash = useUIStore((s) => s.showSplash);
     const options = {
         animationData: universeAnimation,

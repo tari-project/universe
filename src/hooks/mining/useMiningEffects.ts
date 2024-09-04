@@ -26,12 +26,14 @@ export const useMiningEffects = () => {
         setIsChangingMode: s.setIsChangingMode,
     }));
 
-    // We probably should remove it in the future and relay on events emited from rust code ?
+    // We probably should remove it in the future and relay on events emitted from rust code ?
     useEffect(() => {
         if (isMining && isMiningEnabled) {
             if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
             if (isChangingMode) setIsChangingMode(false);
-            handleVisual('start');
+            handleVisual('showVisual').then(() => {
+                handleVisual('start');
+            });
             setIsMiningInProgress(true);
             return;
         }

@@ -1,6 +1,27 @@
 const LOG_TARGET: &str = "tari::universe::download_utils";
 
-pub async fn download_file(
+pub async fn download_file_with_retries(
+    url: &str,
+    destination: &Path,
+    progress_tracker: ProgressTracker,
+) -> Result<(), Error> {
+    let mut retries = 0;
+    loop {
+        match download_file(url, destination, progress_tracker.clone()).await {
+            Ok(_) => return Ok(()),
+            Err(err) => {
+                if retries >= 3 {
+                    return Err(err);
+                }
+                retries += 1;
+                eprintln!("Error downloading file: {}. Try {:?}/3", err, retries);
+                sleep(Duration::from_secs(1)).await;
+            }
+        }
+    }
+}
+
+async fn download_file(
     url: &str,
     destination: &Path,
     progress_tracker: ProgressTracker,
@@ -20,12 +41,14 @@ pub async fn download_file(
     // Stream the response body directly to the file
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
-        let _ = progress_tracker.update("downloading".to_string(), 10).await;
+        let _ = progress_tracker
+            .update("downloading".to_string(), None, 10)
+            .await;
         dest.write_all(&item?).await?;
     }
 
     progress_tracker
-        .update("download-completed".to_string(), 100)
+        .update("download-completed".to_string(), None, 100)
         .await;
     info!(target: LOG_TARGET, "Done downloading");
 
@@ -71,11 +94,13 @@ use log::info;
 use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
 use tar::Archive;
 use tokio::fs;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::AsyncReadExt;
 use tokio::io::{AsyncWriteExt, BufReader};
+use tokio::time::sleep;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 // Taken from async_zip example
@@ -151,7 +176,7 @@ pub async fn validate_checksum(
 
     // Extract the expected hash for the corresponding asset name
     let mut expected_hash = "";
-    let re = Regex::new(&format!(r"([a-f0-9]+)\s+{}", asset_name)).unwrap();
+    let re = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name)).unwrap();
     for line in contents.lines() {
         if let Some(caps) = re.captures(line) {
             expected_hash = caps.get(1).unwrap().as_str();

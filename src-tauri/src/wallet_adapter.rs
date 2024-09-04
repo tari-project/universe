@@ -2,6 +2,7 @@ use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
 use anyhow::Error;
+use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetBalanceRequest;
@@ -42,6 +43,7 @@ impl ProcessAdapter for WalletAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        _config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
@@ -79,12 +81,16 @@ impl ProcessAdapter for WalletAdapter {
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
             ),
+            "-p".to_string(),
+            "wallet.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9999".to_string(),
         ];
         if !self.use_tor {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
             args.push("wallet.p2p.public_addresses=/ip4/172.2.3.4/tcp/18188".to_string());
             // args.push("-p".to_string());
@@ -95,10 +101,11 @@ impl ProcessAdapter for WalletAdapter {
             args.push(
                 "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
             );
+
             // todo!()
         } else {
             args.push("-p".to_string());
-            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=false".to_string())
+            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         }
         Ok((
             ProcessInstance {
@@ -157,9 +164,24 @@ impl ProcessAdapter for WalletAdapter {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum WalletStatusMonitorError {
+    #[error("Wallet not started")]
+    WalletNotStarted,
+    #[error("Unknown error: {0}")]
+    UnknownError(#[from] anyhow::Error),
+}
+
 pub struct WalletStatusMonitor {}
 
-impl StatusMonitor for WalletStatusMonitor {}
+#[async_trait]
+impl StatusMonitor for WalletStatusMonitor {
+    type Status = ();
+
+    async fn status(&self) -> Result<Self::Status, Error> {
+        todo!()
+    }
+}
 
 #[derive(Debug, Serialize)]
 pub struct WalletBalance {
@@ -169,9 +191,14 @@ pub struct WalletBalance {
     pub pending_outgoing_balance: MicroMinotari,
 }
 impl WalletStatusMonitor {
-    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
-        let mut client = WalletClient::connect("http://127.0.0.1:18141").await?;
-        let res = client.get_balance(GetBalanceRequest {}).await?;
+    pub async fn get_balance(&self) -> Result<WalletBalance, WalletStatusMonitorError> {
+        let mut client = WalletClient::connect("http://127.0.0.1:18141")
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_balance(GetBalanceRequest {})
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
 
         Ok(WalletBalance {

@@ -1,7 +1,10 @@
 use crate::binary_resolver::{VersionAsset, VersionDownloadInfo};
 use anyhow::anyhow;
+use log::info;
 use reqwest::Client;
 use serde::Deserialize;
+
+const LOG_TARGET: &str = "tari::universe::github";
 
 #[derive(Deserialize)]
 struct Release {
@@ -37,7 +40,7 @@ pub async fn list_releases(
     let data = response.text().await?;
     let releases: Vec<Release> = serde_json::from_str(&data)?;
 
-    println!("Releases for {}/{}:", repo_owner, repo_name);
+    info!(target: LOG_TARGET, "Releases for {}/{}:", repo_owner, repo_name);
     let mut res = vec![];
     for release in releases {
         if release.draft {
@@ -49,6 +52,7 @@ pub async fn list_releases(
         }
         // Remove any v prefix
         let name = release.name.trim_start_matches('v').to_string();
+        info!(target: LOG_TARGET, " - release: {}", name);
         // res.push(semver::Version::parse(&tag_name)?);
         let mut assets = vec![];
         for asset in release.assets {
@@ -57,10 +61,15 @@ pub async fn list_releases(
                 name: asset.name,
             });
         }
-        res.push(VersionDownloadInfo {
-            version: semver::Version::parse(&name)?,
-            assets,
-        });
+        match semver::Version::parse(&name) {
+            Ok(v) => {
+                res.push(VersionDownloadInfo { version: v, assets });
+            }
+            Err(e) => {
+                info!(target: LOG_TARGET, "Failed to parse version: {}", e);
+                continue;
+            }
+        }
     }
 
     Ok(res)
