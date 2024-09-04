@@ -15,6 +15,7 @@ pub fn launch_child_process(
     }
     #[cfg(target_os = "windows")]
     {
+        use crate::consts::PROCESS_CREATION_NO_WINDOW;
         Ok(tokio::process::Command::new(file_path)
             .args(args)
             .stdout(std::process::Stdio::null())
