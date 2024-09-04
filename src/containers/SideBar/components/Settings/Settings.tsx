@@ -230,7 +230,6 @@ export default function Settings() {
         </MinerContainer>
     );
 
-
     const gpuEnabledMarkup = (
         <MinerContainer>
             <Stack>
