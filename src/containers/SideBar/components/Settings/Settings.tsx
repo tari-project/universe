@@ -196,8 +196,8 @@ export default function Settings() {
     );
 
     const toggleDisabledBase = !miningAllowed || miningLoading;
-    const cpuDisabled = isMiningInProgress && !isGpuMiningEnabled; // TODO: should we rather stop mining if they both get turned off from settings?
-    const gpuDisabled = isMiningInProgress && !isCpuMiningEnabled;
+    const cpuDisabled = isMiningInProgress && isCpuMiningEnabled && !isGpuMiningEnabled; // TODO: should we rather stop mining if they both get turned off from settings?
+    const gpuDisabled = isMiningInProgress && isGpuMiningEnabled && !isCpuMiningEnabled;
 
     const cpuEnabledMarkup = (
         <MinerContainer>

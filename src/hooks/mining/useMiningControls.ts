@@ -50,13 +50,11 @@ export function useChangeMiningMode() {
                 } else {
                     await handleMining('pause');
                     await invoke('set_mode', { mode }).then(() => {
-                        handleMining('start');
+                        handleMining('start').then(() => setIsChangingMode(false));
                     });
                 }
             } catch (e) {
                 console.error('Could not change the mode', e);
-            } finally {
-                setIsChangingMode(false);
             }
         },
         [setIsChangingMode, isMiningInProgress, handleMining]

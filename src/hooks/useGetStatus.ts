@@ -39,16 +39,10 @@ export function useGetStatus() {
                     if (status) {
                         setAppStatus(status);
                         setCPUStatus(status.cpu);
-                        setBaseNodeStatus(status.base_node);
                         setGPUStatus(status.gpu);
 
-                        if (status.cpu?.is_mining) {
-                            if (!status.cpu?.connection.is_connected) {
-                                setError('Xmrig connection lost!');
-                            } else if (error === 'Xmrig connection lost!') {
-                                setError('');
-                            }
-                        }
+                        setBaseNodeStatus(status.base_node);
+
                         const wallet_balance = status.wallet_balance;
 
                         setBalanceData(wallet_balance);
@@ -60,6 +54,14 @@ export function useGetStatus() {
                         setMiningControlsEnabled(miningEnabled);
                         setIsMiningInProgress(isMining);
                         setMiningInitiated(isMining);
+
+                        if (status.cpu?.is_mining) {
+                            if (!status.cpu?.connection.is_connected) {
+                                setError('Xmrig connection lost!');
+                            } else if (error === 'Xmrig connection lost!') {
+                                setError('');
+                            }
+                        }
                     } else {
                         console.error('Could not get status');
                     }
