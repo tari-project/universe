@@ -112,15 +112,15 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         ];
 
         // TODO: uncomment if p2pool is needed in CPU mining
-        // if self.config.p2pool_enabled {
-        //     args.push("-p".to_string());
-        //     args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
-        //     args.push("-p".to_string());
-        //     args.push(format!(
-        //         "merge_mining_proxy.p2pool_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
-        //         self.config.p2pool_grpc_port
-        //     ));
-        // }
+        if self.config.p2pool_enabled {
+            args.push("-p".to_string());
+            args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
+            args.push("-p".to_string());
+            args.push(format!(
+                "merge_mining_proxy.p2pool_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
+                self.config.p2pool_grpc_port
+            ));
+        }
 
         Ok((
             ProcessInstance {
