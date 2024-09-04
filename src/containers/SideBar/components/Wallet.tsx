@@ -1,5 +1,5 @@
 import { WalletContainer, Handle } from '../styles';
-import useWalletStore from '@app/store/walletStore';
+import { useWalletStore } from '@app/store/walletStore';
 import formatBalance from '@app/utils/formatBalance.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { WalletBalance } from './Wallet.styles.ts';

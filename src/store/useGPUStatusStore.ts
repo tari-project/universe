@@ -23,6 +23,7 @@ export const useGPUStatusStore = create<GPUStatusStoreState>()(
             storage: createJSONStorage(() => sessionStorage),
             partialize: (s) => ({
                 gpu_hash_rate: s.hash_rate,
+                is_mining: s.is_mining,
             }),
         }
     )
