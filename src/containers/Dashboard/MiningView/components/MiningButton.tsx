@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { GiPauseButton } from 'react-icons/gi';
 
 import { IconWrapper, StyledButton, StyledIcon, ButtonWrapper } from './MiningButton.styles.ts';
@@ -9,20 +9,41 @@ import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+
+enum MiningButtonStateText {
+    STARTING = 'starting-mining',
+    STARTED = 'pause-mining',
+    CONNECTION_LOST = 'cancel-mining',
+    CHANGING_MODE = 'changing-mode',
+    START = 'start-mining',
+}
 
 function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const miningLoading = useMiningStore((s) => s.miningLoading);
+    const isChangingMode = useMiningStore((s) => s.isChangingMode);
+    const miningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
+    const isConnectionLostDuringMining = useMiningStore((s) => s.isConnectionLostDuringMining);
+    const { startMining, stopMining, cancelMining } = useMiningControls();
 
-    const {
-        startMining,
-        stopMining,
-        getMiningButtonStateText,
-        isLoading,
-        shouldMiningControlsBeEnabled,
-        isConnectionLostDuringMining,
-        cancelMining,
-    } = useMiningControls();
+    const miningButtonStateText = useMemo(() => {
+        if (isChangingMode) {
+            return MiningButtonStateText.CHANGING_MODE;
+        }
+        if (isConnectionLostDuringMining) {
+            return MiningButtonStateText.CONNECTION_LOST;
+        }
+        if (miningLoading) {
+            return MiningButtonStateText.STARTING;
+        }
+        if (isMining) {
+            return MiningButtonStateText.STARTED;
+        }
+        return MiningButtonStateText.START;
+    }, [isChangingMode, isConnectionLostDuringMining, isMining, miningLoading]);
+
     const handleClick = useCallback(() => {
         if (isConnectionLostDuringMining) {
             return cancelMining();
@@ -45,10 +66,10 @@ function MiningButton() {
                     variant="rounded"
                     $hasStarted={isMining || isConnectionLostDuringMining}
                     onClick={handleClick}
-                    icon={<IconWrapper>{isLoading ? <StyledIcon /> : icon}</IconWrapper>}
-                    disabled={!shouldMiningControlsBeEnabled}
+                    icon={<IconWrapper>{miningLoading ? <StyledIcon /> : icon}</IconWrapper>}
+                    disabled={!miningControlsEnabled}
                 >
-                    <span>{t(`mining-button-text.${getMiningButtonStateText()}`)}</span>
+                    <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
                 </StyledButton>
             </ButtonWrapper>
 

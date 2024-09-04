@@ -38,10 +38,10 @@ import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
-import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 
 import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput';
 import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',
@@ -67,7 +67,7 @@ export default function Settings() {
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
     const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
-    const { isLoading } = useMiningControls();
+    const miningLoading = useMiningStore((s) => s.miningLoading);
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => {
         setOpen(false);
@@ -185,7 +185,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isP2poolEnabled}
-                disabled={isMining || !miningAllowed || isLoading}
+                disabled={isMining || !miningAllowed || miningLoading}
                 onChange={handleP2poolEnabled}
             />
         </MinerContainer>
@@ -198,7 +198,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isCpuMiningEnabled}
-                disabled={isMining || !miningAllowed || isLoading}
+                disabled={isMining || !miningAllowed || miningLoading}
                 onChange={handleCpuMiningEnabled}
             />
         </MinerContainer>
@@ -211,7 +211,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isGpuMiningEnabled}
-                disabled={isMining || !miningAllowed || isLoading}
+                disabled={isMining || !miningAllowed || miningLoading}
                 onChange={handleGpuMiningEnabled}
             />
         </MinerContainer>

@@ -12,6 +12,7 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 const variants = {
     hidden: {
@@ -27,7 +28,8 @@ export default function Miner() {
     const { t } = useTranslation('common', { useSuspense: false });
 
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
-    const { isWaitingForHashRate, isMiningEnabled, isChangingMode } = useMiningControls();
+    const { isMiningEnabled, isChangingMode } = useMiningControls();
+    const hashrateReady = useMiningStore((s) => s.hashrateReady);
 
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
     const gpu_hash_rate = useGPUStatusStore((s) => s.hash_rate) || 0;
@@ -36,6 +38,8 @@ export default function Miner() {
 
     const hardwareValSplit = cpuHardwareStatus?.label?.split(' ');
     const hardwareVal = hardwareValSplit?.[0] + ' ' + hardwareValSplit?.[1];
+
+    const isWaitingForHashRate = !hashrateReady || hash_rate < 0;
 
     return (
         <MinerContainer>

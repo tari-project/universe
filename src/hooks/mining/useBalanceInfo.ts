@@ -35,7 +35,7 @@ export default function useBalanceInfo() {
             setEarnings(diff);
         }
         setShowFailAnimation(!hasEarnings);
-        void handleVisual(!hasEarnings ? 'fail' : 'success');
+        handleVisual(!hasEarnings ? 'fail' : 'success');
         prevBalanceRef.current = previousBalance;
     }, [balance, handleVisual, previousBalance, setEarnings, setShowFailAnimation, setTimerPaused]);
 

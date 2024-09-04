@@ -9,7 +9,15 @@ interface State {
     showFailAnimation?: boolean;
     postBlockAnimation?: boolean;
     timerPaused?: boolean;
+    miningLoading?: boolean;
     displayBlockHeight?: number;
+    hashrateReady?: boolean;
+
+    miningInitiated: boolean;
+    miningControlsEnabled: boolean;
+    isMiningInProgress: boolean;
+    isChangingMode: boolean;
+    isConnectionLostDuringMining: boolean;
 }
 interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
@@ -18,6 +26,14 @@ interface Actions {
     setPostBlockAnimation: (postBlockAnimation: boolean) => void;
     setTimerPaused: (timerPaused: boolean) => void;
     setShowFailAnimation: (showFailAnimation: boolean) => void;
+    setMiningLoading: (miningLoading: boolean) => void;
+    setHashrateReady: (hashrateReady: boolean) => void;
+
+    setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
+    setMiningInitiated: (miningInitiated: State['miningInitiated']) => void;
+    setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
+    setIsMiningInProgress: (isMiningInProgress: State['isMiningInProgress']) => void;
+    setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
 }
 type MiningStoreState = State & Actions;
 
@@ -25,6 +41,13 @@ const initialState: State = {
     displayBlockHeight: useBaseNodeStatusStore.getState().block_height,
     timerPaused: false,
     postBlockAnimation: false,
+    miningLoading: false,
+    hashrateReady: false,
+    miningInitiated: false,
+    isMiningInProgress: false,
+    isChangingMode: false,
+    isConnectionLostDuringMining: false,
+    miningControlsEnabled: false,
 };
 
 export const useMiningStore = create<MiningStoreState>()(
@@ -35,8 +58,17 @@ export const useMiningStore = create<MiningStoreState>()(
             setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
             setEarnings: (earnings) => set({ earnings }),
             setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
-            setTimerPaused: (timerPaused) => set({ timerPaused }),
             setShowFailAnimation: (showFailAnimation) => set({ showFailAnimation }),
+            setTimerPaused: (timerPaused) => set({ timerPaused }),
+            setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
+            setHashrateReady: (hashrateReady) => set({ hashrateReady }),
+
+            setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
+            setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
+            setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
+            setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+            setMiningControlsEnabled: (miningControlsEnabled) =>
+                set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
         }),
         {
             name: 'mining',
@@ -46,9 +78,13 @@ export const useMiningStore = create<MiningStoreState>()(
                 showFailAnimation: s.showFailAnimation,
                 postBlockAnimation: s.postBlockAnimation,
                 timerPaused: s.timerPaused,
+                miningLoading: s.miningLoading,
                 earnings: s.earnings,
+                miningInitiated: s.miningInitiated,
+                miningControlsEnabled: s.miningControlsEnabled,
+                isConnectionLostDuringMining: s.isConnectionLostDuringMining,
             }),
-            version: 2,
+            version: 3,
         }
     )
 );

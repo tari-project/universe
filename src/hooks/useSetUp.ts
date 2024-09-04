@@ -8,6 +8,7 @@ import useAppStateStore from '../store/appStateStore.ts';
 
 import { useVersions } from '@app/hooks/useVersions.ts';
 import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
@@ -16,6 +17,8 @@ export function useSetUp() {
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setError = useAppStateStore((s) => s.setError);
+    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+
     const handleVisual = useVisualisation();
 
     useEffect(() => {
@@ -31,6 +34,7 @@ export function useSetUp() {
                     if (p.progress >= 1) {
                         settingUpFinished();
                         setView('mining');
+                        setMiningControlsEnabled(true);
                         handleVisual('showVisual');
                     }
                     break;
@@ -44,7 +48,6 @@ export function useSetUp() {
             invoke('setup_application').catch((e) => {
                 setError(`Failed to setup application: ${e}`);
                 settingUpFinished();
-                handleVisual('showVisual');
                 setView('mining');
             });
         }
@@ -52,7 +55,7 @@ export function useSetUp() {
             unlistenPromise.then((unlisten) => unlisten());
             clearTimeout(splashTimeout);
         };
-    }, [handleVisual, setError, setSetupDetails, setShowSplash, setView, settingUpFinished]);
+    }, [handleVisual, setError, setMiningControlsEnabled, setSetupDetails, setShowSplash, setView, settingUpFinished]);
 
     useVersions();
 }
