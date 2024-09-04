@@ -6,7 +6,7 @@ import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
 
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
-import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+
 import { formatNumber } from '@app/utils/formatNumber.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
 
@@ -28,8 +28,10 @@ export default function Miner() {
     const { t } = useTranslation('common', { useSuspense: false });
 
     const { cpu: cpuHardwareStatus } = useHardwareStatus();
-    const { isMiningEnabled, isChangingMode } = useMiningControls();
+
     const hashrateReady = useMiningStore((s) => s.hashrateReady);
+    const miningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
     const gpu_hash_rate = useGPUStatusStore((s) => s.hash_rate) || 0;
@@ -66,7 +68,7 @@ export default function Miner() {
                     useLowerCase
                 />
                 <AnimatePresence>
-                    {isMiningEnabled || isChangingMode ? (
+                    {miningInitiated || isChangingMode ? (
                         <>
                             <motion.div variants={variants} initial="hidden" animate="visible" exit="hidden">
                                 <Tile

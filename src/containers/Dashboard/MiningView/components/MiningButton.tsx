@@ -26,7 +26,7 @@ function MiningButton() {
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const miningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isConnectionLostDuringMining = useMiningStore((s) => s.isConnectionLostDuringMining);
-    const { startMining, stopMining, cancelMining } = useMiningControls();
+    const handleMining = useMiningControls();
 
     const miningButtonStateText = useMemo(() => {
         if (isChangingMode) {
@@ -46,16 +46,10 @@ function MiningButton() {
 
     const handleClick = useCallback(() => {
         if (isConnectionLostDuringMining) {
-            return cancelMining();
+            return handleMining('stop');
         }
-
-        if (isMining) {
-            return stopMining();
-        }
-        if (!isMining) {
-            return startMining();
-        }
-    }, [isMining, startMining, stopMining, cancelMining, isConnectionLostDuringMining]);
+        return handleMining(isMining ? 'stop' : 'start');
+    }, [isMining, handleMining, isConnectionLostDuringMining]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
 

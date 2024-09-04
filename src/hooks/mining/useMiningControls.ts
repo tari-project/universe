@@ -13,42 +13,9 @@ export function useMiningControls() {
     const isMining = useCPUStatusStore((s) => s.is_mining);
 
     const setMiningLoading = useMiningStore((s) => s.setMiningLoading);
-
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
-
-    const startMining = useCallback(async () => {
-        setMiningInitiated(true);
-        await invoke('start_mining', {})
-            .then(() => {
-                console.info(`mining started`);
-            })
-            .catch((e) => {
-                setError(e);
-            });
-    }, [setMiningInitiated, setError]);
-
-    const stopMining = useCallback(async () => {
-        setMiningInitiated(false);
-        await invoke('stop_mining', {})
-            .then(async () => {
-                console.info(`mining stopped`);
-                await handleVisual('stop');
-            })
-            .catch(() => {
-                setMiningInitiated(true);
-            });
-    }, [handleVisual, setMiningInitiated]);
-
-    const cancelMining = useCallback(async () => {
-        setMiningInitiated(false);
-        await invoke('stop_mining', {}).then(async () => {
-            console.info(`mining canceled`);
-            await handleVisual('start');
-            await handleVisual('stop');
-        });
-    }, [handleVisual, setMiningInitiated]);
 
     useEffect(() => {
         const initLoading = miningInitiated && !isMining;
@@ -56,45 +23,47 @@ export function useMiningControls() {
         setMiningLoading(initLoading || modeChange);
     }, [isChangingMode, isMining, miningInitiated, setMiningLoading]);
 
-    return {
-        cancelMining,
-        startMining,
-        stopMining,
-    };
+    return useCallback(
+        async (type: 'start' | 'stop' | 'pause') => {
+            const isStart = type === 'start';
+            setMiningInitiated(!isStart);
+            const invokeFn = isStart ? 'start_mining' : 'stop_mining';
+            invoke(invokeFn, {})
+                .then(() => {
+                    console.info(`mining ${isStart ? 'started' : 'stopped'}`);
+                    handleVisual(type);
+                })
+                .catch((e) => {
+                    setError(e);
+                    if (!isStart) {
+                        setMiningInitiated(true);
+                    }
+                });
+        },
+        [handleVisual, setError, setMiningInitiated]
+    );
 }
 
-// export function useMiningMode() {
-//     const isMiningInProgress = useUIStore((s) => s.isMiningInProgress);
-//     const changeMode = useCallback(
-//         async (mode: string) => {
-//             const hasBeenMining = isMiningInProgress;
-//
-//             if (!hasBeenMining) {
-//                 await invoke('set_mode', { mode });
-//                 return;
-//             }
-//
-//             setIsChangingMode(true);
-//             if (hasBeenMining && !isConnectionLostDuringMining) {
-//                 await stopMining();
-//             }
-//
-//             if (isConnectionLostDuringMining) {
-//                 await cancelMining();
-//             }
-//
-//             await invoke('set_mode', { mode });
-//
-//             if (hasBeenMining && !isConnectionLostDuringMining) {
-//                 setTimeout(async () => {
-//                     await startMining();
-//                 }, 2000);
-//             }
-//
-//             if (isConnectionLostDuringMining) {
-//                 setIsChangingMode(false);
-//             }
-//         },
-//         [isMiningInProgress, isConnectionLostDuringMining, cancelMining, setIsChangingMode, startMining, stopMining]
-//     );
-// }
+export function useChangeMiningMode() {
+    const handleMining = useMiningControls();
+    const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
+    const setIsChangingMode = useMiningStore((s) => s.setIsChangingMode);
+
+    return useCallback(
+        async (mode: string) => {
+            setIsChangingMode(true);
+            if (!isMiningInProgress) {
+                return await invoke('set_mode', { mode }).finally(() => setIsChangingMode(false));
+            }
+
+            if (isMiningInProgress) {
+                await handleMining('pause');
+                await invoke('set_mode', { mode }).finally(() => {
+                    handleMining('start');
+                    setIsChangingMode(false);
+                });
+            }
+        },
+        [setIsChangingMode, isMiningInProgress, handleMining]
+    );
+}

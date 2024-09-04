@@ -1,64 +1,37 @@
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore';
-import { useUIStore } from '@app/store/useUIStore';
-import { useEffect } from 'react';
+import { useMiningStore } from '@app/store/useMiningStore';
+import { useLayoutEffect } from 'react';
 import { useVisualisation } from './useVisualisation';
+
+// THIS hook is only for the edge cases of mining status from  BE not being in sync with our UI mining state
 
 export const useMiningEffects = () => {
     const isMining = useCPUStatusStore((s) => s.is_mining);
     const handleVisual = useVisualisation();
 
-    const { isConnectionLostDuringMining, setIsConnectionLostDuringMining } = useUIStore((s) => ({
-        isConnectionLostDuringMining: s.isConnectionLostDuringMining,
-        setIsConnectionLostDuringMining: s.setIsConnectionLostDuringMining,
-    }));
+    const setIsConnectionLostDuringMining = useMiningStore((s) => s.setIsConnectionLostDuringMining);
+    const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
+    const miningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
-    const { isMiningInProgress, setIsMiningInProgress } = useUIStore((s) => ({
-        isMiningInProgress: s.isMiningInProgress,
-        setIsMiningInProgress: s.setIsMiningInProgress,
-    }));
-
-    const { isMiningEnabled } = useUIStore((s) => ({
-        isMiningEnabled: s.isMiningEnabled,
-    }));
-
-    const { isChangingMode, setIsChangingMode } = useUIStore((s) => ({
-        isChangingMode: s.isChangingMode,
-        setIsChangingMode: s.setIsChangingMode,
-    }));
-
-    // We probably should remove it in the future and relay on events emitted from rust code ?
-    useEffect(() => {
-        if (isMining && isMiningEnabled) {
-            if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
-            if (isChangingMode) setIsChangingMode(false);
-            handleVisual('showVisual').then(() => {
-                handleVisual('start');
-            });
-            setIsMiningInProgress(true);
-            return;
+    useLayoutEffect(() => {
+        // shouldn't be needed any more, but in the case of the animation not starting when _actually_ starting to mine
+        if (isMining && miningInitiated) {
+            return () => {
+                handleVisual('showVisual').then(() => {
+                    handleVisual('start');
+                });
+            };
         }
+    }, [handleVisual, isMining, miningInitiated]);
 
-        if (!isMining && !isMiningEnabled && isMiningInProgress) {
-            if (isConnectionLostDuringMining) setIsConnectionLostDuringMining(false);
-            handleVisual('stop');
-            setIsMiningInProgress(false);
-            return;
-        }
-
-        if (!isMining && isMiningInProgress && !isChangingMode) {
+    useLayoutEffect(() => {
+        // in the case of isMining == false but mining should be in progress, means connection is lost
+        if (isMiningInProgress && !isMining && !isChangingMode) {
             setIsConnectionLostDuringMining(true);
-            handleVisual('pause');
-            return;
+            return () => {
+                handleVisual('pause');
+            };
         }
-    }, [
-        handleVisual,
-        isMining,
-        isMiningEnabled,
-        isConnectionLostDuringMining,
-        isChangingMode,
-        isMiningInProgress,
-        setIsChangingMode,
-        setIsConnectionLostDuringMining,
-        setIsMiningInProgress,
-    ]);
+    }, [handleVisual, isChangingMode, isMining, isMiningInProgress, setIsConnectionLostDuringMining]);
 };
