@@ -19,6 +19,7 @@ pub trait ProcessAdapter {
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
+        config_folder: PathBuf,
         log_folder: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
@@ -26,9 +27,10 @@ pub trait ProcessAdapter {
     fn spawn(
         &self,
         base_folder: PathBuf,
+        config_folder: PathBuf,
         log_folder: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
-        self.spawn_inner(base_folder, log_folder)
+        self.spawn_inner(base_folder, config_folder, log_folder)
     }
 
     fn pid_file_name(&self) -> &str;
