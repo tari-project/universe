@@ -31,7 +31,7 @@ jobs:
           - platform: 'ubuntu-20.04'
             args: ''
           - platform: 'windows-2019'
-            args: '--bundles msi'
+            args: '--bundles msi,updater'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
 
@@ -44,7 +44,7 @@ jobs:
         if: ${{ ! startsWith(github.ref, 'refs/heads/build-') }}
         shell: bash
         run: |
-          echo "tagName='v__VERSION__'" >> $GITHUB_ENV
+          echo "tagName=v__VERSION__" >> $GITHUB_ENV
           echo "releaseName='Tari Universe v__VERSION__'" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
 
