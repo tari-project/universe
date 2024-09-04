@@ -1,20 +1,25 @@
-use crate::process_killer::kill_process;
-use anyhow::Error;
-use log::{info, warn};
 use std::fs;
 use std::path::PathBuf;
+
+use anyhow::Error;
+use async_trait::async_trait;
+use log::{info, warn};
 use tari_shutdown::Shutdown;
 use tokio::runtime::Handle;
 use tokio::task::JoinHandle;
+
+use crate::process_killer::kill_process;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
 pub trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
+
     // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
     fn spawn_inner(
         &self,
         base_folder: PathBuf,
+        config_folder: PathBuf,
         log_folder: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
@@ -22,9 +27,10 @@ pub trait ProcessAdapter {
     fn spawn(
         &self,
         base_folder: PathBuf,
+        config_folder: PathBuf,
         log_folder: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
-        self.spawn_inner(base_folder, log_folder)
+        self.spawn_inner(base_folder, config_folder, log_folder)
     }
 
     fn pid_file_name(&self) -> &str;
@@ -44,7 +50,11 @@ pub trait ProcessAdapter {
     }
 }
 
-pub trait StatusMonitor {}
+#[async_trait]
+pub trait StatusMonitor {
+    type Status;
+    async fn status(&self) -> Result<Self::Status, anyhow::Error>;
+}
 
 pub struct ProcessInstance {
     pub shutdown: Shutdown,
