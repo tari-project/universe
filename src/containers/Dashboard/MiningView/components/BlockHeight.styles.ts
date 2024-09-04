@@ -5,11 +5,11 @@ export const Wrapper = styled.div`
     align-items: flex-end;
     justify-content: flex-end;
     position: absolute;
-    right: 0;
-    top: 0;
+    right: -10px;
+    top: 30px;
     overflow: hidden;
     width: 100%;
-    height: 100%;
+    height: calc(100% - 60px);
 `;
 
 export const RulerContainer = styled.div<{ $height?: number }>`
@@ -21,6 +21,7 @@ export const RulerContainer = styled.div<{ $height?: number }>`
     flex-direction: column;
     align-items: end;
     justify-content: center;
+    z-index: 0;
 `;
 
 export const RulerMarkContainer = styled.div`
@@ -57,10 +58,11 @@ export const BlockHeightAccent = styled.div<{ $content: string; $height?: number
     width: 100vh;
     height: 100%;
     font-family: Druk, sans-serif;
+    font-variant-numeric: tabular-nums;
     line-height: 1.1;
-    letter-spacing: -1px;
-    font-size: 110px;
-    transform: rotate(-90deg) translate(0, calc(100vh - ${({ $height = 100 }) => `${$height * 100 - 20}px`}));
+    letter-spacing: -2px;
+    font-size: 105px;
+    transform: rotate(-90deg) translate(0, calc(100vh - ${({ $height = 100 }) => `${$height * 100 - 40}px`}));
     position: fixed;
     z-index: -1;
 
@@ -72,7 +74,14 @@ export const BlockHeightAccent = styled.div<{ $content: string; $height?: number
         opacity: 0.4;
         transform: ${({ $height }) => ($height ? `scale(${$height})` : `scale(1.3)`)};
         text-align: center;
-        z-index: -1;
+    }
+
+    @media (max-width: 1100px) {
+        transform: rotate(-90deg) translate(0, calc(100vh - ${({ $height = 100 }) => `${$height * 100 - 10}px`}));
+        &:before {
+            width: 95%;
+            transform: ${({ $height }) => ($height ? `scale(${$height})` : `scale(1.1)`)};
+        }
     }
 `;
 
@@ -85,4 +94,8 @@ export const BlockHeightText = styled.div`
     font-size: 25px;
     font-weight: 700;
     line-height: normal;
+
+    @media (max-width: 1100px) {
+        font-size: 20px;
+    }
 `;
