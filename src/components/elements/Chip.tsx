@@ -23,11 +23,13 @@ const Wrapper = styled.div<StyleProps>`
     color: ${({ theme, $color }) => $color || theme.palette.text.contrast};
     font-family: Poppins, sans-serif;
     width: max-content;
+    min-width: 35px;
     span {
         display: flex;
         line-height: 1.05;
         font-weight: 600;
         user-select: none;
+        font-variant-numeric: tabular-nums;
     }
 
     ${({ $size }) => {

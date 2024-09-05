@@ -40,6 +40,7 @@ export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
     display: flex;
     gap: 2px;
     align-items: baseline;
+    font-variant-numeric: tabular-nums;
     color: ${({ theme }) => theme.palette.text.primary};
     text-transform: ${({ $useLowerCase }) => $useLowerCase && 'lowercase'};
 `;

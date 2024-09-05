@@ -7,24 +7,13 @@ import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
-import { formatNumber } from '@app/utils/formatNumber.ts';
+import { formatNumber, formatPercent } from '@app/utils/formatNumber.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
 
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 
-const variants = {
-    hidden: {
-        y: '150%',
-        opacity: 0,
-    },
-    visible: {
-        y: 0,
-        opacity: 1,
-    },
-};
 export default function Miner() {
     const { t } = useTranslation('common', { useSuspense: false });
 
@@ -78,7 +67,7 @@ export default function Miner() {
                         unit={tileStats.cpu.unit}
                         useLowerCase
                     />
-                ) : null}{' '}
+                ) : null}
                 {isGpuMiningEnabled ? (
                     <Tile
                         title={tileStats.gpu.title}
@@ -89,28 +78,6 @@ export default function Miner() {
                         useLowerCase
                     />
                 ) : null}
-                <AnimatePresence>
-                    {isCpuMiningEnabled && miningInitiated && !isWaitingForCPUHashRate ? (
-                        <>
-                            <motion.div variants={variants} initial="hidden" animate="visible" exit="hidden">
-                                <Tile
-                                    title={`CPU ${t('utilization')}`}
-                                    stats={
-                                        (cpuHardwareStatus?.usage_percentage || 0).toLocaleString(undefined, {
-                                            maximumFractionDigits: 0,
-                                        }) + '%'
-                                    }
-                                />
-                            </motion.div>
-                            <motion.div variants={variants} initial="hidden" animate="visible" exit="hidden">
-                                <Tile
-                                    title={`CPU ${t('temperature')}`}
-                                    stats={`${cpuHardwareStatus?.current_temperature || 0}°C`}
-                                />
-                            </motion.div>
-                        </>
-                    ) : null}
-                </AnimatePresence>
             </TileContainer>
         </MinerContainer>
     );
