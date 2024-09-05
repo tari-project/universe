@@ -47,10 +47,12 @@ pub async fn launch_and_get_outputs(
 
     #[cfg(target_os = "windows")]
     {
+        use crate::consts::PROCESS_CREATION_NO_WINDOW;
         let child = tokio::process::Command::new(file_path)
             .args(args)
             .stdout(std::process::Stdio::piped())
             .kill_on_drop(true)
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
             .spawn()?;
 
         let output = child.wait_with_output().await?;
