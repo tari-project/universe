@@ -140,7 +140,7 @@ impl TelemetryManager {
         let os = std::env::consts::OS;
         let anon_id = config.anon_id.clone();
         let version = env!("CARGO_PKG_VERSION");
-        let mode = MiningMode::to_str(config.mode.clone());
+        let mode = MiningMode::to_str(config.mode);
         let auto_mining = config.auto_mining;
         let unique_string = format!("v0,{},{},{},{},{}", anon_id, mode, auto_mining, os, version,);
         unique_string
@@ -282,7 +282,7 @@ async fn get_telemetry_data(
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
-        mode: config_guard.mode.clone().into(),
+        mode: config_guard.mode.into(),
         cpu_hash_rate,
         cpu_utilization,
         cpu_make,
