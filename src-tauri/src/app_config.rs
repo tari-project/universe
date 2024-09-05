@@ -12,16 +12,24 @@ const LOG_TARGET: &str = "tari::universe::app_config";
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct AppConfigFromFile {
-    pub version: u32,
-    pub mode: String,
-    pub auto_mining: bool,
-    pub p2pool_enabled: bool,
-    pub last_binaries_update_timestamp: SystemTime,
-    pub allow_telemetry: bool,
-    pub anon_id: String,
-    pub monero_address: String,
-    pub gpu_mining_enabled: bool,
-    pub cpu_mining_enabled: bool,
+    #[serde(default = "default_mode")]
+    mode: String,
+    #[serde(default = "default_false")]
+    auto_mining: bool,
+    #[serde(default = "default_false")]
+    p2pool_enabled: bool,
+    #[serde(default = "default_system_time")]
+    last_binaries_update_timestamp: SystemTime,
+    #[serde(default = "default_true")]
+    allow_telemetry: bool,
+    #[serde(default = "default_anon_id")]
+    anon_id: String,
+    #[serde(default = "default_monero_address")]
+    monero_address: String,
+    #[serde(default = "default_true")]
+    gpu_mining_enabled: bool,
+    #[serde(default = "default_true")]
+    cpu_mining_enabled: bool,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -51,7 +59,6 @@ impl MiningMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     config_file: Option<PathBuf>,
-    pub version: u32,
     pub mode: MiningMode,
     pub auto_mining: bool,
     pub p2pool_enabled: bool,
@@ -66,7 +73,6 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn new() -> Self {
         Self {
-            version: 1,
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: false,
@@ -87,64 +93,31 @@ impl AppConfig {
         if file.exists() {
             info!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
-            match serde_json::from_str::<AppConfigFromFile>(&config) {
-                Ok(config) => {
-                    self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
-                    self.auto_mining = config.auto_mining;
-                    self.p2pool_enabled = config.p2pool_enabled;
-                    self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
-                    self.allow_telemetry = config.allow_telemetry;
-                    self.anon_id = config.anon_id;
-                    self.version = config.version;
-                    if self.version == 0 {
-                        // migrate
-                        self.version = 1;
-                        self.allow_telemetry = true;
-                        self.anon_id = generate_password(20);
-                    }
-                    if self.version == 1 {
-                        // migrate
-                        self.version = 2;
-                        self.monero_address = DEFAULT_MONERO_ADDRESS.to_string();
-                    }
-                    if self.version == 2 {
-                        // migrate
-                        self.version = 3;
-                        self.gpu_mining_enabled = true;
-                        self.cpu_mining_enabled = true;
-                    }
-                    if self.version == 3 {
-                        // migrate
-                        self.version = 4;
-                        self.p2pool_enabled = true;
-                    }
-                    if self.version == 4 {
-                        self.version = 4;
-                        // temporarily disable p2pool by default
-                        self.p2pool_enabled = false;
-                    }
-                }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
-                }
-            }
+            self.apply_loaded_config(config);
         }
         info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
-        let config = &AppConfigFromFile {
-            mode: MiningMode::to_str(self.mode),
-            auto_mining: self.auto_mining,
-            p2pool_enabled: self.p2pool_enabled,
-            last_binaries_update_timestamp: self.last_binaries_update_timestamp,
-            version: self.version,
-            allow_telemetry: self.allow_telemetry,
-            anon_id: self.anon_id.clone(),
-            monero_address: self.monero_address.clone(),
-            gpu_mining_enabled: self.gpu_mining_enabled,
-            cpu_mining_enabled: self.cpu_mining_enabled,
-        };
-        let config = serde_json::to_string(&config)?;
-        fs::write(file, config).await?;
+        self.update_config_file().await?;
         Ok(())
+    }
+
+    pub fn apply_loaded_config(&mut self, config: String) {
+        match serde_json::from_str::<AppConfigFromFile>(&config) {
+            Ok(config) => {
+                info!("Loaded config from file {:?}", config);
+                self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
+                self.auto_mining = config.auto_mining;
+                self.p2pool_enabled = config.p2pool_enabled;
+                self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
+                self.allow_telemetry = config.allow_telemetry;
+                self.anon_id = config.anon_id;
+                self.monero_address = config.monero_address;
+                self.gpu_mining_enabled = config.gpu_mining_enabled;
+                self.cpu_mining_enabled = config.cpu_mining_enabled;
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
+            }
+        }
     }
 
     pub async fn set_mode(&mut self, mode: String) -> Result<(), anyhow::Error> {
@@ -237,7 +210,6 @@ impl AppConfig {
             auto_mining: self.auto_mining,
             p2pool_enabled: self.p2pool_enabled,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
-            version: self.version,
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
             monero_address: self.monero_address.clone(),
@@ -250,4 +222,28 @@ impl AppConfig {
 
         Ok(())
     }
+}
+
+fn default_mode() -> String {
+    "Eco".to_string()
+}
+
+fn default_false() -> bool {
+    false
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_anon_id() -> String {
+    generate_password(20)
+}
+
+fn default_system_time() -> SystemTime {
+    SystemTime::now()
+}
+
+fn default_monero_address() -> String {
+    DEFAULT_MONERO_ADDRESS.to_string()
 }

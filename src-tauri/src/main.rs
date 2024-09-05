@@ -24,6 +24,7 @@ mod process_utils;
 mod process_watcher;
 mod systemtray_manager;
 mod telemetry_manager;
+mod tests;
 mod user_listener;
 mod wallet_adapter;
 mod wallet_manager;
