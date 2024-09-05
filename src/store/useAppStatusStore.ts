@@ -12,6 +12,7 @@ interface Actions {
     setMode: (mode: modeType) => void;
     setConfigMode: (mode: modeType) => void;
     setP2poolEnabled: (p2poolEnabled: boolean) => void;
+    setTelemetryMode: (telemetryMode: boolean) => void;
 }
 
 type AppStatusStoreState = State & Actions;
@@ -33,6 +34,7 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
     persist(
         (set) => ({
             ...initialState,
+            setTelemetryMode: (telemetry_mode) => set({ telemetry_mode }),
             setAppStatus: (appStatus) => set({ ...appStatus }),
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMode: (mode) => set({ mode }),

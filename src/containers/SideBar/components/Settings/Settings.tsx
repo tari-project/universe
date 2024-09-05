@@ -24,7 +24,6 @@ import Dialog from '@app/components/elements/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
-import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
@@ -249,7 +248,6 @@ export default function Settings() {
                     <Divider />
                     <Stack direction="row" justifyContent="space-between">
                         <VisualMode />
-                        <TelemetryMode />
                     </Stack>
                     <Divider />
                     <Divider />

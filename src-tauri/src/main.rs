@@ -766,6 +766,8 @@ async fn status(
         cpu.estimated_earnings as f64,
     );
 
+    let telemetry_mode = config_guard.get_allow_telemetry();
+
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
     Ok(AppStatus {
@@ -785,6 +787,7 @@ async fn status(
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
+        telemetry_mode
     })
 }
 
@@ -857,6 +860,7 @@ pub struct AppStatus {
     monero_address: String,
     cpu_mining_enabled: bool,
     gpu_mining_enabled: bool,
+    telemetry_mode: bool,
 }
 
 #[derive(Debug, Serialize)]
