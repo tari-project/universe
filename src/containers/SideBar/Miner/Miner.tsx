@@ -1,5 +1,5 @@
 import Tile from './components/Tile.tsx';
-import { MinerContainer, TileContainer } from './styles.ts';
+import { MinerContainer, StatWrapper, TileContainer } from './styles.ts';
 
 import ModeSelect from './components/ModeSelect.tsx';
 import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
@@ -7,7 +7,7 @@ import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
-import { formatNumber, formatPercent } from '@app/utils/formatNumber.ts';
+import { formatNumber } from '@app/utils/formatNumber.ts';
 import { Divider } from '@app/components/elements/Divider.tsx';
 
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,8 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { ExpandableTile } from '@app/containers/SideBar/Miner/components/ExpandableTile.tsx';
 import formatBalance from '@app/utils/formatBalance.ts';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { ExpandedContentTile } from '@app/containers/SideBar/Miner/components/ExpandableTile.styles.ts';
 
 export default function Miner() {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -85,7 +87,37 @@ export default function Miner() {
                         useLowerCase
                     />
                 ) : null}
-                <ExpandableTile title="Est tXTM/day" stats={formatBalance(totalEarnings)} />
+                <ExpandableTile title="Est tXTM/day" stats={formatBalance(totalEarnings)}>
+                    <Typography>You earn rewards for mining CPU and GPU separately</Typography>
+                    <ExpandedContentTile>
+                        <Typography variant="p">CPU Estimated earnings</Typography>
+                        <StatWrapper>
+                            <Typography
+                                variant="h5"
+                                style={{
+                                    textTransform: 'lowercase',
+                                    lineHeight: '1.02',
+                                }}
+                            >
+                                {formatBalance(estimated_earnings)}
+                            </Typography>
+                        </StatWrapper>
+                    </ExpandedContentTile>
+                    <ExpandedContentTile>
+                        <Typography variant="p">GPU Estimated earnings</Typography>
+                        <StatWrapper>
+                            <Typography
+                                variant="h5"
+                                style={{
+                                    textTransform: 'lowercase',
+                                    lineHeight: '1.02',
+                                }}
+                            >
+                                {formatBalance(gpu_estimated_earnings)}
+                            </Typography>
+                        </StatWrapper>
+                    </ExpandedContentTile>
+                </ExpandableTile>
             </TileContainer>
         </MinerContainer>
     );

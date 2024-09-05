@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
 
 export const MinerContainer = styled.div`
     display: flex;
@@ -46,7 +47,7 @@ export const TileTop = styled.div`
     width: 100%;
 `;
 
-export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
+export const StatWrapper = styled(motion.div)<{ $useLowerCase?: boolean }>`
     display: flex;
     justify-content: space-between;
     align-items: baseline;
