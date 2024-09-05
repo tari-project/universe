@@ -880,7 +880,7 @@ struct CpuMinerConfig {
 }
 
 struct UniverseAppState {
-    is_setup_finished: Arc<RwLock<bool>>,    
+    is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
     cpu_miner: Arc<RwLock<CpuMiner>>,
