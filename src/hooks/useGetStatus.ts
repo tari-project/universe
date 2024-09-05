@@ -22,6 +22,7 @@ export function useGetStatus() {
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
     const setIsMiningInProgress = useMiningStore((s) => s.setIsMiningInProgress);
     const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
+    const setTelemetryMode = useAppStatusStore((s) => s.setTelemetryMode);
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
 
     const { error, setError } = useAppStateStore((s) => ({
@@ -43,6 +44,7 @@ export function useGetStatus() {
                         setGPUStatus(status.gpu);
 
                         setBaseNodeStatus(status.base_node);
+                        setTelemetryMode(status.telemetry_mode);
 
                         const wallet_balance = status.wallet_balance;
 
