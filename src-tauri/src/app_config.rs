@@ -18,7 +18,7 @@ pub struct AppConfigFromFile {
     auto_mining: bool,
     #[serde(default = "default_false")]
     p2pool_enabled: bool,
-    #[serde(default = "default_system_time")]
+    #[serde(default = "default_0")]
     last_binaries_update_timestamp: SystemTime,
     #[serde(default = "default_true")]
     allow_telemetry: bool,
