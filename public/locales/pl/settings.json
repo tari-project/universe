@@ -21,5 +21,9 @@
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
   "visual-mode": "Tryb wizualny",
   "pool-mining": "Pool Mining",
-  "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia)."
+  "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
+  "yes": "Tak",
+  "cancel": "Anuluj",
+  "reset-settings": "Resetuj ustawienia",
+  "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?"
 }
