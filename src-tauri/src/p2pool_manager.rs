@@ -1,16 +1,20 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anyhow::anyhow;
+use tari_core::proof_of_work::PowAlgorithm;
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use tokio::time::sleep;
 
 use crate::p2pool::models::Stats;
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::process_adapter::StatusMonitor;
 use crate::process_watcher::ProcessWatcher;
+
+const P2POOL_STATS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
 
 #[derive(Clone)]
 pub struct P2poolConfig {
@@ -56,9 +60,15 @@ impl Default for P2poolConfig {
     }
 }
 
+struct P2poolStats {
+    last_updated: Instant,
+    stats: HashMap<String, Stats>,
+}
+
 pub struct P2poolManager {
     config: Arc<P2poolConfig>,
     watcher: Arc<RwLock<ProcessWatcher<P2poolAdapter>>>,
+    stats: Arc<Mutex<Option<P2poolStats>>>,
 }
 
 impl P2poolManager {
@@ -69,10 +79,57 @@ impl P2poolManager {
         Self {
             config,
             watcher: Arc::new(RwLock::new(process_watcher)),
+            stats: Arc::new(Mutex::new(None)),
         }
     }
 
-    pub async fn stats(&self) -> Result<Stats, anyhow::Error> {
+    fn default_stats(&self) -> HashMap<String, Stats> {
+        let mut p2pool_stats = HashMap::with_capacity(2);
+        p2pool_stats.insert(
+            PowAlgorithm::Sha3x.to_string().to_lowercase(),
+            Stats::default(),
+        );
+        p2pool_stats.insert(
+            PowAlgorithm::RandomX.to_string().to_lowercase(),
+            Stats::default(),
+        );
+        p2pool_stats
+    }
+
+    pub async fn stats(&self) -> HashMap<String, Stats> {
+        let mut curr_stats = self.stats.lock().await;
+        match &mut *curr_stats {
+            Some(curr_stats) => {
+                if Instant::now()
+                    .duration_since(curr_stats.last_updated)
+                    .lt(&P2POOL_STATS_UPDATE_INTERVAL)
+                {
+                    curr_stats.stats.clone()
+                } else {
+                    match self.get_stats().await {
+                        Ok(stats) => {
+                            curr_stats.stats = stats.clone();
+                            curr_stats.last_updated = Instant::now();
+                            stats
+                        }
+                        Err(_) => self.default_stats(),
+                    }
+                }
+            }
+            None => match self.get_stats().await {
+                Ok(stats) => {
+                    *curr_stats = Some(P2poolStats {
+                        last_updated: Instant::now(),
+                        stats: stats.clone(),
+                    });
+                    stats
+                }
+                Err(_) => self.default_stats(),
+            },
+        }
+    }
+
+    async fn get_stats(&self) -> Result<HashMap<String, Stats>, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             return status_monitor.status().await;
@@ -88,11 +145,12 @@ impl P2poolManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
-            .start(app_shutdown, base_path, log_path)
+            .start(app_shutdown, base_path, config_path, log_path)
             .await?;
         process_watcher.wait_ready().await?;
         if let Some(status_monitor) = &process_watcher.status_monitor {

@@ -135,7 +135,7 @@ export const GlobalStyle = createGlobalStyle`
         font-style: normal;
         font-display: fallback;
     }
-    
+
     @font-face {
         font-family: "Druk";
         src: url("/assets/fonts/Druk/DrukWideLCG-Heavy.ttf") format("truetype");
@@ -154,7 +154,6 @@ export const GlobalStyle = createGlobalStyle`
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         border-radius: 12px;
-        //overflow: hidden;
         height: 100%;
         min-height: 100vh;
         min-width: 100vw;
@@ -164,18 +163,25 @@ export const GlobalStyle = createGlobalStyle`
         ::-webkit-scrollbar {
             display: none;
         }
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
-        letter-spacing: -.02px;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        letter-spacing: -0.02px;
         font-weight: 400;
-        pointer-events: none;
         * {
             box-sizing: border-box;
             ::-webkit-scrollbar {
                 display: none;
             }
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
         }
+    }
+
+    #canvas {
+        z-index: 0;
+        pointer-events: auto;
+    }
+    #root {
+        pointer-events: none;
     }
 `;

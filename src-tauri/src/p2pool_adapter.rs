@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -11,11 +12,11 @@ use tari_shutdown::Shutdown;
 use tokio::select;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
-use crate::{p2pool, process_utils};
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -47,6 +48,7 @@ impl ProcessAdapter for P2poolAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        _config_dir: PathBuf,
         log_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
@@ -60,7 +62,7 @@ impl ProcessAdapter for P2poolAdapter {
             .join("sha-p2pool");
         std::fs::create_dir_all(&working_dir)?;
 
-        let mut args: Vec<String> = vec![
+        let args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
             self.config.grpc_port.to_string(),
@@ -91,12 +93,10 @@ impl ProcessAdapter for P2poolAdapter {
 
                     let output = child.wait_with_output().await?;
                     let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
-                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
+                    let _tribe = match tribes.choose(&mut rand::thread_rng()) {
                         Some(tribe) => tribe.to_string(),
                         None => String::from("default"), // TODO: generate name
                     };
-                    args.push("--tribe".to_string());
-                    args.push(tribe);
 
                     // start
                     let mut child = launch_child_process(&file_path, &args)?;
@@ -164,7 +164,7 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    type Status = Stats;
+    type Status = HashMap<String, Stats>;
 
     async fn status(&self) -> Result<Self::Status, Error> {
         self.stats_client.stats().await

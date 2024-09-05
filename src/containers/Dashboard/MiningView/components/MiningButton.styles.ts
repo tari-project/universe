@@ -62,7 +62,7 @@ export const AnimatedBg = styled(motion.div)`
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 2;
+    //z-index: 2;
     pointer-events: none;
     overflow: hidden;
     width: 100%;

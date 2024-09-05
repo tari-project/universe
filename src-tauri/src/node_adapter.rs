@@ -24,6 +24,7 @@ const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 pub struct MinotariNodeAdapter {
     use_tor: bool,
     pub(crate) grpc_port: u16,
+    pub(crate) use_pruned_mode: bool,
 }
 
 impl MinotariNodeAdapter {
@@ -32,6 +33,7 @@ impl MinotariNodeAdapter {
         Self {
             use_tor,
             grpc_port: port,
+            use_pruned_mode: false,
         }
     }
 }
@@ -42,6 +44,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        _config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
@@ -69,12 +72,29 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "-p".to_string(),
             "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
         ];
-        if !self.use_tor {
+        if self.use_pruned_mode {
+            args.push("-p".to_string());
+            args.push("base_node.storage.pruning_horizon=100".to_string());
+        }
+        // if cfg!(debug_assertions) {
+        //     args.push("--network".to_string());
+        //     args.push("localnet".to_string());
+        // }
+        if self.use_tor {
+            args.push("-p".to_string());
+            args.push(
+                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
+                    .to_string(),
+            );
+        } else {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
+            // args.push("-p".to_string());
+            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
+            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
             args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
             // args.push("base_node.p2p.allow_test_addresses=true".to_string());
             // args.push("-p".to_string());
@@ -83,12 +103,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
             // args.push(
             //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
             // );
-        } else {
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
-                    .to_string(),
-            );
         }
         Ok((
             ProcessInstance {
@@ -150,6 +164,14 @@ impl ProcessAdapter for MinotariNodeAdapter {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum MinotariNodeStatusMonitorError {
+    #[error("Unknown error: {0}")]
+    UnknownError(#[from] anyhow::Error),
+    #[error("Node not started")]
+    NodeNotStarted,
+}
+
 pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
 }
@@ -166,21 +188,27 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
         &self,
-    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), Error> {
+    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), MinotariNodeStatusMonitorError> {
         // TODO: use GRPC port returned from process
         let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
+                .await
+                .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
         let res = client
             .get_new_block_template(NewBlockTemplateRequest {
                 algo: Some(PowAlgo { pow_algo: 1 }),
                 max_weight: 0,
             })
-            .await?;
+            .await
+            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
         let reward = res.miner_data.unwrap().reward;
 
-        let res = client.get_tip_info(Empty {}).await?;
+        let res = client
+            .get_tip_info(Empty {})
+            .await
+            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
         let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
@@ -191,22 +219,27 @@ impl MinotariNodeStatusMonitor {
         // First try with 10 blocks
         let blocks = [10, 100];
         let mut result = Err(anyhow::anyhow!("No difficulty found"));
-        for i in 0..blocks.len() {
+        for block in &blocks {
             // Unfortunately have to use 100 blocks to ensure that there are both randomx and sha blocks included
             // otherwise the hashrate is 0 for one of them.
             let res = client
                 .get_network_difficulty(HeightRequest {
-                    from_tip: blocks[i],
+                    from_tip: *block,
                     start_height: 0,
                     end_height: 0,
                 })
-                .await?;
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
             let mut res = res.into_inner();
             // Get the last one.
             // base node returns 0 for hashrate when the algo doesn't match, so we need to keep track of last one.
             let mut last_sha3_estimated_hashrate = 0;
             let mut last_randomx_estimated_hashrate = 0;
-            while let Some(difficulty) = res.message().await? {
+            while let Some(difficulty) = res
+                .message()
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?
+            {
                 if difficulty.sha3x_estimated_hash_rate != 0 {
                     last_sha3_estimated_hashrate = difficulty.sha3x_estimated_hash_rate;
                 }
@@ -228,7 +261,7 @@ impl MinotariNodeStatusMonitor {
             }
         }
 
-        result
+        Ok(result?)
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
@@ -307,6 +340,8 @@ impl MinotariNodeStatusMonitor {
                         progress,
                     )
                     .await;
+            } else {
+                //do nothing
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }

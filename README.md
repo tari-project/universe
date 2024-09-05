@@ -1,7 +1,8 @@
-# Tauri + React + Typescript
+# Tari Universe V1
 
-This template should help get you started developing with Tauri, React and Typescript in Vite.
+Pre-release.
 
-## Recommended IDE Setup
+[License to code](./LICENSE.md)
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+Copyright (c) 2024  Tari Labs, LLC
+
