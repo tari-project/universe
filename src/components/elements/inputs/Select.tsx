@@ -3,7 +3,7 @@ import { useState, MouseEvent } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { SpinnerIcon } from '@app/components/elements/SpinnerIcon.tsx';
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
-import { useClickOutside } from '@app/hooks/helpers/useClickOutside.ts';
+
 import {
     Options,
     SelectedOption,
@@ -42,7 +42,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, ..
         onChange(value);
         setExpanded(false);
     }
-    const clickRef = useClickOutside(() => setExpanded(false), expanded);
+
     const selectedOption = selectedValue ? options.find((o) => o.value === selectedValue) : options[0];
     const selectedLabel = selectedOption?.label;
     const selectedIcon = selectedOption?.iconSrc;
@@ -53,7 +53,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, ..
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
                 </SelectedOption>
-                <Options ref={clickRef} id="select-options" tabIndex={0} $open={expanded}>
+                <Options id="select-options" tabIndex={0} $open={expanded}>
                     {options.map(({ label, value, iconSrc }) => {
                         const selected = value === selectedOption?.value;
                         return (

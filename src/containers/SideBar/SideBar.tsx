@@ -5,7 +5,6 @@ import { SideBarContainer, SideBarInner, BottomContainer } from './styles';
 
 import { useUIStore } from '../../store/useUIStore.ts';
 import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
-import { Dialog } from '@app/components/elements/dialog/Dialog.tsx';
 
 function SideBar() {
     const sidebarOpen = useUIStore((state) => state.sidebarOpen);
@@ -15,12 +14,6 @@ function SideBar() {
             <MiningButton />
             <SideBarInner>
                 <Miner />
-                <Dialog heading="wtf bra">
-                    HELLO
-                    <br />
-                    wtf? <br />
-                    bruhhh
-                </Dialog>
             </SideBarInner>
             <BottomContainer>
                 <Wallet />

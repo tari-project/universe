@@ -167,7 +167,6 @@ export const GlobalStyle = createGlobalStyle`
         scrollbar-width: none; /* Firefox */
         letter-spacing: -0.02px;
         font-weight: 400;
-        pointer-events: none;
         * {
             box-sizing: border-box;
             ::-webkit-scrollbar {
@@ -178,14 +177,11 @@ export const GlobalStyle = createGlobalStyle`
         }
     }
 
-    // z-indexes
     #canvas {
-        //z-index: 0;
+        z-index: 0;
+        pointer-events: auto;
     }
     #root {
-        //z-index: 1;
-    }
-    #portal-root {
-        //z-index: 2;
+        pointer-events: none;
     }
 `;

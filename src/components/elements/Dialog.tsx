@@ -2,7 +2,6 @@ import { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { useKeyboardEvent } from '@app/hooks/helpers/useKeyboardEvent.ts';
-import { useClickOutside } from '@app/hooks/helpers/useClickOutside.ts';
 
 const Content = styled.div<{ $isNested?: boolean }>`
     max-height: 90%;
@@ -46,13 +45,11 @@ interface Props {
 
 function ModalContent({ onClose, children, isNested, open }: Props) {
     useKeyboardEvent({ keys: ['Escape'], callback: onClose });
-    const clickRef = useClickOutside(onClose, open, isNested);
+
     return (
         <Wrapper $isNested={isNested}>
             <Backdrop $isNested={isNested} />
-            <Content ref={clickRef} $isNested={isNested}>
-                {children}
-            </Content>
+            <Content $isNested={isNested}>{children}</Content>
         </Wrapper>
     );
 }

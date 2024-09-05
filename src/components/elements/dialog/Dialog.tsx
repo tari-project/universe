@@ -1,76 +1,119 @@
-import { ContentWrapper, Overlay, TriggerWrapper } from './Dialog.styles.ts';
-import { ReactNode, useState } from 'react';
-import { Typography } from '@app/components/elements/Typography.tsx';
+import {
+    createContext,
+    Dispatch,
+    forwardRef,
+    HTMLProps,
+    ReactNode,
+    SetStateAction,
+    useContext,
+    useMemo,
+    useState,
+} from 'react';
 import {
     FloatingFocusManager,
     FloatingPortal,
     useClick,
     useDismiss,
     useFloating,
-    useId,
     useInteractions,
+    useMergeRefs,
     useRole,
 } from '@floating-ui/react';
+import { ContentWrapper, Overlay } from '@app/components/elements/dialog/Dialog.styles.ts';
 
-interface DialogProps {
-    children: ReactNode;
-    heading?: string;
+interface DialogOptions {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
 }
-export function Dialog({ children, heading }: DialogProps) {
-    const [isOpen, setIsOpen] = useState(false);
 
-    const { refs, context } = useFloating({
-        open: isOpen,
-        onOpenChange: setIsOpen,
+export function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen }: DialogOptions) {
+    const [labelId, setLabelId] = useState<string | undefined>();
+    const [descriptionId, setDescriptionId] = useState<string | undefined>();
+
+    const open = controlledOpen;
+    const setOpen = setControlledOpen;
+
+    const data = useFloating({
+        open,
+        onOpenChange: setOpen,
     });
 
-    const click = useClick(context);
-    const role = useRole(context);
+    const context = data.context;
+
+    const click = useClick(context, {
+        enabled: controlledOpen == null,
+    });
     const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown' });
+    const role = useRole(context);
 
-    const { getReferenceProps, getFloatingProps } = useInteractions([click, role, dismiss]);
+    const interactions = useInteractions([click, dismiss, role]);
 
-    const headingId = useId();
-    const descriptionId = useId();
-
-    const trigger = (
-        <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
-            <p>hello {isOpen}</p>
-        </TriggerWrapper>
-    );
-    return (
-        <>
-            {trigger}
-            <FloatingPortal id="portal-root">
-                {isOpen && (
-                    <Overlay lockScroll>
-                        <FloatingFocusManager context={context}>
-                            <ContentWrapper
-                                ref={refs.setFloating}
-                                aria-labelledby={headingId}
-                                aria-describedby={descriptionId}
-                                {...getFloatingProps()}
-                            >
-                                {heading ? (
-                                    <Typography id={headingId} variant="h3">
-                                        {heading}
-                                    </Typography>
-                                ) : null}
-                                <ContentWrapper>{children}</ContentWrapper>
-                                <button
-                                    onClick={() => {
-                                        console.log('Deleted.');
-                                        setIsOpen(false);
-                                    }}
-                                >
-                                    Confirm
-                                </button>
-                                <button onClick={() => setIsOpen(false)}>Cancel</button>
-                            </ContentWrapper>
-                        </FloatingFocusManager>
-                    </Overlay>
-                )}
-            </FloatingPortal>
-        </>
+    return useMemo(
+        () => ({
+            open,
+            setOpen,
+            ...interactions,
+            ...data,
+            labelId,
+            descriptionId,
+            setLabelId,
+            setDescriptionId,
+        }),
+        [open, setOpen, interactions, data, labelId, descriptionId]
     );
 }
+
+type ContextType =
+    | (ReturnType<typeof useDialog> & {
+          setLabelId: Dispatch<SetStateAction<string | undefined>>;
+          setDescriptionId: Dispatch<SetStateAction<string | undefined>>;
+      })
+    | null;
+
+const DialogContext = createContext<ContextType>(null);
+
+export const useDialogContext = () => {
+    const context = useContext(DialogContext);
+
+    if (context == null) {
+        throw new Error('Dialog components must be wrapped in <Dialog />');
+    }
+
+    return context;
+};
+
+export function Dialog({
+    children,
+    ...options
+}: {
+    children: ReactNode;
+} & DialogOptions) {
+    const dialog = useDialog(options);
+    return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>;
+}
+
+export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement>>(
+    function DialogContent(props, propRef) {
+        const context = useDialogContext();
+        const ref = useMergeRefs([context.refs.setFloating, propRef]);
+
+        if (!context.open) return null;
+
+        return (
+            <FloatingPortal>
+                <Overlay lockScroll>
+                    <FloatingFocusManager context={context.context}>
+                        <ContentWrapper
+                            ref={ref}
+                            aria-labelledby={context.labelId}
+                            aria-describedby={context.descriptionId}
+                            {...context.getFloatingProps(props)}
+                        >
+                            {props.children}
+                        </ContentWrapper>
+                    </FloatingFocusManager>
+                </Overlay>
+            </FloatingPortal>
+        );
+    }
+);
