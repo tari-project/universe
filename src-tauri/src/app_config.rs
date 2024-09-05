@@ -20,7 +20,7 @@ pub struct AppConfigFromFile {
     p2pool_enabled: bool,
     #[serde(default = "default_0")]
     last_binaries_update_timestamp: SystemTime,
-    #[serde(default = "default_true")]
+    #[serde(default = "default_false")]
     allow_telemetry: bool,
     #[serde(default = "default_anon_id")]
     anon_id: String,
