@@ -350,6 +350,12 @@ async fn send_telemetry_data(
     }
 
     let result = request_builder.send().await?;
+
+    if result.status() == 429 {
+        info!(target: LOG_TARGET,"Telemetry could not be sent due to rate limiting");
+        return Ok(None);
+    }
+
     let response = result.error_for_status()?;
     info!(target: LOG_TARGET,"Telemetry data sent");
 

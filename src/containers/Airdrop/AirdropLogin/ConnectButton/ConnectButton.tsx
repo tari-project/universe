@@ -110,6 +110,12 @@ const collectInstallReward = async (
         });
 
         const body: InstallRewardResponse = await result.json();
+
+        if (result.status === 429) {
+            // Rate limited
+            return;
+        }
+
         if (result.status !== 200 || !body.success) {
             console.error('Error getting first install reward', body);
             return;
