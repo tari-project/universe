@@ -1,27 +1,36 @@
 {
-    "settings": "Settings",
-    "seed-words": "Seed words",
-    "change-language": "Change language",
-    "logs": "Logs",
-    "open-logs-directory": "Open logs directory",
-    "debug-info": "Debug",
-    "hardware-status": "Hardware status",
-    "update-versions": "Update versions",
-    "refresh-versions": "Refresh versions",
-    "idle-timeout": {
-        "title": "Time after which machine is considered idle",
-        "placeholder": "Enter idle timeout in seconds",
-        "max": "Maximum is 21600 seconds",
-        "min": "Minimum is 1 second"
-    },
-    "monero-address": {
-        "title": "Monero address",
-        "placeholder": "Enter Monero address"
-    },
-    "last-block-added-time": "Last block added to chain time",
-    "visual-mode": "Visual mode",
-    "pool-mining": "Pool Mining",
-    "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners (tribe).",
-    "cpu-mining-enabled": "CPU Mining",
-    "gpu-mining-enabled": "GPU Mining"
+  "settings": "Settings",
+  "seed-words": "Seed words",
+  "change-language": "Change language",
+  "logs": "Logs",
+  "open-logs-directory": "Open logs directory",
+  "debug-info": "Debug",
+  "hardware-status": "Hardware status",
+  "update-versions": "Update versions",
+  "refresh-versions": "Refresh versions",
+  "idle-timeout": {
+    "title": "Time after which machine is considered idle",
+    "placeholder": "Enter idle timeout in seconds",
+    "max": "Maximum is 21600 seconds",
+    "min": "Minimum is 1 second"
+  },
+  "monero-address": {
+    "title": "Monero address",
+    "placeholder": "Enter Monero address"
+  },
+  "last-block-added-time": "Last block added to chain time",
+  "visual-mode": "Visual mode",
+  "pool-mining": "Pool Mining",
+  "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners (tribe).",
+  "cpu-mining-enabled": "CPU Mining",
+  "gpu-mining-enabled": "GPU Mining",
+  "p2pool-stats": "P2Pool Stats",
+  "tribe": "Tribe",
+  "miners": "Miners",
+  "tribe-earnings": "Tribe earnings",
+  "tribe-pool-height": "Pool height",
+  "p2pool-hash-rate": "Pool hash rates",
+  "p2pool-total-earnings": "Pool total earnings",
+  "p2pool-chain-tip": "Tip of chains",
+  "p2pool-user-total-earnings": "Total earnings"
 }
