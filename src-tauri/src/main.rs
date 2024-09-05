@@ -42,6 +42,7 @@ use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
+use anyhow::Error;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use futures_lite::future::block_on;
@@ -54,9 +55,10 @@ use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
 use std::collections::HashMap;
 use std::fs::remove_dir_all;
+use std::future::Future;
 use std::sync::Arc;
 use std::thread::sleep;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 use std::{panic, process};
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
@@ -722,20 +724,20 @@ async fn status(
         }
     };
 
+    let tari_address = match state.wallet_manager.wallet_address().await {
+        Ok(addr) => addr,
+        Err(error) => {
+            warn!(target: LOG_TARGET, "Error getting wallet address: {}", error);
+            String::new()
+        }
+    };
+
     let hardware_status = HardwareMonitor::current()
         .write()
         .await
         .read_hardware_parameters();
 
-    let mut p2pool_stats = HashMap::with_capacity(2);
-    p2pool_stats.insert(
-        PowAlgorithm::Sha3x.to_string().to_lowercase(),
-        Stats::default(),
-    );
-    p2pool_stats.insert(
-        PowAlgorithm::RandomX.to_string().to_lowercase(),
-        Stats::default(),
-    );
+    let p2pool_stats = state.p2pool_manager.stats().await;
 
     let config_guard = state.config.read().await;
 
@@ -765,6 +767,7 @@ async fn status(
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
+        tari_address,
     })
 }
 
@@ -834,6 +837,7 @@ pub struct AppStatus {
     auto_mining: bool,
     p2pool_enabled: bool,
     p2pool_stats: HashMap<String, Stats>,
+    tari_address: String,
     monero_address: String,
     cpu_mining_enabled: bool,
     gpu_mining_enabled: bool,
