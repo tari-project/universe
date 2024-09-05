@@ -227,7 +227,9 @@ impl WalletStatusMonitor {
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
 
-        Ok(TariAddress::from_bytes(res.address.as_slice())
-            .map_err(WalletStatusMonitorError::TariAddress)?)
+        match TariAddress::from_bytes(res.address.as_slice()) {
+            Ok(address) => Ok(address),
+            Err(err) => Err(WalletStatusMonitorError::TariAddress(err)),
+        }
     }
 }

@@ -13,6 +13,7 @@ import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
+import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
 
 export default function App() {
     useAirdropTokensRefresh();
@@ -30,6 +31,7 @@ export default function App() {
             <GlobalStyle />
             <AppBackground />
             <SplashScreen />
+            <AutoUpdateDialog />
             {!showSplash && (
                 <DashboardContainer>
                     <ContainerInner>
