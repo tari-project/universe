@@ -22,7 +22,7 @@ export const TileItem = styled.div`
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     max-width: 152px;
-    gap: 6px;
+    gap: 8px;
     display: flex;
 
     flex-direction: column;
@@ -38,9 +38,13 @@ export const TileTop = styled.div`
 
 export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
     display: flex;
-    gap: 2px;
+    justify-content: space-between;
     align-items: baseline;
+    line-height: 1;
     font-variant-numeric: tabular-nums;
     color: ${({ theme }) => theme.palette.text.primary};
-    text-transform: ${({ $useLowerCase }) => $useLowerCase && 'lowercase'};
+`;
+export const Unit = styled.div`
+    line-height: 1;
+    font-size: 10px;
 `;

@@ -1,4 +1,4 @@
-import { StatWrapper, TileItem, TileTop } from '../styles';
+import { StatWrapper, TileItem, TileTop, Unit } from '../styles';
 import truncateString from '@app/utils/truncateString.ts';
 import { StyledIcon } from '@app/containers/Dashboard/MiningView/components/MiningButton.styles';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -19,6 +19,7 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
     const chipRange = Math.ceil(chipValue / 10);
     const chipColor = colors.ramp[chipRange];
     const chipText = formatPercent(chipValue);
+
     return (
         <TileItem>
             <TileTop>
@@ -33,10 +34,16 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
                 <StyledIcon />
             ) : (
                 <StatWrapper $useLowerCase={useLowerCase}>
-                    <Typography variant="h5" title={stats}>
+                    <Typography
+                        variant="h5"
+                        title={stats}
+                        style={{ textTransform: useLowerCase ? 'lowercase' : 'inherit', lineHeight: '1.02' }}
+                    >
                         {truncateString(stats, 8)}
                     </Typography>
-                    <Typography>{unit}</Typography>
+                    <Unit>
+                        <Typography>{unit}</Typography>
+                    </Unit>
                 </StatWrapper>
             )}
         </TileItem>
