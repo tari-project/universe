@@ -4,7 +4,7 @@ import { ButtonWrapper, ContentWrapper, Wrapper } from './ErrorSnackbar.styles.t
 import { AnimatePresence, easeIn, Variants } from 'framer-motion';
 import { IconButton } from '@app/components/elements/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { useClickOutside } from '@app/hooks/helpers/useClickOutside.ts';
+
 import { useCallback, useEffect, useState } from 'react';
 
 const transition = {
@@ -37,7 +37,6 @@ export default function ErrorSnackbar() {
     useEffect(() => {
         setShow(Boolean(error && error?.length));
     }, [error]);
-    const clickRef = useClickOutside(handleClose, show);
 
     useEffect(() => {
         if (show) {
@@ -54,7 +53,7 @@ export default function ErrorSnackbar() {
     return (
         <AnimatePresence>
             {show && (
-                <Wrapper variants={variants} initial="hidden" animate="visible" exit="hidden" ref={clickRef}>
+                <Wrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
                     <ButtonWrapper>
                         <IconButton aria-label="close" onClick={handleClose}>
                             <IoClose />

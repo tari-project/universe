@@ -18,6 +18,7 @@ export function useSetUp() {
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setError = useAppStateStore((s) => s.setError);
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+    const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
 
     useVersions();
 
@@ -43,17 +44,28 @@ export function useSetUp() {
                     break;
             }
         });
-        if (!startupInitiated.current) {
-            startupInitiated.current = true;
-            invoke('setup_application').catch((e) => {
-                setError(`Failed to setup application: ${e}`);
-                settingUpFinished();
-                setView('mining');
-            });
-        }
+        const intervalId = setInterval(() => {
+            if (!startupInitiated.current && isAfterAutoUpdate) {
+                clearInterval(intervalId);
+                startupInitiated.current = true;
+                invoke('setup_application').catch((e) => {
+                    setError(`Failed to setup application: ${e}`);
+                    settingUpFinished();
+                    setView('mining');
+                });
+            }
+        }, 100);
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
             clearTimeout(splashTimeout);
         };
-    }, [setError, setMiningControlsEnabled, setSetupDetails, setShowSplash, setView, settingUpFinished]);
+    }, [
+        setError,
+        setMiningControlsEnabled,
+        setSetupDetails,
+        setShowSplash,
+        setView,
+        settingUpFinished,
+        isAfterAutoUpdate,
+    ]);
 }

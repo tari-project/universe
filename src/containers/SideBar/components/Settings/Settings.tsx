@@ -1,12 +1,12 @@
 import React, { useCallback, useState } from 'react';
 
 import {
+    IoSettingsOutline,
+    IoCopyOutline,
+    IoEyeOutline,
+    IoEyeOffOutline,
     IoCheckmarkOutline,
     IoClose,
-    IoCopyOutline,
-    IoEyeOffOutline,
-    IoEyeOutline,
-    IoSettingsOutline,
 } from 'react-icons/io5';
 import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
 
@@ -14,13 +14,13 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { CardContainer, DialogContent, Form, HorisontalBox } from './Settings.styles';
+import { CardContainer, Form, HorisontalBox } from './Settings.styles';
 
 import { useForm } from 'react-hook-form';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
 
 import { Button, IconButton } from '@app/components/elements/Button.tsx';
-import Dialog from '@app/components/elements/Dialog.tsx';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
@@ -44,7 +44,7 @@ import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { SeedWords } from './SeedWords';
-import { CardComponent } from './Card.component';
+import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',
@@ -82,7 +82,7 @@ export default function Settings() {
 
     const isCpuMiningEnabled = useAppStatusStore((state) => state.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppStatusStore((state) => state.gpu_mining_enabled);
-    const [open, setOpen] = useState(false);
+
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const [isCopyTooltipHiddenWalletAddress, setIsCopyTooltipHiddenWalletAddress] = useState(true);
@@ -97,9 +97,9 @@ export default function Settings() {
     const isMining = isCPUMining || isGPUMining;
     const miningLoading = useMiningStore((s) => s.miningLoading);
     const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
-    const handleClickOpen = () => setOpen(true);
+    const [open, setOpen] = useState(false);
+
     const handleClose = () => {
-        setOpen(false);
         setShowSeedWords(false);
     };
 
@@ -353,16 +353,16 @@ export default function Settings() {
     ) : null;
 
     return (
-        <>
-            <IconButton onClick={handleClickOpen}>
+        <Dialog open={open} onOpenChange={setOpen}>
+            <IconButton onClick={() => setOpen(true)}>
                 <IoSettingsOutline size={16} />
             </IconButton>
-            <Dialog onClose={handleClose} open={open}>
-                <DialogContent>
+            <DialogContent>
+                <Stack style={{ minWidth: 600 }}>
                     <Stack direction="row" justifyContent="space-between">
                         <Typography variant="h4">Settings</Typography>
-                        <IconButton onClick={handleClose}>
-                            <IoClose size={20} />
+                        <IconButton onClick={() => setOpen(false)}>
+                            <IoClose />
                         </IconButton>
                     </Stack>
                     {walletAddressMarkup}
@@ -399,8 +399,8 @@ export default function Settings() {
                     <HorisontalBox>
                         <ResetSettingsButton />
                     </HorisontalBox>
-                </DialogContent>
-            </Dialog>
-        </>
+                </Stack>
+            </DialogContent>
+        </Dialog>
     );
 }

@@ -140,6 +140,17 @@ async fn setup_application(
     })
 }
 
+#[tauri::command]
+async fn restart_application(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    // This restart doesn't need to shutdown all the miners
+    app.restart();
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(
     window: tauri::Window,
@@ -350,7 +361,7 @@ async fn setup_inner(
         ))
         .await?;
     mm_proxy_manager.wait_ready().await?;
-
+    *state.is_setup_finished.write().await = true;
     drop(
         window
             .emit(
@@ -667,13 +678,14 @@ async fn status(
 ) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
     let mut gpu_miner = state.gpu_miner.write().await;
+    let is_setup_finished = *state.is_setup_finished.read().await;
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
             .get_network_hash_rate_and_block_reward()
             .await
             .unwrap_or_else(|e| {
-                if !matches!(e, NodeManagerError::NodeNotStarted) {
+                if !matches!(e, NodeManagerError::NodeNotStarted) && is_setup_finished {
                     warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
                 }
                 (0, 0, MicroMinotari(0), 0, 0, false)
@@ -686,7 +698,9 @@ async fn status(
     {
         Ok(cpu) => cpu,
         Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
+            if is_setup_finished {
+                warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
+            }
             return Err(e);
         }
     };
@@ -702,21 +716,15 @@ async fn status(
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
         Err(e) => {
-            if matches!(e, WalletManagerError::WalletNotStarted) {
-                WalletBalance {
-                    available_balance: MicroMinotari(0),
-                    pending_incoming_balance: MicroMinotari(0),
-                    pending_outgoing_balance: MicroMinotari(0),
-                    timelocked_balance: MicroMinotari(0),
-                }
-            } else {
+            if !matches!(e, WalletManagerError::WalletNotStarted) {
                 warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
-                WalletBalance {
-                    available_balance: MicroMinotari(0),
-                    pending_incoming_balance: MicroMinotari(0),
-                    pending_outgoing_balance: MicroMinotari(0),
-                    timelocked_balance: MicroMinotari(0),
-                }
+            }
+
+            WalletBalance {
+                available_balance: MicroMinotari(0),
+                pending_incoming_balance: MicroMinotari(0),
+                pending_outgoing_balance: MicroMinotari(0),
+                timelocked_balance: MicroMinotari(0),
             }
         }
     };
@@ -880,6 +888,7 @@ struct CpuMinerConfig {
 }
 
 struct UniverseAppState {
+    is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
     cpu_miner: Arc<RwLock<CpuMiner>>,
@@ -951,6 +960,7 @@ fn main() {
     };
     let mm_proxy_manager = MmProxyManager::new(mm_proxy_config);
     let app_state = UniverseAppState {
+        is_setup_finished: Arc::new(RwLock::new(false)),
         config: app_config.clone(),
         shutdown: shutdown.clone(),
         cpu_miner: cpu_miner.clone(),
@@ -1047,7 +1057,8 @@ fn main() {
             update_applications,
             reset_settings,
             set_gpu_mining_enabled,
-            set_cpu_mining_enabled
+            set_cpu_mining_enabled,
+            restart_application
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
