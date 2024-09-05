@@ -4,6 +4,8 @@ const LOG_TARGET: &str = "tari::universe::process_killer";
 pub fn kill_process(pid: i32) -> Result<(), anyhow::Error> {
     #[cfg(target_os = "windows")]
     {
+        use log::warn;
+        use std::process::Command;
         let output = Command::new("taskkill")
             .args(["/F", "/PID", &pid.to_string()])
             .output()?;
