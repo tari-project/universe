@@ -218,7 +218,7 @@ impl ProcessAdapter for XmrigAdapter {
                         .join(&version)
                         .join(format!("xmrig-{}", version));
                     let xmrig_bin = xmrig_dir.join("xmrig");
-                    let mut xmrig = process_utils::launch_child_process(&xmrig_bin, &args)?;
+                    let mut xmrig = process_utils::launch_child_process(&xmrig_bin, None, &args)?;
 
                     if let Some(id) = xmrig.id() {
                         std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;

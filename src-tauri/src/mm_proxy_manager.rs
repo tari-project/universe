@@ -37,6 +37,7 @@ impl PartialEq for StartConfig {
 }
 
 impl StartConfig {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,

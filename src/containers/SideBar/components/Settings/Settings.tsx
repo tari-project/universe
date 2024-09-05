@@ -259,8 +259,7 @@ export default function Settings() {
         </MinerContainer>
     );
 
-    const showP2poolStats = isP2poolEnabled && p2poolTribe;
-    const p2poolStatsMarkup = showP2poolStats ? (
+    const p2poolStatsMarkup = (
         <>
             <Divider />
             <MinerContainer>
@@ -350,7 +349,7 @@ export default function Settings() {
                 </CardContainer>
             </MinerContainer>
         </>
-    ) : null;
+    );
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
