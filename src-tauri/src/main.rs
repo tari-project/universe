@@ -107,6 +107,15 @@ async fn set_telemetry_mode(
 }
 
 #[tauri::command]
+async fn get_telemetry_mode(
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<bool, ()> {
+    let telemetry_mode = state.config.read().await.get_allow_telemetry();
+    Ok(telemetry_mode)
+}
+
+#[tauri::command]
 async fn get_app_id(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -766,8 +775,6 @@ async fn status(
         cpu.estimated_earnings as f64,
     );
 
-    let telemetry_mode = config_guard.get_allow_telemetry();
-
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
     Ok(AppStatus {
@@ -787,7 +794,6 @@ async fn status(
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
-        telemetry_mode
     })
 }
 
@@ -860,7 +866,6 @@ pub struct AppStatus {
     monero_address: String,
     cpu_mining_enabled: bool,
     gpu_mining_enabled: bool,
-    telemetry_mode: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -1076,6 +1081,7 @@ fn main() {
             update_applications,
             log_web_message,
             set_telemetry_mode,
+            get_telemetry_mode,
             set_airdrop_access_token,
             get_app_id,
             get_app_in_memory_config,

@@ -10,6 +10,7 @@ import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import useMining from '@app/hooks/mining/useMining.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useEffect } from 'react';
 
 const INTERVAL = 1000;
 
@@ -34,6 +35,17 @@ export function useGetStatus() {
     useMainAppVersion();
     useMining();
 
+    useEffect(() => {
+        invoke('get_telemetry_mode')
+            .then((telemetryMode) => {
+                console.info('Telemetry mode', telemetryMode);
+                setTelemetryMode(telemetryMode);
+            })
+            .catch((e) => {
+                console.error('Could not get telemetry mode', e);
+            });
+    }, [setTelemetryMode]);
+
     useInterval(
         () =>
             invoke('status')
@@ -44,7 +56,6 @@ export function useGetStatus() {
                         setGPUStatus(status.gpu);
 
                         setBaseNodeStatus(status.base_node);
-                        setTelemetryMode(status.telemetry_mode);
 
                         const wallet_balance = status.wallet_balance;
 
