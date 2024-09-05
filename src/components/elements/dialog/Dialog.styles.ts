@@ -23,4 +23,5 @@ export const Overlay = styled(FloatingOverlay)`
     align-items: center;
     justify-content: center;
     background-color: ${({ theme }) => theme.palette.colors.darkAlpha[50]};
+    z-index: 2;
 `;

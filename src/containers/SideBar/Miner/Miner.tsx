@@ -1,5 +1,5 @@
 import Tile from './components/Tile.tsx';
-import { MinerContainer, StatWrapper, TileContainer } from './styles.ts';
+import { MinerContainer, StatWrapper, TileContainer, Unit } from './styles.ts';
 
 import ModeSelect from './components/ModeSelect.tsx';
 import { useHardwareStatus } from '../../../hooks/useHardwareStatus.ts';
@@ -63,7 +63,6 @@ export default function Miner() {
 
     return (
         <MinerContainer>
-            <Divider />
             <TileContainer>
                 <ModeSelect />
                 <Tile title="CHIP/GPU" stats={hardwareVal || t('unknown')} />
@@ -90,31 +89,39 @@ export default function Miner() {
                 <ExpandableTile title="Est tXTM/day" stats={formatBalance(totalEarnings)}>
                     <Typography>You earn rewards for mining CPU and GPU separately</Typography>
                     <ExpandedContentTile>
-                        <Typography variant="p">CPU Estimated earnings</Typography>
+                        <Typography>CPU Estimated earnings</Typography>
                         <StatWrapper>
                             <Typography
                                 variant="h5"
                                 style={{
                                     textTransform: 'lowercase',
+                                    fontWeight: 500,
                                     lineHeight: '1.02',
                                 }}
                             >
                                 {formatBalance(estimated_earnings)}
                             </Typography>
+                            <Unit>
+                                <Typography>tXTM/day</Typography>
+                            </Unit>
                         </StatWrapper>
                     </ExpandedContentTile>
                     <ExpandedContentTile>
-                        <Typography variant="p">GPU Estimated earnings</Typography>
+                        <Typography>GPU Estimated earnings</Typography>
                         <StatWrapper>
                             <Typography
                                 variant="h5"
                                 style={{
                                     textTransform: 'lowercase',
+                                    fontWeight: 500,
                                     lineHeight: '1.02',
                                 }}
                             >
                                 {formatBalance(gpu_estimated_earnings)}
                             </Typography>
+                            <Unit>
+                                <Typography>tXTM/day</Typography>
+                            </Unit>
                         </StatWrapper>
                     </ExpandedContentTile>
                 </ExpandableTile>

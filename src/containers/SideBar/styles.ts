@@ -16,7 +16,6 @@ export const SideBarContainer = styled.div<SideBarContainerProps>`
     transition: width 0.5s ease-in-out;
     pointer-events: auto;
     display: flex;
-    //z-index: 10;
     flex-shrink: 0;
     flex-direction: column;
     justify-content: stretch;
@@ -24,26 +23,32 @@ export const SideBarContainer = styled.div<SideBarContainerProps>`
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     background: ${({ theme }) => theme.palette.background.paper};
     padding: 16px 0;
-    gap: 16px;
+    gap: 8px;
     position: relative;
+`;
+
+export const TopContainer = styled.div`
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 `;
 
 export const SideBarInner = styled.div`
     display: flex;
-    background: ${({ theme }) => theme.palette.background.paper};
     flex-direction: column;
     position: relative;
-    gap: 10px;
-    padding: 0 16px;
+    padding: 0 16px 176px;
     height: 100%;
+    overflow-y: scroll;
 `;
 
 export const BottomContainer = styled.div`
     display: flex;
     justify-content: flex-start;
     justify-self: flex-end;
-    //z-index: 2;
     position: absolute;
+    z-index: 1;
     width: 100%;
     bottom: 20px;
     padding: 0 16px;

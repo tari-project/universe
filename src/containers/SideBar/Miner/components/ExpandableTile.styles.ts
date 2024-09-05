@@ -31,7 +31,6 @@ export const ExpandedWrapper = styled(motion.div)`
     display: flex;
     flex-direction: column;
     gap: 8px;
-
     width: 100%;
 `;
 
@@ -39,7 +38,10 @@ export const ExpandedContentTile = styled.div`
     display: flex;
     padding: 5px 10px 10px;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     border-radius: 10px;
     background: ${({ theme }) => theme.palette.colors.darkAlpha[5]};
+
+    font-size: 12px;
+    font-weight: 500;
 `;

@@ -100,7 +100,7 @@ export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement
         if (!context.open) return null;
 
         return (
-            <FloatingPortal>
+            <FloatingPortal id="portal-root">
                 <Overlay lockScroll>
                     <FloatingFocusManager context={context.context}>
                         <ContentWrapper
