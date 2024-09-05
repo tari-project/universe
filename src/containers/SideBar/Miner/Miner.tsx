@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { ExpandableTile } from '@app/containers/SideBar/Miner/components/ExpandableTile.tsx';
+import formatBalance from '@app/utils/formatBalance.ts';
 
 export default function Miner() {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -25,6 +26,9 @@ export default function Miner() {
     const hash_rate = useCPUStatusStore((s) => s.hash_rate);
     const gpu_hash_rate = useGPUStatusStore((s) => s.hash_rate) || 0;
 
+    const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
+    const gpu_estimated_earnings = useGPUStatusStore((s) => s.estimated_earnings) || 0;
+
     const isCpuMiningEnabled = useAppStatusStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppStatusStore((s) => s.gpu_mining_enabled);
 
@@ -33,6 +37,8 @@ export default function Miner() {
 
     const isWaitingForCPUHashRate = miningInitiated && hash_rate <= 0;
     const isWaitingForGPUHashRate = miningInitiated && gpu_hash_rate <= 0;
+
+    const totalEarnings = estimated_earnings + gpu_estimated_earnings;
 
     const tileStats = {
         cpu: {
@@ -79,7 +85,7 @@ export default function Miner() {
                         useLowerCase
                     />
                 ) : null}
-                <ExpandableTile title="Est tXTM/day" />
+                <ExpandableTile title="Est tXTM/day" stats={formatBalance(totalEarnings)} />
             </TileContainer>
         </MinerContainer>
     );
