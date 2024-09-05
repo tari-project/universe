@@ -32,5 +32,9 @@
   "p2pool-hash-rate": "Pool hash rates",
   "p2pool-total-earnings": "Pool total earnings",
   "p2pool-chain-tip": "Tip of chains",
-  "p2pool-user-total-earnings": "Total earnings"
+  "p2pool-user-total-earnings": "Total earnings",
+  "yes": "Yes",
+  "cancel": "Cancel",
+  "reset-settings": "Reset Settings",
+  "reset-permanently": "Are you sure you want to reset all settings permanently?"
 }
