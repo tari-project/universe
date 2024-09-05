@@ -23,6 +23,8 @@ pub struct GpuMinerAdapter {
     pub(crate) tari_address: TariAddress,
     pub(crate) node_grpc_port: u16,
     pub(crate) gpu_percentage: u8,
+    pub(crate) p2pool_enabled: bool,
+    pub(crate) p2pool_grpc_port: u16,
 }
 
 impl GpuMinerAdapter {
@@ -31,6 +33,8 @@ impl GpuMinerAdapter {
             tari_address: TariAddress::default(),
             node_grpc_port: 0,
             gpu_percentage: ECO_MODE_GPU_PERCENTAGE,
+            p2pool_enabled: false,
+            p2pool_grpc_port: 0,
         }
     }
 
@@ -58,11 +62,18 @@ impl ProcessAdapter for GpuMinerAdapter {
         let working_dir = data_dir.join("gpuminer");
         std::fs::create_dir_all(&working_dir)?;
         std::fs::create_dir_all(config_dir.join("gpuminer"))?;
-        let args: Vec<String> = vec![
+
+        let tari_node_port = if self.p2pool_enabled {
+            self.p2pool_grpc_port
+        } else {
+            self.node_grpc_port
+        };
+
+        let mut args: Vec<String> = vec![
             "--tari-address".to_string(),
             self.tari_address.to_string(),
             "--tari-node-url".to_string(),
-            format!("http://127.0.0.1:{}", self.node_grpc_port),
+            format!("http://127.0.0.1:{}", tari_node_port),
             "--config".to_string(),
             config_dir
                 .join("gpuminer")
@@ -74,6 +85,10 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--gpu-percentage".to_string(),
             self.gpu_percentage.to_string(),
         ];
+
+        if self.p2pool_enabled {
+            args.push("--p2pool-enabled".to_string());
+        }
 
         Ok((
             ProcessInstance {
@@ -105,8 +120,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                     child = tokio::process::Command::new(file_path)
                         .args(args)
                         .env("TARI_NETWORK", "esme")
-                        // .stdout(std::process::Stdio::null())
-                        // .stderr(std::process::Stdio::null())
+                        .stdout(std::process::Stdio::null())
+                        .stderr(std::process::Stdio::null())
                         .kill_on_drop(true)
                         .spawn()?;
                     if let Some(id) = child.id() {
@@ -176,6 +191,13 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
+                if e.is_connect() {
+                    return Ok(GpuMinerStatus {
+                        is_mining: false,
+                        hash_rate: 0,
+                        estimated_earnings: 0,
+                    });
+                }
                 warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
                 return Ok(GpuMinerStatus {
                     is_mining: false,
@@ -185,7 +207,6 @@ impl StatusMonitor for GpuMinerStatusMonitor {
             }
         };
         let text = response.text().await?;
-        dbg!(&text);
         let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
             Ok(body) => body,
             Err(e) => {

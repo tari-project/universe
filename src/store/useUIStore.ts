@@ -9,11 +9,6 @@ interface State {
     visualMode: boolean;
     telemetryMode: boolean;
     sidebarOpen: boolean;
-    isMiningSwitchingState: boolean;
-    isMiningEnabled: boolean;
-    isMiningInProgress: boolean;
-    isChangingMode: boolean;
-    isConnectionLostDuringMining: boolean;
 }
 interface Actions {
     setShowSplash: (showSplash: boolean) => void;
@@ -22,11 +17,6 @@ interface Actions {
     toggleVisualMode: () => void;
     toggleTelemetryMode: () => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
-    setIsMiningSwitchingState: (isMiningSwitchingState: State['isMiningSwitchingState']) => void;
-    setIsMiningEnabled: (isMiningEnabled: State['isMiningEnabled']) => void;
-    setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
-    setIsMiningInProgress: (isMiningInProgress: State['isMiningInProgress']) => void;
-    setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -38,11 +28,6 @@ const initialState: State = {
     visualMode: true,
     telemetryMode: false,
     sidebarOpen: false,
-    isMiningSwitchingState: false,
-    isMiningEnabled: false,
-    isMiningInProgress: false,
-    isChangingMode: false,
-    isConnectionLostDuringMining: false,
 };
 
 export const useUIStore = create<UIStoreState>()(
@@ -55,18 +40,11 @@ export const useUIStore = create<UIStoreState>()(
             toggleTelemetryMode: () => set((state) => ({ telemetryMode: !state.telemetryMode })),
             toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
             setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-            setIsMiningSwitchingState: (isMiningSwitchingState) => set({ isMiningSwitchingState }),
-            setIsMiningEnabled: (isMiningEnabled) => set({ isMiningEnabled }),
-            setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
-            setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
-            setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
         }),
         {
             name: 'ui-store',
             storage: createJSONStorage(() => sessionStorage),
             partialize: (s) => ({
-                isMiningEnabled: s.isMiningEnabled,
-                isConnectionLostDuringMining: s.isConnectionLostDuringMining,
                 telemetryMode: s.telemetryMode,
             }),
         }

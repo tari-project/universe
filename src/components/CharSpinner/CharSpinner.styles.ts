@@ -54,4 +54,5 @@ export const Character = styled('div')<Props>`
     justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
     letter-spacing: -0.02ch;
+    text-transform: lowercase;
 `;

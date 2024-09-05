@@ -1,9 +1,16 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { InputHTMLAttributes } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-const Wrapper = styled.label`
+const Wrapper = styled.label<{ $disabled?: boolean }>`
     display: flex;
+    cursor: ${({ $disabled }) => ($disabled ? 'default' : 'pointer')};
+    ${({ $disabled }) =>
+        $disabled &&
+        css`
+            pointer-events: none;
+            opacity: 0.8;
+        `}
 `;
 const Label = styled.label`
     cursor: pointer;
@@ -30,7 +37,7 @@ const Switch = styled.div<{ $isSolid?: boolean }>`
     background: ${({ $isSolid, theme }) =>
         $isSolid
             ? theme.palette.colors.grey[300]
-            : `linear-gradient(90deg, ${theme.palette.contrast} 0%, ${theme.palette.colors.teal[700]} 100%)`};
+            : `linear-gradient(90deg, ${theme.palette.colors.grey[200]} 0%,  ${theme.palette.base} 100%)`};
 
     border-radius: 24px;
     transition: 300ms all;
@@ -63,9 +70,9 @@ const Input = styled.input<{ $isSolid?: boolean }>`
         background: ${({ $isSolid, theme }) =>
             $isSolid
                 ? theme.palette.success.main
-                : `linear-gradient(90deg, ${theme.palette.base} 0%, ${theme.palette.colors.grey[200]} 100%)`};
+                : `linear-gradient(90deg, ${theme.palette.colors.teal[700]} 0%, ${theme.palette.contrast} 100%)`};
         &:before {
-            background: ${({ $isSolid, theme }) => ($isSolid ? theme.palette.base : theme.palette.contrast)};
+            background: ${({ $isSolid, theme }) => ($isSolid ? theme.palette.base : theme.palette.base)};
             box-shadow: ${({ $isSolid }) => ($isSolid ? '0 3px 3px 0 rgba(0, 0, 0, 0.25)' : 'none')};
             transform: translate(16px, -50%);
         }
@@ -80,7 +87,7 @@ export function ToggleSwitch({ label, variant = 'solid', ...props }: ToggleSwitc
     const isSolid = variant === 'solid';
 
     const switchMarkup = (
-        <Wrapper>
+        <Wrapper $disabled={props.disabled}>
             <Input checked={props.checked} type="checkbox" onChange={props.onChange} $isSolid={isSolid} />
             <Switch $isSolid={isSolid} />
         </Wrapper>

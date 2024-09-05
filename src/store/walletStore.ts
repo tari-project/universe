@@ -5,6 +5,7 @@ import { WalletBalance } from '@app/types/app-status.ts';
 interface State extends WalletBalance {
     balance: number;
     previousBalance: number;
+    balanceDiff: number;
 }
 
 interface Actions {
@@ -15,13 +16,14 @@ type WalletStore = State & Actions;
 const initialState: State = {
     balance: 0,
     previousBalance: 0,
+    balanceDiff: 0,
     available_balance: 0,
     timelocked_balance: 0,
     pending_incoming_balance: 0,
     pending_outgoing_balance: 0,
 };
 
-const useWalletStore = create<WalletStore>()(
+export const useWalletStore = create<WalletStore>()(
     persist(
         (set) => ({
             ...initialState,
@@ -40,6 +42,7 @@ const useWalletStore = create<WalletStore>()(
                         ...wallet_balance,
                         balance: newBalance,
                         previousBalance: prevValue,
+                        balanceDiff: prevValue > 0 ? newBalance - prevValue : 0,
                     };
                 }),
         }),
@@ -49,10 +52,9 @@ const useWalletStore = create<WalletStore>()(
             partialize: (s) => ({
                 balance: s.balance,
                 previousBalance: s.previousBalance,
+                balanceDiff: s.balanceDiff,
             }),
-            version: 1,
+            version: 2,
         }
     )
 );
-
-export default useWalletStore;

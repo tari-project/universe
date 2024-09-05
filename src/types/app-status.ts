@@ -14,9 +14,14 @@ export interface AppStatus {
     auto_mining: boolean;
     monero_address?: string;
     p2pool_enabled: boolean;
-    p2pool_stats?: P2poolStats;
-    cpu_mining_enabled?: boolean;
-    gpu_mining_enabled?: boolean;
+    p2pool_stats?: P2poolStatsResult;
+    cpu_mining_enabled: boolean;
+    gpu_mining_enabled: boolean;
+}
+
+export interface P2poolStatsResult {
+    randomx: P2poolStats;
+    sha3: P2poolStats;
 }
 
 export interface P2poolStats {
@@ -79,6 +84,7 @@ export interface CpuMinerStatus {
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
 }
+
 export interface CpuMinerConnectionStatus {
     is_connected: boolean;
 }
