@@ -23,11 +23,16 @@ pub struct MergeMiningProxyConfig {
 }
 
 impl MergeMiningProxyConfig {
-    pub fn new(port: u16, base_node_grpc_port: u16, coinbase_extra: Option<String>) -> Self {
+    pub fn new(
+        port: u16,
+        p2pool_grpc_port: u16,
+        base_node_grpc_port: u16,
+        coinbase_extra: Option<String>,
+    ) -> Self {
         Self {
             port,
             p2pool_enabled: false,
-            p2pool_grpc_port: 0,
+            p2pool_grpc_port,
             base_node_grpc_port,
             coinbase_extra: coinbase_extra.unwrap_or("tari_universe_mmproxy".to_string()),
         }
