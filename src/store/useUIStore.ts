@@ -26,7 +26,7 @@ const initialState: State = {
     background: 'onboarding',
     view: 'setup',
     visualMode: true,
-    telemetryMode: false,
+    telemetryMode: true,
     sidebarOpen: false,
 };
 

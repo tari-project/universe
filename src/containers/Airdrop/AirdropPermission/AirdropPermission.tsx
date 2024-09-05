@@ -16,18 +16,21 @@ export default function AirdropPermission() {
         invoke('set_telemetry_mode', { telemetryMode: !telemetryMode });
     };
 
-    if (!appConfig.displayAirdropWipUI) return null;
     return (
         <Position>
             <BoxWrapper>
-                <Gem1 src={gemImage} alt="" />
-                <Gem2 src={gemImage} alt="" />
-                <Gem3 src={gemImage} alt="" />
-                <Gem4 src={gemImage} alt="" />
+                {appConfig.displayAirdropWipUI && (
+                    <>
+                        <Gem1 src={gemImage} alt="" />
+                        <Gem2 src={gemImage} alt="" />
+                        <Gem3 src={gemImage} alt="" />
+                        <Gem4 src={gemImage} alt="" />
+                    </>
+                )}
 
                 <TextWrapper>
-                    <Title>{t('permission.title')}</Title>
-                    <Text>{t('permission.text')}</Text>
+                    <Title>{t(appConfig.displayAirdropWipUI ? 'permission.title' : 'permissionNoGems.title')}</Title>
+                    <Text>{t(appConfig.displayAirdropWipUI ? 'permission.text' : 'permissionNoGems.text')}</Text>
                 </TextWrapper>
                 <ToggleSwitch checked={telemetryMode} onChange={handleChange} />
             </BoxWrapper>
