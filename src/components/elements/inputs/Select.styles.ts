@@ -35,6 +35,7 @@ export const Options = styled.div<{ $open?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-weight: 500;
     letter-spacing: -1px;
+    z-index: 2;
 `;
 
 export const SelectedOption = styled.div`
