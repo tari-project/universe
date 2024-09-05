@@ -7,7 +7,7 @@
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.2.0"
+        "version": "0.2.3"
     },
     "tauri": {
         "systemTray": {
@@ -48,12 +48,12 @@
         },
         "windows": [
             {
-                "title": "Tari Universe",
+                "title": "Tari Universe | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
-                "minWidth": 388,
-                "minHeight": 455,
+                "minWidth": 997,
+                "minHeight": 620,
                 "resizable": true,
                 "fullscreen": false,
                 "decorations": true,
