@@ -63,11 +63,11 @@ impl UserListener {
                         println!("Listening for user inactivity, is_mining_initialized: {}, timeout: {}, timeout_counter: {}", user_listener.is_mining_initialized, timeout.as_secs(), timeout_counter.as_secs());
                         let current_mouse_coords = UserListener::read_user_mouse_coords();
 
-                        if current_mouse_coords != last_mouse_coords {
+                        if current_mouse_coords == last_mouse_coords {
+                            timeout_counter += Duration::from_secs(1);
+                        } else {
                             last_mouse_coords = current_mouse_coords;
                             timeout_counter = Duration::from_secs(0);
-                        } else {
-                            timeout_counter += Duration::from_secs(1);
                         }
 
 

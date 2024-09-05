@@ -84,7 +84,7 @@ impl WalletManager {
 
     pub async fn get_balance(&self) -> Result<WalletBalance, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
-        Ok(process_watcher
+        process_watcher
             .status_monitor
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
@@ -93,6 +93,21 @@ impl WalletManager {
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
                 _ => WalletManagerError::UnknownError(e.into()),
-            })?)
+            })
+    }
+
+    pub async fn wallet_address(&self) -> Result<String, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        Ok(process_watcher
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| WalletManagerError::WalletNotStarted)?
+            .get_wallet_address()
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })?
+            .to_base58())
     }
 }
