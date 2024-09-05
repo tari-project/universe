@@ -16,7 +16,7 @@ export function useMiningControls() {
     return useCallback(
         async (type: 'start' | 'stop' | 'pause') => {
             const isStart = type === 'start';
-            setMiningLoading(isStart);
+            setMiningLoading(true);
             setMiningInitiated(isStart);
             const invokeFn = isStart ? 'start_mining' : 'stop_mining';
             try {
@@ -25,6 +25,7 @@ export function useMiningControls() {
                 await handleVisual(type);
                 setMiningLoading(false);
             } catch (e) {
+                setMiningLoading(false);
                 const error = e as string;
                 if (!isStart) {
                     setMiningInitiated(true);
@@ -46,12 +47,12 @@ export function useChangeMiningMode() {
             setIsChangingMode(true); // is is worth having this ? it's so quick...
             try {
                 if (!isMiningInProgress) {
-                    await invoke('set_mode', { mode }).then(() => setIsChangingMode(false));
+                    await invoke('set_mode', { mode }).finally(() => setIsChangingMode(false));
                 } else {
                     await handleMining('pause');
-                    await invoke('set_mode', { mode }).then(() => {
-                        handleMining('start').then(() => setIsChangingMode(false));
-                    });
+                    await invoke('set_mode', { mode })
+                        .then(() => handleMining('start'))
+                        .finally(() => setIsChangingMode(false));
                 }
             } catch (e) {
                 console.error('Could not change the mode', e);
