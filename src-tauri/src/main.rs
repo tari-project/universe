@@ -52,6 +52,7 @@ use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
+use std::collections::HashMap;
 use std::fs::remove_dir_all;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -60,6 +61,7 @@ use std::{panic, process};
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
+use tari_core::proof_of_work::PowAlgorithm;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
@@ -78,23 +80,6 @@ async fn set_mode<'r>(
     state: tauri::State<'r, UniverseAppState>,
 ) -> Result<(), String> {
     let _ = state.config.write().await.set_mode(mode).await;
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_user_inactivity_timeout<'r>(
-    timeout: u64,
-    _window: tauri::Window,
-    state: tauri::State<'r, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
-    let _ = state
-        .config
-        .write()
-        .await
-        .set_user_inactivity_timeout(Duration::from_secs(timeout))
-        .await;
-
     Ok(())
 }
 
@@ -325,10 +310,10 @@ async fn setup_inner<'r>(
     progress
         .update("starting-p2pool".to_string(), None, 0)
         .await;
-    // state
-    //     .p2pool_manager
-    //     .ensure_started(state.shutdown.to_signal(), data_dir, config_dir, log_dir)
-    //     .await?;
+    state
+        .p2pool_manager
+        .ensure_started(state.shutdown.to_signal(), data_dir, config_dir, log_dir)
+        .await?;
 
     progress.set_max(100).await;
     progress
@@ -413,26 +398,6 @@ async fn set_p2pool_enabled<'r>(
 }
 
 #[tauri::command]
-async fn set_auto_mining<'r>(
-    auto_mining: bool,
-    window: tauri::Window,
-    state: tauri::State<'r, UniverseAppState>,
-) -> Result<(), String> {
-    let mut config = state.config.write().await;
-    let _ = config.set_auto_mining(auto_mining).await;
-    let timeout = config.get_user_inactivity_timeout();
-    let mut user_listener = state.user_listener.write().await;
-
-    if auto_mining {
-        user_listener.start_listening_to_mouse_poisition_change(timeout, window);
-    } else {
-        user_listener.stop_listening_to_mouse_poisition_change();
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
 async fn set_cpu_mining_enabled<'r>(
     enabled: bool,
     state: tauri::State<'r, UniverseAppState>,
@@ -483,7 +448,7 @@ async fn start_mining<'r>(
     let gpu_mining_enabled = config.gpu_mining_enabled;
     let mode = config.mode;
 
-    let config = state.cpu_miner_config.read().await;
+    let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = state.config.read().await.monero_address.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
     if cpu_mining_enabled {
@@ -493,7 +458,7 @@ async fn start_mining<'r>(
             .await
             .start(
                 state.shutdown.to_signal(),
-                &config,
+                &cpu_miner_config,
                 monero_address,
                 app.path_resolver().app_local_data_dir().unwrap(),
                 app.path_resolver().app_cache_dir().unwrap(),
@@ -527,6 +492,7 @@ async fn start_mining<'r>(
                 state.shutdown.to_signal(),
                 tari_address,
                 grpc_port,
+                config.p2pool_enabled,
                 app.path_resolver().app_local_data_dir().unwrap(),
                 app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
@@ -672,7 +638,9 @@ async fn status(
             .get_network_hash_rate_and_block_reward()
             .await
             .unwrap_or_else(|e| {
-                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+                if !matches!(e, NodeManagerError::NodeNotStarted) {
+                    warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+                }
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
 
@@ -723,13 +691,15 @@ async fn status(
         .await
         .read_hardware_parameters();
 
-    let p2pool_stats = match state.p2pool_manager.stats().await {
-        Ok(stats) => stats,
-        Err(e) => {
-            // warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
-            Stats::default()
-        }
-    };
+    let mut p2pool_stats = HashMap::with_capacity(2);
+    p2pool_stats.insert(
+        PowAlgorithm::Sha3x.to_string().to_lowercase(),
+        Stats::default(),
+    );
+    p2pool_stats.insert(
+        PowAlgorithm::RandomX.to_string().to_lowercase(),
+        Stats::default(),
+    );
 
     let config_guard = state.config.read().await;
 
@@ -756,7 +726,6 @@ async fn status(
         p2pool_enabled: config_guard.p2pool_enabled,
         p2pool_stats,
         auto_mining: config_guard.auto_mining,
-        user_inactivity_timeout: config_guard.user_inactivity_timeout.as_secs(),
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
@@ -827,8 +796,7 @@ pub struct AppStatus {
     mode: MiningMode,
     auto_mining: bool,
     p2pool_enabled: bool,
-    p2pool_stats: Stats,
-    user_inactivity_timeout: u64,
+    p2pool_stats: HashMap<String, Stats>,
     monero_address: String,
     cpu_mining_enabled: bool,
     gpu_mining_enabled: bool,
@@ -924,7 +892,7 @@ fn main() {
     let app_config = Arc::new(RwLock::new(AppConfig::new()));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
-    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new(p2pool_config.clone()).into());
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         node_manager.clone(),
@@ -1027,13 +995,11 @@ fn main() {
             status,
             start_mining,
             stop_mining,
-            set_auto_mining,
             set_p2pool_enabled,
             set_mode,
             open_log_dir,
             get_seed_words,
             get_applications_versions,
-            set_user_inactivity_timeout,
             update_applications,
             log_web_message,
             set_telemetry_mode,

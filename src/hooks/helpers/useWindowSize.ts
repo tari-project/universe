@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 export default function useWindowSize() {
     const windowSize = useRef({ width: window.innerWidth, height: window.innerHeight });
-    useEffect(() => {
+    useLayoutEffect(() => {
         function handleResize() {
             windowSize.current = {
                 width: window.innerWidth,

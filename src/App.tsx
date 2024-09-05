@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-
 import { ContainerInner, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
@@ -13,12 +11,12 @@ import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
-import { setupLogger } from './utils/logger.ts';
+
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
 import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
 
-function App() {
+export default function App() {
     useAirdropTokensRefresh();
     useSetUp();
     useGetStatus();
@@ -28,10 +26,6 @@ function App() {
     const isShuttingDown = useShuttingDown();
     const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
-
-    useEffect(() => {
-        setupLogger();
-    }, []);
 
     return (
         <ThemeProvider>
@@ -52,5 +46,3 @@ function App() {
         </ThemeProvider>
     );
 }
-
-export default App;
