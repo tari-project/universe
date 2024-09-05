@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use libsqlite3_sys::SQLITE_CONFIG_PAGECACHE;
 use log::info;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
@@ -23,6 +22,7 @@ pub struct StartConfig {
     pub tari_address: TariAddress,
     pub base_node_grpc_port: u16,
     pub coinbase_extra: String,
+    pub p2pool_enabled: bool,
 }
 
 impl PartialEq for StartConfig {
@@ -37,6 +37,7 @@ impl PartialEq for StartConfig {
 }
 
 impl StartConfig {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
@@ -45,6 +46,7 @@ impl StartConfig {
         tari_address: TariAddress,
         base_node_grpc_port: u16,
         coinbase_extra: String,
+        p2pool_enabled: bool,
     ) -> Self {
         Self {
             app_shutdown,
@@ -54,6 +56,7 @@ impl StartConfig {
             tari_address,
             base_node_grpc_port,
             coinbase_extra,
+            p2pool_enabled,
         }
     }
 }
@@ -120,6 +123,7 @@ impl MmProxyManager {
         process_watcher.adapter.tari_address = config.tari_address;
         process_watcher.adapter.config.base_node_grpc_port = config.base_node_grpc_port;
         process_watcher.adapter.config.coinbase_extra = config.coinbase_extra;
+        process_watcher.adapter.config.p2pool_enabled = config.p2pool_enabled;
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher
             .start(

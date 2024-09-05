@@ -13,6 +13,9 @@ import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
 import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
+import { useShuttingDown } from './hooks/useShuttingDown.ts';
+import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
+import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
 
 export default function App() {
     useAirdropTokensRefresh();
@@ -21,6 +24,7 @@ export default function App() {
     useEnvironment();
     useMiningEffects();
 
+    const isShuttingDown = useShuttingDown();
     const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
 
@@ -30,7 +34,9 @@ export default function App() {
             <GlobalStyle />
             <AppBackground />
             <SplashScreen />
-            {!showSplash && (
+            <AutoUpdateDialog />
+            {isShuttingDown && <ShuttingDownScreen />}
+            {!showSplash && !isShuttingDown && (
                 <DashboardContainer>
                     <ContainerInner>
                         <SideBar />

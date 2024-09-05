@@ -62,7 +62,7 @@ impl ProcessAdapter for P2poolAdapter {
             .join("sha-p2pool");
         std::fs::create_dir_all(&working_dir)?;
 
-        let mut args: Vec<String> = vec![
+        let args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
             self.config.grpc_port.to_string(),
@@ -84,22 +84,19 @@ impl ProcessAdapter for P2poolAdapter {
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
 
-                    // select tribe
-                    let child = tokio::process::Command::new(file_path.clone())
-                        .args(vec!["list-tribes"])
-                        .stdout(std::process::Stdio::piped())
-                        .kill_on_drop(true)
-                        .spawn()?;
-
-                    let output = child.wait_with_output().await?;
-                    let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
-                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
+                    let output = process_utils::launch_and_get_outputs(
+                        &file_path,
+                        vec!["list-tribes".to_string()],
+                    )
+                    .await?;
+                    let tribes: Vec<String> = serde_json::from_slice(&output)?;
+                    let _tribe = match tribes.choose(&mut rand::thread_rng()) {
                         Some(tribe) => tribe.to_string(),
                         None => String::from("default"), // TODO: generate name
                     };
 
                     // start
-                    let mut child = launch_child_process(&file_path, &args)?;
+                    let mut child = launch_child_process(&file_path, None, &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join(pid_file_name.clone()), id.to_string())?;
