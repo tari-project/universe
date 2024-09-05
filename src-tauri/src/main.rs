@@ -143,6 +143,17 @@ async fn setup_application(
     })
 }
 
+#[tauri::command]
+async fn restart_application<'r>(
+    _window: tauri::Window,
+    _state: tauri::State<'r, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    // This restart doesn't need to shutdown all the miners
+    let _ = app.restart();
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(
     window: tauri::Window,
@@ -1050,7 +1061,8 @@ fn main() {
             update_applications,
             reset_settings,
             set_gpu_mining_enabled,
-            set_cpu_mining_enabled
+            set_cpu_mining_enabled,
+            restart_application
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
