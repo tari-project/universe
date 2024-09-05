@@ -75,9 +75,10 @@ export default function Settings() {
     const p2poolRandomxChainTip = p2poolRandomXStats?.share_chain_height;
     const p2poolSha3UserTotalEarnings = walletAddress ? p2poolSha3Stats?.total_earnings[walletAddress] : 0;
     const p2poolRandomxUserTotalEarnings = walletAddress ? p2poolRandomXStats?.total_earnings[walletAddress] : 0;
-    const p2poolUserTotalEarnings = (p2poolSha3UserTotalEarnings && p2poolRandomxUserTotalEarnings)
-        ? p2poolSha3UserTotalEarnings + p2poolRandomxUserTotalEarnings
-        : 0;
+    const p2poolUserTotalEarnings =
+        p2poolSha3UserTotalEarnings && p2poolRandomxUserTotalEarnings
+            ? p2poolSha3UserTotalEarnings + p2poolRandomxUserTotalEarnings
+            : 0;
 
     const isCpuMiningEnabled = useAppStatusStore((state) => state.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppStatusStore((state) => state.gpu_mining_enabled);
@@ -337,7 +338,8 @@ export default function Settings() {
                             },
                             {
                                 labelText: 'RandomX',
-                                labelValue: (p2poolRandomxUserTotalEarnings ? p2poolRandomxUserTotalEarnings : 0) + ' tXTM',
+                                labelValue:
+                                    (p2poolRandomxUserTotalEarnings ? p2poolRandomxUserTotalEarnings : 0) + ' tXTM',
                             },
                             {
                                 labelText: 'Total',
