@@ -2,7 +2,7 @@ interface LogoProps {
     fill: string;
 }
 
-const TariLogo: React.FC<LogoProps> = ({ fill }: LogoProps) => (
+const TariLogo = ({ fill }: LogoProps) => (
     <svg width="150" height="28" viewBox="0 0 150 28" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path
             d="M56.5988 4.86621L50.5073 23.1349H54.4033L55.6899 18.9109H61.0286L62.314 23.1349H66.2112L60.1237 4.86621H56.5988ZM56.7323 15.4892L58.3646 10.0442L59.9983 15.4905L56.7323 15.4892Z"
