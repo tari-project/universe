@@ -42,7 +42,6 @@ use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
-use anyhow::Error;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
 use futures_lite::future::block_on;
@@ -55,15 +54,13 @@ use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
 use std::collections::HashMap;
 use std::fs::remove_dir_all;
-use std::future::Future;
 use std::sync::Arc;
 use std::thread::sleep;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 use std::{panic, process};
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
-use tari_core::proof_of_work::PowAlgorithm;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
@@ -144,13 +141,13 @@ async fn setup_application(
 }
 
 #[tauri::command]
-async fn restart_application<'r>(
+async fn restart_application(
     _window: tauri::Window,
-    _state: tauri::State<'r, UniverseAppState>,
+    _state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     // This restart doesn't need to shutdown all the miners
-    let _ = app.restart();
+    app.restart();
     Ok(())
 }
 
