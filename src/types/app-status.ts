@@ -17,6 +17,7 @@ export interface AppStatus {
     p2pool_stats?: P2poolStatsResult;
     cpu_mining_enabled: boolean;
     gpu_mining_enabled: boolean;
+    telemetry_mode: boolean;
 }
 
 export interface P2poolStatsResult {
