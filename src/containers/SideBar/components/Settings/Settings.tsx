@@ -2,11 +2,11 @@ import React, { useCallback, useState } from 'react';
 
 import {
     IoSettingsOutline,
-    IoClose,
     IoCopyOutline,
     IoEyeOutline,
     IoEyeOffOutline,
     IoCheckmarkOutline,
+    IoClose,
 } from 'react-icons/io5';
 import { useGetSeedWords } from '../../../../hooks/useGetSeedWords';
 
@@ -14,13 +14,13 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { DialogContent, Form, HorisontalBox } from './Settings.styles';
+import { CardContainer, Form, HorisontalBox } from './Settings.styles';
 
 import { useForm } from 'react-hook-form';
 import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
 
 import { Button, IconButton } from '@app/components/elements/Button.tsx';
-import Dialog from '@app/components/elements/Dialog.tsx';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
@@ -44,6 +44,7 @@ import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { SeedWords } from './SeedWords';
+import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',
@@ -56,12 +57,35 @@ interface FormState {
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const moneroAddress = useAppStatusStore((state) => state.monero_address);
+    const walletAddress = useAppStatusStore((state) => state.tari_address);
+
+    // p2pool
     const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
+    const p2poolStats = useAppStatusStore((state) => state.p2pool_stats);
+    const p2poolSha3Stats = p2poolStats?.sha3;
+    const p2poolRandomXStats = p2poolStats?.randomx;
+    const p2poolTribe = p2poolSha3Stats?.tribe?.name;
+    const p2poolSha3MinersCount = p2poolSha3Stats?.num_of_miners;
+    const p2poolRandomxMinersCount = p2poolRandomXStats?.num_of_miners;
+    const p2poolSha3HashRate = p2poolSha3Stats?.pool_hash_rate;
+    const p2poolRandomxHashRate = p2poolRandomXStats?.pool_hash_rate;
+    const p2poolSha3TotalEarnings = p2poolSha3Stats?.pool_total_earnings;
+    const p2poolRandomxTotalEarnings = p2poolRandomXStats?.pool_total_earnings;
+    const p2poolSha3ChainTip = p2poolSha3Stats?.share_chain_height;
+    const p2poolRandomxChainTip = p2poolRandomXStats?.share_chain_height;
+    const p2poolSha3UserTotalEarnings = walletAddress ? p2poolSha3Stats?.total_earnings[walletAddress] : 0;
+    const p2poolRandomxUserTotalEarnings = walletAddress ? p2poolRandomXStats?.total_earnings[walletAddress] : 0;
+    const p2poolUserTotalEarnings =
+        p2poolSha3UserTotalEarnings && p2poolRandomxUserTotalEarnings
+            ? p2poolSha3UserTotalEarnings + p2poolRandomxUserTotalEarnings
+            : 0;
+
     const isCpuMiningEnabled = useAppStatusStore((state) => state.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppStatusStore((state) => state.gpu_mining_enabled);
-    const [open, setOpen] = useState(false);
+
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
+    const [isCopyTooltipHiddenWalletAddress, setIsCopyTooltipHiddenWalletAddress] = useState(true);
     const { reset, handleSubmit, control } = useForm<FormState>({
         defaultValues: { moneroAddress },
         mode: 'onSubmit',
@@ -73,9 +97,9 @@ export default function Settings() {
     const isMining = isCPUMining || isGPUMining;
     const miningLoading = useMiningStore((s) => s.miningLoading);
     const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
-    const handleClickOpen = () => setOpen(true);
+    const [open, setOpen] = useState(false);
+
     const handleClose = () => {
-        setOpen(false);
         setShowSeedWords(false);
     };
 
@@ -93,6 +117,12 @@ export default function Settings() {
         setIsCopyTooltipHidden(false);
         await navigator.clipboard.writeText(seedWords.join(' '));
         setTimeout(() => setIsCopyTooltipHidden(true), 1000);
+    };
+
+    const copyWalletAddress = async () => {
+        setIsCopyTooltipHiddenWalletAddress(false);
+        await navigator.clipboard.writeText(walletAddress + '');
+        setTimeout(() => setIsCopyTooltipHiddenWalletAddress(true), 1000);
     };
 
     const handleCancel = () => {
@@ -113,6 +143,23 @@ export default function Settings() {
             }
         )();
     };
+
+    const walletAddressMarkup = walletAddress ? (
+        <>
+            <Divider />
+            <Stack>
+                <Stack direction="row" justifyContent="space-between" style={{ height: 40 }}>
+                    <Typography variant="h6">Tari Wallet Address</Typography>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="p">{walletAddress}</Typography>
+                    <IconButton onClick={copyWalletAddress}>
+                        {isCopyTooltipHiddenWalletAddress ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+                    </IconButton>
+                </Stack>
+            </Stack>
+        </>
+    ) : null;
 
     const seedWordMarkup = (
         <Stack>
@@ -212,19 +259,113 @@ export default function Settings() {
         </MinerContainer>
     );
 
-    return (
+    const showP2poolStats = isP2poolEnabled && p2poolTribe;
+    const p2poolStatsMarkup = showP2poolStats ? (
         <>
-            <IconButton onClick={handleClickOpen}>
+            <Divider />
+            <MinerContainer>
+                <HorisontalBox>
+                    <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
+                </HorisontalBox>
+                <CardContainer>
+                    <CardComponent
+                        heading={`${t('tribe', { ns: 'settings' })}`}
+                        labels={[
+                            {
+                                labelText: 'Current',
+                                labelValue: p2poolTribe ? p2poolTribe : '',
+                            },
+                        ]}
+                    />
+                    <CardComponent
+                        heading={`${t('miners', { ns: 'settings' })}`}
+                        labels={[
+                            {
+                                labelText: 'SHA-3',
+                                labelValue: '' + p2poolSha3MinersCount,
+                            },
+                            {
+                                labelText: 'RandomX',
+                                labelValue: '' + p2poolRandomxMinersCount,
+                            },
+                        ]}
+                    />
+                    <CardComponent
+                        heading={`${t('p2pool-hash-rate', { ns: 'settings' })}`}
+                        labels={[
+                            {
+                                labelText: 'SHA-3',
+                                labelValue: (p2poolSha3HashRate ? p2poolSha3HashRate : 0) + ' H/s',
+                            },
+                            {
+                                labelText: 'RandomX',
+                                labelValue: (p2poolRandomxHashRate ? p2poolRandomxHashRate : 0) + ' H/s',
+                            },
+                        ]}
+                    />
+                    <CardComponent
+                        heading={`${t('p2pool-total-earnings', { ns: 'settings' })}`}
+                        labels={[
+                            {
+                                labelText: 'SHA-3',
+                                labelValue: (p2poolSha3TotalEarnings ? p2poolSha3TotalEarnings : 0) + ' tXTM',
+                            },
+                            {
+                                labelText: 'RandomX',
+                                labelValue: (p2poolRandomxTotalEarnings ? p2poolRandomxTotalEarnings : 0) + ' tXTM',
+                            },
+                        ]}
+                    />
+                    <CardComponent
+                        heading={`${t('p2pool-chain-tip', { ns: 'settings' })}`}
+                        labels={[
+                            {
+                                labelText: 'SHA-3',
+                                labelValue: '#' + p2poolSha3ChainTip,
+                            },
+                            {
+                                labelText: 'RandomX',
+                                labelValue: '#' + p2poolRandomxChainTip,
+                            },
+                        ]}
+                    />
+                    <CardComponent
+                        heading={`${t('p2pool-user-total-earnings', { ns: 'settings' })}`}
+                        labels={[
+                            {
+                                labelText: 'SHA-3',
+                                labelValue: (p2poolSha3UserTotalEarnings ? p2poolSha3UserTotalEarnings : 0) + ' tXTM',
+                            },
+                            {
+                                labelText: 'RandomX',
+                                labelValue:
+                                    (p2poolRandomxUserTotalEarnings ? p2poolRandomxUserTotalEarnings : 0) + ' tXTM',
+                            },
+                            {
+                                labelText: 'Total',
+                                labelValue: p2poolUserTotalEarnings + ' tXTM',
+                            },
+                        ]}
+                    />
+                </CardContainer>
+            </MinerContainer>
+        </>
+    ) : null;
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <IconButton onClick={() => setOpen(true)}>
                 <IoSettingsOutline size={16} />
             </IconButton>
-            <Dialog onClose={handleClose} open={open}>
-                <DialogContent>
+            <DialogContent>
+                <Stack style={{ minWidth: 600 }}>
                     <Stack direction="row" justifyContent="space-between">
                         <Typography variant="h4">Settings</Typography>
-                        <IconButton onClick={handleClose}>
-                            <IoClose size={20} />
+                        <IconButton onClick={() => setOpen(false)}>
+                            <IoClose />
                         </IconButton>
                     </Stack>
+                    {walletAddressMarkup}
                     <Divider />
                     {seedWordMarkup}
                     <Divider />
@@ -240,6 +381,7 @@ export default function Settings() {
                     <LanguageSettings />
                     <Divider />
                     <DebugSettings />
+                    {p2poolStatsMarkup}
                     <Divider />
                     <HardwareStatus />
                     <Divider />
@@ -257,8 +399,8 @@ export default function Settings() {
                     <HorisontalBox>
                         <ResetSettingsButton />
                     </HorisontalBox>
-                </DialogContent>
-            </Dialog>
-        </>
+                </Stack>
+            </DialogContent>
+        </Dialog>
     );
 }

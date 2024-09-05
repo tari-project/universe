@@ -53,7 +53,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         &self,
         data_dir: PathBuf,
         config_dir: PathBuf,
-        log_dir: PathBuf,
+        _log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -159,9 +159,7 @@ impl ProcessAdapter for GpuMinerAdapter {
                     Ok(exit_code)
                 })),
             },
-            GpuMinerStatusMonitor {
-                http_api_port: http_api_port,
-            },
+            GpuMinerStatusMonitor { http_api_port },
         ))
     }
 

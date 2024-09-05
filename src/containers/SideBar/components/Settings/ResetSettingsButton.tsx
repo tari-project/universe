@@ -3,10 +3,10 @@ import useAppStateStore from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api';
 import { useCallback, useState } from 'react';
 import { Button } from '@app/components/elements/Button.tsx';
-import Dialog from '@app/components/elements/Dialog.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
 export const ResetSettingsButton = () => {
     const [open, setOpen] = useState(false);
@@ -14,20 +14,16 @@ export const ResetSettingsButton = () => {
     const setError = useAppStateStore((state) => state.setError);
 
     const resetSettings = () => {
-        if (!open) {
-            setOpen(true);
-            return;
-        }
         setLoading(true);
         invoke('reset_settings')
             .then(() => {
                 setLoading(false);
+                setOpen(false);
             })
             .catch((e) => {
                 console.error('Error when resetting settings: ', e);
                 setError('Resetting settings failed: ' + e);
             });
-        setOpen(false);
     };
 
     const handleClose = useCallback(() => {
@@ -35,11 +31,11 @@ export const ResetSettingsButton = () => {
     }, [setOpen]);
 
     return (
-        <>
-            <Button onClick={resetSettings} styleVariant="outline" color="error">
+        <Dialog open={open} onOpenChange={setOpen}>
+            <Button onClick={() => setOpen(true)} styleVariant="outline" color="error">
                 Reset Settings
             </Button>
-            <Dialog open={open} onClose={handleClose} isNested>
+            <DialogContent>
                 <Stack direction="column" alignItems="center" justifyContent="space-between">
                     <Typography variant="h2">Reset Settings</Typography>
                     <Typography variant="p">Are you sure you want to reset all settings permanently?</Typography>
@@ -52,7 +48,7 @@ export const ResetSettingsButton = () => {
                         </Button>
                     </Stack>
                 </Stack>
-            </Dialog>
-        </>
+            </DialogContent>
+        </Dialog>
     );
 };

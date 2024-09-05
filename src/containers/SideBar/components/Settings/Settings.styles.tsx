@@ -10,18 +10,6 @@ export const HorisontalBox = styled.div`
     width: 100%;
 `;
 
-export const DialogContent = styled.div`
-    display: flex;
-    align-items: stretch;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    gap: 4px;
-`;
-export const RightHandColumn = styled.div`
-    justify-self: end;
-`;
-
 export const CardContainer = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr;

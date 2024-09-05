@@ -44,7 +44,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-        config_dir: PathBuf,
+        _config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
@@ -80,7 +80,13 @@ impl ProcessAdapter for MinotariNodeAdapter {
         //     args.push("--network".to_string());
         //     args.push("localnet".to_string());
         // }
-        if !self.use_tor {
+        if self.use_tor {
+            args.push("-p".to_string());
+            args.push(
+                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
+                    .to_string(),
+            );
+        } else {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
@@ -97,12 +103,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
             // args.push(
             //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
             // );
-        } else {
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
-                    .to_string(),
-            );
         }
         Ok((
             ProcessInstance {
@@ -219,12 +219,12 @@ impl MinotariNodeStatusMonitor {
         // First try with 10 blocks
         let blocks = [10, 100];
         let mut result = Err(anyhow::anyhow!("No difficulty found"));
-        for i in 0..blocks.len() {
+        for block in &blocks {
             // Unfortunately have to use 100 blocks to ensure that there are both randomx and sha blocks included
             // otherwise the hashrate is 0 for one of them.
             let res = client
                 .get_network_difficulty(HeightRequest {
-                    from_tip: blocks[i],
+                    from_tip: *block,
                     start_height: 0,
                     end_height: 0,
                 })
@@ -340,6 +340,8 @@ impl MinotariNodeStatusMonitor {
                         progress,
                     )
                     .await;
+            } else {
+                //do nothing
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }

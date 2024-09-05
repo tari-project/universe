@@ -21,7 +21,7 @@ export const RulerContainer = styled.div<{ $height?: number }>`
     flex-direction: column;
     align-items: end;
     justify-content: center;
-    z-index: 0;
+    //z-index: 0;
 `;
 
 export const RulerMarkContainer = styled.div`
@@ -64,7 +64,7 @@ export const BlockHeightAccent = styled.div<{ $content: string; $height?: number
     font-size: 105px;
     transform: rotate(-90deg) translate(0, calc(100vh - ${({ $height = 100 }) => `${$height * 100 - 40}px`}));
     position: fixed;
-    z-index: -1;
+    //z-index: -1;
 
     &:before {
         content: ${({ $content }) => $content || ''};
