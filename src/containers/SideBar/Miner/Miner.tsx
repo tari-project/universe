@@ -13,6 +13,7 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 import { useTranslation } from 'react-i18next';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
+import { ExpandableTile } from '@app/containers/SideBar/Miner/components/ExpandableTile.tsx';
 
 export default function Miner() {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -78,6 +79,7 @@ export default function Miner() {
                         useLowerCase
                     />
                 ) : null}
+                <ExpandableTile title="Est tXTM/day" />
             </TileContainer>
         </MinerContainer>
     );

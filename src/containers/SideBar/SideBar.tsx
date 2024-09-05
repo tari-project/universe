@@ -10,9 +10,9 @@ function SideBar() {
     const sidebarOpen = useUIStore((state) => state.sidebarOpen);
     return (
         <SideBarContainer $sidebarOpen={sidebarOpen}>
-            <Heading />
-            <MiningButton />
             <SideBarInner>
+                <Heading />
+                <MiningButton />
                 <Miner />
             </SideBarInner>
             <BottomContainer>

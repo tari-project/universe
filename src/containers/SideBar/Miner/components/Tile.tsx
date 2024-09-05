@@ -6,7 +6,7 @@ import { Chip } from '@app/components/elements/Chip.tsx';
 import { formatPercent } from '@app/utils/formatNumber.ts';
 import { colors } from '@app/theme/colors.ts';
 
-interface TileProps {
+export interface TileProps {
     title: string;
     stats: string;
     unit?: string;

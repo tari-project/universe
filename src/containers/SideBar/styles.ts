@@ -23,7 +23,7 @@ export const SideBarContainer = styled.div<SideBarContainerProps>`
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     background: ${({ theme }) => theme.palette.background.paper};
-    padding: 16px;
+    padding: 16px 0;
     gap: 16px;
     position: relative;
 `;
@@ -34,10 +34,8 @@ export const SideBarInner = styled.div`
     flex-direction: column;
     position: relative;
     gap: 10px;
+    padding: 0 16px;
     height: 100%;
-    //z-index: 1;
-    padding: 0 0 178px 0;
-    overflow-y: scroll;
 `;
 
 export const BottomContainer = styled.div`
@@ -46,8 +44,9 @@ export const BottomContainer = styled.div`
     justify-self: flex-end;
     //z-index: 2;
     position: absolute;
-    width: calc(100% - 40px);
+    width: 100%;
     bottom: 20px;
+    padding: 0 16px;
 `;
 
 // Wallet

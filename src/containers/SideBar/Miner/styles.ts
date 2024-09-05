@@ -8,24 +8,34 @@ export const MinerContainer = styled.div`
 `;
 
 export const TileContainer = styled.div`
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: stretch;
+    align-items: stretch;
+    width: 100%;
     gap: 6px;
+
+    &:last-child {
+        flex-grow: 2;
+    }
 `;
 
 export const TileItem = styled.div`
-    width: 155px;
-    height: 61px;
-
+    height: 65px;
+    min-width: 140px;
+    flex-shrink: 0;
+    flex-grow: 1;
     padding: 10px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
-    max-width: 152px;
     gap: 8px;
     display: flex;
 
     flex-direction: column;
+    justify-content: space-between;
+
     color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-weight: 500;
@@ -40,8 +50,6 @@ export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
 export const Unit = styled.div`
