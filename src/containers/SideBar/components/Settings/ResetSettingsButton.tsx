@@ -3,10 +3,10 @@ import useAppStateStore from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api';
 import { useCallback, useState } from 'react';
 import { Button } from '@app/components/elements/Button.tsx';
-import Dialog from '@app/components/elements/Dialog.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
 export const ResetSettingsButton = () => {
     const [open, setOpen] = useState(false);
@@ -36,22 +36,24 @@ export const ResetSettingsButton = () => {
 
     return (
         <>
-            <Button onClick={resetSettings} styleVariant="outline" color="error">
-                Reset Settings
-            </Button>
-            <Dialog open={open} onClose={handleClose} isNested>
-                <Stack direction="column" alignItems="center" justifyContent="space-between">
-                    <Typography variant="h2">Reset Settings</Typography>
-                    <Typography variant="p">Are you sure you want to reset all settings permanently?</Typography>
-                    <Stack direction="row">
-                        <Button disabled={loading} onClick={handleClose} color="warning">
-                            Cancel
-                        </Button>
-                        <Button disabled={loading} onClick={resetSettings}>
-                            {loading ? <CircularProgress /> : 'Yes'}
-                        </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+                <Button onClick={resetSettings} styleVariant="outline" color="error">
+                    Reset Settings
+                </Button>
+                <DialogContent>
+                    <Stack direction="column" alignItems="center" justifyContent="space-between">
+                        <Typography variant="h2">Reset Settings</Typography>
+                        <Typography variant="p">Are you sure you want to reset all settings permanently?</Typography>
+                        <Stack direction="row">
+                            <Button disabled={loading} onClick={handleClose} color="warning">
+                                Cancel
+                            </Button>
+                            <Button disabled={loading} onClick={resetSettings}>
+                                {loading ? <CircularProgress /> : 'Yes'}
+                            </Button>
+                        </Stack>
                     </Stack>
-                </Stack>
+                </DialogContent>
             </Dialog>
         </>
     );
