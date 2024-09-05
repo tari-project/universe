@@ -10,12 +10,14 @@ import { useUpdateStatus } from '@app/hooks/useUpdateStatus.ts';
 
 function SideBar() {
     const sidebarOpen = useUIStore((state) => state.sidebarOpen);
-    const { status, contentLength } = useUpdateStatus();
+    const { status, contentLength, downloaded } = useUpdateStatus();
 
     return (
         <SideBarContainer $sidebarOpen={sidebarOpen}>
             <Heading />
-            {status !== 'NONE' && <UpdatedStatus contentLength={contentLength} status={status} />}
+            {status !== 'NONE' && (
+                <UpdatedStatus contentLength={contentLength} status={status} downloaded={downloaded} />
+            )}
             <MiningButton />
             <SideBarInner>
                 <Miner />

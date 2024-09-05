@@ -8,6 +8,5 @@
     "mining-schedules-description": "Schedule your mining activity",
     "updating-title": "Updating",
     "updating-downloading": "Downloading the Tari Universe to the latest version",
-    "updating-downloading-done": "Downloaded the Tari Universe to the latest version",
-    "updating-content-size": "Content size: {{size}}"
+    "updating-downloading-done": "Download has been completed"
 }

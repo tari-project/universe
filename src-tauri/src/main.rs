@@ -74,6 +74,14 @@ mod gpu_miner_adapter;
 mod progress_tracker;
 mod setup_status_event;
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct UpdateProgressRustEvent {
+    chunk_length: usize,
+    content_length: Option<u64>,
+    downloaded: u64,
+}
+
 #[tauri::command]
 async fn set_mode<'r>(
     mode: String,
@@ -1024,10 +1032,16 @@ fn main() {
         app.path_resolver().app_log_dir().unwrap()
     );
 
+    let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
         tauri::RunEvent::Updater(updater_event) => match updater_event {
             UpdaterEvent::Error(e) => {
                 error!(target: LOG_TARGET, "Updater error: {:?}", e);
+            }
+            UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
+                downloaded += chunk_length as u64;
+                let window = _app_handle.get_window("main").unwrap();
+                let _ = window.emit("update-progress", UpdateProgressRustEvent {chunk_length, content_length, downloaded});
             }
             _ => {
                 info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
