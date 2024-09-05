@@ -349,6 +349,7 @@ async fn setup_inner(
         telemetry_id = "unknown_miner_tari_universe".to_string();
     }
 
+    let config = state.config.read().await;
     mm_proxy_manager
         .start(StartConfig::new(
             state.shutdown.to_signal().clone(),
@@ -358,6 +359,7 @@ async fn setup_inner(
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
             telemetry_id,
+            config.p2pool_enabled,
         ))
         .await?;
     mm_proxy_manager.wait_ready().await?;
@@ -408,7 +410,12 @@ async fn set_p2pool_enabled(
                 .get_grpc_port()
                 .await
                 .map_err(|error| error.to_string())?;
-            MergeMiningProxyConfig::new(origin_config.port, base_node_grpc_port, None)
+            MergeMiningProxyConfig::new(
+                origin_config.port,
+                p2pool_config.grpc_port,
+                base_node_grpc_port,
+                None,
+            )
         };
         state
             .mm_proxy_manager
@@ -956,7 +963,12 @@ fn main() {
     let mm_proxy_config = if app_config_raw.p2pool_enabled {
         MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     } else {
-        MergeMiningProxyConfig::new(mm_proxy_port, base_node_grpc_port, None)
+        MergeMiningProxyConfig::new(
+            mm_proxy_port,
+            p2pool_config.grpc_port,
+            base_node_grpc_port,
+            None,
+        )
     };
     let mm_proxy_manager = MmProxyManager::new(mm_proxy_config);
     let app_state = UniverseAppState {
