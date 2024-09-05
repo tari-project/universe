@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           echo "tagName=v__VERSION__" >> $GITHUB_ENV
-          echo "releaseName='Tari Universe v__VERSION__'" >> $GITHUB_ENV
+          echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
 
       - name: Node.js setup
