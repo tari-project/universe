@@ -21,9 +21,9 @@ mod tests {
         assert_eq!(config.mode, MiningMode::Eco);
         // it doesn't affect auto_mining value saved in the config
         assert_eq!(config.auto_mining, true);
-        assert_eq!(config.p2pool_enabled, false);
+        assert_eq!(config.p2pool_enabled, true);
         assert_ne!(format!("{:?}", config.last_binaries_update_timestamp), "");
-        assert_eq!(config.allow_telemetry, true);
+        assert_eq!(config.allow_telemetry, false);
         assert_eq!(config.anon_id.len(), 20);
         assert_eq!(config.monero_address, DEFAULT_MONERO_ADDRESS.to_string());
         assert_eq!(config.gpu_mining_enabled, true);

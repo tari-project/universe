@@ -18,7 +18,7 @@ pub struct AppConfigFromFile {
     auto_mining: bool,
     #[serde(default = "default_true")]
     p2pool_enabled: bool,
-    #[serde(default = "default_0")]
+    #[serde(default = "default_system_time")]
     last_binaries_update_timestamp: SystemTime,
     #[serde(default = "default_false")]
     allow_telemetry: bool,
@@ -241,7 +241,7 @@ fn default_anon_id() -> String {
 }
 
 fn default_system_time() -> SystemTime {
-    SystemTime::now()
+    SystemTime::UNIX_EPOCH
 }
 
 fn default_monero_address() -> String {
