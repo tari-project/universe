@@ -1,6 +1,10 @@
 {
     "loginButton": "Log in to claim gems",
     "logout": "Logout",
+    "permissionNoGems": {
+        "title": "Make Tari Universe better",
+        "text": "Tari Universe would like to use analytics to improve your experience."
+    },
     "permission": {
         "title": "Earn Gems & make Tari Universe better",
         "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining."

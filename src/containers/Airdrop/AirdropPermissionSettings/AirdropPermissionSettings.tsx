@@ -15,14 +15,12 @@ export default function AirdropPermissionSettings() {
         invoke('set_telemetry_mode', { telemetryMode: !telemetryMode });
     };
 
-    if (!appConfig.displayAirdropWipUI) return null;
-
     return (
         <Wrapper>
             <BoxWrapper>
                 <TextWrapper>
-                    <Title>{t('permission.title')}</Title>
-                    <Text>{t('permission.text')}</Text>
+                    <Title>{t(appConfig.displayAirdropWipUI ? 'permission.title' : 'permissionNoGems.title')}</Title>
+                    <Text>{t(appConfig.displayAirdropWipUI ? 'permission.text' : 'permissionNoGems.text')}</Text>
                 </TextWrapper>
                 <ToggleSwitch checked={telemetryMode} onChange={handleChange} />
             </BoxWrapper>
