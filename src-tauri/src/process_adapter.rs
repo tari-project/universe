@@ -39,7 +39,7 @@ pub trait ProcessAdapter {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
             Ok(pid) => {
-                let pid = pid.trim().parse::<u32>()?;
+                let pid = pid.trim().parse::<i32>()?;
                 kill_process(pid)?;
             }
             Err(e) => {

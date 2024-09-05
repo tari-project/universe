@@ -10,8 +10,6 @@ use log::{debug, warn};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::select;
-use tokio::sync::{broadcast, mpsc};
-use tokio::task::JoinHandle;
 
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
