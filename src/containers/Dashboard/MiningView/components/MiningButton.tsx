@@ -15,7 +15,8 @@ import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 enum MiningButtonStateText {
     STARTING = 'starting-mining',
     STARTED = 'pause-mining',
-    CONNECTION_LOST = 'cancel-mining',
+    PAUSING = 'pausing-mining',
+    // CONNECTION_LOST = 'cancel-mining',
     CHANGING_MODE = 'changing-mode',
     START = 'start-mining',
 }
@@ -32,10 +33,16 @@ function MiningButton() {
     const handleMining = useMiningControls();
 
     const miningButtonStateText = useMemo(() => {
-        if (isConnectionLostDuringMining) {
-            return MiningButtonStateText.CONNECTION_LOST;
-        }
+        // if (isConnectionLostDuringMining) {
+        //     return MiningButtonStateText.CONNECTION_LOST;
+        // }
         if (miningLoading) {
+            if (isChangingMode) {
+                return MiningButtonStateText.CHANGING_MODE;
+            }
+            if (isMining) {
+                return MiningButtonStateText.PAUSING;
+            }
             return MiningButtonStateText.STARTING;
         }
         if (isMining) {
@@ -45,16 +52,11 @@ function MiningButton() {
             return MiningButtonStateText.STARTED;
         }
         return MiningButtonStateText.START;
-    }, [isChangingMode, isConnectionLostDuringMining, isMining, miningLoading]);
+    }, [isChangingMode, isMining, miningLoading]);
 
     const handleClick = useCallback(() => {
-        if (isConnectionLostDuringMining) {
-            handleMining('pause');
-            return;
-        } else {
-            handleMining(isMining ? 'stop' : 'start');
-        }
-    }, [isMining, handleMining, isConnectionLostDuringMining]);
+        handleMining(isMining ? 'stop' : 'start');
+    }, [isMining, handleMining]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
 
