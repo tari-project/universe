@@ -38,6 +38,7 @@ function AutoUpdateDialog() {
                 }
             } catch (error) {
                 console.error(error);
+                setIsAfterAutoUpdate(true);
             }
         };
 
@@ -65,8 +66,15 @@ function AutoUpdateDialog() {
         setIsAfterAutoUpdate(true);
     };
 
+    const onOpenChange = (open: boolean) => {
+        if (!open) {
+            setIsAfterAutoUpdate(true);
+        }
+        setOpen(open);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t('would-you-like-to-install', { version: latestVersion })}</Typography>
