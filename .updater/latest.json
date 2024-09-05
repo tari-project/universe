@@ -14,10 +14,6 @@
         "windows-x86_64": {
             "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFpQd2tRZTFKcEhmVCs3TFJkb3ExVWg0VlBjNVZYTGVTbHJtdGo0WmhSZThOdW1ZT1M5UHRWNDk0VHNkeWV1d014ZlVoelg4Q3h0N0p2djdlZVMrMUE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzI0NzY3ODU1CWZpbGU6VGFyaSBVbml2ZXJzZV8wLjEuMzlfeDY0X2VuLVVTLm1zaS56aXAKNUNVNjZUaVljV2JmSGhHaXlmcmtyYWQzZUp6RTMxM2RzZFEzRWI0VENzdzlvS2NIUXp5QnoxUzRWbTRwZnhJK0VTdTcxU2Nrcjk1c0I5Q2NpemxGRFE9PQo=",
             "url": "https://github.com/tari-project/universe/releases/download/tari_universe-v0.1.39/Tari.Universe_0.1.39_x64_en-US.msi.zip"
-        },
-        "linux-x86_64": {
-            "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSbFdYNlF0VXlRdVZEbUx2ejZDZTR1SldEWVhQSnk5UngvY3B2OUxYTytETWdOUStHV1MvaVZRY1FMQ1did2kxWWpxcE9vbU1vVVNsY29OYkYxSjZTTCtHYlpYcnZTbGdNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzI1MzYzMjgzCWZpbGU6dGFyaS11bml2ZXJzZV8wLjEuMzlfYW1kNjQuQXBwSW1hZ2UudGFyLmd6CkRzWS9zODRqcHRhL0NlQmN0aU9pMkhrcUI5RTAwbStHZDRQYWxyaE1ZRC96T3ZVbXZjZXBZUGhjQ0c5Vjd1T1U5NVlpRGtOZ3RHMWF0VU4xc1VveUFRPT0K",
-            "url": "https://drive.usercontent.google.com/download?id=13hqj5ExwpIZ22ttzJO4OwF9h4DjIyXZ_&export=download&authuser=0&confirm=t&uuid=4e4d2823-32d3-4719-abdc-2778fc42ba04&at=AO7h07cucb_JatrLowvqLI-MX9rv:1725436262817"
         }
     }
 }

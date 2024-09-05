@@ -859,9 +859,6 @@ fn main() {
                 UpdaterEvent::Error(e) => {
                     error!(target: LOG_TARGET, "Updater error: {:?}", e);
                 }
-                UpdaterEvent::Downloaded => {
-                    shutdown.trigger();
-                }
                 _ => {
                     info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
                 }

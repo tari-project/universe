@@ -39,7 +39,6 @@ import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
-import { listen } from '@tauri-apps/api/event';
 import { ControlledNumberInput } from '@app/components/NumberInput';
 import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput';
 import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
