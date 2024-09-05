@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const BlockTimeContainer = styled.div`
-    z-index: 100;
     display: flex;
     flex-direction: column;
     font-weight: 500;
