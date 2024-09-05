@@ -46,7 +46,7 @@ function AutoUpdateDialog() {
         return () => {
             unlistenPromise?.then((unlisten) => unlisten());
         };
-    }, []);
+    }, [setIsAfterAutoUpdate]);
 
     const handleUpdate = async () => {
         setIsLoading(true);
