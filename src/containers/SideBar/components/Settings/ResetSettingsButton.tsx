@@ -14,20 +14,16 @@ export const ResetSettingsButton = () => {
     const setError = useAppStateStore((state) => state.setError);
 
     const resetSettings = () => {
-        if (!open) {
-            setOpen(true);
-            return;
-        }
         setLoading(true);
         invoke('reset_settings')
             .then(() => {
                 setLoading(false);
+                setOpen(false);
             })
             .catch((e) => {
                 console.error('Error when resetting settings: ', e);
                 setError('Resetting settings failed: ' + e);
             });
-        setOpen(false);
     };
 
     const handleClose = useCallback(() => {
@@ -35,26 +31,24 @@ export const ResetSettingsButton = () => {
     }, [setOpen]);
 
     return (
-        <>
-            <Dialog open={open} onOpenChange={setOpen}>
-                <Button onClick={resetSettings} styleVariant="outline" color="error">
-                    Reset Settings
-                </Button>
-                <DialogContent>
-                    <Stack direction="column" alignItems="center" justifyContent="space-between">
-                        <Typography variant="h2">Reset Settings</Typography>
-                        <Typography variant="p">Are you sure you want to reset all settings permanently?</Typography>
-                        <Stack direction="row">
-                            <Button disabled={loading} onClick={handleClose} color="warning">
-                                Cancel
-                            </Button>
-                            <Button disabled={loading} onClick={resetSettings}>
-                                {loading ? <CircularProgress /> : 'Yes'}
-                            </Button>
-                        </Stack>
+        <Dialog open={open} onOpenChange={setOpen}>
+            <Button onClick={() => setOpen(true)} styleVariant="outline" color="error">
+                Reset Settings
+            </Button>
+            <DialogContent>
+                <Stack direction="column" alignItems="center" justifyContent="space-between">
+                    <Typography variant="h2">Reset Settings</Typography>
+                    <Typography variant="p">Are you sure you want to reset all settings permanently?</Typography>
+                    <Stack direction="row">
+                        <Button disabled={loading} onClick={handleClose} color="warning">
+                            Cancel
+                        </Button>
+                        <Button disabled={loading} onClick={resetSettings}>
+                            {loading ? <CircularProgress /> : 'Yes'}
+                        </Button>
                     </Stack>
-                </DialogContent>
-            </Dialog>
-        </>
+                </Stack>
+            </DialogContent>
+        </Dialog>
     );
 };

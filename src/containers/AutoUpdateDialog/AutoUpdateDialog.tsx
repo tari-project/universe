@@ -5,9 +5,8 @@ import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/upda
 import { UnlistenFn } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/tauri';
 import { Button } from '@app/components/elements/Button';
-import Dialog from '@app/components/elements/Dialog';
+import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import useAppStateStore from '@app/store/appStateStore';
-import { DialogContent } from '../SideBar/components/Settings/Settings.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ButtonsWrapper } from './AutoUpdateDialog.styles';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
@@ -67,7 +66,7 @@ function AutoUpdateDialog() {
     };
 
     return (
-        <Dialog isNested open={open} onClose={handleClose}>
+        <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t('would-you-like-to-install', { version: latestVersion })}</Typography>
