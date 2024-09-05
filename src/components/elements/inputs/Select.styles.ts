@@ -33,7 +33,7 @@ export const Options = styled.div<{ $open?: boolean }>`
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     background: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    z-index: 100;
+    //z-index: 100;
     height: ${({ $open }) => ($open ? 'auto' : 0)};
     opacity: ${({ $open }) => ($open ? 1 : 0)};
     pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};

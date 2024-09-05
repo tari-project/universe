@@ -14,14 +14,14 @@ const Content = styled.div<{ $isNested?: boolean }>`
     display: flex;
     padding: 20px;
     overflow-y: scroll;
-    z-index: ${({ $isNested }) => ($isNested ? 2 : 1)};
+    //z-index: ${({ $isNested }) => ($isNested ? 2 : 1)};
     position: relative;
 `;
 const Backdrop = styled.div<{ $isNested?: boolean }>`
     width: 100%;
     position: absolute;
     background: rgba(0, 0, 0, 0.5);
-    z-index: ${({ $isNested }) => ($isNested ? 1 : 0)};
+    //z-index: ${({ $isNested }) => ($isNested ? 1 : 0)};
     height: 100%;
 `;
 const Wrapper = styled.div<{ $isNested?: boolean }>`
@@ -34,7 +34,7 @@ const Wrapper = styled.div<{ $isNested?: boolean }>`
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10;
+    //z-index: 10;
 `;
 
 interface Props {

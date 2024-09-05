@@ -16,7 +16,7 @@ export const SideBarContainer = styled.div<SideBarContainerProps>`
     transition: width 0.5s ease-in-out;
     pointer-events: auto;
     display: flex;
-    z-index: 10;
+    //z-index: 10;
     flex-shrink: 0;
     flex-direction: column;
     justify-content: stretch;
@@ -35,7 +35,7 @@ export const SideBarInner = styled.div`
     position: relative;
     gap: 10px;
     height: 100%;
-    z-index: 1;
+    //z-index: 1;
     padding: 0 0 178px 0;
     overflow-y: scroll;
 `;
@@ -44,7 +44,7 @@ export const BottomContainer = styled.div`
     display: flex;
     justify-content: flex-start;
     justify-self: flex-end;
-    z-index: 2;
+    //z-index: 2;
     position: absolute;
     width: calc(100% - 40px);
     bottom: 20px;

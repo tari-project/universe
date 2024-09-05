@@ -13,7 +13,7 @@ export const Wrapper = styled(motion.div)`
     bottom: 10px;
     left: 50%;
     display: flex;
-    z-index: 100;
+    //z-index: 100;
 `;
 export const ContentWrapper = styled.div`
     display: flex;
