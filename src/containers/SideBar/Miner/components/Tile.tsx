@@ -7,16 +7,17 @@ interface TileProps {
     title: string;
     stats: string;
     isLoading?: boolean;
+    useLowerCase?: boolean;
 }
 
-function Tile({ title, stats, isLoading }: TileProps) {
+function Tile({ title, stats, isLoading = false, useLowerCase = false }: TileProps) {
     return (
         <TileItem>
             <Typography>{title}</Typography>
             {isLoading ? (
                 <StyledIcon />
             ) : (
-                <StatWrapper>
+                <StatWrapper $useLowerCase={useLowerCase}>
                     <Typography variant="h5" title={stats}>
                         {truncateString(stats, 8)}
                     </Typography>

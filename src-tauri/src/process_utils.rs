@@ -1,7 +1,5 @@
 use std::path::Path;
 
-use crate::consts::PROCESS_CREATION_NO_WINDOW;
-
 pub fn launch_child_process(
     file_path: &Path,
     args: &[String],
@@ -10,13 +8,14 @@ pub fn launch_child_process(
     {
         Ok(tokio::process::Command::new(file_path)
             .args(args)
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null()) // TODO: uncomment, only for testing
+            .stderr(std::process::Stdio::null()) // TODO: uncomment, only for testing
             .kill_on_drop(true)
             .spawn()?)
     }
     #[cfg(target_os = "windows")]
     {
+        use crate::consts::PROCESS_CREATION_NO_WINDOW;
         Ok(tokio::process::Command::new(file_path)
             .args(args)
             .stdout(std::process::Stdio::null())
