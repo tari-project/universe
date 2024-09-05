@@ -73,8 +73,8 @@ impl SystemtrayManager {
         SystrayData {
             cpu_hashrate,
             gpu_hashrate,
-            cpu_usage: hardware_status.cpu.unwrap_or_default().usage_percentage as f64,
-            gpu_usage: hardware_status.gpu.unwrap_or_default().usage_percentage as f64,
+            cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
+            gpu_usage: f64::from(hardware_status.gpu.unwrap_or_default().usage_percentage),
             estimated_earning,
         }
     }
@@ -97,23 +97,21 @@ impl SystemtrayManager {
 
         match current_os {
             CurrentOperatingSystem::Windows => {
-                return format!(
+                format!(
                     "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEarn: {:.2} tXTM/Day",
                     data.cpu_hashrate,
                     data.cpu_usage,
                     data.gpu_hashrate,
                     data.gpu_usage,
                     data.estimated_earning
-                );
+                )
             }
-            CurrentOperatingSystem::Linux => {
-                return "Not supported".to_string();
-            }
+            CurrentOperatingSystem::Linux => "Not supported".to_string(),
             CurrentOperatingSystem::MacOS => {
-                return format!(
+                format!(
                     "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEstimated Earning: {:.2} tXTM/Day",
                     data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, data.estimated_earning
-                );
+                )
             }
         }
     }
@@ -175,7 +173,7 @@ impl SystemtrayManager {
             CurrentOperatingSystem::Windows => {
                 return systray.with_tooltip(tooltip.clone().as_str())
             }
-            CurrentOperatingSystem::Linux => return systray.with_menu(tray_menu),
+            CurrentOperatingSystem::Linux => systray.with_menu(tray_menu),
             CurrentOperatingSystem::MacOS => return systray.with_tooltip(tooltip.clone().as_str()),
         }
     }
