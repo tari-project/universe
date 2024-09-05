@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use libsqlite3_sys::SQLITE_CONFIG_PAGECACHE;
 use log::info;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;

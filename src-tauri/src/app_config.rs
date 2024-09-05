@@ -1,7 +1,4 @@
-use std::{
-    path::PathBuf,
-    time::{Duration, SystemTime},
-};
+use std::{path::PathBuf, time::SystemTime};
 
 use anyhow::anyhow;
 use log::{info, warn};
@@ -13,6 +10,7 @@ use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 const LOG_TARGET: &str = "tari::universe::app_config";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct AppConfigFromFile {
     pub version: u32,
     pub mode: String,
@@ -49,6 +47,7 @@ impl MiningMode {
     }
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     config_file: Option<PathBuf>,
@@ -127,7 +126,7 @@ impl AppConfig {
         }
         info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
         let config = &AppConfigFromFile {
-            mode: MiningMode::to_str(self.mode.clone()),
+            mode: MiningMode::to_str(self.mode),
             auto_mining: self.auto_mining,
             p2pool_enabled: self.p2pool_enabled,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
@@ -155,7 +154,7 @@ impl AppConfig {
     }
 
     pub fn get_mode(&self) -> MiningMode {
-        self.mode.clone()
+        self.mode
     }
 
     pub async fn set_auto_mining(&mut self, auto_mining: bool) -> Result<(), anyhow::Error> {
@@ -229,7 +228,7 @@ impl AppConfig {
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
         let file = self.config_file.clone().unwrap();
         let config = &AppConfigFromFile {
-            mode: MiningMode::to_str(self.mode.clone()),
+            mode: MiningMode::to_str(self.mode),
             auto_mining: self.auto_mining,
             p2pool_enabled: self.p2pool_enabled,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
