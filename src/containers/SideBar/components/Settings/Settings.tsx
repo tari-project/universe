@@ -140,7 +140,7 @@ export default function Settings() {
             },
             (error) => {
                 console.error(error);
-            },
+            }
         )();
     };
 
