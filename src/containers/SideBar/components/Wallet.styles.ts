@@ -10,9 +10,9 @@ export const WalletBalance = styled.div`
 export const WalletBalanceContainer = styled.div`
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-start;
-    padding: 10px;
+    padding: 5px;
     width: 100%;
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
