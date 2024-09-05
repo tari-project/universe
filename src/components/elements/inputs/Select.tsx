@@ -1,5 +1,5 @@
 import { HiOutlineSelector } from 'react-icons/hi';
-import { useState, MouseEvent } from 'react';
+import { useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { SpinnerIcon } from '@app/components/elements/SpinnerIcon.tsx';
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
@@ -8,11 +8,21 @@ import {
     Options,
     SelectedOption,
     StyledOption,
-    StyledSelect,
-    Wrapper,
     IconWrapper,
     OptionLabelWrapper,
+    TriggerWrapper,
 } from './Select.styles.ts';
+import {
+    autoUpdate,
+    flip,
+    offset,
+    shift,
+    useClick,
+    useDismiss,
+    useFloating,
+    useInteractions,
+    useRole,
+} from '@floating-ui/react';
 
 interface Option {
     label: string;
@@ -22,43 +32,53 @@ interface Option {
 }
 
 interface Props {
+    options: Option[];
+    onChange: (value: Option['value']) => void;
     disabled?: boolean;
     loading?: boolean;
-    options: Option[];
     selectedValue?: Option['value'];
-    onChange: (value: Option['value']) => void;
 }
 
-type OnClickEvent = MouseEvent<HTMLDivElement>;
+export function Select({ options, selectedValue, disabled, loading, onChange }: Props) {
+    const [isOpen, setIsOpen] = useState(false);
 
-export function Select({ options, selectedValue, disabled, loading, onChange, ...props }: Props) {
-    const [expanded, setExpanded] = useState(false);
-    function toggleOpen() {
-        setExpanded((c) => !c);
-    }
+    const { refs, floatingStyles, context } = useFloating({
+        open: isOpen,
+        onOpenChange: setIsOpen,
+        middleware: [offset(15), flip(), shift()],
+        whileElementsMounted: autoUpdate,
+    });
 
-    function handleChange(e: OnClickEvent, value: string) {
-        e.stopPropagation();
+    function handleChange(value: string) {
         onChange(value);
-        setExpanded(false);
+        setIsOpen(false);
     }
+    const click = useClick(context);
+    const dismiss = useDismiss(context);
+    const role = useRole(context);
+
+    const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
 
     const selectedOption = selectedValue ? options.find((o) => o.value === selectedValue) : options[0];
     const selectedLabel = selectedOption?.label;
     const selectedIcon = selectedOption?.iconSrc;
+
     return (
-        <Wrapper onClick={() => toggleOpen()} $disabled={disabled}>
-            <StyledSelect {...props}>
-                <SelectedOption $selected>
+        <>
+            <TriggerWrapper $disabled={disabled} ref={refs.setReference} {...getReferenceProps()}>
+                <SelectedOption>
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
                 </SelectedOption>
-                <Options id="select-options" tabIndex={0} $open={expanded}>
+                <IconWrapper>{loading ? <SpinnerIcon /> : <HiOutlineSelector />}</IconWrapper>
+            </TriggerWrapper>
+            {isOpen ? (
+                <Options ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
                     {options.map(({ label, value, iconSrc }) => {
                         const selected = value === selectedOption?.value;
                         return (
                             <StyledOption
-                                onClick={(e) => handleChange(e, value)}
+                                onClick={() => handleChange(value)}
                                 key={`opt-${value}-${label}`}
                                 $selected={selected}
                             >
@@ -75,8 +95,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, ..
                         );
                     })}
                 </Options>
-            </StyledSelect>
-            <IconWrapper>{loading ? <SpinnerIcon /> : <HiOutlineSelector />}</IconWrapper>
-        </Wrapper>
+            ) : null}
+        </>
     );
 }
