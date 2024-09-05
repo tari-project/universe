@@ -44,7 +44,10 @@ pub trait ProcessAdapter {
                 kill_process(pid)?;
             }
             Err(e) => {
-                if let Ok(true) = std::path::Path::new(&base_folder).join(self.pid_file_name()).try_exists() {
+                if let Ok(true) = std::path::Path::new(&base_folder)
+                    .join(self.pid_file_name())
+                    .try_exists()
+                {
                     warn!(target: LOG_TARGET, "{} pid file exists, but the error occurred while killing: {}", self.name(), e);
                 }
             }
