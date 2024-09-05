@@ -84,7 +84,10 @@ impl ProcessAdapter for WalletAdapter {
             "-p".to_string(),
             "wallet.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9999".to_string(),
         ];
-        if !self.use_tor {
+        if self.use_tor {
+            args.push("-p".to_string());
+            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
+        } else {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
@@ -103,9 +106,6 @@ impl ProcessAdapter for WalletAdapter {
             );
 
             // todo!()
-        } else {
-            args.push("-p".to_string());
-            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         }
         Ok((
             ProcessInstance {

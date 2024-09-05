@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{info, warn};
+use log::{error, info, warn};
 use semver::Version;
 use tari_shutdown::Shutdown;
 use tokio::fs;
@@ -104,12 +104,8 @@ impl XmrigAdapter {
         }
 
         match latest_version.clone() {
-            Some(version) => {
-                return Ok(version.to_string());
-            }
-            None => {
-                return Err(anyhow::anyhow!("Failed to get latest release for xmrig"));
-            }
+            Some(version) => Ok(version.to_string()),
+            None => Err(anyhow::anyhow!("Failed to get latest release for xmrig")),
         }
     }
 
@@ -120,18 +116,19 @@ impl XmrigAdapter {
     ) -> Result<String, Error> {
         let latest_release_res = fetch_latest_release().await;
 
-        let latest_release: XmrigRelease;
-        if latest_release_res.is_err() {
+        let latest_release: XmrigRelease = if latest_release_res.is_err() {
             return XmrigAdapter::get_latest_local_version(cache_dir.clone()).await;
         } else {
             // fetched properly so it can be unwrapped
-            latest_release = latest_release_res.unwrap();
-        }
+            latest_release_res?
+        };
 
         let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
         if force_download {
             println!("Cleaning up xmrig dir");
-            let _ = fs::remove_dir_all(&xmrig_dir).await;
+            fs::remove_dir_all(&xmrig_dir).await.inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e),
+            )?;
         }
         if !xmrig_dir.exists() {
             println!("Latest version of xmrig doesn't exist");
@@ -205,7 +202,7 @@ impl ProcessAdapter for XmrigAdapter {
         args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));
-        args.push(format!("--donate-level=1"));
+        args.push("--donate-level=1".to_string());
         args.push(format!("--user={}", self.monero_address));
         args.push(format!("--threads={}", self.cpu_max_percentage));
 
