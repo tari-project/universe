@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
+import { appConfig } from '@app/config';
 
 export default function UserInfo() {
     const { logout, userDetails, airdropTokens } = useAirdropStore();
@@ -60,6 +61,7 @@ export default function UserInfo() {
         return () => document.removeEventListener('click', handleClickOutside);
     }, [handleClickOutside]);
 
+    if (!appConfig.displayAirdropWipUI) return null;
     if (!airdropTokens?.token) return null;
 
     const showNotificationButton = false;

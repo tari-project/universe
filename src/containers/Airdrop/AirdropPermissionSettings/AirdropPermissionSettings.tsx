@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '@app/store/useUIStore';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+import { appConfig } from '@app/config';
 
 export default function AirdropPermissionSettings() {
     const telemetryMode = useUIStore((s) => s.telemetryMode);
@@ -14,6 +15,8 @@ export default function AirdropPermissionSettings() {
         invoke('set_telemetry_mode', { telemetryMode: !telemetryMode });
     };
 
+    if (!appConfig.displayAirdropWipUI) return null;
+
     return (
         <Wrapper>
             <BoxWrapper>
@@ -21,7 +24,7 @@ export default function AirdropPermissionSettings() {
                     <Title>{t('permission.title')}</Title>
                     <Text>{t('permission.text')}</Text>
                 </TextWrapper>
-                <ToggleSwitch checked={telemetryMode} onChange={handleChange} color="primary" />
+                <ToggleSwitch checked={telemetryMode} onChange={handleChange} />
             </BoxWrapper>
         </Wrapper>
     );
