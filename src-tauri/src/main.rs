@@ -62,7 +62,6 @@ use std::{panic, process};
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
-use tari_core::proof_of_work::PowAlgorithm;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
@@ -140,6 +139,17 @@ async fn setup_application(
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         e.to_string()
     })
+}
+
+#[tauri::command]
+async fn restart_application(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    // This restart doesn't need to shutdown all the miners
+    app.restart();
+    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
@@ -340,6 +350,7 @@ async fn setup_inner(
         telemetry_id = "unknown_miner_tari_universe".to_string();
     }
 
+    let config = state.config.read().await;
     mm_proxy_manager
         .start(StartConfig::new(
             state.shutdown.to_signal().clone(),
@@ -349,10 +360,11 @@ async fn setup_inner(
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
             telemetry_id,
+            config.p2pool_enabled,
         ))
         .await?;
     mm_proxy_manager.wait_ready().await?;
-
+    *state.is_setup_finished.write().await = true;
     drop(
         window
             .emit(
@@ -399,7 +411,12 @@ async fn set_p2pool_enabled(
                 .get_grpc_port()
                 .await
                 .map_err(|error| error.to_string())?;
-            MergeMiningProxyConfig::new(origin_config.port, base_node_grpc_port, None)
+            MergeMiningProxyConfig::new(
+                origin_config.port,
+                p2pool_config.grpc_port,
+                base_node_grpc_port,
+                None,
+            )
         };
         state
             .mm_proxy_manager
@@ -669,13 +686,14 @@ async fn status(
 ) -> Result<AppStatus, String> {
     let mut cpu_miner = state.cpu_miner.write().await;
     let mut gpu_miner = state.gpu_miner.write().await;
+    let is_setup_finished = *state.is_setup_finished.read().await;
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
             .get_network_hash_rate_and_block_reward()
             .await
             .unwrap_or_else(|e| {
-                if !matches!(e, NodeManagerError::NodeNotStarted) {
+                if !matches!(e, NodeManagerError::NodeNotStarted) && is_setup_finished {
                     warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
                 }
                 (0, 0, MicroMinotari(0), 0, 0, false)
@@ -688,7 +706,9 @@ async fn status(
     {
         Ok(cpu) => cpu,
         Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
+            if is_setup_finished {
+                warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
+            }
             return Err(e);
         }
     };
@@ -704,22 +724,24 @@ async fn status(
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
         Err(e) => {
-            if matches!(e, WalletManagerError::WalletNotStarted) {
-                WalletBalance {
-                    available_balance: MicroMinotari(0),
-                    pending_incoming_balance: MicroMinotari(0),
-                    pending_outgoing_balance: MicroMinotari(0),
-                    timelocked_balance: MicroMinotari(0),
-                }
-            } else {
+            if !matches!(e, WalletManagerError::WalletNotStarted) {
                 warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
-                WalletBalance {
-                    available_balance: MicroMinotari(0),
-                    pending_incoming_balance: MicroMinotari(0),
-                    pending_outgoing_balance: MicroMinotari(0),
-                    timelocked_balance: MicroMinotari(0),
-                }
             }
+
+            WalletBalance {
+                available_balance: MicroMinotari(0),
+                pending_incoming_balance: MicroMinotari(0),
+                pending_outgoing_balance: MicroMinotari(0),
+                timelocked_balance: MicroMinotari(0),
+            }
+        }
+    };
+
+    let tari_address = match state.wallet_manager.wallet_address().await {
+        Ok(addr) => addr,
+        Err(error) => {
+            warn!(target: LOG_TARGET, "Error getting wallet address: {}", error);
+            String::new()
         }
     };
 
@@ -728,15 +750,7 @@ async fn status(
         .await
         .read_hardware_parameters();
 
-    let mut p2pool_stats = HashMap::with_capacity(2);
-    p2pool_stats.insert(
-        PowAlgorithm::Sha3x.to_string().to_lowercase(),
-        Stats::default(),
-    );
-    p2pool_stats.insert(
-        PowAlgorithm::RandomX.to_string().to_lowercase(),
-        Stats::default(),
-    );
+    let p2pool_stats = state.p2pool_manager.stats().await;
 
     let config_guard = state.config.read().await;
 
@@ -766,6 +780,7 @@ async fn status(
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
+        tari_address,
     })
 }
 
@@ -835,6 +850,7 @@ pub struct AppStatus {
     auto_mining: bool,
     p2pool_enabled: bool,
     p2pool_stats: HashMap<String, Stats>,
+    tari_address: String,
     monero_address: String,
     cpu_mining_enabled: bool,
     gpu_mining_enabled: bool,
@@ -880,6 +896,7 @@ struct CpuMinerConfig {
 }
 
 struct UniverseAppState {
+    is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     shutdown: Shutdown,
     cpu_miner: Arc<RwLock<CpuMiner>>,
@@ -947,10 +964,16 @@ fn main() {
     let mm_proxy_config = if app_config_raw.p2pool_enabled {
         MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     } else {
-        MergeMiningProxyConfig::new(mm_proxy_port, base_node_grpc_port, None)
+        MergeMiningProxyConfig::new(
+            mm_proxy_port,
+            p2pool_config.grpc_port,
+            base_node_grpc_port,
+            None,
+        )
     };
     let mm_proxy_manager = MmProxyManager::new(mm_proxy_config);
     let app_state = UniverseAppState {
+        is_setup_finished: Arc::new(RwLock::new(false)),
         config: app_config.clone(),
         shutdown: shutdown.clone(),
         cpu_miner: cpu_miner.clone(),
@@ -1047,7 +1070,8 @@ fn main() {
             update_applications,
             reset_settings,
             set_gpu_mining_enabled,
-            set_cpu_mining_enabled
+            set_cpu_mining_enabled,
+            restart_application
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

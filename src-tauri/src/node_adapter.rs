@@ -112,7 +112,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .resolve_path(Binaries::MinotariNode)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
+                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("node_pid"), id.to_string())?;

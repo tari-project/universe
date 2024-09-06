@@ -12,11 +12,11 @@ use tari_shutdown::Shutdown;
 use tokio::select;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
+use crate::{p2pool, process_utils};
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -84,22 +84,19 @@ impl ProcessAdapter for P2poolAdapter {
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
 
-                    // select tribe
-                    let child = tokio::process::Command::new(file_path.clone())
-                        .args(vec!["list-tribes"])
-                        .stdout(std::process::Stdio::piped())
-                        .kill_on_drop(true)
-                        .spawn()?;
-
-                    let output = child.wait_with_output().await?;
-                    let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
+                    let output = process_utils::launch_and_get_outputs(
+                        &file_path,
+                        vec!["list-tribes".to_string()],
+                    )
+                    .await?;
+                    let tribes: Vec<String> = serde_json::from_slice(&output)?;
                     let _tribe = match tribes.choose(&mut rand::thread_rng()) {
                         Some(tribe) => tribe.to_string(),
                         None => String::from("default"), // TODO: generate name
                     };
 
                     // start
-                    let mut child = launch_child_process(&file_path, &args)?;
+                    let mut child = launch_child_process(&file_path, None, &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join(pid_file_name.clone()), id.to_string())?;
