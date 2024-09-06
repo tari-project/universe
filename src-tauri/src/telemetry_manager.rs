@@ -102,6 +102,7 @@ pub struct TelemetryData {
     pub gpu_utilization: Option<f32>,
     pub gpu_make: Option<String>,
     pub mode: TelemetryMiningMode,
+    pub version: String,
 }
 
 pub struct TelemetryManager {
@@ -276,6 +277,7 @@ async fn get_telemetry_data(
     let gpu_hash_rate = None;
     let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
     let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
+    let version = env!("CARGO_PKG_VERSION").to_string();
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id.clone(),
@@ -290,6 +292,7 @@ async fn get_telemetry_data(
         gpu_hash_rate,
         gpu_utilization,
         resource_used: TelemetryResource::Cpu,
+        version,
     })
 }
 

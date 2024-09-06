@@ -944,10 +944,11 @@ fn main() {
         tari_address: TariAddress::default(),
     }));
 
-    let app_config = Arc::new(RwLock::new(AppConfig::new()));
-
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new(p2pool_config.clone()).into());
+
+    let app_config_raw = AppConfig::new();
+    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         node_manager.clone(),
@@ -956,9 +957,6 @@ fn main() {
         app_config.clone(),
         Some(Network::default()),
     );
-
-    let app_config_raw = AppConfig::new();
-    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
     let mm_proxy_port = 18081u16;
     let mm_proxy_config = if app_config_raw.p2pool_enabled {
         MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
