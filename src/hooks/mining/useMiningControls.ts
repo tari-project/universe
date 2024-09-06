@@ -13,16 +13,20 @@ export function useMiningControls() {
             const isStart = type === 'start';
             try {
                 if (isStart) {
-                    await invoke('start_mining', {})
-                        .then(() => console.info('Mining started.'))
+                    return await invoke('start_mining', {})
+                        .then(async () => {
+                            console.info('Mining started.');
+                            await handleVisual('showVisual').then(() => handleVisual('start'));
+                        })
                         .catch((e) => console.error(e));
                 } else {
-                    await invoke('stop_mining', {})
-                        .then(() => console.info('Mining stopped.'))
+                    return await invoke('stop_mining', {})
+                        .then(async () => {
+                            console.info('Mining stopped.');
+                            await handleVisual('stop');
+                        })
                         .catch((e) => console.error(e));
                 }
-
-                await handleVisual(type);
             } catch (e) {
                 const error = e as string;
                 setError(error);
