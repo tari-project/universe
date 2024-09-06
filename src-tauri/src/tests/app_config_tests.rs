@@ -21,7 +21,7 @@ mod tests {
         assert_eq!(config.mode, MiningMode::Eco);
         // it doesn't affect auto_mining value saved in the config
         assert_eq!(config.auto_mining, true);
-        assert_eq!(config.p2pool_enabled, true);
+        assert_eq!(config.p2pool_enabled, false);
         assert_ne!(format!("{:?}", config.last_binaries_update_timestamp), "");
         assert_eq!(config.allow_telemetry, false);
         assert_eq!(config.anon_id.len(), 20);
@@ -36,7 +36,7 @@ mod tests {
             {
                 "mode": "Ludicrous",
                 "auto_mining": false,
-                "p2pool_enabled": false,
+                "p2pool_enabled": true,
                 "last_binaries_update_timestamp": {
                     "secs_since_epoch": 1725545367,
                     "nanos_since_epoch": 379078628
@@ -55,7 +55,7 @@ mod tests {
 
         assert_eq!(config.mode, MiningMode::Ludicrous);
         assert_eq!(config.auto_mining, false);
-        assert_eq!(config.p2pool_enabled, false);
+        assert_eq!(config.p2pool_enabled, true);
         assert_eq!(
             format!("{:?}", config.last_binaries_update_timestamp),
             "SystemTime { tv_sec: 1725545367, tv_nsec: 379078628 }"
