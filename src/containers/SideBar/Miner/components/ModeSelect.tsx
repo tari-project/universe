@@ -21,7 +21,7 @@ function ModeSelect() {
     const gpuIsMining = useGPUStatusStore((s) => s.is_mining);
 
     const isMining = cpuIsMining || gpuIsMining;
-    const handleMining = useMiningControls();
+    const { handleStop, handleStart } = useMiningControls();
     const mode = useAppStatusStore((s) => s.mode);
     const prevMode = useRef(mode);
     const wasMining = useRef(false);
@@ -29,20 +29,20 @@ function ModeSelect() {
     const changeMode = useCallback(
         async (mode: string) => {
             if (isMining) {
-                await handleMining('pause');
+                await handleStop({ isPause: true });
                 wasMining.current = true;
             }
             try {
                 await invoke('set_mode', { mode });
 
                 if (wasMining.current) {
-                    await handleMining('start');
+                    await handleStart();
                 }
             } catch (e) {
                 console.error(e);
             }
         },
-        [handleMining, isMining]
+        [handleStart, handleStop, isMining]
     );
 
     const handleChange = (value: string) => {

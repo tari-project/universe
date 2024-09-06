@@ -27,9 +27,9 @@ function MiningButton() {
 
     const isMining = isCPUMining || isGPUMining;
 
-    const handleMining = useMiningControls();
+    const { handleStop, handleStart } = useMiningControls();
 
-    const miningLoading = miningInitiated && !isMining;
+    const miningLoading = isMining ? !miningInitiated : miningInitiated;
 
     const miningButtonStateText = useMemo(() => {
         return isMining ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
@@ -38,12 +38,11 @@ function MiningButton() {
     const handleClick = useCallback(async () => {
         if (!isMining) {
             setMiningInitiated(true);
-            return await handleMining('start');
+            return await handleStart();
         } else {
-            setMiningInitiated(false);
-            return await handleMining('stop');
+            return await handleStop().finally(() => setMiningInitiated(false));
         }
-    }, [isMining, setMiningInitiated, handleMining]);
+    }, [handleStart, handleStop, isMining, setMiningInitiated]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
 
@@ -55,7 +54,7 @@ function MiningButton() {
                     $hasStarted={isMining}
                     onClick={handleClick}
                     icon={<IconWrapper>{miningLoading ? <StyledIcon /> : icon}</IconWrapper>}
-                    disabled={!miningControlsEnabled}
+                    disabled={!miningControlsEnabled || miningLoading}
                 >
                     <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
                 </StyledButton>

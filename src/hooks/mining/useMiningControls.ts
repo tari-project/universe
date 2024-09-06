@@ -8,37 +8,40 @@ export function useMiningControls() {
     const handleVisual = useVisualisation();
     const setError = useAppStateStore((s) => s.setError);
 
-    return useCallback(
-        async (type: 'start' | 'stop' | 'pause') => {
-            const isStart = type === 'start';
-            if (isStart) {
-                try {
-                    return await invoke('start_mining', {})
-                        .then(async () => {
-                            console.info('Mining started.');
-                            await handleVisual('start');
-                        })
-                        .catch((e) => console.error(e));
-                } catch (e) {
-                    const error = e as string;
-                    setError(error);
-                    return;
-                }
-            }
+    const handleStart = useCallback(async () => {
+        try {
+            await invoke('start_mining', {})
+                .then(async () => {
+                    console.info('Mining started.');
+                })
+                .catch((e) => console.error(e));
+            await handleVisual('start');
+        } catch (e) {
+            const error = e as string;
+            setError(error);
+        }
+    }, [handleVisual, setError]);
 
+    const handleStop = useCallback(
+        async (args?: { isPause?: boolean }) => {
             try {
-                return await invoke('stop_mining', {})
+                await invoke('stop_mining', {})
                     .then(async () => {
-                        console.info('Mining stopped.');
-                        await handleVisual(type);
+                        if (args?.isPause) {
+                            console.info('Mining stopped, as pause, to be restarted.');
+                        } else {
+                            console.info('Mining stopped.');
+                        }
                     })
                     .catch((e) => console.error(e));
+                await handleVisual(args?.isPause ? 'pause' : 'stop');
             } catch (e) {
                 const error = e as string;
                 setError(error);
-                return;
             }
         },
         [handleVisual, setError]
     );
+
+    return { handleStart, handleStop };
 }
