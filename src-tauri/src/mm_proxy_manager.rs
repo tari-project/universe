@@ -9,6 +9,7 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
+use crate::network_utils;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
@@ -23,18 +24,21 @@ pub struct StartConfig {
     pub base_node_grpc_port: u16,
     pub coinbase_extra: String,
     pub p2pool_enabled: bool,
+    pub p2pool_port: u16,
 }
 
-impl PartialEq for StartConfig {
-    fn eq(&self, other: &Self) -> bool {
-        self.base_path == other.base_path
-            && self.config_path == other.config_path
-            && self.log_path == other.log_path
-            && self.tari_address == other.tari_address
-            && self.base_node_grpc_port == other.base_node_grpc_port
-            && self.coinbase_extra == other.coinbase_extra
-    }
-}
+// impl PartialEq for StartConfig {
+//     fn eq(&self, other: &Self) -> bool {
+//         self.base_path == other.base_path
+//             && self.config_path == other.config_path
+//             && self.log_path == other.log_path
+//             && self.tari_address == other.tari_address
+//             && self.base_node_grpc_port == other.base_node_grpc_port
+//             && self.coinbase_extra == other.coinbase_extra
+//             && self.p2pool_enabled == other.p2pool_enabled
+//             && self.p2pool_port == other.p2pool_port
+//     }
+// }
 
 impl StartConfig {
     #[allow(clippy::too_many_arguments)]
@@ -47,6 +51,7 @@ impl StartConfig {
         base_node_grpc_port: u16,
         coinbase_extra: String,
         p2pool_enabled: bool,
+        p2pool_port: u16,
     ) -> Self {
         Self {
             app_shutdown,
@@ -57,6 +62,7 @@ impl StartConfig {
             base_node_grpc_port,
             coinbase_extra,
             p2pool_enabled,
+            p2pool_port,
         }
     }
 }
@@ -77,7 +83,7 @@ impl Clone for MmProxyManager {
 
 impl MmProxyManager {
     pub fn new(config: MergeMiningProxyConfig) -> Self {
-        let sidecar_adapter = MergeMiningProxyAdapter::new(config);
+        let sidecar_adapter = MergeMiningProxyAdapter::new();
         let process_watcher = ProcessWatcher::new(sidecar_adapter);
 
         Self {
@@ -86,17 +92,15 @@ impl MmProxyManager {
         }
     }
 
-    pub async fn config(&self) -> MergeMiningProxyConfig {
+    pub async fn config(&self) -> Option<MergeMiningProxyConfig> {
         let lock = self.watcher.read().await;
         lock.adapter.config.clone()
     }
 
     pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
-        let sidecar_adapter = MergeMiningProxyAdapter::new(config);
-        let process_watcher = ProcessWatcher::new(sidecar_adapter);
         let mut lock = self.watcher.write().await;
         lock.stop().await?;
-        *lock = process_watcher;
+        lock.adapter.config = Some(config);
         let start_config_read = self.start_config.read().await;
         match start_config_read.as_ref() {
             Some(start_config) => {
@@ -120,10 +124,15 @@ impl MmProxyManager {
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.adapter.tari_address = config.tari_address;
-        process_watcher.adapter.config.base_node_grpc_port = config.base_node_grpc_port;
-        process_watcher.adapter.config.coinbase_extra = config.coinbase_extra;
-        process_watcher.adapter.config.p2pool_enabled = config.p2pool_enabled;
+        let new_config = MergeMiningProxyConfig {
+            tari_address: config.tari_address.clone(),
+            base_node_grpc_port: config.base_node_grpc_port,
+            coinbase_extra: config.coinbase_extra.clone(),
+            p2pool_enabled: config.p2pool_enabled,
+            port: network_utils::get_free_port().expect("Failed to get free port"),
+            p2pool_grpc_port: config.p2pool_port,
+        };
+        process_watcher.adapter.config = Some(new_config.clone());
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher
             .start(

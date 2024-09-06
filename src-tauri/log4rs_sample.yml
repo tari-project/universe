@@ -18,7 +18,7 @@ appenders:
       pattern: "{d(%H:%M)} {h({l}):5} {m}{n}"
     filters:
       - kind: threshold
-        level: warn
+        level: info
 
   # An appender named "web" that writes to a file with a custom pattern encoder
   web:
@@ -73,17 +73,17 @@ appenders:
 
 # Set the default logging level to "info"
 root:
-  level: info
+  level: debug
   appenders:
+    - default
     - stdout
 
 loggers:
   # Route log events common to every application to all appenders
-  tari::universe:
-    level: debug
-    appenders:
-      - default
+  # tari::universe:
+  # level: debug
   tari::universe::web:
     level: info
     appenders:
       - web
+    additive: false

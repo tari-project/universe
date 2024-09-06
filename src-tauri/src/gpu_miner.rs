@@ -6,6 +6,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
+use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::p2pool_manager::P2poolConfig;
 use crate::{
     app_config::MiningMode,
@@ -19,16 +20,14 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
-    p2pool_config: Arc<P2poolConfig>,
 }
 
 impl GpuMiner {
-    pub fn new(p2pool_config: Arc<P2poolConfig>) -> Self {
+    pub fn new() -> Self {
         let adapter = GpuMinerAdapter::new();
         let process_watcher = ProcessWatcher::new(adapter);
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
-            p2pool_config,
         }
     }
 
@@ -37,8 +36,7 @@ impl GpuMiner {
         &mut self,
         app_shutdown: ShutdownSignal,
         tari_address: TariAddress,
-        node_grpc_port: u16,
-        p2pool_enabled: bool,
+        node_source: GpuNodeSource,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -46,21 +44,22 @@ impl GpuMiner {
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
-        process_watcher.adapter.node_grpc_port = node_grpc_port;
         process_watcher.adapter.set_mode(mining_mode);
-        process_watcher.adapter.p2pool_enabled = p2pool_enabled;
-        process_watcher.adapter.p2pool_grpc_port = self.p2pool_config.grpc_port;
+        process_watcher.adapter.node_source = Some(node_source);
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
             .start(app_shutdown, base_path, config_path, log_path)
             .await?;
+        info!(target: LOG_TARGET, "xtrgpuminer started");
 
         Ok(())
     }
 
     pub async fn stop(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Stopping xtrgpuminer");
         let mut process_watcher = self.watcher.write().await;
         process_watcher.stop().await?;
+        info!(target: LOG_TARGET, "xtrgpuminer stopped");
         Ok(())
     }
 
