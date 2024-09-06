@@ -4,7 +4,7 @@
     "temperature": "Sıcaklık",
     "max-temperature": "Maks. Sıcaklık",
     "usage": "Kullanım",
-    "seconds": "saniye",
+    "seconds": "Saniye",
     "copied": "Kopyalandı",
     "unknown": "Bilinmeyen",
     "versions": "Versiyon",
@@ -12,6 +12,9 @@
     "resources": "Kaynaklar",
     "hashrate": "Hashrate",
     "utilization": "Fayda",
-    "mode": "Mode",
-    "day": "Gün"
+    "mode": "Mod",
+    "day": "Gün",
+    "shutting-down": "Kapatılıyor..",
+    "tari-universe": "Tari Universe",
+    "testnet": "Testnet"
 }
