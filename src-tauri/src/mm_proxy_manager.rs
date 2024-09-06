@@ -82,7 +82,7 @@ impl Clone for MmProxyManager {
 }
 
 impl MmProxyManager {
-    pub fn new(config: MergeMiningProxyConfig) -> Self {
+    pub fn new() -> Self {
         let sidecar_adapter = MergeMiningProxyAdapter::new();
         let process_watcher = ProcessWatcher::new(sidecar_adapter);
 
@@ -155,9 +155,12 @@ impl MmProxyManager {
         Ok(())
     }
 
-    pub async fn try_get_listening_port(&self) -> Result<u16, anyhow::Error> {
-        // todo!()
-        Ok(0)
+    pub async fn get_monero_port(&self) -> Result<u16, anyhow::Error> {
+        let lock = self.watcher.read().await;
+        match lock.adapter.config.clone() {
+            Some(config) => Ok(config.port),
+            None => Err(anyhow!("MM proxy not started")),
+        }
     }
 
     pub async fn stop(&self) -> Result<(), anyhow::Error> {

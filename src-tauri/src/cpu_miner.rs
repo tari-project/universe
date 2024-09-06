@@ -40,6 +40,7 @@ impl CpuMiner {
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
         monero_address: String,
+        monero_port: u16,
         base_path: PathBuf,
         cache_dir: PathBuf,
         config_path: PathBuf,
@@ -60,7 +61,7 @@ impl CpuMiner {
                     host_name: "127.0.0.1".to_string(),
                     // port: local_mm_proxy.try_get_listening_port().await?
                     // TODO: Replace with actual port
-                    port: 18081,
+                    port: monero_port,
                 }
             }
         };
@@ -93,7 +94,6 @@ impl CpuMiner {
         self.api_client = Some(xmrig.client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
-            println!("Starting process");
             let mut watch_timer = tokio::time::interval(tokio::time::Duration::from_secs(1));
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
             // read events such as stdout

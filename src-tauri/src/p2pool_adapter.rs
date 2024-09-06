@@ -117,7 +117,7 @@ impl ProcessAdapter for P2poolAdapter {
                             }
                         },
                     };
-                    println!("Stopping p2pool node");
+                    info!(target: LOG_TARGET, "Stopping p2pool node");
 
                     if let Err(error) = fs::remove_file(data_dir.join(pid_file_name)) {
                         warn!(target: LOG_TARGET, "Could not clear p2pool's pid file: {error:?}");

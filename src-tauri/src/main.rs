@@ -501,6 +501,12 @@ async fn start_mining<'r>(
     let monero_address = state.config.read().await.monero_address.clone();
     let progress_tracker = ProgressTracker::new(window.clone());
     if cpu_mining_enabled {
+        let mm_proxy_port = state
+            .mm_proxy_manager
+            .get_monero_port()
+            .await
+            .map_err(|e| e.to_string())?;
+
         let res = state
             .cpu_miner
             .write()
@@ -509,6 +515,7 @@ async fn start_mining<'r>(
                 state.shutdown.to_signal(),
                 &cpu_miner_config,
                 monero_address,
+                mm_proxy_port,
                 app.path_resolver().app_local_data_dir().unwrap(),
                 app.path_resolver().app_cache_dir().unwrap(),
                 app.path_resolver().app_config_dir().unwrap(),
@@ -978,7 +985,6 @@ fn main() {
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
-    let mm_proxy_port = 18081u16;
     // let mm_proxy_config = if app_config_raw.p2pool_enabled {
     //     MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     // } else {
@@ -989,8 +995,7 @@ fn main() {
     //         None,
     //     )
     // };
-    let mm_proxy_config = MergeMiningProxyConfig::default();
-    let mm_proxy_manager = MmProxyManager::new(mm_proxy_config);
+    let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
         is_setup_finished: Arc::new(RwLock::new(false)),
         config: app_config.clone(),

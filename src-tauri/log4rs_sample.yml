@@ -75,13 +75,18 @@ appenders:
 root:
   level: debug
   appenders:
-    - default
+    - other
     - stdout
 
 loggers:
   # Route log events common to every application to all appenders
-  # tari::universe:
-  # level: debug
+  tari::universe:
+    level: debug
+    appenders:
+      - stdout
+      - default
+    additive: false
+
   tari::universe::web:
     level: info
     appenders:
