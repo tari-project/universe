@@ -118,6 +118,11 @@ impl AppConfig {
                         self.version = 4;
                         self.p2pool_enabled = true;
                     }
+                    if self.version == 4 {
+                        self.version = 4;
+                        // temporarily disable p2pool by default
+                        self.p2pool_enabled = false;
+                    }
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
