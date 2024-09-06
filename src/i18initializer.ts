@@ -6,6 +6,8 @@ import HttpBackend from 'i18next-http-backend';
 export enum Language {
     EN = 'en',
     PL = 'pl',
+    AF = 'af',
+    TR = 'tr',
 }
 
 export const LanguageList = Object.values(Language);
@@ -20,6 +22,6 @@ i18n.use(HttpBackend)
         backend: {
             loadPath: '/locales/{{lng}}/{{ns}}.json',
         },
-        supportedLngs: [Language.EN, Language.PL],
+        supportedLngs: [Language.EN, Language.PL, Language.AF, Language.TR],
         saveMissingTo: 'all',
     });

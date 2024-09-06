@@ -19,5 +19,9 @@
         "download-completed": "Pobieranie zakończone",
         "waiting-for-header-sync": "Oczekiwanie na synchronizację nagłówków. {{local_height}}/{{tip_height}} zsynchronizowano",
         "waiting-for-block-sync": "Oczekiwanie na synchronizację bloków. {{local_height}}/{{tip_height}} zsynchronizowano"
-    }
+    },
+    "new-tari-version-available": "Nowa wersja Tari Universe jest dostępna!",
+    "would-you-like-to-install": "Czy chciałbys zainstalować Tari Universe {{version}} teraz?",
+    "yes": "Tak",
+    "no": "Nie"
 }

@@ -117,7 +117,7 @@ impl ProcessAdapter for WalletAdapter {
                         .resolve_path(Binaries::Wallet)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
+                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
@@ -227,7 +227,9 @@ impl WalletStatusMonitor {
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
 
-        Ok(TariAddress::from_bytes(res.address.as_slice())
-            .map_err(WalletStatusMonitorError::TariAddress)?)
+        match TariAddress::from_bytes(res.address.as_slice()) {
+            Ok(address) => Ok(address),
+            Err(err) => Err(WalletStatusMonitorError::TariAddress(err)),
+        }
     }
 }

@@ -13,5 +13,6 @@
     "hashrate": "Hashtempo",
     "utilization": "Benutting",
     "mode": "Modus",
-    "day": "Dag"
+    "day": "Dag",
+    "shutting-down": "Afskakel.."
 }
