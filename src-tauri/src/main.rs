@@ -64,7 +64,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::proof_of_work::PowAlgorithm;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::{Manager, RunEvent, UpdaterEvent};
+use tauri::{AboutMetadata, Manager, Menu, MenuItem, RunEvent, UpdaterEvent};
 use telemetry_manager::TelemetryManager;
 use tokio::runtime::Handle;
 use tokio::sync::RwLock;
@@ -927,8 +927,19 @@ fn main() {
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
+    let mut metadata = AboutMetadata::new();
+    metadata.version = Some("Tari Labs".to_string());
+    metadata.authors = Some(vec!["Tari Labs".to_string()]);
+    metadata.license = Some("Tari Labs".to_string());
+    metadata.comments = Some("Tari Labs".to_string());
+    metadata.website = Some("Tari Labs".to_string());
+    metadata.copyright = Some("Tari Labs".to_string());
+    metadata.website_label = Some("Tari Labs".to_string());
+    let menu_item = MenuItem::About("Tari Universe".to_string(), metadata);
+    let menu = Menu::new().add_native_item(menu_item);
 
     let app = tauri::Builder::default()
+        .menu(menu)
         .system_tray(systray)
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
@@ -982,6 +993,16 @@ fn main() {
                 }
                 Ok(())
             });
+            // let mut metadata = AboutMetadata::new();
+            // metadata.version= Some("Tari Labs".to_string());
+            // metadata.authors= Some(vec!["Tari Labs".to_string()]);
+            // metadata.license= Some("Tari Labs".to_string());
+            // metadata.comments=Some("Tari Labs".to_string());
+            // metadata.website= Some("Tari Labs".to_string());
+            // metadata.copyright= Some("Tari Labs".to_string());
+            // metadata.website_label= Some("Tari Labs".to_string());
+            // let menu = MenuItem::About("Tari Universe".to_string(), metadata);
+
             match tauri::async_runtime::block_on(thread).unwrap() {
                 Ok(_) => Ok(()),
                 Err(e) => {
