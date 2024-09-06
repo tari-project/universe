@@ -70,7 +70,12 @@
             "copyright": "Copyright (c) 2024 Tari Labs, LLC",
             "shortDescription": "Tari Universe is a digital wallet for the Tari network.",
             "longDescription": "https://github.com/tari-project/tari-universe/blob/main/LICENSE.md",
-            "publisher": "Tari Labs, LLC"
+            "publisher": "Tari Labs, LLC",
+            "macOS": {
+                "minimumSystemVersion": "10.13",
+                "providerShortName": "Tari Labs, LLC",
+                "license": "macOS/LICENSE.md"
+            }
         },
         "macOSPrivateApi": true
     }
