@@ -19,5 +19,9 @@
         "download-completed": "İndirme tamamlandı",
         "waiting-for-header-sync": "Üstbilgi senkronizasyonu bekleniyor. {{local_height}}/{{tip_height}} üstbilgiler senkronize edildi",
         "waiting-for-block-sync": "Blok senkronize için bekleniyor. {{local_height}}/{{tip_height}} bloklar senkronize edildi"
-    }
+    },
+    "new-tari-version-available": "Tari Universe'ün yeni sürümü var!",
+    "would-you-like-to-install": "Tari Universe'ü şimdi yüklemek ister misiniz {{version}} ?",
+    "yes": "Evet",
+    "no": "Hayır"
 }
