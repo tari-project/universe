@@ -11,13 +11,11 @@
     },
     "tauri": {
         "systemTray": {
-            "iconPath": "icons/icon.ico"
+            "iconPath": "icons/systray_icon.png"
         },
         "updater": {
             "active": true,
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"],
             "dialog": false,
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
         },
@@ -69,7 +67,7 @@
             "identifier": "com.tari.universe",
             "icon": [
                 "icons/icon.icns",
-                "icons/icon.ico",
+                "icons/systray_icon.png",
                 "icons/icon.png",
                 "icons/StoreLogo.png",
                 "icons/tari.png"
