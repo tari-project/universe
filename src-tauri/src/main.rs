@@ -827,7 +827,14 @@ async fn reset_settings<'r>(
         // check if dir exists
         if dir.clone().unwrap().exists() {
             info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
-            remove_dir_all(dir.clone().unwrap()).unwrap();
+            match remove_dir_all(dir.clone().unwrap()) {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "[reset_settings] Removed {:?} directory", dir);
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", dir, e);
+                }
+            }
         }
     });
 
