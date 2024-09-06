@@ -35,7 +35,7 @@ export default function UserInfo() {
     const hammers = userDetails?.user?.rank?.hammers;
 
     const handleClick = () => {
-        setOpen(true);
+        setOpen(!open);
     };
 
     const handleClose = () => {
@@ -96,7 +96,7 @@ export default function UserInfo() {
                 <StyledAvatar id="avatar-wrapper" $img={profileimageurl} onClick={handleClick} />
                 <AnimatePresence>
                     {open && (
-                        <Menu>
+                        <Menu initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                             <MenuItem onClick={handleLogout}>{t('logout')}</MenuItem>
                         </Menu>
                     )}

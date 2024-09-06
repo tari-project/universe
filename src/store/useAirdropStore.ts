@@ -91,7 +91,7 @@ export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
-            logout: () => set({ airdropTokens: undefined }),
+            logout: () => set({ airdropTokens: undefined, authUuid: '', userDetails: undefined }),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
             setAirdropTokens: (airdropTokens) =>

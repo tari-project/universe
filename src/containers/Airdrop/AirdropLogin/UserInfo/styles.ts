@@ -20,6 +20,7 @@ export const Wrapper = styled('div')`
     display: flex;
     align-items: center;
     gap: 13px;
+    user-select: none;
 `;
 
 export const StatsGroup = styled('div')`
@@ -35,6 +36,7 @@ export const StatsPill = styled('div')`
 
     border-radius: 20px;
     border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.05);
 
     height: 36px;
     padding: 0 15px;
@@ -129,26 +131,48 @@ export const StyledAvatar = styled('div')<{ $img?: string }>`
 `;
 
 export const Menu = styled(motion.div)`
-    width: 180px;
     position: absolute;
-    top: 110%;
+    top: 100%;
     right: 0;
-    z-index: 2;
-    padding: 10px;
-    background-color: white;
+    margin-top: 12px;
+
     border-radius: 10px;
-`;
-export const MenuItem = styled('div')`
+    background: #fff;
+    box-shadow: 0px 14px 25px 0px rgba(0, 0, 0, 0.15);
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+
+    width: 194px;
     padding: 10px;
-    border-radius: 6px;
-    width: 100%;
-    cursor: pointer;
     pointer-events: all;
+`;
+
+export const MenuItem = styled('div')`
+    color: #000;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    width: 100%;
+    padding: 10px 15px;
+    cursor: pointer;
+
     transition: background-color 0.2s ease;
+
     &:hover {
-        background-color: #f5f5f5;
+        background-color: rgba(0, 0, 0, 0.05);
     }
 `;
+
 export const MenuWrapper = styled('div')`
     position: relative;
 `;
