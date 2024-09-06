@@ -7,7 +7,6 @@ use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
 use crate::gpu_miner_adapter::GpuNodeSource;
-use crate::p2pool_manager::P2poolConfig;
 use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},

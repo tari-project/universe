@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::{network_utils, process_utils};
+use crate::process_utils;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, warn};

@@ -33,7 +33,6 @@ mod xmrig_adapter;
 use crate::cpu_miner::CpuMiner;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
-use crate::mm_proxy_adapter::MergeMiningProxyConfig;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
@@ -43,9 +42,7 @@ use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
-use async_zip::base;
 use binary_resolver::{Binaries, BinaryResolver};
-use futures_lite::future::block_on;
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
@@ -962,7 +959,6 @@ fn main() {
     let node_manager = NodeManager::new();
     let wallet_manager = WalletManager::new(node_manager.clone());
     let wallet_manager2 = wallet_manager.clone();
-    let p2pool_config = Arc::new(P2poolConfig::builder().build());
     let p2pool_manager = P2poolManager::new();
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
@@ -1126,7 +1122,6 @@ fn main() {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown caught");
-        
             shutdown.trigger();
             // TODO: Find a better way of knowing that all miners have stopped
             sleep(std::time::Duration::from_secs(2));
