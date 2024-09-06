@@ -64,7 +64,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::proof_of_work::PowAlgorithm;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::{AboutMetadata, Manager, Menu, MenuItem, RunEvent, UpdaterEvent};
+use tauri::{AboutMetadata, Manager, Menu, MenuItem, RunEvent, Submenu, UpdaterEvent};
 use telemetry_manager::TelemetryManager;
 use tokio::runtime::Handle;
 use tokio::sync::RwLock;
@@ -927,6 +927,7 @@ fn main() {
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
+
     let mut metadata = AboutMetadata::new();
     metadata.version = Some("Tari Labs".to_string());
     metadata.authors = Some(vec!["Tari Labs".to_string()]);
@@ -935,8 +936,16 @@ fn main() {
     metadata.website = Some("Tari Labs".to_string());
     metadata.copyright = Some("Tari Labs".to_string());
     metadata.website_label = Some("Tari Labs".to_string());
-    let menu_item = MenuItem::About("Tari Universe".to_string(), metadata);
-    let menu = Menu::new().add_native_item(menu_item);
+    // let menu_item = MenuItem::About("Tari Universe".to_string(), metadata);
+    // let menu = Menu::new().add_native_item(menu_item);
+    let app_name = "Tari Universe";
+    let menu = Menu::new().add_submenu(Submenu::new(
+        app_name,
+        Menu::new().add_native_item(MenuItem::About(
+            app_name.to_string(),
+            metadata,
+        )),
+    ));
 
     let app = tauri::Builder::default()
         .menu(menu)
