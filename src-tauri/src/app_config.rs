@@ -106,7 +106,8 @@ impl AppConfig {
                 info!("Loaded config from file {:?}", config);
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                 self.auto_mining = config.auto_mining;
-                self.p2pool_enabled = config.p2pool_enabled;
+                // TODO: uncomment when p2pool issue is resolved
+                // self.p2pool_enabled = config.p2pool_enabled;
                 self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                 self.allow_telemetry = config.allow_telemetry;
                 self.anon_id = config.anon_id;

@@ -55,7 +55,8 @@ mod tests {
 
         assert_eq!(config.mode, MiningMode::Ludicrous);
         assert_eq!(config.auto_mining, false);
-        assert_eq!(config.p2pool_enabled, true);
+        // For now always false by default
+        assert_eq!(config.p2pool_enabled, false);
         assert_eq!(
             format!("{:?}", config.last_binaries_update_timestamp),
             "SystemTime { tv_sec: 1725545367, tv_nsec: 379078628 }"
