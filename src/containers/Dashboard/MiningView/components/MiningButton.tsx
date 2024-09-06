@@ -29,7 +29,7 @@ function MiningButton() {
 
     const { handleStop, handleStart } = useMiningControls();
 
-    const miningLoading = isMining ? !miningInitiated : miningInitiated;
+    const miningLoading = (isMining && !miningInitiated) || (miningInitiated && !isMining);
 
     const miningButtonStateText = useMemo(() => {
         return isMining ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
@@ -40,7 +40,8 @@ function MiningButton() {
             setMiningInitiated(true);
             return await handleStart();
         } else {
-            return await handleStop().finally(() => setMiningInitiated(false));
+            setMiningInitiated(false);
+            return await handleStop();
         }
     }, [handleStart, handleStop, isMining, setMiningInitiated]);
 

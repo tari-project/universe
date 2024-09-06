@@ -12,6 +12,7 @@ import useAppStateStore from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -19,7 +20,7 @@ function ModeSelect() {
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const cpuIsMining = useCPUStatusStore((s) => s.is_mining);
     const gpuIsMining = useGPUStatusStore((s) => s.is_mining);
-
+    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
     const isMining = cpuIsMining || gpuIsMining;
     const { handleStop, handleStart } = useMiningControls();
     const mode = useAppStatusStore((s) => s.mode);
@@ -29,20 +30,22 @@ function ModeSelect() {
     const changeMode = useCallback(
         async (mode: string) => {
             if (isMining) {
-                await handleStop({ isPause: true });
                 wasMining.current = true;
+                setMiningInitiated(false);
+                await handleStop({ isPause: true });
             }
             try {
                 await invoke('set_mode', { mode });
 
                 if (wasMining.current) {
+                    setMiningInitiated(true);
                     await handleStart();
                 }
             } catch (e) {
                 console.error(e);
             }
         },
-        [handleStart, handleStop, isMining]
+        [handleStart, handleStop, isMining, setMiningInitiated]
     );
 
     const handleChange = (value: string) => {

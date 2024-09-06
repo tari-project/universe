@@ -27,6 +27,13 @@ export function useSetUp() {
         const splashTimeout = setTimeout(() => {
             setShowSplash(false);
         }, 3500);
+
+        return () => {
+            clearTimeout(splashTimeout);
+        };
+    }, [setShowSplash]);
+
+    useEffect(() => {
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
             console.info('Setup Event:', e, p);
             switch (p.event_type) {
@@ -56,15 +63,6 @@ export function useSetUp() {
         }, 100);
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
-            clearTimeout(splashTimeout);
         };
-    }, [
-        setError,
-        setMiningControlsEnabled,
-        setSetupDetails,
-        setShowSplash,
-        setView,
-        settingUpFinished,
-        isAfterAutoUpdate,
-    ]);
+    }, [setError, setMiningControlsEnabled, setSetupDetails, setView, settingUpFinished, isAfterAutoUpdate]);
 }

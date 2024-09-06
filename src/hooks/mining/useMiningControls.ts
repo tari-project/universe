@@ -7,7 +7,6 @@ import useAppStateStore from '@app/store/appStateStore.ts';
 export function useMiningControls() {
     const handleVisual = useVisualisation();
     const setError = useAppStateStore((s) => s.setError);
-
     const handleStart = useCallback(async () => {
         try {
             await invoke('start_mining', {})

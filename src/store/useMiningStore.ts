@@ -75,6 +75,7 @@ export const useMiningStore = create<MiningStoreState>()(
                 timerPaused: s.timerPaused,
                 miningControlsEnabled: s.miningControlsEnabled,
                 miningInitiated: s.miningInitiated,
+                displayBlockHeight: s.displayBlockHeight,
             }),
             version: 3,
         }
