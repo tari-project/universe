@@ -18,6 +18,7 @@ export function useSetUp() {
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setError = useAppStateStore((s) => s.setError);
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+    const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
 
     useVersions();
 
@@ -30,7 +31,7 @@ export function useSetUp() {
             console.info('Setup Event:', e, p);
             switch (p.event_type) {
                 case 'setup_status':
-                    console.info('Setup status:', p.title, p.title_params, p.progress);
+                    // console.info('Setup status:', p.title, p.title_params, p.progress);
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         settingUpFinished();
@@ -43,17 +44,28 @@ export function useSetUp() {
                     break;
             }
         });
-        if (!startupInitiated.current) {
-            startupInitiated.current = true;
-            invoke('setup_application').catch((e) => {
-                setError(`Failed to setup application: ${e}`);
-                settingUpFinished();
-                setView('mining');
-            });
-        }
+        const intervalId = setInterval(() => {
+            if (!startupInitiated.current && isAfterAutoUpdate) {
+                clearInterval(intervalId);
+                startupInitiated.current = true;
+                invoke('setup_application').catch((e) => {
+                    setError(`Failed to setup application: ${e}`);
+                    settingUpFinished();
+                    setView('mining');
+                });
+            }
+        }, 100);
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
             clearTimeout(splashTimeout);
         };
-    }, [setError, setMiningControlsEnabled, setSetupDetails, setShowSplash, setView, settingUpFinished]);
+    }, [
+        setError,
+        setMiningControlsEnabled,
+        setSetupDetails,
+        setShowSplash,
+        setView,
+        settingUpFinished,
+        isAfterAutoUpdate,
+    ]);
 }

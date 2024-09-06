@@ -13,25 +13,21 @@ export const TriggerWrapper = styled.div`
 `;
 
 export const ExpandableTileItem = styled(motion.div)`
-    flex-grow: 1;
-    min-width: 140px;
-    padding: 10px;
-    min-height: 65px;
-    background-color: ${({ theme }) => theme.palette.background.paper};
-    border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
-    gap: 8px;
     display: flex;
-    flex-direction: column;
-    color: ${({ theme }) => theme.palette.text.secondary};
-    font-size: 12px;
-    font-weight: 500;
+    justify-content: space-between;
+    align-items: baseline;
+    color: ${({ theme }) => theme.palette.text.primary};
 `;
 export const ExpandedWrapper = styled(motion.div)`
     display: flex;
+    background-color: ${({ theme }) => theme.palette.background.paper};
+    border-radius: ${({ theme }) => theme.shape.borderRadius.app};
+    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     flex-direction: column;
     gap: 8px;
-    width: 100%;
+    width: 216px;
+    padding: 20px 12px;
+    z-index: 2;
 `;
 
 export const ExpandedContentTile = styled.div`

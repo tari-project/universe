@@ -36,9 +36,11 @@ const Wrapper = styled.div<StyleProps>`
         switch ($size) {
             case 'small': {
                 return css`
-                    padding: 4px 6px;
+                    height: 15px;
+                    padding: 0 6px;
                     span {
                         font-size: 10px;
+                        line-height: 9px;
                     }
                 `;
             }

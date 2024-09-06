@@ -1,10 +1,11 @@
-import { StatWrapper, TileTop } from '../styles';
+import { StatWrapper, TileItem, TileTop } from '../styles';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ReactNode, useState } from 'react';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
-import { ExpandableTileItem, ExpandedWrapper, TriggerWrapper } from './ExpandableTile.styles.ts';
+import { ExpandedWrapper, TriggerWrapper } from './ExpandableTile.styles.ts';
 import { StyledIcon } from '@app/containers/Dashboard/MiningView/components/MiningButton.styles.ts';
 import { AnimatePresence } from 'framer-motion';
+import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 interface ExpandableTileProps {
     title: string;
@@ -35,21 +36,38 @@ export function ExpandableTile({
     useLowerCase = false,
 }: ExpandableTileProps) {
     const [expanded, setExpanded] = useState(false);
+    const { refs, floatingStyles, context } = useFloating({
+        open: expanded,
+        onOpenChange: setExpanded,
+        placement: 'left-start',
+        middleware: [offset(-22)],
+    });
+
+    const hover = useHover(context, {
+        move: !expanded,
+        handleClose: safePolygon(),
+    });
+    const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
 
     return (
-        <ExpandableTileItem
-            animate={{ height: expanded ? 'auto' : '65px' }}
-            transition={{ duration: 0.2, ease: 'linear' }}
-        >
+        <TileItem>
             <TileTop>
-                <Typography style={{ color: expanded ? '#000' : 'inherit' }}>{title}</Typography>
-                <TriggerWrapper onClick={() => setExpanded((c) => !c)}>
+                <Typography>{title}</Typography>
+                <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
                     <QuestionMarkSvg />
                 </TriggerWrapper>
             </TileTop>
             <AnimatePresence>
                 {expanded && (
-                    <ExpandedWrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
+                    <ExpandedWrapper
+                        ref={refs.setFloating}
+                        {...getFloatingProps()}
+                        variants={variants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="hidden"
+                        style={floatingStyles}
+                    >
                         {children}
                     </ExpandedWrapper>
                 )}
@@ -72,6 +90,6 @@ export function ExpandableTile({
                         </StatWrapper>
                     ))}
             </AnimatePresence>
-        </ExpandableTileItem>
+        </TileItem>
     );
 }

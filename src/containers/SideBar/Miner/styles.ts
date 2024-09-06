@@ -8,24 +8,10 @@ export const MinerContainer = styled.div`
     gap: 10px;
 `;
 
-export const TileContainer = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: row;
-    justify-content: stretch;
-    align-items: stretch;
-    width: 100%;
-    gap: 6px;
-
-    &:last-child {
-        flex-grow: 2;
-    }
-`;
-
-export const TileItem = styled.div`
+export const TileItem = styled(motion.div)`
     height: 65px;
-    min-width: 140px;
-    flex-shrink: 0;
+    width: 155px;
+    flex-shrink: 1;
     flex-grow: 1;
     padding: 10px;
     background-color: ${({ theme }) => theme.palette.background.paper};
@@ -40,11 +26,11 @@ export const TileItem = styled.div`
     color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-weight: 500;
+    position: relative;
 `;
 export const TileTop = styled.div`
     display: flex;
     justify-content: space-between;
-    width: 100%;
 `;
 
 export const StatWrapper = styled(motion.div)<{ $useLowerCase?: boolean }>`
@@ -56,4 +42,11 @@ export const StatWrapper = styled(motion.div)<{ $useLowerCase?: boolean }>`
 export const Unit = styled.div`
     line-height: 1;
     font-size: 10px;
+`;
+
+export const TileContainer = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    gap: 6px;
 `;

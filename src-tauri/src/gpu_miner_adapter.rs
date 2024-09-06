@@ -1,3 +1,4 @@
+use crate::process_utils;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, warn};
@@ -117,13 +118,9 @@ impl ProcessAdapter for GpuMinerAdapter {
                     //         .kill_on_drop(true)
                     //         .spawn()?;
                     // }
-                    child = tokio::process::Command::new(file_path)
-                        .args(args)
-                        .env("TARI_NETWORK", "esme")
-                        .stdout(std::process::Stdio::null())
-                        .stderr(std::process::Stdio::null())
-                        .kill_on_drop(true)
-                        .spawn()?;
+                    let mut envs = std::collections::HashMap::new();
+                    envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
+                    child = process_utils::launch_child_process(&file_path, Some(envs), &args)?;
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("xtrgpuminer_pid"), id.to_string())?;
                     }
