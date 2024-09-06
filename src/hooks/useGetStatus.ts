@@ -38,7 +38,7 @@ export function useGetStatus() {
                         setAppStatus(status);
                         setCPUStatus(status.cpu);
                         setGPUStatus(status.gpu);
-
+                        console.log(`status.mode= ${status.mode}`);
                         setBaseNodeStatus(status.base_node);
 
                         const wallet_balance = status.wallet_balance;

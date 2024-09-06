@@ -10,7 +10,7 @@ interface Actions {
     setAppStatus: (appStatus: AppStatus) => void;
     setApplicationsVersions: (applicationsVersions: ApplicationsVersions) => void;
     setMode: (mode: modeType) => void;
-    setConfigMode: (mode: modeType) => void;
+    // setConfigMode: (mode: modeType) => void;
     setP2poolEnabled: (p2poolEnabled: boolean) => void;
 }
 
@@ -37,15 +37,15 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
             setApplicationsVersions: (applications_versions) => set({ applications_versions }),
             setMode: (mode) => set({ mode }),
             setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
-            setConfigMode: async (mode) => {
-                try {
-                    await invoke('set_mode', { mode });
-                    set({ mode });
-                    console.info(`Mode changed to ${mode}`);
-                } catch (e) {
-                    console.error('Could not change the mode', e);
-                }
-            },
+            // setConfigMode: async (mode) => {
+            //     try {
+            //         await invoke('set_mode', { mode });
+            //         set({ mode });
+            //         console.info(`Mode changed to ${mode}`);
+            //     } catch (e) {
+            //         console.error('Could not change the mode', e);
+            //     }
+            // },
         }),
         {
             name: 'status-store',

@@ -1,32 +1,45 @@
-import { modeType } from '@app/store/types';
 import { TileItem } from '../styles';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useChangeMiningMode } from '@app/hooks/mining/useMiningControls';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Select } from '@app/components/elements/inputs/Select.tsx';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
+import { useCallback, useState } from 'react';
+import { invoke } from '@tauri-apps/api/tauri';
+import useAppStateStore from '@app/store/appStateStore.ts';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
+    const [isLoading, setIsLoading] = useState(false);
+    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const mode = useAppStatusStore((s) => s.mode);
+    console.log(`mode= ${mode}`);
+    const changeMode = useCallback(async (mode: string) => {
+        console.log(`mode= ${mode}`);
+        try {
+            const r = await invoke('set_mode', { mode });
 
-    const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const changeMode = useChangeMiningMode();
+            console.log(r);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     const handleChange = (value: string) => {
-        changeMode(value as modeType);
+        setIsLoading(true);
+        changeMode(value);
     };
 
     return (
         <TileItem>
             <Typography>{t('mode')}</Typography>
             <Select
-                disabled={isChangingMode}
-                loading={isChangingMode}
+                disabled={isLoading || isSettingUp}
+                loading={isLoading}
                 onChange={handleChange}
                 selectedValue={mode}
                 options={[
