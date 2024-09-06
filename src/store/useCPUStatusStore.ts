@@ -22,10 +22,6 @@ export const useCPUStatusStore = create<CPUStatusStoreState>()(
         {
             name: 'cpu',
             storage: createJSONStorage(() => sessionStorage),
-            partialize: (s) => ({
-                hash_rate: s.hash_rate,
-                is_mining: s.is_mining,
-            }),
         }
     )
 );
