@@ -33,7 +33,10 @@ function ModeSelect() {
                 wasMining.current = true;
                 setMiningInitiated(false);
                 await handleStop({ isPause: true });
+            } else {
+                wasMining.current = false;
             }
+
             try {
                 await invoke('set_mode', { mode });
 
