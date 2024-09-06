@@ -36,7 +36,6 @@ export function useSetUp() {
                     if (p.progress >= 1) {
                         settingUpFinished();
                         setView('mining');
-                        setMiningControlsEnabled(true);
                     }
                     break;
                 default:

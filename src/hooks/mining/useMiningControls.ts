@@ -10,36 +10,27 @@ export function useMiningControls() {
     const handleVisual = useVisualisation();
     const setError = useAppStateStore((s) => s.setError);
 
-    const setMiningLoading = useMiningStore((s) => s.setMiningLoading);
-    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
-
     return useCallback(
         async (type: 'start' | 'stop' | 'pause') => {
             const isStart = type === 'start';
-            setMiningLoading(true);
-            setMiningInitiated(isStart);
             const invokeFn = isStart ? 'start_mining' : 'stop_mining';
             try {
                 await invoke(invokeFn, {});
                 console.info(`mining ${isStart ? 'started' : 'stopped'}`);
                 await handleVisual(type);
-                setMiningLoading(false);
+                return true;
             } catch (e) {
-                setMiningLoading(false);
                 const error = e as string;
-                if (!isStart) {
-                    setMiningInitiated(true);
-                }
                 setError(error);
+                return false;
             }
         },
-        [handleVisual, setError, setMiningInitiated, setMiningLoading]
+        [handleVisual, setError]
     );
 }
 
 export function useChangeMiningMode() {
     const handleMining = useMiningControls();
-    const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
     const setIsChangingMode = useMiningStore((s) => s.setIsChangingMode);
 
     return useCallback(
@@ -58,6 +49,6 @@ export function useChangeMiningMode() {
                 console.error('Could not change the mode', e);
             }
         },
-        [setIsChangingMode, isMiningInProgress, handleMining]
+        [setIsChangingMode, handleMining]
     );
 }

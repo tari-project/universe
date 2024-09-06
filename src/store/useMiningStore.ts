@@ -73,11 +73,7 @@ export const useMiningStore = create<MiningStoreState>()(
             storage: createJSONStorage(() => sessionStorage),
             partialize: (s) => ({
                 timerPaused: s.timerPaused,
-                miningLoading: s.miningLoading,
-                isMiningInProgress: s.isMiningInProgress,
-                miningInitiated: s.miningInitiated,
                 miningControlsEnabled: s.miningControlsEnabled,
-                isConnectionLostDuringMining: s.isConnectionLostDuringMining,
             }),
             version: 3,
         }
