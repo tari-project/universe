@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
+import formatBalance from '@app/utils/formatBalance.ts';
 
 const variants = {
     hidden: {
@@ -65,7 +66,7 @@ export default function Miner() {
                 {isCpuMiningEnabled ? (
                     <Tile
                         title={`Est tXTM/${t('day')}`}
-                        stats={formatNumber(estimated_earnings / 1000000)}
+                        stats={formatBalance(estimated_earnings)}
                         isLoading={isWaitingForCPUHashRate}
                         useLowerCase
                     />
@@ -81,7 +82,7 @@ export default function Miner() {
                 {isGpuMiningEnabled ? (
                     <Tile
                         title={`GPU Est tXTM/${t('day')}`}
-                        stats={formatNumber(gpu_estimated_earnings / 1000000)}
+                        stats={formatBalance(gpu_estimated_earnings)}
                         useLowerCase
                         isLoading={isWaitingForGPUHashRate}
                     />
