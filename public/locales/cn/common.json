@@ -1,1 +1,20 @@
-
+{
+    "submit": "提交",
+    "cancel": "取消",
+    "temperature": "温度",
+    "max-temperature": "最高温度",
+    "usage": "使用",
+    "seconds": "片刻",
+    "copied": "复制",
+    "unknown": "未知",
+    "versions": "版本",
+    "version": "版本",
+    "resources": "资源",
+    "hashrate": "哈希率",
+    "utilization": "利用率",
+    "mode": "模式",
+    "day": "天",
+    "shutting-down": "停工..",
+    "tari-universe": "Tari宇宙",
+    "testnet": "测试网"
+}
