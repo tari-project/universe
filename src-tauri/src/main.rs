@@ -1103,10 +1103,13 @@ fn main() {
             info!(target: LOG_TARGET, "App shutdown caught");
             shutdown.trigger();
             // TODO: Find a better way of knowing that all miners have stopped
-            sleep(std::time::Duration::from_secs(5));
+            sleep(std::time::Duration::from_secs(2));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
-        tauri::RunEvent::Exit => {
+        tauri::RunEvent::Exit => { info!(target: LOG_TARGET, "App shutdown caught");
+            shutdown.trigger();
+            // TODO: Find a better way of knowing that all miners have stopped
+            sleep(std::time::Duration::from_secs(2));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
