@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import { GiPauseButton } from 'react-icons/gi';
 
 import { IconWrapper, StyledButton, StyledIcon, ButtonWrapper } from './MiningButton.styles.ts';
@@ -27,11 +27,9 @@ function MiningButton() {
 
     const isMining = isCPUMining || isGPUMining;
 
-    const [isMiningInitiated, setIsMiningInitiated] = useState(miningInitiated || false);
-
     const handleMining = useMiningControls();
 
-    const miningLoading = isMiningInitiated && !isMining;
+    const miningLoading = miningInitiated && !isMining;
 
     const miningButtonStateText = useMemo(() => {
         return isMining ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
@@ -39,17 +37,11 @@ function MiningButton() {
 
     const handleClick = useCallback(async () => {
         if (!isMining) {
-            setIsMiningInitiated(true);
             setMiningInitiated(true);
-            await handleMining('start');
-            return;
+            return await handleMining('start');
         } else {
-            handleMining('stop').then((r) => {
-                if (r) {
-                    setIsMiningInitiated(false);
-                    setMiningInitiated(false);
-                }
-            });
+            setMiningInitiated(false);
+            return await handleMining('stop');
         }
     }, [isMining, setMiningInitiated, handleMining]);
 

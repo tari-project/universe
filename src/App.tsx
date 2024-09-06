@@ -21,7 +21,7 @@ export default function App() {
     useSetUp();
     useGetStatus();
     useEnvironment();
-    // useMiningEffects();
+    // useMiningEffects(); // TODO: check if we will still need this hook
 
     const isShuttingDown = useShuttingDown();
     const view = useUIStore((s) => s.view);

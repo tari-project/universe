@@ -9,18 +9,23 @@ export function useMiningControls() {
     const setError = useAppStateStore((s) => s.setError);
 
     return useCallback(
-        async (type: 'start' | 'stop' | 'pause') => {
+        async (type: 'start' | 'stop') => {
             const isStart = type === 'start';
-            const invokeFn = isStart ? 'start_mining' : 'stop_mining';
             try {
-                await invoke(invokeFn, {});
-                console.info(`mining ${isStart ? 'started' : 'stopped'}`);
+                if (isStart) {
+                    await invoke('start_mining', {})
+                        .then(() => console.info('Mining started.'))
+                        .catch((e) => console.error(e));
+                } else {
+                    await invoke('stop_mining', {})
+                        .then(() => console.info('Mining stopped.'))
+                        .catch((e) => console.error(e));
+                }
+
                 await handleVisual(type);
-                return true;
             } catch (e) {
                 const error = e as string;
                 setError(error);
-                return false;
             }
         },
         [handleVisual, setError]
