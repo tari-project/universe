@@ -29,7 +29,7 @@ function ModeSelect() {
     const changeMode = useCallback(
         async (mode: string) => {
             if (isMining) {
-                await handleMining('stop');
+                await handleMining('pause');
                 wasMining.current = true;
             }
             try {
