@@ -6,7 +6,7 @@ import { Select } from '@app/components/elements/inputs/Select.tsx';
 
 import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import useAppStateStore from '@app/store/appStateStore.ts';
 
@@ -15,17 +15,12 @@ function ModeSelect() {
     const [isLoading, setIsLoading] = useState(false);
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const mode = useAppStatusStore((s) => s.mode);
-    console.log(`mode= ${mode}`);
+    const prevMode = useRef(mode);
     const changeMode = useCallback(async (mode: string) => {
-        console.log(`mode= ${mode}`);
         try {
-            const r = await invoke('set_mode', { mode });
-
-            console.log(r);
+            await invoke('set_mode', { mode });
         } catch (e) {
             console.error(e);
-        } finally {
-            setIsLoading(false);
         }
     }, []);
 
@@ -33,6 +28,12 @@ function ModeSelect() {
         setIsLoading(true);
         changeMode(value);
     };
+    useEffect(() => {
+        if (isLoading && prevMode.current !== mode) {
+            setIsLoading(false);
+            prevMode.current = mode;
+        }
+    }, [isLoading, mode]);
 
     return (
         <TileItem>

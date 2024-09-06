@@ -19,13 +19,15 @@ enum MiningButtonStateText {
 function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const miningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
+    const miningInitiated = useMiningStore((s) => s.miningInitiated);
+    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
 
     const isCPUMining = useCPUStatusStore((s) => s.is_mining);
     const isGPUMining = useGPUStatusStore((s) => s.is_mining);
 
     const isMining = isCPUMining || isGPUMining;
 
-    const [isMiningInitiated, setIsMiningInitiated] = useState(false);
+    const [isMiningInitiated, setIsMiningInitiated] = useState(miningInitiated || false);
 
     const handleMining = useMiningControls();
 
@@ -38,16 +40,18 @@ function MiningButton() {
     const handleClick = useCallback(async () => {
         if (!isMining) {
             setIsMiningInitiated(true);
+            setMiningInitiated(true);
             await handleMining('start');
             return;
         } else {
             handleMining('stop').then((r) => {
                 if (r) {
                     setIsMiningInitiated(false);
+                    setMiningInitiated(false);
                 }
             });
         }
-    }, [isMining, setIsMiningInitiated, handleMining]);
+    }, [isMining, setMiningInitiated, handleMining]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
 
