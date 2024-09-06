@@ -74,6 +74,7 @@ export const useMiningStore = create<MiningStoreState>()(
             partialize: (s) => ({
                 timerPaused: s.timerPaused,
                 miningControlsEnabled: s.miningControlsEnabled,
+                miningInitiated: s.miningInitiated,
             }),
             version: 3,
         }

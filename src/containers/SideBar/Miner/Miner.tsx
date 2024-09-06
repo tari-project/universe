@@ -23,28 +23,30 @@ export default function Miner() {
     const { cpu: cpuHardwareStatus, gpu: gpuHardwareStatus } = useHardwareStatus();
 
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
-    const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
 
-    const hash_rate = useCPUStatusStore((s) => s.hash_rate);
-    const gpu_hash_rate = useGPUStatusStore((s) => s.hash_rate) || 0;
-
-    const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
-    const gpu_estimated_earnings = useGPUStatusStore((s) => s.estimated_earnings) || 0;
+    const cpuState = useCPUStatusStore((s) => s);
+    const gpuState = useGPUStatusStore((s) => s);
     //TODO - dedup these states
+    const { estimated_earnings: cpu_estimated_earnings, hash_rate: cpu_hash_rate, is_mining: cpu_is_mining } = cpuState;
+    const { estimated_earnings: gpu_estimated_earnings, hash_rate: gpu_hash_rate, is_mining: gpu_is_mining } = gpuState;
+
     const isCpuMiningEnabled = useAppStatusStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppStatusStore((s) => s.gpu_mining_enabled);
 
-    const isWaitingForCPUHashRate = miningInitiated && hash_rate <= 0;
+    const isWaitingForCPUHashRate = miningInitiated && cpu_hash_rate <= 0;
     const isWaitingForGPUHashRate = miningInitiated && gpu_hash_rate <= 0;
 
-    const totalEarnings = estimated_earnings + gpu_estimated_earnings;
+    const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
+
+    const isMiningInProgress = cpu_is_mining || gpu_is_mining;
+
     const tileStats = {
         cpu: {
             title: 'CPU Power',
             chipValue: cpuHardwareStatus?.usage_percentage,
             loading: isCpuMiningEnabled && isWaitingForCPUHashRate,
-            stats: isCpuMiningEnabled && isMiningInProgress ? formatNumber(hash_rate) : '-',
+            stats: isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-',
             unit: 'H/s',
         },
         gpu: {
@@ -96,7 +98,7 @@ export default function Miner() {
                                     lineHeight: '1.02',
                                 }}
                             >
-                                {isMiningInProgress && isCpuMiningEnabled ? formatBalance(estimated_earnings) : '-'}
+                                {isMiningInProgress && isCpuMiningEnabled ? formatBalance(cpu_estimated_earnings) : '-'}
                             </Typography>
                             <Unit>
                                 <Typography>tXTM/day</Typography>
