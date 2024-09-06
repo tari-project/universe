@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 const ring = keyframes`
   0%, 100% {
@@ -40,6 +40,7 @@ export const StatsPill = styled('div')`
 
     height: 36px;
     padding: 0 15px;
+    user-select: none;
 `;
 
 export const StatsNumber = styled('div')`
@@ -120,14 +121,17 @@ export const StyledAvatar = styled('div')<{ $img?: string }>`
     user-select: none;
     pointer-events: all;
     cursor: pointer;
-    background-color: grey;
+    background-color: rgba(0, 0, 0, 0.1);
     width: 36px;
     height: 36px;
-    // fit background image
+
+    ${({ $img }) =>
+        $img &&
+        css`
+            background-image: url(${$img});
+        `}
     background-size: cover;
     background-position: center;
-
-    ${({ $img }) => $img && `background-image: url(${$img})`}
 `;
 
 export const Menu = styled(motion.div)`
