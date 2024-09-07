@@ -13,7 +13,7 @@
         "waiting-for-node": "等待节点同步",
         "preparing-for-initial-sync": "准备初始同步",
         "starting-mmproxy": "正在启动合并挖掘代理",
-        "starting-p2pool": "设置 P2Pool",headers synced
+        "starting-p2pool": "设置 P2Pool",
         "application-started": "应用程序已启动",
         "downloading": "D下载中",
         "download-completed": "下载完成",
