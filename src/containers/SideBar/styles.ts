@@ -8,9 +8,7 @@ import { motion } from 'framer-motion';
 
 // SideBar
 export const SideBarContainer = styled(motion.div)`
-    height: 100%;
-    width: 100%;
-    min-width: ${sidebarWidth};
+    width: ${sidebarWidth};
     pointer-events: auto;
     display: flex;
     flex-direction: column;
@@ -23,14 +21,14 @@ export const SideBarContainer = styled(motion.div)`
     position: relative;
 `;
 
-export const TopContainer = styled.div`
+export const TopContainer = styled(motion.div)`
     padding: 0 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
 `;
 
-export const SideBarInner = styled.div`
+export const SideBarInner = styled(motion.div)`
     display: flex;
     flex-direction: column;
     position: relative;
@@ -39,7 +37,7 @@ export const SideBarInner = styled.div`
     overflow-y: scroll;
 `;
 
-export const BottomContainer = styled.div`
+export const BottomContainer = styled(motion.div)`
     display: flex;
     justify-content: flex-start;
     justify-self: flex-end;
@@ -51,7 +49,7 @@ export const BottomContainer = styled.div`
 `;
 
 // Wallet
-export const WalletContainer = styled.div`
+export const WalletContainer = styled(motion.div)`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -67,7 +65,7 @@ export const WalletContainer = styled.div`
     box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
 `;
 
-export const Handle = styled.div`
+export const Handle = styled(motion.div)`
     background-color: ${({ theme }) => theme.palette.text.secondary};
     width: 52px;
     height: 3px;
@@ -76,7 +74,7 @@ export const Handle = styled.div`
 `;
 
 // Milestones
-export const ProgressBox = styled.div`
+export const ProgressBox = styled(motion.div)`
     background-color: ${({ theme }) => theme.palette.background.paper};
     padding: 3px;
     border-radius: 10px;
@@ -97,7 +95,7 @@ export const StyledLinearProgress = styled(LinearProgress)`
     flex-grow: 1;
 `;
 
-export const GemBox = styled.div`
+export const GemBox = styled(motion.div)`
     background-image: url(${gem});
     background-repeat: no-repeat;
     background-position: center;

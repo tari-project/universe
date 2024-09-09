@@ -9,8 +9,8 @@ import { LayoutGroup } from 'framer-motion';
 
 function SideBar() {
     return (
-        <SideBarContainer layout>
-            <LayoutGroup>
+        <SideBarContainer layout style={{ height: '100%' }} transition={{ duration: 200 }}>
+            <LayoutGroup id="sidebar-content">
                 <TopContainer>
                     <Heading />
                     <MiningButton />
