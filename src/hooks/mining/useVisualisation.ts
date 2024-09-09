@@ -26,6 +26,7 @@ async function playBlockWinAudio() {
 export function useVisualisation() {
     const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
     const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
+    const audioEnabled = useMiningStore((s) => s.audioEnabled);
 
     const handleMiningStates = useCallback(
         async (state: GlAppState) => {
@@ -37,17 +38,18 @@ export function useVisualisation() {
 
             if (canAnimate) {
                 setAnimationState(state);
-                playBlockWinAudio();
                 if (state === 'fail') {
                     setPostBlockAnimation(true);
                     setTimerPaused(false);
                 }
                 if (state === 'success') {
-                    // playBlockWinAudio();
+                    if (audioEnabled) {
+                        playBlockWinAudio();
+                    }
                 }
             }
         },
-        [setPostBlockAnimation, setTimerPaused]
+        [setPostBlockAnimation, setTimerPaused, audioEnabled]
     );
 
     return useCallback(

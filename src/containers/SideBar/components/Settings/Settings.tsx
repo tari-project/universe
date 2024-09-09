@@ -97,6 +97,8 @@ export default function Settings() {
     const isMining = isCPUMining || isGPUMining;
     const miningLoading = useMiningStore((s) => s.miningLoading);
     const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
+    const audioEnabled = useMiningStore((s) => s.audioEnabled);
+    const setAudioEnabled = useMiningStore((s) => s.setAudioEnabled);
     const [open, setOpen] = useState(false);
 
     const handleClose = () => {
@@ -230,6 +232,13 @@ export default function Settings() {
                 disabled={isMining || !miningAllowed || miningLoading}
                 onChange={handleP2poolEnabled}
             />
+        </MinerContainer>
+    );
+
+    const audioEnabledMarkup = (
+        <MinerContainer>
+            <Typography variant="h6">{t('audio-enabled', { ns: 'settings' })}</Typography>
+            <ToggleSwitch checked={audioEnabled} onChange={(event) => setAudioEnabled(event.target.checked)} />
         </MinerContainer>
     );
 
@@ -376,6 +385,8 @@ export default function Settings() {
                         {cpuEnabledMarkup}
                         {gpuEnabledMarkup}
                     </HorisontalBox>
+                    <Divider />
+                    {audioEnabledMarkup}
                     <Divider />
                     <LanguageSettings />
                     <Divider />
