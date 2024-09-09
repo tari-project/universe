@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
-use anyhow::{anyhow, Error};
+use anyhow::anyhow;
 use log::warn;
 use tari_core::proof_of_work::PowAlgorithm;
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use tokio::time::sleep;
 
 use crate::network_utils;
@@ -17,7 +17,7 @@ use crate::process_adapter::StatusMonitor;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
-const P2POOL_STATS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
+// const P2POOL_STATS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
 
 #[derive(Clone)]
 pub struct P2poolConfig {
@@ -71,14 +71,8 @@ impl Default for P2poolConfig {
     }
 }
 
-struct P2poolStats {
-    last_updated: Instant,
-    stats: HashMap<String, Stats>,
-}
-
 pub struct P2poolManager {
     watcher: Arc<RwLock<ProcessWatcher<P2poolAdapter>>>,
-    stats: Arc<Mutex<Option<P2poolStats>>>,
 }
 
 impl P2poolManager {
@@ -88,7 +82,6 @@ impl P2poolManager {
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
-            stats: Arc::new(Mutex::new(None)),
         }
     }
 
