@@ -36,15 +36,19 @@
     function init() {
       glApp.init();
       time = performance.now() / 1000;
+
+      glApp.properties.lightPositionX = -5;
+      glApp.properties.lightPositionY = 4;
+      glApp.properties.lightPositionZ = 3;
+      glApp.properties.cameraOffsetX = (348 + 50) / window.innerWidth; // 348 is sidebar width with some padding
+
       window.addEventListener("resize", onResize);
-      glApp.stateManager.set('showVisual')
       onResize();
       animate();
     }
 
     function onResize() {
       glApp.setSize(window.innerWidth, window.innerHeight);
-      glApp.properties.cameraOffsetX = (348 + 10) / window.innerWidth; // 348 is sidebar width with some padding
     }
 
     function animate() {

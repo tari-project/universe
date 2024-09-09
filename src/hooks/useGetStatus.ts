@@ -1,4 +1,4 @@
-import useAppStateStore from '../store/appStateStore.ts';
+import { useAppStateStore } from '../store/appStateStore.ts';
 
 import { invoke } from '@tauri-apps/api/tauri';
 import { useWalletStore } from '../store/walletStore.ts';
@@ -7,9 +7,9 @@ import { useInterval } from './useInterval.ts';
 import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '../store/useGPUStatusStore.ts';
 import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
-import useMining from '@app/hooks/mining/useMining.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 import { useEffect } from 'react';
 
 const INTERVAL = 1000;
@@ -22,7 +22,7 @@ export function useGetStatus() {
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
     const setTelemetryMode = useAppStatusStore((s) => s.setTelemetryMode);
-    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
+    const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
 
     const { setError } = useAppStateStore((s) => ({
         setError: s.setError,
@@ -30,7 +30,6 @@ export function useGetStatus() {
     const setMode = useAppStatusStore((s) => s.setMode);
 
     useMainAppVersion();
-    useMining();
 
     useEffect(() => {
         invoke('get_telemetry_mode')
@@ -59,6 +58,7 @@ export function useGetStatus() {
                         setMode(status.mode);
 
                         const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
+
                         setMiningControlsEnabled(!isSettingUp && miningEnabled);
                     } else {
                         console.info('Status not returned. It could still be setting up');

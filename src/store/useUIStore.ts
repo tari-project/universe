@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
 
 interface State {
