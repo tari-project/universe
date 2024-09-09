@@ -3,7 +3,6 @@ use std::{path::PathBuf, time::SystemTime};
 use anyhow::anyhow;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use tari_common_types::tari_address::TariAddress;
 use tokio::fs;
 
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};

@@ -6,7 +6,6 @@ use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetBalanceRequest;
-use minotari_wallet_grpc_client::grpc::Empty;
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;

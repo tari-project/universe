@@ -38,7 +38,6 @@ impl InternalWallet {
         if file.exists() {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
-            dbg!(&config);
             match serde_json::from_str::<WalletConfig>(&config) {
                 Ok(config) => {
                     return Ok(Self {

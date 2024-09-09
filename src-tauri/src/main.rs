@@ -1093,7 +1093,7 @@ fn main() {
                             .await;
                         let mut lock = address.write().await;
                         *lock = wallet.get_tari_address();
-                        return Ok(());
+                        Ok(())
                         //app.state::<UniverseAppState>().tari_address = wallet.get_tari_address();
                     }
                     Err(e) => {
@@ -1101,7 +1101,7 @@ fn main() {
                         // TODO: If this errors, the application does not exit properly.
                         // So temporarily we are going to kill it here
 
-                        return Err(e);
+                        Err(e)
                     }
                 }
             });
