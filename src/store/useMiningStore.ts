@@ -1,7 +1,6 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from './create';
+import { persist } from 'zustand/middleware';
 import { BlockTimeData } from '@app/types/mining.ts';
-import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
 interface State {
     displayBlockTime?: BlockTimeData;
@@ -37,7 +36,7 @@ interface Actions {
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
-    displayBlockHeight: useBaseNodeStatusStore.getState().block_height,
+    displayBlockHeight: undefined,
     timerPaused: false,
     postBlockAnimation: false,
     miningLoading: false,
@@ -70,14 +69,14 @@ export const useMiningStore = create<MiningStoreState>()(
         }),
         {
             name: 'mining',
-            storage: createJSONStorage(() => sessionStorage),
             partialize: (s) => ({
                 timerPaused: s.timerPaused,
                 miningControlsEnabled: s.miningControlsEnabled,
                 miningInitiated: s.miningInitiated,
                 displayBlockHeight: s.displayBlockHeight,
+                earnings: s.earnings,
             }),
-            version: 3,
+            version: 0.1,
         }
     )
 );
