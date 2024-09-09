@@ -15,9 +15,7 @@
         },
         "updater": {
             "active": true,
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"],
             "dialog": false,
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
         },
@@ -38,6 +36,27 @@
                 "unmaximize": true,
                 "unminimize": true,
                 "startDragging": true
+            },
+            "protocol": {
+                "all": true,
+                "asset": true,
+                "assetScope": ["**"]
+            },
+            "fs": {
+                "all": true,
+                "copyFile": false,
+                "createDir": false,
+                "exists": false,
+                "readDir": true,
+                "readFile": true,
+                "removeDir": false,
+                "removeFile": false,
+                "renameFile": false,
+                "scope": ["**"],
+                "writeFile": false
+            },
+            "path": {
+                "all": true
             }
         },
         "pattern": {
@@ -61,19 +80,14 @@
             }
         ],
         "security": {
-            "csp": null
+            "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; media-src 'self' asset: https://asset.localhost"
         },
         "bundle": {
             "active": true,
             "targets": "all",
             "identifier": "com.tari.universe",
-            "icon": [
-                "icons/icon.icns",
-                "icons/icon.ico",
-                "icons/icon.png",
-                "icons/StoreLogo.png",
-                "icons/tari.png"
-            ]
+            "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png", "icons/StoreLogo.png", "icons/tari.png"],
+            "resources": ["audio/*"]
         },
         "macOSPrivateApi": true
     }
