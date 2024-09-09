@@ -7,22 +7,24 @@ import {
     SpacedNum,
 } from '@app/containers/Dashboard/MiningView/components/BlockHeightAccent.styles.ts';
 import { useDeferredValue, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { AnimatePresence, LayoutGroup } from 'framer-motion';
 
 export function BlockHeightAccent() {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [windowHeight, setWindowHeight] = useState(window.innerHeight);
-    const [textHeight, setTextHeight] = useState(containerRef.current?.offsetHeight || 110);
-    const [fontSize, setFontSize] = useState(0);
     const height = useMiningStore(useShallow((s) => s.displayBlockHeight));
+    const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+    const [fontSize, setFontSize] = useState(0);
+    const [textHeight, setTextHeight] = useState(containerRef.current?.offsetHeight);
     const heightString = height?.toString();
     const heightStringArr = heightString?.split('') || [];
-    const deferredValue = useDeferredValue(windowHeight);
+    const deferredHeight = useDeferredValue(windowHeight || 110);
+    const deferredFontSize = useDeferredValue(fontSize);
 
     useEffect(() => {
-        const height = deferredValue - 60;
+        const height = deferredHeight - 60;
         const dividend = (height - 100) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
         setFontSize(Math.floor(dividend));
-    }, [heightStringArr.length, deferredValue]);
+    }, [heightStringArr.length, deferredHeight]);
 
     useLayoutEffect(() => {
         function handleResize() {
@@ -32,6 +34,7 @@ export function BlockHeightAccent() {
             }
         }
         window.addEventListener('resize', handleResize);
+        handleResize();
         return () => {
             window.removeEventListener('resize', handleResize);
         };
@@ -39,23 +42,28 @@ export function BlockHeightAccent() {
 
     return (
         <AccentWrapper layout>
-            <Accent
-                layout
-                $accentHeight={textHeight}
-                animate={{
-                    width: `${textHeight}px`,
-                }}
-            >
-                <AccentText
-                    layout
-                    ref={containerRef}
+            <LayoutGroup>
+                <Accent
+                    $accentHeight={textHeight}
                     animate={{
-                        fontSize: `${fontSize}px`,
+                        width: `${textHeight}px`,
                     }}
                 >
-                    {heightStringArr?.map((c, i) => <SpacedNum key={`spaced-char-${c}-${i}`}>{c}</SpacedNum>)}
-                </AccentText>
-            </Accent>
+                    <AccentText
+                        ref={containerRef}
+                        animate={{
+                            fontSize: `${deferredFontSize}px`,
+                        }}
+                    >
+                        <AnimatePresence mode="wait">
+                            {Boolean(deferredFontSize) &&
+                                heightStringArr?.map((c, i) => (
+                                    <SpacedNum key={`spaced-char-${c}-${i}`}>{c}</SpacedNum>
+                                ))}
+                        </AnimatePresence>
+                    </AccentText>
+                </Accent>
+            </LayoutGroup>
         </AccentWrapper>
     );
 }

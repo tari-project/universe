@@ -46,7 +46,6 @@ export function useSetUp() {
                 startupInitiated.current = true;
                 invoke('setup_application').catch((e) => {
                     setError(`Failed to setup application: ${e}`);
-                    settingUpFinished();
                     setView('mining');
                 });
             }

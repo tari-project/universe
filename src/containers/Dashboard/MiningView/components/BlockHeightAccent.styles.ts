@@ -31,11 +31,11 @@ export const AccentText = styled(motion.div)<{ $accentHeight?: number }>`
     height: max-content;
     font-family: Druk, sans-serif;
     white-space: pre;
-    color: ${({ theme }) => theme.palette.base};
     line-height: 1;
     opacity: 0.55;
-    position: relative;
     transform: rotate(-90deg);
+    position: relative;
+    color: ${({ theme }) => theme.palette.base};
 `;
 
 export const SpacedNum = styled('span')`
