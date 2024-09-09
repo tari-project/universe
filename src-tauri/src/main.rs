@@ -53,7 +53,7 @@ use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
 use std::collections::HashMap;
-use std::fs::remove_dir_all;
+use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -833,6 +833,20 @@ async fn reset_settings<'r>(
                 }
                 Err(e) => {
                     error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", dir, e);
+                    for entry in read_dir(dir.clone().unwrap()).expect("Failed to read directory") {
+                        let path = entry.expect("Failed to read entry").path();
+                        if path.is_dir() {
+                            match remove_dir_all(&path) {
+                                Ok(_) => {},
+                                Err(e) => println!("[reset_settings] Error removing directory: {:?}: {:?}", path, e),
+                            }
+                        } else {
+                            match remove_file(&path) {
+                                Ok(_) => {},
+                                Err(e) => println!("[reset_settings] Error removing file: {:?}: {}", path, e),
+                            }
+                        }
+                    }
                 }
             }
         }

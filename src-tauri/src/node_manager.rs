@@ -53,7 +53,10 @@ impl NodeManager {
     }
 
     pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
-        fs::remove_dir_all(base_path.join("node")).await?;
+        let path = base_path.join("node");
+        if path.exists() {
+            fs::remove_dir_all(&path).await?;
+        }
         Ok(())
     }
 
