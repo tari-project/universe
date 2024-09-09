@@ -1,10 +1,11 @@
-import useAppStateStore from '@app/store/appStateStore';
+import { useAppStateStore } from '@app/store/appStateStore';
 import SetupView from './SetupView';
+import { useShallow } from 'zustand/react/shallow';
 
 function SetupViewContainer() {
-    const setupTitle = useAppStateStore((s) => s.setupTitle);
-    const setupTitleParams = useAppStateStore((s) => s.setupTitleParams);
-    const setupProgress = useAppStateStore((s) => s.setupProgress);
+    const setupTitle = useAppStateStore(useShallow((s) => s.setupTitle));
+    const setupTitleParams = useAppStateStore(useShallow((s) => s.setupTitleParams));
+    const setupProgress = useAppStateStore(useShallow((s) => s.setupProgress));
 
     const progressPercentage = Math.floor(setupProgress * 100);
 

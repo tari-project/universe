@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 interface State {
     showSplash: boolean;
@@ -42,11 +42,14 @@ export const useUIStore = create<UIStoreState>()(
             setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
         }),
         {
-            name: 'ui-store',
-            storage: createJSONStorage(() => sessionStorage),
+            name: 'ui_store',
             partialize: (s) => ({
                 telemetryMode: s.telemetryMode,
+                view: s.view,
+                visualMode: s.visualMode,
+                showSplash: s.showSplash,
             }),
+            version: 0.1,
         }
     )
 );

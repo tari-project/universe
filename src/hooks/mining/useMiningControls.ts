@@ -1,28 +1,28 @@
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-
-import { useVisualisation } from './useVisualisation.ts';
-import useAppStateStore from '@app/store/appStateStore.ts';
+import { setAnimationState } from '@app/visuals.ts';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 export function useMiningControls() {
-    const handleVisual = useVisualisation();
     const setError = useAppStateStore((s) => s.setError);
     const handleStart = useCallback(async () => {
+        console.info('Mining starting....');
         try {
             await invoke('start_mining', {})
                 .then(async () => {
                     console.info('Mining started.');
                 })
                 .catch((e) => console.error(e));
-            await handleVisual('start');
+            setAnimationState('start');
         } catch (e) {
             const error = e as string;
             setError(error);
         }
-    }, [handleVisual, setError]);
+    }, [setError]);
 
     const handleStop = useCallback(
         async (args?: { isPause?: boolean }) => {
+            console.info('Mining stopping...');
             try {
                 await invoke('stop_mining', {})
                     .then(async () => {
@@ -33,13 +33,13 @@ export function useMiningControls() {
                         }
                     })
                     .catch((e) => console.error(e));
-                await handleVisual(args?.isPause ? 'pause' : 'stop');
+                setAnimationState(args?.isPause ? 'pause' : 'stop');
             } catch (e) {
                 const error = e as string;
                 setError(error);
             }
         },
-        [handleVisual, setError]
+        [setError]
     );
 
     return { handleStart, handleStop };

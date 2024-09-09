@@ -9,15 +9,10 @@ function TelemetryMode() {
     const telemetryMode = useUIStore((s) => s.telemetryMode);
     const toggleTelemetryMode = useUIStore((s) => s.toggleTelemetryMode);
 
-    const canvasElement = document.getElementById('canvas');
-
     const handleSwitch = useCallback(() => {
-        if (canvasElement) {
-            canvasElement.style.display = telemetryMode ? 'none' : 'block';
-        }
         toggleTelemetryMode();
         invoke('set_telemetry_mode', { telemetryMode: !telemetryMode });
-    }, [canvasElement, toggleTelemetryMode, telemetryMode]);
+    }, [toggleTelemetryMode, telemetryMode]);
 
     return (
         <VisualModeContainer>

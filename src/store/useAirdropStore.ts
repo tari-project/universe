@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from './create';
 import { persist } from 'zustand/middleware';
 
 interface TokenResponse {
@@ -55,6 +55,12 @@ export const useAirdropStore = create<AirdropStore>()(
                     },
                 }),
         }),
-        { name: 'airdrop-store' }
+        {
+            name: 'token_airdrop_store',
+            partialize: (s) => ({
+                authUuid: s.authUuid,
+            }),
+            version: 0.1,
+        }
     )
 );

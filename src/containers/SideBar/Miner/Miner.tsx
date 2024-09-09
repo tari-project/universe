@@ -18,20 +18,31 @@ import {
     ExpandableTileItem,
     ExpandedContentTile,
 } from '@app/containers/SideBar/Miner/components/ExpandableTile.styles.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function Miner() {
     const { cpu: cpuHardwareStatus, gpu: gpuHardwareStatus } = useHardwareStatus();
-
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
-
-    const cpuState = useCPUStatusStore((s) => s);
-    const gpuState = useGPUStatusStore((s) => s);
-    //TODO - dedup these states
-    const { estimated_earnings: cpu_estimated_earnings, hash_rate: cpu_hash_rate, is_mining: cpu_is_mining } = cpuState;
-    const { estimated_earnings: gpu_estimated_earnings, hash_rate: gpu_hash_rate, is_mining: gpu_is_mining } = gpuState;
-
-    const isCpuMiningEnabled = useAppStatusStore((s) => s.cpu_mining_enabled);
-    const isGpuMiningEnabled = useAppStatusStore((s) => s.gpu_mining_enabled);
+    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const { isCpuMiningEnabled, isGpuMiningEnabled } = useAppStatusStore(
+        useShallow((s) => ({
+            isCpuMiningEnabled: s.cpu_mining_enabled,
+            isGpuMiningEnabled: s.gpu_mining_enabled,
+        }))
+    );
+    const { cpu_estimated_earnings, cpu_hash_rate, cpu_is_mining } = useCPUStatusStore(
+        useShallow((s) => ({
+            cpu_estimated_earnings: s.estimated_earnings,
+            cpu_hash_rate: s.hash_rate,
+            cpu_is_mining: s.is_mining,
+        }))
+    );
+    const { gpu_estimated_earnings, gpu_hash_rate, gpu_is_mining } = useGPUStatusStore(
+        useShallow((s) => ({
+            gpu_estimated_earnings: s.estimated_earnings,
+            gpu_hash_rate: s.hash_rate,
+            gpu_is_mining: s.is_mining,
+        }))
+    );
 
     const isWaitingForCPUHashRate = miningInitiated && cpu_hash_rate <= 0;
     const isWaitingForGPUHashRate = miningInitiated && gpu_hash_rate <= 0;
@@ -41,40 +52,23 @@ export default function Miner() {
 
     const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 
-    const tileStats = {
-        cpu: {
-            title: 'CPU Power',
-            chipValue: cpuHardwareStatus?.usage_percentage,
-            loading: isCpuMiningEnabled && isWaitingForCPUHashRate,
-            stats: isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-',
-            unit: 'H/s',
-        },
-        gpu: {
-            title: 'GPU Power',
-            chipValue: gpuHardwareStatus?.usage_percentage,
-            loading: isGpuMiningEnabled && isWaitingForGPUHashRate,
-            stats: isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-',
-            unit: 'H/s',
-        },
-    };
-
     return (
         <MinerContainer>
             <TileContainer>
                 <Tile
-                    title={tileStats.cpu.title}
-                    stats={tileStats.cpu.stats}
-                    isLoading={tileStats.cpu.loading}
-                    chipValue={tileStats.cpu.chipValue}
-                    unit={tileStats.cpu.unit}
+                    title="CPU Power"
+                    stats={isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-'}
+                    isLoading={isCpuMiningEnabled && isWaitingForCPUHashRate}
+                    chipValue={cpuHardwareStatus?.usage_percentage}
+                    unit="H/s"
                     useLowerCase
                 />
                 <Tile
-                    title={tileStats.gpu.title}
-                    stats={tileStats.gpu.stats}
-                    isLoading={tileStats.gpu.loading}
-                    chipValue={tileStats.gpu.chipValue}
-                    unit={tileStats.gpu.unit}
+                    title="GPU Power"
+                    stats={isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-'}
+                    isLoading={isGpuMiningEnabled && isWaitingForGPUHashRate}
+                    chipValue={gpuHardwareStatus?.usage_percentage}
+                    unit="H/s"
                     useLowerCase
                 />
                 <ModeSelect />

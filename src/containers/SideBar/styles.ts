@@ -4,13 +4,14 @@ import cardBg from '../../assets/images/card.png';
 import gem from '../../assets/images/gem-sml.png';
 
 import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
+import { motion } from 'framer-motion';
 
 interface SideBarContainerProps {
     $sidebarOpen: boolean;
 }
 
 // SideBar
-export const SideBarContainer = styled.div<SideBarContainerProps>`
+export const SideBarContainer = styled(motion.div)<SideBarContainerProps>`
     height: 100%;
     width: ${({ $sidebarOpen }) => ($sidebarOpen ? `100%` : sidebarWidth)};
     transition: width 0.5s ease-in-out;

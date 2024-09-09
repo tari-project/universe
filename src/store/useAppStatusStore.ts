@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from './create';
 import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
 import { persist } from 'zustand/middleware';
@@ -38,6 +38,14 @@ export const useAppStatusStore = create<AppStatusStoreState>()(
         }),
         {
             name: 'statusStore',
+            version: 0.1,
+            partialize: (s) => ({
+                mode: s.mode,
+                cpu_mining_enabled: s.cpu_mining_enabled,
+                gpu_mining_enabled: s.gpu_mining_enabled,
+                p2pool_enabled: s.p2pool_enabled,
+                monero_address: s.monero_address,
+            }),
         }
     )
 );

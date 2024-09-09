@@ -1,40 +1,56 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { setAnimationState } from '../../visuals';
-import { GlAppState } from '@app/glApp';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { appWindow } from '@tauri-apps/api/window';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 export function useVisualisation() {
-    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
-    const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
-
-    const handleMiningStates = useCallback(
-        async (state: GlAppState) => {
-            const documentIsVisible = document.visibilityState === 'visible';
-            const focused = await appWindow.isFocused();
-            const minimized = await appWindow.isMinimized();
-
-            const canAnimate = !minimized && (focused || documentIsVisible);
-
-            if (canAnimate) {
-                setAnimationState(state);
-                if (state === 'fail') {
-                    setPostBlockAnimation(true);
-                    setTimerPaused(false);
-                }
-            }
-        },
-        [setPostBlockAnimation, setTimerPaused]
+    const [useFailTimeout, setUseFailTimeout] = useState(false);
+    const { setTimerPaused, setPostBlockAnimation } = useMiningStore(
+        useShallow((s) => ({
+            setPostBlockAnimation: s.setPostBlockAnimation,
+            setTimerPaused: s.setTimerPaused,
+        }))
     );
 
-    return useCallback(
-        async (state: GlAppState) => {
-            if (state == 'fail' || state == 'success') {
-                return handleMiningStates(state);
-            } else {
-                setAnimationState(state);
-            }
-        },
-        [handleMiningStates]
-    );
+    const checkCanAnimate = useCallback(async () => {
+        const focused = await appWindow?.isFocused();
+        const minimized = await appWindow?.isMinimized();
+        const documentIsVisible = document?.visibilityState === 'visible' || false;
+
+        return !minimized && (focused || documentIsVisible);
+    }, []);
+
+    useEffect(() => {
+        if (useFailTimeout) {
+            const failAnimationTimeout = setTimeout(() => {
+                setPostBlockAnimation(true);
+                setTimerPaused(false);
+                setUseFailTimeout(false);
+            }, 1500);
+
+            return () => {
+                clearTimeout(failAnimationTimeout);
+            };
+        }
+    }, [setPostBlockAnimation, setTimerPaused, useFailTimeout]);
+
+    const handleFail = useCallback(async () => {
+        const canAnimate = await checkCanAnimate();
+
+        if (canAnimate) {
+            setAnimationState('fail');
+            setUseFailTimeout(true);
+        }
+    }, [checkCanAnimate]);
+
+    const handleWin = useCallback(async () => {
+        const canAnimate = await checkCanAnimate();
+
+        if (canAnimate) {
+            setAnimationState('success');
+        }
+    }, [checkCanAnimate]);
+
+    return { handleFail, handleWin };
 }
