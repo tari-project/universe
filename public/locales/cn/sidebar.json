@@ -1,0 +1,9 @@
+{
+    "auto-miner":"自动采矿机",
+    "auto-miner-description":"当您的机器闲置时，自动矿机将打开您的矿机",
+    "next-milestone":"下一个里程碑",
+    "wallet-balance":"钱包余额",
+    "setup-scheduler":"安装计划程序",
+    "mining-schedules":"采矿时间表",
+    "mining-schedules-description":"安排您的采矿活动"
+}

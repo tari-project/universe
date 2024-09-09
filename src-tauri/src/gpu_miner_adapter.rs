@@ -1,4 +1,5 @@
 use crate::process_utils;
+use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, warn};
@@ -17,25 +18,27 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
-pub const ECO_MODE_GPU_PERCENTAGE: u8 = 1;
-pub const LUDICROUS_MODE_GPU_PERCENTAGE: u8 = 80; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
+pub const ECO_MODE_GPU_PERCENTAGE: u16 = 1;
+pub const LUDICROUS_MODE_GPU_PERCENTAGE: u16 = 800; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
+
+pub enum GpuNodeSource {
+    BaseNode { port: u16 },
+    P2Pool { port: u16 },
+}
 
 pub struct GpuMinerAdapter {
     pub(crate) tari_address: TariAddress,
-    pub(crate) node_grpc_port: u16,
-    pub(crate) gpu_percentage: u8,
-    pub(crate) p2pool_enabled: bool,
-    pub(crate) p2pool_grpc_port: u16,
+    // Value ranges 1 - 1000
+    pub(crate) gpu_percentage: u16,
+    pub(crate) node_source: Option<GpuNodeSource>,
 }
 
 impl GpuMinerAdapter {
     pub fn new() -> Self {
         Self {
             tari_address: TariAddress::default(),
-            node_grpc_port: 0,
             gpu_percentage: ECO_MODE_GPU_PERCENTAGE,
-            p2pool_enabled: false,
-            p2pool_grpc_port: 0,
+            node_source: None,
         }
     }
 
@@ -64,10 +67,13 @@ impl ProcessAdapter for GpuMinerAdapter {
         std::fs::create_dir_all(&working_dir)?;
         std::fs::create_dir_all(config_dir.join("gpuminer"))?;
 
-        let tari_node_port = if self.p2pool_enabled {
-            self.p2pool_grpc_port
-        } else {
-            self.node_grpc_port
+        if self.node_source.is_none() {
+            return Err(anyhow!("GpuMinerAdapter node_source is not set"));
+        }
+
+        let tari_node_port = match self.node_source.as_ref().unwrap() {
+            GpuNodeSource::BaseNode { port } => port,
+            GpuNodeSource::P2Pool { port } => port,
         };
 
         let mut args: Vec<String> = vec![
@@ -87,7 +93,10 @@ impl ProcessAdapter for GpuMinerAdapter {
             self.gpu_percentage.to_string(),
         ];
 
-        if self.p2pool_enabled {
+        if matches!(
+            self.node_source.as_ref(),
+            Some(GpuNodeSource::P2Pool { .. })
+        ) {
             args.push("--p2pool-enabled".to_string());
         }
 

@@ -1,8 +1,8 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { setAnimationState } from '../../visuals';
-import { GlAppState } from '@app/glApp';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { appWindow } from '@tauri-apps/api/window';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 import { resourceDir, join } from '@tauri-apps/api/path';
 import { readBinaryFile } from '@tauri-apps/api/fs';
 
@@ -24,42 +24,59 @@ async function playBlockWinAudio() {
 }
 
 export function useVisualisation() {
-    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
-    const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
-    const audioEnabled = useMiningStore((s) => s.audioEnabled);
-
-    const handleMiningStates = useCallback(
-        async (state: GlAppState) => {
-            const documentIsVisible = document.visibilityState === 'visible';
-            const focused = await appWindow.isFocused();
-            const minimized = await appWindow.isMinimized();
-
-            const canAnimate = !minimized && (focused || documentIsVisible);
-
-            if (canAnimate) {
-                setAnimationState(state);
-                if (state === 'fail') {
-                    setPostBlockAnimation(true);
-                    setTimerPaused(false);
-                }
-                if (state === 'success') {
-                    if (audioEnabled) {
-                        playBlockWinAudio();
-                    }
-                }
-            }
-        },
-        [setPostBlockAnimation, setTimerPaused, audioEnabled]
+    const [useFailTimeout, setUseFailTimeout] = useState(false);
+    const { setTimerPaused, setPostBlockAnimation, setEarnings, audioEnabled } = useMiningStore(
+        useShallow((s) => ({
+            setPostBlockAnimation: s.setPostBlockAnimation,
+            setTimerPaused: s.setTimerPaused,
+            setEarnings: s.setEarnings,
+            audioEnabled: s.audioEnabled,
+        }))
     );
 
-    return useCallback(
-        async (state: GlAppState) => {
-            if (state == 'fail' || state == 'success') {
-                return handleMiningStates(state);
-            } else {
-                setAnimationState(state);
+    const checkCanAnimate = useCallback(async () => {
+        const focused = await appWindow?.isFocused();
+        const minimized = await appWindow?.isMinimized();
+        const documentIsVisible = document?.visibilityState === 'visible' || false;
+
+        return !minimized && (focused || documentIsVisible);
+    }, []);
+
+    useEffect(() => {
+        if (useFailTimeout) {
+            const failAnimationTimeout = setTimeout(() => {
+                setPostBlockAnimation(true);
+                setTimerPaused(false);
+                setUseFailTimeout(false);
+            }, 1500);
+
+            return () => {
+                clearTimeout(failAnimationTimeout);
+            };
+        }
+    }, [setPostBlockAnimation, setTimerPaused, useFailTimeout]);
+
+    const handleFail = useCallback(async () => {
+        const canAnimate = await checkCanAnimate();
+
+        if (canAnimate) {
+            setAnimationState('fail');
+            setUseFailTimeout(true);
+        }
+    }, [checkCanAnimate]);
+
+    const handleWin = useCallback(async () => {
+        const canAnimate = await checkCanAnimate();
+
+        if (canAnimate) {
+            setAnimationState('success');
+        } else {
+            setEarnings(undefined);
+            if (audioEnabled) {
+                playBlockWinAudio();
             }
-        },
-        [handleMiningStates]
-    );
+        }
+    }, [checkCanAnimate, setEarnings, audioEnabled]);
+
+    return { handleFail, handleWin };
 }
