@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod tests {
+    use std::time::{Duration, SystemTime};
+
     use crate::{
         app_config::{AppConfig, MiningMode},
         consts::DEFAULT_MONERO_ADDRESS,
@@ -57,10 +59,8 @@ mod tests {
         assert_eq!(config.auto_mining, false);
         // For now always false by default
         assert_eq!(config.p2pool_enabled, false);
-        assert_eq!(
-            format!("{:?}", config.last_binaries_update_timestamp),
-            "SystemTime { tv_sec: 1725545367, tv_nsec: 379078628 }"
-        );
+        let expected_timestamp = SystemTime::UNIX_EPOCH + Duration::new(1725545367, 379078628);
+        assert_eq!(config.last_binaries_update_timestamp, expected_timestamp);
         assert_eq!(config.allow_telemetry, true);
         assert_eq!(config.anon_id, "5GGl^0NQiChrGMsjYXs5");
         assert_eq!(
