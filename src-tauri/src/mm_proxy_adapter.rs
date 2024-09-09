@@ -24,7 +24,7 @@ pub struct MergeMiningProxyConfig {
 }
 
 impl MergeMiningProxyConfig {
-    pub fn new(
+    pub(crate) fn new(
         port: Option<u16>,
         coinbase_extra: Option<String>,
         tari_address: TariAddress,
