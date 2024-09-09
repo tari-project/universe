@@ -9,7 +9,7 @@ import { LayoutGroup } from 'framer-motion';
 
 function SideBar() {
     return (
-        <SideBarContainer layout style={{ height: '100%' }} transition={{ duration: 200 }}>
+        <SideBarContainer layout style={{ height: '100%' }} transition={{ duration: 200 }} layoutId="sidebar">
             <LayoutGroup id="sidebar-content">
                 <TopContainer>
                     <Heading />
