@@ -981,15 +981,6 @@ fn main() {
                 }
                 Ok(())
             });
-            // let mut metadata = AboutMetadata::new();
-            // metadata.version= Some("Tari Labs".to_string());
-            // metadata.authors= Some(vec!["Tari Labs".to_string()]);
-            // metadata.license= Some("Tari Labs".to_string());
-            // metadata.comments=Some("Tari Labs".to_string());
-            // metadata.website= Some("Tari Labs".to_string());
-            // metadata.copyright= Some("Tari Labs".to_string());
-            // metadata.website_label= Some("Tari Labs".to_string());
-            // let menu = MenuItem::About("Tari Universe".to_string(), metadata);
 
             match tauri::async_runtime::block_on(thread).unwrap() {
                 Ok(_) => Ok(()),
