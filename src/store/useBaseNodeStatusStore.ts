@@ -1,6 +1,6 @@
-import { create } from 'zustand';
+import { create } from './create';
 import { BaseNodeStatus } from '../types/app-status.ts';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 
 interface Actions {
     setBaseNodeStatus: (baseNodeStatus?: BaseNodeStatus) => void;
@@ -20,10 +20,10 @@ export const useBaseNodeStatusStore = create<BaseNodeStatusStoreState>()(
         }),
         {
             name: 'base_node',
-            storage: createJSONStorage(() => sessionStorage),
             partialize: (s) => ({
                 block_height: s.block_height,
             }),
+            version: 0.1,
         }
     )
 );

@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from './create';
+import { persist } from 'zustand/middleware';
 import { WalletBalance } from '@app/types/app-status.ts';
 
 interface State extends WalletBalance {
@@ -42,19 +42,16 @@ export const useWalletStore = create<WalletStore>()(
                         ...wallet_balance,
                         balance: newBalance,
                         previousBalance: prevValue,
-                        balanceDiff: prevValue > 0 ? newBalance - prevValue : 0,
                     };
                 }),
         }),
         {
             name: 'wallet_balance',
-            storage: createJSONStorage(() => sessionStorage),
             partialize: (s) => ({
                 balance: s.balance,
                 previousBalance: s.previousBalance,
-                balanceDiff: s.balanceDiff,
             }),
-            version: 2,
+            version: 0.1,
         }
     )
 );
