@@ -15,7 +15,7 @@ use crate::process_watcher::ProcessWatcher;
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
 
 #[derive(Clone)]
-pub struct StartConfig {
+pub(crate) struct StartConfig {
     pub app_shutdown: ShutdownSignal,
     pub base_path: PathBuf,
     pub config_path: PathBuf,

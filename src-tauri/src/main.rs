@@ -384,6 +384,7 @@ async fn setup_inner(
         .await
         .get_unique_string()
         .await;
+    dbg!(&telemetry_id);
     if telemetry_id.is_empty() {
         telemetry_id = "unknown_miner_tari_universe".to_string();
     }
@@ -442,6 +443,7 @@ async fn set_p2pool_enabled(
         warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
         return Ok(());
     }
+    dbg!(origin_config.as_ref().map(|s| s.coinbase_extra.clone()));
     let mut origin_config = origin_config.clone().unwrap();
     if origin_config.p2pool_enabled != p2pool_enabled {
         if p2pool_enabled {
@@ -581,6 +583,16 @@ async fn start_mining<'r>(
             GpuNodeSource::BaseNode { port: grpc_port }
         };
 
+        let mut telemetry_id = state
+            .telemetry_manager
+            .read()
+            .await
+            .get_unique_string()
+            .await;
+        if telemetry_id.is_empty() {
+            telemetry_id = "tari-universe".to_string();
+        }
+
         let res = state
             .gpu_miner
             .write()
@@ -593,6 +605,7 @@ async fn start_mining<'r>(
                 app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
                 mode,
+                telemetry_id,
             )
             .await;
 
@@ -953,7 +966,6 @@ struct UniverseAppState {
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
-    _user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
@@ -1036,7 +1048,6 @@ fn main() {
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
-        _user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,

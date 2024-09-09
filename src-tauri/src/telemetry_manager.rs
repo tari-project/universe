@@ -165,8 +165,7 @@ impl TelemetryManager {
         let anon_id = config.anon_id.clone();
         let version = env!("CARGO_PKG_VERSION");
         let mode = MiningMode::to_str(config.mode);
-        let auto_mining = config.auto_mining;
-        let unique_string = format!("v0,{},{},{},{},{}", anon_id, mode, auto_mining, os, version,);
+        let unique_string = format!("v1,{},{},{},{}", anon_id, mode, os, version,);
         unique_string
     }
 

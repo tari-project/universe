@@ -26,11 +26,12 @@ pub enum GpuNodeSource {
     P2Pool { port: u16 },
 }
 
-pub struct GpuMinerAdapter {
+pub(crate) struct GpuMinerAdapter {
     pub(crate) tari_address: TariAddress,
     // Value ranges 1 - 1000
     pub(crate) gpu_percentage: u16,
     pub(crate) node_source: Option<GpuNodeSource>,
+    pub(crate) coinbase_extra: String,
 }
 
 impl GpuMinerAdapter {
@@ -39,6 +40,7 @@ impl GpuMinerAdapter {
             tari_address: TariAddress::default(),
             gpu_percentage: ECO_MODE_GPU_PERCENTAGE,
             node_source: None,
+            coinbase_extra: "tari-universe".to_string(),
         }
     }
 
@@ -93,6 +95,10 @@ impl ProcessAdapter for GpuMinerAdapter {
             self.gpu_percentage.to_string(),
         ];
 
+        // Only available after 0.1.8-pre.2
+        args.push("--coinbase-extra".to_string());
+        args.push(self.coinbase_extra.clone());
+
         if matches!(
             self.node_source.as_ref(),
             Some(GpuNodeSource::P2Pool { .. })
@@ -129,6 +135,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                     // }
                     let mut envs = std::collections::HashMap::new();
                     envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
+                    // Uncomment to test winning blocks. Also uncomment in node_adpater
+                    // envs.insert("TARI_NETWORK".to_string(), "localnet".to_string());
                     child = process_utils::launch_child_process(&file_path, Some(envs), &args)?;
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("xtrgpuminer_pid"), id.to_string())?;
