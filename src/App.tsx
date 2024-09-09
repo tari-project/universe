@@ -55,7 +55,7 @@ export default function App() {
                         <ContainerInner layout>
                             <SideBar />
                             <AirdropLogin />
-                        <Dashboard status={view} />
+                            <Dashboard status={view} />
                         </ContainerInner>
                     </DashboardContainer>
                 )}
