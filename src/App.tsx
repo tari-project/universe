@@ -27,8 +27,8 @@ export default function App() {
     useEnvironment();
 
     const isShuttingDown = useShuttingDown();
-    const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
+    const view = useUIStore((s) => s.view);
 
     const canRenderMain = !isShuttingDown && !showSplash;
     const splashScreenMarkup = <SplashScreen />;
