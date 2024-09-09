@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
+import { motion } from 'framer-motion';
 
-export const TriggerWrapper = styled.div<{ $disabled?: boolean }>`
+export const TriggerWrapper = styled(motion.div)<{ $disabled?: boolean }>`
     width: 100%;
     background: ${({ theme }) => theme.palette.background.paper};
     display: flex;
@@ -16,7 +17,7 @@ export const TriggerWrapper = styled.div<{ $disabled?: boolean }>`
         `}
 `;
 
-export const Options = styled.div<{ $open?: boolean }>`
+export const Options = styled(motion.div)<{ $open?: boolean }>`
     display: flex;
     flex-direction: column;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);

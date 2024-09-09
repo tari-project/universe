@@ -34,17 +34,13 @@ export const SideBarInner = styled(motion.div)`
     position: relative;
     padding: 0 16px;
     height: 100%;
-    overflow-y: scroll;
 `;
 
 export const BottomContainer = styled(motion.div)`
     display: flex;
     justify-content: flex-start;
     justify-self: flex-end;
-    position: absolute;
-    z-index: 1;
     width: 100%;
-    bottom: 20px;
     padding: 0 16px;
 `;
 

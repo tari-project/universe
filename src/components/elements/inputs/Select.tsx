@@ -12,17 +12,8 @@ import {
     OptionLabelWrapper,
     TriggerWrapper,
 } from './Select.styles.ts';
-import {
-    autoUpdate,
-    flip,
-    offset,
-    shift,
-    useClick,
-    useDismiss,
-    useFloating,
-    useInteractions,
-    useRole,
-} from '@floating-ui/react';
+import { offset, useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
+import { LayoutGroup } from 'framer-motion';
 
 interface Option {
     label: string;
@@ -45,8 +36,12 @@ export function Select({ options, selectedValue, disabled, loading, onChange }: 
     const { refs, floatingStyles, context } = useFloating({
         open: isOpen,
         onOpenChange: setIsOpen,
-        middleware: [offset(15), flip(), shift()],
-        whileElementsMounted: autoUpdate,
+        middleware: [
+            offset({
+                mainAxis: 10,
+                crossAxis: 30,
+            }),
+        ],
     });
 
     function handleChange(value: string) {
@@ -64,8 +59,8 @@ export function Select({ options, selectedValue, disabled, loading, onChange }: 
     const selectedIcon = selectedOption?.iconSrc;
 
     return (
-        <>
-            <TriggerWrapper $disabled={disabled} ref={refs.setReference} {...getReferenceProps()}>
+        <LayoutGroup id="dropdown-select">
+            <TriggerWrapper layout $disabled={disabled} ref={refs.setReference} {...getReferenceProps()}>
                 <SelectedOption>
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
@@ -73,7 +68,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange }: 
                 <IconWrapper>{loading ? <SpinnerIcon /> : <HiOutlineSelector />}</IconWrapper>
             </TriggerWrapper>
             {isOpen ? (
-                <Options ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                <Options layout ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
                     {options.map(({ label, value, iconSrc }) => {
                         const selected = value === selectedOption?.value;
                         return (
@@ -96,6 +91,6 @@ export function Select({ options, selectedValue, disabled, loading, onChange }: 
                     })}
                 </Options>
             ) : null}
-        </>
+        </LayoutGroup>
     );
 }

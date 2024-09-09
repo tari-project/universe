@@ -48,7 +48,7 @@ export function BlockHeightAccent() {
                     style={{
                         fontSize: `100px`,
                         rotate: -90,
-                        x: deferredFontSize * 1.65,
+                        x: deferredFontSize * 1.55,
                     }}
                 >
                     {heightStringArr?.map((c, i) => (

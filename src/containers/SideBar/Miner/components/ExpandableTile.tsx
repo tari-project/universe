@@ -24,7 +24,7 @@ const variants = {
     },
     visible: {
         opacity: 1,
-        transition: { delay: 0.1, duration: 0.3, ease: 'linear' },
+        transition: { duration: 0.2, ease: 'linear' },
     },
 };
 
@@ -50,7 +50,7 @@ export function ExpandableTile({
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
 
     return (
-        <TileItem>
+        <TileItem layoutId="expandable-tile">
             <TileTop>
                 <Typography>{title}</Typography>
                 <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
@@ -60,6 +60,7 @@ export function ExpandableTile({
             <AnimatePresence>
                 {expanded && (
                     <ExpandedWrapper
+                        layout
                         ref={refs.setFloating}
                         {...getFloatingProps()}
                         variants={variants}
