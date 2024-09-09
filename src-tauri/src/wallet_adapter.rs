@@ -142,7 +142,7 @@ impl ProcessAdapter for WalletAdapter {
                        }
                         },
                     };
-                    println!("Stopping minotari node");
+                    info!(target: LOG_TARGET, "Stopping minotari wallet");
 
                     match fs::remove_file(data_dir.join("wallet_pid")) {
                         Ok(_) => {}

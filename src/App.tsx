@@ -9,7 +9,7 @@ import { useEnvironment } from './hooks/useEnvironment.ts';
 import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
-import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
+// import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
 import { useAirdropSyncState } from './hooks/airdrop/useAirdropSyncState.ts';
 import AirdropLogin from './containers/Airdrop/AirdropLogin/AirdropLogin.tsx';
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
@@ -22,7 +22,7 @@ export default function App() {
     useSetUp();
     useGetStatus();
     useEnvironment();
-    useMiningEffects();
+    // useMiningEffects(); // TODO: check if we will still need this hook
 
     const isShuttingDown = useShuttingDown();
     const view = useUIStore((s) => s.view);
