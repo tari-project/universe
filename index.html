@@ -36,12 +36,13 @@
     function init() {
       glApp.init();
       time = performance.now() / 1000;
-
       glApp.properties.lightPositionX = -5;
       glApp.properties.lightPositionY = 4;
       glApp.properties.lightPositionZ = 3;
-      glApp.properties.cameraOffsetX = (348 + 50) / window.innerWidth; // 348 is sidebar width with some padding
+      glApp.properties.cameraZoom = 0.9;
+      glApp.properties.cameraOffsetX = 0.31;
 
+      glApp.properties.showVisual = true;
       window.addEventListener("resize", onResize);
       onResize();
       animate();

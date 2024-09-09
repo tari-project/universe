@@ -9,7 +9,7 @@ import { BlockHeightAccent } from '@app/containers/Dashboard/MiningView/componen
 
 export default function MiningView() {
     return (
-        <MiningViewContainer layout transition={{ duration: 0.3 }}>
+        <MiningViewContainer layout layoutId="mining-view--content">
             <LayoutGroup>
                 <BlockHeightAccent />
                 <Ruler />

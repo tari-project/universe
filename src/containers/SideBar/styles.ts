@@ -6,18 +6,11 @@ import gem from '../../assets/images/gem-sml.png';
 import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 import { motion } from 'framer-motion';
 
-interface SideBarContainerProps {
-    $sidebarOpen: boolean;
-}
-
 // SideBar
-export const SideBarContainer = styled(motion.div)<SideBarContainerProps>`
-    height: 100%;
-    width: ${({ $sidebarOpen }) => ($sidebarOpen ? `100%` : sidebarWidth)};
-    transition: width 0.5s ease-in-out;
+export const SideBarContainer = styled(motion.div)`
+    width: ${sidebarWidth};
     pointer-events: auto;
     display: flex;
-    flex-shrink: 0;
     flex-direction: column;
     justify-content: stretch;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
@@ -28,35 +21,31 @@ export const SideBarContainer = styled(motion.div)<SideBarContainerProps>`
     position: relative;
 `;
 
-export const TopContainer = styled.div`
+export const TopContainer = styled(motion.div)`
     padding: 0 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
 `;
 
-export const SideBarInner = styled.div`
+export const SideBarInner = styled(motion.div)`
     display: flex;
     flex-direction: column;
     position: relative;
-    padding: 0 16px 176px;
+    padding: 0 16px;
     height: 100%;
-    overflow-y: scroll;
 `;
 
-export const BottomContainer = styled.div`
+export const BottomContainer = styled(motion.div)`
     display: flex;
     justify-content: flex-start;
     justify-self: flex-end;
-    position: absolute;
-    z-index: 1;
     width: 100%;
-    bottom: 20px;
     padding: 0 16px;
 `;
 
 // Wallet
-export const WalletContainer = styled.div`
+export const WalletContainer = styled(motion.div)`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -72,7 +61,7 @@ export const WalletContainer = styled.div`
     box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
 `;
 
-export const Handle = styled.div`
+export const Handle = styled(motion.div)`
     background-color: ${({ theme }) => theme.palette.text.secondary};
     width: 52px;
     height: 3px;
@@ -81,7 +70,7 @@ export const Handle = styled.div`
 `;
 
 // Milestones
-export const ProgressBox = styled.div`
+export const ProgressBox = styled(motion.div)`
     background-color: ${({ theme }) => theme.palette.background.paper};
     padding: 3px;
     border-radius: 10px;
@@ -102,7 +91,7 @@ export const StyledLinearProgress = styled(LinearProgress)`
     flex-grow: 1;
 `;
 
-export const GemBox = styled.div`
+export const GemBox = styled(motion.div)`
     background-image: url(${gem});
     background-repeat: no-repeat;
     background-position: center;
