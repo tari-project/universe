@@ -39,14 +39,15 @@ export const Options = styled(motion.div)<{ $open?: boolean }>`
     z-index: 2;
 `;
 
-export const SelectedOption = styled.div`
+export const SelectedOption = styled(motion.div)`
     color: ${({ theme }) => theme.palette.text.primary};
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 5px;
     font-size: 18px;
     font-weight: 500;
+    height: 36px;
+    width: 100%;
     img {
         width: 14px;
         display: flex;
@@ -63,7 +64,7 @@ export const OptionLabelWrapper = styled.div`
         display: flex;
     }
 `;
-export const StyledOption = styled.div<{ $selected?: boolean }>`
+export const StyledOption = styled(motion.div)<{ $selected?: boolean }>`
     display: flex;
     font-size: 14px;
     background: ${({ theme }) => theme.palette.background.paper};
