@@ -4,14 +4,11 @@ import { GlAppState } from '@app/glApp';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { appWindow } from '@tauri-apps/api/window';
 import { resourceDir, join } from '@tauri-apps/api/path';
-import { convertFileSrc } from '@tauri-apps/api/tauri';
 import { readBinaryFile } from '@tauri-apps/api/fs';
 
 async function playBlockWinAudio() {
     const resourceDirPath = await resourceDir();
     const filePath = await join(resourceDirPath, 'audio/block_win.mp3');
-    const assetUrl = decodeURIComponent(convertFileSrc(filePath));
-    console.log('assetUrl:', assetUrl);
     readBinaryFile(filePath)
         .catch((err) => {
             console.error(err);
@@ -21,35 +18,9 @@ async function playBlockWinAudio() {
             const reader = new FileReader();
             reader.readAsDataURL(fileBlob);
             const url = URL.createObjectURL(fileBlob);
-            const audio = document.getElementById('audio') as HTMLAudioElement;
-            console.log('url:', url);
-            audio.src = url;
+            const audio = new Audio(url);
             audio.play();
         });
-    // const audio = document.getElementById('audio') as HTMLAudioElement;
-    // audio.src = assetUrl;
-    // audio.play();
-    // fetch(assetUrl)
-    //     .then((res) => {
-    //         // create blob url from response
-    //         res.blob()
-    //             .then((blob) => {
-    //                 const url = URL.createObjectURL(blob);
-    //                 const audio = document.getElementById('audio') as HTMLAudioElement;
-    //                 console.log('url:', url);
-    //                 audio.src = url;
-    //                 audio.play();
-    //             })
-    //             .catch((err) => {
-    //                 console.error(err);
-    //             });
-    //     })
-    //     .catch((err) => {
-    //         console.error(err);
-    //     });
-    const blobUrl = URL.createObjectURL(await fetch(assetUrl).then((res) => res.blob()));
-    const sound = new Audio(blobUrl);
-    sound.play();
 }
 
 export function useVisualisation() {

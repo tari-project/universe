@@ -44,7 +44,6 @@ export default function App() {
                 </DashboardContainer>
             )}
             <ErrorSnackbar />
-            <audio id="audio" />
         </ThemeProvider>
     );
 }

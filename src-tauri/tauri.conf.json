@@ -38,12 +38,10 @@
                 "startDragging": true
             },
             "protocol": {
-                "all": true,
                 "asset": true,
-                "assetScope": ["**"]
+                "assetScope": ["$RESOURCE/*"]
             },
             "fs": {
-                "all": true,
                 "copyFile": false,
                 "createDir": false,
                 "exists": false,
