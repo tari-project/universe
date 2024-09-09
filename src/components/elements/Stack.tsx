@@ -1,12 +1,12 @@
 import { CSSProperties, ReactNode } from 'react';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { motion, MotionProps } from 'framer-motion';
 
 type StackFlexProps = Partial<
     Pick<CSSProperties, 'justifyContent' | 'justifyItems' | 'alignItems' | 'alignContent' | 'flexDirection'>
 >;
 
-interface StackProps extends StackFlexProps {
+interface StackProps extends MotionProps, StackFlexProps {
     children?: ReactNode;
     direction?: StackFlexProps['flexDirection'];
     gap?: number;
