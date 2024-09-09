@@ -790,13 +790,7 @@ async fn status(
         }
     };
 
-    let tari_address = match state.wallet_manager.wallet_address().await {
-        Ok(addr) => addr,
-        Err(error) => {
-            warn!(target: LOG_TARGET, "Error getting wallet address: {}", error);
-            String::new()
-        }
-    };
+    let tari_address = state.tari_address.read().await;
 
     let hardware_status = HardwareMonitor::current()
         .write()
@@ -833,7 +827,8 @@ async fn status(
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
-        tari_address,
+        tari_address_base58: tari_address.to_base58(),
+        tari_address_emoji: tari_address.to_emoji_string(),
     }))
 }
 
@@ -903,7 +898,8 @@ pub struct AppStatus {
     auto_mining: bool,
     p2pool_enabled: bool,
     p2pool_stats: HashMap<String, Stats>,
-    tari_address: String,
+    tari_address_base58: String,
+    tari_address_emoji: String,
     monero_address: String,
     cpu_mining_enabled: bool,
     gpu_mining_enabled: bool,
@@ -953,6 +949,7 @@ struct UniverseAppState {
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     shutdown: Shutdown,
+    tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
@@ -1035,6 +1032,7 @@ fn main() {
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
         shutdown: shutdown.clone(),
+        tari_address: Arc::new(RwLock::new(TariAddress::default())),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
@@ -1082,6 +1080,7 @@ fn main() {
             };
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
+            let address = app.state::<UniverseAppState>().tari_address.clone();
             let thread = tauri::async_runtime::spawn(async move {
                 match InternalWallet::load_or_create(config_path).await {
                     Ok(wallet) => {
@@ -1092,19 +1091,26 @@ fn main() {
                                 wallet.get_spend_key(),
                             )
                             .await;
+                        let mut lock = address.write().await;
+                        *lock = wallet.get_tari_address();
+                        Ok(())
+                        //app.state::<UniverseAppState>().tari_address = wallet.get_tari_address();
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
                         // TODO: If this errors, the application does not exit properly.
                         // So temporarily we are going to kill it here
 
-                        return Err(e);
+                        Err(e)
                     }
                 }
-                Ok(())
             });
             match tauri::async_runtime::block_on(thread).unwrap() {
-                Ok(_) => Ok(()),
+                Ok(_) => {
+                    // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
+                    // *lock = address;
+                    Ok(())
+                }
                 Err(e) => {
                     error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e);
                     Err(e.into())

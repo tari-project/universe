@@ -13,7 +13,8 @@ export interface AppStatus {
     mode: modeType;
     auto_mining: boolean;
     monero_address?: string;
-    tari_address?: string;
+    tari_address_base58?: string;
+    tari_address_emoji?: string;
     p2pool_enabled: boolean;
     p2pool_stats?: P2poolStatsResult;
     cpu_mining_enabled: boolean;
