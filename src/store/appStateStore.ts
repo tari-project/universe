@@ -38,7 +38,7 @@ export const useAppStateStore = create<AppState>()(
             setupTitleParams: {},
             setupProgress: 0,
             setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
-                set({ setupTitle, setupTitleParams, setupProgress }),
+                set({ setupTitle, setupTitleParams, setupProgress, isSettingUp: setupProgress < 1 }),
 
             // functions
             settingUpFinished: () => set({ isSettingUp: false }),

@@ -27,7 +27,6 @@ export function useSetUp() {
             console.info('Setup Event:', e, p);
             switch (p.event_type) {
                 case 'setup_status':
-                    // console.info('Setup status:', p.title, p.title_params, p.progress);
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         settingUpFinished();

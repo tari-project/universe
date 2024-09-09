@@ -6,10 +6,11 @@ import { useShallow } from 'zustand/react/shallow';
 
 export function useVisualisation() {
     const [useFailTimeout, setUseFailTimeout] = useState(false);
-    const { setTimerPaused, setPostBlockAnimation } = useMiningStore(
+    const { setTimerPaused, setPostBlockAnimation, setEarnings } = useMiningStore(
         useShallow((s) => ({
             setPostBlockAnimation: s.setPostBlockAnimation,
             setTimerPaused: s.setTimerPaused,
+            setEarnings: s.setEarnings,
         }))
     );
 
@@ -49,8 +50,10 @@ export function useVisualisation() {
 
         if (canAnimate) {
             setAnimationState('success');
+        } else {
+            setEarnings(undefined);
         }
-    }, [checkCanAnimate]);
+    }, [checkCanAnimate, setEarnings]);
 
     return { handleFail, handleWin };
 }

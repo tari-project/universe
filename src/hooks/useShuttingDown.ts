@@ -9,7 +9,6 @@ export function useShuttingDown() {
         appWindow.onCloseRequested(async (e) => {
             if (!isShuttingDown) {
                 e.preventDefault();
-                resetAllStores();
                 setIsShuttingDown(true);
             }
         });
@@ -18,6 +17,7 @@ export function useShuttingDown() {
     useEffect(() => {
         if (isShuttingDown) {
             setTimeout(() => {
+                resetAllStores();
                 appWindow.close();
             }, 250);
         }

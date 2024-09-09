@@ -10,14 +10,16 @@ import { useDeferredValue, useEffect, useLayoutEffect, useRef, useState } from '
 import { AnimatePresence, LayoutGroup } from 'framer-motion';
 
 export function BlockHeightAccent() {
-    const containerRef = useRef<HTMLDivElement>(null);
     const height = useMiningStore(useShallow((s) => s.displayBlockHeight));
+    const heightString = height?.toString();
+    const containerRef = useRef<HTMLDivElement>(null);
+
     const [windowHeight, setWindowHeight] = useState(window.innerHeight);
     const [fontSize, setFontSize] = useState(0);
     const [textHeight, setTextHeight] = useState(containerRef.current?.offsetHeight);
-    const heightString = height?.toString();
     const heightStringArr = heightString?.split('') || [];
-    const deferredHeight = useDeferredValue(windowHeight || 110);
+
+    const deferredHeight = useDeferredValue(windowHeight);
     const deferredFontSize = useDeferredValue(fontSize);
 
     useEffect(() => {
@@ -43,26 +45,27 @@ export function BlockHeightAccent() {
     return (
         <AccentWrapper layout>
             <LayoutGroup>
-                <Accent
-                    $accentHeight={textHeight}
-                    animate={{
-                        width: `${textHeight}px`,
-                    }}
-                >
-                    <AccentText
-                        ref={containerRef}
-                        animate={{
-                            fontSize: `${deferredFontSize}px`,
-                        }}
-                    >
-                        <AnimatePresence mode="wait">
-                            {Boolean(deferredFontSize) &&
-                                heightStringArr?.map((c, i) => (
+                <AnimatePresence mode="sync">
+                    {window.innerHeight ? (
+                        <Accent
+                            $accentHeight={textHeight}
+                            animate={{
+                                width: `${textHeight}`,
+                            }}
+                        >
+                            <AccentText
+                                ref={containerRef}
+                                animate={{
+                                    fontSize: `${deferredFontSize || 110}px`,
+                                }}
+                            >
+                                {heightStringArr?.map((c, i) => (
                                     <SpacedNum key={`spaced-char-${c}-${i}`}>{c}</SpacedNum>
                                 ))}
-                        </AnimatePresence>
-                    </AccentText>
-                </Accent>
+                            </AccentText>
+                        </Accent>
+                    ) : null}
+                </AnimatePresence>
             </LayoutGroup>
         </AccentWrapper>
     );
