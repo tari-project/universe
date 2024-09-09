@@ -57,7 +57,7 @@ impl ProcessAdapter for P2poolAdapter {
             return Err(anyhow!("P2poolAdapter config is not set"));
         }
         let config = self.config.as_ref().unwrap();
-        let args: Vec<String> = vec![
+        let mut args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
             config.grpc_port.to_string(),
@@ -85,10 +85,12 @@ impl ProcessAdapter for P2poolAdapter {
                     )
                     .await?;
                     let tribes: Vec<String> = serde_json::from_slice(&output)?;
-                    let _tribe = match tribes.choose(&mut rand::thread_rng()) {
+                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
                         Some(tribe) => tribe.to_string(),
                         None => String::from("default"), // TODO: generate name
                     };
+                    args.push("--tribe".to_string());
+                    args.push(tribe);
 
                     // start
                     let mut child = launch_child_process(&file_path, None, &args)?;
