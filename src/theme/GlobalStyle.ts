@@ -1,5 +1,4 @@
 import { createGlobalStyle } from 'styled-components';
-import clouds from '@app/assets/backgrounds/clouds.png';
 
 export const GlobalReset = createGlobalStyle`
     button {

@@ -1,6 +1,5 @@
 import { GlAppState } from './glApp';
 
-console.log(window.glApp);
 export function setAnimationState(state: GlAppState) {
     const sM = window.glApp.stateManager;
     let newState = state;
