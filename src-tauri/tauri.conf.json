@@ -68,11 +68,11 @@
             "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png", "icons/StoreLogo.png", "icons/tari.png"],
             "category": "Finance",
             "copyright": "Copyright (c) 2024 Tari Labs, LLC",
-            "shortDescription": "Tari Universe is a digital wallet for the Tari network.",
-            "longDescription": "https://github.com/tari-project/tari-universe/blob/main/LICENSE.md",
+            "shortDescription": "Tari Universe is a mining app for Tari.",
+            "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
             "publisher": "Tari Labs, LLC",
             "macOS": {
-                "minimumSystemVersion": "10.13",
+                "minimumSystemVersion": "13.6",
                 "providerShortName": "Tari Labs, LLC",
                 "license": "macOS/LICENSE.md"
             }
