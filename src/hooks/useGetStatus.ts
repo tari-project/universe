@@ -21,13 +21,10 @@ export function useGetStatus() {
     const setGPUStatus = useGPUStatusStore((s) => s.setGPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
-    const setIsMiningInProgress = useMiningStore((s) => s.setIsMiningInProgress);
-    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
     const setTelemetryMode = useAppStatusStore((s) => s.setTelemetryMode);
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
 
-    const { error, setError } = useAppStateStore((s) => ({
-        error: s.error,
+    const { setError } = useAppStateStore((s) => ({
         setError: s.setError,
     }));
     const setMode = useAppStatusStore((s) => s.setMode);
@@ -54,7 +51,6 @@ export function useGetStatus() {
                         setAppStatus(status);
                         setCPUStatus(status.cpu);
                         setGPUStatus(status.gpu);
-
                         setBaseNodeStatus(status.base_node);
 
                         const wallet_balance = status.wallet_balance;
@@ -63,22 +59,9 @@ export function useGetStatus() {
                         setMode(status.mode);
 
                         const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
-                        const isMining = Boolean(status.cpu?.is_mining || status.gpu?.is_mining);
-
                         setMiningControlsEnabled(!isSettingUp && miningEnabled);
-
-                        setIsMiningInProgress(isMining);
-                        setMiningInitiated(isMining);
-
-                        if (status.cpu?.is_mining) {
-                            if (!status.cpu?.connection.is_connected) {
-                                setError('Xmrig connection lost!');
-                            } else if (error === 'Xmrig connection lost!') {
-                                setError('');
-                            }
-                        }
                     } else {
-                        console.error('Could not get status');
+                        console.info('Status not returned. It could still be setting up');
                     }
                 })
                 .catch((e) => {
