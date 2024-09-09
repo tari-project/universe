@@ -996,8 +996,6 @@ fn main() {
         tari_address: TariAddress::default(),
     }));
 
-    let app_config = Arc::new(RwLock::new(AppConfig::new()));
-
     let app_in_memory_config = if cfg!(feature = "airdrop-local") {
         Arc::new(RwLock::new(
             app_in_memory_config::AppInMemoryConfig::init_local(),
@@ -1009,6 +1007,9 @@ fn main() {
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
 
+    let app_config_raw = AppConfig::new();
+    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
+
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         node_manager.clone(),
         cpu_miner.clone(),
@@ -1018,8 +1019,6 @@ fn main() {
         Some(Network::default()),
     );
 
-    let app_config_raw = AppConfig::new();
-    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
     // let mm_proxy_config = if app_config_raw.p2pool_enabled {
     //     MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     // } else {
