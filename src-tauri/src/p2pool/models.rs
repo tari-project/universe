@@ -1,4 +1,3 @@
-use num::BigUint;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -26,7 +25,7 @@ pub struct Stats {
     pub num_of_miners: usize,
     pub last_block_won: Option<StatsBlock>,
     pub share_chain_height: u64,
-    pub pool_hash_rate: BigUint,
+    pub pool_hash_rate: String,
     pub pool_total_earnings: MicroMinotari,
     pub pool_total_estimated_earnings: EstimatedEarnings,
     pub total_earnings: HashMap<String, u64>,
