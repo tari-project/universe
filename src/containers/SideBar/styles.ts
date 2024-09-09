@@ -6,18 +6,13 @@ import gem from '../../assets/images/gem-sml.png';
 import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 import { motion } from 'framer-motion';
 
-interface SideBarContainerProps {
-    $sidebarOpen: boolean;
-}
-
 // SideBar
-export const SideBarContainer = styled(motion.div)<SideBarContainerProps>`
+export const SideBarContainer = styled(motion.div)`
     height: 100%;
-    width: ${({ $sidebarOpen }) => ($sidebarOpen ? `100%` : sidebarWidth)};
-    transition: width 0.5s ease-in-out;
+    width: 100%;
+    min-width: ${sidebarWidth};
     pointer-events: auto;
     display: flex;
-    flex-shrink: 0;
     flex-direction: column;
     justify-content: stretch;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
@@ -39,7 +34,7 @@ export const SideBarInner = styled.div`
     display: flex;
     flex-direction: column;
     position: relative;
-    padding: 0 16px 176px;
+    padding: 0 16px;
     height: 100%;
     overflow-y: scroll;
 `;

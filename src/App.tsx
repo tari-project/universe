@@ -1,4 +1,4 @@
-import { BackgroundImage, ContainerInner, DashboardContainer } from './theme/styles';
+import { BackgroundImage, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
@@ -36,11 +36,8 @@ export default function App() {
     const shutDownMarkup = isShuttingDown ? <ShuttingDownScreen /> : null;
     const mainMarkup = canRenderMain ? (
         <DashboardContainer>
-            <ContainerInner>
-                <SideBar />
-                <AirdropLogin />
-                <Dashboard status={view} />
-            </ContainerInner>
+            <SideBar />
+            <Dashboard status={view} />
         </DashboardContainer>
     ) : null;
 
@@ -49,10 +46,11 @@ export default function App() {
             <GlobalReset />
             <GlobalStyle />
             <AutoUpdateDialog />
-            <LayoutGroup>
+            <LayoutGroup id="app-content">
+                <AirdropLogin />
                 {splashScreenMarkup}
                 {shutDownMarkup}
-                {!visualMode || view != 'mining' ? <BackgroundImage layout /> : null}
+                {!visualMode || view != 'mining' ? <BackgroundImage layout transition={{ duration: 0.3 }} /> : null}
                 {mainMarkup}
                 <ErrorSnackbar />
             </LayoutGroup>
