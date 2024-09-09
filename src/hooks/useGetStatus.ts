@@ -10,6 +10,7 @@ import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useShallow } from 'zustand/react/shallow';
+import { useEffect } from 'react';
 
 const INTERVAL = 1000;
 
@@ -20,6 +21,7 @@ export function useGetStatus() {
     const setGPUStatus = useGPUStatusStore((s) => s.setGPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+    const setTelemetryMode = useAppStatusStore((s) => s.setTelemetryMode);
     const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
 
     const { setError } = useAppStateStore((s) => ({
@@ -28,6 +30,17 @@ export function useGetStatus() {
     const setMode = useAppStatusStore((s) => s.setMode);
 
     useMainAppVersion();
+
+    useEffect(() => {
+        invoke('get_telemetry_mode')
+            .then((telemetryMode) => {
+                console.info('Telemetry mode', telemetryMode);
+                setTelemetryMode(telemetryMode);
+            })
+            .catch((e) => {
+                console.error('Could not get telemetry mode', e);
+            });
+    }, [setTelemetryMode]);
 
     useInterval(
         () =>

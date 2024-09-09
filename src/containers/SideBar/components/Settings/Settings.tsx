@@ -17,14 +17,13 @@ import VisualMode from '../../../Dashboard/components/VisualMode';
 import { CardContainer, Form, HorisontalBox } from './Settings.styles';
 
 import { useForm } from 'react-hook-form';
-import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
+import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
 
 import { Button, IconButton } from '@app/components/elements/Button.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
-import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
@@ -382,6 +381,8 @@ export default function Settings() {
                         {gpuEnabledMarkup}
                     </HorisontalBox>
                     <Divider />
+                    <AirdropPermissionSettings />
+                    <Divider />
                     <LanguageSettings />
                     <Divider />
                     <DebugSettings />
@@ -393,12 +394,8 @@ export default function Settings() {
                     <Divider />
                     <Stack direction="row" justifyContent="space-between">
                         <VisualMode />
-                        <TelemetryMode />
                     </Stack>
                     <Divider />
-                    <HorisontalBox>
-                        <ConnectButton />
-                    </HorisontalBox>
                     <Divider />
                     <HorisontalBox>
                         <ResetSettingsButton />
