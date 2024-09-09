@@ -5,24 +5,15 @@ import { SpinnerIcon } from '@app/components/elements/SpinnerIcon.tsx';
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 
 import {
+    IconWrapper,
+    OptionLabelWrapper,
     Options,
     SelectedOption,
     StyledOption,
-    IconWrapper,
-    OptionLabelWrapper,
     TriggerWrapper,
 } from './Select.styles.ts';
-import {
-    autoUpdate,
-    flip,
-    offset,
-    shift,
-    useClick,
-    useDismiss,
-    useFloating,
-    useInteractions,
-    useRole,
-} from '@floating-ui/react';
+import { useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
+import { LayoutGroup } from 'framer-motion';
 
 interface Option {
     label: string;
@@ -42,11 +33,9 @@ interface Props {
 export function Select({ options, selectedValue, disabled, loading, onChange }: Props) {
     const [isOpen, setIsOpen] = useState(false);
 
-    const { refs, floatingStyles, context } = useFloating({
+    const { refs, context } = useFloating({
         open: isOpen,
         onOpenChange: setIsOpen,
-        middleware: [offset(15), flip(), shift()],
-        whileElementsMounted: autoUpdate,
     });
 
     function handleChange(value: string) {
@@ -64,38 +53,41 @@ export function Select({ options, selectedValue, disabled, loading, onChange }: 
     const selectedIcon = selectedOption?.iconSrc;
 
     return (
-        <>
-            <TriggerWrapper $disabled={disabled} ref={refs.setReference} {...getReferenceProps()}>
-                <SelectedOption>
+        <LayoutGroup id="dropdown-select">
+            <TriggerWrapper layout $disabled={disabled} ref={refs.setReference} {...getReferenceProps()}>
+                <SelectedOption layout>
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
                 </SelectedOption>
                 <IconWrapper>{loading ? <SpinnerIcon /> : <HiOutlineSelector />}</IconWrapper>
             </TriggerWrapper>
             {isOpen ? (
-                <Options ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
-                    {options.map(({ label, value, iconSrc }) => {
-                        const selected = value === selectedOption?.value;
-                        return (
-                            <StyledOption
-                                onClick={() => handleChange(value)}
-                                key={`opt-${value}-${label}`}
-                                $selected={selected}
-                            >
-                                <OptionLabelWrapper>
-                                    {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
-                                    <Typography>{label}</Typography>
-                                </OptionLabelWrapper>
-                                {selected ? (
-                                    <IconWrapper>
-                                        <CheckSvg />
-                                    </IconWrapper>
-                                ) : null}
-                            </StyledOption>
-                        );
-                    })}
+                <Options layout ref={refs.setFloating} {...getFloatingProps()}>
+                    <LayoutGroup id="options">
+                        {options.map(({ label, value, iconSrc }) => {
+                            const selected = value === selectedOption?.value;
+                            return (
+                                <StyledOption
+                                    layout
+                                    onClick={() => handleChange(value)}
+                                    key={`opt-${value}-${label}`}
+                                    $selected={selected}
+                                >
+                                    <OptionLabelWrapper>
+                                        {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
+                                        <Typography>{label}</Typography>
+                                    </OptionLabelWrapper>
+                                    {selected ? (
+                                        <IconWrapper>
+                                            <CheckSvg />
+                                        </IconWrapper>
+                                    ) : null}
+                                </StyledOption>
+                            );
+                        })}
+                    </LayoutGroup>
                 </Options>
             ) : null}
-        </>
+        </LayoutGroup>
     );
 }

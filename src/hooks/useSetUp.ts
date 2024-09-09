@@ -15,9 +15,7 @@ export function useSetUp() {
     const startupInitiated = useRef(false);
     const setView = useUIStore((s) => s.setView);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
-    const settingUpFinished = useAppStateStore(useShallow((s) => s.settingUpFinished));
     const setError = useAppStateStore((s) => s.setError);
-
     const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
 
     useVersions();
@@ -29,7 +27,6 @@ export function useSetUp() {
                 case 'setup_status':
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
-                        settingUpFinished();
                         setAnimationState('showVisual');
                         setView('mining');
                     }
@@ -52,5 +49,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [setError, setSetupDetails, setView, settingUpFinished, isAfterAutoUpdate]);
+    }, [isAfterAutoUpdate, setError, setSetupDetails, setView]);
 }

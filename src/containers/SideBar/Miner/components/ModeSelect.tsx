@@ -70,7 +70,7 @@ function ModeSelect() {
     }, [isLoading, mode]);
 
     return (
-        <TileItem>
+        <TileItem layoutId="miner-mode-select-tile" layout>
             <Typography>{t('mode')}</Typography>
             <Select
                 disabled={isLoading || isSettingUp}
