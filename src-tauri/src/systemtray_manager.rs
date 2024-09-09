@@ -101,19 +101,19 @@ impl SystemtrayManager {
         match current_os {
             CurrentOperatingSystem::Windows => {
                 format!(
-                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEarn: {:.2} tXTM/Day",
+                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEst. earning: {} tXTM/day",
                     data.cpu_hashrate,
                     data.cpu_usage,
                     data.gpu_hashrate,
                     data.gpu_usage,
-                    data.estimated_earning
+                    format_balance(data.estimated_earning)
                 )
             }
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             CurrentOperatingSystem::MacOS => {
                 format!(
-                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEstimated Earning: {:.2} tXTM/Day",
-                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, data.estimated_earning
+                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
+                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, format_balance(data.estimated_earning)
                 )
             }
         }
