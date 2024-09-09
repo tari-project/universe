@@ -18,61 +18,58 @@ import {
     ExpandableTileItem,
     ExpandedContentTile,
 } from '@app/containers/SideBar/Miner/components/ExpandableTile.styles.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function Miner() {
     const { cpu: cpuHardwareStatus, gpu: gpuHardwareStatus } = useHardwareStatus();
+    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const { isCpuMiningEnabled, isGpuMiningEnabled } = useAppStatusStore(
+        useShallow((s) => ({
+            isCpuMiningEnabled: s.cpu_mining_enabled,
+            isGpuMiningEnabled: s.gpu_mining_enabled,
+        }))
+    );
+    const { cpu_estimated_earnings, cpu_hash_rate, cpu_is_mining } = useCPUStatusStore(
+        useShallow((s) => ({
+            cpu_estimated_earnings: s.estimated_earnings,
+            cpu_hash_rate: s.hash_rate,
+            cpu_is_mining: s.is_mining,
+        }))
+    );
+    const { gpu_estimated_earnings, gpu_hash_rate, gpu_is_mining } = useGPUStatusStore(
+        useShallow((s) => ({
+            gpu_estimated_earnings: s.estimated_earnings,
+            gpu_hash_rate: s.hash_rate,
+            gpu_is_mining: s.is_mining,
+        }))
+    );
 
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
-    const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
+    const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 
-    const hash_rate = useCPUStatusStore((s) => s.hash_rate);
-    const gpu_hash_rate = useGPUStatusStore((s) => s.hash_rate) || 0;
+    const isLoading = (miningInitiated && !isMiningInProgress) || (isMiningInProgress && !miningInitiated);
+    const isWaitingForCPUHashRate = isMiningInProgress && cpu_hash_rate <= 0;
+    const isWaitingForGPUHashRate = isMiningInProgress && gpu_hash_rate <= 0;
 
-    const estimated_earnings = useCPUStatusStore((s) => s.estimated_earnings);
-    const gpu_estimated_earnings = useGPUStatusStore((s) => s.estimated_earnings) || 0;
-    //TODO - dedup these states
-    const isCpuMiningEnabled = useAppStatusStore((s) => s.cpu_mining_enabled);
-    const isGpuMiningEnabled = useAppStatusStore((s) => s.gpu_mining_enabled);
-
-    const isWaitingForCPUHashRate = miningInitiated && hash_rate <= 0;
-    const isWaitingForGPUHashRate = miningInitiated && gpu_hash_rate <= 0;
-
-    const totalEarnings = estimated_earnings + gpu_estimated_earnings;
+    const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
-    const tileStats = {
-        cpu: {
-            title: 'CPU Power',
-            chipValue: cpuHardwareStatus?.usage_percentage,
-            loading: isCpuMiningEnabled && isWaitingForCPUHashRate,
-            stats: isCpuMiningEnabled && isMiningInProgress ? formatNumber(hash_rate) : '-',
-            unit: 'H/s',
-        },
-        gpu: {
-            title: 'GPU Power',
-            chipValue: gpuHardwareStatus?.usage_percentage,
-            loading: isGpuMiningEnabled && isWaitingForGPUHashRate,
-            stats: isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-',
-            unit: 'H/s',
-        },
-    };
 
     return (
         <MinerContainer>
             <TileContainer>
                 <Tile
-                    title={tileStats.cpu.title}
-                    stats={tileStats.cpu.stats}
-                    isLoading={tileStats.cpu.loading}
-                    chipValue={tileStats.cpu.chipValue}
-                    unit={tileStats.cpu.unit}
+                    title="CPU Power"
+                    stats={isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-'}
+                    isLoading={isLoading || (isCpuMiningEnabled && isWaitingForCPUHashRate)}
+                    chipValue={cpuHardwareStatus?.usage_percentage}
+                    unit="H/s"
                     useLowerCase
                 />
                 <Tile
-                    title={tileStats.gpu.title}
-                    stats={tileStats.gpu.stats}
-                    isLoading={tileStats.gpu.loading}
-                    chipValue={tileStats.gpu.chipValue}
-                    unit={tileStats.gpu.unit}
+                    title="GPU Power"
+                    stats={isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-'}
+                    isLoading={isLoading || (isGpuMiningEnabled && isWaitingForGPUHashRate)}
+                    chipValue={gpuHardwareStatus?.usage_percentage}
+                    unit="H/s"
                     useLowerCase
                 />
                 <ModeSelect />
@@ -96,7 +93,7 @@ export default function Miner() {
                                     lineHeight: '1.02',
                                 }}
                             >
-                                {isMiningInProgress && isCpuMiningEnabled ? formatBalance(estimated_earnings) : '-'}
+                                {isMiningInProgress && isCpuMiningEnabled ? formatBalance(cpu_estimated_earnings) : '-'}
                             </Typography>
                             <Unit>
                                 <Typography>tXTM/day</Typography>

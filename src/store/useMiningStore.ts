@@ -1,7 +1,6 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from './create';
+
 import { BlockTimeData } from '@app/types/mining.ts';
-import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
 interface State {
     displayBlockTime?: BlockTimeData;
@@ -37,7 +36,7 @@ interface Actions {
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
-    displayBlockHeight: useBaseNodeStatusStore.getState().block_height,
+    displayBlockHeight: undefined,
     timerPaused: false,
     postBlockAnimation: false,
     miningLoading: false,
@@ -49,37 +48,20 @@ const initialState: State = {
     miningControlsEnabled: false,
 };
 
-export const useMiningStore = create<MiningStoreState>()(
-    persist(
-        (set) => ({
-            ...initialState,
-            setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
-            setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
-            setEarnings: (earnings) => set({ earnings }),
-            setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
-            setTimerPaused: (timerPaused) => set({ timerPaused }),
-            setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
-            setHashrateReady: (hashrateReady) => set({ hashrateReady }),
+export const useMiningStore = create<MiningStoreState>()((set) => ({
+    ...initialState,
+    setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
+    setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
+    setEarnings: (earnings) => set({ earnings }),
+    setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
+    setTimerPaused: (timerPaused) => set({ timerPaused }),
+    setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
+    setHashrateReady: (hashrateReady) => set({ hashrateReady }),
 
-            setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
-            setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
-            setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
-            setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-            setMiningControlsEnabled: (miningControlsEnabled) =>
-                set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
-        }),
-        {
-            name: 'mining',
-            storage: createJSONStorage(() => sessionStorage),
-            partialize: (s) => ({
-                timerPaused: s.timerPaused,
-                miningLoading: s.miningLoading,
-                isMiningInProgress: s.isMiningInProgress,
-                miningInitiated: s.miningInitiated,
-                miningControlsEnabled: s.miningControlsEnabled,
-                isConnectionLostDuringMining: s.isConnectionLostDuringMining,
-            }),
-            version: 3,
-        }
-    )
-);
+    setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
+    setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
+    setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
+    setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setMiningControlsEnabled: (miningControlsEnabled) =>
+        set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
+}));
