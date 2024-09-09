@@ -56,11 +56,12 @@ interface FormState {
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
-    const { moneroAddress, walletAddress, isCpuMiningEnabled, isGpuMiningEnabled, isP2poolEnabled, p2poolStats } =
+    const { moneroAddress, walletAddress, isCpuMiningEnabled, isGpuMiningEnabled, isP2poolEnabled, p2poolStats, walletAddressEmoji } =
         useAppStatusStore(
             useShallow((s) => ({
                 moneroAddress: s.monero_address,
-                walletAddress: s.tari_address,
+                walletAddress: s.tari_address_base58,
+                walletAddressEmoji: s.tari_address_emoji,
                 isCpuMiningEnabled: s.cpu_mining_enabled,
                 isGpuMiningEnabled: s.gpu_mining_enabled,
                 isP2poolEnabled: s.p2pool_enabled,
@@ -160,6 +161,10 @@ export default function Settings() {
                     <IconButton onClick={copyWalletAddress}>
                         {isCopyTooltipHiddenWalletAddress ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                     </IconButton>
+
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="p">{walletAddressEmoji}</Typography>
                 </Stack>
             </Stack>
         </>

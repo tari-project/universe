@@ -827,7 +827,7 @@ async fn status(
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
-        tari_address_base58: tari_address.to_string(),
+        tari_address_base58: tari_address.to_base58(),
         tari_address_emoji: tari_address.to_emoji_string(),
     }))
 }
