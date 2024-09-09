@@ -45,7 +45,7 @@ export function useGetStatus() {
                         setMode(status.mode);
 
                         const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
-                        setMiningControlsEnabled(!isSettingUp && miningEnabled);
+                        setMiningControlsEnabled(isSettingUp ? false : miningEnabled);
                     } else {
                         console.info('Status not returned. It could still be setting up');
                     }
