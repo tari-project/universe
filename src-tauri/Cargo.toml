@@ -45,6 +45,7 @@ tauri = { version = "1", features = [
     "process-command-api",
 ] }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+tauri-plugin-deep-link = "0.1.2"
 tokio = { version = "1", features = ["full"] }
 semver = "1.0.23"
 serde = { version = "1", features = ["derive"] }
@@ -52,6 +53,7 @@ serde_json = "1"
 futures-util = "0.3.30"
 flate2 = "1.0.30"
 tar = "0.4.26"
+fluent-uri = "0.2.0"
 async_zip = { version = "0.0.17", features = ["full"] }
 futures-lite = "2.3.0"
 tokio-util = { version = "0.7.11", features = ["compat"] }
@@ -86,6 +88,7 @@ nvml-wrapper = "0.10.0"
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
+airdrop-local = []
 
 [package.metadata.cargo-machete]
 ignored = [

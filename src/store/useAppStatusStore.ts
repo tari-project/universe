@@ -1,7 +1,6 @@
-import { create } from 'zustand';
+import { create } from './create';
 import { ApplicationsVersions, AppStatus } from '../types/app-status.ts';
 import { modeType } from './types.ts';
-import { persist } from 'zustand/middleware';
 
 type State = Partial<AppStatus>;
 
@@ -10,6 +9,7 @@ interface Actions {
     setApplicationsVersions: (applicationsVersions: ApplicationsVersions) => void;
     setMode: (mode: modeType) => void;
     setP2poolEnabled: (p2poolEnabled: boolean) => void;
+    setTelemetryMode: (telemetryMode: boolean) => void;
 }
 
 type AppStatusStoreState = State & Actions;
@@ -27,17 +27,11 @@ const initialState: State = {
     cpu_mining_enabled: false,
     gpu_mining_enabled: false,
 };
-export const useAppStatusStore = create<AppStatusStoreState>()(
-    persist(
-        (set) => ({
-            ...initialState,
-            setAppStatus: (appStatus) => set({ ...appStatus }),
-            setApplicationsVersions: (applications_versions) => set({ applications_versions }),
-            setMode: (mode) => set({ mode }),
-            setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
-        }),
-        {
-            name: 'statusStore',
-        }
-    )
-);
+export const useAppStatusStore = create<AppStatusStoreState>()((set) => ({
+    ...initialState,
+    setTelemetryMode: (telemetry_mode) => set({ telemetry_mode }),
+    setAppStatus: (appStatus) => set({ ...appStatus }),
+    setApplicationsVersions: (applications_versions) => set({ applications_versions }),
+    setMode: (mode) => set({ mode }),
+    setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
+}));

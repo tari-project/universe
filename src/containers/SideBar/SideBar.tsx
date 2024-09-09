@@ -6,22 +6,25 @@ import { SideBarContainer, SideBarInner, BottomContainer, TopContainer } from '.
 import { useUIStore } from '../../store/useUIStore.ts';
 import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import { LayoutGroup } from 'framer-motion';
 
 function SideBar() {
     const sidebarOpen = useUIStore((state) => state.sidebarOpen);
     return (
-        <SideBarContainer $sidebarOpen={sidebarOpen}>
-            <TopContainer>
-                <Heading />
-                <MiningButton />
-            </TopContainer>
-            <Divider />
-            <SideBarInner>
-                <Miner />
-            </SideBarInner>
-            <BottomContainer>
-                <Wallet />
-            </BottomContainer>
+        <SideBarContainer $sidebarOpen={sidebarOpen} layout>
+            <LayoutGroup>
+                <TopContainer>
+                    <Heading />
+                    <MiningButton />
+                </TopContainer>
+                <Divider />
+                <SideBarInner>
+                    <Miner />
+                </SideBarInner>
+                <BottomContainer>
+                    <Wallet />
+                </BottomContainer>
+            </LayoutGroup>
         </SideBarContainer>
     );
 }

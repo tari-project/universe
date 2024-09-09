@@ -3,6 +3,7 @@ import { useAppStatusStore } from '../store/useAppStatusStore';
 import { invoke } from '@tauri-apps/api';
 import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
 import { useInterval } from '@app/hooks/useInterval.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 export function useApplicationsVersions() {
     const setApplicationsVersions = useAppStatusStore((state) => state.setApplicationsVersions);
@@ -31,7 +32,7 @@ export function useApplicationsVersions() {
 }
 
 export function useVersions() {
-    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const applicationsVersions = useAppStatusStore(useShallow((state) => state.applications_versions));
     const { getApplicationsVersions } = useApplicationsVersions();
     const areAllVersionsPresent = useRef(false);
 

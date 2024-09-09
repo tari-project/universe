@@ -21,5 +21,20 @@
     "last-block-added-time": "Zincir zamanına eklenen son blok",
     "visual-mode": "Görsel mod",
     "pool-mining": "Havuz Madenciliği",
-    "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kadroya) katılacaksınız."
+    "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
+    "cpu-mining-enabled": "CPU Madenciliği",
+    "gpu-mining-enabled": "GPU Madenciliği",
+    "p2pool-stats": "P2Pool İstatistikleri",
+    "tribe": "Kabile",
+    "miners": "Madenciler",
+    "tribe-earnings": "Kabile kazançları",
+    "tribe-pool-height": "Havuz yüksekliği",
+    "p2pool-hash-rate": "Havuz hash oranları",
+    "p2pool-total-earnings": "Toplam havuz kazançları",
+    "p2pool-chain-tip": "Zincir ucu",
+    "p2pool-user-total-earnings": "Toplam kazançlar",
+    "yes": "Evet",
+    "cancel": "İptal",
+    "reset-settings": "Ayarları sıfırla",
+    "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?"
 }

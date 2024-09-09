@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 enum MiningButtonStateText {
     STARTED = 'pause-mining',
@@ -18,12 +19,12 @@ enum MiningButtonStateText {
 
 function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const miningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
-    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
+    const miningControlsEnabled = useMiningStore(useShallow((s) => s.miningControlsEnabled));
+    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const setMiningInitiated = useMiningStore(useShallow((s) => s.setMiningInitiated));
 
-    const isCPUMining = useCPUStatusStore((s) => s.is_mining);
-    const isGPUMining = useGPUStatusStore((s) => s.is_mining);
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
 
     const isMining = isCPUMining || isGPUMining;
 

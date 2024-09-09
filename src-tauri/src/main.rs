@@ -2,9 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app_config;
+mod app_in_memory_config;
 mod binary_resolver;
 mod consts;
 mod cpu_miner;
+mod deep_link;
 mod download_utils;
 mod github;
 mod gpu_miner;
@@ -42,7 +44,9 @@ use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
+use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binary_resolver::{Binaries, BinaryResolver};
+use deep_link::DeepLinkParser;
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
@@ -62,6 +66,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
+use tauri_plugin_deep_link;
 use telemetry_manager::TelemetryManager;
 use tokio::sync::RwLock;
 use wallet_manager::WalletManagerError;
@@ -102,6 +107,24 @@ async fn set_telemetry_mode(
 }
 
 #[tauri::command]
+async fn get_telemetry_mode(
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<bool, ()> {
+    let telemetry_mode = state.config.read().await.get_allow_telemetry();
+    Ok(telemetry_mode)
+}
+
+#[tauri::command]
+async fn get_app_id(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<String, ()> {
+    Ok(state.config.read().await.anon_id.clone())
+}
+
+#[tauri::command]
 async fn set_airdrop_access_token(
     token: String,
     _window: tauri::Window,
@@ -111,6 +134,15 @@ async fn set_airdrop_access_token(
     let mut write_lock = state.airdrop_access_token.write().await;
     *write_lock = Some(token);
     Ok(())
+}
+
+#[tauri::command]
+async fn get_app_in_memory_config(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<AirdropInMemoryConfig, ()> {
+    Ok(state.in_memory_config.read().await.clone().into())
 }
 
 #[tauri::command]
@@ -183,7 +215,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(state.airdrop_access_token.clone())
+        .initialize(app.clone(), state.airdrop_access_token.clone())
         .await?;
 
     BinaryResolver::current()
@@ -922,6 +954,7 @@ struct CpuMinerConfig {
 struct UniverseAppState {
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     shutdown: Shutdown,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -946,6 +979,8 @@ pub const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    tauri_plugin_deep_link::prepare("com.tari.universe");
+
     let default_hook = panic::take_hook();
     panic::set_hook(Box::new(move |info| {
         default_hook(info);
@@ -966,21 +1001,29 @@ fn main() {
         tari_address: TariAddress::default(),
     }));
 
-    let app_config = Arc::new(RwLock::new(AppConfig::new()));
+    let app_in_memory_config = if cfg!(feature = "airdrop-local") {
+        Arc::new(RwLock::new(
+            app_in_memory_config::AppInMemoryConfig::init_local(),
+        ))
+    } else {
+        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()))
+    };
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
+
+    let app_config_raw = AppConfig::new();
+    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         node_manager.clone(),
         cpu_miner.clone(),
         gpu_miner.clone(),
         app_config.clone(),
+        app_in_memory_config.clone(),
         Some(Network::default()),
     );
 
-    let app_config_raw = AppConfig::new();
-    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
     // let mm_proxy_config = if app_config_raw.p2pool_enabled {
     //     MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     // } else {
@@ -995,6 +1038,7 @@ fn main() {
     let app_state = UniverseAppState {
         is_setup_finished: Arc::new(RwLock::new(false)),
         config: app_config.clone(),
+        in_memory_config: app_in_memory_config.clone(),
         shutdown: shutdown.clone(),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
@@ -1029,6 +1073,11 @@ fn main() {
                 include_str!("../log4rs_sample.yml"),
             )
             .expect("Could not set up logging");
+
+            let handle = app.handle();
+
+            tauri_plugin_deep_link::register("tari", DeepLinkParser::handle(handle.clone()))
+                .inspect_err(|e| error!("Could not register deep link handler: {:?}", e))?;
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread_config = tauri::async_runtime::spawn(async move {
@@ -1085,7 +1134,10 @@ fn main() {
             update_applications,
             log_web_message,
             set_telemetry_mode,
+            get_telemetry_mode,
             set_airdrop_access_token,
+            get_app_id,
+            get_app_in_memory_config,
             set_monero_address,
             update_applications,
             reset_settings,

@@ -10,9 +10,8 @@ function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const blockTime = useMiningStore(useShallow((s) => s.displayBlockTime));
     const isMining = isCPUMining || isGPUMining;
-
-    const blockTime = useMiningStore((s) => s.displayBlockTime);
 
     const { daysString, hoursString, minutes, seconds } = blockTime || {};
     return (

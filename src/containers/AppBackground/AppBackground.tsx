@@ -4,7 +4,7 @@ function AppBackground() {
     const visualMode = useUIStore((s) => s.visualMode);
     const view = useUIStore((s) => s.view);
 
-    return !visualMode || view === 'setup' ? <BackgroundImage /> : null;
+    return !visualMode || view === 'setup' ? <BackgroundImage layout /> : null;
 }
 
 export default AppBackground;

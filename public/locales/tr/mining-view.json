@@ -1,9 +1,5 @@
 {
     "floor": "Zemin",
-    "tribe": "Kadro",
-    "miners": "Madenciler",
-    "tribe-earnings": "Kadro kazançları",
-    "tribe-pool-height": "Havuz yüksekliği",
     "current-block-time": "Geçerli blok zamanı",
     "your-reward-is": "Ödülünüz",
     "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",

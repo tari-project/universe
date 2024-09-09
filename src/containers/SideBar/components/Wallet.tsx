@@ -5,10 +5,11 @@ import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { WalletBalance, WalletBalanceContainer } from './Wallet.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
-    const balance = useWalletStore((state) => state.balance);
+    const balance = useWalletStore(useShallow((state) => state.balance));
     const formatted = formatBalance(balance);
     const sizing = formatted.length <= 6 ? 60 : formatted.length <= 8 ? 44 : 32;
 

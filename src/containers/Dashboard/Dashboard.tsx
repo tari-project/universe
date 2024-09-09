@@ -8,7 +8,7 @@ function Dashboard({ status }: { status: viewType }) {
     const viewMarkup =
         status == 'setup' ? <SetupViewContainer /> : status == 'tribes' ? <TribesView /> : <MiningView />;
 
-    return <DashboardContainer>{viewMarkup}</DashboardContainer>;
+    return <DashboardContainer layout>{viewMarkup}</DashboardContainer>;
 }
 
 export default Dashboard;

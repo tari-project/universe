@@ -7,11 +7,12 @@ import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { useApplicationsVersions } from '@app/hooks/useVersions.ts';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 export default function AppVersions() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const currentEnvironment = useEnvironment();
-    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const applicationsVersions = useAppStatusStore(useShallow((state) => state.applications_versions));
     const { refreshApplicationsVersions, getApplicationsVersions } = useApplicationsVersions();
     return applicationsVersions ? (
         <Stack>
