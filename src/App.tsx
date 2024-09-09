@@ -16,7 +16,7 @@ import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
 import useMining from '@app/hooks/mining/useMining.ts';
-import { useEffect } from 'react';
+
 import { LayoutGroup } from 'framer-motion';
 
 export default function App() {
@@ -29,36 +29,30 @@ export default function App() {
     const isShuttingDown = useShuttingDown();
     const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
-    const setShowSplash = useUIStore((s) => s.setShowSplash);
 
-    useEffect(() => {
-        const splashTimeout = setTimeout(() => {
-            setShowSplash(false);
-        }, 3500);
-
-        return () => {
-            clearTimeout(splashTimeout);
-        };
-    }, [setShowSplash]);
+    const canRenderMain = !isShuttingDown && !showSplash;
+    const splashScreenMarkup = <SplashScreen />;
+    const shutDownMarkup = isShuttingDown ? <ShuttingDownScreen /> : null;
+    const mainMarkup = canRenderMain ? (
+        <DashboardContainer layout>
+            <ContainerInner layout>
+                <SideBar />
+                <AirdropLogin />
+                <Dashboard status={view} />
+            </ContainerInner>
+        </DashboardContainer>
+    ) : null;
 
     return (
         <ThemeProvider>
+            <GlobalReset />
+            <GlobalStyle />
             <LayoutGroup>
-                <GlobalReset />
-                <GlobalStyle />
                 <AppBackground />
-                <SplashScreen />
                 <AutoUpdateDialog />
-                {isShuttingDown && <ShuttingDownScreen />}
-                {!showSplash && !isShuttingDown && (
-                    <DashboardContainer layout>
-                        <ContainerInner layout>
-                            <SideBar />
-                            <AirdropLogin />
-                            <Dashboard status={view} />
-                        </ContainerInner>
-                    </DashboardContainer>
-                )}
+                {splashScreenMarkup}
+                {shutDownMarkup}
+                {mainMarkup}
                 <ErrorSnackbar />
             </LayoutGroup>
         </ThemeProvider>

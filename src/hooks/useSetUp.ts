@@ -7,7 +7,7 @@ import { useUIStore } from '../store/useUIStore.ts';
 import { useAppStateStore } from '../store/appStateStore.ts';
 
 import { useVersions } from '@app/hooks/useVersions.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
+
 import { useShallow } from 'zustand/react/shallow';
 import { setAnimationState } from '@app/visuals.ts';
 
@@ -17,7 +17,7 @@ export function useSetUp() {
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const settingUpFinished = useAppStateStore(useShallow((s) => s.settingUpFinished));
     const setError = useAppStateStore((s) => s.setError);
-    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+
     const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
 
     useVersions();
@@ -52,5 +52,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [setError, setMiningControlsEnabled, setSetupDetails, setView, settingUpFinished, isAfterAutoUpdate]);
+    }, [setError, setSetupDetails, setView, settingUpFinished, isAfterAutoUpdate]);
 }

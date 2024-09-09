@@ -50,7 +50,7 @@ export function useBalanceChanges() {
 
     const handleBalanceChange = useCallback(() => {
         setTimerPaused(true);
-        const balanceHasChanges = balance > 0 && balanceRef.current != balance;
+        const balanceHasChanges = balanceRef.current > 0 && balance > 0 && balanceRef.current != balance;
         if (balanceHasChanges) {
             const diff = balance - balanceRef.current;
             logBalanceChanges({ balance, prevBalance: balanceRef.current, balanceDiff: diff });
