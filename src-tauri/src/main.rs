@@ -713,7 +713,7 @@ async fn status(
         }
     };
 
-    let gpu_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
+    let gpu = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
@@ -756,7 +756,7 @@ async fn status(
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu.hash_rate,
-        0.0,
+        gpu.hash_rate as f64,
         hardware_status.clone(),
         cpu.estimated_earnings as f64,
     );
@@ -765,7 +765,7 @@ async fn status(
 
     Ok(AppStatus {
         cpu,
-        gpu: gpu_status,
+        gpu,
         hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,
