@@ -13,57 +13,49 @@ use tokio::select;
 
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Default)]
 pub struct MergeMiningProxyConfig {
     pub port: u16,
     pub p2pool_enabled: bool,
-    pub p2pool_grpc_port: u16,
     pub base_node_grpc_port: u16,
+    pub p2pool_grpc_port: u16,
     pub coinbase_extra: String,
+    pub tari_address: TariAddress,
 }
 
 impl MergeMiningProxyConfig {
     pub fn new(
-        port: u16,
-        p2pool_grpc_port: u16,
-        base_node_grpc_port: u16,
+        port: Option<u16>,
         coinbase_extra: Option<String>,
+        tari_address: TariAddress,
     ) -> Self {
         Self {
-            port,
+            port: port.unwrap_or(0),
             p2pool_enabled: false,
-            p2pool_grpc_port,
-            base_node_grpc_port,
+            base_node_grpc_port: 0,
+            p2pool_grpc_port: 0,
             coinbase_extra: coinbase_extra.unwrap_or("tari_universe_mmproxy".to_string()),
+            tari_address,
         }
     }
 
-    pub fn new_with_p2pool(
-        port: u16,
-        p2pool_grpc_port: u16,
-        coinbase_extra: Option<String>,
-    ) -> Self {
-        Self {
-            port,
-            p2pool_enabled: true,
-            p2pool_grpc_port,
-            base_node_grpc_port: 0,
-            coinbase_extra: coinbase_extra.unwrap_or("tari_universe_mmproxy".to_string()),
-        }
+    pub fn set_to_use_base_node(&mut self, port: u16) {
+        self.base_node_grpc_port = port;
+    }
+
+    pub fn set_to_use_p2pool(&mut self, port: u16) {
+        self.p2pool_enabled = true;
+        self.p2pool_grpc_port = port;
     }
 }
 
 pub struct MergeMiningProxyAdapter {
-    pub(crate) tari_address: TariAddress,
-    pub config: MergeMiningProxyConfig,
+    pub config: Option<MergeMiningProxyConfig>,
 }
 
 impl MergeMiningProxyAdapter {
-    pub fn new(config: MergeMiningProxyConfig) -> Self {
-        Self {
-            tari_address: TariAddress::default(),
-            config,
-        }
+    pub fn new() -> Self {
+        Self { config: None }
     }
 }
 
@@ -82,6 +74,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         let working_dir = data_dir.join("mmproxy");
         std::fs::create_dir_all(&working_dir)?;
 
+        if self.config.is_none() {
+            return Err(Error::msg("MergeMiningProxyAdapter config is None"));
+        }
+        let config = self.config.as_ref().unwrap();
         let mut args: Vec<String> = vec![
             "-b".to_string(),
             working_dir.to_str().unwrap().to_string(),
@@ -92,36 +88,36 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
                 "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
-                self.config.base_node_grpc_port
+                config.base_node_grpc_port
             ),
             "-p".to_string(),
             format!(
                 "merge_mining_proxy.listener_address=/ip4/127.0.0.1/tcp/{}",
-                self.config.port
+                config.port
             ),
             "-p".to_string(),
             format!(
                 "merge_mining_proxy.coinbase_extra={}",
-                self.config.coinbase_extra
+                config.coinbase_extra
             ),
             "-p".to_string(),
             // TODO: If you leave this out, it does not start. It just halts. Probably an error on the mmproxy noninteractive
             format!(
                 "merge_mining_proxy.wallet_payment_address={}",
-                self.tari_address.to_base58()
+                config.tari_address.to_base58()
             ),
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
         ];
 
         // TODO: uncomment if p2pool is needed in CPU mining
-        if self.config.p2pool_enabled {
+        if config.p2pool_enabled {
             args.push("-p".to_string());
             args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
             args.push("-p".to_string());
             args.push(format!(
                 "merge_mining_proxy.p2pool_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
-                self.config.p2pool_grpc_port
+                config.p2pool_grpc_port
             ));
         }
 

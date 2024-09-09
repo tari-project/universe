@@ -1,25 +1,27 @@
 import { useEffect, useState } from 'react';
 import { appWindow } from '@tauri-apps/api/window';
+import { resetAllStores } from '@app/store/create.ts';
 
 export function useShuttingDown() {
-    const [isShutingDown, setIsShutingDown] = useState(false);
+    const [isShuttingDown, setIsShuttingDown] = useState(false);
 
     useEffect(() => {
         appWindow.onCloseRequested(async (e) => {
-            if (!isShutingDown) {
+            if (!isShuttingDown) {
                 e.preventDefault();
-                setIsShutingDown(true);
+                setIsShuttingDown(true);
             }
         });
-    }, []);
+    }, [isShuttingDown]);
 
     useEffect(() => {
-        if (isShutingDown) {
+        if (isShuttingDown) {
             setTimeout(() => {
+                resetAllStores();
                 appWindow.close();
             }, 250);
         }
-    }, [isShutingDown]);
+    }, [isShuttingDown]);
 
-    return isShutingDown;
+    return isShuttingDown;
 }
