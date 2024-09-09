@@ -235,10 +235,19 @@ export default function Settings() {
         </MinerContainer>
     );
 
+    const handleAudioEnabled = useCallback(
+        async (event) => {
+            const isEnabled = event.target.checked;
+            await invoke('set_audio_config', { audioEnabled: isEnabled });
+            setAudioEnabled(isEnabled);
+        },
+        [setAudioEnabled]
+    );
+
     const audioEnabledMarkup = (
         <MinerContainer>
             <Typography variant="h6">{t('audio-enabled', { ns: 'settings' })}</Typography>
-            <ToggleSwitch checked={audioEnabled} onChange={(event) => setAudioEnabled(event.target.checked)} />
+            <ToggleSwitch checked={audioEnabled} onChange={handleAudioEnabled} />
         </MinerContainer>
     );
 

@@ -19,6 +19,7 @@ export function useSetUp() {
     const setError = useAppStateStore((s) => s.setError);
     const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
     const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
+    const setAudioEnabled = useMiningStore((s) => s.setAudioEnabled);
 
     useVersions();
 
@@ -59,10 +60,25 @@ export function useSetUp() {
                     settingUpFinished();
                     setView('mining');
                 });
+                invoke('load_audio_config')
+                    .then((isAudioEnabled) => {
+                        setAudioEnabled(isAudioEnabled);
+                    })
+                    .catch((e) => {
+                        setError(`Failed to load audio config: ${e}`);
+                    });
             }
         }, 100);
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [setError, setMiningControlsEnabled, setSetupDetails, setView, settingUpFinished, isAfterAutoUpdate]);
+    }, [
+        setError,
+        setMiningControlsEnabled,
+        setSetupDetails,
+        setView,
+        settingUpFinished,
+        isAfterAutoUpdate,
+        setAudioEnabled,
+    ]);
 }

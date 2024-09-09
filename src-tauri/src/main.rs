@@ -837,6 +837,31 @@ async fn reset_settings<'r>(
     Ok(())
 }
 
+#[tauri::command]
+async fn load_audio_config(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<bool, String> {
+    Ok(state.config.read().await.audio_enabled)
+}
+
+#[tauri::command]
+async fn set_audio_config(
+    audio_enabled: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_audio_enabled(audio_enabled)
+        .await
+        .inspect_err(|e| error!("error at set_audio_config {:?}", e))
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Setting audio config to {}", audio_enabled);
+    Ok(())
+}
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
@@ -1070,7 +1095,9 @@ fn main() {
             reset_settings,
             set_gpu_mining_enabled,
             set_cpu_mining_enabled,
-            restart_application
+            restart_application,
+            load_audio_config,
+            set_audio_config
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
