@@ -24,6 +24,8 @@ const initialState: State = {
     mode: 'Eco',
     applications_versions: undefined,
     monero_address: undefined,
+    tari_address_base58: undefined,
+    tari_address_emoji: undefined,
     cpu_mining_enabled: false,
     gpu_mining_enabled: false,
 };
