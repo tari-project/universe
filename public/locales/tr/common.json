@@ -13,5 +13,8 @@
     "hashrate": "Hashrate",
     "utilization": "Fayda",
     "mode": "Mode",
-    "day": "Gün"
+    "day": "Gün",
+    "shutting-down": "Kapatılıyor..",
+    "tari-universe": "Tari Universe",
+    "testnet": "Testnet"
 }
