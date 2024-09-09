@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
 use log::warn;
 use tari_core::proof_of_work::PowAlgorithm;
 use tari_shutdown::ShutdownSignal;
@@ -106,35 +106,9 @@ impl P2poolManager {
     }
 
     pub async fn stats(&self) -> HashMap<String, Stats> {
-        let mut curr_stats = self.stats.lock().await;
-        match &mut *curr_stats {
-            Some(curr_stats) => {
-                if Instant::now()
-                    .duration_since(curr_stats.last_updated)
-                    .lt(&P2POOL_STATS_UPDATE_INTERVAL)
-                {
-                    curr_stats.stats.clone()
-                } else {
-                    match self.get_stats().await {
-                        Ok(stats) => {
-                            curr_stats.stats = stats.clone();
-                            curr_stats.last_updated = Instant::now();
-                            stats
-                        }
-                        Err(_) => self.default_stats(),
-                    }
-                }
-            }
-            None => match self.get_stats().await {
-                Ok(stats) => {
-                    *curr_stats = Some(P2poolStats {
-                        last_updated: Instant::now(),
-                        stats: stats.clone(),
-                    });
-                    stats
-                }
-                Err(_) => self.default_stats(),
-            },
+        match self.get_stats().await {
+            Ok(stats) => stats,
+            Err(_) => self.default_stats(),
         }
     }
 
