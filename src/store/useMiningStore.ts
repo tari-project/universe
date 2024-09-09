@@ -1,5 +1,5 @@
 import { create } from './create';
-import { persist } from 'zustand/middleware';
+
 import { BlockTimeData } from '@app/types/mining.ts';
 
 interface State {
@@ -48,35 +48,20 @@ const initialState: State = {
     miningControlsEnabled: false,
 };
 
-export const useMiningStore = create<MiningStoreState>()(
-    persist(
-        (set) => ({
-            ...initialState,
-            setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
-            setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
-            setEarnings: (earnings) => set({ earnings }),
-            setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
-            setTimerPaused: (timerPaused) => set({ timerPaused }),
-            setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
-            setHashrateReady: (hashrateReady) => set({ hashrateReady }),
+export const useMiningStore = create<MiningStoreState>()((set) => ({
+    ...initialState,
+    setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
+    setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
+    setEarnings: (earnings) => set({ earnings }),
+    setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
+    setTimerPaused: (timerPaused) => set({ timerPaused }),
+    setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
+    setHashrateReady: (hashrateReady) => set({ hashrateReady }),
 
-            setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
-            setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
-            setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
-            setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-            setMiningControlsEnabled: (miningControlsEnabled) =>
-                set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
-        }),
-        {
-            name: 'mining',
-            partialize: (s) => ({
-                timerPaused: s.timerPaused,
-                miningControlsEnabled: s.miningControlsEnabled,
-                miningInitiated: s.miningInitiated,
-                displayBlockHeight: s.displayBlockHeight,
-                earnings: s.earnings,
-            }),
-            version: 0.1,
-        }
-    )
-);
+    setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
+    setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
+    setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
+    setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setMiningControlsEnabled: (miningControlsEnabled) =>
+        set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
+}));
