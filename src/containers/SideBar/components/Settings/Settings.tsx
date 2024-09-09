@@ -34,7 +34,7 @@ import DebugSettings from '@app/containers/SideBar/components/Settings/DebugSett
 import { MinerContainer } from '../../Miner/styles';
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import useAppStateStore from '@app/store/appStateStore.ts';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -55,12 +55,20 @@ interface FormState {
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const moneroAddress = useAppStatusStore((state) => state.monero_address);
-    const walletAddress = useAppStatusStore((state) => state.tari_address);
+
+    const { moneroAddress, walletAddress, isCpuMiningEnabled, isGpuMiningEnabled, isP2poolEnabled, p2poolStats } =
+        useAppStatusStore(
+            useShallow((s) => ({
+                moneroAddress: s.monero_address,
+                walletAddress: s.tari_address,
+                isCpuMiningEnabled: s.cpu_mining_enabled,
+                isGpuMiningEnabled: s.gpu_mining_enabled,
+                isP2poolEnabled: s.p2pool_enabled,
+                p2poolStats: s.p2pool_stats,
+            }))
+        );
 
     // p2pool
-    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
-    const p2poolStats = useAppStatusStore((state) => state.p2pool_stats);
     const p2poolSha3Stats = p2poolStats?.sha3;
     const p2poolRandomXStats = p2poolStats?.randomx;
     const p2poolTribe = p2poolSha3Stats?.tribe?.name;
@@ -79,9 +87,6 @@ export default function Settings() {
             ? p2poolSha3UserTotalEarnings + p2poolRandomxUserTotalEarnings
             : 0;
 
-    const isCpuMiningEnabled = useAppStatusStore((state) => state.cpu_mining_enabled);
-    const isGpuMiningEnabled = useAppStatusStore((state) => state.gpu_mining_enabled);
-
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const [isCopyTooltipHiddenWalletAddress, setIsCopyTooltipHiddenWalletAddress] = useState(true);
@@ -90,12 +95,12 @@ export default function Settings() {
         mode: 'onSubmit',
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
-    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const miningAllowed = useAppStateStore(useShallow((s) => s.setupProgress >= 1));
     const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
-    const isMining = isCPUMining || isGPUMining;
-    const miningLoading = useMiningStore((s) => s.miningLoading);
-    const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
+    const isMiningInProgress = isCPUMining || isGPUMining;
+    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const miningLoading = (miningInitiated && !isMiningInProgress) || (!miningInitiated && isMiningInProgress);
     const [open, setOpen] = useState(false);
 
     const handleClose = () => {
@@ -226,7 +231,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isP2poolEnabled}
-                disabled={isMining || !miningAllowed || miningLoading}
+                disabled={isMiningInProgress || !miningAllowed || miningLoading}
                 onChange={handleP2poolEnabled}
             />
         </MinerContainer>

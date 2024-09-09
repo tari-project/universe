@@ -36,7 +36,10 @@ export default [
             ...hooksPlugin.configs.recommended.rules,
             'react/jsx-uses-react': 'off',
             'react/react-in-jsx-scope': 'off',
-            'no-console': ['warn', { allow: ['info', 'warn', 'debug', 'error'] }],
+            'no-console': [
+                'warn',
+                { allow: ['info', 'warn', 'debug', 'error', 'group', 'groupCollapsed', 'groupEnd'] },
+            ],
             'react/prop-types': 'off',
             '@typescript-eslint/no-explicit-any': 'warn',
             '@typescript-eslint/no-unused-vars': 'warn',
