@@ -5,6 +5,7 @@ mod app_config;
 mod binary_resolver;
 mod consts;
 mod cpu_miner;
+mod deep_link;
 mod download_utils;
 mod github;
 mod gpu_miner;
@@ -44,6 +45,7 @@ use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use binary_resolver::{Binaries, BinaryResolver};
+use deep_link::DeepLinkParser;
 use futures_lite::future::block_on;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
@@ -1013,11 +1015,9 @@ fn main() {
             .expect("Could not set up logging");
 
             let handle = app.handle();
-            tauri_plugin_deep_link::register("tari", move |request| {
-                warn!("DEEP LINK received -------------: {:?}", request);
-                handle.emit_all("tari-deeplink-received", request).unwrap();
-            })
-            .inspect_err(|e| error!("Error registering deep link: {:?}", e))?;
+
+            tauri_plugin_deep_link::register("tari", DeepLinkParser::handle(handle.clone()))
+                .inspect_err(|e| error!("Could not register deep link handler: {:?}", e))?;
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
             let thread_config = tauri::async_runtime::spawn(async move {
