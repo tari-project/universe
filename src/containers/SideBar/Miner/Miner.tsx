@@ -44,13 +44,14 @@ export default function Miner() {
         }))
     );
 
-    const isWaitingForCPUHashRate = miningInitiated && cpu_hash_rate <= 0;
-    const isWaitingForGPUHashRate = miningInitiated && gpu_hash_rate <= 0;
+    const isMiningInProgress = cpu_is_mining || gpu_is_mining;
+
+    const isLoading = (miningInitiated && !isMiningInProgress) || (isMiningInProgress && !miningInitiated);
+    const isWaitingForCPUHashRate = isMiningInProgress && cpu_hash_rate <= 0;
+    const isWaitingForGPUHashRate = isMiningInProgress && gpu_hash_rate <= 0;
 
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
-
-    const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 
     return (
         <MinerContainer>
@@ -58,7 +59,7 @@ export default function Miner() {
                 <Tile
                     title="CPU Power"
                     stats={isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-'}
-                    isLoading={isCpuMiningEnabled && isWaitingForCPUHashRate}
+                    isLoading={isLoading || (isCpuMiningEnabled && isWaitingForCPUHashRate)}
                     chipValue={cpuHardwareStatus?.usage_percentage}
                     unit="H/s"
                     useLowerCase
@@ -66,7 +67,7 @@ export default function Miner() {
                 <Tile
                     title="GPU Power"
                     stats={isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-'}
-                    isLoading={isGpuMiningEnabled && isWaitingForGPUHashRate}
+                    isLoading={isLoading || (isGpuMiningEnabled && isWaitingForGPUHashRate)}
                     chipValue={gpuHardwareStatus?.usage_percentage}
                     unit="H/s"
                     useLowerCase
