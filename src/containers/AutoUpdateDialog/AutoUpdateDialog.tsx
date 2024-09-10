@@ -9,13 +9,15 @@ import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { Typography } from '@app/components/elements/Typography';
 import { ButtonsWrapper } from './AutoUpdateDialog.styles';
-import { CircularProgress } from '@app/components/elements/CircularProgress';
+import { useUpdateStatus } from '@app/hooks/useUpdateStatus';
+import { UpdatedStatus } from './UpdatedStatus';
 
 function AutoUpdateDialog() {
     const setIsAfterAutoUpdate = useAppStateStore((s) => s.setIsAfterAutoUpdate);
     const [latestVersion, setLatestVersion] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
+    const { contentLength, downloaded } = useUpdateStatus();
     const { t } = useTranslation('setup-view', { useSuspense: false });
 
     useEffect(() => {
@@ -78,14 +80,13 @@ function AutoUpdateDialog() {
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t('would-you-like-to-install', { version: latestVersion })}</Typography>
+                {isLoading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
                 <ButtonsWrapper>
-                    {!isLoading ? (
+                    {!isLoading && (
                         <>
                             <Button onClick={handleUpdate}>{t('yes')}</Button>
                             <Button onClick={handleClose}>{t('no')}</Button>
                         </>
-                    ) : (
-                        <CircularProgress />
                     )}
                 </ButtonsWrapper>
             </DialogContent>

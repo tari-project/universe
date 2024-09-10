@@ -4,8 +4,5 @@
     "next-milestone": "Następny kamień milowy",
     "wallet-balance": "Saldo portfela",
     "setup-scheduler": "Ustawienia harmonogramu",
-    "mining-schedules": "Ustaw twój harmonogram kopania",
-    "updating-title": "Aktualizowanie",
-    "updating-downloading": "Pobieranie najnowszej wersji Tari Universe",
-    "updating-downloading-done": "Pobieranie zostało zakończone"
+    "mining-schedules": "Ustaw twój harmonogram kopania"
 }
