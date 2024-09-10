@@ -5,6 +5,7 @@ export const BlockTimeContainer = styled.div`
     display: flex;
     flex-direction: column;
     font-weight: 500;
+    position: relative;
     align-items: flex-end;
 `;
 
