@@ -69,7 +69,7 @@ impl AppConfig {
             version: 1,
             config_file: None,
             mode: MiningMode::Eco,
-            auto_mining: false,
+            auto_mining: true,
             p2pool_enabled: false,
             last_binaries_update_timestamp: SystemTime::UNIX_EPOCH,
             allow_telemetry: true,
