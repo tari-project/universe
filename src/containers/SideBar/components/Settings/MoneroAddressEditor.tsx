@@ -23,6 +23,8 @@ const StyledInput = styled(Input)(() => ({
 
 const StyledForm = styled('form')(() => ({
     width: '100%',
+    // Reserve space for error message
+    minHeight: '53px',
 }));
 
 const MoneroAddressEditor: React.FC<MoneroAddressEditorProps> = ({ initialAddress, onApply }) => {
