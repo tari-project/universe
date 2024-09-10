@@ -12,7 +12,7 @@ export default function HardwareStatus() {
     return (
         <Stack>
             <HorisontalBox>
-                <Typography variant="h6">{t('hardware-status', { ns: 'settings' })}:</Typography>
+                <Typography variant="h6">{t('hardware-status', { ns: 'settings' })}</Typography>
             </HorisontalBox>
             <CardContainer>
                 <CardComponent

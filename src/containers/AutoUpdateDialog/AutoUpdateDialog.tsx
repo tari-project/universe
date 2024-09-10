@@ -6,7 +6,7 @@ import { UnlistenFn } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/tauri';
 import { Button } from '@app/components/elements/Button';
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
-import useAppStateStore from '@app/store/appStateStore';
+import { useAppStateStore } from '@app/store/appStateStore';
 import { Typography } from '@app/components/elements/Typography';
 import { ButtonsWrapper } from './AutoUpdateDialog.styles';
 import { CircularProgress } from '@app/components/elements/CircularProgress';

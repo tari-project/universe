@@ -7,6 +7,7 @@ import { useCallback } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 const variants = {
     visible: {
@@ -29,14 +30,22 @@ const variants = {
 
 export default function Earnings() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const earnings = useMiningStore((s) => s.earnings);
-    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
-    const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
+
+    const { earnings, setPostBlockAnimation, setEarnings, setTimerPaused } = useMiningStore(
+        useShallow((s) => ({
+            setPostBlockAnimation: s.setPostBlockAnimation,
+            setEarnings: s.setEarnings,
+            setTimerPaused: s.setTimerPaused,
+            earnings: s.earnings,
+        }))
+    );
     const formatted = formatBalance(earnings || 0);
+
     const handleComplete = useCallback(() => {
         setPostBlockAnimation(true);
         setTimerPaused(false);
-    }, [setPostBlockAnimation, setTimerPaused]);
+        setEarnings(undefined);
+    }, [setEarnings, setPostBlockAnimation, setTimerPaused]);
 
     return (
         <EarningsContainer>

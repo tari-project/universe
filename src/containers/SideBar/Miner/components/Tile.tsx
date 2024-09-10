@@ -21,8 +21,8 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
     const chipText = formatPercent(chipValue);
 
     return (
-        <TileItem>
-            <TileTop>
+        <TileItem layoutId={`tile-item-${title}`}>
+            <TileTop layout>
                 <Typography>{title}</Typography>
                 {chipValue ? (
                     <Chip size="small" background={chipColor} color={'#fff'}>
@@ -33,7 +33,7 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
             {isLoading ? (
                 <StyledIcon />
             ) : (
-                <StatWrapper $useLowerCase={useLowerCase}>
+                <StatWrapper $useLowerCase={useLowerCase} layout>
                     <Typography
                         variant="h5"
                         title={stats}

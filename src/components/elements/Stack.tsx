@@ -1,16 +1,18 @@
-import { CSSProperties, HTMLAttributes } from 'react';
+import { CSSProperties, ReactNode } from 'react';
 import styled from 'styled-components';
+import { motion, MotionProps } from 'framer-motion';
 
 type StackFlexProps = Partial<
     Pick<CSSProperties, 'justifyContent' | 'justifyItems' | 'alignItems' | 'alignContent' | 'flexDirection'>
 >;
 
-interface StackProps extends HTMLAttributes<HTMLDivElement>, StackFlexProps {
+interface StackProps extends MotionProps, StackFlexProps {
+    children?: ReactNode;
     direction?: StackFlexProps['flexDirection'];
     gap?: number;
 }
 
-const StyledStack = styled.div<{
+const StyledStack = styled(motion.div)<{
     $direction?: StackProps['direction'];
     $justifyContent?: StackProps['justifyContent'];
     $alignItems?: StackProps['alignItems'];
@@ -34,6 +36,7 @@ export function Stack({
 }: StackProps) {
     return (
         <StyledStack
+            layout
             $direction={direction}
             $justifyContent={justifyContent}
             $alignItems={alignItems}
