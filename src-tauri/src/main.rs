@@ -1172,7 +1172,10 @@ fn main() {
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
                 let window = _app_handle.get_window("main").unwrap();
-                let _ = window.emit("update-progress", UpdateProgressRustEvent {chunk_length, content_length, downloaded});
+                drop(window.emit("update-progress", UpdateProgressRustEvent {chunk_length, content_length, downloaded}));
+            }
+            UpdaterEvent::Downloaded => {
+                shutdown.trigger();
             }
             _ => {
                 info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
