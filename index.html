@@ -39,8 +39,6 @@
       glApp.properties.lightPositionX = -5;
       glApp.properties.lightPositionY = 4;
       glApp.properties.lightPositionZ = 3;
-      glApp.properties.cameraZoom = 0.9;
-      glApp.properties.cameraOffsetX = 0.31;
       glApp.properties.defaultColor = '#FFFFFF';
       glApp.properties.startColor = '#40d1f7';
       glApp.properties.endColor = '#5ff09a';
@@ -51,7 +49,11 @@
       animate();
     }
 
+    const sidebarOffset =348 + 20; // sidebar + padding
+
     function onResize() {
+      glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
+      // glApp.properties.cameraOffsetX = (348 + (20 * 2)) / window.innerWidth;
       glApp.setSize(window.innerWidth, window.innerHeight);
     }
 
