@@ -15,7 +15,7 @@ export const StyledIcon = styled(ImSpinner3)`
     animation-timing-function: cubic-bezier(0.76, 0.89, 0.95, 0.85);
 `;
 
-export const IconWrapper = styled('div')`
+export const IconWrapper = styled.div`
     width: 27px;
     height: 27px;
     border-radius: 100%;
@@ -29,7 +29,7 @@ export const IconWrapper = styled('div')`
     }
 `;
 
-export const ButtonWrapper = styled.div`
+export const ButtonWrapper = styled(motion.div)`
     position: relative;
     display: flex;
     align-items: stretch;
@@ -54,22 +54,4 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
         border-color: rgba(0, 0, 0, 0.3);
         background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
     }
-`;
-
-// TODO make fancy mining button bg
-export const AnimatedBg = styled(motion.div)`
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    //z-index: 2;
-    pointer-events: none;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-`;
-export const AnimatedCube = styled(motion.div)`
-    position: relative;
-    pointer-events: none;
-    color: rgba(255, 255, 255, 0.2);
 `;

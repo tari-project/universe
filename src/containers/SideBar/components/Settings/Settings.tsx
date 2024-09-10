@@ -17,14 +17,13 @@ import VisualMode from '../../../Dashboard/components/VisualMode';
 import { CardContainer, Form, HorisontalBox } from './Settings.styles';
 
 import { useForm } from 'react-hook-form';
-import ConnectButton from '@app/containers/Airdrop/components/ConnectButton/ConnectButton.tsx';
+import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
 
 import { Button, IconButton } from '@app/components/elements/Button.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
-import TelemetryMode from '@app/containers/Dashboard/components/TelemetryMode.tsx';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
@@ -35,7 +34,7 @@ import DebugSettings from '@app/containers/SideBar/components/Settings/DebugSett
 import { MinerContainer } from '../../Miner/styles';
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import useAppStateStore from '@app/store/appStateStore.ts';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -56,12 +55,28 @@ interface FormState {
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const moneroAddress = useAppStatusStore((state) => state.monero_address);
-    const walletAddress = useAppStatusStore((state) => state.tari_address);
+
+    const {
+        moneroAddress,
+        walletAddress,
+        isCpuMiningEnabled,
+        isGpuMiningEnabled,
+        isP2poolEnabled,
+        p2poolStats,
+        walletAddressEmoji,
+    } = useAppStatusStore(
+        useShallow((s) => ({
+            moneroAddress: s.monero_address,
+            walletAddress: s.tari_address_base58,
+            walletAddressEmoji: s.tari_address_emoji,
+            isCpuMiningEnabled: s.cpu_mining_enabled,
+            isGpuMiningEnabled: s.gpu_mining_enabled,
+            isP2poolEnabled: s.p2pool_enabled,
+            p2poolStats: s.p2pool_stats,
+        }))
+    );
 
     // p2pool
-    const isP2poolEnabled = useAppStatusStore((state) => state.p2pool_enabled);
-    const p2poolStats = useAppStatusStore((state) => state.p2pool_stats);
     const p2poolSha3Stats = p2poolStats?.sha3;
     const p2poolRandomXStats = p2poolStats?.randomx;
     const p2poolTribe = p2poolSha3Stats?.tribe?.name;
@@ -80,9 +95,6 @@ export default function Settings() {
             ? p2poolSha3UserTotalEarnings + p2poolRandomxUserTotalEarnings
             : 0;
 
-    const isCpuMiningEnabled = useAppStatusStore((state) => state.cpu_mining_enabled);
-    const isGpuMiningEnabled = useAppStatusStore((state) => state.gpu_mining_enabled);
-
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const [isCopyTooltipHiddenWalletAddress, setIsCopyTooltipHiddenWalletAddress] = useState(true);
@@ -91,12 +103,12 @@ export default function Settings() {
         mode: 'onSubmit',
     });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
-    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const miningAllowed = useAppStateStore(useShallow((s) => s.setupProgress >= 1));
     const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
-    const isMining = isCPUMining || isGPUMining;
-    const miningLoading = useMiningStore((s) => s.miningLoading);
-    const isMiningInProgress = useMiningStore((s) => s.isMiningInProgress);
+    const isMiningInProgress = isCPUMining || isGPUMining;
+    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const miningLoading = (miningInitiated && !isMiningInProgress) || (!miningInitiated && isMiningInProgress);
     const [open, setOpen] = useState(false);
 
     const handleClose = () => {
@@ -156,6 +168,9 @@ export default function Settings() {
                     <IconButton onClick={copyWalletAddress}>
                         {isCopyTooltipHiddenWalletAddress ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                     </IconButton>
+                </Stack>
+                <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="p">{walletAddressEmoji}</Typography>
                 </Stack>
             </Stack>
         </>
@@ -227,7 +242,7 @@ export default function Settings() {
             </Stack>
             <ToggleSwitch
                 checked={isP2poolEnabled}
-                disabled={isMining || !miningAllowed || miningLoading}
+                disabled={isMiningInProgress || !miningAllowed || miningLoading}
                 onChange={handleP2poolEnabled}
             />
         </MinerContainer>
@@ -377,6 +392,8 @@ export default function Settings() {
                         {gpuEnabledMarkup}
                     </HorisontalBox>
                     <Divider />
+                    <AirdropPermissionSettings />
+                    <Divider />
                     <LanguageSettings />
                     <Divider />
                     <DebugSettings />
@@ -388,12 +405,8 @@ export default function Settings() {
                     <Divider />
                     <Stack direction="row" justifyContent="space-between">
                         <VisualMode />
-                        <TelemetryMode />
                     </Stack>
                     <Divider />
-                    <HorisontalBox>
-                        <ConnectButton />
-                    </HorisontalBox>
                     <Divider />
                     <HorisontalBox>
                         <ResetSettingsButton />
