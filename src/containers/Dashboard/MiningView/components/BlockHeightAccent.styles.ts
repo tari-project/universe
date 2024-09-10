@@ -4,11 +4,10 @@ import { motion } from 'framer-motion';
 export const AccentWrapper = styled(motion.div)`
     overflow: hidden;
     pointer-events: none;
-    top: 0;
-    right: -20px;
     height: 100%;
     position: absolute;
     align-items: center;
+    justify-content: center;
     display: flex;
 `;
 
@@ -20,8 +19,8 @@ export const AccentText = styled(motion.div)`
     opacity: 0.55;
     position: relative;
     color: ${({ theme }) => theme.palette.base};
-    max-height: min-content;
     user-select: none;
+    height: min-content;
 `;
 
 export const SpacedNum = styled(motion.span)`

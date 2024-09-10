@@ -86,6 +86,7 @@ export function useBalanceChanges() {
         if (blockHeightChanged || !!balanceChangeBlock) {
             const timer = !isMining || balanceChangeBlock === block_height ? 1 : TIMER_VALUE;
             blockHeightRef.current = block_height;
+
             const waitForBalanceTimeout = setTimeout(() => {
                 if (isMining) {
                     handleBalanceChange();
@@ -99,7 +100,7 @@ export function useBalanceChanges() {
     }, [balanceChangeBlock, blockHeightChanged, block_height, handleBalanceChange, isMining]);
 
     useEffect(() => {
-        if (postBlockAnimation && !timerPaused) {
+        if ((postBlockAnimation && !timerPaused) || !isMining) {
             const animationTimeout = setTimeout(() => {
                 setPostBlockAnimation(false);
                 setBlockHeightChanged(false);
@@ -111,5 +112,5 @@ export function useBalanceChanges() {
                 clearTimeout(animationTimeout);
             };
         }
-    }, [postBlockAnimation, setDisplayBlockHeight, setPostBlockAnimation, timerPaused]);
+    }, [isMining, postBlockAnimation, setDisplayBlockHeight, setPostBlockAnimation, timerPaused]);
 }
