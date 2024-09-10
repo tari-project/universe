@@ -35,7 +35,10 @@ pub struct VersionAsset {
 
 #[async_trait]
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
-    async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error>;
+    async fn fetch_latest_release(
+        &self,
+        is_prereleases: bool,
+    ) -> Result<VersionDownloadInfo, Error>;
 
     fn get_binary_folder(&self) -> PathBuf;
 
@@ -49,7 +52,10 @@ pub struct XmrigVersionApiAdapter {}
 
 #[async_trait]
 impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
-    async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
+    async fn fetch_latest_release(
+        &self,
+        _is_prerelease: bool,
+    ) -> Result<VersionDownloadInfo, Error> {
         todo!()
     }
 
@@ -73,14 +79,20 @@ pub struct GithubReleasesAdapter {
 
 #[async_trait]
 impl LatestVersionApiAdapter for GithubReleasesAdapter {
-    async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
+    async fn fetch_latest_release(
+        &self,
+        is_prerelease: bool,
+    ) -> Result<VersionDownloadInfo, Error> {
         let releases = github::list_releases(&self.owner, &self.repo).await?;
         // dbg!(&releases);
         let network = "pre";
         let version = releases
             .iter()
             .filter_map(|v| {
-                if v.version.pre.starts_with(network) {
+                if is_prerelease && v.version.pre.starts_with(network) {
+                    info!(target: LOG_TARGET, "Found candidate version: {}", v.version);
+                    Some(&v.version)
+                } else if !is_prerelease && v.version.pre.is_empty() {
                     info!(target: LOG_TARGET, "Found candidate version: {}", v.version);
                     Some(&v.version)
                 } else {
@@ -150,6 +162,14 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 impl BinaryResolver {
     pub fn new() -> Self {
         let mut adapters = HashMap::<Binaries, Box<dyn LatestVersionApiAdapter>>::new();
+        adapters.insert(
+            Binaries::Clythor,
+            Box::new(GithubReleasesAdapter {
+                repo: "clythor".to_string(),
+                owner: "tari-project".to_string(),
+                specific_name: None,
+            }),
+        );
         adapters.insert(Binaries::Xmrig, Box::new(XmrigVersionApiAdapter {}));
         adapters.insert(
             Binaries::MergeMiningProxy,
@@ -203,6 +223,13 @@ impl BinaryResolver {
         &INSTANCE
     }
 
+    pub fn should_be_prerelease(binary: Binaries) -> bool {
+        match binary {
+            Binaries::Clythor => false,
+            _ => true,
+        }
+    }
+
     pub async fn resolve_path(&self, binary: Binaries) -> Result<PathBuf, anyhow::Error> {
         let adapter = self
             .adapters
@@ -242,7 +269,9 @@ impl BinaryResolver {
             .adapters
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
-        let latest_release = adapter.fetch_latest_release().await?;
+        let latest_release = adapter
+            .fetch_latest_release(Self::should_be_prerelease(binary))
+            .await?;
         // TODO: validate that version doesn't have any ".." or "/" in it
 
         let bin_folder = adapter
@@ -401,6 +430,10 @@ impl BinaryResolver {
 
 fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error> {
     match binary {
+        Binaries::Clythor => {
+            let clythor_bin = base_dir.join("clythor");
+            Ok(clythor_bin)
+        }
         Binaries::Xmrig => {
             let xmrig_bin = base_dir.join("xmrig");
             Ok(xmrig_bin)
@@ -431,6 +464,7 @@ fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Binaries {
+    Clythor,
     Xmrig,
     MergeMiningProxy,
     MinotariNode,
@@ -442,6 +476,7 @@ pub enum Binaries {
 impl Binaries {
     pub fn name(&self) -> &str {
         match self {
+            Binaries::Clythor => "clythor",
             Binaries::Xmrig => "xmrig",
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",

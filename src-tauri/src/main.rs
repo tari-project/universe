@@ -216,6 +216,9 @@ async fn setup_inner(
         .await?;
 
     BinaryResolver::current()
+        .read_current_highest_version(Binaries::Clythor, progress.clone())
+        .await?;
+    BinaryResolver::current()
         .read_current_highest_version(Binaries::MinotariNode, progress.clone())
         .await?;
     BinaryResolver::current()
@@ -242,6 +245,14 @@ async fn setup_inner(
             .write()
             .await
             .set_last_binaries_update_timestamp(now)
+            .await?;
+
+        progress.set_max(5).await;
+        progress
+            .update("checking-latest-version-clythor".to_string(), None, 0)
+            .await;
+        BinaryResolver::current()
+            .ensure_latest(Binaries::Clythor, progress.clone())
             .await?;
 
         progress.set_max(10).await;
