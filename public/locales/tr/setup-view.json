@@ -1,7 +1,7 @@
 {
     "setting-up": "Tari doğruluk makinesi kuruluyor...",
     "this-might-take-a-few-minutes": "Bu birkaç dakika sürebilir",
-    "dont-worry": "Endişelenmeyin, bunu yalnızca bir kez yapmanız gerekecek.",
+    "dont-worry": "Merak etmeyin, bir dahaki sefere bu kadar uzun sürmeyecek",
     "title": {
         "starting-up": "Başlatılıyor",
         "checking-latest-version-node": "Düğümün en son sürümü kontrol ediliyor",
@@ -11,7 +11,7 @@
         "checking-latest-version-sha-p2pool": "sha-p2pool'un en son sürümü kontrol ediliyor",
         "waiting-for-wallet": "Cüzdan bekleniyor",
         "waiting-for-node": "Düğümün senkronize edilmesi bekleniyor",
-        "preparing-for-initial-sync": "İlk senkronizasyon için hazırlanıyor",
+        "preparing-for-initial-sync": "İlk senkronizasyon için hazırlanıyor {{initial_connected_peers}}/{{required_peers}}",
         "starting-mmproxy": "Merge mining proxy'sini başlatılıyor",
         "starting-p2pool": "P2Pool başlatılıyor",
         "application-started": "Uygulamalar başladı",

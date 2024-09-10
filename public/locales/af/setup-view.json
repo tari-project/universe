@@ -1,7 +1,7 @@
 {
     "setting-up": "Stel Tari waarheidsmasjien op...",
     "this-might-take-a-few-minutes": "Hierdie mag 'n paar minute neem",
-    "dont-worry": "Moenie bekommerd wees nie, hierdie is eenmalig.",
+    "dont-worry": "Moenie bekommerd wees nie, volgende keer sal dit nie so lank vat nie",
     "title": {
         "starting-up": "Begin",
         "checking-latest-version-node": "Bepaal nuutste weergawe van node",
@@ -11,7 +11,7 @@
         "checking-latest-version-sha-p2pool": "Bepaal nuutste weergawe van sha-p2pool",
         "waiting-for-wallet": "Wag vir beursie",
         "waiting-for-node": "Wag vir node om te sinkroniseer",
-        "preparing-for-initial-sync": "Wag vir aanvanklike sinkronisasie",
+        "preparing-for-initial-sync": "Gekoppel aan netwerk nodes {{initial_connected_peers}}/{{required_peers}}",
         "starting-mmproxy": "Begin mmproxy",
         "starting-p2pool": "Begin P2Pool",
         "application-started": "Toepassings het begin",

@@ -1,7 +1,7 @@
 {
     "setting-up": "正在建立tari机器...",
     "this-might-take-a-few-minutes": "这需要几分钟",
-    "dont-worry": "别担心，你只需要做一次。",
+    "dont-worry": "别担心，下次就不会那么久了",
     "title": {
         "starting-up": "启动",
         "checking-latest-version-node": "检查节点的最新版本",
@@ -11,7 +11,7 @@
         "checking-latest-version-sha-p2pool": "正在sha-p2pool最新版本",
         "waiting-for-wallet": "等待钱包",
         "waiting-for-node": "等待节点同步",
-        "preparing-for-initial-sync": "准备初始同步",
+        "preparing-for-initial-sync": "连接到网络对等点 {{initial_connected_peers}}/{{required_peers}}",
         "starting-mmproxy": "正在启动合并挖掘代理",
         "starting-p2pool": "设置 P2Pool",
         "application-started": "应用程序已启动",

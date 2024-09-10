@@ -90,6 +90,9 @@ export const light = {
             light: info[100],
             contrastText: info[300],
         },
+        action: {
+            hover: 'rgba(0,0,0,0.02)',
+        },
         colors,
     },
 };
@@ -148,6 +151,9 @@ export const dark = {
             dark: info[100],
             light: info[300],
             contrastText: info[100],
+        },
+        action: {
+            hover: 'rgba(255,255,255,0.1)',
         },
         colors,
     },

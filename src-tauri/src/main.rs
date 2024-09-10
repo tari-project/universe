@@ -7,6 +7,7 @@ mod binary_resolver;
 mod consts;
 mod cpu_miner;
 mod download_utils;
+mod format_utils;
 mod github;
 mod gpu_miner;
 mod hardware_monitor;
@@ -160,11 +161,13 @@ async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
-) -> Result<(), String> {
-    setup_inner(window, state, app).await.map_err(|e| {
+) -> Result<bool, String> {
+    setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         e.to_string()
-    })
+    })?;
+
+    Ok(state.config.read().await.auto_mining)
 }
 
 #[tauri::command]
@@ -350,26 +353,28 @@ async fn setup_inner(
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    progress.set_max(85).await;
-    progress
-        .update("starting-p2pool".to_string(), None, 0)
-        .await;
+    if state.config.read().await.p2pool_enabled {
+        progress.set_max(85).await;
+        progress
+            .update("starting-p2pool".to_string(), None, 0)
+            .await;
 
-    let base_node_grpc = state.node_manager.get_grpc_port().await?;
-    let p2pool_config = P2poolConfig::builder()
-        .with_base_node(base_node_grpc)
-        .build()?;
+        let base_node_grpc = state.node_manager.get_grpc_port().await?;
+        let p2pool_config = P2poolConfig::builder()
+            .with_base_node(base_node_grpc)
+            .build()?;
 
-    state
-        .p2pool_manager
-        .ensure_started(
-            state.shutdown.to_signal(),
-            p2pool_config,
-            data_dir,
-            config_dir,
-            log_dir,
-        )
-        .await?;
+        state
+            .p2pool_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                p2pool_config,
+                data_dir,
+                config_dir,
+                log_dir,
+            )
+            .await?;
+    }
 
     progress.set_max(100).await;
     progress
@@ -766,7 +771,7 @@ async fn status(
         }
     };
 
-    let gpu_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
+    let gpu = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
@@ -803,7 +808,7 @@ async fn status(
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu.hash_rate,
-        0.0,
+        gpu.hash_rate as f64,
         hardware_status.clone(),
         cpu.estimated_earnings as f64,
     );
@@ -812,7 +817,7 @@ async fn status(
 
     Ok(Some(AppStatus {
         cpu,
-        gpu: gpu_status,
+        gpu,
         hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,

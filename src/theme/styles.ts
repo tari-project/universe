@@ -6,7 +6,7 @@ export const sidebarWidth = '348px'; // if this is updated please update the val
 
 export const DashboardContainer = styled(motion.div)`
     display: grid;
-    grid-template-columns: ${sidebarWidth} 2fr;
+    grid-template-columns: ${sidebarWidth} auto;
     position: relative;
     gap: 20px;
     padding: 20px;
