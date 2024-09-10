@@ -24,6 +24,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import { SettingsTabs } from '@app/components/elements/Tabs';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
@@ -158,7 +159,6 @@ export default function Settings() {
 
     const walletAddressMarkup = walletAddress ? (
         <>
-            <Divider />
             <Stack>
                 <Stack direction="row" justifyContent="space-between" style={{ height: 40 }}>
                     <Typography variant="h6">Tari Wallet Address</Typography>
@@ -366,6 +366,56 @@ export default function Settings() {
         </>
     );
 
+    const GeneralTab = () => {
+        return (
+            <Stack>
+                {walletAddressMarkup}
+                <Divider />
+                {inputsMarkup}
+                <Divider />
+                {seedWordMarkup}
+                <Divider />
+                <HorisontalBox>
+                    {cpuEnabledMarkup}
+                    {gpuEnabledMarkup}
+                </HorisontalBox>
+                <Divider />
+                <DebugSettings />
+                <Divider />
+                <HorisontalBox>
+                    <ResetSettingsButton />
+                </HorisontalBox>
+            </Stack>
+        );
+    };
+
+    const ExperimentalTab = () => {
+        return (
+            <Stack>
+                {p2pMarkup}
+                <Divider />
+                <AirdropPermissionSettings />
+                <Divider />
+                <LanguageSettings />
+                <Divider />
+                {p2poolStatsMarkup}
+                <Divider />
+                <HardwareStatus />
+                <Divider />
+                <AppVersions />
+                <Divider />
+                <Stack direction="row" justifyContent="space-between">
+                    <VisualMode />
+                </Stack>
+            </Stack>
+        );
+    };
+
+    const tabs = [
+        { label: 'General', content: <GeneralTab /> },
+        { label: 'Experimental', content: <ExperimentalTab /> },
+    ];
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <IconButton onClick={() => setOpen(true)}>
@@ -379,38 +429,7 @@ export default function Settings() {
                             <IoClose />
                         </IconButton>
                     </Stack>
-                    {walletAddressMarkup}
-                    <Divider />
-                    {seedWordMarkup}
-                    <Divider />
-                    {inputsMarkup}
-                    <Divider />
-                    {p2pMarkup}
-                    <Divider />
-                    <HorisontalBox>
-                        {cpuEnabledMarkup}
-                        {gpuEnabledMarkup}
-                    </HorisontalBox>
-                    <Divider />
-                    <AirdropPermissionSettings />
-                    <Divider />
-                    <LanguageSettings />
-                    <Divider />
-                    <DebugSettings />
-                    {p2poolStatsMarkup}
-                    <Divider />
-                    <HardwareStatus />
-                    <Divider />
-                    <AppVersions />
-                    <Divider />
-                    <Stack direction="row" justifyContent="space-between">
-                        <VisualMode />
-                    </Stack>
-                    <Divider />
-                    <Divider />
-                    <HorisontalBox>
-                        <ResetSettingsButton />
-                    </HorisontalBox>
+                    <SettingsTabs tabs={tabs} />
                 </Stack>
             </DialogContent>
         </Dialog>
