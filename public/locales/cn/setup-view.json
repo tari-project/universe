@@ -11,7 +11,7 @@
         "checking-latest-version-sha-p2pool": "正在sha-p2pool最新版本",
         "waiting-for-wallet": "等待钱包",
         "waiting-for-node": "等待节点同步",
-        "preparing-for-initial-sync": "准备初始同步",
+        "preparing-for-initial-sync": "连接到网络对等点 {{initial_connected_peers}}/{{required_peers}}",
         "starting-mmproxy": "正在启动合并挖掘代理",
         "starting-p2pool": "设置 P2Pool",
         "application-started": "应用程序已启动",
