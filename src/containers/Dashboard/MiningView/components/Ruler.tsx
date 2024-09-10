@@ -37,11 +37,11 @@ export function Ruler() {
         }
 
         const groupOpacity = (rulerSegments.length * 1.25 - segment) * 0.075;
-
+        const numberMark = heightSegment && heightSegment > 1 ? heightSegment?.toString() : '';
         return (
             <MarkGroup key={`row-${segment}-${i}`} layout style={{ opacity: groupOpacity }}>
                 <RulerMarkGroup>
-                    <RulerMark $opacity={1} data-before={heightSegment?.toString()}></RulerMark>
+                    <RulerMark $opacity={1} data-before={numberMark}></RulerMark>
                     <RulerMark />
                     <RulerMark />
                     <RulerMark />
