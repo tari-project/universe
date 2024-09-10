@@ -14,10 +14,11 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { CardContainer, Form, HorisontalBox } from './Settings.styles';
+import { CardContainer, Form, HorisontalBox, HeadingContainer } from './Settings.styles';
 
 import { useForm } from 'react-hook-form';
 import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
+import LogsSettings from './LogsSettings';
 
 import { Button, IconButton } from '@app/components/elements/Button.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
@@ -45,6 +46,7 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { SeedWords } from './SeedWords';
 import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
+import Heading from '../Heading';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',
@@ -238,13 +240,15 @@ export default function Settings() {
         <MinerContainer>
             <Stack>
                 <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
-                <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
+                <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
+                    <ToggleSwitch
+                        checked={isP2poolEnabled}
+                        disabled={isMiningInProgress || !miningAllowed || miningLoading}
+                        onChange={handleP2poolEnabled}
+                    />
+                </Stack>
             </Stack>
-            <ToggleSwitch
-                checked={isP2poolEnabled}
-                disabled={isMiningInProgress || !miningAllowed || miningLoading}
-                onChange={handleP2poolEnabled}
-            />
         </MinerContainer>
     );
 
@@ -276,7 +280,6 @@ export default function Settings() {
 
     const p2poolStatsMarkup = (
         <>
-            <Divider />
             <MinerContainer>
                 <HorisontalBox>
                     <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
@@ -368,9 +371,7 @@ export default function Settings() {
 
     const GeneralTab = () => {
         return (
-            <Stack>
-                {walletAddressMarkup}
-                <Divider />
+            <Stack gap={10}>
                 {inputsMarkup}
                 <Divider />
                 {seedWordMarkup}
@@ -380,7 +381,11 @@ export default function Settings() {
                     {gpuEnabledMarkup}
                 </HorisontalBox>
                 <Divider />
-                <DebugSettings />
+                <LogsSettings />
+                <Divider />
+                <LanguageSettings />
+                <Divider />
+                <AirdropPermissionSettings />
                 <Divider />
                 <HorisontalBox>
                     <ResetSettingsButton />
@@ -391,12 +396,12 @@ export default function Settings() {
 
     const ExperimentalTab = () => {
         return (
-            <Stack>
+            <Stack gap={10}>
+                {walletAddressMarkup}
+                <Divider />
                 {p2pMarkup}
                 <Divider />
-                <AirdropPermissionSettings />
-                <Divider />
-                <LanguageSettings />
+                <DebugSettings />
                 <Divider />
                 {p2poolStatsMarkup}
                 <Divider />
@@ -422,15 +427,13 @@ export default function Settings() {
                 <IoSettingsOutline size={16} />
             </IconButton>
             <DialogContent>
-                <Stack style={{ minWidth: 600 }}>
-                    <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="h4">Settings</Typography>
-                        <IconButton onClick={() => setOpen(false)}>
-                            <IoClose />
-                        </IconButton>
-                    </Stack>
-                    <SettingsTabs tabs={tabs} />
-                </Stack>
+                <HeadingContainer>
+                    <Typography variant="h4">{t('settings', { ns: 'settings' })}</Typography>
+                    <IconButton onClick={() => setOpen(false)}>
+                        <IoClose />
+                    </IconButton>
+                </HeadingContainer>
+                <SettingsTabs tabs={tabs} />
             </DialogContent>
         </Dialog>
     );

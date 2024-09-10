@@ -26,7 +26,7 @@ export const TabHeader = styled.div<TabHeaderProps>`
     font-size: 15px;
 
     &:hover {
-        background-color: #f0f0f0;
+        background-color: ${({ theme }) => theme.palette.action.hover};
     }
 `;
 
