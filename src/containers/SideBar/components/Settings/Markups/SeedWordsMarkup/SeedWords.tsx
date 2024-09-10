@@ -1,11 +1,18 @@
-import { SeedWordsContainer } from './Settings.styles';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
+import styled from 'styled-components';
 
 export interface SeedWordsProps {
     showSeedWords: boolean;
     seedWords: string[];
 }
+
+export const SeedWordsContainer = styled.div`
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: repeat(12, 1fr);
+    gap: 10px;
+`;
 
 export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
     return (
