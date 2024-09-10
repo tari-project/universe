@@ -21,10 +21,11 @@ use tokio::select;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
-pub struct MinotariNodeAdapter {
+pub(crate) struct MinotariNodeAdapter {
     use_tor: bool,
     pub(crate) grpc_port: u16,
     pub(crate) use_pruned_mode: bool,
+    required_initial_peers: u32,
 }
 
 impl MinotariNodeAdapter {
@@ -34,6 +35,7 @@ impl MinotariNodeAdapter {
             use_tor,
             grpc_port: port,
             use_pruned_mode: false,
+            required_initial_peers: 3,
         }
     }
 }
@@ -71,6 +73,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "base_node.report_grpc_error=true".to_string(),
             "-p".to_string(),
             "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
+            "-p".to_string(),
+            format!(
+                "base_node.state_machine.initial_sync_peer_count={}",
+                self.required_initial_peers
+            ),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
@@ -151,6 +158,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             },
             MinotariNodeStatusMonitor {
                 grpc_port: self.grpc_port,
+                required_sync_peers: self.required_initial_peers,
             },
         ))
     }
@@ -174,6 +182,7 @@ pub enum MinotariNodeStatusMonitorError {
 
 pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
+    required_sync_peers: u32,
 }
 
 #[async_trait]
@@ -292,7 +301,20 @@ impl MinotariNodeStatusMonitor {
 
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
-                    .update("preparing-for-initial-sync".to_string(), None, 10)
+                    .update(
+                        "preparing-for-initial-sync".to_string(),
+                        Some(HashMap::from([
+                            (
+                                "initial_connected_peers".to_string(),
+                                sync_progress.initial_connected_peers.to_string(),
+                            ),
+                            (
+                                "required_peers".to_string(),
+                                self.required_sync_peers.to_string(),
+                            ),
+                        ])),
+                        10,
+                    )
                     .await;
             } else if sync_progress.state == SyncState::Header as i32 {
                 let progress = if sync_progress.tip_height == 0 {
