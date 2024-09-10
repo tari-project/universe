@@ -8,22 +8,28 @@ import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import useAppStateStore from '@app/store/appStateStore.ts';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
     const [isLoading, setIsLoading] = useState(false);
-    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
-    const cpuIsMining = useCPUStatusStore((s) => s.is_mining);
-    const gpuIsMining = useGPUStatusStore((s) => s.is_mining);
+
+    const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
+    const mode = useAppStatusStore(useShallow((s) => s.mode));
+
+    const cpuIsMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+
     const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
     const isMining = cpuIsMining || gpuIsMining;
+
     const { handleStop, handleStart } = useMiningControls();
-    const mode = useAppStatusStore((s) => s.mode);
+
     const prevMode = useRef(mode);
     const wasMining = useRef(false);
 
@@ -64,7 +70,7 @@ function ModeSelect() {
     }, [isLoading, mode]);
 
     return (
-        <TileItem>
+        <TileItem layoutId="miner-mode-select-tile" layout>
             <Typography>{t('mode')}</Typography>
             <Select
                 disabled={isLoading || isSettingUp}

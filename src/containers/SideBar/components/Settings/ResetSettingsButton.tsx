@@ -1,4 +1,4 @@
-import useAppStateStore from '@app/store/appStateStore';
+import { useAppStateStore } from '@app/store/appStateStore';
 
 import { invoke } from '@tauri-apps/api';
 import { useCallback, useState } from 'react';

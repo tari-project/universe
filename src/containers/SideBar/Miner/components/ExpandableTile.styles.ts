@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 import { motion } from 'framer-motion';
 
-export const TriggerWrapper = styled.div`
+export const TriggerWrapper = styled(motion.div)`
     width: 14px;
     height: 14px;
     background: ${({ theme }) => theme.palette.colors.darkAlpha[10]};
@@ -28,6 +28,9 @@ export const ExpandedWrapper = styled(motion.div)`
     width: 216px;
     padding: 20px 12px;
     z-index: 2;
+    position: absolute;
+    top: 0;
+    right: 0;
 `;
 
 export const ExpandedContentTile = styled.div`

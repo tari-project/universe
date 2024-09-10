@@ -1,5 +1,6 @@
 import { useAppStatusStore } from '../store/useAppStatusStore';
 import { HardwareParameters } from '../types/app-status';
+import { useShallow } from 'zustand/react/shallow';
 
 const roundTo = (num: number, precision = 2) => {
     const factor = 10 ** precision;
@@ -7,7 +8,7 @@ const roundTo = (num: number, precision = 2) => {
 };
 
 export const useHardwareStatus = () => {
-    const hardwareStatus = useAppStatusStore((state) => state.hardware_status);
+    const hardwareStatus = useAppStatusStore(useShallow((state) => state.hardware_status));
 
     if (hardwareStatus) {
         const { cpu: cpuRaw, gpu: gpuRaw } = hardwareStatus;
