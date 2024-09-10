@@ -14,16 +14,18 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { CardContainer, Form, HorisontalBox } from './Settings.styles';
+import { CardContainer, Form, HorisontalBox, HeadingContainer } from './Settings.styles';
 
 import { useForm } from 'react-hook-form';
 import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
+import LogsSettings from './LogsSettings';
 
 import { Button, IconButton } from '@app/components/elements/Button.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import { SettingsTabs } from '@app/components/elements/Tabs';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
@@ -44,6 +46,7 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { SeedWords } from './SeedWords';
 import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
+import Heading from '../Heading';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',
@@ -158,7 +161,6 @@ export default function Settings() {
 
     const walletAddressMarkup = walletAddress ? (
         <>
-            <Divider />
             <Stack>
                 <Stack direction="row" justifyContent="space-between" style={{ height: 40 }}>
                     <Typography variant="h6">Tari Wallet Address</Typography>
@@ -238,13 +240,15 @@ export default function Settings() {
         <MinerContainer>
             <Stack>
                 <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
-                <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
+                <Stack direction="row" justifyContent="space-between">
+                    <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
+                    <ToggleSwitch
+                        checked={isP2poolEnabled}
+                        disabled={isMiningInProgress || !miningAllowed || miningLoading}
+                        onChange={handleP2poolEnabled}
+                    />
+                </Stack>
             </Stack>
-            <ToggleSwitch
-                checked={isP2poolEnabled}
-                disabled={isMiningInProgress || !miningAllowed || miningLoading}
-                onChange={handleP2poolEnabled}
-            />
         </MinerContainer>
     );
 
@@ -276,7 +280,6 @@ export default function Settings() {
 
     const p2poolStatsMarkup = (
         <>
-            <Divider />
             <MinerContainer>
                 <HorisontalBox>
                     <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
@@ -366,52 +369,71 @@ export default function Settings() {
         </>
     );
 
+    const GeneralTab = () => {
+        return (
+            <Stack gap={10}>
+                {inputsMarkup}
+                <Divider />
+                {seedWordMarkup}
+                <Divider />
+                <HorisontalBox>
+                    {cpuEnabledMarkup}
+                    {gpuEnabledMarkup}
+                </HorisontalBox>
+                <Divider />
+                <LogsSettings />
+                <Divider />
+                <LanguageSettings />
+                <Divider />
+                <AirdropPermissionSettings />
+                <Divider />
+                <HorisontalBox>
+                    <ResetSettingsButton />
+                </HorisontalBox>
+            </Stack>
+        );
+    };
+
+    const ExperimentalTab = () => {
+        return (
+            <Stack gap={10}>
+                {walletAddressMarkup}
+                <Divider />
+                {p2pMarkup}
+                <Divider />
+                <DebugSettings />
+                <Divider />
+                {p2poolStatsMarkup}
+                <Divider />
+                <HardwareStatus />
+                <Divider />
+                <AppVersions />
+                <Divider />
+                <Stack direction="row" justifyContent="space-between">
+                    <VisualMode />
+                </Stack>
+            </Stack>
+        );
+    };
+
+    const tabs = [
+        { label: 'General', content: <GeneralTab /> },
+        { label: 'Experimental', content: <ExperimentalTab /> },
+    ];
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <IconButton onClick={() => setOpen(true)}>
                 <IoSettingsOutline size={16} />
             </IconButton>
             <DialogContent>
-                <Stack style={{ minWidth: 600 }}>
-                    <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="h4">Settings</Typography>
-                        <IconButton onClick={() => setOpen(false)}>
-                            <IoClose />
-                        </IconButton>
-                    </Stack>
-                    {walletAddressMarkup}
-                    <Divider />
-                    {seedWordMarkup}
-                    <Divider />
-                    {inputsMarkup}
-                    <Divider />
-                    {p2pMarkup}
-                    <Divider />
-                    <HorisontalBox>
-                        {cpuEnabledMarkup}
-                        {gpuEnabledMarkup}
-                    </HorisontalBox>
-                    <Divider />
-                    <AirdropPermissionSettings />
-                    <Divider />
-                    <LanguageSettings />
-                    <Divider />
-                    <DebugSettings />
-                    {p2poolStatsMarkup}
-                    <Divider />
-                    <HardwareStatus />
-                    <Divider />
-                    <AppVersions />
-                    <Divider />
-                    <Stack direction="row" justifyContent="space-between">
-                        <VisualMode />
-                    </Stack>
-                    <Divider />
-                    <Divider />
-                    <HorisontalBox>
-                        <ResetSettingsButton />
-                    </HorisontalBox>
-                </Stack>
+                <HeadingContainer>
+                    <Typography variant="h4">{t('settings', { ns: 'settings' })}</Typography>
+                    <IconButton onClick={() => setOpen(false)}>
+                        <IoClose />
+                    </IconButton>
+                </HeadingContainer>
+                <SettingsTabs tabs={tabs} />
             </DialogContent>
         </Dialog>
     );
