@@ -119,9 +119,15 @@ impl AppConfig {
                         self.p2pool_enabled = true;
                     }
                     if self.version == 4 {
-                        self.version = 4;
+                        self.version = 5;
                         // temporarily disable p2pool by default
                         self.p2pool_enabled = false;
+                    }
+                    if self.version == 5 {
+                        self.version = 6;
+
+                        // start mining as soon as setup is complete
+                        self.auto_mining = true;
                     }
                 }
                 Err(e) => {
