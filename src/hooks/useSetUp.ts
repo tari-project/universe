@@ -9,7 +9,6 @@ import { useAppStateStore } from '../store/appStateStore.ts';
 import { useVersions } from '@app/hooks/useVersions.ts';
 
 import { useShallow } from 'zustand/react/shallow';
-import { setAnimationState } from '@app/visuals.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
@@ -27,7 +26,6 @@ export function useSetUp() {
                 case 'setup_status':
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
-                        setAnimationState('showVisual');
                         setView('mining');
                     }
                     break;

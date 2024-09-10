@@ -73,11 +73,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "base_node.report_grpc_error=true".to_string(),
             "-p".to_string(),
             "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
-            "-p".to_string(),
-            format!(
-                "base_node.state_machine.initial_sync_peer_count={}",
-                self.required_initial_peers
-            ),
+//             "-p".to_string(),
+//             format!(
+//                 "base_node.state_machine.initial_sync_peer_count={}",
+//                 self.required_initial_peers
+//             ),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
