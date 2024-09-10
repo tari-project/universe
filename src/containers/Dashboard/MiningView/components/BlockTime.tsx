@@ -13,13 +13,11 @@ function BlockTime() {
     const blockTime = useMiningStore(useShallow((s) => s.displayBlockTime));
     const isMining = isCPUMining || isGPUMining;
 
-    const { daysString, hoursString, minutes, seconds } = blockTime || {};
+    const { minutes, seconds } = blockTime || {};
     return blockTime && isMining ? (
         <BlockTimeContainer layout layoutId="block-time">
             <TimerWrapper>
                 <TimerTypography>
-                    {daysString}
-                    {hoursString?.split('').map((c, i) => <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>)}:
                     {minutes?.split('').map((c, i) => <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>)}:
                     {seconds?.split('').map((c, i) => <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>)}
                 </TimerTypography>
