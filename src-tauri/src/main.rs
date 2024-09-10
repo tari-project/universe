@@ -144,12 +144,18 @@ async fn get_app_in_memory_config(
 }
 
 #[tauri::command]
+async fn get_monero_address(state: tauri::State<'_, UniverseAppState>) -> Result<String, String> {
+    let app_config = state.config.read().await;
+    Ok(app_config.monero_address.clone())
+}
+
+#[tauri::command]
 async fn set_monero_address(
     monero_address: String,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-    let mut cpu_miner_config = state.config.write().await;
-    cpu_miner_config
+    let mut app_config = state.config.write().await;
+    app_config
         .set_monero_address(monero_address)
         .await
         .map_err(|e| e.to_string())?;
@@ -1137,6 +1143,7 @@ fn main() {
             set_airdrop_access_token,
             get_app_id,
             get_app_in_memory_config,
+            get_monero_address,
             set_monero_address,
             update_applications,
             reset_settings,
