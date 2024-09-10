@@ -46,7 +46,6 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { SeedWords } from './SeedWords';
 import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
-import Heading from '../Heading';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',

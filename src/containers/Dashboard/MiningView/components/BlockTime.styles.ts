@@ -6,6 +6,7 @@ export const BlockTimeContainer = styled(motion.div)`
     display: flex;
     flex-direction: column;
     font-weight: 500;
+    position: relative;
     align-items: flex-end;
 `;
 
