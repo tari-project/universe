@@ -15,7 +15,7 @@ export const TitleTypography = styled(Typography)`
 `;
 
 export const TimerWrapper = styled.div`
-    box-shadow: 40px 10px 60px 40px rgb(137, 8, 178);
+    box-shadow: 30px -10px 40px 20px rgba(255, 255, 255, 0.8);
 `;
 export const TimerTypography = styled.div`
     font-family: Druk, sans-serif;

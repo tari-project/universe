@@ -17,7 +17,7 @@ export const AccentText = styled(motion.div)`
     text-align: center;
     font-family: Druk, sans-serif;
     white-space: pre;
-    line-height: 1.1;
+    line-height: 1;
     opacity: 0.55;
     right: 0;
     position: relative;
