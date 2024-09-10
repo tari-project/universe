@@ -16,6 +16,7 @@ interface State {
     isMiningInProgress: boolean;
     isChangingMode: boolean;
     isConnectionLostDuringMining: boolean;
+    audioEnabled: boolean;
 }
 interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
@@ -32,6 +33,7 @@ interface Actions {
     setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
     setIsMiningInProgress: (isMiningInProgress: State['isMiningInProgress']) => void;
     setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
+    setAudioEnabled: (audioEnabled: State['audioEnabled']) => void;
 }
 type MiningStoreState = State & Actions;
 
@@ -46,6 +48,7 @@ const initialState: State = {
     isChangingMode: false,
     isConnectionLostDuringMining: false,
     miningControlsEnabled: false,
+    audioEnabled: true,
 };
 
 export const useMiningStore = create<MiningStoreState>()((set) => ({
@@ -64,4 +67,5 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
     setMiningControlsEnabled: (miningControlsEnabled) =>
         set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
+    setAudioEnabled: (audioEnabled) => set({ audioEnabled: audioEnabled }),
 }));

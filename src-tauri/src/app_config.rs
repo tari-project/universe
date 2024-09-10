@@ -22,6 +22,7 @@ pub struct AppConfigFromFile {
     pub monero_address: String,
     pub gpu_mining_enabled: bool,
     pub cpu_mining_enabled: bool,
+    pub audio_enabled: bool,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -61,6 +62,7 @@ pub struct AppConfig {
     pub monero_address: String,
     pub gpu_mining_enabled: bool,
     pub cpu_mining_enabled: bool,
+    pub audio_enabled: bool,
 }
 
 impl AppConfig {
@@ -77,6 +79,7 @@ impl AppConfig {
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            audio_enabled: true,
         }
     }
 
@@ -96,6 +99,7 @@ impl AppConfig {
                     self.allow_telemetry = config.allow_telemetry;
                     self.anon_id = config.anon_id;
                     self.version = config.version;
+                    self.audio_enabled = config.audio_enabled;
                     if self.version == 0 {
                         // migrate
                         self.version = 1;
@@ -130,7 +134,7 @@ impl AppConfig {
             }
         }
         info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
-        let config = &AppConfigFromFile {
+        let config = &(AppConfigFromFile {
             mode: MiningMode::to_str(self.mode),
             auto_mining: self.auto_mining,
             p2pool_enabled: self.p2pool_enabled,
@@ -141,7 +145,8 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
-        };
+            audio_enabled: self.audio_enabled,
+        });
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
         Ok(())
@@ -151,7 +156,9 @@ impl AppConfig {
         let new_mode = match mode.as_str() {
             "Eco" => MiningMode::Eco,
             "Ludicrous" => MiningMode::Ludicrous,
-            _ => return Err(anyhow!("Invalid mode")),
+            _ => {
+                return Err(anyhow!("Invalid mode"));
+            }
         };
         self.mode = new_mode;
         self.update_config_file().await?;
@@ -230,9 +237,15 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_audio_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+        self.audio_enabled = enabled;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
         let file = self.config_file.clone().unwrap();
-        let config = &AppConfigFromFile {
+        let config = &(AppConfigFromFile {
             mode: MiningMode::to_str(self.mode),
             auto_mining: self.auto_mining,
             p2pool_enabled: self.p2pool_enabled,
@@ -243,7 +256,8 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
-        };
+            audio_enabled: self.audio_enabled,
+        });
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
         fs::write(file, config).await?;

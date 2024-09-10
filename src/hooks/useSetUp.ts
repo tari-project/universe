@@ -10,6 +10,7 @@ import { useVersions } from '@app/hooks/useVersions.ts';
 
 import { useShallow } from 'zustand/react/shallow';
 import { setAnimationState } from '@app/visuals.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
@@ -17,6 +18,7 @@ export function useSetUp() {
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setError = useAppStateStore((s) => s.setError);
     const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
+    const setAudioEnabled = useMiningStore((s) => s.setAudioEnabled);
 
     useVersions();
 
@@ -44,10 +46,17 @@ export function useSetUp() {
                     setError(`Failed to setup application: ${e}`);
                     setView('mining');
                 });
+                invoke('load_audio_config')
+                    .then((isAudioEnabled) => {
+                        setAudioEnabled(isAudioEnabled);
+                    })
+                    .catch((e) => {
+                        setError(`Failed to load audio config: ${e}`);
+                    });
             }
         }, 100);
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [isAfterAutoUpdate, setError, setSetupDetails, setView]);
+    }, [isAfterAutoUpdate, setError, setSetupDetails, setView, setAudioEnabled]);
 }

@@ -3,14 +3,34 @@ import { setAnimationState } from '../../visuals';
 import { appWindow } from '@tauri-apps/api/window';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useShallow } from 'zustand/react/shallow';
+import { resourceDir, join } from '@tauri-apps/api/path';
+import { readBinaryFile } from '@tauri-apps/api/fs';
+
+async function playBlockWinAudio() {
+    const resourceDirPath = await resourceDir();
+    const filePath = await join(resourceDirPath, 'audio/block_win.mp3');
+    readBinaryFile(filePath)
+        .catch((err) => {
+            console.error(err);
+        })
+        .then((res) => {
+            const fileBlob = new Blob([res as ArrayBuffer], { type: 'audio/mpeg' });
+            const reader = new FileReader();
+            reader.readAsDataURL(fileBlob);
+            const url = URL.createObjectURL(fileBlob);
+            const audio = new Audio(url);
+            audio.play();
+        });
+}
 
 export function useVisualisation() {
     const [useFailTimeout, setUseFailTimeout] = useState(false);
-    const { setTimerPaused, setPostBlockAnimation, setEarnings } = useMiningStore(
+    const { setTimerPaused, setPostBlockAnimation, setEarnings, audioEnabled } = useMiningStore(
         useShallow((s) => ({
             setPostBlockAnimation: s.setPostBlockAnimation,
             setTimerPaused: s.setTimerPaused,
             setEarnings: s.setEarnings,
+            audioEnabled: s.audioEnabled,
         }))
     );
 
@@ -52,8 +72,11 @@ export function useVisualisation() {
             setAnimationState('success');
         } else {
             setEarnings(undefined);
+            if (audioEnabled) {
+                playBlockWinAudio();
+            }
         }
-    }, [checkCanAnimate, setEarnings]);
+    }, [checkCanAnimate, setEarnings, audioEnabled]);
 
     return { handleFail, handleWin };
 }

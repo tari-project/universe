@@ -36,5 +36,6 @@
   "yes": "Yes",
   "cancel": "Cancel",
   "reset-settings": "Reset Settings",
-  "reset-permanently": "Are you sure you want to reset all settings permanently?"
+  "reset-permanently": "Are you sure you want to reset all settings permanently?",
+  "audio-enabled": "Enable audio"
 }

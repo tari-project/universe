@@ -107,7 +107,13 @@ export default function Settings() {
     const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
     const isMiningInProgress = isCPUMining || isGPUMining;
-    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const { miningInitiated, audioEnabled, setAudioEnabled } = useMiningStore(
+        useShallow((s) => ({
+            miningInitiated: s.miningInitiated,
+            audioEnabled: s.audioEnabled,
+            setAudioEnabled: s.setAudioEnabled,
+        }))
+    );
     const miningLoading = (miningInitiated && !isMiningInProgress) || (!miningInitiated && isMiningInProgress);
     const [open, setOpen] = useState(false);
 
@@ -245,6 +251,22 @@ export default function Settings() {
                 disabled={isMiningInProgress || !miningAllowed || miningLoading}
                 onChange={handleP2poolEnabled}
             />
+        </MinerContainer>
+    );
+
+    const handleAudioEnabled = useCallback(
+        async (event) => {
+            const isEnabled = event.target.checked;
+            await invoke('set_audio_config', { audioEnabled: isEnabled });
+            setAudioEnabled(isEnabled);
+        },
+        [setAudioEnabled]
+    );
+
+    const audioEnabledMarkup = (
+        <MinerContainer>
+            <Typography variant="h6">{t('audio-enabled', { ns: 'settings' })}</Typography>
+            <ToggleSwitch checked={audioEnabled} onChange={handleAudioEnabled} />
         </MinerContainer>
     );
 
@@ -391,6 +413,8 @@ export default function Settings() {
                         {cpuEnabledMarkup}
                         {gpuEnabledMarkup}
                     </HorisontalBox>
+                    <Divider />
+                    {audioEnabledMarkup}
                     <Divider />
                     <AirdropPermissionSettings />
                     <Divider />

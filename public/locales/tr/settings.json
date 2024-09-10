@@ -21,6 +21,7 @@
     "last-block-added-time": "Zincir zamanına eklenen son blok",
     "visual-mode": "Görsel mod",
     "pool-mining": "Havuz Madenciliği",
+    "audio-enabled": "Ses etkin",
     "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
     "cpu-mining-enabled": "CPU Madenciliği",
     "gpu-mining-enabled": "GPU Madenciliği",
