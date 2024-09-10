@@ -356,26 +356,28 @@ async fn setup_inner(
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    progress.set_max(85).await;
-    progress
-        .update("starting-p2pool".to_string(), None, 0)
-        .await;
+    if state.config.read().await.p2pool_enabled {
+        progress.set_max(85).await;
+        progress
+            .update("starting-p2pool".to_string(), None, 0)
+            .await;
 
-    let base_node_grpc = state.node_manager.get_grpc_port().await?;
-    let p2pool_config = P2poolConfig::builder()
-        .with_base_node(base_node_grpc)
-        .build()?;
+        let base_node_grpc = state.node_manager.get_grpc_port().await?;
+        let p2pool_config = P2poolConfig::builder()
+            .with_base_node(base_node_grpc)
+            .build()?;
 
-    state
-        .p2pool_manager
-        .ensure_started(
-            state.shutdown.to_signal(),
-            p2pool_config,
-            data_dir,
-            config_dir,
-            log_dir,
-        )
-        .await?;
+        state
+            .p2pool_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                p2pool_config,
+                data_dir,
+                config_dir,
+                log_dir,
+            )
+            .await?;
+    }
 
     progress.set_max(100).await;
     progress

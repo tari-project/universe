@@ -282,17 +282,18 @@ async fn validate_jwt(airdrop_access_token: Arc<RwLock<Option<String>>>) -> Opti
 
 async fn get_telemetry_data(
     cpu_miner: Arc<RwLock<CpuMiner>>,
-    _gpu_miner: Arc<RwLock<GpuMiner>>,
+    gpu_miner: Arc<RwLock<GpuMiner>>,
     node_manager: NodeManager,
     config: Arc<RwLock<AppConfig>>,
     network: Option<Network>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let mut cpu_miner = cpu_miner.write().await;
-    let (_sha_hash_rate, randomx_hash_rate, block_reward, block_height, _block_time, is_synced) =
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, _block_time, is_synced) =
         node_manager
             .get_network_hash_rate_and_block_reward()
             .await
             .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
+
+    let mut cpu_miner = cpu_miner.write().await;
     let cpu = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
@@ -301,7 +302,15 @@ async fn get_telemetry_data(
         Ok(cpu) => cpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-            return Err(e);
+            return Err(TelemetryManagerError::Other(e));
+        }
+    };
+    let mut gpu_miner_lock = gpu_miner.write().await;
+    let gpu_status = match gpu_miner_lock.status(sha_hash_rate, block_reward).await {
+        Ok(gpu) => gpu,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
+            return Err(TelemetryManagerError::Other(e));
         }
     };
 
@@ -315,7 +324,7 @@ async fn get_telemetry_data(
     let cpu_hash_rate = Some(cpu.hash_rate);
     let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
     let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
-    let gpu_hash_rate = None;
+    let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
     let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
     let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
     let version = env!("CARGO_PKG_VERSION").to_string();
