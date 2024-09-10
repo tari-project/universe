@@ -1,13 +1,12 @@
-use std::collections::HashMap;
-use std::fs;
-use std::path::PathBuf;
-use std::sync::Arc;
-
+use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::{info, warn};
 use rand::seq::SliceRandom;
+use std::collections::HashMap;
+use std::fs;
+use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::select;
 
@@ -21,24 +20,16 @@ use crate::{p2pool, process_utils};
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
 pub struct P2poolAdapter {
-    config: Arc<P2poolConfig>,
+    pub(crate) config: Option<P2poolConfig>,
 }
 
 impl P2poolAdapter {
-    pub fn new(config: Arc<P2poolConfig>) -> Self {
-        Self { config }
+    pub fn new() -> Self {
+        Self { config: None }
     }
 
-    pub fn grpc_port(&self) -> u16 {
-        self.config.grpc_port
-    }
-
-    pub fn stats_server_port(&self) -> u16 {
-        self.config.stats_server_port
-    }
-
-    pub fn config(&self) -> &P2poolConfig {
-        &self.config
+    pub fn config(&self) -> Option<&P2poolConfig> {
+        self.config.as_ref()
     }
 }
 
@@ -62,14 +53,18 @@ impl ProcessAdapter for P2poolAdapter {
             .join("sha-p2pool");
         std::fs::create_dir_all(&working_dir)?;
 
+        if self.config.is_none() {
+            return Err(anyhow!("P2poolAdapter config is not set"));
+        }
+        let config = self.config.as_ref().unwrap();
         let mut args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
-            self.config.grpc_port.to_string(),
+            config.grpc_port.to_string(),
             "--stats-server-port".to_string(),
-            self.config.stats_server_port.to_string(),
+            config.stats_server_port.to_string(),
             "--base-node-address".to_string(),
-            self.config.base_node_address.clone(),
+            config.base_node_address.clone(),
             "-b".to_string(),
             log_path.join("sha-p2pool").to_str().unwrap().to_string(),
         ];
@@ -84,22 +79,21 @@ impl ProcessAdapter for P2poolAdapter {
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
 
-                    // select tribe
-                    let child = tokio::process::Command::new(file_path.clone())
-                        .args(vec!["list-tribes"])
-                        .stdout(std::process::Stdio::piped())
-                        .kill_on_drop(true)
-                        .spawn()?;
-
-                    let output = child.wait_with_output().await?;
-                    let tribes: Vec<String> = serde_json::from_slice(output.stdout.as_slice())?;
+                    let output = process_utils::launch_and_get_outputs(
+                        &file_path,
+                        vec!["list-tribes".to_string()],
+                    )
+                    .await?;
+                    let tribes: Vec<String> = serde_json::from_slice(&output)?;
                     let tribe = match tribes.choose(&mut rand::thread_rng()) {
                         Some(tribe) => tribe.to_string(),
                         None => String::from("default"), // TODO: generate name
                     };
+                    args.push("--tribe".to_string());
+                    args.push(tribe);
 
                     // start
-                    let mut child = launch_child_process(&file_path, &args)?;
+                    let mut child = launch_child_process(&file_path, None, &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join(pid_file_name.clone()), id.to_string())?;
@@ -125,7 +119,7 @@ impl ProcessAdapter for P2poolAdapter {
                             }
                         },
                     };
-                    println!("Stopping p2pool node");
+                    info!(target: LOG_TARGET, "Stopping p2pool node");
 
                     if let Err(error) = fs::remove_file(data_dir.join(pid_file_name)) {
                         warn!(target: LOG_TARGET, "Could not clear p2pool's pid file: {error:?}");
@@ -134,10 +128,7 @@ impl ProcessAdapter for P2poolAdapter {
                     Ok(exit_code)
                 })),
             },
-            P2poolStatusMonitor::new(format!(
-                "http://127.0.0.1:{}",
-                self.config.stats_server_port
-            )),
+            P2poolStatusMonitor::new(format!("http://127.0.0.1:{}", config.stats_server_port)),
         ))
     }
 

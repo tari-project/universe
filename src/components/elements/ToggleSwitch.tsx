@@ -88,7 +88,7 @@ export function ToggleSwitch({ label, variant = 'solid', ...props }: ToggleSwitc
 
     const switchMarkup = (
         <Wrapper $disabled={props.disabled}>
-            <Input checked={props.checked} type="checkbox" onChange={props.onChange} $isSolid={isSolid} />
+            <Input checked={props.checked || false} type="checkbox" onChange={props.onChange} $isSolid={isSolid} />
             <Switch $isSolid={isSolid} />
         </Wrapper>
     );

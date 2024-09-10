@@ -10,7 +10,7 @@ interface Props {
     $variant?: CharSpinnerVariant;
 }
 
-export const Wrapper = styled('div')<{ $letterHeight?: number }>`
+export const Wrapper = styled.div<{ $letterHeight?: number }>`
     display: flex;
     overflow: hidden;
     flex-direction: row;
@@ -23,7 +23,7 @@ export const Wrapper = styled('div')<{ $letterHeight?: number }>`
     }
 `;
 
-export const SpinnerWrapper = styled('div')<Props>`
+export const SpinnerWrapper = styled(motion.div)<Props>`
     font-variant-numeric: tabular-nums;
     column-gap: ${({ $variant }) => ($variant == 'simple' ? '0' : '2px')};
     display: flex;
@@ -49,7 +49,7 @@ export const Characters = styled(motion.div)<Props>`
     line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
 `;
 
-export const Character = styled('div')<Props>`
+export const Character = styled(motion.div)<Props>`
     display: flex;
     justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};

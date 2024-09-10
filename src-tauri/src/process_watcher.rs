@@ -103,6 +103,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         Ok(())
     }
 
+    pub fn is_running(&self) -> bool {
+        self.watcher_task.is_some() && !self.watcher_task.as_ref().unwrap().inner().is_finished()
+    }
+
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task {
             if task.inner().is_finished() {

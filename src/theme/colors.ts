@@ -236,6 +236,18 @@ const errorDarkAlpha = {
     90: 'rgba(97,40,32,0.9)',
 };
 
+const ramp = {
+    1: '#1CCF31',
+    2: '#50CC27',
+    3: '#84C91E',
+    4: '#B8C614',
+    5: '#ECC30B',
+    6: '#F2A607',
+    7: '#F88903',
+    8: '#FF6C00',
+    9: '#FF4F00',
+    10: '#FF3300',
+};
 export const colors = {
     blue,
     orange,
@@ -256,6 +268,7 @@ export const colors = {
     tariPurpleAlpha,
     warningDarkAlpha,
     errorDarkAlpha,
+    ramp,
 };
 
 export type Colours = typeof colors;

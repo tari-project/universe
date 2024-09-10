@@ -84,7 +84,7 @@ impl WalletManager {
 
     pub async fn get_balance(&self) -> Result<WalletBalance, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
-        Ok(process_watcher
+        process_watcher
             .status_monitor
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
@@ -93,6 +93,28 @@ impl WalletManager {
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
                 _ => WalletManagerError::UnknownError(e.into()),
-            })?)
+            })
+    }
+
+    #[deprecated(
+        note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
+    )]
+    pub async fn wallet_address(&self) -> Result<String, WalletManagerError> {
+        panic!("Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet.");
+        // In future the wallet might return the correct address. View only wallets have the same offline address, but different online addresses.
+        // But the grpc only returns the online address.
+
+        // let process_watcher = self.watcher.read().await;
+        // Ok(process_watcher
+        //     .status_monitor
+        //     .as_ref()
+        //     .ok_or_else(|| WalletManagerError::WalletNotStarted)?
+        //     .get_wallet_address()
+        //     .await
+        //     .map_err(|e| match e {
+        //         WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+        //         _ => WalletManagerError::UnknownError(e.into()),
+        //     })?
+        //     .to_base58())
     }
 }

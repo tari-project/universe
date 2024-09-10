@@ -1,6 +1,8 @@
-import { create } from 'zustand';
+import { create } from './create';
 
 interface AppState {
+    isAfterAutoUpdate: boolean;
+    setIsAfterAutoUpdate: (value: boolean) => void;
     error?: string;
     setError: (value: string | undefined) => void;
     topStatus: string;
@@ -19,7 +21,9 @@ interface AppState {
     settingUpFinished: () => void;
 }
 
-const useAppStateStore = create<AppState>()((set) => ({
+export const useAppStateStore = create<AppState>()((set) => ({
+    isAfterAutoUpdate: false,
+    setIsAfterAutoUpdate: (value: boolean) => set({ isAfterAutoUpdate: value }),
     error: undefined,
     setError: (error) => set({ error }),
     topStatus: 'Not mining',
@@ -31,10 +35,8 @@ const useAppStateStore = create<AppState>()((set) => ({
     setupTitleParams: {},
     setupProgress: 0,
     setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
-        set({ setupTitle, setupTitleParams, setupProgress }),
+        set({ setupTitle, setupTitleParams, setupProgress, isSettingUp: setupProgress < 1 }),
 
     // functions
     settingUpFinished: () => set({ isSettingUp: false }),
 }));
-
-export default useAppStateStore;

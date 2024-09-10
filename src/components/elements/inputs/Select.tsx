@@ -1,18 +1,19 @@
 import { HiOutlineSelector } from 'react-icons/hi';
-import { useState, MouseEvent } from 'react';
+import { useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { SpinnerIcon } from '@app/components/elements/SpinnerIcon.tsx';
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
-import { useClickOutside } from '@app/hooks/helpers/useClickOutside.ts';
+
 import {
+    IconWrapper,
+    OptionLabelWrapper,
     Options,
     SelectedOption,
     StyledOption,
-    StyledSelect,
-    Wrapper,
-    IconWrapper,
-    OptionLabelWrapper,
+    TriggerWrapper,
 } from './Select.styles.ts';
+import { useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
+import { LayoutGroup } from 'framer-motion';
 
 interface Option {
     label: string;
@@ -22,61 +23,71 @@ interface Option {
 }
 
 interface Props {
+    options: Option[];
+    onChange: (value: Option['value']) => void;
     disabled?: boolean;
     loading?: boolean;
-    options: Option[];
     selectedValue?: Option['value'];
-    onChange: (value: Option['value']) => void;
 }
 
-type OnClickEvent = MouseEvent<HTMLDivElement>;
+export function Select({ options, selectedValue, disabled, loading, onChange }: Props) {
+    const [isOpen, setIsOpen] = useState(false);
 
-export function Select({ options, selectedValue, disabled, loading, onChange, ...props }: Props) {
-    const [expanded, setExpanded] = useState(false);
-    function toggleOpen() {
-        setExpanded((c) => !c);
-    }
+    const { refs, context } = useFloating({
+        open: isOpen,
+        onOpenChange: setIsOpen,
+    });
 
-    function handleChange(e: OnClickEvent, value: string) {
-        e.stopPropagation();
+    function handleChange(value: string) {
         onChange(value);
-        setExpanded(false);
+        setIsOpen(false);
     }
-    const clickRef = useClickOutside(() => setExpanded(false), expanded);
+    const click = useClick(context);
+    const dismiss = useDismiss(context);
+    const role = useRole(context);
+
+    const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
+
     const selectedOption = selectedValue ? options.find((o) => o.value === selectedValue) : options[0];
     const selectedLabel = selectedOption?.label;
     const selectedIcon = selectedOption?.iconSrc;
+
     return (
-        <Wrapper onClick={() => toggleOpen()} $disabled={disabled}>
-            <StyledSelect {...props}>
-                <SelectedOption $selected>
+        <LayoutGroup id="dropdown-select">
+            <TriggerWrapper layout $disabled={disabled} ref={refs.setReference} {...getReferenceProps()}>
+                <SelectedOption layout>
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
                 </SelectedOption>
-                <Options ref={clickRef} id="select-options" tabIndex={0} $open={expanded}>
-                    {options.map(({ label, value, iconSrc }) => {
-                        const selected = value === selectedOption?.value;
-                        return (
-                            <StyledOption
-                                onClick={(e) => handleChange(e, value)}
-                                key={`opt-${value}-${label}`}
-                                $selected={selected}
-                            >
-                                <OptionLabelWrapper>
-                                    {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
-                                    <Typography>{label}</Typography>
-                                </OptionLabelWrapper>
-                                {selected ? (
-                                    <IconWrapper>
-                                        <CheckSvg />
-                                    </IconWrapper>
-                                ) : null}
-                            </StyledOption>
-                        );
-                    })}
+                <IconWrapper>{loading ? <SpinnerIcon /> : <HiOutlineSelector />}</IconWrapper>
+            </TriggerWrapper>
+            {isOpen ? (
+                <Options layout ref={refs.setFloating} {...getFloatingProps()}>
+                    <LayoutGroup id="options">
+                        {options.map(({ label, value, iconSrc }) => {
+                            const selected = value === selectedOption?.value;
+                            return (
+                                <StyledOption
+                                    layout
+                                    onClick={() => handleChange(value)}
+                                    key={`opt-${value}-${label}`}
+                                    $selected={selected}
+                                >
+                                    <OptionLabelWrapper>
+                                        {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
+                                        <Typography>{label}</Typography>
+                                    </OptionLabelWrapper>
+                                    {selected ? (
+                                        <IconWrapper>
+                                            <CheckSvg />
+                                        </IconWrapper>
+                                    ) : null}
+                                </StyledOption>
+                            );
+                        })}
+                    </LayoutGroup>
                 </Options>
-            </StyledSelect>
-            <IconWrapper>{loading ? <SpinnerIcon /> : <HiOutlineSelector />}</IconWrapper>
-        </Wrapper>
+            ) : null}
+        </LayoutGroup>
     );
 }

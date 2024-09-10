@@ -1,8 +1,9 @@
 import styled from 'styled-components';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { motion } from 'framer-motion';
 
-export const DashboardContainer = styled.div`
+export const DashboardContainer = styled(motion.div)`
     display: flex;
     align-items: center;
     flex-direction: column;
@@ -10,7 +11,7 @@ export const DashboardContainer = styled.div`
     height: 100%;
     flex-grow: 1;
     position: relative;
-    z-index: 1;
+    //z-index: 1;
 `;
 
 export const ProgressWrapper = styled.div`

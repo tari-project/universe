@@ -1,6 +1,5 @@
-import { create } from 'zustand';
+import { create } from './create';
 import { CpuMinerStatus } from '../types/app-status.ts';
-import { persist, createJSONStorage } from 'zustand/middleware';
 
 interface Actions {
     setCPUStatus: (cpuStatus?: CpuMinerStatus) => void;
@@ -13,19 +12,7 @@ const initialState: CpuMinerStatus = {
     estimated_earnings: 0,
     connection: { is_connected: false },
 };
-export const useCPUStatusStore = create<CPUStatusStoreState>()(
-    persist(
-        (set) => ({
-            ...initialState,
-            setCPUStatus: (cpuStatus) => set({ ...cpuStatus }),
-        }),
-        {
-            name: 'cpu',
-            storage: createJSONStorage(() => sessionStorage),
-            partialize: (s) => ({
-                hash_rate: s.hash_rate,
-                is_mining: s.is_mining,
-            }),
-        }
-    )
-);
+export const useCPUStatusStore = create<CPUStatusStoreState>()((set) => ({
+    ...initialState,
+    setCPUStatus: (cpuStatus) => set({ ...cpuStatus }),
+}));
