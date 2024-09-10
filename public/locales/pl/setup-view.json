@@ -1,7 +1,7 @@
 {
     "setting-up": "Konfiguracja Tari truth machine...",
     "this-might-take-a-few-minutes": "To może zająć kilka minut",
-    "dont-worry": "Nie martw się, będziesz musiał to zrobić tylko raz.",
+    "dont-worry": "Nie martw się, następnym razem nie zajmie to tak długo",
     "title": {
         "starting-up": "Uruchamianie",
         "checking-latest-version-node": "Sprawdzanie najnowszej wersji węzła",
