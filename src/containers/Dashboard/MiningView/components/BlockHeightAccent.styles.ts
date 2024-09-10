@@ -23,6 +23,7 @@ export const AccentText = styled(motion.div)`
     position: relative;
     color: ${({ theme }) => theme.palette.base};
     max-height: min-content;
+    user-select: none;
 `;
 
 export const SpacedNum = styled(motion.span)`

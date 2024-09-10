@@ -17,7 +17,7 @@ export function BlockHeightAccent() {
     const heightStringArr = heightString?.split('') || [];
 
     const deferredHeight = useDeferredValue(windowHeight);
-    const deferredFontSize = useDeferredValue(fontSize || 100);
+    const deferredFontSize = useDeferredValue(fontSize);
 
     useEffect(() => {
         const height = deferredHeight - 60;
@@ -46,7 +46,7 @@ export function BlockHeightAccent() {
                         fontSize: `${deferredFontSize}px`,
                     }}
                     style={{
-                        fontSize: `100px`,
+                        fontSize: `170px`,
                         rotate: -90,
                         x: deferredFontSize * 1.55,
                     }}
