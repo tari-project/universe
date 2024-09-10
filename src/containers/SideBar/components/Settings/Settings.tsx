@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 import {
     IoSettingsOutline,
@@ -14,12 +14,11 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { CardContainer, Form, HorisontalBox } from './Settings.styles';
+import { CardContainer, HorisontalBox } from './Settings.styles';
 
-import { useForm } from 'react-hook-form';
 import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
 
-import { Button, IconButton } from '@app/components/elements/Button.tsx';
+import { IconButton } from '@app/components/elements/Button.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -38,20 +37,12 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 
-import { ControlledMoneroAddressInput } from '@app/components/MoneroAddressInput';
 import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { SeedWords } from './SeedWords';
 import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
-
-enum FormFields {
-    MONERO_ADDRESS = 'moneroAddress',
-}
-
-interface FormState {
-    [FormFields.MONERO_ADDRESS]: string;
-}
+import MoneroAddressEditor from './MoneroAddressEditor';
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -64,6 +55,7 @@ export default function Settings() {
         isP2poolEnabled,
         p2poolStats,
         walletAddressEmoji,
+        setMoneroAddress,
     } = useAppStatusStore(
         useShallow((s) => ({
             moneroAddress: s.monero_address,
@@ -73,6 +65,7 @@ export default function Settings() {
             isGpuMiningEnabled: s.gpu_mining_enabled,
             isP2poolEnabled: s.p2pool_enabled,
             p2poolStats: s.p2pool_stats,
+            setMoneroAddress: s.setMoneroAddress,
         }))
     );
 
@@ -98,22 +91,15 @@ export default function Settings() {
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
     const [isCopyTooltipHiddenWalletAddress, setIsCopyTooltipHiddenWalletAddress] = useState(true);
-    const { reset, handleSubmit, control } = useForm<FormState>({
-        defaultValues: { moneroAddress },
-        mode: 'onSubmit',
-    });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
     const miningAllowed = useAppStateStore(useShallow((s) => s.setupProgress >= 1));
+    const setError = useAppStateStore((s) => s.setError);
     const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
     const isMiningInProgress = isCPUMining || isGPUMining;
     const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
     const miningLoading = (miningInitiated && !isMiningInProgress) || (!miningInitiated && isMiningInProgress);
     const [open, setOpen] = useState(false);
-
-    const handleClose = () => {
-        setShowSeedWords(false);
-    };
 
     const toggleSeedWordsVisibility = async () => {
         if (!seedWordsFetched) {
@@ -137,24 +123,25 @@ export default function Settings() {
         setTimeout(() => setIsCopyTooltipHiddenWalletAddress(true), 1000);
     };
 
-    const handleCancel = () => {
-        reset({ moneroAddress });
+    const handleMoneroAddressChange = async (moneroAddress: string) => {
+        try {
+            console.info('Setting Monero address', moneroAddress);
+            await invoke('set_monero_address', { moneroAddress });
+            setMoneroAddress(moneroAddress);
+        } catch (error) {
+            console.error('Failed to set Monero address', error);
+            setError('Failed to set Monero address!');
+        }
     };
 
-    const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        event.stopPropagation();
-        console.info('submitting');
-        handleSubmit(
-            (data) => {
-                invoke('set_monero_address', { moneroAddress: data[FormFields.MONERO_ADDRESS] });
-                handleClose();
-            },
-            (error) => {
-                console.error(error);
-            }
-        )();
-    };
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            const fetchedMoneroAddress = await invoke('get_monero_address');
+            setMoneroAddress(fetchedMoneroAddress);
+        };
+
+        fetchInitialData();
+    }, [setMoneroAddress]);
 
     const walletAddressMarkup = walletAddress ? (
         <>
@@ -201,23 +188,15 @@ export default function Settings() {
         </Stack>
     );
 
-    const inputsMarkup = (
-        <Form onSubmit={onSubmit}>
-            <Stack>
-                <ControlledMoneroAddressInput
-                    name={FormFields.MONERO_ADDRESS}
-                    control={control}
-                    title={t('monero-address.title', { ns: 'settings' })}
-                    placeholder={t('monero-address.placeholder', { ns: 'settings' })}
-                />
+    const moneroAddressMarkup = (
+        <Stack>
+            <Stack direction="row" justifyContent="space-between" style={{ height: 40 }}>
+                <Typography variant="h6">Monero Address</Typography>
             </Stack>
-            <Stack direction="row" justifyContent="flex-end">
-                <Button onClick={handleCancel}>Cancel</Button>
-                <Button type="submit" styleVariant="contained">
-                    Submit
-                </Button>
+            <Stack direction="row" justifyContent="space-between">
+                <MoneroAddressEditor initialAddress={moneroAddress || ''} onApply={handleMoneroAddressChange} />
             </Stack>
-        </Form>
+        </Stack>
     );
     const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
         const isChecked = event.target.checked;
@@ -383,7 +362,7 @@ export default function Settings() {
                     <Divider />
                     {seedWordMarkup}
                     <Divider />
-                    {inputsMarkup}
+                    {moneroAddressMarkup}
                     <Divider />
                     {p2pMarkup}
                     <Divider />
