@@ -161,11 +161,13 @@ async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
-) -> Result<(), String> {
-    setup_inner(window, state, app).await.map_err(|e| {
+) -> Result<bool, String> {
+    setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         e.to_string()
-    })
+    })?;
+
+    Ok(state.config.read().await.auto_mining)
 }
 
 #[tauri::command]
