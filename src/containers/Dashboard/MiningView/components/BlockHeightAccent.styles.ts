@@ -14,23 +14,21 @@ export const AccentWrapper = styled(motion.div)`
 
 export const AccentText = styled(motion.div)`
     display: flex;
-    text-align: center;
     font-family: Druk, sans-serif;
     white-space: pre;
     line-height: 1;
     opacity: 0.55;
-    right: 0;
     position: relative;
     color: ${({ theme }) => theme.palette.base};
     max-height: min-content;
+    user-select: none;
 `;
 
 export const SpacedNum = styled(motion.span)`
     font-variant-numeric: tabular-nums;
     display: flex;
     position: relative;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    width: min-content;
-    max-width: 1ch;
+    width: 1ch;
 `;
