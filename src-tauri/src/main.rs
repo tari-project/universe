@@ -4,6 +4,8 @@
 mod app_config;
 mod app_in_memory_config;
 mod binary_resolver;
+mod clythor;
+mod clythor_adapter;
 mod consts;
 mod cpu_miner;
 mod download_utils;
