@@ -96,6 +96,7 @@ impl AppConfig {
                     self.allow_telemetry = config.allow_telemetry;
                     self.anon_id = config.anon_id;
                     self.version = config.version;
+                    self.monero_address = config.monero_address;
                     if self.version == 0 {
                         // migrate
                         self.version = 1;
