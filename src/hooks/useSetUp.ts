@@ -10,6 +10,7 @@ import { useVersions } from '@app/hooks/useVersions.ts';
 
 import { useShallow } from 'zustand/react/shallow';
 import { setAnimationState } from '@app/visuals.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
@@ -18,6 +19,7 @@ export function useSetUp() {
     const setError = useAppStateStore((s) => s.setError);
     const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
 
+    const setMiningInitiated = useMiningStore(useShallow((s) => s.setMiningInitiated));
     useVersions();
 
     useEffect(() => {
@@ -27,7 +29,6 @@ export function useSetUp() {
                 case 'setup_status':
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
-                        setAnimationState('showVisual');
                         setView('mining');
                     }
                     break;
@@ -36,18 +37,35 @@ export function useSetUp() {
                     break;
             }
         });
-        const intervalId = setInterval(() => {
+        const intervalId = setInterval(async () => {
             if (!startupInitiated.current && isAfterAutoUpdate) {
                 clearInterval(intervalId);
                 startupInitiated.current = true;
-                invoke('setup_application').catch((e) => {
-                    setError(`Failed to setup application: ${e}`);
-                    setView('mining');
-                });
+
+                invoke('setup_application')
+                    .then(async (autoMiningEnabled) => {
+                        if (autoMiningEnabled) {
+                            console.info('Auto-Mining starting');
+                            await invoke('start_mining', {})
+                                .then(() => {
+                                    console.info('Auto-Mining started.');
+                                    setMiningInitiated(true);
+                                    setAnimationState('start');
+                                })
+                                .catch((e) => {
+                                    console.error('Failed to start auto-mining:', e);
+                                    setError(e as string);
+                                });
+                        }
+                    })
+                    .catch((e) => {
+                        setError(`Failed to setup application: ${e}`);
+                        setView('mining');
+                    });
             }
         }, 100);
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [isAfterAutoUpdate, setError, setSetupDetails, setView]);
+    }, [isAfterAutoUpdate, setError, setMiningInitiated, setSetupDetails, setView]);
 }

@@ -1,7 +1,7 @@
 {
     "setting-up": "Konfiguracja Tari truth machine...",
     "this-might-take-a-few-minutes": "To może zająć kilka minut",
-    "dont-worry": "Nie martw się, będziesz musiał to zrobić tylko raz.",
+    "dont-worry": "Nie martw się, następnym razem nie zajmie to tak długo",
     "title": {
         "starting-up": "Uruchamianie",
         "checking-latest-version-node": "Sprawdzanie najnowszej wersji węzła",
@@ -11,7 +11,7 @@
         "checking-latest-version-sha-p2pool": "Sprawdzanie najnowszej wersji sha-p2pool",
         "waiting-for-wallet": "Oczekiwanie na portfel",
         "waiting-for-node": "Oczekiwanie na synchronizację węzła",
-        "preparing-for-initial-sync": "Przygotowywanie do początkowej synchronizacji",
+        "preparing-for-initial-sync": "Łączenie się z urządzeniami równorzędnymi w sieci {{initial_connected_peers}}/{{required_peers}}",
         "starting-mmproxy": "Uruchamianie mmproxy",
         "starting-p2pool": "Uruchamianie P2Pool",
         "application-started": "Aplikacje uruchomione",

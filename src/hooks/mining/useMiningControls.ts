@@ -11,9 +11,9 @@ export function useMiningControls() {
             await invoke('start_mining', {})
                 .then(async () => {
                     console.info('Mining started.');
+                    setAnimationState('start');
                 })
                 .catch((e) => console.error(e));
-            setAnimationState('start');
         } catch (e) {
             const error = e as string;
             setError(error);
@@ -31,9 +31,9 @@ export function useMiningControls() {
                         } else {
                             console.info('Mining stopped.');
                         }
+                        setAnimationState(args?.isPause ? 'pause' : 'stop');
                     })
                     .catch((e) => console.error(e));
-                setAnimationState(args?.isPause ? 'pause' : 'stop');
             } catch (e) {
                 const error = e as string;
                 setError(error);
