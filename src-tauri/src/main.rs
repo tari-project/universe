@@ -54,7 +54,7 @@ use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
 use std::collections::HashMap;
-use std::fs::remove_dir_all;
+use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -857,7 +857,46 @@ async fn reset_settings<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    state
+        .cpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    let exit_code = state
+        .wallet_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
+    state
+        .mm_proxy_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
+    let exit_code = state
+        .p2pool_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
+
     state.shutdown.clone().trigger();
+
+    // let num_retries = 10;
+    // for _ in 0..num_retries {
+    // sleep(Duration::from_secs(1));
+    // }
     // TODO: Find a better way of knowing that all miners have stopped
     sleep(std::time::Duration::from_secs(5));
 
@@ -883,13 +922,39 @@ async fn reset_settings<'r>(
         return Err("Could not get app directories".to_string());
     }
 
-    dirs_to_remove.iter().for_each(|dir| {
+    // Exclude EBWebView because it is still being used.
+    let folder_block_list = ["EBWebView"];
+    for dir in &dirs_to_remove {
         // check if dir exists
         if dir.clone().unwrap().exists() {
-            info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
-            remove_dir_all(dir.clone().unwrap()).unwrap();
+            for entry in read_dir(dir.clone().unwrap()).map_err(|e| e.to_string())? {
+                let entry = entry.map_err(|e| e.to_string())?;
+                let path = entry.path();
+                if path.is_dir() {
+                    if folder_block_list.contains(&path.file_name().unwrap().to_str().unwrap()) {
+                        continue;
+                    }
+                    info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
+                    remove_dir_all(path.clone()).map_err(|e| {
+                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
+                        format!("Could not remove directory: {}", e)
+                    })?;
+                } else {
+                    info!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
+                    remove_file(path.clone()).map_err(|e| {
+                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
+                        format!("Could not remove file: {}", e)
+                    })?;
+                }
+            }
+            // info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
+            // remove_dir_all(dir.clone().unwrap()).map_err(|e|
+            //  {
+            // error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", dir, e);
+            //  format!("Could not remove directory: {}", e)
+            //  })?;
         }
-    });
+    }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
