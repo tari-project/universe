@@ -294,11 +294,7 @@ async fn get_telemetry_data(
             .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
 
     let mut cpu_miner = cpu_miner.write().await;
-    let cpu = match cpu_miner
-        .status(randomx_hash_rate, block_reward)
-        .await
-        .map_err(|e| e.into())
-    {
+    let cpu = match cpu_miner.status(randomx_hash_rate, block_reward).await {
         Ok(cpu) => cpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);

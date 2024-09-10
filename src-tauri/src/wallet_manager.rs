@@ -101,7 +101,7 @@ impl WalletManager {
         process_watcher
             .stop()
             .await
-            .map_err(|e| WalletManagerError::UnknownError(e.into()))
+            .map_err(WalletManagerError::UnknownError)
     }
 
     #[deprecated(

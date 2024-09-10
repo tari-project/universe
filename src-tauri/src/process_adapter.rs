@@ -12,7 +12,7 @@ use crate::process_killer::kill_process;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
-pub trait ProcessAdapter {
+pub(crate) trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
 
     // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
@@ -34,10 +34,6 @@ pub trait ProcessAdapter {
     }
 
     fn pid_file_name(&self) -> &str;
-
-    fn get_pid_file_path(&self, base_folder: PathBuf) -> PathBuf {
-        base_folder.join(self.pid_file_name())
-    }
 
     fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
@@ -61,12 +57,12 @@ pub trait ProcessAdapter {
 }
 
 #[async_trait]
-pub trait StatusMonitor {
+pub(crate) trait StatusMonitor {
     type Status;
     async fn status(&self) -> Result<Self::Status, anyhow::Error>;
 }
 
-pub struct ProcessInstance {
+pub(crate) struct ProcessInstance {
     pub shutdown: Shutdown,
     pub handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
 }

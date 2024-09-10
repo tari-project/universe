@@ -43,7 +43,6 @@ use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
-use anyhow::anyhow;
 use app_config::{AppConfig, MiningMode};
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binary_resolver::{Binaries, BinaryResolver};
@@ -924,8 +923,8 @@ async fn reset_settings<'r>(
     }
 
     // Exclude EBWebView because it is still being used.
-    let folder_block_list = vec!["EBWebView"];
-    for dir in dirs_to_remove.iter() {
+    let folder_block_list = ["EBWebView"];
+    for dir in &dirs_to_remove {
         // check if dir exists
         if dir.clone().unwrap().exists() {
             for entry in read_dir(dir.clone().unwrap()).map_err(|e| e.to_string())? {
