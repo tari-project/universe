@@ -23,6 +23,9 @@ export function useBalanceChanges() {
     const block_height = useBaseNodeStatusStore(useShallow((s) => s.block_height));
     const balance = useWalletStore(useShallow((s) => s.balance));
 
+    const balanceRef = useRef(balance);
+    const blockHeightRef = useRef(block_height);
+
     const {
         setDisplayBlockHeight,
         setEarnings,
@@ -45,12 +48,10 @@ export function useBalanceChanges() {
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
     const isMining = isCPUMining || isGPUMining;
 
-    const balanceRef = useRef(balance);
-    const blockHeightRef = useRef(block_height);
-
     const handleBalanceChange = useCallback(() => {
         setTimerPaused(true);
-        const balanceHasChanges = balanceRef.current > 0 && balance > 0 && balanceRef.current != balance;
+
+        const balanceHasChanges = balance > 0 && balanceRef.current != balance;
         if (balanceHasChanges) {
             const diff = balance - balanceRef.current;
             logBalanceChanges({ balance, prevBalance: balanceRef.current, balanceDiff: diff });
@@ -76,7 +77,7 @@ export function useBalanceChanges() {
     }, [block_height, balance, isMining, setDisplayBlockHeight]);
 
     useEffect(() => {
-        if (balanceRef.current !== balance) {
+        if (balance > 0 && balanceRef.current !== balance) {
             setBalanceChangeBlock(block_height);
         }
     }, [block_height, balance]);
