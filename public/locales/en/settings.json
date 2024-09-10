@@ -14,6 +14,10 @@
     "max": "Maximum is 21600 seconds",
     "min": "Minimum is 1 second"
   },
+  "tabs": {
+    "general": "General",
+    "experimental": "Experimental"
+  },
   "monero-address": {
     "title": "Monero address",
     "placeholder": "Enter Monero address"
