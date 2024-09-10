@@ -1,7 +1,8 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { motion } from 'framer-motion';
 
-export const BlockTimeContainer = styled.div`
+export const BlockTimeContainer = styled(motion.div)`
     display: flex;
     flex-direction: column;
     font-weight: 500;
@@ -13,9 +14,11 @@ export const TitleTypography = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
+export const TimerWrapper = styled.div`
+    box-shadow: 40px 10px 60px 40px rgb(137, 8, 178);
+`;
 export const TimerTypography = styled.div`
     font-family: Druk, sans-serif;
-
     font-variant-numeric: tabular-nums;
     font-size: 18px;
     font-weight: 700;

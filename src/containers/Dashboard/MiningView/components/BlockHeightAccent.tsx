@@ -15,13 +15,12 @@ export function BlockHeightAccent() {
     const [windowHeight, setWindowHeight] = useState(window.innerHeight);
     const [fontSize, setFontSize] = useState(0);
     const heightStringArr = heightString?.split('') || [];
-
     const deferredHeight = useDeferredValue(windowHeight);
-    const deferredFontSize = useDeferredValue(fontSize || 120);
+    const deferredFontSize = useDeferredValue(fontSize || 130);
 
     useEffect(() => {
         const height = deferredHeight - 60;
-        const dividend = (height - 120) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
+        const dividend = (height - 100) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
         setFontSize(Math.floor(dividend));
     }, [heightStringArr.length, deferredHeight]);
 
@@ -46,9 +45,9 @@ export function BlockHeightAccent() {
                         fontSize: `${deferredFontSize}px`,
                     }}
                     style={{
-                        fontSize: `120px`,
+                        fontSize: `130px`,
                         rotate: -90,
-                        x: deferredFontSize * 1.7 - 10,
+                        x: deferredFontSize * 1.1,
                     }}
                 >
                     {heightStringArr?.map((c, i) => (
