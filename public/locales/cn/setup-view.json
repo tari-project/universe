@@ -1,7 +1,7 @@
 {
     "setting-up": "正在建立tari机器...",
     "this-might-take-a-few-minutes": "这需要几分钟",
-    "dont-worry": "别担心，你只需要做一次。",
+    "dont-worry": "别担心，下次就不会那么久了",
     "title": {
         "starting-up": "启动",
         "checking-latest-version-node": "检查节点的最新版本",

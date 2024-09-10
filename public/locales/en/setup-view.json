@@ -1,7 +1,7 @@
 {
     "setting-up": "Setting up the Tari truth machine...",
     "this-might-take-a-few-minutes": "This might take a few minutes",
-    "dont-worry": "Don’t worry you’ll only need to do this once.",
+    "dont-worry": "Don't worry, next time it won't take as long",
     "title": {
         "starting-up": "Starting up",
         "checking-latest-version-node": "Checking for latest version of node",
