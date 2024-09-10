@@ -96,6 +96,14 @@ impl WalletManager {
             })
     }
 
+    pub async fn stop(&self) -> Result<i32, WalletManagerError> {
+        let mut process_watcher = self.watcher.write().await;
+        process_watcher
+            .stop()
+            .await
+            .map_err(|e| WalletManagerError::UnknownError(e.into()))
+    }
+
     #[deprecated(
         note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
     )]

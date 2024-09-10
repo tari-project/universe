@@ -141,13 +141,13 @@ impl P2poolManager {
         Ok(())
     }
 
-    pub async fn stop(&self) -> Result<(), anyhow::Error> {
+    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
         if exit_code != 0 {
             warn!(target: LOG_TARGET, "P2pool process exited with code {}", exit_code);
         }
-        Ok(())
+        Ok(exit_code)
     }
 
     pub async fn grpc_port(&self) -> u16 {
