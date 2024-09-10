@@ -49,7 +49,6 @@ export function useVisualisation() {
 
     const handleFail = useCallback(async () => {
         const canAnimate = await checkCanAnimate();
-
         if (canAnimate) {
             setAnimationState('fail');
             setUseFailTimeout(true);
@@ -58,7 +57,6 @@ export function useVisualisation() {
 
     const handleWin = useCallback(async () => {
         const canAnimate = await checkCanAnimate();
-
         if (canAnimate) {
             setAnimationState('success');
         } else {
