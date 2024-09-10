@@ -49,17 +49,14 @@
       animate();
     }
 
-    const sidebarOffset =348 + 20; // sidebar + padding
-
+    const sidebarOffset = 348 + 20; // sidebar + padding
     function onResize() {
       glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
-      // glApp.properties.cameraOffsetX = (348 + (20 * 2)) / window.innerWidth;
       glApp.setSize(window.innerWidth, window.innerHeight);
     }
 
     function animate() {
       requestAnimationFrame(animate);
-
       let newTime = performance.now() / 1000;
       let dt = newTime - time;
       time = newTime;

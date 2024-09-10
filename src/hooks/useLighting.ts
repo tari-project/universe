@@ -1,10 +1,15 @@
 import { useInterval } from '@app/hooks/useInterval.ts';
 import { setLighting } from '@app/visuals.ts';
+import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 const INTERVAL = 1000 * 60 * 10; // every 10 min
 
 export function useLighting() {
-    function getSunPosition() {
+    const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
+    const hasSetInit = useRef(false);
+    const getSunPosition = useCallback(() => {
         // Get the current time
         const now = new Date();
         // Get the local time in hours (0-24)
@@ -14,7 +19,7 @@ export function useLighting() {
         // Estimate the sun's y position: 0 is the horizon, 1 is directly overhead at noon
         const y = Math.max(0, Math.sin(((hours - 6) / 12) * Math.PI));
         return { x, y };
-    }
+    }, []);
 
     const { x: sunX, y: sunY } = getSunPosition();
     // normalise for webgl vals
@@ -22,7 +27,16 @@ export function useLighting() {
     const y = Math.round(sunY * 100) / 10;
     const z = Math.round((y + x) * 100) / 100;
 
-    return useInterval(() => {
+    useLayoutEffect(() => {
+        if (hasSetInit.current || isSettingUp) {
+            return;
+        }
+
+        setLighting(x, y, z);
+        hasSetInit.current = true;
+    }, [isSettingUp, x, y, z]);
+
+    useInterval(() => {
         setLighting(x, y, z);
     }, INTERVAL);
 }
