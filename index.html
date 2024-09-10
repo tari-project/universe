@@ -10,7 +10,6 @@
       #canvas {
         position: absolute;
         pointer-events: auto;
-        z-index: 0;
       }
   </style>
 </head>
@@ -37,15 +36,20 @@
     function init() {
       glApp.init();
       time = performance.now() / 1000;
+      glApp.properties.lightPositionX = -5;
+      glApp.properties.lightPositionY = 4;
+      glApp.properties.lightPositionZ = 3;
+      glApp.properties.cameraZoom = 0.9;
+      glApp.properties.cameraOffsetX = 0.31;
+
+      glApp.properties.showVisual = true;
       window.addEventListener("resize", onResize);
-      glApp.stateManager.set('showVisual')
       onResize();
       animate();
     }
 
     function onResize() {
       glApp.setSize(window.innerWidth, window.innerHeight);
-      glApp.properties.cameraOffsetX = (348 + 10) / window.innerWidth; // 348 is sidebar width with some padding
     }
 
     function animate() {

@@ -4,38 +4,31 @@ import { TauriEvent } from '../types.ts';
 
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
-import useAppStateStore from '../store/appStateStore.ts';
+import { useAppStateStore } from '../store/appStateStore.ts';
 
 import { useVersions } from '@app/hooks/useVersions.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { setupLogger } from '@app/utils/logger.ts';
+
+import { useShallow } from 'zustand/react/shallow';
+import { setAnimationState } from '@app/visuals.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
     const setView = useUIStore((s) => s.setView);
-    const setShowSplash = useUIStore((s) => s.setShowSplash);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
-    const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setError = useAppStateStore((s) => s.setError);
-    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+    const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
 
     useVersions();
 
     useEffect(() => {
-        setupLogger();
-        const splashTimeout = setTimeout(() => {
-            setShowSplash(false);
-        }, 3500);
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
             console.info('Setup Event:', e, p);
             switch (p.event_type) {
                 case 'setup_status':
-                    console.info('Setup status:', p.title, p.title_params, p.progress);
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
-                        settingUpFinished();
+                        setAnimationState('showVisual');
                         setView('mining');
-                        setMiningControlsEnabled(true);
                     }
                     break;
                 default:
@@ -43,17 +36,18 @@ export function useSetUp() {
                     break;
             }
         });
-        if (!startupInitiated.current) {
-            startupInitiated.current = true;
-            invoke('setup_application').catch((e) => {
-                setError(`Failed to setup application: ${e}`);
-                settingUpFinished();
-                setView('mining');
-            });
-        }
+        const intervalId = setInterval(() => {
+            if (!startupInitiated.current && isAfterAutoUpdate) {
+                clearInterval(intervalId);
+                startupInitiated.current = true;
+                invoke('setup_application').catch((e) => {
+                    setError(`Failed to setup application: ${e}`);
+                    setView('mining');
+                });
+            }
+        }, 100);
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
-            clearTimeout(splashTimeout);
         };
-    }, [setError, setMiningControlsEnabled, setSetupDetails, setShowSplash, setView, settingUpFinished]);
+    }, [isAfterAutoUpdate, setError, setSetupDetails, setView]);
 }

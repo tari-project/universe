@@ -13,10 +13,13 @@ export interface AppStatus {
     mode: modeType;
     auto_mining: boolean;
     monero_address?: string;
+    tari_address_base58?: string;
+    tari_address_emoji?: string;
     p2pool_enabled: boolean;
     p2pool_stats?: P2poolStatsResult;
     cpu_mining_enabled: boolean;
     gpu_mining_enabled: boolean;
+    telemetry_mode: boolean;
 }
 
 export interface P2poolStatsResult {
@@ -34,7 +37,7 @@ export interface P2poolStats {
     pool_hash_rate: bigint;
     pool_total_earnings: number;
     pool_total_estimated_earnings: P2poolEstimatedEarnings;
-    total_earnings: Map<string, number>;
+    total_earnings: Record<string, number>;
     estimated_earnings: Map<string, P2poolEstimatedEarnings>;
     miner_block_stats: P2poolBlockStats;
     p2pool_block_stats: P2poolBlockStats;

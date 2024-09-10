@@ -5,7 +5,7 @@ use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
     CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
 };
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::thread;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -16,7 +16,6 @@ use tokio::time::MissedTickBehavior;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
-pub enum CpuMinerEvent {}
 
 pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
@@ -41,6 +40,7 @@ impl CpuMiner {
         mut app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
         monero_address: String,
+        monero_port: u16,
         base_path: PathBuf,
         cache_dir: PathBuf,
         config_path: PathBuf,
@@ -61,14 +61,14 @@ impl CpuMiner {
                     host_name: "127.0.0.1".to_string(),
                     // port: local_mm_proxy.try_get_listening_port().await?
                     // TODO: Replace with actual port
-                    port: 18081,
+                    port: monero_port,
                 }
             }
         };
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
-                dbg!("Available CPUs: {}", available_cpus);
+                debug!(target:LOG_TARGET, "Available CPUs: {}", available_cpus);
                 available_cpus.get()
             }
             Err(err) => {
@@ -94,7 +94,6 @@ impl CpuMiner {
         self.api_client = Some(xmrig.client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
-            println!("Starting process");
             let mut watch_timer = tokio::time::interval(tokio::time::Duration::from_secs(1));
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
             // read events such as stdout
@@ -168,17 +167,20 @@ impl CpuMiner {
     ) -> Result<CpuMinerStatus, anyhow::Error> {
         match &self.api_client {
             Some(client) => {
-                let (hash_rate, hashrate_sum, estimated_earnings, is_connected) =
+                let (hash_rate, _hashrate_sum, estimated_earnings, is_connected) =
                     match client.summary().await {
                         Ok(xmrig_status) => {
                             let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
                             let estimated_earnings = if network_hash_rate == 0 {
                                 0
                             } else {
-                                ((block_reward.as_u64() as f64)
-                                    * ((hash_rate / (network_hash_rate as f64))
-                                        * (RANDOMX_BLOCKS_PER_DAY as f64)))
-                                    as u64
+                                #[allow(clippy::cast_possible_truncation)]
+                                {
+                                    ((block_reward.as_u64() as f64)
+                                        * ((hash_rate / (network_hash_rate as f64))
+                                            * (RANDOMX_BLOCKS_PER_DAY as f64)))
+                                        .floor() as u64
+                                }
                             };
                             // Can't be more than the max reward for a day
                             let estimated_earnings = std::cmp::min(

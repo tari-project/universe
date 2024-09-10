@@ -1,11 +1,19 @@
 import loading from '@app/assets/backgrounds/white-bg.jpg';
 import styled from 'styled-components';
+import { motion } from 'framer-motion';
 
+export const SplashScreenWrapper = styled(motion.div)`
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    height: 100vh;
+    width: 100vw;
+`;
 export const SplashScreenContainer = styled.div`
     position: absolute;
     background: url(${loading}) no-repeat center center fixed;
     background-size: cover;
-    z-index: 100;
     width: 100%;
     height: 100vh;
     display: flex;

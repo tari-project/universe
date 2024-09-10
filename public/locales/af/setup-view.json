@@ -19,5 +19,9 @@
         "download-completed": "Aflaai voltooi",
         "waiting-for-header-sync": "Wag vir kopkopsinchronisasie. {{local_height}}/{{tip_height}} gesinchroniseer",
         "waiting-for-block-sync": "Wag vir bloksinchronisasie. {{local_height}}/{{tip_height}} gesinchroniseer"
-    }
+    },
+    "new-tari-version-available": "'n Nuwe weergawe van Tari Universe is beskikbaar",
+    "would-you-like-to-install": "Wil jy nou Tari Universe {{version}} installeer?",
+    "yes": "Ja",
+    "no": "Nee"
 }

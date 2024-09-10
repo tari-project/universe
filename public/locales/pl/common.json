@@ -13,5 +13,6 @@
     "hashrate": "Prędkość ( hashrate )",
     "utilization": "Wykorzystanie",
     "mode": "Tryb",
-    "day": "Dzień"
+    "day": "Dzień",
+    "shutting-down": "Wyłączanie.."
 }

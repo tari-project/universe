@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
+import { motion } from 'framer-motion';
 
-export const Wrapper = styled.div<{ $disabled?: boolean }>`
+export const TriggerWrapper = styled(motion.div)<{ $disabled?: boolean }>`
     width: 100%;
     background: ${({ theme }) => theme.palette.background.paper};
     display: flex;
@@ -16,46 +17,37 @@ export const Wrapper = styled.div<{ $disabled?: boolean }>`
         `}
 `;
 
-export const StyledSelect = styled.div`
+export const Options = styled(motion.div)<{ $open?: boolean }>`
     display: flex;
     flex-direction: column;
-    color: ${({ theme }) => theme.palette.text.primary};
-    font-weight: 500;
-    position: relative;
-    letter-spacing: -1px;
-`;
-
-export const Options = styled.div<{ $open?: boolean }>`
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    position: absolute;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     background: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    z-index: 100;
-    height: ${({ $open }) => ($open ? 'auto' : 0)};
-    opacity: ${({ $open }) => ($open ? 1 : 0)};
-    pointer-events: ${({ $open }) => ($open ? 'auto' : 'none')};
+    height: auto;
     transition: all 0.1s ease-in;
 
-    left: 0;
-    top: 100%;
-    transform: translate(-10px, 10px); // TODO: check bounding box stuff or use react popover
-
     min-width: 220px;
+    width: max-content;
     padding: 9px 12px;
 
     align-items: flex-start;
     gap: 6px;
+
+    color: ${({ theme }) => theme.palette.text.primary};
+    font-weight: 500;
+    letter-spacing: -1px;
+    z-index: 2;
 `;
 
-export const SelectedOption = styled.div<{ $selected?: boolean }>`
+export const SelectedOption = styled(motion.div)`
+    color: ${({ theme }) => theme.palette.text.primary};
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 5px;
-    font-size: 15px;
+    font-size: 18px;
+    font-weight: 500;
+    height: 36px;
+    width: 100%;
     img {
         width: 14px;
         display: flex;
@@ -72,7 +64,7 @@ export const OptionLabelWrapper = styled.div`
         display: flex;
     }
 `;
-export const StyledOption = styled.div<{ $selected?: boolean }>`
+export const StyledOption = styled(motion.div)<{ $selected?: boolean }>`
     display: flex;
     font-size: 14px;
     background: ${({ theme }) => theme.palette.background.paper};
