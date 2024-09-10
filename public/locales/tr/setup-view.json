@@ -11,7 +11,7 @@
         "checking-latest-version-sha-p2pool": "sha-p2pool'un en son sürümü kontrol ediliyor",
         "waiting-for-wallet": "Cüzdan bekleniyor",
         "waiting-for-node": "Düğümün senkronize edilmesi bekleniyor",
-        "preparing-for-initial-sync": "İlk senkronizasyon için hazırlanıyor",
+        "preparing-for-initial-sync": "İlk senkronizasyon için hazırlanıyor {{initial_connected_peers}}/{{required_peers}}",
         "starting-mmproxy": "Merge mining proxy'sini başlatılıyor",
         "starting-p2pool": "P2Pool başlatılıyor",
         "application-started": "Uygulamalar başladı",

@@ -11,7 +11,7 @@
         "checking-latest-version-sha-p2pool": "Checking for latest version of sha-p2pool",
         "waiting-for-wallet": "Waiting for wallet",
         "waiting-for-node": "Waiting for node to sync",
-        "preparing-for-initial-sync": "Preparing for initial sync",
+        "preparing-for-initial-sync": "Connecting to network peers {{initial_connected_peers}}/{{required_peers}}",
         "starting-mmproxy": "Starting merge mining proxy",
         "starting-p2pool": "Starting P2Pool",
         "application-started": "Applications started",
