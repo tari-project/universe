@@ -52,26 +52,10 @@ export function useSetUp() {
                 clearInterval(intervalId);
                 startupInitiated.current = true;
                 clearStorage();
-                invoke('setup_application')
-                    .then(async (autoMiningEnabled) => {
-                        if (autoMiningEnabled) {
-                            console.info('Auto-Mining starting');
-                            await invoke('start_mining', {})
-                                .then(() => {
-                                    console.info('Auto-Mining started.');
-                                    setMiningInitiated(true);
-                                    setAnimationState('start');
-                                })
-                                .catch((e) => {
-                                    console.error('Failed to start auto-mining:', e);
-                                    setError(e as string);
-                                });
-                        }
-                    })
-                    .catch((e) => {
-                        setError(`Failed to setup application: ${e}`);
-                        setView('mining');
-                    });
+                invoke('setup_application').catch((e) => {
+                    setError(`Failed to setup application: ${e}`);
+                    setView('mining');
+                });
             }
         }, 100);
         return () => {
