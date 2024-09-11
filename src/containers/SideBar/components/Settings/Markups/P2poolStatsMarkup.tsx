@@ -17,6 +17,12 @@ const P2PoolStats = () => {
         }))
     );
 
+    const { isP2poolEnabled } = useAppStatusStore(
+        useShallow((s) => ({
+            isP2poolEnabled: s.p2pool_enabled,
+        }))
+    );
+
     const p2poolSha3Stats = p2poolStats?.sha3;
     const p2poolRandomXStats = p2poolStats?.randomx;
     const p2poolTribe = p2poolSha3Stats?.tribe?.name;
@@ -35,7 +41,7 @@ const P2PoolStats = () => {
             ? p2poolSha3UserTotalEarnings + p2poolRandomxUserTotalEarnings
             : 0;
 
-    return (
+    return isP2poolEnabled ? (
         <MinerContainer>
             <Stack>
                 <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
@@ -122,7 +128,7 @@ const P2PoolStats = () => {
                 </CardContainer>
             </Stack>
         </MinerContainer>
-    );
+    ) : null;
 };
 
 export default P2PoolStats;
