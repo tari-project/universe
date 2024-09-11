@@ -36,5 +36,6 @@
     "yes": "Evet",
     "cancel": "İptal",
     "reset-settings": "Ayarları sıfırla",
-    "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?"
+    "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?",
+    "gpu-unavailable": "⚠️ GPU devre dışı bırakıldı çünkü donanımınız bunu desteklemiyor"
 }
