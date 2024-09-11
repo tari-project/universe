@@ -115,12 +115,12 @@ impl GpuMiner {
         match output.status.code() {
             Some(0) => {
                 info!(target: LOG_TARGET, "Output status code {:?}", output.status.code().unwrap_or_default());
-                return Ok(());
+                Ok(());
             }
-            Some(code) => return Err(anyhow::anyhow!("Non-zero exit code {:?}", code)),
+            Some(code) => Err(anyhow::anyhow!("Non-zero exit code {:?}", code)),
             None => {
                 warn!(target: LOG_TARGET, "No output status code");
-                return Err(anyhow::anyhow!("No output status code"));
+                Err(anyhow::anyhow!("No output status code"));
             }
         }
     }
