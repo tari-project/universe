@@ -4,6 +4,7 @@
     "dont-worry": "Moenie bekommerd wees nie, volgende keer sal dit nie so lank vat nie",
     "title": {
         "starting-up": "Begin",
+        "checking-latest-version-gpuminer": "Bepaal nuutste weergawe van xtrgpuminer",
         "checking-latest-version-node": "Bepaal nuutste weergawe van node",
         "checking-latest-version-mmproxy": "Bepaal nuutste weergawe van mmproxy",
         "checking-latest-version-wallet": "Bepaal nuutste weergawe van beursie",

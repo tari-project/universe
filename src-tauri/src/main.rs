@@ -282,11 +282,7 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
         progress.set_max(25).await;
         progress
-            .update(
-                "Checking for latest version of gpu miner".to_string(),
-                None,
-                0,
-            )
+            .update("checking-latest-version-gpuminer".to_string(), None, 0)
             .await;
         BinaryResolver::current()
             .ensure_latest(Binaries::GpuMiner, progress.clone())

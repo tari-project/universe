@@ -4,6 +4,7 @@
     "dont-worry": "Don't worry, next time it won't take as long",
     "title": {
         "starting-up": "Starting up",
+        "checking-latest-version-gpuminer": "Checking for latest version of xtrgpuminer",
         "checking-latest-version-node": "Checking for latest version of node",
         "checking-latest-version-mmproxy": "Checking for latest version of mmproxy",
         "checking-latest-version-wallet": "Checking for latest version of wallet",
