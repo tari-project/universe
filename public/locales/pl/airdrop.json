@@ -1,12 +1,12 @@
 {
-    "loginButton": "Log in to claim gems",
-    "logout": "Logout",
+    "loginButton": "Zaloguj się, aby odebrać klejnoty",
+    "logout": "Wyloguj się",
     "permissionNoGems": {
-        "title": "Make Tari Universe better",
-        "text": "Tari Universe would like to use analytics to improve your experience."
+        "title": "Uczyń Tari Universe lepszym",
+        "text": "Tari Universe zbierać informacje z aplikacji, aby poprawić Twoje doświadczenie."
     },
     "permission": {
-        "title": "Earn Gems & make Tari Universe better",
-        "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining."
+        "title": "Zarabiaj klejnoty i uczynij Tari Universe lepszym",
+        "text": "Tari Universe chciałoby zbierać informacje z aplikacji, aby poprawić Twoje doświadczenie i nagrodzić Cię klejnotami za kopanie."
     }
 }
