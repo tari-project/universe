@@ -1,7 +1,7 @@
 {
     "cancel": "Kanselleer",
     "copied": "Gekopieer",
-    "current": "==== Fill in the translation ====",
+    "current": "Current",
     "day": "Dag",
     "hashrate": "Hashtempo",
     "max-temperature": "Maksimum temperatuur",
@@ -14,7 +14,7 @@
     "tari-universe": "Tari Universe",
     "temperature": "Temperatuur",
     "testnet": "Testnet",
-    "total": "==== Fill in the translation ====",
+    "total": "Total",
     "unknown": "Onbekend",
     "usage": "Gebruik",
     "utilization": "Benutting",

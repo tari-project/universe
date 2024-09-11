@@ -34,10 +34,10 @@
   "seed-words": "Seed Kelimeleri",
   "settings": "Ayarlar",
   "tabs": {
-    "experimental": "==== Fill in the translation ====",
-    "general": "==== Fill in the translation ===="
+    "experimental": "Experimental",
+    "general": "General"
   },
-  "tari-wallet-address": "==== Fill in the translation ====",
+  "tari-wallet-address": "Tari Wallet Address",
   "tribe": "Kabile",
   "tribe-earnings": "Kabile kazançları",
   "tribe-pool-height": "Havuz yüksekliği",

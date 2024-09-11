@@ -1,12 +1,12 @@
 {
-    "loginButton": "==== Fill in the translation ====",
-    "logout": "==== Fill in the translation ====",
+    "loginButton": "Log in to claim gems",
+    "logout": "Logout",
     "permission": {
-        "text": "==== Fill in the translation ====",
-        "title": "==== Fill in the translation ===="
+        "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining.",
+        "title": "Earn Gems & make Tari Universe better"
     },
     "permissionNoGems": {
-        "text": "==== Fill in the translation ====",
-        "title": "==== Fill in the translation ===="
+        "text": "Tari Universe would like to use analytics to improve your experience.",
+        "title": "Make Tari Universe better"
     }
 }

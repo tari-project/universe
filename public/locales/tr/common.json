@@ -1,7 +1,7 @@
 {
     "cancel": "İptal",
     "copied": "Kopyalandı",
-    "current": "==== Fill in the translation ====",
+    "current": "Current",
     "day": "Gün",
     "hashrate": "Hashrate",
     "max-temperature": "Maks. Sıcaklık",
@@ -14,7 +14,7 @@
     "tari-universe": "Tari Universe",
     "temperature": "Sıcaklık",
     "testnet": "Testnet",
-    "total": "==== Fill in the translation ====",
+    "total": "Total",
     "unknown": "Bilinmeyen",
     "usage": "Kullanım",
     "utilization": "Fayda",
