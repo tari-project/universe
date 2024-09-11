@@ -64,18 +64,5 @@ export function useVisualisation() {
         }
     }, [checkCanAnimate, setEarnings]);
 
-    useEffect(() => {
-        const sM = window?.glApp?.stateManager;
-        const status = sM?.status;
-
-        if (status === 'free' && !isMining) {
-            setAnimationState('stop');
-        }
-
-        if (status === 'not-started' && isMining) {
-            setAnimationState('start');
-        }
-    }, [isMining]);
-
     return { handleFail, handleWin };
 }
