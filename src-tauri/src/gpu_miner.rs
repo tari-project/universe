@@ -21,6 +21,7 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
+    is_available: bool,
 }
 
 impl GpuMiner {
@@ -29,6 +30,7 @@ impl GpuMiner {
         let process_watcher = ProcessWatcher::new(adapter);
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
+            is_available: false,
         }
     }
 
@@ -91,17 +93,19 @@ impl GpuMiner {
                     block_reward.as_u64() * SHA_BLOCKS_PER_DAY,
                 );
                 status.estimated_earnings = estimated_earnings;
+                status.is_available = self.is_available;
                 Ok(status)
             }
             None => Ok(GpuMinerStatus {
                 hash_rate: 0,
                 estimated_earnings: 0,
                 is_mining: false,
+                is_available: false,
             }),
         }
     }
 
-    pub async fn detect(&self) -> Result<(), anyhow::Error> {
+    pub async fn detect(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
 
         let args: Vec<String> = vec!["--detect".to_string(), "true".to_string()];
@@ -115,13 +119,21 @@ impl GpuMiner {
         match output.status.code() {
             Some(0) => {
                 info!(target: LOG_TARGET, "Output status code {:?}", output.status.code().unwrap_or_default());
-                Ok(());
+                self.is_available = true;
+                return Ok(());
             }
-            Some(code) => Err(anyhow::anyhow!("Non-zero exit code {:?}", code)),
+            Some(code) => {
+                warn!(target: LOG_TARGET, "Non-zero exit code {:?}", code);
+                return Err(anyhow::anyhow!("Non-zero exit code {:?}", code));
+            }
             None => {
                 warn!(target: LOG_TARGET, "No output status code");
-                Err(anyhow::anyhow!("No output status code"));
+                return Err(anyhow::anyhow!("No output status code"));
             }
         }
+    }
+
+    pub fn is_gpu_mining_available(&self) -> bool {
+        self.is_available
     }
 }

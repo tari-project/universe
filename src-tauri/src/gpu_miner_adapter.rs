@@ -208,6 +208,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                         is_mining: false,
                         hash_rate: 0,
                         estimated_earnings: 0,
+                        is_available: false,
                     });
                 }
                 warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
@@ -215,6 +216,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                     is_mining: false,
                     hash_rate: 0,
                     estimated_earnings: 0,
+                    is_available: false,
                 });
             }
         };
@@ -227,6 +229,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                     is_mining: false,
                     hash_rate: 0,
                     estimated_earnings: 0,
+                    is_available: false,
                 });
             }
         };
@@ -234,6 +237,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
             is_mining: true,
             hash_rate: body.hashes_per_second,
             estimated_earnings: 0,
+            is_available: true,
         })
     }
 }
@@ -248,4 +252,5 @@ pub struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: u64,
     pub estimated_earnings: u64,
+    pub is_available: bool,
 }

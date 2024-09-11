@@ -289,18 +289,7 @@ async fn setup_inner(
             .ensure_latest(Binaries::GpuMiner, progress.clone())
             .await?;
 
-        let gpu_miner = state.gpu_miner.write().await;
-        match gpu_miner.detect().await {
-            Ok(_) => {
-                info!(target: LOG_TARGET, "Gpu miner available")
-            }
-            Err(e) => {
-                if let Err(e) = set_gpu_mining_enabled(false, state.clone()).await {
-                    error!(target: LOG_TARGET, "Set gpu disabled error {:?}",e)
-                }
-                warn!(target: LOG_TARGET, "Gpu miner unavailable {:?}",e)
-            }
-        }
+        state.gpu_miner.write().await.detect().await;
 
         progress.set_max(30).await;
         progress
@@ -586,7 +575,7 @@ async fn start_mining<'r>(
         }
     }
 
-    if gpu_mining_enabled {
+    if gpu_mining_enabled && state.gpu_miner.write().await.is_gpu_mining_available() {
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         let p2pool_enabled = state.config.read().await.p2pool_enabled();
         let source = if p2pool_enabled {

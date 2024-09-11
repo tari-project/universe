@@ -10,6 +10,7 @@ const initialState: GpuMinerStatus = {
     is_mining: false,
     hash_rate: 0,
     estimated_earnings: 0,
+    is_available: false,
 };
 export const useGPUStatusStore = create<GPUStatusStoreState>()((set) => ({
     ...initialState,
