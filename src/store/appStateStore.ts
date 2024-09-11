@@ -5,12 +5,12 @@ import { invoke } from '@tauri-apps/api';
 interface AppState {
     isAfterAutoUpdate: boolean;
     setIsAfterAutoUpdate: (value: boolean) => void;
+    criticalError?: string;
+    setCriticalError: (value: string | undefined) => void;
     error?: string;
     setError: (value: string | undefined) => void;
     topStatus: string;
     setTopStatus: (value: string) => void;
-    errorOpen: boolean;
-    setErrorOpen: (value: boolean) => void;
     setupTitle: string;
     setupTitleParams: Record<string, string>;
     setupProgress: number;
@@ -27,12 +27,12 @@ interface AppState {
 export const useAppStateStore = create<AppState>()((set, getState) => ({
     isAfterAutoUpdate: false,
     setIsAfterAutoUpdate: (value: boolean) => set({ isAfterAutoUpdate: value }),
+    criticalError: undefined,
+    setCriticalError: (criticalError) => set({ criticalError }),
     error: undefined,
     setError: (error) => set({ error }),
     topStatus: 'Not mining',
     setTopStatus: (value) => set({ topStatus: value }),
-    errorOpen: false,
-    setErrorOpen: (value) => set({ errorOpen: value }),
     setupTitle: '',
     setupTitleParams: {},
     setupProgress: 0,

@@ -13,6 +13,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
+use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 
@@ -82,6 +83,48 @@ struct UpdateProgressRustEvent {
     chunk_length: usize,
     content_length: Option<u64>,
     downloaded: u64,
+}
+
+async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(), String> {
+    state
+        .cpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    let exit_code = state
+        .wallet_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
+    state
+        .mm_proxy_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
+    let exit_code = state
+        .p2pool_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
+
+    state.shutdown.clone().trigger();
+
+    // TODO: Find a better way of knowing that all miners have stopped
+    sleep(std::time::Duration::from_secs(sleep_secs));
+    Ok(())
 }
 
 #[tauri::command]
@@ -178,6 +221,29 @@ async fn set_monero_address(
 }
 
 #[tauri::command]
+async fn restart_application(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    // This restart doesn't need to shutdown all the miners
+    app.restart();
+    Ok(())
+}
+
+#[tauri::command]
+async fn exit_application(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    stop_all_miners(state.inner().clone(), 5).await?;
+
+    app.exit(0);
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -189,17 +255,6 @@ async fn setup_application(
     })?;
 
     Ok(state.config.read().await.auto_mining())
-}
-
-#[tauri::command]
-async fn restart_application(
-    _window: tauri::Window,
-    _state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
-    // This restart doesn't need to shutdown all the miners
-    app.restart();
-    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
@@ -258,23 +313,23 @@ async fn setup_inner(
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60 * 10)
+        > Duration::from_secs(0)
     // 10 minutes
     {
-        state
+        let _ = state
             .config
             .write()
             .await
             .set_last_binaries_update_timestamp(now)
-            .await?;
+            .await;
 
         progress.set_max(10).await;
         progress
             .update("checking-latest-version-node".to_string(), None, 0)
             .await;
-        BinaryResolver::current()
+        let _ = BinaryResolver::current()
             .ensure_latest(Binaries::MinotariNode, progress.clone())
-            .await?;
+            .await;
         sleep(Duration::from_secs(1));
 
         progress.set_max(15).await;
@@ -282,26 +337,26 @@ async fn setup_inner(
             .update("checking-latest-version-mmproxy".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        BinaryResolver::current()
+        let _ = BinaryResolver::current()
             .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
-            .await?;
+            .await;
         progress.set_max(20).await;
         progress
             .update("checking-latest-version-wallet".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        BinaryResolver::current()
+        let _ = BinaryResolver::current()
             .ensure_latest(Binaries::Wallet, progress.clone())
-            .await?;
+            .await;
 
         sleep(Duration::from_secs(1));
         progress.set_max(25).await;
         progress
             .update("checking-latest-version-gpuminer".to_string(), None, 0)
             .await;
-        BinaryResolver::current()
+        let _ = BinaryResolver::current()
             .ensure_latest(Binaries::GpuMiner, progress.clone())
-            .await?;
+            .await;
 
         state.gpu_miner.write().await.detect().await?;
 
@@ -310,16 +365,16 @@ async fn setup_inner(
             .update("checking-latest-version-xmrig".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await?;
+        let _ = XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await;
 
         progress.set_max(35).await;
         progress
             .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        BinaryResolver::current()
+        let _ = BinaryResolver::current()
             .ensure_latest(Binaries::ShaP2pool, progress.clone())
-            .await?;
+            .await;
     }
 
     for _i in 0..2 {
@@ -894,48 +949,7 @@ async fn reset_settings<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    state
-        .cpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    state
-        .gpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    let exit_code = state
-        .wallet_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
-    state
-        .mm_proxy_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
-    let exit_code = state
-        .p2pool_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
-
-    state.shutdown.clone().trigger();
-
-    // let num_retries = 10;
-    // for _ in 0..num_retries {
-    // sleep(Duration::from_secs(1));
-    // }
-    // TODO: Find a better way of knowing that all miners have stopped
-    sleep(std::time::Duration::from_secs(5));
+    stop_all_miners(state.inner().clone(), 5).await?;
 
     let app_config_dir = app.path_resolver().app_config_dir();
     let app_cache_dir = app.path_resolver().app_cache_dir();
@@ -1063,6 +1077,7 @@ struct CpuMinerConfig {
     tari_address: TariAddress,
 }
 
+#[derive(Clone)]
 struct UniverseAppState {
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
@@ -1170,7 +1185,7 @@ fn main() {
             app.emit_all("single-instance", Payload { args: argv, cwd })
                 .unwrap();
         }))
-        .manage(app_state)
+        .manage(app_state.clone())
         .setup(|app| {
             tari_common::initialize_logging(
                 &app.path_resolver()
@@ -1258,7 +1273,8 @@ fn main() {
             get_miner_metrics,
             get_app_config,
             get_p2pool_stats,
-            get_tari_wallet_details
+            get_tari_wallet_details,
+            exit_application
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -1295,15 +1311,12 @@ fn main() {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown caught");
-            shutdown.trigger();
-            // TODO: Find a better way of knowing that all miners have stopped
-            sleep(std::time::Duration::from_secs(2));
+            let _ = block_on(stop_all_miners(app_state.clone(), 2));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
-        tauri::RunEvent::Exit => { info!(target: LOG_TARGET, "App shutdown caught");
-            shutdown.trigger();
-            // TODO: Find a better way of knowing that all miners have stopped
-            sleep(std::time::Duration::from_secs(2));
+        tauri::RunEvent::Exit => {
+            info!(target: LOG_TARGET, "App shutdown caught");
+            let _ = block_on(stop_all_miners(app_state.clone(), 2));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
