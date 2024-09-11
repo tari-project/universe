@@ -250,7 +250,7 @@ impl BinaryResolver {
             .join(latest_release.version.to_string());
         let _lock = self.download_mutex.lock().await;
 
-        if force_download {
+        if force_download && bin_folder.exists() {
             info!(target: LOG_TARGET, "Cleaning up existing dir");
             fs::remove_dir_all(&bin_folder)
                 .await
