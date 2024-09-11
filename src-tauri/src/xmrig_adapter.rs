@@ -1,3 +1,4 @@
+use crate::binary_resolver::VersionDownloadInfo;
 use crate::download_utils::{download_file_with_retries, extract};
 use std::path::PathBuf;
 
@@ -10,7 +11,7 @@ use tokio::fs;
 
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::xmrig::http_api::XmrigHttpApiClient;
-use crate::xmrig::latest_release::{fetch_latest_release, XmrigRelease};
+use crate::xmrig::latest_release::{fetch_xmrig_latest_release, find_version_for_platform};
 use crate::{process_utils, ProgressTracker};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
@@ -114,17 +115,19 @@ impl XmrigAdapter {
         force_download: bool,
         progress_tracker: ProgressTracker,
     ) -> Result<String, Error> {
-        let latest_release_res = fetch_latest_release().await;
+        let latest_release_res = fetch_xmrig_latest_release().await;
 
-        let latest_release: XmrigRelease = if latest_release_res.is_err() {
+        let latest_release: VersionDownloadInfo = if latest_release_res.is_err() {
             return XmrigAdapter::get_latest_local_version(cache_dir.clone()).await;
         } else {
             // fetched properly so it can be unwrapped
             latest_release_res?
         };
 
-        let xmrig_dir = cache_dir.join("xmrig").join(&latest_release.version);
-        if force_download {
+        let xmrig_dir = cache_dir
+            .join("xmrig")
+            .join(latest_release.version.to_string());
+        if force_download && xmrig_dir.exists() {
             println!("Cleaning up xmrig dir");
             fs::remove_dir_all(&xmrig_dir).await.inspect_err(
                 |e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e),
@@ -145,17 +148,12 @@ impl XmrigAdapter {
                 }
             }
 
-            let id = get_os_string_id();
-            info!(target: LOG_TARGET, "Downloading xmrig for {}", &id);
-            let platform = latest_release
-                .get_asset(&id)
-                .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
+            let asset = find_version_for_platform(&latest_release)?;
             println!("Downloading file");
-            println!("Downloading file from {}", &platform.url);
+            println!("Downloading file from {}", &asset.url);
 
-            let in_progress_file = in_progress_dir.join(&platform.name);
-            match download_file_with_retries(&platform.url, &in_progress_file, progress_tracker)
-                .await
+            let in_progress_file = in_progress_dir.join(&asset.name);
+            match download_file_with_retries(&asset.url, &in_progress_file, progress_tracker).await
             {
                 Ok(_) => {}
                 Err(_) => match XmrigAdapter::get_latest_local_version(cache_dir.clone()).await {
@@ -176,8 +174,7 @@ impl XmrigAdapter {
             extract(&in_progress_file, &xmrig_dir).await?;
             fs::remove_dir_all(in_progress_dir).await?;
         }
-
-        Ok(latest_release.version)
+        Ok(latest_release.version.to_string())
     }
 }
 
@@ -259,39 +256,4 @@ impl StatusMonitor for XmrigStatusMonitor {
     async fn status(&self) -> Result<Self::Status, Error> {
         todo!()
     }
-}
-
-#[allow(unreachable_code)]
-fn get_os_string_id() -> String {
-    #[cfg(target_os = "windows")]
-    {
-        return "msvc-win64".to_string();
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        #[cfg(target_arch = "x86_64")]
-        {
-            return "macos-x64".to_string();
-        }
-
-        #[cfg(target_arch = "aarch64")]
-        {
-            // the x64 seems to work better on the M1
-            return "macos-arm64".to_string();
-            // return "macos-x64".to_string();
-        }
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        return "linux-static-x64".to_string();
-    }
-
-    #[cfg(target_os = "freebsd")]
-    {
-        return "freebsd-static-x64".to_string();
-    }
-
-    panic!("Unsupported OS");
 }
