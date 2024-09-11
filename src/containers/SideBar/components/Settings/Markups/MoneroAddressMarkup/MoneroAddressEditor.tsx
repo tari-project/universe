@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
@@ -27,7 +27,7 @@ const StyledForm = styled('form')(() => ({
     minHeight: '53px',
 }));
 
-const MoneroAddressEditor: React.FC<MoneroAddressEditorProps> = ({ initialAddress, onApply }) => {
+const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorProps) => {
     const {
         control,
         watch,
