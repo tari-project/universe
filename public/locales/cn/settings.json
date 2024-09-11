@@ -11,8 +11,8 @@
   "idle-timeout": {
     "title": "机器被视为空闲的时间",
     "placeholder": "输入空闲超时时间（秒）",
-    "max": "最大值为21600秒",
-    "min": "最小值为1秒"
+    "max": "最大值为 21600 秒",
+    "min": "最小值为 1 秒"
   },
   "monero-address": {
     "title": "Monero 地址",
@@ -24,7 +24,7 @@
   "pool-mining-description": "启用后，您将在矿池中挖矿并加入一组矿工（部落）.",
   "cpu-mining-enabled": "CPU 挖矿",
   "gpu-mining-enabled": "GPU 挖矿",
-  "p2pool-stats": "P2Pool状态",
+  "p2pool-stats": "P2Pool 状态",
   "tribe": "部落",
   "miners": "矿工",
   "tribe-earnings": "部落收入",
