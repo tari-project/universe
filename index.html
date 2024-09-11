@@ -36,24 +36,27 @@
     function init() {
       glApp.init();
       time = performance.now() / 1000;
+      glApp.properties.lightPositionX = -1;
+      glApp.properties.lightPositionY = 0;
+      glApp.properties.lightPositionZ = 1;
+      glApp.properties.defaultColor = '#FFFFFF';
+      glApp.properties.startColor = '#40d1f7';
+      glApp.properties.endColor = '#5ff09a';
 
-      glApp.properties.lightPositionX = -5;
-      glApp.properties.lightPositionY = 4;
-      glApp.properties.lightPositionZ = 3;
-      glApp.properties.cameraOffsetX = (348 + 50) / window.innerWidth; // 348 is sidebar width with some padding
-
+      glApp.properties.showVisual = true;
       window.addEventListener("resize", onResize);
       onResize();
       animate();
     }
 
+    const sidebarOffset = 348 + 20; // sidebar + padding
     function onResize() {
+      glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
       glApp.setSize(window.innerWidth, window.innerHeight);
     }
 
     function animate() {
       requestAnimationFrame(animate);
-
       let newTime = performance.now() / 1000;
       let dt = newTime - time;
       time = newTime;

@@ -7,7 +7,7 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 import { IoChevronForwardOutline } from 'react-icons/io5';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { useTranslation } from 'react-i18next';
-import { Stack } from '@app/components/elements/Stack.tsx';
+
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
@@ -17,7 +17,7 @@ enum MiningButtonStateText {
     START = 'start-mining',
 }
 
-function MiningButton() {
+export default function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const miningControlsEnabled = useMiningStore(useShallow((s) => s.miningControlsEnabled));
     const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
@@ -49,20 +49,16 @@ function MiningButton() {
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
 
     return (
-        <Stack>
-            <ButtonWrapper>
-                <StyledButton
-                    variant="rounded"
-                    $hasStarted={isMining}
-                    onClick={handleClick}
-                    icon={<IconWrapper>{miningLoading ? <StyledIcon /> : icon}</IconWrapper>}
-                    disabled={!miningControlsEnabled || miningLoading}
-                >
-                    <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
-                </StyledButton>
-            </ButtonWrapper>
-        </Stack>
+        <ButtonWrapper layout layoutId="mining-button-wrapper">
+            <StyledButton
+                variant="rounded"
+                $hasStarted={isMining}
+                onClick={handleClick}
+                icon={<IconWrapper>{miningLoading ? <StyledIcon /> : icon}</IconWrapper>}
+                disabled={!miningControlsEnabled || miningLoading}
+            >
+                <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
+            </StyledButton>
+        </ButtonWrapper>
     );
 }
-
-export default MiningButton;

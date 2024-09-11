@@ -30,6 +30,9 @@ export interface Properties extends Record<string, unknown> {
     spawnSignal: unknown;
     gameEndedSignal: unknown;
     statusUpdateQueue: unknown;
+    lightPositionX: number;
+    lightPositionY: number;
+    lightPositionZ: number;
 }
 
 export interface StateManager extends Record<string, unknown> {

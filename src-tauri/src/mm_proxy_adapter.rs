@@ -24,21 +24,6 @@ pub struct MergeMiningProxyConfig {
 }
 
 impl MergeMiningProxyConfig {
-    pub fn new(
-        port: Option<u16>,
-        coinbase_extra: Option<String>,
-        tari_address: TariAddress,
-    ) -> Self {
-        Self {
-            port: port.unwrap_or(0),
-            p2pool_enabled: false,
-            base_node_grpc_port: 0,
-            p2pool_grpc_port: 0,
-            coinbase_extra: coinbase_extra.unwrap_or("tari_universe_mmproxy".to_string()),
-            tari_address,
-        }
-    }
-
     pub fn set_to_use_base_node(&mut self, port: u16) {
         self.base_node_grpc_port = port;
     }

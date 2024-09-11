@@ -29,7 +29,7 @@ impl Default for AppInMemoryConfig {
     fn default() -> Self {
         AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
-            airdrop_api_url: "https://airdrop.tari.com/api".into(),
+            airdrop_api_url: "https://ut.tari.com".into(),
             airdrop_twitter_auth_url: "https://airdrop.tari.com".into(),
         }
     }

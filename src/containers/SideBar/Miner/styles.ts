@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 
-export const MinerContainer = styled.div`
+export const MinerContainer = styled(motion.div)`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -28,7 +28,7 @@ export const TileItem = styled(motion.div)`
     font-weight: 500;
     position: relative;
 `;
-export const TileTop = styled.div`
+export const TileTop = styled(motion.div)`
     display: flex;
     justify-content: space-between;
 `;
@@ -39,12 +39,12 @@ export const StatWrapper = styled(motion.div)<{ $useLowerCase?: boolean }>`
     align-items: baseline;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
-export const Unit = styled.div`
+export const Unit = styled(motion.div)`
     line-height: 1;
     font-size: 10px;
 `;
 
-export const TileContainer = styled.div`
+export const TileContainer = styled(motion.div)`
     display: flex;
     flex-wrap: wrap;
     flex-direction: row;

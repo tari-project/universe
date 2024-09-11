@@ -11,7 +11,6 @@ export const DashboardContainer = styled(motion.div)`
     height: 100%;
     flex-grow: 1;
     position: relative;
-    //z-index: 1;
 `;
 
 export const ProgressWrapper = styled.div`

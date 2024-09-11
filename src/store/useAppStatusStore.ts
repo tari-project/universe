@@ -10,6 +10,7 @@ interface Actions {
     setMode: (mode: modeType) => void;
     setP2poolEnabled: (p2poolEnabled: boolean) => void;
     setTelemetryMode: (telemetryMode: boolean) => void;
+    setMoneroAddress: (moneroAddress: string) => void;
 }
 
 type AppStatusStoreState = State & Actions;
@@ -24,6 +25,8 @@ const initialState: State = {
     mode: 'Eco',
     applications_versions: undefined,
     monero_address: undefined,
+    tari_address_base58: undefined,
+    tari_address_emoji: undefined,
     cpu_mining_enabled: false,
     gpu_mining_enabled: false,
 };
@@ -32,6 +35,7 @@ export const useAppStatusStore = create<AppStatusStoreState>()((set) => ({
     setTelemetryMode: (telemetry_mode) => set({ telemetry_mode }),
     setAppStatus: (appStatus) => set({ ...appStatus }),
     setApplicationsVersions: (applications_versions) => set({ applications_versions }),
+    setMoneroAddress: (monero_address) => set({ monero_address }),
     setMode: (mode) => set({ mode }),
     setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
 }));

@@ -9,7 +9,7 @@ export const Wrapper = styled(motion.div)`
     align-items: center;
     justify-content: flex-end;
     pointer-events: none;
-    height: calc(100vh - 100px);
+    height: calc(100% - 100px);
     position: fixed;
     right: 10px;
 `;

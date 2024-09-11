@@ -1,7 +1,7 @@
-import { ContainerInner, DashboardContainer } from './theme/styles';
+import { BackgroundImage, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
-import { AppBackground } from './containers/AppBackground';
+
 import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
@@ -18,6 +18,7 @@ import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx
 import useMining from '@app/hooks/mining/useMining.ts';
 
 import { LayoutGroup } from 'framer-motion';
+import { useLighting } from '@app/hooks/useLighting.ts';
 
 export default function App() {
     useAirdropSyncState();
@@ -25,21 +26,20 @@ export default function App() {
     useMining();
     useGetStatus();
     useEnvironment();
+    useLighting();
 
     const isShuttingDown = useShuttingDown();
-    const view = useUIStore((s) => s.view);
     const showSplash = useUIStore((s) => s.showSplash);
+    const view = useUIStore((s) => s.view);
+    const visualMode = useUIStore((s) => s.visualMode);
 
     const canRenderMain = !isShuttingDown && !showSplash;
     const splashScreenMarkup = <SplashScreen />;
     const shutDownMarkup = isShuttingDown ? <ShuttingDownScreen /> : null;
     const mainMarkup = canRenderMain ? (
-        <DashboardContainer layout>
-            <ContainerInner layout>
-                <SideBar />
-                <AirdropLogin />
-                <Dashboard status={view} />
-            </ContainerInner>
+        <DashboardContainer>
+            <SideBar />
+            <Dashboard status={view} />
         </DashboardContainer>
     ) : null;
 
@@ -47,11 +47,12 @@ export default function App() {
         <ThemeProvider>
             <GlobalReset />
             <GlobalStyle />
-            <LayoutGroup>
-                <AppBackground />
-                <AutoUpdateDialog />
+            <AutoUpdateDialog />
+            <LayoutGroup id="app-content">
+                <AirdropLogin />
                 {splashScreenMarkup}
                 {shutDownMarkup}
+                {!visualMode || view != 'mining' ? <BackgroundImage layout transition={{ duration: 0.3 }} /> : null}
                 {mainMarkup}
                 <ErrorSnackbar />
             </LayoutGroup>

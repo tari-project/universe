@@ -18,6 +18,7 @@ import { useShallow } from 'zustand/react/shallow';
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
     const [isLoading, setIsLoading] = useState(false);
+    const [miningLoading, setMiningLoading] = useState(false);
 
     const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
     const mode = useAppStatusStore(useShallow((s) => s.mode));
@@ -26,6 +27,7 @@ function ModeSelect() {
     const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
 
     const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
+    const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isMining = cpuIsMining || gpuIsMining;
 
     const { handleStop, handleStart } = useMiningControls();
@@ -69,12 +71,16 @@ function ModeSelect() {
         }
     }, [isLoading, mode]);
 
+    useEffect(() => {
+        setMiningLoading((miningInitiated && !isMining) || (!miningInitiated && isMining));
+    }, [isMining, miningInitiated]);
+
     return (
-        <TileItem>
+        <TileItem layoutId="miner-mode-select-tile" layout>
             <Typography>{t('mode')}</Typography>
             <Select
-                disabled={isLoading || isSettingUp}
-                loading={isLoading}
+                disabled={miningLoading || isLoading || isSettingUp}
+                loading={isLoading || miningLoading}
                 onChange={handleChange}
                 selectedValue={mode}
                 options={[
