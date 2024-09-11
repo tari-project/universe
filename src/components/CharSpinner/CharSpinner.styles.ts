@@ -11,6 +11,7 @@ interface Props {
 }
 
 export const Wrapper = styled.div<{ $letterHeight?: number }>`
+    width: 100%;
     display: flex;
     overflow: hidden;
     flex-direction: row;
