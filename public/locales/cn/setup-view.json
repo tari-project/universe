@@ -4,6 +4,7 @@
     "dont-worry": "别担心，下次就不会那么久了",
     "title": {
         "starting-up": "启动",
+        "checking-latest-version-gpuminer": "正在检查xtrgpuminer的最新版本",
         "checking-latest-version-node": "检查节点的最新版本",
         "checking-latest-version-mmproxy": "正在检查mmproxy的最新版本",
         "checking-latest-version-wallet": "正在检查wallet最新版本",
