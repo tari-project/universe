@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../types.ts';
 
@@ -22,9 +22,17 @@ export function useSetUp() {
     const setMiningInitiated = useMiningStore(useShallow((s) => s.setMiningInitiated));
     useVersions();
 
+    const clearStorage = useCallback(() => {
+        // clear all storage except airdrop data
+        const airdropStorage = localStorage.getItem('airdrop-store');
+        localStorage.clear();
+        if (airdropStorage) {
+            localStorage.setItem('airdrop-store', airdropStorage);
+        }
+    }, []);
+
     useEffect(() => {
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
-            console.info('Setup Event:', e, p);
             switch (p.event_type) {
                 case 'setup_status':
                     setSetupDetails(p.title, p.title_params, p.progress);
@@ -41,7 +49,7 @@ export function useSetUp() {
             if (!startupInitiated.current && isAfterAutoUpdate) {
                 clearInterval(intervalId);
                 startupInitiated.current = true;
-
+                clearStorage();
                 invoke('setup_application')
                     .then(async (autoMiningEnabled) => {
                         if (autoMiningEnabled) {
@@ -67,5 +75,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [isAfterAutoUpdate, setError, setMiningInitiated, setSetupDetails, setView]);
+    }, [clearStorage, isAfterAutoUpdate, setError, setMiningInitiated, setSetupDetails, setView]);
 }
