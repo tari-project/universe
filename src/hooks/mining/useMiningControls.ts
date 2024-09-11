@@ -19,6 +19,7 @@ export function useMiningControls() {
                     setAnimationState('stop');
                 });
         } catch (e) {
+            console.error(e);
             const error = e as string;
             // if there was a problem starting
             setAnimationState('stop');
@@ -45,6 +46,7 @@ export function useMiningControls() {
                         setAnimationState('start');
                     });
             } catch (e) {
+                console.error(e);
                 const error = e as string;
                 // if there was a problem stopping
                 setAnimationState('start');
