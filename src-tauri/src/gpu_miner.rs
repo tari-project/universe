@@ -114,6 +114,7 @@ impl GpuMiner {
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone().to_str());
+        crate::download_utils::set_permissions(&gpuminer_bin).await?;
         let child = process_utils::launch_child_process(&gpuminer_bin, None, &args)?;
         let output = child.wait_with_output().await?;
         match output.status.code() {
@@ -124,10 +125,12 @@ impl GpuMiner {
             }
             Some(code) => {
                 warn!(target: LOG_TARGET, "Non-zero exit code {:?}", code);
+                self.is_available = false;
                 return Err(anyhow::anyhow!("Non-zero exit code {:?}", code));
             }
             None => {
                 warn!(target: LOG_TARGET, "No output status code");
+                self.is_available = false;
                 return Err(anyhow::anyhow!("No output status code"));
             }
         }

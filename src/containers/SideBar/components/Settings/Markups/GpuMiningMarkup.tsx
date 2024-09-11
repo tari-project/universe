@@ -43,7 +43,7 @@ const GpuMiningMarkup = () => {
                 disabled={toggleDisabledBase || gpuDisabled}
                 onChange={handleGpuMiningEnabled}
             />
-            <Typography variant="p">{t('gpu-unavailable', { ns: 'settings' })}</Typography>
+            {!isGPUMiningAvailable && <Typography variant="p">{t('gpu-unavailable', { ns: 'settings' })}</Typography>}
         </MinerContainer>
     );
 };
