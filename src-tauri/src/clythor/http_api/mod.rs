@@ -1,4 +1,4 @@
-mod models;
+use crate::xmrig::http_api::models;
 use log::{debug, error};
 const LOG_TARGET: &str = "tari::universe::clythor::http_api";
 
