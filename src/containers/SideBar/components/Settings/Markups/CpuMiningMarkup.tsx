@@ -12,7 +12,7 @@ import { MinerContainer } from '../../../Miner/styles';
 import { useTranslation } from 'react-i18next';
 
 const CpuMiningSettings = () => {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const { t } = useTranslation('settings', { useSuspense: false });
 
     const { isCpuMiningEnabled } = useAppStatusStore(
         useShallow((s) => ({

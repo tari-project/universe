@@ -1,4 +1,5 @@
 {
+  "app-restart-required": "App restart required",
   "change-language": "Zmień język",
   "cpu-mining-enabled": "Kopanie z CPU",
   "debug-info": "Informacje debugowania",
@@ -17,7 +18,7 @@
   "miners": "Górnicy",
   "monero-address": {
     "placeholder": "Wprowadź address Monero",
-    "title": "Address Monero"
+    "title": "Addres Monero"
   },
   "open-logs-directory": "Otwórz katalog logów",
   "p2pool-chain-tip": "Wierzchołek łańcucha",
@@ -40,5 +41,6 @@
   "tribe-earnings": "Zarobki plemienia",
   "tribe-pool-height": "Wysokość puli",
   "update-versions": "Aktualizuj wersje",
-  "visual-mode": "Tryb wizualny"
+  "visual-mode": "Tryb wizualny",
+  "tari-wallet-address": "Adres portfela Tari"
 }

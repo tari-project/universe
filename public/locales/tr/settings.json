@@ -1,4 +1,5 @@
 {
+  "app-restart-required": "App restart required",
   "change-language": "Dil Değiştir",
   "cpu-mining-enabled": "CPU Madenciliği",
   "debug-info": "Hata Ayıklama",
@@ -40,5 +41,6 @@
   "tribe-earnings": "Kabile kazançları",
   "tribe-pool-height": "Havuz yüksekliği",
   "update-versions": "Güncelleme sürümleri",
-  "visual-mode": "Görsel mod"
+  "visual-mode": "Görsel mod",
+  "tari-wallet-address": "==== Fill in the translation ===="
 }

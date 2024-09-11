@@ -18,5 +18,7 @@
     "tari-universe": "Tari Universe",
     "testnet": "Testnet",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "current": "Current",
+    "total": "Total"
 }

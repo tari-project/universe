@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
 
 const P2PoolStats = () => {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const { t } = useTranslation('settings', { useSuspense: false });
 
     const { walletAddress, p2poolStats } = useAppStatusStore(
         useShallow((s) => ({
@@ -46,19 +46,19 @@ const P2PoolStats = () => {
         <MinerContainer>
             <Divider />
             <Stack>
-                <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
+                <Typography variant="h6">{t('p2pool-stats')}</Typography>
                 <CardContainer>
                     <CardComponent
-                        heading={`${t('tribe', { ns: 'settings' })}`}
+                        heading={`${t('tribe')}`}
                         labels={[
                             {
-                                labelText: 'Current',
+                                labelText: t('current'),
                                 labelValue: p2poolTribe ? p2poolTribe : '',
                             },
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('miners', { ns: 'settings' })}`}
+                        heading={`${t('miners')}`}
                         labels={[
                             {
                                 labelText: 'SHA-3',
@@ -71,7 +71,7 @@ const P2PoolStats = () => {
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('p2pool-hash-rate', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-hash-rate')}`}
                         labels={[
                             {
                                 labelText: 'SHA-3',
@@ -84,7 +84,7 @@ const P2PoolStats = () => {
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('p2pool-total-earnings', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-total-earnings')}`}
                         labels={[
                             {
                                 labelText: 'SHA-3',
@@ -97,7 +97,7 @@ const P2PoolStats = () => {
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('p2pool-chain-tip', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-chain-tip')}`}
                         labels={[
                             {
                                 labelText: 'SHA-3',
@@ -110,7 +110,7 @@ const P2PoolStats = () => {
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('p2pool-user-total-earnings', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-user-total-earnings')}`}
                         labels={[
                             {
                                 labelText: 'SHA-3',
@@ -122,7 +122,7 @@ const P2PoolStats = () => {
                                     (p2poolRandomxUserTotalEarnings ? p2poolRandomxUserTotalEarnings : 0) + ' tXTM',
                             },
                             {
-                                labelText: 'Total',
+                                labelText: t('total'),
                                 labelValue: p2poolUserTotalEarnings + ' tXTM',
                             },
                         ]}

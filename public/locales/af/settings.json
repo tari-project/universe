@@ -1,4 +1,5 @@
 {
+  "app-restart-required": "App restart required",
   "change-language": "Verander taal",
   "cpu-mining-enabled": "==== Fill in the translation ====",
   "debug-info": "Ontfoutingsinligting",
@@ -40,5 +41,6 @@
   "tribe-earnings": "==== Fill in the translation ====",
   "tribe-pool-height": "==== Fill in the translation ====",
   "update-versions": "Opdateer weergawes",
-  "visual-mode": "Visuele modus"
+  "visual-mode": "Visuele modus",
+  "tari-wallet-address": "==== Fill in the translation ===="
 }

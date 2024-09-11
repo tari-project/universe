@@ -5,8 +5,11 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import MoneroAddressEditor from './MoneroAddressEditor';
 import { useAppStateStore } from '@app/store/appStateStore';
+import { useTranslation } from 'react-i18next';
 
 const MoneroAddressMarkup = () => {
+    const { t } = useTranslation('settings', { useSuspense: false });
+
     const setError = useAppStateStore((s) => s.setError);
     const { moneroAddress, setMoneroAddress } = useAppStatusStore((state) => ({
         moneroAddress: state.monero_address,
@@ -39,7 +42,7 @@ const MoneroAddressMarkup = () => {
     return (
         <Stack>
             <Stack direction="row" justifyContent="space-between" style={{ height: 40 }}>
-                <Typography variant="h6">Monero Address</Typography>
+                <Typography variant="h6">{t('monero-address.title')}</Typography>
             </Stack>
             <Stack direction="row" justifyContent="space-between">
                 <MoneroAddressEditor initialAddress={moneroAddress || ''} onApply={handleMoneroAddressChange} />

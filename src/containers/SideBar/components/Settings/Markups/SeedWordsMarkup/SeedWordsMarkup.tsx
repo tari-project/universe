@@ -6,8 +6,11 @@ import { IconButton } from '@app/components/elements/Button.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { SeedWords } from './SeedWords';
+import { useTranslation } from 'react-i18next';
 
 const SeedWordsMarkup = () => {
+    const { t } = useTranslation('settings', { useSuspense: false });
+
     const [showSeedWords, setShowSeedWords] = useState(false);
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
 
@@ -21,7 +24,7 @@ const SeedWordsMarkup = () => {
     return (
         <Stack>
             <Stack direction="row" style={{ height: 40 }} justifyContent="flex-start" alignItems="center">
-                <Typography variant="h6">Seed Words</Typography>
+                <Typography variant="h6">{t('seed-words')}</Typography>
                 <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
                     {seedWordsFetching ? (
                         <CircularProgress />

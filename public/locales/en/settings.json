@@ -1,5 +1,5 @@
 {
-  "cancel": "Cancel",
+  "app-restart-required": "App restart required",
   "change-language": "Change language",
   "cpu-mining-enabled": "CPU Mining",
   "debug-info": "Debug",
@@ -37,6 +37,7 @@
     "experimental": "Experimental",
     "general": "General"
   },
+  "tari-wallet-address": "Tari Wallet Address",
   "tribe": "Squad",
   "tribe-earnings": "Squad earnings",
   "tribe-pool-height": "Squad height",

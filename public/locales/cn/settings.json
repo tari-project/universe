@@ -1,5 +1,5 @@
 {
-  "cancel": "取消",
+  "app-restart-required": "App restart required",
   "change-language": "更改语言",
   "cpu-mining-enabled": "CPU 挖矿",
   "debug-info": "调试信息",
@@ -37,10 +37,10 @@
     "general": "常规",
     "title": "机器被视为空闲的时间"
   },
+  "tari-wallet-address": "Tari Wallet Address",
   "tribe": "部落",
   "tribe-earnings": "部落收入",
   "tribe-pool-height": "矿池高度",
   "update-versions": "更新版本",
-  "visual-mode": "视觉模式",
-  "yes": "是"
+  "visual-mode": "视觉模式"
 }

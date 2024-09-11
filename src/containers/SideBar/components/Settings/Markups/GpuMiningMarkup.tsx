@@ -12,7 +12,7 @@ import { MinerContainer } from '../../../Miner/styles';
 import { useTranslation } from 'react-i18next';
 
 const GpuMiningMarkup = () => {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const { t } = useTranslation('settings', { useSuspense: false });
 
     const { isGpuMiningEnabled } = useAppStatusStore(
         useShallow((s) => ({

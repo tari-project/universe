@@ -13,7 +13,7 @@ import { MinerContainer } from '../../../Miner/styles';
 import { useTranslation } from 'react-i18next';
 
 const P2pMarkup = () => {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const { t } = useTranslation('settings', { useSuspense: false });
 
     const { isP2poolEnabled } = useAppStatusStore(
         useShallow((s) => ({
@@ -39,11 +39,11 @@ const P2pMarkup = () => {
         <MinerContainer>
             <Stack>
                 <Typography variant="h6">
-                    {t('pool-mining', { ns: 'settings' })}
-                    <b>&nbsp;(APP RESTART REQUIRED)</b>
+                    {t('pool-mining')}
+                    <b>&nbsp;({t('app-restart-required')})</b>
                 </Typography>
                 <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
+                    <Typography variant="p">{t('pool-mining-description')}</Typography>
                     <ToggleSwitch
                         checked={isP2poolEnabled}
                         disabled={isMiningInProgress || !miningAllowed || miningLoading}

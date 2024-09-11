@@ -18,5 +18,7 @@
     "tari-universe": "Tari Universe",
     "testnet": "Testnet",
     "yes": "Ja",
-    "no": "Nee"
+    "no": "Nee",
+    "current": "==== Fill in the translation ====",
+    "total": "==== Fill in the translation ===="
 }
