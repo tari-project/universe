@@ -313,10 +313,10 @@ async fn setup_inner(
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(0)
+        > Duration::from_secs(60 * 10)
     // 10 minutes
     {
-        let _ = state
+        let _unused = state
             .config
             .write()
             .await
@@ -327,7 +327,7 @@ async fn setup_inner(
         progress
             .update("checking-latest-version-node".to_string(), None, 0)
             .await;
-        let _ = BinaryResolver::current()
+        let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::MinotariNode, progress.clone())
             .await;
         sleep(Duration::from_secs(1));
@@ -337,7 +337,7 @@ async fn setup_inner(
             .update("checking-latest-version-mmproxy".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        let _ = BinaryResolver::current()
+        let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
             .await;
         progress.set_max(20).await;
@@ -345,7 +345,7 @@ async fn setup_inner(
             .update("checking-latest-version-wallet".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        let _ = BinaryResolver::current()
+        let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::Wallet, progress.clone())
             .await;
 
@@ -354,7 +354,7 @@ async fn setup_inner(
         progress
             .update("checking-latest-version-gpuminer".to_string(), None, 0)
             .await;
-        let _ = BinaryResolver::current()
+        let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::GpuMiner, progress.clone())
             .await;
 
@@ -365,14 +365,14 @@ async fn setup_inner(
             .update("checking-latest-version-xmrig".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        let _ = XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await;
+        let _unused = XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await;
 
         progress.set_max(35).await;
         progress
             .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        let _ = BinaryResolver::current()
+        let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::ShaP2pool, progress.clone())
             .await;
     }
@@ -1311,12 +1311,12 @@ fn main() {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _ = block_on(stop_all_miners(app_state.clone(), 2));
+            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _ = block_on(stop_all_miners(app_state.clone(), 2));
+            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {

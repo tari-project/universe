@@ -451,7 +451,7 @@ impl BinaryResolver {
             .write()
             .await
             .insert(binary, version.clone());
-        return Ok(version);
+        Ok(version)
     }
 
     pub async fn get_latest_version(&self, binary: Binaries) -> Version {
