@@ -1,46 +1,45 @@
 {
-  "settings": "Settings",
-  "seed-words": "Seed words",
+  "cancel": "Cancel",
   "change-language": "Change language",
-  "logs": "Logs",
-  "open-logs-directory": "Open logs directory",
+  "cpu-mining-enabled": "CPU Mining",
   "debug-info": "Debug",
+  "experimental-title": "Experimental Features",
+  "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
+  "gpu-mining-enabled": "GPU Mining",
   "hardware-status": "Hardware status",
-  "update-versions": "Update versions",
-  "refresh-versions": "Refresh versions",
   "idle-timeout": {
-    "title": "Time after which machine is considered idle",
-    "placeholder": "Enter idle timeout in seconds",
     "max": "Maximum is 21600 seconds",
-    "min": "Minimum is 1 second"
-  },
-  "tabs": {
-    "general": "General",
-    "experimental": "Experimental"
-  },
-  "monero-address": {
-    "title": "Monero address",
-    "placeholder": "Enter Monero address"
+    "min": "Minimum is 1 second",
+    "placeholder": "Enter idle timeout in seconds",
+    "title": "Time after which machine is considered idle"
   },
   "last-block-added-time": "Last block added to chain time",
-  "visual-mode": "Visual mode",
+  "logs": "Logs",
+  "miners": "Miners",
+  "monero-address": {
+    "placeholder": "Enter Monero address",
+    "title": "Monero address"
+  },
+  "open-logs-directory": "Open logs directory",
+  "p2pool-chain-tip": "Tip of chains",
+  "p2pool-hash-rate": "Squad hash rates",
+  "p2pool-stats": "Squad Stats",
+  "p2pool-total-earnings": "Squad total earnings",
+  "p2pool-user-total-earnings": "Total earnings",
   "pool-mining": "Pool Mining",
   "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
-  "cpu-mining-enabled": "CPU Mining",
-  "gpu-mining-enabled": "GPU Mining",
-  "p2pool-stats": "Squad Stats",
+  "refresh-versions": "Refresh versions",
+  "reset-permanently": "Are you sure you want to reset all settings permanently?",
+  "reset-settings": "Reset Settings",
+  "seed-words": "Seed words",
+  "settings": "Settings",
+  "tabs": {
+    "experimental": "Experimental",
+    "general": "General"
+  },
   "tribe": "Squad",
-  "miners": "Miners",
   "tribe-earnings": "Squad earnings",
   "tribe-pool-height": "Squad height",
-  "p2pool-hash-rate": "Squad hash rates",
-  "p2pool-total-earnings": "Squad total earnings",
-  "p2pool-chain-tip": "Tip of chains",
-  "p2pool-user-total-earnings": "Total earnings",
-  "yes": "Yes",
-  "cancel": "Cancel",
-  "reset-settings": "Reset Settings",
-  "reset-permanently": "Are you sure you want to reset all settings permanently?",
-  "experimental-title": "Experimental Features",
-  "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully."
+  "update-versions": "Update versions",
+  "visual-mode": "Visual mode"
 }

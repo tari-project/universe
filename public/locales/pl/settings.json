@@ -1,29 +1,44 @@
 {
-  "settings": "Ustawienia",
-  "seed-words": "Słowa kluczowe",
   "change-language": "Zmień język",
-  "logs": "Logi",
-  "open-logs-directory": "Otwórz katalog logów",
+  "cpu-mining-enabled": "Kopanie z CPU",
   "debug-info": "Informacje debugowania",
+  "experimental-title": "Funkcje eksperymentalne",
+  "experimental-warning": "⚠️ Ostrzeżenie: Te funkcje są w trakcie aktywnego rozwoju i mogą zachowywać się nieprzewidywalnie. Proszę postępować ostrożnie.",
+  "gpu-mining-enabled": "Kopanie z GPU",
   "hardware-status": "Status sprzętu",
-  "update-versions": "Aktualizuj wersje",
-  "refresh-versions": "Odśwież wersje",
   "idle-timeout": {
-    "title": "Czas po którym urządzenie jest uważane za bezczynne",
-    "placeholder": "Wprowadź czas bezczynności w sekundach",
     "max": "Maksymalny czas to 21600 sekund",
-    "min": "Minimalny czas to 1 sekunda"
-  },
-  "monero-address": {
-    "title": "Address Monero",
-    "placeholder": "Wprowadź address Monero"
+    "min": "Minimalny czas to 1 sekunda",
+    "placeholder": "Wprowadź czas bezczynności w sekundach",
+    "title": "Czas po którym urządzenie jest uważane za bezczynne"
   },
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
-  "visual-mode": "Tryb wizualny",
+  "logs": "Logi",
+  "miners": "Górnicy",
+  "monero-address": {
+    "placeholder": "Wprowadź address Monero",
+    "title": "Address Monero"
+  },
+  "open-logs-directory": "Otwórz katalog logów",
+  "p2pool-chain-tip": "Wierzchołek łańcucha",
+  "p2pool-hash-rate": "Współczynniki hashowania puli",
+  "p2pool-stats": "Statystyki P2Pool",
+  "p2pool-total-earnings": "Całkowite zarobki puli",
+  "p2pool-user-total-earnings": "Całkowite zarobki",
   "pool-mining": "Pool Mining",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
-  "yes": "Tak",
-  "cancel": "Anuluj",
+  "refresh-versions": "Odśwież wersje",
+  "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
   "reset-settings": "Resetuj ustawienia",
-  "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?"
+  "seed-words": "Słowa kluczowe",
+  "settings": "Ustawienia",
+  "tabs": {
+    "experimental": "Experimental",
+    "general": "General"
+  },
+  "tribe": "Plemię",
+  "tribe-earnings": "Zarobki plemienia",
+  "tribe-pool-height": "Wysokość puli",
+  "update-versions": "Aktualizuj wersje",
+  "visual-mode": "Tryb wizualny"
 }

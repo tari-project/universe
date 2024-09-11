@@ -20,7 +20,7 @@ function AutoUpdateDialog() {
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const { contentLength, downloaded } = useUpdateStatus();
-    const { t } = useTranslation('setup-view', { useSuspense: false });
+    const { t } = useTranslation(['setup-view'], { useSuspense: false });
 
     const checkUpdateTariUniverse = useCallback(async () => {
         try {

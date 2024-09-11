@@ -22,7 +22,5 @@
         "waiting-for-block-sync": "Oczekiwanie na synchronizację bloków. {{local_height}}/{{tip_height}} zsynchronizowano"
     },
     "new-tari-version-available": "Nowa wersja Tari Universe jest dostępna!",
-    "would-you-like-to-install": "Czy chciałbys zainstalować Tari Universe {{version}} teraz?",
-    "yes": "Tak",
-    "no": "Nie"
+    "would-you-like-to-install": "Czy chciałbys zainstalować Tari Universe {{version}} teraz?"
 }

@@ -22,7 +22,5 @@
         "waiting-for-block-sync": "等待区块同步。{{local_height}}/{{tip_height}} 个区块已同步"
     },
     "new-tari-version-available": "有新版本的 Tari Universe 可用！",
-    "would-you-like-to-install": "您想现在安装 Tari Universe {{version}} 吗？",
-    "yes": "是",
-    "no": "否"
+    "would-you-like-to-install": "您想现在安装 Tari Universe {{version}} 吗？"
 }

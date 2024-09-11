@@ -14,5 +14,9 @@
     "utilization": "Benutting",
     "mode": "Modus",
     "day": "Dag",
-    "shutting-down": "Afskakel.."
+    "shutting-down": "Afskakel..",
+    "tari-universe": "Tari Universe",
+    "testnet": "Testnet",
+    "yes": "Ja",
+    "no": "Nee"
 }

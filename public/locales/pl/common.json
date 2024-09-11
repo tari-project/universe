@@ -14,5 +14,9 @@
     "utilization": "Wykorzystanie",
     "mode": "Tryb",
     "day": "Dzień",
-    "shutting-down": "Wyłączanie.."
+    "shutting-down": "Wyłączanie..",
+    "tari-universe": "Tari Universe",
+    "testnet": "Testnet",
+    "yes": "Tak",
+    "no": "Nie"
 }

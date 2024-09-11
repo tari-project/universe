@@ -16,5 +16,7 @@
     "day": "Day",
     "shutting-down": "Shutting down..",
     "tari-universe": "Tari Universe",
-    "testnet": "Testnet"
+    "testnet": "Testnet",
+    "yes": "Yes",
+    "no": "No"
 }
