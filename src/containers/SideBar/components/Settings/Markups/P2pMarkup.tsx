@@ -38,7 +38,10 @@ const P2pMarkup = () => {
     return (
         <MinerContainer>
             <Stack>
-                <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
+                <Typography variant="h6">
+                    {t('pool-mining', { ns: 'settings' })}
+                    <b>&nbsp;(APP RESTART REQUIRED)</b>
+                </Typography>
                 <Stack direction="row" justifyContent="space-between">
                     <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
                     <ToggleSwitch
