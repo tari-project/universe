@@ -10,7 +10,7 @@ import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useShallow } from 'zustand/react/shallow';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 const INTERVAL = 1000;
 
@@ -42,32 +42,39 @@ export function useGetStatus() {
             });
     }, [setTelemetryMode]);
 
-    useInterval(
-        () =>
-            invoke('status')
-                .then((status) => {
-                    if (status) {
-                        setAppStatus(status);
-                        setCPUStatus(status.cpu);
-                        setGPUStatus(status.gpu);
-                        setBaseNodeStatus(status.base_node);
+    const invokeStatus = useCallback(() => {
+        invoke('status')
+            .then((status) => {
+                if (status) {
+                    setAppStatus(status);
+                    setCPUStatus(status.cpu);
+                    setGPUStatus(status.gpu);
+                    setBaseNodeStatus(status.base_node);
 
-                        const wallet_balance = status.wallet_balance;
+                    const wallet_balance = status.wallet_balance;
 
-                        setBalanceData(wallet_balance);
-                        setMode(status.mode);
+                    setBalanceData(wallet_balance);
+                    setMode(status.mode);
 
-                        const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
+                    const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
+                    setMiningControlsEnabled(!isSettingUp && miningEnabled);
+                }
+            })
+            .catch((e) => {
+                console.error('Could not get status', e);
+                setError(e.toString());
+            });
+    }, [
+        isSettingUp,
+        setAppStatus,
+        setBalanceData,
+        setBaseNodeStatus,
+        setCPUStatus,
+        setError,
+        setGPUStatus,
+        setMiningControlsEnabled,
+        setMode,
+    ]);
 
-                        setMiningControlsEnabled(!isSettingUp && miningEnabled);
-                    } else {
-                        console.info('Status not returned. It could still be setting up');
-                    }
-                })
-                .catch((e) => {
-                    console.error('Could not get status', e);
-                    setError(e.toString());
-                }),
-        INTERVAL
-    );
+    useInterval(() => invokeStatus(), INTERVAL);
 }
