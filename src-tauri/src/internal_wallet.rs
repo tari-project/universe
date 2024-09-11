@@ -86,10 +86,7 @@ impl InternalWallet {
         });
 
         let seed = CipherSeed::new();
-        let seed_words = seed.to_mnemonic(MnemonicLanguage::English, None).unwrap();
-        for i in 0..seed_words.len() {
-            info!(target: LOG_TARGET, "Seed: {}:{}", i+1, seed_words.get_word(i).unwrap());
-        }
+
         let seed_file = seed.encipher(Some(passphrase))?;
         config.seed_words_encrypted_base58 = seed_file.to_base58();
 
