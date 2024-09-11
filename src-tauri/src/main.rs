@@ -110,7 +110,7 @@ async fn get_telemetry_mode(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<bool, ()> {
-    let telemetry_mode = state.config.read().await.get_allow_telemetry();
+    let telemetry_mode = state.config.read().await.allow_telemetry();
     Ok(telemetry_mode)
 }
 
@@ -120,7 +120,7 @@ async fn get_app_id(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<String, ()> {
-    Ok(state.config.read().await.anon_id.clone())
+    Ok(state.config.read().await.anon_id().to_string())
 }
 
 #[tauri::command]
@@ -147,7 +147,7 @@ async fn get_app_in_memory_config(
 #[tauri::command]
 async fn get_monero_address(state: tauri::State<'_, UniverseAppState>) -> Result<String, String> {
     let app_config = state.config.read().await;
-    Ok(app_config.monero_address.clone())
+    Ok(app_config.monero_address().to_string())
 }
 
 #[tauri::command]
@@ -174,7 +174,7 @@ async fn setup_application(
         e.to_string()
     })?;
 
-    Ok(state.config.read().await.auto_mining)
+    Ok(state.config.read().await.auto_mining())
 }
 
 #[tauri::command]
@@ -215,7 +215,7 @@ async fn setup_inner(
 
     let progress = ProgressTracker::new(window.clone());
 
-    let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
+    let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
     state
@@ -356,7 +356,7 @@ async fn setup_inner(
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    if state.config.read().await.p2pool_enabled {
+    if state.config.read().await.p2pool_enabled() {
         progress.set_max(85).await;
         progress
             .update("starting-p2pool".to_string(), None, 0)
@@ -407,7 +407,7 @@ async fn setup_inner(
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
             telemetry_id,
-            config.p2pool_enabled,
+            config.p2pool_enabled(),
             p2pool_port,
         ))
         .await?;
@@ -527,12 +527,12 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let config = state.config.read().await;
-    let cpu_mining_enabled = config.cpu_mining_enabled;
-    let gpu_mining_enabled = config.gpu_mining_enabled;
-    let mode = config.mode;
+    let cpu_mining_enabled = config.cpu_mining_enabled();
+    let gpu_mining_enabled = config.gpu_mining_enabled();
+    let mode = config.mode();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
-    let monero_address = state.config.read().await.monero_address.clone();
+    let monero_address = config.monero_address().to_string();
     let progress_tracker = ProgressTracker::new(window.clone());
     if cpu_mining_enabled {
         let mm_proxy_port = state
@@ -548,7 +548,7 @@ async fn start_mining<'r>(
             .start(
                 state.shutdown.to_signal(),
                 &cpu_miner_config,
-                monero_address,
+                monero_address.to_string(),
                 mm_proxy_port,
                 app.path_resolver().app_local_data_dir().unwrap(),
                 app.path_resolver().app_cache_dir().unwrap(),
@@ -575,7 +575,7 @@ async fn start_mining<'r>(
 
     if gpu_mining_enabled {
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
-        let p2pool_enabled = state.config.read().await.p2pool_enabled;
+        let p2pool_enabled = state.config.read().await.p2pool_enabled();
         let source = if p2pool_enabled {
             let p2pool_port = state.p2pool_manager.grpc_port().await;
             GpuNodeSource::P2Pool { port: p2pool_port }
@@ -828,13 +828,13 @@ async fn status(
             is_synced,
         },
         wallet_balance,
-        mode: config_guard.mode,
-        p2pool_enabled: config_guard.p2pool_enabled,
+        mode: config_guard.mode(),
+        p2pool_enabled: config_guard.p2pool_enabled(),
         p2pool_stats,
-        auto_mining: config_guard.auto_mining,
-        monero_address: config_guard.monero_address.clone(),
-        cpu_mining_enabled: config_guard.cpu_mining_enabled,
-        gpu_mining_enabled: config_guard.gpu_mining_enabled,
+        auto_mining: config_guard.auto_mining(),
+        monero_address: config_guard.monero_address().to_string(),
+        cpu_mining_enabled: config_guard.cpu_mining_enabled(),
+        gpu_mining_enabled: config_guard.gpu_mining_enabled(),
         tari_address_base58: tari_address.to_base58(),
         tari_address_emoji: tari_address.to_emoji_string(),
     }))
