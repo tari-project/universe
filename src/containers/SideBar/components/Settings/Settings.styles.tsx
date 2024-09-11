@@ -31,13 +31,6 @@ export const Form = styled.form`
     gap: 6px;
 `;
 
-export const SeedWordsContainer = styled.div`
-    display: grid;
-    grid-auto-flow: column;
-    grid-template-rows: repeat(12, 1fr);
-    gap: 10px;
-`;
-
 export const HeadingContainer = styled.div`
     display: flex;
     justify-content: space-between;
