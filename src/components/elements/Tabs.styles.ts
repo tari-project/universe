@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 interface TabHeaderProps {
-    active: boolean;
+    $active: boolean;
 }
 
 export const TabsContainer = styled.div`
@@ -17,9 +17,9 @@ export const TabHeaders = styled.div`
 export const TabHeader = styled.div<TabHeaderProps>`
     padding: 10px 20px;
     cursor: pointer;
-    font-weight: ${({ active }) => (active ? 'bold' : 'normal')};
-    border-bottom: ${({ theme, active }) => (active ? `2px solid ${theme.palette.primary.main}` : 'none')};
-    color: ${({ theme, active }) => (active ? theme.palette.primary.main : theme.palette.text.primary)};
+    font-weight: ${({ $active }) => ($active ? 'bold' : 'normal')};
+    border-bottom: ${({ theme, $active }) => ($active ? `2px solid ${theme.palette.primary.main}` : 'none')};
+    color: ${({ theme, $active }) => ($active ? theme.palette.primary.main : theme.palette.text.primary)};
     width: 100%;
     text-align: center;
     font-family: Poppins, sans-serif;

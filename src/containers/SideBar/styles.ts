@@ -51,7 +51,7 @@ export const WalletContainer = styled(motion.div)`
     justify-content: space-between;
     align-items: center;
     background-image: url(${cardBg});
-    height: 150px;
+    height: 178px;
     background-repeat: no-repeat;
     background-position: top left;
     padding: 10px;
