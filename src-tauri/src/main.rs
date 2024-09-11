@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod app_config;
+mod app_in_memory_config;
 mod binary_resolver;
 mod consts;
 mod cpu_miner;
@@ -43,6 +44,7 @@ use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
+use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binary_resolver::{Binaries, BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
@@ -103,6 +105,24 @@ async fn set_telemetry_mode(
 }
 
 #[tauri::command]
+async fn get_telemetry_mode(
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<bool, ()> {
+    let telemetry_mode = state.config.read().await.get_allow_telemetry();
+    Ok(telemetry_mode)
+}
+
+#[tauri::command]
+async fn get_app_id(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<String, ()> {
+    Ok(state.config.read().await.anon_id.clone())
+}
+
+#[tauri::command]
 async fn set_airdrop_access_token(
     token: String,
     _window: tauri::Window,
@@ -112,6 +132,15 @@ async fn set_airdrop_access_token(
     let mut write_lock = state.airdrop_access_token.write().await;
     *write_lock = Some(token);
     Ok(())
+}
+
+#[tauri::command]
+async fn get_app_in_memory_config(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<AirdropInMemoryConfig, ()> {
+    Ok(state.in_memory_config.read().await.clone().into())
 }
 
 #[tauri::command]
@@ -184,7 +213,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(state.airdrop_access_token.clone())
+        .initialize(app.clone(), state.airdrop_access_token.clone())
         .await?;
 
     BinaryResolver::current()
@@ -322,26 +351,28 @@ async fn setup_inner(
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    progress.set_max(85).await;
-    progress
-        .update("starting-p2pool".to_string(), None, 0)
-        .await;
+    if state.config.read().await.p2pool_enabled {
+        progress.set_max(85).await;
+        progress
+            .update("starting-p2pool".to_string(), None, 0)
+            .await;
 
-    let base_node_grpc = state.node_manager.get_grpc_port().await?;
-    let p2pool_config = P2poolConfig::builder()
-        .with_base_node(base_node_grpc)
-        .build()?;
+        let base_node_grpc = state.node_manager.get_grpc_port().await?;
+        let p2pool_config = P2poolConfig::builder()
+            .with_base_node(base_node_grpc)
+            .build()?;
 
-    state
-        .p2pool_manager
-        .ensure_started(
-            state.shutdown.to_signal(),
-            p2pool_config,
-            data_dir,
-            config_dir,
-            log_dir,
-        )
-        .await?;
+        state
+            .p2pool_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                p2pool_config,
+                data_dir,
+                config_dir,
+                log_dir,
+            )
+            .await?;
+    }
 
     progress.set_max(100).await;
     progress
@@ -762,13 +793,7 @@ async fn status(
         }
     };
 
-    let tari_address = match state.wallet_manager.wallet_address().await {
-        Ok(addr) => addr,
-        Err(error) => {
-            warn!(target: LOG_TARGET, "Error getting wallet address: {}", error);
-            String::new()
-        }
-    };
+    let tari_address = state.tari_address.read().await;
 
     let hardware_status = HardwareMonitor::current()
         .write()
@@ -805,7 +830,8 @@ async fn status(
         monero_address: config_guard.monero_address.clone(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled,
         gpu_mining_enabled: config_guard.gpu_mining_enabled,
-        tari_address,
+        tari_address_base58: tari_address.to_base58(),
+        tari_address_emoji: tari_address.to_emoji_string(),
     }))
 }
 
@@ -875,7 +901,8 @@ pub struct AppStatus {
     auto_mining: bool,
     p2pool_enabled: bool,
     p2pool_stats: HashMap<String, Stats>,
-    tari_address: String,
+    tari_address_base58: String,
+    tari_address_emoji: String,
     monero_address: String,
     cpu_mining_enabled: bool,
     gpu_mining_enabled: bool,
@@ -923,7 +950,9 @@ struct CpuMinerConfig {
 struct UniverseAppState {
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
+    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     shutdown: Shutdown,
+    tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
@@ -967,21 +996,29 @@ fn main() {
         tari_address: TariAddress::default(),
     }));
 
-    let app_config = Arc::new(RwLock::new(AppConfig::new()));
+    let app_in_memory_config = if cfg!(feature = "airdrop-local") {
+        Arc::new(RwLock::new(
+            app_in_memory_config::AppInMemoryConfig::init_local(),
+        ))
+    } else {
+        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()))
+    };
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
+
+    let app_config_raw = AppConfig::new();
+    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         node_manager.clone(),
         cpu_miner.clone(),
         gpu_miner.clone(),
         app_config.clone(),
+        app_in_memory_config.clone(),
         Some(Network::default()),
     );
 
-    let app_config_raw = AppConfig::new();
-    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
     // let mm_proxy_config = if app_config_raw.p2pool_enabled {
     //     MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     // } else {
@@ -996,7 +1033,9 @@ fn main() {
     let app_state = UniverseAppState {
         is_setup_finished: Arc::new(RwLock::new(false)),
         config: app_config.clone(),
+        in_memory_config: app_in_memory_config.clone(),
         shutdown: shutdown.clone(),
+        tari_address: Arc::new(RwLock::new(TariAddress::default())),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
@@ -1044,6 +1083,7 @@ fn main() {
             };
 
             let config_path = app.path_resolver().app_config_dir().unwrap();
+            let address = app.state::<UniverseAppState>().tari_address.clone();
             let thread = tauri::async_runtime::spawn(async move {
                 match InternalWallet::load_or_create(config_path).await {
                     Ok(wallet) => {
@@ -1054,19 +1094,26 @@ fn main() {
                                 wallet.get_spend_key(),
                             )
                             .await;
+                        let mut lock = address.write().await;
+                        *lock = wallet.get_tari_address();
+                        Ok(())
+                        //app.state::<UniverseAppState>().tari_address = wallet.get_tari_address();
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
                         // TODO: If this errors, the application does not exit properly.
                         // So temporarily we are going to kill it here
 
-                        return Err(e);
+                        Err(e)
                     }
                 }
-                Ok(())
             });
             match tauri::async_runtime::block_on(thread).unwrap() {
-                Ok(_) => Ok(()),
+                Ok(_) => {
+                    // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
+                    // *lock = address;
+                    Ok(())
+                }
                 Err(e) => {
                     error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e);
                     Err(e.into())
@@ -1086,7 +1133,10 @@ fn main() {
             update_applications,
             log_web_message,
             set_telemetry_mode,
+            get_telemetry_mode,
             set_airdrop_access_token,
+            get_app_id,
+            get_app_in_memory_config,
             set_monero_address,
             update_applications,
             reset_settings,
