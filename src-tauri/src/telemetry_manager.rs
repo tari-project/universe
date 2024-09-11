@@ -158,14 +158,14 @@ impl TelemetryManager {
 
     pub async fn get_unique_string(&self) -> String {
         let config = self.config.read().await;
-        if !config.allow_telemetry {
+        if !config.allow_telemetry() {
             return "".to_string();
         }
         let os = std::env::consts::OS;
-        let anon_id = config.anon_id.clone();
+        let anon_id = config.anon_id();
         let version = env!("CARGO_PKG_VERSION");
-        let mode = MiningMode::to_str(config.mode);
-        let auto_mining = config.auto_mining;
+        let mode = MiningMode::to_str(config.mode());
+        let auto_mining = config.auto_mining();
         let unique_string = format!("v0,{},{},{},{},{}", anon_id, mode, auto_mining, os, version,);
         unique_string
     }
@@ -205,7 +205,7 @@ impl TelemetryManager {
                 _ = async {
                     info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
-                        let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry;
+                        let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
                             let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
@@ -326,11 +326,11 @@ async fn get_telemetry_data(
     let version = env!("CARGO_PKG_VERSION").to_string();
 
     Ok(TelemetryData {
-        app_id: config_guard.anon_id.clone(),
+        app_id: config_guard.anon_id().to_string(),
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
-        mode: config_guard.mode.into(),
+        mode: config_guard.mode().into(),
         cpu_hash_rate,
         cpu_utilization,
         cpu_make,
