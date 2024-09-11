@@ -1,15 +1,15 @@
 {
-    "floor": "Vloer",
-    "current-block-time": "Huidige bloktyd",
-    "your-reward-is": "Jou beloning is",
     "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
+    "current-block-time": "Huidige bloktyd",
+    "floor": "Vloer",
     "mining-button-text": {
-        "starting-mining": "Myn begin",
-        "start-mining": "Begin myn",
-        "pause-mining": "Onderbreek myn",
-        "changing-mode": "Verander modus",
         "cancel-mining": "Kanselleer myn",
-        "waiting-for-idle": "Wag tot onaktief",
-        "started-auto-mining": "Outomatiese myn het begin"
-    }
+        "changing-mode": "Verander modus",
+        "pause-mining": "Onderbreek myn",
+        "start-mining": "Begin myn",
+        "started-auto-mining": "Outomatiese myn het begin",
+        "starting-mining": "Myn begin",
+        "waiting-for-idle": "Wag tot onaktief"
+    },
+    "your-reward-is": "Jou beloning is"
 }

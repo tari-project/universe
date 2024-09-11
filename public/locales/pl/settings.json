@@ -37,10 +37,10 @@
     "experimental": "Eksperymentalne",
     "general": "Główne"
   },
+  "tari-wallet-address": "Adres portfela Tari",
   "tribe": "Plemię",
   "tribe-earnings": "Zarobki plemienia",
   "tribe-pool-height": "Wysokość puli",
   "update-versions": "Aktualizuj wersje",
-  "visual-mode": "Tryb wizualny",
-  "tari-wallet-address": "Adres portfela Tari"
+  "visual-mode": "Tryb wizualny"
 }

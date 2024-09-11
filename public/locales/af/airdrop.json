@@ -1,12 +1,12 @@
 {
     "loginButton": "==== Fill in the translation ====",
     "logout": "==== Fill in the translation ====",
-    "permissionNoGems": {
-        "title": "==== Fill in the translation ====",
-        "text": "==== Fill in the translation ===="
-    },
     "permission": {
-        "title": "==== Fill in the translation ====",
-        "text": "==== Fill in the translation ===="
+        "text": "==== Fill in the translation ====",
+        "title": "==== Fill in the translation ===="
+    },
+    "permissionNoGems": {
+        "text": "==== Fill in the translation ====",
+        "title": "==== Fill in the translation ===="
     }
 }

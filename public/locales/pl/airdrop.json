@@ -1,12 +1,12 @@
 {
     "loginButton": "Zaloguj się, aby odebrać klejnoty",
     "logout": "Wyloguj się",
-    "permissionNoGems": {
-        "title": "Uczyń Tari Universe lepszym",
-        "text": "Tari Universe zbierać informacje z aplikacji, aby poprawić Twoje doświadczenie."
-    },
     "permission": {
-        "title": "Zarabiaj klejnoty i uczynij Tari Universe lepszym",
-        "text": "Tari Universe chciałoby zbierać informacje z aplikacji, aby poprawić Twoje doświadczenie i nagrodzić Cię klejnotami za kopanie."
+        "text": "Tari Universe chciałoby zbierać informacje z aplikacji, aby poprawić Twoje doświadczenie i nagrodzić Cię klejnotami za kopanie.",
+        "title": "Zarabiaj klejnoty i uczynij Tari Universe lepszym"
+    },
+    "permissionNoGems": {
+        "text": "Tari Universe zbierać informacje z aplikacji, aby poprawić Twoje doświadczenie.",
+        "title": "Uczyń Tari Universe lepszym"
     }
 }

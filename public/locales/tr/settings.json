@@ -37,10 +37,10 @@
     "experimental": "==== Fill in the translation ====",
     "general": "==== Fill in the translation ===="
   },
+  "tari-wallet-address": "==== Fill in the translation ====",
   "tribe": "Kabile",
   "tribe-earnings": "Kabile kazançları",
   "tribe-pool-height": "Havuz yüksekliği",
   "update-versions": "Güncelleme sürümleri",
-  "visual-mode": "Görsel mod",
-  "tari-wallet-address": "==== Fill in the translation ===="
+  "visual-mode": "Görsel mod"
 }

@@ -1,9 +1,9 @@
 {
-    "auto-miner":"Otomatik Madenci",
-    "auto-miner-description":"Otomatik madenci, makineniz boştayken madencinizi açacaktır",
-    "next-milestone":"Sonraki Dönüm Noktası",
-    "wallet-balance":"Cüzdan Bakiyesi",
-    "setup-scheduler":"Kurulum Planlayıcısı",
-    "mining-schedules":"Madencilik Planları",
-    "mining-schedules-description":"Madencilik faaliyetinizi planlayın"
+    "auto-miner": "Otomatik Madenci",
+    "auto-miner-description": "Otomatik madenci, makineniz boştayken madencinizi açacaktır",
+    "mining-schedules": "Madencilik Planları",
+    "mining-schedules-description": "Madencilik faaliyetinizi planlayın",
+    "next-milestone": "Sonraki Dönüm Noktası",
+    "setup-scheduler": "Kurulum Planlayıcısı",
+    "wallet-balance": "Cüzdan Bakiyesi"
 }

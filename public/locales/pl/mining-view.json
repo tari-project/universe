@@ -1,15 +1,15 @@
 {
-  "floor": "Poziom",
-  "current-block-time": "Aktualny czas bloku",
-  "your-reward-is": "Twoja nagroda wynosi",
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
+  "current-block-time": "Aktualny czas bloku",
+  "floor": "Poziom",
   "mining-button-text": {
-    "starting-mining": "Uruchamianie kopania",
-    "start-mining": "Uruchom kopanie",
-    "pause-mining": "Wstrzymaj kopanie",
-    "changing-mode": "Zmiana trybu",
     "cancel-mining": "Anuluj kopanie",
-    "waiting-for-idle": "Oczekiwanie na bezczynność",
-    "started-auto-mining": "Automatyczne kopanie uruchomione"
-  }
+    "changing-mode": "Zmiana trybu",
+    "pause-mining": "Wstrzymaj kopanie",
+    "start-mining": "Uruchom kopanie",
+    "started-auto-mining": "Automatyczne kopanie uruchomione",
+    "starting-mining": "Uruchamianie kopania",
+    "waiting-for-idle": "Oczekiwanie na bezczynność"
+  },
+  "your-reward-is": "Twoja nagroda wynosi"
 }
