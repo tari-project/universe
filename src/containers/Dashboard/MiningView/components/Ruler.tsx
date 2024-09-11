@@ -3,6 +3,7 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from 'styled-components';
 import { useRef } from 'react';
+import { AnimatePresence } from 'framer-motion';
 
 export function Ruler() {
     const theme = useTheme();
@@ -56,25 +57,29 @@ export function Ruler() {
 
     return (
         <Wrapper layout layoutId="ruler-wrapper">
-            <Column layoutId="ruler-column" ref={columnRef}>
-                {topMarkSegments}
-                <RulerMarkGroup layout>
-                    <RulerMark
-                        $opacity={1}
-                        data-before={height?.toString()}
-                        animate={{
-                            fontSize: '25px',
-                            fontFamily: 'Druk, sans-serif',
-                            color: theme.palette.text.primary,
-                        }}
-                    />
-                    <RulerMark />
-                    <RulerMark />
-                    <RulerMark />
-                    <RulerMark />
-                </RulerMarkGroup>
-                {bottomMarkSegments}
-            </Column>
+            <AnimatePresence>
+                {height && height > 0 ? (
+                    <Column layoutId="ruler-column" ref={columnRef}>
+                        {topMarkSegments}
+                        <RulerMarkGroup layout>
+                            <RulerMark
+                                $opacity={1}
+                                data-before={height?.toString()}
+                                animate={{
+                                    fontSize: '25px',
+                                    fontFamily: 'Druk, sans-serif',
+                                    color: theme.palette.text.primary,
+                                }}
+                            />
+                            <RulerMark />
+                            <RulerMark />
+                            <RulerMark />
+                            <RulerMark />
+                        </RulerMarkGroup>
+                        {bottomMarkSegments}
+                    </Column>
+                ) : null}
+            </AnimatePresence>
         </Wrapper>
     );
 }
