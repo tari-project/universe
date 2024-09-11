@@ -6,6 +6,7 @@ import { CardContainer } from '../Settings.styles';
 import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
 import { MinerContainer } from '../../../Miner/styles';
 import { useTranslation } from 'react-i18next';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
 const P2PoolStats = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -43,6 +44,7 @@ const P2PoolStats = () => {
 
     return isP2poolEnabled ? (
         <MinerContainer>
+            <Divider />
             <Stack>
                 <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
                 <CardContainer>

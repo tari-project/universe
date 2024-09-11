@@ -40,5 +40,7 @@
   "yes": "Yes",
   "cancel": "Cancel",
   "reset-settings": "Reset Settings",
-  "reset-permanently": "Are you sure you want to reset all settings permanently?"
+  "reset-permanently": "Are you sure you want to reset all settings permanently?",
+  "experimental-title": "Experimental Features",
+  "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully."
 }

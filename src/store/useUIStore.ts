@@ -7,6 +7,7 @@ interface State {
     view: viewType;
     visualMode: boolean;
     sidebarOpen: boolean;
+    showExperimental: boolean;
 }
 interface Actions {
     setShowSplash: (showSplash: boolean) => void;
@@ -14,6 +15,7 @@ interface Actions {
     setView: (view: State['view']) => void;
     toggleVisualMode: () => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
+    setShowExperimental: (showExperimental: boolean) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -24,6 +26,7 @@ const initialState: State = {
     view: 'setup',
     visualMode: true,
     sidebarOpen: false,
+    showExperimental: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -33,4 +36,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setView: (view) => set({ view }),
     toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+    setShowExperimental: (showExperimental) => set({ showExperimental }),
 }));
