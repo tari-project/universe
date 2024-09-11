@@ -53,7 +53,7 @@ export function useSetUp() {
                 invoke('setup_application')
                     .then(async (autoMiningEnabled) => {
                         if (autoMiningEnabled) {
-                            // console.info('Auto-Mining starting');
+                            console.info('Auto-Mining starting');
                             await invoke('start_mining', {})
                                 .then(() => {
                                     console.info('Auto-Mining started.');
