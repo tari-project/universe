@@ -12,7 +12,7 @@ use crate::process_killer::kill_process;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
-pub trait ProcessAdapter {
+pub(crate) trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
 
     // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
@@ -57,12 +57,12 @@ pub trait ProcessAdapter {
 }
 
 #[async_trait]
-pub trait StatusMonitor {
+pub(crate) trait StatusMonitor {
     type Status;
     async fn status(&self) -> Result<Self::Status, anyhow::Error>;
 }
 
-pub struct ProcessInstance {
+pub(crate) struct ProcessInstance {
     pub shutdown: Shutdown,
     pub handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
 }

@@ -7,6 +7,7 @@ mod binary_resolver;
 mod consts;
 mod cpu_miner;
 mod download_utils;
+mod format_utils;
 mod github;
 mod gpu_miner;
 mod hardware_monitor;
@@ -54,7 +55,7 @@ use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
 use std::collections::HashMap;
-use std::fs::remove_dir_all;
+use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -144,12 +145,18 @@ async fn get_app_in_memory_config(
 }
 
 #[tauri::command]
+async fn get_monero_address(state: tauri::State<'_, UniverseAppState>) -> Result<String, String> {
+    let app_config = state.config.read().await;
+    Ok(app_config.monero_address.clone())
+}
+
+#[tauri::command]
 async fn set_monero_address(
     monero_address: String,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-    let mut cpu_miner_config = state.config.write().await;
-    cpu_miner_config
+    let mut app_config = state.config.write().await;
+    app_config
         .set_monero_address(monero_address)
         .await
         .map_err(|e| e.to_string())?;
@@ -161,11 +168,13 @@ async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
-) -> Result<(), String> {
-    setup_inner(window, state, app).await.map_err(|e| {
+) -> Result<bool, String> {
+    setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         e.to_string()
-    })
+    })?;
+
+    Ok(state.config.read().await.auto_mining)
 }
 
 #[tauri::command]
@@ -274,11 +283,7 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
         progress.set_max(25).await;
         progress
-            .update(
-                "Checking for latest version of gpu miner".to_string(),
-                None,
-                0,
-            )
+            .update("checking-latest-version-gpuminer".to_string(), None, 0)
             .await;
         BinaryResolver::current()
             .ensure_latest(Binaries::GpuMiner, progress.clone())
@@ -769,7 +774,7 @@ async fn status(
         }
     };
 
-    let gpu_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
+    let gpu = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
@@ -806,7 +811,7 @@ async fn status(
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu.hash_rate,
-        0.0,
+        gpu.hash_rate as f64,
         hardware_status.clone(),
         cpu.estimated_earnings as f64,
     );
@@ -815,7 +820,7 @@ async fn status(
 
     Ok(Some(AppStatus {
         cpu,
-        gpu: gpu_status,
+        gpu,
         hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,
@@ -849,7 +854,46 @@ async fn reset_settings<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    state
+        .cpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    let exit_code = state
+        .wallet_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
+    state
+        .mm_proxy_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
+    let exit_code = state
+        .p2pool_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
+
     state.shutdown.clone().trigger();
+
+    // let num_retries = 10;
+    // for _ in 0..num_retries {
+    // sleep(Duration::from_secs(1));
+    // }
     // TODO: Find a better way of knowing that all miners have stopped
     sleep(std::time::Duration::from_secs(5));
 
@@ -875,13 +919,39 @@ async fn reset_settings<'r>(
         return Err("Could not get app directories".to_string());
     }
 
-    dirs_to_remove.iter().for_each(|dir| {
+    // Exclude EBWebView because it is still being used.
+    let folder_block_list = ["EBWebView"];
+    for dir in &dirs_to_remove {
         // check if dir exists
         if dir.clone().unwrap().exists() {
-            info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
-            remove_dir_all(dir.clone().unwrap()).unwrap();
+            for entry in read_dir(dir.clone().unwrap()).map_err(|e| e.to_string())? {
+                let entry = entry.map_err(|e| e.to_string())?;
+                let path = entry.path();
+                if path.is_dir() {
+                    if folder_block_list.contains(&path.file_name().unwrap().to_str().unwrap()) {
+                        continue;
+                    }
+                    info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
+                    remove_dir_all(path.clone()).map_err(|e| {
+                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
+                        format!("Could not remove directory: {}", e)
+                    })?;
+                } else {
+                    info!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
+                    remove_file(path.clone()).map_err(|e| {
+                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
+                        format!("Could not remove file: {}", e)
+                    })?;
+                }
+            }
+            // info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
+            // remove_dir_all(dir.clone().unwrap()).map_err(|e|
+            //  {
+            // error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", dir, e);
+            //  format!("Could not remove directory: {}", e)
+            //  })?;
         }
-    });
+    }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
@@ -1137,6 +1207,7 @@ fn main() {
             set_airdrop_access_token,
             get_app_id,
             get_app_in_memory_config,
+            get_monero_address,
             set_monero_address,
             update_applications,
             reset_settings,

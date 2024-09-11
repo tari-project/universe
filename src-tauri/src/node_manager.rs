@@ -167,10 +167,10 @@ impl NodeManager {
         status_monitor.get_identity().await
     }
 
-    pub async fn stop(&self) -> Result<(), anyhow::Error> {
+    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.stop().await?;
-        Ok(())
+        let exit_code = process_watcher.stop().await?;
+        Ok(exit_code)
     }
 }
 

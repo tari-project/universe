@@ -6,6 +6,7 @@ export const BlockTimeContainer = styled(motion.div)`
     display: flex;
     flex-direction: column;
     font-weight: 500;
+    position: relative;
     align-items: flex-end;
 `;
 
@@ -15,7 +16,7 @@ export const TitleTypography = styled(Typography)`
 `;
 
 export const TimerWrapper = styled.div`
-    box-shadow: 30px -10px 40px 20px rgba(255, 255, 255, 0.8);
+    box-shadow: 80px -20px 60px 20px rgba(255, 255, 255, 0.6);
 `;
 export const TimerTypography = styled.div`
     font-family: Druk, sans-serif;

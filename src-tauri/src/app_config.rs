@@ -75,9 +75,9 @@ impl AppConfig {
         Self {
             config_file: None,
             mode: MiningMode::Eco,
-            auto_mining: false,
+            auto_mining: true,
             p2pool_enabled: false,
-            last_binaries_update_timestamp: SystemTime::now(),
+            last_binaries_update_timestamp: SystemTime::UNIX_EPOCH,
             allow_telemetry: true,
             anon_id: generate_password(20),
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),

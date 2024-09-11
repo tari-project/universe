@@ -13,3 +13,9 @@ export function setAnimationState(state: GlAppState) {
         sM.isPaused = true;
     }
 }
+
+export function setLighting(x, y, z) {
+    window.glApp.properties.lightPositionX = x;
+    window.glApp.properties.lightPositionY = y;
+    window.glApp.properties.lightPositionZ = z;
+}
