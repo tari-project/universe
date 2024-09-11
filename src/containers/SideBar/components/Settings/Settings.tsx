@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { IoClose, IoSettingsOutline } from 'react-icons/io5';
 
@@ -33,61 +33,61 @@ import ExperimentalWarning from './ExperimentalWarning';
 import { useUIStore } from '@app/store/useUIStore';
 import { ToggleAirdropUi } from '@app/containers/Airdrop/Settings/ToggleAirdropUi';
 
+const GeneralTab = () => (
+    <Stack gap={10}>
+        <MoneroAddressMarkup />
+        <Divider />
+        <SeedWordsMarkup />
+        <Divider />
+        <HorisontalBox>
+            <CpuMiningMarkup />
+            <GpuMiningMarkup />
+        </HorisontalBox>
+        <Divider />
+        <LogsSettings />
+        <Divider />
+        <LanguageSettings />
+        <Divider />
+        <AirdropPermissionSettings />
+        <Divider />
+        <HorisontalBox>
+            <ResetSettingsButton />
+        </HorisontalBox>
+    </Stack>
+);
+
+const ExperimentalTab: React.FC<{ showExperimental: boolean }> = ({ showExperimental }) => (
+    <Stack gap={10}>
+        <ExperimentalWarning />
+        {showExperimental && (
+            <>
+                <Divider />
+                <WalletAddressMarkup />
+                <Divider />
+                <P2pMarkup />
+                <P2poolStatsMarkup />
+                <Divider />
+                <DebugSettings />
+                <Divider />
+                <AppVersions />
+                <Divider />
+                <Stack direction="row" justifyContent="space-between">
+                    <VisualMode />
+                    <ToggleAirdropUi />
+                </Stack>
+            </>
+        )}
+    </Stack>
+);
+
 export default function Settings() {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const { t } = useTranslation('settings', { useSuspense: false });
     const [open, setOpen] = useState(false);
     const showExperimental = useUIStore((s) => s.showExperimental);
 
-    const GeneralTab = () => (
-        <Stack gap={10}>
-            <MoneroAddressMarkup />
-            <Divider />
-            <SeedWordsMarkup />
-            <Divider />
-            <HorisontalBox>
-                <CpuMiningMarkup />
-                <GpuMiningMarkup />
-            </HorisontalBox>
-            <Divider />
-            <LogsSettings />
-            <Divider />
-            <LanguageSettings />
-            <Divider />
-            <AirdropPermissionSettings />
-            <Divider />
-            <HorisontalBox>
-                <ResetSettingsButton />
-            </HorisontalBox>
-        </Stack>
-    );
-
-    const ExperimentalTab = () => (
-        <Stack gap={10}>
-            <ExperimentalWarning />
-            {showExperimental && (
-                <>
-                    <Divider />
-                    <WalletAddressMarkup />
-                    <Divider />
-                    <P2pMarkup />
-                    <P2poolStatsMarkup />
-                    <Divider />
-                    <DebugSettings />
-                    <Divider />
-                    <AppVersions />
-                    <Divider />
-                    <Stack direction="row" justifyContent="space-between">
-                        <VisualMode />
-                        <ToggleAirdropUi />
-                    </Stack>
-                </>
-            )}
-        </Stack>
-    );
-
     const tabs = [
-        { label: t('tabs.general', { ns: 'settings' }), content: <GeneralTab /> },
-        { label: t('tabs.experimental', { ns: 'settings' }), content: <ExperimentalTab /> },
+        { label: t('tabs.general'), content: <GeneralTab /> },
+        { label: t('tabs.experimental'), content: <ExperimentalTab showExperimental={showExperimental} /> },
     ];
 
     return (
@@ -97,7 +97,7 @@ export default function Settings() {
             </IconButton>
             <DialogContent>
                 <HeadingContainer>
-                    <Typography variant="h4">{t('settings', { ns: 'settings' })}</Typography>
+                    <Typography variant="h4">{t('settings')}</Typography>
                     <IconButton onClick={() => setOpen(false)}>
                         <IoClose />
                     </IconButton>
