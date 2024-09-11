@@ -1,10 +1,10 @@
-import { useInterval } from '@app/hooks/useInterval.ts';
-import { setLighting } from '@app/visuals.ts';
+// import { useInterval } from '@app/hooks/useInterval.ts';
+// import { setLighting } from '@app/visuals.ts';
 import { useCallback, useLayoutEffect, useRef } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 
-const INTERVAL = 1000 * 60 * 10; // every 10 min
+// const INTERVAL = 1000 * 60 * 10; // every 10 min
 
 export function useLighting() {
     const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
@@ -32,11 +32,11 @@ export function useLighting() {
             return;
         }
 
-        setLighting(x, y, z);
+        // setLighting(x, y, z);
         hasSetInit.current = true;
     }, [isSettingUp, x, y, z]);
 
-    useInterval(() => {
-        setLighting(x, y, z);
-    }, INTERVAL);
+    // useInterval(() => {
+    // setLighting(x, y, z);
+    // }, INTERVAL);
 }

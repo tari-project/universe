@@ -6,6 +6,7 @@ import { CardContainer } from '../Settings.styles';
 import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
 import { MinerContainer } from '../../../Miner/styles';
 import { useTranslation } from 'react-i18next';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
 const P2PoolStats = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -14,6 +15,12 @@ const P2PoolStats = () => {
         useShallow((s) => ({
             walletAddress: s.tari_address_base58,
             p2poolStats: s.p2pool_stats,
+        }))
+    );
+
+    const { isP2poolEnabled } = useAppStatusStore(
+        useShallow((s) => ({
+            isP2poolEnabled: s.p2pool_enabled,
         }))
     );
 
@@ -35,8 +42,9 @@ const P2PoolStats = () => {
             ? p2poolSha3UserTotalEarnings + p2poolRandomxUserTotalEarnings
             : 0;
 
-    return (
+    return isP2poolEnabled ? (
         <MinerContainer>
+            <Divider />
             <Stack>
                 <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
                 <CardContainer>
@@ -122,7 +130,7 @@ const P2PoolStats = () => {
                 </CardContainer>
             </Stack>
         </MinerContainer>
-    );
+    ) : null;
 };
 
 export default P2PoolStats;

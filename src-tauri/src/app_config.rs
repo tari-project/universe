@@ -115,8 +115,9 @@ impl AppConfig {
             info!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
             self.apply_loaded_config(config);
+        } else {
+            info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
         }
-        info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
         self.update_config_file().await?;
         Ok(())
     }

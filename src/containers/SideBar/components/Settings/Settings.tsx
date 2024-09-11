@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
-import { IoSettingsOutline, IoClose } from 'react-icons/io5';
+import { IoClose, IoSettingsOutline } from 'react-icons/io5';
 
 import VisualMode from '../../../Dashboard/components/VisualMode';
-import { HorisontalBox, HeadingContainer } from './Settings.styles';
+import { HeadingContainer, HorisontalBox } from './Settings.styles';
 
 import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
 import LogsSettings from './LogsSettings';
@@ -27,6 +27,7 @@ import MoneroAddressMarkup from './Markups/MoneroAddressMarkup';
 import WalletAddressMarkup from './Markups/WalletAddressMarkup';
 import CpuMiningMarkup from './Markups/CpuMiningMarkup';
 import P2pMarkup from './Markups/P2pMarkup';
+import P2poolStatsMarkup from './Markups/P2poolStatsMarkup';
 import GpuMiningMarkup from './Markups/GpuMiningMarkup';
 import SeedWordsMarkup from './Markups/SeedWordsMarkup';
 import ExperimentalWarning from './ExperimentalWarning';
@@ -69,6 +70,7 @@ export default function Settings() {
                     <WalletAddressMarkup />
                     <Divider />
                     <P2pMarkup />
+                    <P2poolStatsMarkup />
                     <Divider />
                     <DebugSettings />
                     <Divider />
