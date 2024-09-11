@@ -1,12 +1,14 @@
 use std::{path::PathBuf, sync::Arc};
 
-use log::info;
+use log::{info, warn};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
+use crate::binary_resolver::{Binaries, BinaryResolver};
 use crate::gpu_miner_adapter::GpuNodeSource;
+use crate::process_utils;
 use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
@@ -96,6 +98,30 @@ impl GpuMiner {
                 estimated_earnings: 0,
                 is_mining: false,
             }),
+        }
+    }
+
+    pub async fn detect(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
+
+        let args: Vec<String> = vec!["--detect".to_string(), "true".to_string()];
+        let gpuminer_bin = BinaryResolver::current()
+            .resolve_path(Binaries::GpuMiner)
+            .await?;
+
+        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone().to_str());
+        let child = process_utils::launch_child_process(&gpuminer_bin, None, &args)?;
+        let output = child.wait_with_output().await?;
+        match output.status.code() {
+            Some(0) => {
+                info!(target: LOG_TARGET, "Output status code {:?}", output.status.code().unwrap_or_default());
+                return Ok(());
+            }
+            Some(code) => return Err(anyhow::anyhow!("Non-zero exit code {:?}", code)),
+            None => {
+                warn!(target: LOG_TARGET, "No output status code");
+                return Err(anyhow::anyhow!("No output status code"));
+            }
         }
     }
 }
