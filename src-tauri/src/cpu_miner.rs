@@ -1,5 +1,4 @@
 use crate::app_config::MiningMode;
-use crate::clythor::http_api::ClythorHttpApiClient;
 use crate::clythor_adapter::{ClythorAdapter, LocalMmproxy};
 use crate::process_adapter::ProcessAdapter;
 use crate::xmrig::http_api::{models, XmrigHttpApiClient};
@@ -20,24 +19,10 @@ use tokio::time::MissedTickBehavior;
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 
-pub enum ApiClient {
-    Xmrig(XmrigHttpApiClient),
-    Clythor(ClythorHttpApiClient),
-}
-
-impl ApiClient {
-    pub async fn summary(&self) -> Result<models::Summary, anyhow::Error> {
-        match self {
-            ApiClient::Xmrig(client) => client.summary().await,
-            ApiClient::Clythor(client) => client.summary().await,
-        }
-    }
-}
-
 pub(crate) struct CpuMiner {
     watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
     miner_shutdown: Shutdown,
-    api_client: Option<ApiClient>,
+    api_client: Option<XmrigHttpApiClient>,
     is_mining: bool,
 }
 
@@ -72,16 +57,6 @@ impl CpuMiner {
         self.miner_shutdown = Shutdown::new();
         let mut inner_shutdown = self.miner_shutdown.to_signal();
 
-        // let xmrig_node_connection = match cpu_miner_config.node_connection {
-        //     CpuMinerConnection::BuiltInProxy => {
-        //         XmrigNodeConnection::LocalMmproxy {
-        //             host_name: "127.0.0.1".to_string(),
-        //             // port: local_mm_proxy.try_get_listening_port().await?
-        //             // TODO: Replace with actual port
-        //             port: monero_port,
-        //         }
-        //     }
-        // };
         let node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => LocalMmproxy {
                 host_name: "http://127.0.0.1".to_string(),
@@ -103,19 +78,10 @@ impl CpuMiner {
             MiningMode::Eco => (30 * max_cpu_available) / 100,
             MiningMode::Ludicrous => max_cpu_available,
         };
-        // let xmrig_version =
-        //     XmrigAdapter::ensure_latest(cache_dir.clone(), false, progress_tracker.clone()).await?;
-        // let xmrig = XmrigAdapter::new(
-        //     xmrig_node_connection,
-        //     monero_address.clone(),
-        //     cache_dir,
-        //     cpu_max_percentage,
-        //     xmrig_version,
-        // );
         let clythor = ClythorAdapter::new(node_connection, monero_address.clone(), mining_threads);
         let (mut xmrig_child, _xmrig_status_monitor) =
             clythor.spawn_inner(base_path.clone(), config_path.clone(), log_dir.clone())?;
-        self.api_client = Some(ApiClient::Clythor(clythor.client));
+        self.api_client = Some(clythor.client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             let mut watch_timer = tokio::time::interval(tokio::time::Duration::from_secs(1));
@@ -123,47 +89,31 @@ impl CpuMiner {
             // read events such as stdout
             loop {
                 select! {
-                              _ = watch_timer.tick() => {
-                                    if !xmrig_child.ping()
-                                    {
-                                       warn!(target: LOG_TARGET, "xmrig is not running");
-                                       match xmrig_child.stop().await {
-                                           Ok(_) => {
-                                              info!(target: LOG_TARGET, "xmrig exited successfully");
-                                           }
-                                           Err(e) => {
-                                              error!(target: LOG_TARGET, "xmrig exited with error: {}", e);
-                                              return Err(e)
-                                           }
-                                       }
-                                       break;
-                                    }
-                              },
-                                //   event = rx.recv() => {
-                                //     if let Some(event) = event {
-                                //
-                                //   // if let CommandEvent::Stdout(line) = event {
-                                //   //    window
-                                //   //   .emit("message", Some(format!("'{}'", line)))
-                                //   //   .expect("failed to emit event");
-                                // // write to stdin
-                                // //child.write("message from Rust\n".as_bytes()).unwrap();
-                                //
-                                //    }
-                                // else {
-                                //  break;
-                                // }
-                          //         },
-                //
-                            _ = inner_shutdown.wait() => {
-                                xmrig_child.stop().await?;
-                                break;
-                            },
-                            _ = app_shutdown.wait() => {
-                                xmrig_child.stop().await?;
-                                break;
+                      _ = watch_timer.tick() => {
+                            if !xmrig_child.ping()
+                            {
+                               warn!(target: LOG_TARGET, "xmrig is not running");
+                               match xmrig_child.stop().await {
+                                   Ok(_) => {
+                                      info!(target: LOG_TARGET, "xmrig exited successfully");
+                                   }
+                                   Err(e) => {
+                                      error!(target: LOG_TARGET, "xmrig exited with error: {}", e);
+                                      return Err(e)
+                                   }
+                               }
+                               break;
                             }
-                        }
+                      },
+                    _ = inner_shutdown.wait() => {
+                        xmrig_child.stop().await?;
+                        break;
+                    },
+                    _ = app_shutdown.wait() => {
+                        xmrig_child.stop().await?;
+                        break;
+                    }
+                }
             }
             Ok(())
         }));

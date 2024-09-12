@@ -6,9 +6,9 @@ use log::warn;
 use tari_shutdown::Shutdown;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::clythor::http_api::ClythorHttpApiClient;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
+use crate::xmrig::http_api::XmrigHttpApiClient;
 
 const LOG_TARGET: &str = "tari::universe::clythor_adapter";
 
@@ -23,7 +23,7 @@ pub struct ClythorAdapter {
     http_api_token: String,
     http_api_port: u16,
     mining_threads: usize,
-    pub client: ClythorHttpApiClient,
+    pub client: XmrigHttpApiClient,
     // TODO: secure
 }
 
@@ -41,7 +41,7 @@ impl ClythorAdapter {
             http_api_token: http_api_token.clone(),
             http_api_port,
             mining_threads,
-            client: ClythorHttpApiClient::new(
+            client: XmrigHttpApiClient::new(
                 format!("http://127.0.0.1:{}", http_api_port).clone(),
                 http_api_token.clone(),
             ),
@@ -78,6 +78,7 @@ impl ProcessAdapter for ClythorAdapter {
                 self.node_connection.host_name, self.node_connection.port
             ),
         ];
+        let pid_file_path = data_dir.join(&self.pid_file_name());
 
         Ok((
             ProcessInstance {
@@ -91,14 +92,14 @@ impl ProcessAdapter for ClythorAdapter {
                     let mut child = process_utils::launch_child_process(&clythor_bin, None, &args)?;
 
                     if let Some(id) = child.id() {
-                        let pid_file_path = data_dir.join("clythor_pid");
+                        let pid_file_path = data_dir.join(&pid_file_path);
                         std::fs::write(pid_file_path, id.to_string())?;
                     }
                     shutdown_signal.wait().await;
 
                     child.kill().await?;
 
-                    match std::fs::remove_file(data_dir.join("clythor_pid")) {
+                    match std::fs::remove_file(data_dir.join(&pid_file_path)) {
                         Ok(_) => {}
                         Err(e) => {
                             warn!(target: LOG_TARGET, "Could not clear clythor's pid file -  {e}");
