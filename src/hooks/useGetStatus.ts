@@ -10,10 +10,12 @@ import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
 import { useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { useMiningControls } from './mining/useMiningControls.ts';
 
 const INTERVAL = 1000;
 
 export function useGetStatus() {
+    const { handleStart } = useMiningControls();
     const setAppStatus = useAppStatusStore((s) => s.setAppStatus);
     const setBalanceData = useWalletStore((state) => state.setBalanceData);
     const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
@@ -23,6 +25,12 @@ export function useGetStatus() {
     const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
     const appSetupFinished = useAppStateStore(useShallow((s) => s.settingUpFinished));
     const setupProgress = useAppStateStore(useShallow((s) => s.setupProgress));
+
+    const isAutoMiningEnabled = useAppStatusStore(useShallow((s) => s.auto_mining));
+
+    const isGpuMiningEnabled = useAppStatusStore(useShallow((s) => s.gpu_mining_enabled));
+    const isCpuMiningEnabled = useAppStatusStore(useShallow((s) => s.cpu_mining_enabled));
+    const isMiningEnabled = isCpuMiningEnabled || isGpuMiningEnabled;
 
     const { setError } = useAppStateStore((s) => ({
         setError: s.setError,
@@ -57,8 +65,11 @@ export function useGetStatus() {
                     setMode(status.mode);
 
                     // It was moved from useSetup hook to here to ensure that when the setup is finished, we have all data in store
-                    if (setupProgress >= 1) {
+                    if (isSettingUp && setupProgress >= 1) {
                         appSetupFinished();
+                        if (isAutoMiningEnabled && isMiningEnabled) {
+                            handleStart();
+                        }
                     }
                 }
             })
@@ -76,6 +87,10 @@ export function useGetStatus() {
         setGPUStatus,
         setMode,
         setupProgress,
+        appSetupFinished,
+        handleStart,
+        isAutoMiningEnabled,
+        isMiningEnabled,
     ]);
 
     useInterval(() => invokeStatus(), INTERVAL);

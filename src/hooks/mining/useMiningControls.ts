@@ -8,7 +8,7 @@ import { useGPUStatusStore } from '@app/store/useGPUStatusStore';
 
 export function useMiningControls() {
     const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
-    const setError = useAppStateStore((s) => s.setError);
+    const setError = useAppStateStore(useShallow((s) => s.setError));
 
     const isMiningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
 
@@ -29,7 +29,7 @@ export function useMiningControls() {
             setError(error);
             setMiningInitiated(false);
         }
-    }, [setError]);
+    }, [setError, setMiningInitiated]);
 
     const handleStop = useCallback(async () => {
         console.info('Mining stopping...');
@@ -42,7 +42,7 @@ export function useMiningControls() {
             setError(error);
             setMiningInitiated(true);
         }
-    }, [setError]);
+    }, [setError, setMiningInitiated]);
 
     const handlePause = useCallback(async () => {
         console.info('Mining pausing...');
@@ -54,7 +54,7 @@ export function useMiningControls() {
             setError(error);
             setMiningInitiated(true);
         }
-    }, [setError]);
+    }, [setError, setMiningInitiated]);
 
     return { handleStart, handleStop, handlePause, isMiningLoading };
 }

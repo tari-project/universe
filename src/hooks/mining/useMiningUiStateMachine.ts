@@ -5,32 +5,24 @@ import { useGPUStatusStore } from '@app/store/useGPUStatusStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { setAnimationState } from '@app/visuals';
 import { useEffect } from 'react';
-import { useMiningControls } from './useMiningControls';
+import { useShallow } from 'zustand/react/shallow';
 
 export const useUiMiningStateMachine = () => {
-    const { handleStart } = useMiningControls();
+    const isMiningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const setIsChangingMode = useMiningStore(useShallow((s) => s.setIsChangingMode));
+    const isChangingMode = useMiningStore(useShallow((s) => s.isChangingMode));
 
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
-    const setIsChangingMode = useMiningStore((s) => s.setIsChangingMode);
-    const isChangingMode = useMiningStore((s) => s.isChangingMode);
+    const isAutoMiningEnabled = useAppStatusStore(useShallow((s) => s.auto_mining));
 
-    const isAutoMiningEnabled = useAppStatusStore((s) => s.auto_mining);
-
-    const isGpuMiningEnabled = useAppStatusStore((s) => s.gpu_mining_enabled);
-    const isCpuMiningEnabled = useAppStatusStore((s) => s.cpu_mining_enabled);
+    const isGpuMiningEnabled = useAppStatusStore(useShallow((s) => s.gpu_mining_enabled));
+    const isCpuMiningEnabled = useAppStatusStore(useShallow((s) => s.cpu_mining_enabled));
     const isMiningEnabled = isCpuMiningEnabled || isGpuMiningEnabled;
 
-    const gpuIsMining = useGPUStatusStore((s) => s.is_mining);
-    const cpuIsMining = useCPUStatusStore((s) => s.is_mining);
+    const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const cpuIsMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isMining = (isCpuMiningEnabled && cpuIsMining) || (isGpuMiningEnabled && gpuIsMining);
 
-    const isSetupFinished = !useAppStateStore((s) => s.isSettingUp);
-
-    useEffect(() => {
-        if (isSetupFinished && isAutoMiningEnabled && isMiningEnabled) {
-            handleStart();
-        }
-    }, [isSetupFinished]);
+    const isSetupFinished = !useAppStateStore(useShallow((s) => s.isSettingUp));
 
     useEffect(() => {
         if (isSetupFinished && isMiningEnabled && isMining) {
@@ -55,6 +47,7 @@ export const useUiMiningStateMachine = () => {
         isMining,
         isAutoMiningEnabled,
         isMiningInitiated,
+        setIsChangingMode,
         window?.glApp?.stateManager.statusIndex,
     ]);
 };

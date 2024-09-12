@@ -18,7 +18,6 @@ import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx
 import useMining from '@app/hooks/mining/useMining.ts';
 
 import { LayoutGroup } from 'framer-motion';
-import { useLighting } from '@app/hooks/useLighting.ts';
 import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
 
 export default function App() {
@@ -27,7 +26,6 @@ export default function App() {
     useMining();
     useGetStatus();
     useEnvironment();
-    useLighting();
     useUiMiningStateMachine();
 
     const isShuttingDown = useShuttingDown();

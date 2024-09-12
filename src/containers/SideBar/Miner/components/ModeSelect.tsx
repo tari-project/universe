@@ -25,11 +25,10 @@ function ModeSelect() {
     const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
 
     const isMiningControlsEnabled = useMiningStore(useShallow((s) => s.miningControlsEnabled));
-    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const setIsChangingMode = useMiningStore((s) => s.setIsChangingMode);
 
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isMiningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
     const isMining = cpuIsMining || gpuIsMining;
 
     const { handlePause, handleStart, isMiningLoading } = useMiningControls();
@@ -50,7 +49,7 @@ function ModeSelect() {
                 setIsChangingMode(false);
             }
         },
-        [isMining, setMiningInitiated]
+        [isMining, handlePause, handleStart, isMiningInitiated, setIsChangingMode]
     );
 
     return (
