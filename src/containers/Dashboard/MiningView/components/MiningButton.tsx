@@ -21,6 +21,7 @@ enum MiningButtonStateText {
 export default function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isAppSettingUp = useAppStateStore((s) => s.isSettingUp);
+    const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
 
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
@@ -50,7 +51,7 @@ export default function MiningButton() {
                 $hasStarted={isMining}
                 onClick={handleClick}
                 icon={<IconWrapper>{isMiningLoading ? <StyledIcon /> : icon}</IconWrapper>}
-                disabled={isAppSettingUp || isMiningLoading}
+                disabled={isAppSettingUp || isMiningLoading || !isMiningControlsEnabled}
             >
                 <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
             </StyledButton>

@@ -9,7 +9,6 @@ import { useAppStateStore } from '../store/appStateStore.ts';
 import { useVersions } from '@app/hooks/useVersions.ts';
 
 import { useShallow } from 'zustand/react/shallow';
-import { setAnimationState } from '@app/visuals.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useSetUp() {
@@ -39,7 +38,6 @@ export function useSetUp() {
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         setView('mining');
-                        setMiningControlsEnabled(true);
                     }
                     break;
                 default:

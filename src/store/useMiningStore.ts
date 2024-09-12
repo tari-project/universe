@@ -45,7 +45,7 @@ const initialState: State = {
     isMiningInProgress: false,
     isChangingMode: false,
     isConnectionLostDuringMining: false,
-    miningControlsEnabled: false,
+    miningControlsEnabled: true,
 };
 
 export const useMiningStore = create<MiningStoreState>()((set) => ({
@@ -62,6 +62,5 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
     setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
     setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-    setMiningControlsEnabled: (miningControlsEnabled) =>
-        set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
+    setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
 }));
