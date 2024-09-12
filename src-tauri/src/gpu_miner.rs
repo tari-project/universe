@@ -96,15 +96,12 @@ impl GpuMiner {
                 status.is_available = self.is_available;
                 Ok(status)
             }
-            None => {
-                warn!(target: LOG_TARGET, "Gpu miner status not found");
-                Ok(GpuMinerStatus {
-                    hash_rate: 0,
-                    estimated_earnings: 0,
-                    is_mining: false,
-                    is_available: self.is_available,
-                })
-            }
+            None => Ok(GpuMinerStatus {
+                hash_rate: 0,
+                estimated_earnings: 0,
+                is_mining: false,
+                is_available: self.is_available,
+            }),
         }
     }
 
