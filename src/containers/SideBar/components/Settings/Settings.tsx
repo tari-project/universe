@@ -17,7 +17,6 @@ import { SettingsTabs } from '@app/components/elements/Tabs';
 
 import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
 import LanguageSettings from '@app/containers/SideBar/components/Settings/LanguageSettings.tsx';
-import HardwareStatus from '@app/containers/SideBar/components/Settings/HardwareStatus.tsx';
 
 import DebugSettings from '@app/containers/SideBar/components/Settings/DebugSettings.tsx';
 import { useTranslation } from 'react-i18next';
@@ -73,8 +72,6 @@ export default function Settings() {
                     <P2poolStatsMarkup />
                     <Divider />
                     <DebugSettings />
-                    <Divider />
-                    <HardwareStatus />
                     <Divider />
                     <AppVersions />
                     <Divider />

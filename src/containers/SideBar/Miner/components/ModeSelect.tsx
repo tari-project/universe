@@ -27,7 +27,8 @@ function ModeSelect() {
     const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
 
     const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
+    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const miningControlsEnabled = useMiningStore(useShallow((s) => s.miningControlsEnabled));
     const isMining = cpuIsMining || gpuIsMining;
 
     const { handleStop, handleStart } = useMiningControls();
@@ -79,7 +80,7 @@ function ModeSelect() {
         <TileItem layoutId="miner-mode-select-tile" layout>
             <Typography>{t('mode')}</Typography>
             <Select
-                disabled={miningLoading || isLoading || isSettingUp}
+                disabled={miningLoading || isLoading || isSettingUp || (isMining && !miningControlsEnabled)}
                 loading={isLoading || miningLoading}
                 onChange={handleChange}
                 selectedValue={mode}

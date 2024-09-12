@@ -3,3 +3,6 @@ https://momentsingraphics.de/BlueNoise.html
 
 [gobo.jpg]
 ???
+
+[matcap_gold.jpg]
+Generated in Blender
