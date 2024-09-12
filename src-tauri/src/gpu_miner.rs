@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use log::{info, warn};
+use log::info;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
@@ -117,7 +117,7 @@ impl GpuMiner {
         crate::download_utils::set_permissions(&gpuminer_bin).await?;
         let child = process_utils::launch_child_process(&gpuminer_bin, None, &args)?;
         let output = child.wait_with_output().await?;
-        info!(target: LOG_TARGET, "Gpu detect exit code {:?}", output.status.code().clone().unwrap_or_default());
+        info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
         match output.status.code() {
             Some(0) => {
                 self.is_available = true;
@@ -126,7 +126,7 @@ impl GpuMiner {
             _ => {
                 self.is_available = false;
                 Err(anyhow::anyhow!(
-                    "Non-zero exit code {:?}",
+                    "Non-zero exit code: {:?}",
                     output.status.code()
                 ))
             }
