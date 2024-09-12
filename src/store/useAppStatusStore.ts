@@ -11,6 +11,8 @@ interface Actions {
     setP2poolEnabled: (p2poolEnabled: boolean) => void;
     setTelemetryMode: (telemetryMode: boolean) => void;
     setMoneroAddress: (moneroAddress: string) => void;
+    setCpuMiningEnabled: (cpuMiningEnabled: boolean) => void;
+    setGpuMiningEnabled: (gpuMiningEnabled: boolean) => void;
 }
 
 type AppStatusStoreState = State & Actions;
@@ -38,4 +40,6 @@ export const useAppStatusStore = create<AppStatusStoreState>()((set) => ({
     setMoneroAddress: (monero_address) => set({ monero_address }),
     setMode: (mode) => set({ mode }),
     setP2poolEnabled: (p2pool_enabled) => set({ p2pool_enabled }),
+    setCpuMiningEnabled: (cpu_mining_enabled) => set({ cpu_mining_enabled }),
+    setGpuMiningEnabled: (gpu_mining_enabled) => set({ gpu_mining_enabled }),
 }));

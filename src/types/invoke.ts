@@ -17,6 +17,8 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_applications_versions'): Promise<ApplicationsVersions>;
     function invoke(param: 'set_monero_address', payload: { moneroAddress: string }): Promise<void>;
     function invoke(param: 'get_monero_address'): Promise<string>;
+    function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<boolean>;
+    function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<boolean>;
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
