@@ -57,8 +57,8 @@ export function useBalanceChanges() {
             logBalanceChanges({ balance, prevBalance: balanceRef.current, balanceDiff: diff });
             const hasEarnings = Boolean(balance > 0 && diff > 0 && diff !== balance);
             if (hasEarnings) {
-                setEarnings(diff);
                 handleWin();
+                setEarnings(diff);
             }
             balanceRef.current = balance;
         } else {

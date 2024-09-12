@@ -15,24 +15,27 @@ const variants = {
         y: -200,
         scale: 1.05,
         transition: {
+            delay: 1,
             duration: 3,
+            ease: 'easeInOut',
             scale: {
-                duration: 0.5,
+                duration: 1,
             },
         },
     },
     hidden: {
         opacity: 0,
         y: -150,
-        transition: { duration: 0.2, delay: 0.8 },
+        transition: { duration: 1, delay: 2, ease: 'linear' },
     },
 };
 
 export default function Earnings() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
-    const { earnings, setPostBlockAnimation, setEarnings, setTimerPaused } = useMiningStore(
+    const { earnings, setPostBlockAnimation, setEarnings, setTimerPaused, setMiningControlsEnabled } = useMiningStore(
         useShallow((s) => ({
+            setMiningControlsEnabled: s.setMiningControlsEnabled,
             setPostBlockAnimation: s.setPostBlockAnimation,
             setEarnings: s.setEarnings,
             setTimerPaused: s.setTimerPaused,
@@ -45,7 +48,8 @@ export default function Earnings() {
         setPostBlockAnimation(true);
         setTimerPaused(false);
         setEarnings(undefined);
-    }, [setEarnings, setPostBlockAnimation, setTimerPaused]);
+        setMiningControlsEnabled(true);
+    }, [setEarnings, setMiningControlsEnabled, setPostBlockAnimation, setTimerPaused]);
 
     return (
         <EarningsContainer>

@@ -13,8 +13,9 @@ export function useVisualisation() {
     const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
     const isMining = cpuIsMining || gpuIsMining;
 
-    const { setTimerPaused, setPostBlockAnimation, setEarnings } = useMiningStore(
+    const { setTimerPaused, setPostBlockAnimation, setEarnings, setMiningControlsEnabled } = useMiningStore(
         useShallow((s) => ({
+            setMiningControlsEnabled: s.setMiningControlsEnabled,
             setPostBlockAnimation: s.setPostBlockAnimation,
             setTimerPaused: s.setTimerPaused,
             setEarnings: s.setEarnings,
@@ -37,6 +38,7 @@ export function useVisualisation() {
                     setPostBlockAnimation(true);
                     setTimerPaused(false);
                     setUseFailTimeout(false);
+                    setMiningControlsEnabled(true);
                 },
                 isMining ? 1500 : 1
             );
@@ -45,24 +47,26 @@ export function useVisualisation() {
                 clearTimeout(failAnimationTimeout);
             };
         }
-    }, [isMining, setPostBlockAnimation, setTimerPaused, useFailTimeout]);
+    }, [isMining, setMiningControlsEnabled, setPostBlockAnimation, setTimerPaused, useFailTimeout]);
 
     const handleFail = useCallback(async () => {
         const canAnimate = await checkCanAnimate();
         if (canAnimate) {
             setAnimationState('fail');
+            setMiningControlsEnabled(false);
             setUseFailTimeout(true);
         }
-    }, [checkCanAnimate]);
+    }, [checkCanAnimate, setMiningControlsEnabled]);
 
     const handleWin = useCallback(async () => {
         const canAnimate = await checkCanAnimate();
         if (canAnimate) {
             setAnimationState('success');
+            setMiningControlsEnabled(false);
         } else {
             setEarnings(undefined);
         }
-    }, [checkCanAnimate, setEarnings]);
+    }, [checkCanAnimate, setEarnings, setMiningControlsEnabled]);
 
     return { handleFail, handleWin };
 }
