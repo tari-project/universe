@@ -19,7 +19,7 @@ import useMining from '@app/hooks/mining/useMining.ts';
 
 import { LayoutGroup } from 'framer-motion';
 import { useLighting } from '@app/hooks/useLighting.ts';
-import { useUiMiningStateEnforcer } from './hooks/mining/useMiningUiStateEnforcer.ts';
+import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
 
 export default function App() {
     useAirdropSyncState();
@@ -28,7 +28,7 @@ export default function App() {
     useGetStatus();
     useEnvironment();
     useLighting();
-    useUiMiningStateEnforcer();
+    useUiMiningStateMachine();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);

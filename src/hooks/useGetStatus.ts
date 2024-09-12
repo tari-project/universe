@@ -74,7 +74,6 @@ export function useGetStatus() {
         setCPUStatus,
         setError,
         setGPUStatus,
-        setMiningControlsEnabled,
         setMode,
         setupProgress,
     ]);
