@@ -261,12 +261,9 @@ impl BinaryManager {
         }
 
         let binary_folder = self.adapter.get_binary_folder();
-        println!("Binary folder: {:?}", binary_folder);
         let version_folder = binary_folder.join(self.selected_version.clone().unwrap().to_string());
-        println!("Version folder: {:?}", version_folder);
         let binary_file =
             version_folder.join(&binary.binary_file_name(self.selected_version.clone().unwrap()));
-        println!("Binary file: {:?}", binary_file);
 
         let binary_file_exists = binary_file.exists();
 
@@ -291,7 +288,6 @@ impl BinaryManager {
         );
 
         for version_info in versions_info {
-            println!("Version: {:?}", version_info.version.to_string());
             if self.version_requirements.matches(&version_info.version) {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Adding version to online list: {:?}", version_info.version);
                 self.online_versions_list.push(version_info);

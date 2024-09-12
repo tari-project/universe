@@ -50,7 +50,6 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
 }
 
 pub struct BinaryResolver {
-    download_mutex: Mutex<()>,
     managers: HashMap<Binaries, BinaryManager>,
 }
 
@@ -135,7 +134,6 @@ impl BinaryResolver {
 
         Self {
             managers: binary_manager,
-            download_mutex: Mutex::new(()),
         }
     }
 
@@ -175,14 +173,7 @@ impl BinaryResolver {
 
         let mut highest_version = manager.select_highest_version();
 
-        println!(
-            "Highest version for binary: {:?} is: {:?}",
-            binary.name(),
-            highest_version
-        );
-
         if !should_check_for_update && highest_version.is_none() {
-            println!("No version selected => downloading");
             manager.check_for_updates().await;
             highest_version = manager.select_highest_version();
             manager
@@ -191,7 +182,6 @@ impl BinaryResolver {
         }
 
         if highest_version.is_none() {
-            println!("No version selectedddd => downloading");
             manager
                 .download_selected_version(progress_tracker.clone())
                 .await;
@@ -199,7 +189,6 @@ impl BinaryResolver {
 
         let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
         if !check_if_files_exist {
-            println!("Not existing => downloading");
             manager
                 .download_selected_version(progress_tracker.clone())
                 .await;

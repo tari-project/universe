@@ -97,6 +97,9 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         if cfg!(target_os = "linux") {
             name_suffix = r"linux-x86_64.*\.zip";
         }
+        if name_suffix.is_empty() {
+            panic!("Unsupported OS");
+        }
 
         info!(target: BINARY_RESOLVER_LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
 
@@ -106,7 +109,6 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .assets
             .iter()
             .find(|a| {
-                println!("Asset name: {}", a.name);
                 if let Some(ref specific) = self.specific_name {
                     specific.is_match(&a.name) && reg.is_match(&a.name)
                 } else {
