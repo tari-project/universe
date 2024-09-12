@@ -854,7 +854,9 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
     let binary_resolver = BinaryResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
-    let xmrig_version = binary_resolver.get_binary_version_string(Binaries::Xmrig).await;
+    let xmrig_version = binary_resolver
+        .get_binary_version_string(Binaries::Xmrig)
+        .await;
 
     let minotari_node_version = binary_resolver
         .get_binary_version_string(Binaries::MinotariNode)
@@ -862,12 +864,15 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
     let mm_proxy_version = binary_resolver
         .get_binary_version_string(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version =
-        binary_resolver.get_binary_version_string(Binaries::Wallet).await;
+    let wallet_version = binary_resolver
+        .get_binary_version_string(Binaries::Wallet)
+        .await;
     let sha_p2pool_version = binary_resolver
         .get_binary_version_string(Binaries::ShaP2pool)
         .await;
-    let xtrgpuminer_version = binary_resolver.get_binary_version_string(Binaries::GpuMiner).await;
+    let xtrgpuminer_version = binary_resolver
+        .get_binary_version_string(Binaries::GpuMiner)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -883,7 +888,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
         mm_proxy: mm_proxy_version,
         wallet: wallet_version,
         sha_p2pool: sha_p2pool_version,
-        xtrgpuminer: xtrgpuminer_version
+        xtrgpuminer: xtrgpuminer_version,
     })
 }
 

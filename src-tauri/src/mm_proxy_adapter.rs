@@ -53,7 +53,6 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
-
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 

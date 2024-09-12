@@ -233,7 +233,8 @@ impl BinaryResolver {
 
     pub async fn get_binary_version_string(&self, binary: Binaries) -> String {
         let version = self.get_binary_version(binary).await;
-        version.map(|v| v.to_string())
+        version
+            .map(|v| v.to_string())
             .unwrap_or_else(|| "Not Installed".to_string())
     }
 }

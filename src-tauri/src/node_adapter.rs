@@ -122,7 +122,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
                     let file_path = binary_resolver
                         .resolve_path_to_binary_files(Binaries::MinotariNode)
-                        .await.unwrap();
+                        .await
+                        .unwrap();
 
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
