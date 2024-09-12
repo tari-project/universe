@@ -10,6 +10,7 @@ import { useMiningControls } from './useMiningControls';
 export const useUiMiningStateMachine = () => {
     const { handleStart } = useMiningControls();
 
+    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const setIsChangingMode = useMiningStore((s) => s.setIsChangingMode);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
@@ -38,7 +39,7 @@ export const useUiMiningStateMachine = () => {
             return;
         }
 
-        if (isSetupFinished && isMiningEnabled && !isMining && !isChangingMode) {
+        if (isSetupFinished && isMiningEnabled && !isMiningInitiated && !isMining && !isChangingMode) {
             setAnimationState('stop');
             return;
         }
@@ -53,6 +54,7 @@ export const useUiMiningStateMachine = () => {
         isChangingMode,
         isMining,
         isAutoMiningEnabled,
+        isMiningInitiated,
         window?.glApp?.stateManager.statusIndex,
     ]);
 };
