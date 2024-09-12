@@ -171,8 +171,10 @@ impl BinaryResolver {
             manager.check_for_updates().await;
         }
 
+        // Selects the highest version from the Vec of downloaded versions and local versions
         let mut highest_version = manager.select_highest_version();
 
+        // This covers case when we do not check newest version and there is no local version
         if !should_check_for_update && highest_version.is_none() {
             manager.check_for_updates().await;
             highest_version = manager.select_highest_version();
@@ -181,12 +183,14 @@ impl BinaryResolver {
                 .await;
         }
 
+        // If there is no version that meets the requirements, download the highest version
         if highest_version.is_none() {
             manager
                 .download_selected_version(progress_tracker.clone())
                 .await;
         }
 
+        // Check if the files exist after download
         let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
         if !check_if_files_exist {
             manager
@@ -194,6 +198,7 @@ impl BinaryResolver {
                 .await;
         }
 
+        // Throw error if files still do not exist
         let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
         if !check_if_files_exist {
             return Err(anyhow!("Failed to download binaries"));
