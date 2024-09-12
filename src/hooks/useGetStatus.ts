@@ -8,8 +8,6 @@ import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '../store/useGPUStatusStore.ts';
 import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useShallow } from 'zustand/react/shallow';
 import { useCallback, useEffect } from 'react';
 
 const INTERVAL = 1000;
@@ -20,9 +18,7 @@ export function useGetStatus() {
     const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
     const setGPUStatus = useGPUStatusStore((s) => s.setGPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
-    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
     const setTelemetryMode = useAppStatusStore((s) => s.setTelemetryMode);
-    const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
 
     const { setError } = useAppStateStore((s) => ({
         setError: s.setError,
@@ -55,26 +51,13 @@ export function useGetStatus() {
 
                     setBalanceData(wallet_balance);
                     setMode(status.mode);
-
-                    const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
-                    setMiningControlsEnabled(!isSettingUp && miningEnabled);
                 }
             })
             .catch((e) => {
                 console.error('Could not get status', e);
                 setError(e.toString());
             });
-    }, [
-        isSettingUp,
-        setAppStatus,
-        setBalanceData,
-        setBaseNodeStatus,
-        setCPUStatus,
-        setError,
-        setGPUStatus,
-        setMiningControlsEnabled,
-        setMode,
-    ]);
+    }, [setAppStatus, setBalanceData, setBaseNodeStatus, setCPUStatus, setError, setGPUStatus, setMode]);
 
     useInterval(() => invokeStatus(), INTERVAL);
 }

@@ -33,12 +33,14 @@ export function useMiningControls() {
             try {
                 await invoke('stop_mining', {})
                     .then(async () => {
+                        setAnimationState(args?.isPause ? 'pause' : 'stop');
+
                         if (args?.isPause) {
                             console.info('Mining stopped, as pause, to be restarted.');
                         } else {
                             console.info('Mining stopped.');
                         }
-                        setAnimationState(args?.isPause ? 'pause' : 'stop');
+                        // setAnimationState(args?.isPause ? 'pause' : 'stop');
                     })
                     .catch((e) => {
                         console.error(e);

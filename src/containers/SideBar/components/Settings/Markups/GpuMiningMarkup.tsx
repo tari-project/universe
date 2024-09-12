@@ -32,6 +32,7 @@ const GpuMiningMarkup = () => {
     }, [isGpuMiningEnabled]);
 
     const toggleDisabledBase = !miningAllowed || miningLoading;
+
     const gpuDisabled = isMiningInProgress && isGpuMiningEnabled && !isCPUMining;
 
     return (
