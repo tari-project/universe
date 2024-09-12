@@ -32,15 +32,14 @@ const GpuMiningMarkup = () => {
         await invoke('set_gpu_mining_enabled', { enabled: !isGpuMiningEnabled });
     }, [isGpuMiningEnabled]);
 
-    const toggleDisabledBase = !miningAllowed || miningLoading || !isGPUMiningAvailable;
-    const gpuDisabled = isMiningInProgress && isGpuMiningEnabled && !isCPUMining;
+    const toggleDisabledBase = !miningAllowed || miningLoading || isMiningInProgress;
 
     return (
         <MinerContainer>
             <Typography variant="h6">{t('gpu-mining-enabled', { ns: 'settings' })}</Typography>
             <ToggleSwitch
                 checked={isGpuMiningEnabled}
-                disabled={toggleDisabledBase || gpuDisabled}
+                disabled={toggleDisabledBase}
                 onChange={handleGpuMiningEnabled}
             />
             {!isGPUMiningAvailable && <Typography variant="p">{t('gpu-unavailable', { ns: 'settings' })}</Typography>}

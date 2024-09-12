@@ -31,15 +31,14 @@ const CpuMiningSettings = () => {
         await invoke('set_cpu_mining_enabled', { enabled: !isCpuMiningEnabled });
     }, [isCpuMiningEnabled]);
 
-    const toggleDisabledBase = !miningAllowed || miningLoading;
-    const cpuDisabled = isMiningInProgress && isCpuMiningEnabled && !isGPUMining;
+    const toggleDisabledBase = !miningAllowed || miningLoading || isMiningInProgress;
 
     return (
         <MinerContainer>
             <Typography variant="h6">{t('cpu-mining-enabled', { ns: 'settings' })}</Typography>
             <ToggleSwitch
                 checked={isCpuMiningEnabled}
-                disabled={toggleDisabledBase || cpuDisabled}
+                disabled={toggleDisabledBase}
                 onChange={handleCpuMiningEnabled}
             />
         </MinerContainer>
