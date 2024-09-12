@@ -13,8 +13,9 @@ export function useVisualisation() {
     const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
     const isMining = cpuIsMining || gpuIsMining;
 
-    const { setTimerPaused, setPostBlockAnimation, setEarnings } = useMiningStore(
+    const { setTimerPaused, setPostBlockAnimation, setEarnings, setMiningControlsEnabled } = useMiningStore(
         useShallow((s) => ({
+            setMiningControlsEnabled: s.setMiningControlsEnabled,
             setPostBlockAnimation: s.setPostBlockAnimation,
             setTimerPaused: s.setTimerPaused,
             setEarnings: s.setEarnings,
@@ -50,32 +51,21 @@ export function useVisualisation() {
     const handleFail = useCallback(async () => {
         const canAnimate = await checkCanAnimate();
         if (canAnimate) {
+            setMiningControlsEnabled(false);
             setAnimationState('fail');
             setUseFailTimeout(true);
         }
-    }, [checkCanAnimate]);
+    }, [checkCanAnimate, setMiningControlsEnabled]);
 
     const handleWin = useCallback(async () => {
         const canAnimate = await checkCanAnimate();
         if (canAnimate) {
+            setMiningControlsEnabled(false);
             setAnimationState('success');
         } else {
             setEarnings(undefined);
         }
-    }, [checkCanAnimate, setEarnings]);
-
-    useEffect(() => {
-        const sM = window?.glApp?.stateManager;
-        const status = sM?.status;
-
-        if (status === 'free' && !isMining) {
-            setAnimationState('stop');
-        }
-
-        if (status === 'not-started' && isMining) {
-            setAnimationState('start');
-        }
-    }, [isMining]);
+    }, [checkCanAnimate, setEarnings, setMiningControlsEnabled]);
 
     return { handleFail, handleWin };
 }

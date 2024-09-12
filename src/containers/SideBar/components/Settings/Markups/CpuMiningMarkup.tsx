@@ -14,10 +14,9 @@ import { useTranslation } from 'react-i18next';
 const CpuMiningSettings = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
-    const { isCpuMiningEnabled, isGpuMiningEnabled } = useAppStatusStore(
+    const { isCpuMiningEnabled } = useAppStatusStore(
         useShallow((s) => ({
             isCpuMiningEnabled: s.cpu_mining_enabled,
-            isGpuMiningEnabled: s.gpu_mining_enabled,
         }))
     );
 
@@ -33,7 +32,7 @@ const CpuMiningSettings = () => {
     }, [isCpuMiningEnabled]);
 
     const toggleDisabledBase = !miningAllowed || miningLoading;
-    const cpuDisabled = isMiningInProgress && isCpuMiningEnabled && !isGpuMiningEnabled;
+    const cpuDisabled = isMiningInProgress && isCpuMiningEnabled && !isGPUMining;
 
     return (
         <MinerContainer>
