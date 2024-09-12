@@ -19,6 +19,11 @@ concurrency:
 
 permissions: {}
 
+
+env:
+  TARI_NETWORK: nextnet
+  TARI_TARGET_NETWORK: nextnet
+
 jobs:
   builds:
     name: Building ${{ matrix.platform }}

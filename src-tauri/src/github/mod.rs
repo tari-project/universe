@@ -9,6 +9,7 @@ const LOG_TARGET: &str = "tari::universe::github";
 #[derive(Deserialize)]
 struct Release {
     name: String,
+    tag_name: String,
     draft: bool,
     assets: Vec<Asset>,
 }
@@ -35,7 +36,12 @@ pub async fn list_releases(
         .send()
         .await?;
     if response.status() != 200 {
-        return Err(anyhow!("Failed to fetch releases: {}", response.status()));
+        return Err(anyhow!(
+            "Failed to fetch releases for {}:{}: {} - ",
+            repo_owner,
+            repo_name,
+            response.status()
+        ));
     }
     let data = response.text().await?;
     let releases: Vec<Release> = serde_json::from_str(&data)?;
@@ -51,8 +57,8 @@ pub async fn list_releases(
             continue;
         }
         // Remove any v prefix
-        let name = release.name.trim_start_matches('v').to_string();
-        info!(target: LOG_TARGET, " - release: {}", name);
+        let release_name = release.tag_name.trim_start_matches('v').to_string();
+        info!(target: LOG_TARGET, " - release: {}", release_name);
         // res.push(semver::Version::parse(&tag_name)?);
         let mut assets = vec![];
         for asset in release.assets {
@@ -61,12 +67,12 @@ pub async fn list_releases(
                 name: asset.name,
             });
         }
-        match semver::Version::parse(&name) {
+        match semver::Version::parse(&release_name) {
             Ok(v) => {
                 res.push(VersionDownloadInfo { version: v, assets });
             }
             Err(e) => {
-                info!(target: LOG_TARGET, "Failed to parse version: {}", e);
+                info!(target: LOG_TARGET, "Failed to parse {:?} version: {}", release_name, e);
                 continue;
             }
         }

@@ -13,9 +13,16 @@ export function useMiningControls() {
                     console.info('Mining started.');
                     setAnimationState('start');
                 })
-                .catch((e) => console.error(e));
+                .catch((e) => {
+                    console.error(e);
+                    // if there was a problem starting
+                    setAnimationState('stop');
+                });
         } catch (e) {
+            console.error(e);
             const error = e as string;
+            // if there was a problem starting
+            setAnimationState('stop');
             setError(error);
         }
     }, [setError]);
@@ -33,9 +40,16 @@ export function useMiningControls() {
                         }
                         setAnimationState(args?.isPause ? 'pause' : 'stop');
                     })
-                    .catch((e) => console.error(e));
+                    .catch((e) => {
+                        console.error(e);
+                        // if there was a problem stopping
+                        setAnimationState('start');
+                    });
             } catch (e) {
+                console.error(e);
                 const error = e as string;
+                // if there was a problem stopping
+                setAnimationState('start');
                 setError(error);
             }
         },
