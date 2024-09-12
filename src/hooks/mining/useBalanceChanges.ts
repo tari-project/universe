@@ -33,8 +33,10 @@ export function useBalanceChanges() {
         postBlockAnimation,
         timerPaused,
         setPostBlockAnimation,
+        setMiningControlsEnabled,
     } = useMiningStore(
         useShallow((s) => ({
+            setMiningControlsEnabled: s.setMiningControlsEnabled,
             setDisplayBlockHeight: s.setDisplayBlockHeight,
             setPostBlockAnimation: s.setPostBlockAnimation,
             setEarnings: s.setEarnings,
@@ -57,8 +59,8 @@ export function useBalanceChanges() {
             logBalanceChanges({ balance, prevBalance: balanceRef.current, balanceDiff: diff });
             const hasEarnings = Boolean(balance > 0 && diff > 0 && diff !== balance);
             if (hasEarnings) {
-                setEarnings(diff);
                 handleWin();
+                setEarnings(diff);
             }
             balanceRef.current = balance;
         } else {
@@ -104,13 +106,21 @@ export function useBalanceChanges() {
             const animationTimeout = setTimeout(() => {
                 setPostBlockAnimation(false);
                 setBlockHeightChanged(false);
-
                 setDisplayBlockHeight(blockHeightRef.current);
-            }, 1000);
+
+                setMiningControlsEnabled(true);
+            }, 3000);
 
             return () => {
                 clearTimeout(animationTimeout);
             };
         }
-    }, [isMining, postBlockAnimation, setDisplayBlockHeight, setPostBlockAnimation, timerPaused]);
+    }, [
+        isMining,
+        postBlockAnimation,
+        setDisplayBlockHeight,
+        setMiningControlsEnabled,
+        setPostBlockAnimation,
+        timerPaused,
+    ]);
 }
