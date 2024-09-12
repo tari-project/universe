@@ -22,6 +22,7 @@ export default function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isAppSettingUp = useAppStateStore((s) => s.isSettingUp);
 
+    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
 
@@ -30,8 +31,8 @@ export default function MiningButton() {
     const { handleStop, handleStart, isMiningLoading } = useMiningControls();
 
     const miningButtonStateText = useMemo(() => {
-        return isMining ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
-    }, [isMining]);
+        return isMining && isMiningInitiated ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
+    }, [isMining, isMiningInitiated]);
 
     const handleClick = useCallback(async () => {
         if (!isMining) {
