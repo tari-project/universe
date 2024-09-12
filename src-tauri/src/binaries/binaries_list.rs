@@ -25,6 +25,18 @@ impl Binaries {
         }
     }
 
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "xmrig" => Some(Binaries::Xmrig),
+            "mmproxy" => Some(Binaries::MergeMiningProxy),
+            "minotari_node" => Some(Binaries::MinotariNode),
+            "wallet" => Some(Binaries::Wallet),
+            "sha-p2pool" => Some(Binaries::ShaP2pool),
+            "xtrgpuminer" => Some(Binaries::GpuMiner),
+            _ => None,
+        }
+    }
+
     pub fn binary_file_name(&self, version: Version) -> PathBuf {
         match self {
             Binaries::Xmrig => {

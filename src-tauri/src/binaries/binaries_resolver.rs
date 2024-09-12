@@ -191,7 +191,7 @@ impl BinaryResolver {
         }
 
         // Check if the files exist after download
-        let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
+        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
                 .download_selected_version(progress_tracker.clone())
@@ -199,7 +199,7 @@ impl BinaryResolver {
         }
 
         // Throw error if files still do not exist
-        let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
+        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             return Err(anyhow!("Failed to download binaries"));
         }
@@ -214,9 +214,9 @@ impl BinaryResolver {
         let manager = self.managers.get_mut(&binary).unwrap();
 
         manager.check_for_updates().await;
-        manager.select_highest_version();
+        let highest_version = manager.select_highest_version();
 
-        let check_if_files_exist = manager.check_if_files_of_selected_version_exist(binary);
+        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version);
         if !check_if_files_exist {
             manager
                 .download_selected_version(progress_tracker.clone())

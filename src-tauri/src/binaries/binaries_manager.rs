@@ -140,6 +140,7 @@ impl BinaryManager {
             return None;
         }
 
+
         let version_info = self
             .online_versions_list
             .iter()
@@ -252,7 +253,7 @@ impl BinaryManager {
         self.selected_version.clone()
     }
 
-    pub fn check_if_files_of_selected_version_exist(&self, binary: Binaries) -> bool {
+    pub fn check_if_files_for_version_exist(&self, version:Option<Version>) -> bool {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if files for selected version exist: {:?}", self.selected_version);
 
         if self.selected_version.is_none() {
@@ -261,9 +262,9 @@ impl BinaryManager {
         }
 
         let binary_folder = self.adapter.get_binary_folder();
-        let version_folder = binary_folder.join(self.selected_version.clone().unwrap().to_string());
+        let version_folder = binary_folder.join(version.unwrap().to_string());
         let binary_file =
-            version_folder.join(&binary.binary_file_name(self.selected_version.clone().unwrap()));
+            version_folder.join(Binaries::from_name(&self.binary_name).unwrap().binary_file_name(self.selected_version.clone().unwrap()));
 
         let binary_file_exists = binary_file.exists();
 
@@ -312,13 +313,23 @@ impl BinaryManager {
 
         let asset = self.get_asset_for_selected_version().unwrap();
 
-        let in_progress_dir = self.create_in_progress_folder();
-        let in_progress_file_zip = in_progress_dir.join(asset.name);
-
         let destination_dir = self
             .adapter
             .get_binary_folder()
             .join(self.selected_version.clone().unwrap().to_string());
+
+        // This is a safety check to ensure that the destination directory is empty
+        // Its special case for tari repo, where zip will inclue mutliple binaries
+        // So when one of them is deleted, and we need to download it again
+        // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
+        // extract will fail, so we need to remove all files from destination dir
+        if destination_dir.exists() {
+            std::fs::remove_dir_all(&destination_dir).unwrap();
+            std::fs::create_dir_all(&destination_dir).unwrap();
+        }
+
+        let in_progress_dir = self.create_in_progress_folder();
+        let in_progress_file_zip = in_progress_dir.join(asset.name);
 
         match download_file_with_retries(
             asset.url.as_str(),
@@ -332,6 +343,8 @@ impl BinaryManager {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Extracting version: {:?}", self.selected_version);
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Destination dir: {:?}", destination_dir);
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"In progress file: {:?}", in_progress_file_zip);
+
+
                 extract(&in_progress_file_zip, &destination_dir)
                     .await
                     .unwrap();
@@ -365,7 +378,7 @@ impl BinaryManager {
             let version_folder_name = version_folder.file_name();
             match Version::from_str(version_folder_name.to_str().unwrap()) {
                 Ok(version) => {
-                    if self.version_requirements.matches(&version) {
+                    if self.version_requirements.matches(&version) && self.check_if_files_for_version_exist(Some(version.clone())) {
                         self.local_aviailable_versions_list.push(version);
                     }
                 }
