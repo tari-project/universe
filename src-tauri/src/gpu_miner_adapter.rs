@@ -215,6 +215,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
+                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
                 if e.is_connect() {
                     return Ok(GpuMinerStatus {
                         is_mining: false,
@@ -223,7 +224,6 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                         is_available: false,
                     });
                 }
-                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0,

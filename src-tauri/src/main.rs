@@ -288,8 +288,7 @@ async fn setup_inner(
             .ensure_latest(Binaries::GpuMiner, progress.clone())
             .await?;
 
-        let gpu_res = state.gpu_miner.write().await.detect().await?;
-        info!(target: LOG_TARGET, "Gpu detect response {:?}", gpu_res);
+        state.gpu_miner.write().await.detect().await?;
 
         progress.set_max(30).await;
         progress

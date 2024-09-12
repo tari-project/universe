@@ -96,12 +96,15 @@ impl GpuMiner {
                 status.is_available = self.is_available;
                 Ok(status)
             }
-            None => Ok(GpuMinerStatus {
-                hash_rate: 0,
-                estimated_earnings: 0,
-                is_mining: false,
-                is_available: false,
-            }),
+            None => {
+                warn!(target: LOG_TARGET, "Gpu miner status not found");
+                Ok(GpuMinerStatus {
+                    hash_rate: 0,
+                    estimated_earnings: 0,
+                    is_mining: false,
+                    is_available: self.is_available,
+                })
+            }
         }
     }
 
@@ -117,21 +120,18 @@ impl GpuMiner {
         crate::download_utils::set_permissions(&gpuminer_bin).await?;
         let child = process_utils::launch_child_process(&gpuminer_bin, None, &args)?;
         let output = child.wait_with_output().await?;
+        info!(target: LOG_TARGET, "Gpu detect exit code {:?}", output.status.code().clone().unwrap_or_default());
         match output.status.code() {
             Some(0) => {
-                info!(target: LOG_TARGET, "Output status code {:?}", output.status.code().unwrap_or_default());
                 self.is_available = true;
-                return Ok(());
+                Ok(())
             }
-            Some(code) => {
-                warn!(target: LOG_TARGET, "Non-zero exit code {:?}", code);
+            _ => {
                 self.is_available = false;
-                return Err(anyhow::anyhow!("Non-zero exit code {:?}", code));
-            }
-            None => {
-                warn!(target: LOG_TARGET, "No output status code");
-                self.is_available = false;
-                return Err(anyhow::anyhow!("No output status code"));
+                Err(anyhow::anyhow!(
+                    "Non-zero exit code {:?}",
+                    output.status.code()
+                ))
             }
         }
     }
