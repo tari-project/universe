@@ -1,11 +1,12 @@
 import { modeType } from '@app/store/types';
 import { ApplicationsVersions, AppStatus } from './app-status';
+import { CpuMiner } from './mining';
 
 declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'setup_application'): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'status'): Promise<AppStatus>;
-    function invoke(param: 'start_mining'): Promise<void>;
+    function invoke(param: 'start_mining', payload: { miner: CpuMiner }): Promise<void>;
     function invoke(param: 'stop_mining'): Promise<void>;
     function invoke(param: 'set_telemetry_mode', payload: { telemetryMode: boolean }): Promise<void>;
     function invoke(param: 'get_telemetry_mode'): Promise<boolean>;

@@ -8,7 +8,7 @@ export function useMiningControls() {
     const handleStart = useCallback(async () => {
         console.info('Mining starting....');
         try {
-            await invoke('start_mining', {})
+            await invoke('start_mining', { miner: 'Clythor' })
                 .then(async () => {
                     console.info('Mining started.');
                 })

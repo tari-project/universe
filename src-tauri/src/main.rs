@@ -46,6 +46,7 @@ use crate::xmrig_adapter::XmrigAdapter;
 use app_config::{AppConfig, MiningMode};
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binary_resolver::{Binaries, BinaryResolver};
+use cpu_miner::RandomXMiner;
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
@@ -531,6 +532,7 @@ async fn start_mining<'r>(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
+    miner: RandomXMiner,
 ) -> Result<(), String> {
     let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled;
@@ -547,23 +549,38 @@ async fn start_mining<'r>(
             .await
             .map_err(|e| e.to_string())?;
 
-        let res = state
-            .cpu_miner
-            .write()
-            .await
-            .start(
-                state.shutdown.to_signal(),
-                &cpu_miner_config,
-                monero_address,
-                mm_proxy_port,
-                app.path_resolver().app_local_data_dir().unwrap(),
-                app.path_resolver().app_cache_dir().unwrap(),
-                app.path_resolver().app_config_dir().unwrap(),
-                app.path_resolver().app_log_dir().unwrap(),
-                progress_tracker,
-                mode,
-            )
-            .await;
+        let mut res = state.cpu_miner.write().await;
+
+        let res = match miner {
+            cpu_miner::RandomXMiner::Clythor => {
+                res.start_clythor(
+                    state.shutdown.to_signal(),
+                    &cpu_miner_config,
+                    monero_address,
+                    mm_proxy_port,
+                    app.path_resolver().app_local_data_dir().unwrap(),
+                    app.path_resolver().app_config_dir().unwrap(),
+                    app.path_resolver().app_log_dir().unwrap(),
+                    mode,
+                )
+                .await
+            }
+            cpu_miner::RandomXMiner::Xmrig => {
+                res.start_xmrig(
+                    state.shutdown.to_signal(),
+                    &cpu_miner_config,
+                    monero_address,
+                    mm_proxy_port,
+                    app.path_resolver().app_local_data_dir().unwrap(),
+                    app.path_resolver().app_cache_dir().unwrap(),
+                    app.path_resolver().app_config_dir().unwrap(),
+                    app.path_resolver().app_log_dir().unwrap(),
+                    progress_tracker,
+                    mode,
+                )
+                .await
+            }
+        };
 
         if let Err(e) = res {
             error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
