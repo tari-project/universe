@@ -33,9 +33,8 @@ const variants = {
 export default function Earnings() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
-    const { earnings, setPostBlockAnimation, setEarnings, setTimerPaused, setMiningControlsEnabled } = useMiningStore(
+    const { earnings, setPostBlockAnimation, setEarnings, setTimerPaused } = useMiningStore(
         useShallow((s) => ({
-            setMiningControlsEnabled: s.setMiningControlsEnabled,
             setPostBlockAnimation: s.setPostBlockAnimation,
             setEarnings: s.setEarnings,
             setTimerPaused: s.setTimerPaused,
@@ -45,11 +44,16 @@ export default function Earnings() {
     const formatted = formatBalance(earnings || 0);
 
     const handleComplete = useCallback(() => {
-        setPostBlockAnimation(true);
-        setTimerPaused(false);
-        setEarnings(undefined);
-        setMiningControlsEnabled(true);
-    }, [setEarnings, setMiningControlsEnabled, setPostBlockAnimation, setTimerPaused]);
+        const winTimeout = setTimeout(() => {
+            setPostBlockAnimation(true);
+            setTimerPaused(false);
+            setEarnings(undefined);
+        }, 3000);
+
+        return () => {
+            clearTimeout(winTimeout);
+        };
+    }, [setEarnings, setPostBlockAnimation, setTimerPaused]);
 
     return (
         <EarningsContainer>

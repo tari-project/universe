@@ -47,7 +47,6 @@ export default function MiningButton() {
     }, [handleStart, handleStop, isMining, setMiningInitiated]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
-
     return (
         <ButtonWrapper layout layoutId="mining-button-wrapper">
             <StyledButton

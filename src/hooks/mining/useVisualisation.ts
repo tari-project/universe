@@ -38,7 +38,6 @@ export function useVisualisation() {
                     setPostBlockAnimation(true);
                     setTimerPaused(false);
                     setUseFailTimeout(false);
-                    setMiningControlsEnabled(true);
                 },
                 isMining ? 1500 : 1
             );
@@ -47,13 +46,13 @@ export function useVisualisation() {
                 clearTimeout(failAnimationTimeout);
             };
         }
-    }, [isMining, setMiningControlsEnabled, setPostBlockAnimation, setTimerPaused, useFailTimeout]);
+    }, [isMining, setPostBlockAnimation, setTimerPaused, useFailTimeout]);
 
     const handleFail = useCallback(async () => {
         const canAnimate = await checkCanAnimate();
         if (canAnimate) {
-            setAnimationState('fail');
             setMiningControlsEnabled(false);
+            setAnimationState('fail');
             setUseFailTimeout(true);
         }
     }, [checkCanAnimate, setMiningControlsEnabled]);
@@ -61,8 +60,8 @@ export function useVisualisation() {
     const handleWin = useCallback(async () => {
         const canAnimate = await checkCanAnimate();
         if (canAnimate) {
-            setAnimationState('success');
             setMiningControlsEnabled(false);
+            setAnimationState('success');
         } else {
             setEarnings(undefined);
         }
