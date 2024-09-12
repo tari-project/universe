@@ -64,7 +64,10 @@ impl ProcessAdapter for ClythorAdapter {
         let mut shutdown_signal = clythor_shutdown.to_signal();
         let clythor_log_file = log_dir.join("clythor.log");
         std::fs::create_dir_all(clythor_log_file.parent().unwrap())?;
+        let clythor_data_dir = data_dir.join("clythor");
+        std::fs::create_dir_all(&clythor_data_dir)?;
         let args = vec![
+            format!("-b {}", clythor_data_dir.to_str().unwrap()),
             format!(
                 "--log-path={}",
                 &clythor_log_file.parent().unwrap().to_str().unwrap()
