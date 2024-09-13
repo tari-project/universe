@@ -40,7 +40,6 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
-use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
@@ -588,6 +587,16 @@ async fn start_mining<'r>(
             GpuNodeSource::BaseNode { port: grpc_port }
         };
 
+        let mut telemetry_id = state
+            .telemetry_manager
+            .read()
+            .await
+            .get_unique_string()
+            .await;
+        if telemetry_id.is_empty() {
+            telemetry_id = "tari-universe".to_string();
+        }
+
         let res = state
             .gpu_miner
             .write()
@@ -600,6 +609,7 @@ async fn start_mining<'r>(
                 app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
                 mode,
+                telemetry_id,
             )
             .await;
 
@@ -1025,7 +1035,6 @@ struct UniverseAppState {
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
-    _user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
@@ -1103,7 +1112,6 @@ fn main() {
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
-        _user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,

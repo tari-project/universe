@@ -14,7 +14,7 @@ use tokio::select;
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
 #[derive(Clone, PartialEq, Default)]
-pub struct MergeMiningProxyConfig {
+pub(crate) struct MergeMiningProxyConfig {
     pub port: u16,
     pub p2pool_enabled: bool,
     pub base_node_grpc_port: u16,
