@@ -1,6 +1,6 @@
 import { create } from './create';
 
-import { BlockTimeData } from '@app/types/mining.ts';
+import { BlockTimeData, CpuMiner } from '@app/types/mining.ts';
 
 interface State {
     displayBlockTime?: BlockTimeData;
@@ -16,6 +16,7 @@ interface State {
     isMiningInProgress: boolean;
     isChangingMode: boolean;
     isConnectionLostDuringMining: boolean;
+    cpuMiner: CpuMiner;
 }
 interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
@@ -32,6 +33,7 @@ interface Actions {
     setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
     setIsMiningInProgress: (isMiningInProgress: State['isMiningInProgress']) => void;
     setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
+    setCpuMiner: (cpuMiner: State['cpuMiner']) => void;
 }
 type MiningStoreState = State & Actions;
 
@@ -46,6 +48,7 @@ const initialState: State = {
     isChangingMode: false,
     isConnectionLostDuringMining: false,
     miningControlsEnabled: false,
+    cpuMiner: 'Clythor',
 };
 
 export const useMiningStore = create<MiningStoreState>()((set) => ({
@@ -62,6 +65,7 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
     setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
     setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setCpuMiner: (cpuMiner) => set({ cpuMiner }),
     setMiningControlsEnabled: (miningControlsEnabled) =>
         set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
 }));

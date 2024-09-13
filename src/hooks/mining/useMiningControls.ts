@@ -2,13 +2,15 @@ import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { setAnimationState } from '@app/visuals.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { useMiningStore } from '@app/store/useMiningStore';
 
 export function useMiningControls() {
     const setError = useAppStateStore((s) => s.setError);
+    const cpuMiner = useMiningStore((s) => s.cpuMiner);
     const handleStart = useCallback(async () => {
         console.info('Mining starting....');
         try {
-            await invoke('start_mining', { miner: 'Clythor' })
+            await invoke('start_mining', { miner: cpuMiner })
                 .then(async () => {
                     console.info('Mining started.');
                 })
@@ -18,7 +20,7 @@ export function useMiningControls() {
             const error = e as string;
             setError(error);
         }
-    }, [setError]);
+    }, [setError, cpuMiner]);
 
     const handleStop = useCallback(
         async (args?: { isPause?: boolean }) => {

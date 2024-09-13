@@ -44,6 +44,8 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { SeedWords } from './SeedWords';
 import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
+import { Option, Select } from '@app/components/elements/inputs/Select';
+import { CpuMiner } from '@app/types/mining';
 
 enum FormFields {
     MONERO_ADDRESS = 'moneroAddress',
@@ -52,6 +54,17 @@ enum FormFields {
 interface FormState {
     [FormFields.MONERO_ADDRESS]: string;
 }
+
+const CpuMinerOptions: Option[] = [
+    {
+        label: 'Clythor',
+        value: 'Clythor',
+    },
+    {
+        label: 'Xmrig',
+        value: 'Xmrig',
+    },
+];
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -107,9 +120,19 @@ export default function Settings() {
     const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
     const isMiningInProgress = isCPUMining || isGPUMining;
-    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const { miningInitiated, cpuMiner, setCpuMiner } = useMiningStore(
+        useShallow((s) => ({
+            miningInitiated: s.miningInitiated,
+            cpuMiner: s.cpuMiner,
+            setCpuMiner: s.setCpuMiner,
+        }))
+    );
     const miningLoading = (miningInitiated && !isMiningInProgress) || (!miningInitiated && isMiningInProgress);
     const [open, setOpen] = useState(false);
+
+    const handleMinerChange = (miner: string) => {
+        setCpuMiner(miner as CpuMiner);
+    };
 
     const handleClose = () => {
         setShowSeedWords(false);
@@ -391,6 +414,8 @@ export default function Settings() {
                         {cpuEnabledMarkup}
                         {gpuEnabledMarkup}
                     </HorisontalBox>
+                    <Divider />
+                    <Select options={CpuMinerOptions} onChange={handleMinerChange} selectedValue={cpuMiner} />
                     <Divider />
                     <AirdropPermissionSettings />
                     <Divider />

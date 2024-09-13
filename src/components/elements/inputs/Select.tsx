@@ -15,7 +15,7 @@ import {
 import { useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
 import { LayoutGroup } from 'framer-motion';
 
-interface Option {
+export interface Option {
     label: string;
     selectedLabel?: string;
     iconSrc?: string;
