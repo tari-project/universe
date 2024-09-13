@@ -69,7 +69,7 @@ impl CpuMiner {
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
                 debug!(target:LOG_TARGET, "Available CPUs: {}", available_cpus);
-                available_cpus.get()
+                isize::try_from(available_cpus.get()).unwrap_or(1)
             }
             Err(err) => {
                 error!("Available CPUs: Unknown, error: {}", err);
@@ -77,8 +77,8 @@ impl CpuMiner {
             }
         };
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => (30 * max_cpu_available) / 100,
-            MiningMode::Ludicrous => max_cpu_available,
+            MiningMode::Eco => (30 * max_cpu_available) / 100isize,
+            MiningMode::Ludicrous => -1, // Use all
         };
         let xmrig_version =
             XmrigAdapter::ensure_latest(cache_dir.clone(), false, progress_tracker.clone()).await?;

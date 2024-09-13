@@ -1,4 +1,7 @@
 use anyhow::Result;
+use blake2::digest::Update;
+use blake2::digest::VariableOutput;
+use blake2::Blake2bVar;
 use jsonwebtoken::errors::Error as JwtError;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use log::{error, info, warn};
@@ -6,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_utilities::encoding::Base58;
 use tauri::Manager;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
@@ -157,16 +161,20 @@ impl TelemetryManager {
     }
 
     pub async fn get_unique_string(&self) -> String {
+        // TODO: remove before mainnet
         let config = self.config.read().await;
         if !config.allow_telemetry() {
             return "".to_string();
         }
-        let os = std::env::consts::OS;
+        // let os = std::env::consts::OS;
         let anon_id = config.anon_id();
+        let mut hasher = Blake2bVar::new(20).unwrap();
+        hasher.update(anon_id.as_bytes());
+        let mut buf = [0u8; 20];
+        hasher.finalize_variable(&mut buf).unwrap();
         let version = env!("CARGO_PKG_VERSION");
-        let mode = MiningMode::to_str(config.mode());
-        let auto_mining = config.auto_mining();
-        let unique_string = format!("v0,{},{},{},{},{}", anon_id, mode, auto_mining, os, version,);
+        // let mode = MiningMode::to_str(config.mode());
+        let unique_string = format!("v2,{},{}", buf.to_base58(), version,);
         unique_string
     }
 
