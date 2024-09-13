@@ -303,7 +303,7 @@ async fn get_telemetry_data(
         .read_hardware_parameters();
 
     let config_guard = config.read().await;
-    let is_mining_active = is_synced && cpu.is_mining;
+    let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
     let cpu_hash_rate = Some(cpu.hash_rate);
     let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
     let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
