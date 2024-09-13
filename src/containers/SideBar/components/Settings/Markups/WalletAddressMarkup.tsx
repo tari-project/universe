@@ -24,7 +24,7 @@ const DotContainer = styled.div`
 `;
 
 const AddressContainer = styled.div`
-    overflow: scroll;
+    overflow-x: auto;
     width: 100%;
     padding: 10px;
     background-color: ${({ theme }) => theme.palette.background.default};
