@@ -80,6 +80,7 @@ log = "0.4.22"
 rand = "0.8.5"
 device_query = "2.1.0"
 nvml-wrapper = "0.10.0"
+human_format = "1.1.0"
 # tonic = "0.12.0"
 
 [features]

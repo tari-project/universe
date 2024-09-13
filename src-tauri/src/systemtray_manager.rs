@@ -1,8 +1,8 @@
+use human_format::Formatter;
 use log::{error, info};
 use std::sync::LazyLock;
 use tauri::{AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 
-use crate::format_utils::format_balance;
 use crate::hardware_monitor::HardwareStatus;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
@@ -34,7 +34,13 @@ impl SystrayItemId {
             SystrayItemId::CpuUsage => format!("CPU Usage: {:.2}%", value),
             SystrayItemId::GpuUsage => format!("GPU Usage: {:.2}%", value),
             SystrayItemId::EstimatedEarning => {
-                format!("Est earning: {} tXTM/day", format_balance(value))
+                format!(
+                    "Est earning: {:?} tXTM/day",
+                    Formatter::new()
+                        .with_decimals(2)
+                        .with_separator("")
+                        .format(value / 1_000_000.0)
+                )
             }
         }
     }
@@ -101,19 +107,23 @@ impl SystemtrayManager {
         match current_os {
             CurrentOperatingSystem::Windows => {
                 format!(
-                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEst. earning: {} tXTM/day",
-                    data.cpu_hashrate,
+                    "Hashrate | Usage\nCPU: {:?} H/s | {:.0}%\nGPU: {:?} H/s | {:.0}%\nEst. earning: {:?} tXTM/day",
+                    Formatter::new().with_decimals(2).with_separator("").format(data.cpu_hashrate),
                     data.cpu_usage,
-                    data.gpu_hashrate,
+                    Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
                     data.gpu_usage,
-                    format_balance(data.estimated_earning)
+                    Formatter::new().with_decimals(2).with_separator("").format(data.estimated_earning / 1_000_000.0)
                 )
             }
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             CurrentOperatingSystem::MacOS => {
                 format!(
-                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
-                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, format_balance(data.estimated_earning)
+                    "CPU:\n  Hashrate: {:?} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:?} H/s\n  Usage: {:.0}%\nEst. earning: {:?} tXTM/day",
+                    Formatter::new().with_decimals(2).with_separator("").format(data.cpu_hashrate),
+                    data.cpu_usage,
+                    Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
+                    data.gpu_usage,
+                    Formatter::new().with_decimals(2).with_separator("").format(data.estimated_earning / 1_000_000.0)
                 )
             }
         }
