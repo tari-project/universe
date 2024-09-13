@@ -917,6 +917,29 @@ async fn reset_settings<'r>(
     Ok(())
 }
 
+#[tauri::command]
+async fn set_randomx_miner<'r>(
+    state: tauri::State<'_, UniverseAppState>,
+    miner: RandomXMiner,
+) -> Result<(), String> {
+    let mut app_config = state.config.write().await;
+    app_config
+        .set_randomx_miner(miner)
+        .await
+        .inspect_err(|e| error!("error at set_randomx_miner {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    return Ok(());
+}
+
+#[tauri::command]
+async fn read_randomx_miner<'r>(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<RandomXMiner, String> {
+    let app_config = state.config.read().await;
+    Ok(app_config.randomx_miner)
+}
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize)]
 pub struct AppStatus {
@@ -1170,7 +1193,9 @@ fn main() {
             reset_settings,
             set_gpu_mining_enabled,
             set_cpu_mining_enabled,
-            restart_application
+            restart_application,
+            read_randomx_miner,
+            set_randomx_miner,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

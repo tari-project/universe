@@ -5,7 +5,9 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
-use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
+use crate::{
+    consts::DEFAULT_MONERO_ADDRESS, cpu_miner::RandomXMiner, internal_wallet::generate_password,
+};
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -22,6 +24,7 @@ pub struct AppConfigFromFile {
     pub monero_address: String,
     pub gpu_mining_enabled: bool,
     pub cpu_mining_enabled: bool,
+    pub randomx_miner: RandomXMiner,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -61,6 +64,7 @@ pub struct AppConfig {
     pub monero_address: String,
     pub gpu_mining_enabled: bool,
     pub cpu_mining_enabled: bool,
+    pub randomx_miner: RandomXMiner,
 }
 
 impl AppConfig {
@@ -77,6 +81,7 @@ impl AppConfig {
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            randomx_miner: RandomXMiner::Clythor,
         }
     }
 
@@ -141,6 +146,7 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
+            randomx_miner: self.randomx_miner,
         };
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
@@ -230,6 +236,12 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_randomx_miner(&mut self, miner: RandomXMiner) -> Result<(), anyhow::Error> {
+        self.randomx_miner = miner;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
         let file = self.config_file.clone().unwrap();
         let config = &AppConfigFromFile {
@@ -243,6 +255,7 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
+            randomx_miner: self.randomx_miner,
         };
         let config = serde_json::to_string(config)?;
         info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

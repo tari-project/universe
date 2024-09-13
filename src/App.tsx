@@ -18,6 +18,7 @@ import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx
 import useMining from '@app/hooks/mining/useMining.ts';
 
 import { LayoutGroup } from 'framer-motion';
+import { useInitMiningStore } from './store/useMiningStore.ts';
 
 export default function App() {
     useAirdropSyncState();
@@ -25,6 +26,7 @@ export default function App() {
     useMining();
     useGetStatus();
     useEnvironment();
+    useInitMiningStore();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);

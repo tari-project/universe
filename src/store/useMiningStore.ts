@@ -1,3 +1,4 @@
+import { invoke } from '@tauri-apps/api/tauri';
 import { create } from './create';
 
 import { BlockTimeData, CpuMiner } from '@app/types/mining.ts';
@@ -51,6 +52,13 @@ const initialState: State = {
     cpuMiner: 'Clythor',
 };
 
+export const useInitMiningStore = () => {
+    const setCpuMiner = useMiningStore((state) => state.setCpuMiner);
+    invoke('read_randomx_miner').then((miner) => {
+        setCpuMiner(miner as CpuMiner);
+    });
+};
+
 export const useMiningStore = create<MiningStoreState>()((set) => ({
     ...initialState,
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
@@ -65,7 +73,10 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
     setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
     setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-    setCpuMiner: (cpuMiner) => set({ cpuMiner }),
+    setCpuMiner: (cpuMiner) => {
+        invoke('set_randomx_miner', { miner: cpuMiner });
+        return set({ cpuMiner });
+    },
     setMiningControlsEnabled: (miningControlsEnabled) =>
         set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
 }));
