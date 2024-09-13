@@ -161,7 +161,7 @@ impl BinaryResolver {
             .ok_or_else(|| anyhow!("No latest version manager for this binary"))?;
 
         let version = manager
-            .get_selected_version()
+            .get_used_version()
             .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
         let base_dir = manager.get_base_dir();
         Ok(PathBuf::from(
@@ -194,14 +194,14 @@ impl BinaryResolver {
             manager.check_for_updates().await;
             highest_version = manager.select_highest_version();
             manager
-                .download_selected_version(progress_tracker.clone())
+                .download_selected_version(highest_version.clone(),progress_tracker.clone())
                 .await;
         }
 
         // If there is no version that meets the requirements, download the highest version
-        if highest_version.is_none() {
+        if highest_version.clone().is_none() {
             manager
-                .download_selected_version(progress_tracker.clone())
+                .download_selected_version(highest_version.clone(),progress_tracker.clone())
                 .await;
         }
 
@@ -210,7 +210,7 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_selected_version(progress_tracker.clone())
+                .download_selected_version(highest_version.clone(),progress_tracker.clone())
                 .await;
         }
 
@@ -220,6 +220,9 @@ impl BinaryResolver {
         if !check_if_files_exist {
             return Err(anyhow!("Failed to download binaries"));
         }
+
+        manager.set_used_version(highest_version.clone().unwrap());
+
         Ok(())
     }
 
@@ -233,19 +236,26 @@ impl BinaryResolver {
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
 
-        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version);
+        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_selected_version(progress_tracker.clone())
+                .download_selected_version(highest_version.clone(),progress_tracker.clone())
                 .await;
         }
+
+        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version.clone());
+        if !check_if_files_exist {
+            return Err(anyhow!("Failed to download binaries"));
+        }
+
+        manager.set_used_version(highest_version.clone().unwrap());
 
         Ok(())
     }
 
     pub async fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
         let manager = self.managers.get(&binary).unwrap();
-        manager.get_selected_version()
+        manager.get_used_version()
     }
 
     pub async fn get_binary_version_string(&self, binary: Binaries) -> String {

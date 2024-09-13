@@ -1,13 +1,11 @@
-use std::{collections::HashMap, ops::Deref, path::PathBuf, str::FromStr};
+use std::{collections::HashMap,  path::PathBuf, str::FromStr};
 
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use tari_common::configuration::Network;
-use tari_utilities::message_format::MessageFormat;
 
 use crate::{
     binaries::binaries_resolver::BINARY_RESOLVER_LOG_TARGET,
-    download_utils::{download_file_with_retries, extract, validate_checksum},
+    download_utils::{download_file_with_retries, extract},
     progress_tracker::ProgressTracker,
 };
 
@@ -31,9 +29,7 @@ pub struct BinaryManager {
     online_versions_list: Vec<VersionDownloadInfo>,
     local_aviailable_versions_list: Vec<Version>,
 
-    selected_version: Option<Version>,
-    selected_version_checksum: Option<String>,
-
+    used_version: Option<Version>,
     is_highest_version_missing: bool,
 
     adapter: Box<dyn LatestVersionApiAdapter>,
@@ -84,9 +80,8 @@ impl BinaryManager {
             version_requirements,
             online_versions_list: Vec::new(),
             local_aviailable_versions_list: Vec::new(),
-            selected_version: None,
-            selected_version_checksum: None,
             is_highest_version_missing: false,
+            used_version: None,
             adapter,
         }
     }
@@ -99,10 +94,10 @@ impl BinaryManager {
             return None;
         }
 
-        self.selected_version = Some(self.local_aviailable_versions_list[0].clone());
+        let selected_local_version = Some(self.local_aviailable_versions_list[0].clone());
 
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Selected local version: {:?}", self.selected_version);
-        self.selected_version.clone()
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Selected local version: {:?}", selected_local_version);
+        selected_local_version.clone()
     }
 
     fn select_highest_online_version(&mut self) -> Option<Version> {
@@ -113,17 +108,17 @@ impl BinaryManager {
             return None;
         }
 
-        self.selected_version = Some(self.online_versions_list[0].version.clone());
+        let selected_online_version = Some(self.online_versions_list[0].version.clone());
 
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Selected online version: {:?}", self.selected_version);
-        self.selected_version.clone()
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Selected online version: {:?}", selected_online_version);
+        selected_online_version.clone()
     }
 
-    fn create_in_progress_folder(&self) -> PathBuf {
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Creating in progress folder for version: {:?}", self.selected_version);
+    fn create_in_progress_folder_for_selected_version(&self,selected_version: Version) -> PathBuf {
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Creating in progress folder for version: {:?}", selected_version);
 
         let binary_folder = self.adapter.get_binary_folder();
-        let version_folder = binary_folder.join(self.selected_version.clone().unwrap().to_string());
+        let version_folder = binary_folder.join(selected_version.to_string());
         let in_progress_folder = version_folder.join("in_progress");
 
         if in_progress_folder.exists() {
@@ -137,21 +132,16 @@ impl BinaryManager {
         in_progress_folder
     }
 
-    fn get_asset_for_selected_version(&self) -> Option<VersionAsset> {
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Getting asset for selected version: {:?}", self.selected_version);
-
-        if self.selected_version.is_none() {
-            info!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
-            return None;
-        }
+    fn get_asset_for_selected_version(&self,selected_version: Version) -> Option<VersionAsset> {
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Getting asset for selected version: {:?}", selected_version);
 
         let version_info = self
             .online_versions_list
             .iter()
-            .find(|v| v.version.eq(&self.selected_version.clone().unwrap()));
+            .find(|v| v.version.eq(&selected_version));
 
         if version_info.is_none() {
-            info!(target: BINARY_RESOLVER_LOG_TARGET,"No version info found for version: {:?}", self.selected_version);
+            info!(target: BINARY_RESOLVER_LOG_TARGET,"No version info found for version: {:?}", selected_version);
             return None;
         }
 
@@ -160,11 +150,11 @@ impl BinaryManager {
             .find_version_for_platform(version_info.clone().unwrap())
         {
             Ok(asset) => {
-                info!(target: BINARY_RESOLVER_LOG_TARGET,"Found asset for version: {:?}", self.selected_version);
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Found asset for version: {:?}", selected_version);
                 Some(asset)
             }
             Err(e) => {
-                info!(target: BINARY_RESOLVER_LOG_TARGET,"Error finding asset for version: {:?}. Error: {:?}", self.selected_version, e);
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Error finding asset for version: {:?}. Error: {:?}", selected_version, e);
                 None
             }
         }
@@ -242,25 +232,19 @@ impl BinaryManager {
     pub fn select_highest_version(&mut self) -> Option<Version> {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Selecting version for binary: {:?}", self.binary_name);
 
-        let current_selected_version = self.selected_version.clone();
         let online_selected_version = self.select_highest_online_version();
         let local_selected_version = self.select_highest_local_version();
 
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Current selected version: {:?}", current_selected_version);
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Online selected version: {:?}", online_selected_version);
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Local selected version: {:?}", local_selected_version);
 
         let highest_version = Version::max(
-            current_selected_version.unwrap_or(Version::new(0, 0, 0)),
-            Version::max(
                 online_selected_version.unwrap_or(Version::new(0, 0, 0)),
                 local_selected_version.unwrap_or(Version::new(0, 0, 0)),
-            ),
         );
 
         if highest_version == Version::new(0, 0, 0) {
             self.is_highest_version_missing = true;
-            self.selected_version = None;
             return None;
         }
 
@@ -273,10 +257,9 @@ impl BinaryManager {
             self.is_highest_version_missing = true;
         }
 
-        self.selected_version = Some(highest_version.clone());
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Selected highest version: {:?}", self.selected_version);
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Selected highest version: {:?}", highest_version);
 
-        self.selected_version.clone()
+        Some(highest_version.clone())
     }
 
     pub fn check_if_files_for_version_exist(&self, version: Option<Version>) -> bool {
@@ -335,21 +318,22 @@ impl BinaryManager {
 
     pub async fn download_selected_version(
         &self,
+        selected_version: Option<Version>,
         progress_tracker: ProgressTracker,
     ) -> Option<PathBuf> {
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloading version: {:?}", self.selected_version);
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloading version: {:?}", selected_version);
 
-        if self.selected_version.is_none() {
+        if selected_version.is_none() {
             info!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
             return None;
         }
 
-        let asset = self.get_asset_for_selected_version().unwrap();
+        let asset = self.get_asset_for_selected_version(selected_version.clone().unwrap()).unwrap();
 
         let destination_dir = self
             .adapter
             .get_binary_folder()
-            .join(self.selected_version.clone().unwrap().to_string());
+            .join(selected_version.clone().unwrap().to_string());
 
         // This is a safety check to ensure that the destination directory is empty
         // Its special case for tari repo, where zip will inclue mutliple binaries
@@ -361,7 +345,7 @@ impl BinaryManager {
             std::fs::create_dir_all(&destination_dir).unwrap();
         }
 
-        let in_progress_dir = self.create_in_progress_folder();
+        let in_progress_dir = self.create_in_progress_folder_for_selected_version(selected_version.clone().unwrap());
         let in_progress_file_zip = in_progress_dir.join(asset.name);
 
         match download_file_with_retries(
@@ -372,8 +356,8 @@ impl BinaryManager {
         .await
         {
             Ok(_) => {
-                info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloaded version: {:?}", self.selected_version);
-                info!(target: BINARY_RESOLVER_LOG_TARGET,"Extracting version: {:?}", self.selected_version);
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloaded version: {:?}", selected_version.clone());
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Extracting version: {:?}", selected_version.clone());
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Destination dir: {:?}", destination_dir);
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"In progress file: {:?}", in_progress_file_zip);
 
@@ -383,7 +367,7 @@ impl BinaryManager {
                 return Some(in_progress_file_zip);
             }
             Err(e) => {
-                info!(target: BINARY_RESOLVER_LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", self.selected_version, e);
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", selected_version, e);
                 return None;
             }
         }
@@ -425,13 +409,18 @@ impl BinaryManager {
         }
     }
 
-    pub fn get_selected_version(&self) -> Option<Version> {
-        self.selected_version.clone()
+    pub fn set_used_version(&mut self, version: Version) {
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Setting used version: {:?}", version);
+        self.used_version = Some(version);
+    }
+
+    pub fn get_used_version(&self) -> Option<Version> {
+        self.used_version.clone()
     }
 
     pub fn get_base_dir(&self) -> PathBuf {
         self.adapter
             .get_binary_folder()
-            .join(self.selected_version.clone().unwrap().to_string())
+            .join(self.used_version.clone().unwrap().to_string())
     }
 }
