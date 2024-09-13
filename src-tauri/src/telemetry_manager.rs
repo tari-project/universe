@@ -371,6 +371,10 @@ async fn send_telemetry_data(
     let request = reqwest::Client::new();
     let mut request_builder = request
         .post(format!("{}/miner/heartbeat", airdrop_api_url))
+        .header(
+            "User-Agent".to_string(),
+            format!("tari-universe/{}", data.version.clone()),
+        )
         .json(&data);
 
     if let Some(token) = airdrop_access_token.clone() {
