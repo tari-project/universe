@@ -175,6 +175,12 @@ impl BinaryManager {
         is_meet_semver && is_meet_network_prerelease
     }
 
+    fn check_if_version_exceeds_requirements(&self, version: &Version) -> bool {
+        !self.online_versions_list
+            .iter()
+            .any(|v| v.version.gt(version))
+    }
+
     pub fn select_highest_version(&mut self) -> Option<Version> {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Selecting version for binary: {:?}", self.binary_name);
 
@@ -245,6 +251,11 @@ impl BinaryManager {
             if self.check_if_version_meet_requirements(&version_info.version) {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Adding version to online versions list: {:?}", version_info.version);
                 self.online_versions_list.push(version_info);
+            }else {
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Skipping version: {:?}", version_info.version);
+                if self.check_if_version_exceeds_requirements(&version_info.version) {
+                    warn!(target: BINARY_RESOLVER_LOG_TARGET,"Version: {:?} is higher then maximum version from requirements", version_info.version);
+                }
             }
         }
 

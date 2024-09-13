@@ -182,7 +182,6 @@ impl BinaryResolver {
         manager.read_local_versions().await;
 
         if should_check_for_update {
-            println!("Checking for updates from flag check");
             // Will populate Vec of downloaded versions that meet the requirements
             manager.check_for_updates().await;
         }
@@ -192,7 +191,6 @@ impl BinaryResolver {
 
         // This covers case when we do not check newest version and there is no local version
         if !should_check_for_update && highest_version.is_none() {
-            println!("Checking for updates from couuldn't find highest verison");
             manager.check_for_updates().await;
             highest_version = manager.select_highest_version();
             manager
