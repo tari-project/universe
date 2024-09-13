@@ -19,6 +19,8 @@ import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx
 import useMining from '@app/hooks/mining/useMining.ts';
 
 import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
+import { useMemo } from 'react';
+import SettingsDialog from './containers/SideBar/components/Settings/SettingsDialog.tsx';
 
 export default function App() {
     useAirdropSyncState();
@@ -33,15 +35,21 @@ export default function App() {
     const view = useUIStore((s) => s.view);
     const visualMode = useUIStore((s) => s.visualMode);
 
-    const canRenderMain = !isShuttingDown && !showSplash;
-    const splashScreenMarkup = <SplashScreen />;
-    const shutDownMarkup = isShuttingDown ? <ShuttingDownScreen /> : null;
-    const mainMarkup = canRenderMain ? (
-        <DashboardContainer>
-            <SideBar />
-            <Dashboard status={view} />
-        </DashboardContainer>
-    ) : null;
+    const shutDownMarkup = useMemo(() => {
+        return isShuttingDown ? <ShuttingDownScreen /> : null;
+    }, [isShuttingDown]);
+    const mainMarkup = useMemo(() => {
+        if (!isShuttingDown && !showSplash) {
+            return (
+                <DashboardContainer>
+                    <SideBar />
+                    <Dashboard status={view} />
+                </DashboardContainer>
+            );
+        } else {
+            return null;
+        }
+    }, [isShuttingDown, showSplash, view]);
 
     return (
         <ThemeProvider>
@@ -55,9 +63,10 @@ export default function App() {
                  */}
                 <MotionConfig reducedMotion="user">
                     <AutoUpdateDialog />
+                    <SettingsDialog />
                     <LayoutGroup id="app-content">
                         <AirdropLogin />
-                        {splashScreenMarkup}
+                        <SplashScreen />
                         {shutDownMarkup}
                         {!visualMode || view != 'mining' ? (
                             <BackgroundImage layout transition={{ duration: 0.3 }} />

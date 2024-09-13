@@ -13,7 +13,8 @@ interface AppState {
     setupTitleParams: Record<string, string>;
     setupProgress: number;
     setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) => void;
-
+    isSettingsOpen: boolean;
+    setIsSettingsOpen: (value: boolean) => void;
     // gui
     isSettingUp: boolean;
 
@@ -36,6 +37,8 @@ export const useAppStateStore = create<AppState>()((set) => ({
     setupProgress: 0,
     setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
         set({ setupTitle, setupTitleParams, setupProgress }),
+    isSettingsOpen: false,
+    setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
 
     // functions
     settingUpFinished: () => set({ isSettingUp: false }),
