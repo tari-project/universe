@@ -83,9 +83,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
             args.push("-p".to_string());
             args.push("base_node.storage.pruning_horizon=100".to_string());
         }
+        // Uncomment to test winning blocks
         // if cfg!(debug_assertions) {
-        //     args.push("--network".to_string());
-        //     args.push("localnet".to_string());
+        // args.push("--network".to_string());
+        // args.push("localnet".to_string());
         // }
         if self.use_tor {
             args.push("-p".to_string());
