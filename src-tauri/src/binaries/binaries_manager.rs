@@ -2,6 +2,7 @@ use std::{collections::HashMap, ops::Deref, path::PathBuf, str::FromStr};
 
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 use tari_utilities::message_format::MessageFormat;
 
 use crate::{
@@ -25,6 +26,8 @@ pub struct BinaryManager {
     binary_name: String,
 
     version_requirements: VersionReq,
+    network_prerelease_prefix: Option<String>,
+
     online_versions_list: Vec<VersionDownloadInfo>,
     local_aviailable_versions_list: Vec<Version>,
 
@@ -68,6 +71,7 @@ impl BinaryManager {
         binary_name: String,
         adapter: Box<dyn LatestVersionApiAdapter>,
         versions_requirements_path: PathBuf,
+        network_prerelease_prefix: Option<String>,
     ) -> Self {
         let version_requirements = BinaryManager::read_version_requirements(
             binary_name.clone(),
@@ -76,6 +80,7 @@ impl BinaryManager {
 
         Self {
             binary_name: binary_name.clone(),
+            network_prerelease_prefix,
             version_requirements,
             online_versions_list: Vec::new(),
             local_aviailable_versions_list: Vec::new(),
@@ -166,6 +171,20 @@ impl BinaryManager {
         }
     }
 
+    fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if version meets requirements: {:?}", version);
+        let is_meet_semver = self.version_requirements.matches(version);
+        let is_meet_network_prerelease = match self.network_prerelease_prefix.is_none() {
+            true => true,
+            false => !version.pre.matches(self.network_prerelease_prefix.clone().unwrap().as_str()).collect::<Vec<&str>>().is_empty(),
+        };
+
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Version meets semver requirements: {:?}", is_meet_semver);
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Version meets network prerelease requirements: {:?}", is_meet_network_prerelease);
+
+        is_meet_semver && is_meet_network_prerelease
+    }
+
     // async fn download_checksum(&mut self,progress_tracker: ProgressTracker) -> Option<PathBuf> {
     //     info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloading checksum for version: {:?}", self.selected_version);
 
@@ -224,6 +243,10 @@ impl BinaryManager {
         let online_selected_version = self.select_highest_online_version();
         let local_selected_version = self.select_highest_local_version();
 
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Current selected version: {:?}", current_selected_version);
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Online selected version: {:?}", online_selected_version);
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Local selected version: {:?}", local_selected_version);
+
         let highest_version = Version::max(
             current_selected_version.unwrap_or(Version::new(0, 0, 0)),
             Version::max(
@@ -254,17 +277,21 @@ impl BinaryManager {
     }
 
     pub fn check_if_files_for_version_exist(&self, version:Option<Version>) -> bool {
-        info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if files for selected version exist: {:?}", self.selected_version);
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
 
-        if self.selected_version.is_none() {
+        if version.is_none() {
             info!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
             return false;
         }
 
         let binary_folder = self.adapter.get_binary_folder();
-        let version_folder = binary_folder.join(version.unwrap().to_string());
+        let version_folder = binary_folder.join(version.clone().unwrap().to_string());
         let binary_file =
-            version_folder.join(Binaries::from_name(&self.binary_name).unwrap().binary_file_name(self.selected_version.clone().unwrap()));
+            version_folder.join(Binaries::from_name(&self.binary_name).unwrap().binary_file_name(version.clone().unwrap()));
+
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Binary folder path: {:?}", binary_folder);
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Version folder path: {:?}", version_folder);
+        info!(target: BINARY_RESOLVER_LOG_TARGET,"Binary file path: {:?}", binary_file);
 
         let binary_file_exists = binary_file.exists();
 
@@ -289,8 +316,8 @@ impl BinaryManager {
         );
 
         for version_info in versions_info {
-            if self.version_requirements.matches(&version_info.version) {
-                info!(target: BINARY_RESOLVER_LOG_TARGET,"Adding version to online list: {:?}", version_info.version);
+            if self.check_if_version_meet_requirements(&version_info.version) {
+                info!(target: BINARY_RESOLVER_LOG_TARGET,"Adding version to online versions list: {:?}", version_info.version);
                 self.online_versions_list.push(version_info);
             }
         }
@@ -378,7 +405,9 @@ impl BinaryManager {
             let version_folder_name = version_folder.file_name();
             match Version::from_str(version_folder_name.to_str().unwrap()) {
                 Ok(version) => {
-                    if self.version_requirements.matches(&version) && self.check_if_files_for_version_exist(Some(version.clone())) {
+                    info!(target: BINARY_RESOLVER_LOG_TARGET,"Found local version: {:?}", version);
+                    if self.check_if_version_meet_requirements(&version) && self.check_if_files_for_version_exist(Some(version.clone())) {
+                        info!(target: BINARY_RESOLVER_LOG_TARGET,"Adding local version to list: {:?}", version);
                         self.local_aviailable_versions_list.push(version);
                     }
                 }

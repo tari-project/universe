@@ -4,6 +4,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{info, warn};
 use semver::{Version, VersionReq};
+use tari_common::configuration::Network;
 use std::collections::HashMap;
 use std::future::IntoFuture;
 use std::path::{self, PathBuf};
@@ -58,12 +59,19 @@ impl BinaryResolver {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
         let versions_requirements_path = path::absolute("./binaries_versions.json").unwrap();
 
+        let network_prerelease_prefix = match Network::get_current_or_user_setting_or_default() {
+           Network::NextNet => "rc",
+           Network::Esmeralda => "pre",
+           _ =>  panic!("Unsupported network"),
+        };
+
         binary_manager.insert(
             Binaries::Xmrig,
             BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
                 Box::new(XmrigVersionApiAdapter {}),
                 versions_requirements_path.clone(),
+                None,
             ),
         );
 
@@ -77,6 +85,7 @@ impl BinaryResolver {
                     specific_name: Some("opencl.*testnet".parse().expect("Bad regex string")),
                 }),
                 versions_requirements_path.clone(),
+                Some(network_prerelease_prefix.to_string()),
             ),
         );
 
@@ -90,6 +99,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 versions_requirements_path.clone(),
+                Some(network_prerelease_prefix.to_string()),
             ),
         );
 
@@ -103,6 +113,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 versions_requirements_path.clone(),
+                Some(network_prerelease_prefix.to_string()),
             ),
         );
 
@@ -116,6 +127,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 versions_requirements_path.clone(),
+                Some(network_prerelease_prefix.to_string()),
             ),
         );
 
@@ -129,6 +141,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 versions_requirements_path.clone(),
+                Some(network_prerelease_prefix.to_string()),
             ),
         );
 
@@ -167,6 +180,7 @@ impl BinaryResolver {
         manager.read_local_versions().await;
 
         if should_check_for_update {
+            println!("Checking for updates from flag check");
             // Will populate Vec of downloaded versions that meet the requirements
             manager.check_for_updates().await;
         }
@@ -176,6 +190,7 @@ impl BinaryResolver {
 
         // This covers case when we do not check newest version and there is no local version
         if !should_check_for_update && highest_version.is_none() {
+            println!("Checking for updates from couuldn't find highest verison");
             manager.check_for_updates().await;
             highest_version = manager.select_highest_version();
             manager
