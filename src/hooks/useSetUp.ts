@@ -20,6 +20,7 @@ export function useSetUp() {
     const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
 
     const setMiningInitiated = useMiningStore(useShallow((s) => s.setMiningInitiated));
+    const setMiningControlsEnabled = useMiningStore(useShallow((s) => s.setMiningControlsEnabled));
     useVersions();
 
     const clearStorage = useCallback(() => {
@@ -38,6 +39,7 @@ export function useSetUp() {
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         setView('mining');
+                        setMiningControlsEnabled(true);
                     }
                     break;
                 default:
@@ -75,5 +77,13 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [clearStorage, isAfterAutoUpdate, setError, setMiningInitiated, setSetupDetails, setView]);
+    }, [
+        clearStorage,
+        isAfterAutoUpdate,
+        setError,
+        setMiningControlsEnabled,
+        setMiningInitiated,
+        setSetupDetails,
+        setView,
+    ]);
 }
