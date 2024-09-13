@@ -4,11 +4,11 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{info, warn};
 use semver::{Version, VersionReq};
-use tari_common::configuration::Network;
 use std::collections::HashMap;
 use std::future::IntoFuture;
 use std::path::{self, PathBuf};
 use std::sync::{Arc, LazyLock};
+use tari_common::configuration::Network;
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
 
@@ -60,9 +60,9 @@ impl BinaryResolver {
         let versions_requirements_path = path::absolute("./binaries_versions.json").unwrap();
 
         let network_prerelease_prefix = match Network::get_current_or_user_setting_or_default() {
-           Network::NextNet => "rc",
-           Network::Esmeralda => "pre",
-           _ =>  panic!("Unsupported network"),
+            Network::NextNet => "rc",
+            Network::Esmeralda => "pre",
+            _ => panic!("Unsupported network"),
         };
 
         binary_manager.insert(
@@ -206,7 +206,8 @@ impl BinaryResolver {
         }
 
         // Check if the files exist after download
-        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version.clone());
+        let check_if_files_exist =
+            manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
                 .download_selected_version(progress_tracker.clone())
@@ -214,7 +215,8 @@ impl BinaryResolver {
         }
 
         // Throw error if files still do not exist
-        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version.clone());
+        let check_if_files_exist =
+            manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             return Err(anyhow!("Failed to download binaries"));
         }

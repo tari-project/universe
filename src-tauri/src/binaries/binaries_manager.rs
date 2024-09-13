@@ -145,7 +145,6 @@ impl BinaryManager {
             return None;
         }
 
-
         let version_info = self
             .online_versions_list
             .iter()
@@ -176,7 +175,11 @@ impl BinaryManager {
         let is_meet_semver = self.version_requirements.matches(version);
         let is_meet_network_prerelease = match self.network_prerelease_prefix.is_none() {
             true => true,
-            false => !version.pre.matches(self.network_prerelease_prefix.clone().unwrap().as_str()).collect::<Vec<&str>>().is_empty(),
+            false => !version
+                .pre
+                .matches(self.network_prerelease_prefix.clone().unwrap().as_str())
+                .collect::<Vec<&str>>()
+                .is_empty(),
         };
 
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Version meets semver requirements: {:?}", is_meet_semver);
@@ -276,7 +279,7 @@ impl BinaryManager {
         self.selected_version.clone()
     }
 
-    pub fn check_if_files_for_version_exist(&self, version:Option<Version>) -> bool {
+    pub fn check_if_files_for_version_exist(&self, version: Option<Version>) -> bool {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
 
         if version.is_none() {
@@ -286,8 +289,11 @@ impl BinaryManager {
 
         let binary_folder = self.adapter.get_binary_folder();
         let version_folder = binary_folder.join(version.clone().unwrap().to_string());
-        let binary_file =
-            version_folder.join(Binaries::from_name(&self.binary_name).unwrap().binary_file_name(version.clone().unwrap()));
+        let binary_file = version_folder.join(
+            Binaries::from_name(&self.binary_name)
+                .unwrap()
+                .binary_file_name(version.clone().unwrap()),
+        );
 
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Binary folder path: {:?}", binary_folder);
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Version folder path: {:?}", version_folder);
@@ -371,7 +377,6 @@ impl BinaryManager {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Destination dir: {:?}", destination_dir);
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"In progress file: {:?}", in_progress_file_zip);
 
-
                 extract(&in_progress_file_zip, &destination_dir)
                     .await
                     .unwrap();
@@ -406,7 +411,9 @@ impl BinaryManager {
             match Version::from_str(version_folder_name.to_str().unwrap()) {
                 Ok(version) => {
                     info!(target: BINARY_RESOLVER_LOG_TARGET,"Found local version: {:?}", version);
-                    if self.check_if_version_meet_requirements(&version) && self.check_if_files_for_version_exist(Some(version.clone())) {
+                    if self.check_if_version_meet_requirements(&version)
+                        && self.check_if_files_for_version_exist(Some(version.clone()))
+                    {
                         info!(target: BINARY_RESOLVER_LOG_TARGET,"Adding local version to list: {:?}", version);
                         self.local_aviailable_versions_list.push(version);
                     }
