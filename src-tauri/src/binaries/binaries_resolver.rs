@@ -194,14 +194,14 @@ impl BinaryResolver {
             manager.check_for_updates().await;
             highest_version = manager.select_highest_version();
             manager
-                .download_selected_version(highest_version.clone(),progress_tracker.clone())
+                .download_selected_version(highest_version.clone(), progress_tracker.clone())
                 .await;
         }
 
         // If there is no version that meets the requirements, download the highest version
         if highest_version.clone().is_none() {
             manager
-                .download_selected_version(highest_version.clone(),progress_tracker.clone())
+                .download_selected_version(highest_version.clone(), progress_tracker.clone())
                 .await;
         }
 
@@ -210,7 +210,7 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_selected_version(highest_version.clone(),progress_tracker.clone())
+                .download_selected_version(highest_version.clone(), progress_tracker.clone())
                 .await;
         }
 
@@ -236,14 +236,16 @@ impl BinaryResolver {
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
 
-        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version.clone());
+        let check_if_files_exist =
+            manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_selected_version(highest_version.clone(),progress_tracker.clone())
+                .download_selected_version(highest_version.clone(), progress_tracker.clone())
                 .await;
         }
 
-        let check_if_files_exist = manager.check_if_files_for_version_exist(highest_version.clone());
+        let check_if_files_exist =
+            manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             return Err(anyhow!("Failed to download binaries"));
         }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap,  path::PathBuf, str::FromStr};
+use std::{collections::HashMap, path::PathBuf, str::FromStr};
 
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
@@ -30,7 +30,6 @@ pub struct BinaryManager {
     local_aviailable_versions_list: Vec<Version>,
 
     used_version: Option<Version>,
-    is_highest_version_missing: bool,
 
     adapter: Box<dyn LatestVersionApiAdapter>,
 }
@@ -80,7 +79,6 @@ impl BinaryManager {
             version_requirements,
             online_versions_list: Vec::new(),
             local_aviailable_versions_list: Vec::new(),
-            is_highest_version_missing: false,
             used_version: None,
             adapter,
         }
@@ -114,7 +112,7 @@ impl BinaryManager {
         selected_online_version.clone()
     }
 
-    fn create_in_progress_folder_for_selected_version(&self,selected_version: Version) -> PathBuf {
+    fn create_in_progress_folder_for_selected_version(&self, selected_version: Version) -> PathBuf {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Creating in progress folder for version: {:?}", selected_version);
 
         let binary_folder = self.adapter.get_binary_folder();
@@ -132,7 +130,7 @@ impl BinaryManager {
         in_progress_folder
     }
 
-    fn get_asset_for_selected_version(&self,selected_version: Version) -> Option<VersionAsset> {
+    fn get_asset_for_selected_version(&self, selected_version: Version) -> Option<VersionAsset> {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Getting asset for selected version: {:?}", selected_version);
 
         let version_info = self
@@ -239,22 +237,12 @@ impl BinaryManager {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Local selected version: {:?}", local_selected_version);
 
         let highest_version = Version::max(
-                online_selected_version.unwrap_or(Version::new(0, 0, 0)),
-                local_selected_version.unwrap_or(Version::new(0, 0, 0)),
+            online_selected_version.unwrap_or(Version::new(0, 0, 0)),
+            local_selected_version.unwrap_or(Version::new(0, 0, 0)),
         );
 
         if highest_version == Version::new(0, 0, 0) {
-            self.is_highest_version_missing = true;
             return None;
-        }
-
-        if self
-            .local_aviailable_versions_list
-            .contains(&highest_version)
-        {
-            self.is_highest_version_missing = false;
-        } else {
-            self.is_highest_version_missing = true;
         }
 
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Selected highest version: {:?}", highest_version);
@@ -328,7 +316,9 @@ impl BinaryManager {
             return None;
         }
 
-        let asset = self.get_asset_for_selected_version(selected_version.clone().unwrap()).unwrap();
+        let asset = self
+            .get_asset_for_selected_version(selected_version.clone().unwrap())
+            .unwrap();
 
         let destination_dir = self
             .adapter
@@ -345,7 +335,8 @@ impl BinaryManager {
             std::fs::create_dir_all(&destination_dir).unwrap();
         }
 
-        let in_progress_dir = self.create_in_progress_folder_for_selected_version(selected_version.clone().unwrap());
+        let in_progress_dir =
+            self.create_in_progress_folder_for_selected_version(selected_version.clone().unwrap());
         let in_progress_file_zip = in_progress_dir.join(asset.name);
 
         match download_file_with_retries(
