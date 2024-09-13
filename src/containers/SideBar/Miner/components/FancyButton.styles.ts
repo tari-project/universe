@@ -59,12 +59,12 @@ export const Orbit = styled(motion.div)`
 `;
 
 export const CubeWrapper = styled(motion.div)`
+    position: absolute;
     height: 24px;
     width: 24px;
-
-    position: absolute;
     svg {
         width: 24px;
         height: 24px;
+        position: relative;
     }
 `;
