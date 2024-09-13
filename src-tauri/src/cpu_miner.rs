@@ -69,7 +69,7 @@ impl CpuMiner {
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
                 debug!(target:LOG_TARGET, "Available CPUs: {}", available_cpus);
-                available_cpus.get() as isize
+                isize::try_from(available_cpus.get()).unwrap_or(1)
             }
             Err(err) => {
                 error!("Available CPUs: Unknown, error: {}", err);

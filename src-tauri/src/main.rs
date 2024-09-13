@@ -38,7 +38,6 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
-use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
@@ -384,7 +383,6 @@ async fn setup_inner(
         .await
         .get_unique_string()
         .await;
-    dbg!(&telemetry_id);
     if telemetry_id.is_empty() {
         telemetry_id = "unknown_miner_tari_universe".to_string();
     }
@@ -443,7 +441,6 @@ async fn set_p2pool_enabled(
         warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
         return Ok(());
     }
-    dbg!(origin_config.as_ref().map(|s| s.coinbase_extra.clone()));
     let mut origin_config = origin_config.clone().unwrap();
     if origin_config.p2pool_enabled != p2pool_enabled {
         if p2pool_enabled {
