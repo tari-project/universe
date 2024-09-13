@@ -9,7 +9,6 @@ import { useAppStateStore } from '../store/appStateStore.ts';
 import { useVersions } from '@app/hooks/useVersions.ts';
 
 import { useShallow } from 'zustand/react/shallow';
-import { setAnimationState } from '@app/visuals.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useSetUp() {
@@ -39,7 +38,6 @@ export function useSetUp() {
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         setView('mining');
-                        setMiningControlsEnabled(true);
                     }
                     break;
                 default:
@@ -52,26 +50,10 @@ export function useSetUp() {
                 clearInterval(intervalId);
                 startupInitiated.current = true;
                 clearStorage();
-                invoke('setup_application')
-                    .then(async (autoMiningEnabled) => {
-                        if (autoMiningEnabled) {
-                            console.info('Auto-Mining starting');
-                            await invoke('start_mining', {})
-                                .then(() => {
-                                    console.info('Auto-Mining started.');
-                                    setMiningInitiated(true);
-                                    setAnimationState('start');
-                                })
-                                .catch((e) => {
-                                    console.error('Failed to start auto-mining:', e);
-                                    setError(e as string);
-                                });
-                        }
-                    })
-                    .catch((e) => {
-                        setError(`Failed to setup application: ${e}`);
-                        setView('mining');
-                    });
+                invoke('setup_application').catch((e) => {
+                    setError(`Failed to setup application: ${e}`);
+                    setView('mining');
+                });
             }
         }, 100);
         return () => {
