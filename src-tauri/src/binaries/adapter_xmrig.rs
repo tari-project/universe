@@ -20,7 +20,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 
     async fn download_and_get_checksum_path(
         &self,
-        directory: &PathBuf,
+        directory: PathBuf,
         download_info: VersionDownloadInfo,
         _: ProgressTracker,
     ) -> Result<PathBuf, Error> {
@@ -30,7 +30,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         // file name is SHA256SUMS
         // let platform = self.find_version_for_platform(version)?;
         let checksum_path = directory
-            .join(format!("xmrig-{}", download_info.version.to_string()))
+            .join(format!("xmrig-{}", download_info.version))
             .join("SHA256SUMS");
 
         // // extract and parse checksum from SHA256SUMS file to .sha256
@@ -54,7 +54,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         let binary_folder_path = cache_dir().unwrap().join("com.tari.universe").join("xmrig");
 
         if !binary_folder_path.exists() {
-            std::fs::create_dir_all(&binary_folder_path);
+            drop(std::fs::create_dir_all(&binary_folder_path));
         }
 
         binary_folder_path

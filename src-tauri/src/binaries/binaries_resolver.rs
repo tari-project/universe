@@ -1,4 +1,4 @@
-use crate::{progress_tracker, ProgressTracker};
+use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use semver::Version;
@@ -35,7 +35,7 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
 
     async fn download_and_get_checksum_path(
         &self,
-        directory: &PathBuf,
+        directory: PathBuf,
         download_info: VersionDownloadInfo,
         progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error>;
@@ -168,9 +168,7 @@ impl BinaryResolver {
             .get_used_version()
             .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
         let base_dir = manager.get_base_dir();
-        Ok(PathBuf::from(
-            base_dir.join(binary.binary_file_name(version)),
-        ))
+        Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
     pub async fn initalize_binary(

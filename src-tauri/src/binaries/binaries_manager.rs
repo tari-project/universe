@@ -148,7 +148,7 @@ impl BinaryManager {
 
         match self
             .adapter
-            .find_version_for_platform(version_info.clone().unwrap())
+            .find_version_for_platform(version_info.unwrap())
         {
             Ok(asset) => {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Found asset for version: {:?}", selected_version);
@@ -164,13 +164,14 @@ impl BinaryManager {
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if version meets requirements: {:?}", version);
         let is_meet_semver = self.version_requirements.matches(version);
-        let is_meet_network_prerelease = match self.network_prerelease_prefix.is_none() {
-            true => true,
-            false => !version
+        let is_meet_network_prerelease = if self.network_prerelease_prefix.is_none() {
+            true
+        } else {
+            !version
                 .pre
                 .matches(self.network_prerelease_prefix.clone().unwrap().as_str())
                 .collect::<Vec<&str>>()
-                .is_empty(),
+                .is_empty()
         };
 
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Version meets semver requirements: {:?}", is_meet_semver);
@@ -367,7 +368,7 @@ impl BinaryManager {
                     let checksum_file = self
                         .adapter
                         .download_and_get_checksum_path(
-                            &destination_dir,
+                            destination_dir.clone(),
                             version_download_info,
                             progress_tracker.clone(),
                         )
@@ -383,21 +384,21 @@ impl BinaryManager {
                     {
                         Ok(_) => {
                             info!(target: BINARY_RESOLVER_LOG_TARGET,"Checksum validated for version: {:?}", selected_version.clone());
-                            return Some(in_progress_file_zip);
+                            Some(in_progress_file_zip)
                         }
                         Err(e) => {
                             info!(target: BINARY_RESOLVER_LOG_TARGET,"Error validating checksum for version: {:?}. Error: {:?}", selected_version.clone(), e);
-                            std::fs::remove_dir_all(&destination_dir).unwrap();
-                            return None;
+                            std::fs::remove_dir_all(destination_dir.clone()).unwrap();
+                            None
                         }
                     }
                 } else {
-                    return Some(in_progress_file_zip);
+                    Some(in_progress_file_zip)
                 }
             }
             Err(e) => {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", selected_version, e);
-                return None;
+                None
             }
         }
     }

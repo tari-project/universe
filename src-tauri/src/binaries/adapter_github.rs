@@ -4,7 +4,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
-use tauri::{api::path::cache_dir, utils::platform};
+use tauri::api::path::cache_dir;
 
 use crate::{
     download_utils::download_file_with_retries, github, progress_tracker::ProgressTracker,
@@ -29,7 +29,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 
     async fn download_and_get_checksum_path(
         &self,
-        directory: &PathBuf,
+        directory: PathBuf,
         download_info: VersionDownloadInfo,
         progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error> {
@@ -55,7 +55,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .join(&self.repo);
 
         if !binary_folder_path.exists() {
-            std::fs::create_dir_all(&binary_folder_path);
+            drop(std::fs::create_dir_all(&binary_folder_path));
         }
 
         binary_folder_path

@@ -704,7 +704,6 @@ async fn get_seed_words(
 
 #[tauri::command]
 async fn start_mining<'r>(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -716,7 +715,6 @@ async fn start_mining<'r>(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = config.monero_address().to_string();
-    let progress_tracker = ProgressTracker::new(window.clone());
     if cpu_mining_enabled {
         let mm_proxy_port = state
             .mm_proxy_manager
