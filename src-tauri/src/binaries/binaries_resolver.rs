@@ -1,20 +1,15 @@
-use crate::download_utils::{download_file_with_retries, extract, validate_checksum};
 use crate::{progress_tracker, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{info, warn};
-use semver::{Version, VersionReq};
+use semver::Version;
 use std::collections::HashMap;
-use std::future::IntoFuture;
 use std::path::{self, PathBuf};
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 use tari_common::configuration::Network;
-use tokio::fs;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
-use super::binaries_list::get_binary_path;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
@@ -38,9 +33,12 @@ pub struct VersionAsset {
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error>;
 
-    // async fn get_checksum_path(&self, version: &VersionDownloadInfo) -> Option<PathBuf>;
-
-    // fn get_binary_file(&self, version: &VersionDownloadInfo) -> Option<PathBuf>;
+    async fn download_and_get_checksum_path(
+        &self,
+        directory: &PathBuf,
+        download_info: VersionDownloadInfo,
+        progress_tracker: ProgressTracker,
+    ) -> Result<PathBuf, Error>;
 
     fn get_binary_folder(&self) -> PathBuf;
 
@@ -72,6 +70,7 @@ impl BinaryResolver {
                 Box::new(XmrigVersionApiAdapter {}),
                 versions_requirements_path.clone(),
                 None,
+                true,
             ),
         );
 
@@ -86,6 +85,7 @@ impl BinaryResolver {
                 }),
                 versions_requirements_path.clone(),
                 Some(network_prerelease_prefix.to_string()),
+                true,
             ),
         );
 
@@ -100,6 +100,7 @@ impl BinaryResolver {
                 }),
                 versions_requirements_path.clone(),
                 Some(network_prerelease_prefix.to_string()),
+                true,
             ),
         );
 
@@ -114,6 +115,7 @@ impl BinaryResolver {
                 }),
                 versions_requirements_path.clone(),
                 Some(network_prerelease_prefix.to_string()),
+                true,
             ),
         );
 
@@ -128,6 +130,7 @@ impl BinaryResolver {
                 }),
                 versions_requirements_path.clone(),
                 Some(network_prerelease_prefix.to_string()),
+                true,
             ),
         );
 
@@ -142,6 +145,7 @@ impl BinaryResolver {
                 }),
                 versions_requirements_path.clone(),
                 Some(network_prerelease_prefix.to_string()),
+                true,
             ),
         );
 

@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use regex::Regex;
 use tauri::api::path::cache_dir;
 
-use crate::github;
+use crate::{github, progress_tracker::ProgressTracker};
 
 use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
 
@@ -18,9 +18,37 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         Ok(releases.clone())
     }
 
-    // fn get_checksum_path(&self, _version: &VersionDownloadInfo) -> Option<PathBuf> {
-    //     let bin_folder = self.get_binary_folder().join(_version.version.to_string());
-    // }
+    async fn download_and_get_checksum_path(
+        &self,
+        directory: &PathBuf,
+        download_info: VersionDownloadInfo,
+        _: ProgressTracker,
+    ) -> Result<PathBuf, Error> {
+        // When xmrig is downloaded checksum will be already in its folder so there is no need to download it
+        // directory parameter should point to folder where xmrig is extracted
+        // file with checksum should be in the same folder as xmrig
+        // file name is SHA256SUMS
+        // let platform = self.find_version_for_platform(version)?;
+        let checksum_path = directory
+            .join(format!("xmrig-{}", download_info.version.to_string()))
+            .join("SHA256SUMS");
+
+        // // extract and parse checksum from SHA256SUMS file to .sha256
+
+        // let checksums = std::fs::read_to_string(&checksum_path)?;
+        // let checksums: Vec<&str> = checksums.split('\n').collect();
+        // let checksum = checksums
+        //     .iter()
+        //     .find(|&c| c.contains(&platform.name))
+        //     .ok_or(anyhow::anyhow!("Failed to get checksum"))?;
+        // let checksum = checksum.split(' ').collect::<Vec<&str>>()[0];
+
+        // let checksum_path = directory.join(format!("xmrig.sha256", checksum));
+
+        // std::fs::write(&checksum_path, checksum)?;
+
+        Ok(checksum_path)
+    }
 
     fn get_binary_folder(&self) -> PathBuf {
         let binary_folder_path = cache_dir().unwrap().join("com.tari.universe").join("xmrig");

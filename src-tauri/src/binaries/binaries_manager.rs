@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     binaries::binaries_resolver::BINARY_RESOLVER_LOG_TARGET,
-    download_utils::{download_file_with_retries, extract},
+    download_utils::{download_file_with_retries, extract, validate_checksum},
     progress_tracker::ProgressTracker,
 };
 
@@ -25,6 +25,7 @@ pub struct BinaryManager {
 
     version_requirements: VersionReq,
     network_prerelease_prefix: Option<String>,
+    should_validate_checksum: bool,
 
     online_versions_list: Vec<VersionDownloadInfo>,
     local_aviailable_versions_list: Vec<Version>,
@@ -67,6 +68,7 @@ impl BinaryManager {
         adapter: Box<dyn LatestVersionApiAdapter>,
         versions_requirements_path: PathBuf,
         network_prerelease_prefix: Option<String>,
+        should_validate_checksum: bool,
     ) -> Self {
         let version_requirements = BinaryManager::read_version_requirements(
             binary_name.clone(),
@@ -75,6 +77,7 @@ impl BinaryManager {
 
         Self {
             binary_name: binary_name.clone(),
+            should_validate_checksum,
             network_prerelease_prefix,
             version_requirements,
             online_versions_list: Vec::new(),
@@ -337,12 +340,12 @@ impl BinaryManager {
 
         let in_progress_dir =
             self.create_in_progress_folder_for_selected_version(selected_version.clone().unwrap());
-        let in_progress_file_zip = in_progress_dir.join(asset.name);
+        let in_progress_file_zip = in_progress_dir.join(asset.clone().name);
 
         match download_file_with_retries(
-            asset.url.as_str(),
+            asset.clone().url.as_str(),
             &in_progress_file_zip,
-            progress_tracker,
+            progress_tracker.clone(),
         )
         .await
         {
@@ -352,10 +355,45 @@ impl BinaryManager {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Destination dir: {:?}", destination_dir);
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"In progress file: {:?}", in_progress_file_zip);
 
-                extract(&in_progress_file_zip, &destination_dir)
+                extract(&in_progress_file_zip.clone(), &destination_dir)
                     .await
                     .unwrap();
-                return Some(in_progress_file_zip);
+
+                if self.should_validate_checksum {
+                    let version_download_info = VersionDownloadInfo {
+                        version: selected_version.clone().unwrap(),
+                        assets: vec![asset.clone()],
+                    };
+                    let checksum_file = self
+                        .adapter
+                        .download_and_get_checksum_path(
+                            &destination_dir,
+                            version_download_info,
+                            progress_tracker.clone(),
+                        )
+                        .await
+                        .unwrap();
+
+                    match validate_checksum(
+                        in_progress_file_zip.clone(),
+                        checksum_file,
+                        asset.clone().name,
+                    )
+                    .await
+                    {
+                        Ok(_) => {
+                            info!(target: BINARY_RESOLVER_LOG_TARGET,"Checksum validated for version: {:?}", selected_version.clone());
+                            return Some(in_progress_file_zip);
+                        }
+                        Err(e) => {
+                            info!(target: BINARY_RESOLVER_LOG_TARGET,"Error validating checksum for version: {:?}. Error: {:?}", selected_version.clone(), e);
+                            std::fs::remove_dir_all(&destination_dir).unwrap();
+                            return None;
+                        }
+                    }
+                } else {
+                    return Some(in_progress_file_zip);
+                }
             }
             Err(e) => {
                 info!(target: BINARY_RESOLVER_LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", selected_version, e);

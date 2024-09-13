@@ -2,11 +2,13 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::info;
+use log::{error, info};
 use regex::Regex;
 use tauri::{api::path::cache_dir, utils::platform};
 
-use crate::github;
+use crate::{
+    download_utils::download_file_with_retries, github, progress_tracker::ProgressTracker,
+};
 
 use super::binaries_resolver::{
     LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo, BINARY_RESOLVER_LOG_TARGET,
@@ -25,44 +27,26 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         Ok(releases.clone())
     }
 
-    // async fn get_checksum_path(&self, version: &VersionDownloadInfo) -> Option<PathBuf> {
-    //     let platform = self.find_version_for_platform(version);
+    async fn download_and_get_checksum_path(
+        &self,
+        directory: &PathBuf,
+        download_info: VersionDownloadInfo,
+        progress_tracker: ProgressTracker,
+    ) -> Result<PathBuf, Error> {
+        let asset = self.find_version_for_platform(&download_info)?;
+        let checksum_path = directory
+            .join("in_progress")
+            .join(format!("{}.sha256", asset.name));
+        let checksum_url = format!("{}.sha256", asset.url);
 
-    //     if platform.is_err() {
-    //         info!(target: BINARY_RESOLVER_LOG_TARGET, "Failed to get platform asset");
-    //         return None;
-    //     }
-
-    //     let version_dir = self
-    //         .get_binary_folder()
-    //         .join(version.clone().version.to_string())
-
-    //     let checksum_path = version_dir.join(format!("{}.sha256", platform.unwrap().name));
-
-    //     match checksum_path.exists() {
-    //         true => Some(checksum_path),
-    //         false => None,
-    //     }
-    // }
-
-    // fn  get_binary_file(&self, version: &VersionDownloadInfo) -> Option<PathBuf> {
-    //     let platform = self.find_version_for_platform(version);
-
-    //     if platform.is_err() {
-    //         info!(target: BINARY_RESOLVER_LOG_TARGET, "Failed to get platform asset");
-    //         return None;
-    //     }
-
-    //     let binary_path = self
-    //         .get_binary_folder()
-    //         .join(version.clone().version.to_string())
-    //         .join(format!("{}.zip", platform.unwrap().name));
-
-    //     match binary_path.exists() {
-    //         true => Some(binary_path),
-    //         false => None,
-    //     }
-    // }
+        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
+            Ok(_) => Ok(checksum_path),
+            Err(e) => {
+                error!(target: BINARY_RESOLVER_LOG_TARGET, "Failed to download checksum file: {}", e);
+                Err(e)
+            }
+        }
+    }
 
     fn get_binary_folder(&self) -> PathBuf {
         let binary_folder_path = cache_dir()

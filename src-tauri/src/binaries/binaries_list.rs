@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 use semver::Version;
-use tauri::api::version;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Binaries {
