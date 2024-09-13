@@ -14,7 +14,7 @@ use super::{
     Binaries,
 };
 
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 
 #[derive(Deserialize, Serialize)]
 struct BinaryVersionsJsonContent {
