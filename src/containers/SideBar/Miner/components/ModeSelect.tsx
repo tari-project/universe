@@ -6,7 +6,7 @@ import { Select } from '@app/components/elements/inputs/Select.tsx';
 
 import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
@@ -17,8 +17,6 @@ import { useShallow } from 'zustand/react/shallow';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
-    const [isLoading, setIsLoading] = useState(false);
-    const [miningLoading, setMiningLoading] = useState(false);
 
     const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
     const mode = useAppStatusStore(useShallow((s) => s.mode));
@@ -26,62 +24,40 @@ function ModeSelect() {
     const cpuIsMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
 
-    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
-    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
-    const miningControlsEnabled = useMiningStore(useShallow((s) => s.miningControlsEnabled));
+    const isMiningControlsEnabled = useMiningStore(useShallow((s) => s.miningControlsEnabled));
+    const isChangingMode = useMiningStore((s) => s.isChangingMode);
+    const setIsChangingMode = useMiningStore((s) => s.setIsChangingMode);
+
+    const isMiningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
     const isMining = cpuIsMining || gpuIsMining;
 
-    const { handleStop, handleStart } = useMiningControls();
+    const { handlePause, handleStart, isMiningLoading } = useMiningControls();
 
-    const prevMode = useRef(mode);
-    const wasMining = useRef(false);
-
-    const changeMode = useCallback(
+    const handleChange = useCallback(
         async (mode: string) => {
+            setIsChangingMode(true);
             if (isMining) {
-                wasMining.current = true;
-                setMiningInitiated(false);
-                await handleStop({ isPause: true });
-            } else {
-                wasMining.current = false;
+                await handlePause();
             }
-
             try {
                 await invoke('set_mode', { mode });
-
-                if (wasMining.current) {
-                    setMiningInitiated(true);
+                if (isMiningInitiated) {
                     await handleStart();
                 }
             } catch (e) {
                 console.error(e);
+                setIsChangingMode(false);
             }
         },
-        [handleStart, handleStop, isMining, setMiningInitiated]
+        [isMining, handlePause, handleStart, isMiningInitiated, setIsChangingMode]
     );
-
-    const handleChange = (value: string) => {
-        setIsLoading(true);
-        changeMode(value);
-    };
-
-    useEffect(() => {
-        if (isLoading && prevMode.current !== mode) {
-            setIsLoading(false);
-            prevMode.current = mode;
-        }
-    }, [isLoading, mode]);
-
-    useEffect(() => {
-        setMiningLoading((miningInitiated && !isMining) || (!miningInitiated && isMining));
-    }, [isMining, miningInitiated]);
 
     return (
         <TileItem layoutId="miner-mode-select-tile" layout>
             <Typography>{t('mode')}</Typography>
             <Select
-                disabled={miningLoading || isLoading || isSettingUp || (isMining && !miningControlsEnabled)}
-                loading={isLoading || miningLoading}
+                disabled={isMiningLoading || isChangingMode || isSettingUp || !isMiningControlsEnabled}
+                loading={isChangingMode}
                 onChange={handleChange}
                 selectedValue={mode}
                 options={[

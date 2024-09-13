@@ -7,15 +7,12 @@ interface State {
     earnings?: number;
     postBlockAnimation?: boolean;
     timerPaused?: boolean;
-    miningLoading?: boolean;
     displayBlockHeight?: number;
     hashrateReady?: boolean;
 
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
-    isMiningInProgress: boolean;
     isChangingMode: boolean;
-    isConnectionLostDuringMining: boolean;
 }
 interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
@@ -24,13 +21,8 @@ interface Actions {
     setPostBlockAnimation: (postBlockAnimation: boolean) => void;
     setTimerPaused: (timerPaused: boolean) => void;
 
-    setMiningLoading: (miningLoading: boolean) => void;
-    setHashrateReady: (hashrateReady: boolean) => void;
-
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setMiningInitiated: (miningInitiated: State['miningInitiated']) => void;
-    setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
-    setIsMiningInProgress: (isMiningInProgress: State['isMiningInProgress']) => void;
     setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
 }
 type MiningStoreState = State & Actions;
@@ -39,13 +31,10 @@ const initialState: State = {
     displayBlockHeight: undefined,
     timerPaused: false,
     postBlockAnimation: false,
-    miningLoading: false,
     hashrateReady: false,
     miningInitiated: false,
-    isMiningInProgress: false,
     isChangingMode: false,
-    isConnectionLostDuringMining: false,
-    miningControlsEnabled: false,
+    miningControlsEnabled: true,
 };
 
 export const useMiningStore = create<MiningStoreState>()((set) => ({
@@ -55,13 +44,8 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
     setEarnings: (earnings) => set({ earnings }),
     setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
     setTimerPaused: (timerPaused) => set({ timerPaused }),
-    setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
-    setHashrateReady: (hashrateReady) => set({ hashrateReady }),
 
     setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
-    setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
-    setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-    setMiningControlsEnabled: (miningControlsEnabled) =>
-        set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
+    setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
 }));
