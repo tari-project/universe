@@ -28,7 +28,7 @@ export default function ButtonOrbitAnimation() {
                         y: 150 - size / 2,
                         x: 150 - size / 2,
                     }}
-                    transition={{ ...orbitTransition, delay: (index + 1) * 1.5 }}
+                    transition={{ ...orbitTransition, delay: index * 1.5 }}
                     animate={{ rotate: index % 2 === 0 ? 360 : -360, opacity: [0.7, 0.5, 0.8, 1] }}
                 >
                     {index % 2 === 0 ? (

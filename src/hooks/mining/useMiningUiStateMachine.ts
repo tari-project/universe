@@ -4,7 +4,7 @@ import { useCPUStatusStore } from '@app/store/useCPUStatusStore';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { setAnimationState } from '@app/visuals';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMiningControls } from './useMiningControls';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -24,17 +24,19 @@ export const useUiMiningStateMachine = () => {
     const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
     const cpuIsMining = useCPUStatusStore(useShallow((s) => s.is_mining));
     const isMining = cpuIsMining || gpuIsMining;
-
     const isSetupFinished = !useAppStateStore(useShallow((s) => s.isSettingUp));
 
-    useEffect(() => {
-        if (isSetupFinished && isAutoMiningEnabled && isMiningEnabled) {
-            handleStart();
-        }
-        // Dependencies are intentionally omitted to prevent this effect from running again
-    }, [isSetupFinished]);
+    const hasStartedInit = useRef(false);
 
-    console.log('window?.glApp?.stateManager', window?.glApp?.stateManager);
+    useEffect(() => {
+        if (isSetupFinished && !!isAutoMiningEnabled && !!isMiningEnabled && !hasStartedInit.current) {
+            handleStart();
+            hasStartedInit.current = true;
+        }
+    }, [handleStart, isAutoMiningEnabled, isMiningEnabled, isSetupFinished]);
+
+    const statusIndex = window?.glApp?.stateManager?.statusIndex;
+
     useEffect(() => {
         if (isSetupFinished && isMiningEnabled && isMining) {
             setAnimationState('start');
@@ -52,6 +54,7 @@ export const useUiMiningStateMachine = () => {
             return;
         }
     }, [
+        statusIndex,
         isSetupFinished,
         isMiningEnabled,
         isChangingMode,
@@ -59,6 +62,5 @@ export const useUiMiningStateMachine = () => {
         isAutoMiningEnabled,
         isMiningInitiated,
         setIsChangingMode,
-        window?.glApp?.stateManager.statusIndex,
     ]);
 };
