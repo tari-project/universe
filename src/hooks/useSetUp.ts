@@ -68,5 +68,6 @@ export function useSetUp() {
         setSetupDetails,
         setView,
         settingUpFinished,
+        setCriticalError,
     ]);
 }
