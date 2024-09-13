@@ -14,7 +14,7 @@ use super::{
     Binaries,
 };
 
-use log::{info, warn};
+use log::{debug, error, info, warn};
 
 #[derive(Deserialize, Serialize)]
 struct BinaryVersionsJsonContent {
@@ -36,33 +36,6 @@ pub struct BinaryManager {
 }
 
 impl BinaryManager {
-    fn read_version_requirements(binary_name: String, path: PathBuf) -> VersionReq {
-        info!(target: BINARY_RESOLVER_LOG_TARGET, "Reading version requirements for {:?} from: {:?}",binary_name, path);
-
-        println!(
-            "Reading version requirements for {:?} from: {:?}",
-            binary_name, path
-        );
-
-        let json_content: BinaryVersionsJsonContent =
-            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
-        let version_req = json_content.binaries.get(&binary_name);
-
-        match version_req {
-            Some(version_req) => {
-                info!(target: BINARY_RESOLVER_LOG_TARGET,
-                    "Version requirements for {:?}: {:?}",
-                    binary_name, version_req
-                );
-                VersionReq::from_str(version_req).unwrap()
-            }
-            None => {
-                warn!("No version requirements found for binary: {:?}. Will try to run with highest version found",binary_name);
-                VersionReq::from_str("*").unwrap()
-            }
-        }
-    }
-
     pub fn new(
         binary_name: String,
         adapter: Box<dyn LatestVersionApiAdapter>,
@@ -87,11 +60,33 @@ impl BinaryManager {
         }
     }
 
+    fn read_version_requirements(binary_name: String, path: PathBuf) -> VersionReq {
+        info!(target: BINARY_RESOLVER_LOG_TARGET, "Reading version requirements for {:?} from: {:?}",binary_name, path);
+
+        let json_content: BinaryVersionsJsonContent =
+            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        let version_req = json_content.binaries.get(&binary_name);
+
+        match version_req {
+            Some(version_req) => {
+                info!(target: BINARY_RESOLVER_LOG_TARGET,
+                    "Version requirements for {:?}: {:?}",
+                    binary_name, version_req
+                );
+                VersionReq::from_str(version_req).unwrap()
+            }
+            None => {
+                warn!("No version requirements found for binary: {:?}. Will try to run with highest version found",binary_name);
+                VersionReq::from_str("*").unwrap()
+            }
+        }
+    }
+
     fn select_highest_local_version(&mut self) -> Option<Version> {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Selecting highest local version for binary: {:?}", self.binary_name);
 
         if self.local_aviailable_versions_list.is_empty() {
-            info!(target: BINARY_RESOLVER_LOG_TARGET,"No local versions found for binary: {:?}", self.binary_name);
+            warn!(target: BINARY_RESOLVER_LOG_TARGET,"No local versions found for binary: {:?}", self.binary_name);
             return None;
         }
 
@@ -105,7 +100,7 @@ impl BinaryManager {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Selecting highest online version for binary: {:?}", self.binary_name);
 
         if self.online_versions_list.is_empty() {
-            info!(target: BINARY_RESOLVER_LOG_TARGET,"No online versions found for binary: {:?}", self.binary_name);
+            warn!(target: BINARY_RESOLVER_LOG_TARGET,"No online versions found for binary: {:?}", self.binary_name);
             return None;
         }
 
@@ -142,7 +137,7 @@ impl BinaryManager {
             .find(|v| v.version.eq(&selected_version));
 
         if version_info.is_none() {
-            info!(target: BINARY_RESOLVER_LOG_TARGET,"No version info found for version: {:?}", selected_version);
+            warn!(target: BINARY_RESOLVER_LOG_TARGET,"No version info found for version: {:?}", selected_version);
             return None;
         }
 
@@ -155,7 +150,7 @@ impl BinaryManager {
                 Some(asset)
             }
             Err(e) => {
-                info!(target: BINARY_RESOLVER_LOG_TARGET,"Error finding asset for version: {:?}. Error: {:?}", selected_version, e);
+                error!(target: BINARY_RESOLVER_LOG_TARGET,"Error finding asset for version: {:?}. Error: {:?}", selected_version, e);
                 None
             }
         }
@@ -180,57 +175,6 @@ impl BinaryManager {
         is_meet_semver && is_meet_network_prerelease
     }
 
-    // async fn download_checksum(&mut self,progress_tracker: ProgressTracker) -> Option<PathBuf> {
-    //     info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloading checksum for version: {:?}", self.selected_version);
-
-    //     if self.selected_version.is_none() {
-    //         info!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
-    //         return None;
-    //     }
-
-    //     let asset = self.get_asset_for_selected_version().unwrap();
-    //     let in_progress_dir = self.create_in_progress_folder();
-
-    //     let in_progress_file_sha256 = in_progress_dir
-    //         .clone()
-    //         .join(format!("{}.sha256", asset.name));
-    //     let asset_sha256_url = format!("{}.sha256", asset.url.clone());
-
-    //     match download_file_with_retries(asset_sha256_url.as_str(), in_progress_file_sha256.deref(), progress_tracker).await {
-    //         Ok(_) => {
-    //             info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloaded checksum for version: {:?}", self.selected_version);
-    //             return Some(in_progress_file_sha256)
-    //         }
-    //         Err(e) => {
-    //             info!(target: BINARY_RESOLVER_LOG_TARGET,"Error downloading checksum for version: {:?}. Error: {:?}", self.selected_version, e);
-    //             return None
-    //         }
-    //     }
-
-    // }
-
-    // pub async fn validate_checksum_and_extract(&mut self, zip_file: PathBuf, checksum_file: PathBuf) -> bool {
-    //     info!(target: BINARY_RESOLVER_LOG_TARGET,"Validating checksum for version: {:?}", self.selected_version);
-
-    //     let asset = self.get_asset_for_selected_version().unwrap();
-    //     match validate_checksum(zip_file.clone(), checksum_file, asset.name).await {
-    //         Ok(_) => {
-    //             info!(target: BINARY_RESOLVER_LOG_TARGET,"Checksum validated for version: {:?}", self.selected_version);
-
-    //             let bin_dir = self.adapter.get_binary_folder().join(self.selected_version.clone().unwrap().to_string());
-
-    //             extract(zip_file.clone().as_path(), bin_dir.as_path()).await.unwrap();
-
-    //             return true
-    //         }
-    //         Err(e) => {
-    //             info!(target: BINARY_RESOLVER_LOG_TARGET,"Error validating checksum for version: {:?}. Error: {:?}", self.selected_version, e);
-    //             return false
-    //         }
-    //     }
-
-    // }
-
     pub fn select_highest_version(&mut self) -> Option<Version> {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Selecting version for binary: {:?}", self.binary_name);
 
@@ -246,6 +190,7 @@ impl BinaryManager {
         );
 
         if highest_version == Version::new(0, 0, 0) {
+            warn!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
             return None;
         }
 
@@ -258,7 +203,7 @@ impl BinaryManager {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
 
         if version.is_none() {
-            info!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
+            warn!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
             return false;
         }
 
@@ -316,7 +261,7 @@ impl BinaryManager {
         info!(target: BINARY_RESOLVER_LOG_TARGET,"Downloading version: {:?}", selected_version);
 
         if selected_version.is_none() {
-            info!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
+            warn!(target: BINARY_RESOLVER_LOG_TARGET,"No version selected");
             return None;
         }
 
@@ -335,7 +280,9 @@ impl BinaryManager {
         // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
         // extract will fail, so we need to remove all files from destination dir
         if destination_dir.exists() {
+            warn!(target: BINARY_RESOLVER_LOG_TARGET,"Destination dir exists. Removing all files from: {:?}", destination_dir);
             std::fs::remove_dir_all(&destination_dir).unwrap();
+            info!(target: BINARY_RESOLVER_LOG_TARGET,"Creating destination dir: {:?}", destination_dir);
             std::fs::create_dir_all(&destination_dir).unwrap();
         }
 
@@ -361,6 +308,7 @@ impl BinaryManager {
                     .unwrap();
 
                 if self.should_validate_checksum {
+                    info!(target: BINARY_RESOLVER_LOG_TARGET,"Validating checksum for version: {:?}", selected_version.clone());
                     let version_download_info = VersionDownloadInfo {
                         version: selected_version.clone().unwrap(),
                         assets: vec![asset.clone()],
@@ -387,7 +335,7 @@ impl BinaryManager {
                             Some(in_progress_file_zip)
                         }
                         Err(e) => {
-                            info!(target: BINARY_RESOLVER_LOG_TARGET,"Error validating checksum for version: {:?}. Error: {:?}", selected_version.clone(), e);
+                            error!(target: BINARY_RESOLVER_LOG_TARGET,"Error validating checksum for version: {:?}. Error: {:?}", selected_version.clone(), e);
                             std::fs::remove_dir_all(destination_dir.clone()).unwrap();
                             None
                         }
@@ -397,7 +345,7 @@ impl BinaryManager {
                 }
             }
             Err(e) => {
-                info!(target: BINARY_RESOLVER_LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", selected_version, e);
+                error!(target: BINARY_RESOLVER_LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", selected_version, e);
                 None
             }
         }
@@ -433,7 +381,7 @@ impl BinaryManager {
                     }
                 }
                 Err(e) => {
-                    warn!("Error parsing version folder name: {:?}", e);
+                    error!("Error parsing version folder name: {:?}", e);
                 }
             }
         }
