@@ -3,14 +3,14 @@ import CubeSvg from '@app/components/svgs/CubeSvg.tsx';
 import { Transition } from 'framer-motion';
 
 const orbitTransition: Transition = {
-    duration: 7,
+    duration: 5,
     ease: 'linear',
     repeat: Infinity,
     delayChildren: 0.2,
     staggerDirection: -1,
     opacity: {
         duration: 0.5,
-        times: [0.6, 0.2, 1],
+        times: [0.9, 0.62, 1],
         ease: 'easeInOut',
     },
 };
@@ -18,7 +18,7 @@ const orbitTracks = [{ size: 260 }, { size: 230 }, { size: 200 }, { size: 160 }]
 
 export default function ButtonOrbitAnimation() {
     return (
-        <OrbitWrapper>
+        <OrbitWrapper layout key="orbit">
             {orbitTracks.map(({ size }, index) => (
                 <Orbit
                     key={size}
@@ -29,7 +29,7 @@ export default function ButtonOrbitAnimation() {
                         x: 150 - size / 2,
                     }}
                     transition={{ ...orbitTransition, delay: index + 2 }}
-                    animate={{ opacity: [0.6, 1, 0.8], rotate: index % 2 === 0 ? 360 : -360 }}
+                    animate={{ opacity: [0.9, 1, 0.8], rotate: index % 2 === 0 ? 360 : -360 }}
                 >
                     {index % 2 === 0 ? (
                         <CubeWrapper style={{ x: (size / Math.PI) * 2, y: -6 }}>
