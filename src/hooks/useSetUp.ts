@@ -56,16 +56,16 @@ export function useSetUp() {
                     .then(async (autoMiningEnabled) => {
                         if (autoMiningEnabled) {
                             console.info('Auto-Mining starting');
-                            // await invoke('start_mining', {})
-                            //     .then(() => {
-                            //         console.info('Auto-Mining started.');
-                            //         setMiningInitiated(true);
-                            //         setAnimationState('start');
-                            //     })
-                            //     .catch((e) => {
-                            //         console.error('Failed to start auto-mining:', e);
-                            //         setError(e as string);
-                            //     });
+                            await invoke('start_mining', {})
+                                .then(() => {
+                                    console.info('Auto-Mining started.');
+                                    setMiningInitiated(true);
+                                    setAnimationState('start');
+                                })
+                                .catch((e) => {
+                                    console.error('Failed to start auto-mining:', e);
+                                    setError(e as string);
+                                });
                         }
                     })
                     .catch((e) => {

@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
+import ButtonOrbitAnimation from '@app/containers/SideBar/Miner/components/ButtonOrbitAnimation.tsx';
 
 enum MiningButtonStateText {
     STARTED = 'pause-mining',
@@ -58,6 +59,7 @@ export default function MiningButton() {
             >
                 <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
             </StyledButton>
+            {isMining ? <ButtonOrbitAnimation /> : null}
         </ButtonWrapper>
     );
 }

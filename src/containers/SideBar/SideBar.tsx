@@ -6,7 +6,6 @@ import { SideBarContainer, SideBarInner, BottomContainer, TopContainer } from '.
 import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { LayoutGroup } from 'framer-motion';
-import FancyMiningButton from '@app/containers/SideBar/Miner/components/FancyButton.tsx';
 
 function SideBar() {
     return (
@@ -19,9 +18,6 @@ function SideBar() {
                 <Divider />
                 <SideBarInner>
                     <Miner />
-                </SideBarInner>
-                <SideBarInner>
-                    <FancyMiningButton />
                 </SideBarInner>
                 <BottomContainer>
                     <Wallet />

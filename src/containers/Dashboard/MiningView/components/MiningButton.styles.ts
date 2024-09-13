@@ -33,6 +33,7 @@ export const ButtonWrapper = styled(motion.div)`
     position: relative;
     display: flex;
     align-items: stretch;
+    overflow: hidden;
     justify-content: stretch;
     width: 100%;
 `;
@@ -41,7 +42,10 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
     display: flex;
     width: 100%;
     align-items: center;
-    background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
+    position: relative;
+    overflow: hidden;
+    background: ${({ $hasStarted }) =>
+        $hasStarted ? 'linear-gradient(90deg, #929292 0%, #5e5e5e 99.49%)' : '#188750'};
     border: 1px solid ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
     color: ${({ theme }) => theme.palette.base};
     transition: all 0.2s ease-in;
