@@ -56,7 +56,7 @@ export const BaseButton = styled.button<Props>`
     padding:  ${({ $size }) => ($size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`)};
 
     &:hover {
-        background: ${({ theme, $outlined, $color }) => ($outlined ? theme.palette[$color || 'primary'].wisp : theme.palette[$color || 'primary'].dark)};
+        //background: ${({ theme, $outlined, $color }) => ($outlined ? theme.palette[$color || 'primary'].wisp : theme.palette[$color || 'primary'].dark)};
     }
     ${BASE_STYLES}
 
@@ -92,6 +92,8 @@ export const BaseButton = styled.button<Props>`
 
 export const ChildrenWrapper = styled.div`
     display: flex;
+    user-select: none;
+    -webkit-user-select: none;
     position: relative;
 `;
 export const IconWrapper = styled.div<{ $position?: ButtonProps['iconPosition'] }>`

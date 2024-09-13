@@ -8,12 +8,17 @@ export const OrbitWrapper = styled(motion.div)`
     max-width: 300px;
     max-height: 300px;
     overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+    z-index: 1;
 `;
 export const Orbit = styled(motion.div)`
     border-radius: 100%;
-    border: 1px dashed rgba(255, 255, 255, 0.15);
+    border-width: 1px;
+    border-style: solid dashed dashed dashed;
+    border-color: rgba(255, 255, 255, 0.175);
+    color: rgba(255, 255, 255, 0.3);
     position: absolute;
-    color: rgba(255, 255, 255, 0.2);
     width: 100%;
     height: 100%;
 `;
@@ -22,7 +27,7 @@ export const CubeWrapper = styled(motion.div)`
     position: absolute;
     height: 24px;
     width: 24px;
-    z-index: 1;
+
     svg {
         width: 24px;
         height: 24px;

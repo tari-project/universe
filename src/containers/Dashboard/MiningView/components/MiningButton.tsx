@@ -12,6 +12,7 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 import { useShallow } from 'zustand/react/shallow';
 import ButtonOrbitAnimation from '@app/containers/SideBar/Miner/components/ButtonOrbitAnimation.tsx';
+import { AnimatePresence } from 'framer-motion';
 
 enum MiningButtonStateText {
     STARTED = 'pause-mining',
@@ -49,17 +50,17 @@ export default function MiningButton() {
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
     return (
-        <ButtonWrapper layout layoutId="mining-button-wrapper">
+        <ButtonWrapper>
             <StyledButton
-                variant="rounded"
                 $hasStarted={isMining}
+                variant="rounded"
                 onClick={handleClick}
                 icon={<IconWrapper>{miningLoading ? <StyledIcon /> : icon}</IconWrapper>}
                 disabled={!miningControlsEnabled || miningLoading}
             >
                 <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
             </StyledButton>
-            {isMining ? <ButtonOrbitAnimation /> : null}
+            <AnimatePresence>{isMining ? <ButtonOrbitAnimation /> : null}</AnimatePresence>
         </ButtonWrapper>
     );
 }
