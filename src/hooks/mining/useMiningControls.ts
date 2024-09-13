@@ -11,11 +11,18 @@ export function useMiningControls() {
             await invoke('start_mining', {})
                 .then(async () => {
                     console.info('Mining started.');
+                    setAnimationState('start');
                 })
-                .catch((e) => console.error(e));
-            setAnimationState('start');
+                .catch((e) => {
+                    console.error(e);
+                    // if there was a problem starting
+                    setAnimationState('stop');
+                });
         } catch (e) {
+            console.error(e);
             const error = e as string;
+            // if there was a problem starting
+            setAnimationState('stop');
             setError(error);
         }
     }, [setError]);
@@ -26,16 +33,25 @@ export function useMiningControls() {
             try {
                 await invoke('stop_mining', {})
                     .then(async () => {
+                        setAnimationState(args?.isPause ? 'pause' : 'stop');
+
                         if (args?.isPause) {
                             console.info('Mining stopped, as pause, to be restarted.');
                         } else {
                             console.info('Mining stopped.');
                         }
+                        // setAnimationState(args?.isPause ? 'pause' : 'stop');
                     })
-                    .catch((e) => console.error(e));
-                setAnimationState(args?.isPause ? 'pause' : 'stop');
+                    .catch((e) => {
+                        console.error(e);
+                        // if there was a problem stopping
+                        setAnimationState('start');
+                    });
             } catch (e) {
+                console.error(e);
                 const error = e as string;
+                // if there was a problem stopping
+                setAnimationState('start');
                 setError(error);
             }
         },

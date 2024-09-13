@@ -4,10 +4,11 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{debug, error, info, warn};
 use regex::Regex;
-use semver::Version;
+use semver::{Version, VersionReq};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
+use tari_common::configuration::Network;
 use tauri::api::path::cache_dir;
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
@@ -36,6 +37,7 @@ pub struct VersionAsset {
 #[async_trait]
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
     async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error>;
+    fn is_version_allowed(&self, version: &Version) -> bool;
 
     fn get_binary_folder(&self) -> PathBuf;
 
@@ -50,6 +52,10 @@ pub struct XmrigVersionApiAdapter {}
 #[async_trait]
 impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
+        todo!()
+    }
+
+    fn is_version_allowed(&self, _version: &Version) -> bool {
         todo!()
     }
 
@@ -68,27 +74,44 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 pub struct GithubReleasesAdapter {
     pub repo: String,
     pub owner: String,
+    pub semver: Option<VersionReq>,
+    pub version_pre_filter: Option<Regex>,
     pub specific_name: Option<Regex>,
 }
 
 #[async_trait]
 impl LatestVersionApiAdapter for GithubReleasesAdapter {
+    fn is_version_allowed(&self, version: &Version) -> bool {
+        if let Some(semver) = &self.semver {
+            if !semver.matches(version) {
+                return false;
+            }
+        }
+        if let Some(pre_filter) = &self.version_pre_filter {
+            return pre_filter.is_match(version.pre.as_str());
+        }
+        true
+    }
+
     async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
         let releases = github::list_releases(&self.owner, &self.repo).await?;
         // dbg!(&releases);
-        let network = "pre";
+        // let network = match Network::get_current_or_user_setting_or_default() {
+        // Network::NextNet => "rc",
+        // Network::Esmeralda => "pre",
+        // _ => panic!("Unsupported network"),
+        // };
         let version = releases
             .iter()
             .filter_map(|v| {
-                if v.version.pre.starts_with(network) {
-                    info!(target: LOG_TARGET, "Found candidate version: {}", v.version);
+                if self.is_version_allowed(&v.version) {
                     Some(&v.version)
                 } else {
                     None
                 }
             })
             .max()
-            .ok_or_else(|| anyhow!("No pre release found"))?;
+            .ok_or_else(|| anyhow!("No suitable version found"))?;
 
         info!(target: LOG_TARGET, "Selected version: {}", version);
         let info = releases
@@ -103,7 +126,13 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         cache_dir()
             .unwrap()
             .join("com.tari.universe")
+            .join("binaries")
             .join(&self.repo)
+            .join(
+                Network::get_current_or_user_setting_or_default()
+                    .to_string()
+                    .to_lowercase(),
+            )
     }
 
     fn find_version_for_platform(
@@ -150,12 +179,32 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 impl BinaryResolver {
     pub fn new() -> Self {
         let mut adapters = HashMap::<Binaries, Box<dyn LatestVersionApiAdapter>>::new();
+        // Not working. Keeping for reference because it's not in any commits yet
+        // let tari_semver = match Network::get_current_or_user_setting_or_default() {
+        // Network::NextNet => VersionReq::parse(">=1.4.0-rc.0, <1.5.0").unwrap(),
+        // Network::Esmeralda => VersionReq::parse(">=1.4.1-pre.0, <1.5.0").unwrap(),
+        // _ => panic!("Unsupported network"),
+        // };
+        let (tari_pre_filter, gpuminer_specific) =
+            match Network::get_current_or_user_setting_or_default() {
+                Network::NextNet => (
+                    Some(Regex::new(r"rc").unwrap()),
+                    Some(Regex::new(r"opencl.*nextnet").unwrap()),
+                ),
+                Network::Esmeralda => (
+                    Some(Regex::new(r"pre").unwrap()),
+                    Some(Regex::new(r"opencl.*testnet").unwrap()),
+                ),
+                _ => panic!("Unsupported network"),
+            };
         adapters.insert(Binaries::Xmrig, Box::new(XmrigVersionApiAdapter {}));
         adapters.insert(
             Binaries::MergeMiningProxy,
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                semver: None,
+                version_pre_filter: tari_pre_filter.clone(),
                 specific_name: None,
             }),
         );
@@ -164,6 +213,8 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                semver: None,
+                version_pre_filter: tari_pre_filter.clone(),
                 specific_name: None,
             }),
         );
@@ -172,15 +223,20 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                semver: None,
+                version_pre_filter: tari_pre_filter.clone(),
                 specific_name: None,
             }),
         );
+
         adapters.insert(
             Binaries::GpuMiner,
             Box::new(GithubReleasesAdapter {
                 repo: "tarigpuminer".to_string(),
                 owner: "stringhandler".to_string(),
-                specific_name: Some("opencl.*testnet".parse().expect("Bad regex string")),
+                semver: None, // VersionReq::parse(">=0.1.8-pre, <0.1.9-pre").unwrap(),
+                version_pre_filter: None,
+                specific_name: gpuminer_specific,
             }),
         );
         adapters.insert(
@@ -188,6 +244,8 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "sha-p2pool".to_string(),
                 owner: "tari-project".to_string(),
+                semver: None, // VersionReq::parse(">=0.1.4-pre, <0.1.5-pre.0").unwrap(),
+                version_pre_filter: None,
                 specific_name: None,
             }),
         );
@@ -250,7 +308,7 @@ impl BinaryResolver {
             .join(latest_release.version.to_string());
         let _lock = self.download_mutex.lock().await;
 
-        if force_download {
+        if force_download && bin_folder.exists() {
             info!(target: LOG_TARGET, "Cleaning up existing dir");
             fs::remove_dir_all(&bin_folder)
                 .await
@@ -357,7 +415,12 @@ impl BinaryResolver {
                 }
 
                 let version = path.file_name().unwrap().to_str().unwrap();
-                versions.push(Version::parse(version).unwrap());
+                let version_typed = Version::parse(version).unwrap();
+                if adapter.is_version_allowed(&version_typed) {
+                    versions.push(version_typed);
+                } else {
+                    warn!(target: LOG_TARGET, "Version {} is not allowed", version);
+                }
             }
         }
 

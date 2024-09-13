@@ -5,6 +5,7 @@ use async_trait::async_trait;
 use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
+use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::select;
@@ -134,9 +135,18 @@ impl ProcessAdapter for GpuMinerAdapter {
                     //         .spawn()?;
                     // }
                     let mut envs = std::collections::HashMap::new();
-                    envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
-                    // Uncomment to test winning blocks. Also uncomment in node_adpater
-                    // envs.insert("TARI_NETWORK".to_string(), "localnet".to_string());
+                    match Network::get_current_or_user_setting_or_default() {
+                        Network::Esmeralda => {
+                            envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
+                        }
+                        Network::NextNet => {
+                            envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
+                        }
+                        _ => {
+                            return Err(anyhow!("Unsupported network"));
+                        }
+                    }
+                    // envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
                     child = process_utils::launch_child_process(&file_path, Some(envs), &args)?;
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("xtrgpuminer_pid"), id.to_string())?;

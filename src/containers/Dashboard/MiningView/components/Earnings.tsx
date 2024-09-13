@@ -15,16 +15,18 @@ const variants = {
         y: -200,
         scale: 1.05,
         transition: {
+            delay: 1,
             duration: 3,
+            ease: 'easeInOut',
             scale: {
-                duration: 0.5,
+                duration: 1,
             },
         },
     },
     hidden: {
         opacity: 0,
         y: -150,
-        transition: { duration: 0.2, delay: 0.8 },
+        transition: { duration: 1, delay: 2, ease: 'linear' },
     },
 };
 
@@ -42,9 +44,15 @@ export default function Earnings() {
     const formatted = formatBalance(earnings || 0);
 
     const handleComplete = useCallback(() => {
-        setPostBlockAnimation(true);
-        setTimerPaused(false);
-        setEarnings(undefined);
+        const winTimeout = setTimeout(() => {
+            setPostBlockAnimation(true);
+            setTimerPaused(false);
+            setEarnings(undefined);
+        }, 3000);
+
+        return () => {
+            clearTimeout(winTimeout);
+        };
     }, [setEarnings, setPostBlockAnimation, setTimerPaused]);
 
     return (
