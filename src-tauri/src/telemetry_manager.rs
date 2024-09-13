@@ -166,7 +166,6 @@ impl TelemetryManager {
         if !config.allow_telemetry() {
             return "".to_string();
         }
-        dbg!("hashing anon_id");
         // let os = std::env::consts::OS;
         let anon_id = config.anon_id();
         let mut hasher = Blake2bVar::new(20).unwrap();
