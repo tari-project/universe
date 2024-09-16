@@ -33,20 +33,6 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             .join(format!("xmrig-{}", download_info.version))
             .join("SHA256SUMS");
 
-        // // extract and parse checksum from SHA256SUMS file to .sha256
-
-        // let checksums = std::fs::read_to_string(&checksum_path)?;
-        // let checksums: Vec<&str> = checksums.split('\n').collect();
-        // let checksum = checksums
-        //     .iter()
-        //     .find(|&c| c.contains(&platform.name))
-        //     .ok_or(anyhow::anyhow!("Failed to get checksum"))?;
-        // let checksum = checksum.split(' ').collect::<Vec<&str>>()[0];
-
-        // let checksum_path = directory.join(format!("xmrig.sha256", checksum));
-
-        // std::fs::write(&checksum_path, checksum)?;
-
         Ok(checksum_path)
     }
 
