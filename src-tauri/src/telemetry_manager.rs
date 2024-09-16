@@ -342,7 +342,8 @@ async fn handle_telemetry_data(
                     if let Some(response_inner) = response {
                         if let Some(user_points) = response_inner.user_points {
                             debug!(target: LOG_TARGET,"emitting UserPoints event{:?}",user_points);
-                            window.emit("UserPoints", user_points)
+                            window
+                                .emit("UserPoints", user_points)
                                 .map_err(|e| {
                                     error!("could not send user points as an event: {:?}", e)
                                 })
