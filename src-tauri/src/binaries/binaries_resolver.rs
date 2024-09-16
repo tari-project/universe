@@ -57,17 +57,12 @@ impl BinaryResolver {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
         let versions_requirements_path = path::absolute("./binaries_versions.json").unwrap();
 
-        let (tari_prerelease_prefix, gpuminer_specific_nanme) = match Network::get_current_or_user_setting_or_default() {
-            Network::NextNet => (
-                "rc",
-                Some(Regex::new(r"opencl.*nextnet").unwrap()),
-            ),
-            Network::Esmeralda => (
-                "pre",
-                Some(Regex::new(r"opencl.*testnet").unwrap()),
-            ),
-            _ => panic!("Unsupported network"),
-        };
+        let (tari_prerelease_prefix, gpuminer_specific_nanme) =
+            match Network::get_current_or_user_setting_or_default() {
+                Network::NextNet => ("rc", Some(Regex::new(r"opencl.*nextnet").unwrap())),
+                Network::Esmeralda => ("pre", Some(Regex::new(r"opencl.*testnet").unwrap())),
+                _ => panic!("Unsupported network"),
+            };
 
         binary_manager.insert(
             Binaries::Xmrig,
