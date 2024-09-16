@@ -10,9 +10,9 @@ use crate::{
     download_utils::download_file_with_retries, github, progress_tracker::ProgressTracker,
 };
 
-use super::binaries_resolver::{
-    LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo, BINARY_RESOLVER_LOG_TARGET,
-};
+use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
+
+pub const LOG_TARGET: &str = "tari::universe::adapter_github";
 
 pub struct GithubReleasesAdapter {
     pub repo: String,
@@ -42,7 +42,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
-                error!(target: BINARY_RESOLVER_LOG_TARGET, "Failed to download checksum file: {}", e);
+                error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
                 Err(e)
             }
         }
@@ -85,7 +85,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             panic!("Unsupported OS");
         }
 
-        info!(target: BINARY_RESOLVER_LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
+        info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
 
         let reg = Regex::new(name_suffix).unwrap();
 
@@ -100,7 +100,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
                 }
             })
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
-        info!(target: BINARY_RESOLVER_LOG_TARGET, "Found platform: {:?}", platform);
+        info!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
     }
 }

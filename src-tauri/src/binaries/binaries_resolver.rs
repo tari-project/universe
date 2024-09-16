@@ -13,7 +13,6 @@ use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
-pub const BINARY_RESOLVER_LOG_TARGET: &str = "tari::universe::binary_resolver";
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
 
