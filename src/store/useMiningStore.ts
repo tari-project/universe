@@ -8,15 +8,12 @@ interface State {
     earnings?: number;
     postBlockAnimation?: boolean;
     timerPaused?: boolean;
-    miningLoading?: boolean;
     displayBlockHeight?: number;
     hashrateReady?: boolean;
 
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
-    isMiningInProgress: boolean;
     isChangingMode: boolean;
-    isConnectionLostDuringMining: boolean;
     cpuMiner: CpuMiner;
 }
 interface Actions {
@@ -26,13 +23,8 @@ interface Actions {
     setPostBlockAnimation: (postBlockAnimation: boolean) => void;
     setTimerPaused: (timerPaused: boolean) => void;
 
-    setMiningLoading: (miningLoading: boolean) => void;
-    setHashrateReady: (hashrateReady: boolean) => void;
-
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setMiningInitiated: (miningInitiated: State['miningInitiated']) => void;
-    setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
-    setIsMiningInProgress: (isMiningInProgress: State['isMiningInProgress']) => void;
     setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
     setCpuMiner: (cpuMiner: State['cpuMiner']) => void;
 }
@@ -42,21 +34,11 @@ const initialState: State = {
     displayBlockHeight: undefined,
     timerPaused: false,
     postBlockAnimation: false,
-    miningLoading: false,
     hashrateReady: false,
     miningInitiated: false,
-    isMiningInProgress: false,
     isChangingMode: false,
-    isConnectionLostDuringMining: false,
-    miningControlsEnabled: false,
+    miningControlsEnabled: true,
     cpuMiner: 'Clythor',
-};
-
-export const useInitMiningStore = () => {
-    const setCpuMiner = useMiningStore((state) => state.setCpuMiner);
-    invoke('read_randomx_miner').then((miner) => {
-        setCpuMiner(miner as CpuMiner);
-    });
 };
 
 export const useMiningStore = create<MiningStoreState>()((set) => ({
@@ -66,17 +48,16 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
     setEarnings: (earnings) => set({ earnings }),
     setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
     setTimerPaused: (timerPaused) => set({ timerPaused }),
-    setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
-    setHashrateReady: (hashrateReady) => set({ hashrateReady }),
 
     setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
-    setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
-    setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-    setCpuMiner: (cpuMiner) => {
-        invoke('set_randomx_miner', { miner: cpuMiner });
+    setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
+    setCpuMiner: async (cpuMiner) => {
+        try {
+            await invoke('set_randomx_miner', { miner: cpuMiner });
+        } catch (e) {
+            console.error(e);
+        }
         return set({ cpuMiner });
     },
-    setMiningControlsEnabled: (miningControlsEnabled) =>
-        set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
 }));

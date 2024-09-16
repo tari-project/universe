@@ -1,48 +1,62 @@
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { setAnimationState } from '@app/visuals.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore';
 
 export function useMiningControls() {
-    const setError = useAppStateStore((s) => s.setError);
-    const cpuMiner = useMiningStore((s) => s.cpuMiner);
-    const handleStart = useCallback(async () => {
-        console.info('Mining starting....');
-        try {
-            await invoke('start_mining', { miner: cpuMiner })
-                .then(async () => {
-                    console.info('Mining started.');
-                })
-                .catch((e) => console.error(e));
-            setAnimationState('start');
-        } catch (e) {
-            const error = e as string;
-            setError(error);
-        }
-    }, [setError, cpuMiner]);
+    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
+    const setError = useAppStateStore(useShallow((s) => s.setError));
 
-    const handleStop = useCallback(
-        async (args?: { isPause?: boolean }) => {
-            console.info('Mining stopping...');
-            try {
-                await invoke('stop_mining', {})
-                    .then(async () => {
-                        if (args?.isPause) {
-                            console.info('Mining stopped, as pause, to be restarted.');
-                        } else {
-                            console.info('Mining stopped.');
-                        }
-                    })
-                    .catch((e) => console.error(e));
-                setAnimationState(args?.isPause ? 'pause' : 'stop');
-            } catch (e) {
-                const error = e as string;
-                setError(error);
-            }
-        },
-        [setError]
+    const { isMiningInitiated, cpuMiner } = useMiningStore(
+        useShallow((s) => ({ isMiningInitiated: s.miningInitiated, cpuMiner: s.cpuMiner }))
     );
 
-    return { handleStart, handleStop };
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+
+    const isMining = isCPUMining || isGPUMining;
+    const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
+
+    const handleStart = useCallback(async () => {
+        console.info('Mining starting....');
+        setMiningInitiated(true);
+        try {
+            await invoke('start_mining', { miner: cpuMiner });
+        } catch (e) {
+            console.error(e);
+            const error = e as string;
+            setError(error);
+            setMiningInitiated(false);
+        }
+    }, [setError, setMiningInitiated, cpuMiner]);
+
+    const handleStop = useCallback(async () => {
+        console.info('Mining stopping...');
+        setMiningInitiated(false);
+        try {
+            await invoke('stop_mining', {});
+        } catch (e) {
+            console.error(e);
+            const error = e as string;
+            setError(error);
+            setMiningInitiated(true);
+        }
+    }, [setError, setMiningInitiated]);
+
+    const handlePause = useCallback(async () => {
+        console.info('Mining pausing...');
+        try {
+            await invoke('stop_mining', {});
+        } catch (e) {
+            console.error(e);
+            const error = e as string;
+            setError(error);
+            setMiningInitiated(true);
+        }
+    }, [setError, setMiningInitiated]);
+
+    return { handleStart, handleStop, handlePause, isMiningLoading };
 }

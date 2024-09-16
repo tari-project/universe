@@ -8,6 +8,7 @@ mod clythor_adapter;
 mod consts;
 mod cpu_miner;
 mod download_utils;
+mod format_utils;
 mod github;
 mod gpu_miner;
 mod hardware_monitor;
@@ -26,6 +27,7 @@ mod process_utils;
 mod process_watcher;
 mod systemtray_manager;
 mod telemetry_manager;
+mod tests;
 mod user_listener;
 mod wallet_adapter;
 mod wallet_manager;
@@ -39,7 +41,6 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
-use crate::user_listener::UserListener;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 use crate::xmrig_adapter::XmrigAdapter;
@@ -55,11 +56,10 @@ use progress_tracker::ProgressTracker;
 use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
 use std::collections::HashMap;
-use std::fs::remove_dir_all;
+use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
-use std::{panic, process};
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
@@ -110,7 +110,7 @@ async fn get_telemetry_mode(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<bool, ()> {
-    let telemetry_mode = state.config.read().await.get_allow_telemetry();
+    let telemetry_mode = state.config.read().await.allow_telemetry();
     Ok(telemetry_mode)
 }
 
@@ -120,7 +120,7 @@ async fn get_app_id(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<String, ()> {
-    Ok(state.config.read().await.anon_id.clone())
+    Ok(state.config.read().await.anon_id().to_string())
 }
 
 #[tauri::command]
@@ -145,12 +145,18 @@ async fn get_app_in_memory_config(
 }
 
 #[tauri::command]
+async fn get_monero_address(state: tauri::State<'_, UniverseAppState>) -> Result<String, String> {
+    let app_config = state.config.read().await;
+    Ok(app_config.monero_address().to_string())
+}
+
+#[tauri::command]
 async fn set_monero_address(
     monero_address: String,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-    let mut cpu_miner_config = state.config.write().await;
-    cpu_miner_config
+    let mut app_config = state.config.write().await;
+    app_config
         .set_monero_address(monero_address)
         .await
         .map_err(|e| e.to_string())?;
@@ -162,11 +168,13 @@ async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
-) -> Result<(), String> {
-    setup_inner(window, state, app).await.map_err(|e| {
+) -> Result<bool, String> {
+    setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         e.to_string()
-    })
+    })?;
+
+    Ok(state.config.read().await.auto_mining())
 }
 
 #[tauri::command]
@@ -207,7 +215,7 @@ async fn setup_inner(
 
     let progress = ProgressTracker::new(window.clone());
 
-    let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp;
+    let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
     state
@@ -286,11 +294,7 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
         progress.set_max(25).await;
         progress
-            .update(
-                "Checking for latest version of gpu miner".to_string(),
-                None,
-                0,
-            )
+            .update("checking-latest-version-gpuminer".to_string(), None, 0)
             .await;
         BinaryResolver::current()
             .ensure_latest(Binaries::GpuMiner, progress.clone())
@@ -363,7 +367,7 @@ async fn setup_inner(
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    if state.config.read().await.p2pool_enabled {
+    if state.config.read().await.p2pool_enabled() {
         progress.set_max(85).await;
         progress
             .update("starting-p2pool".to_string(), None, 0)
@@ -414,7 +418,7 @@ async fn setup_inner(
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
             telemetry_id,
-            config.p2pool_enabled,
+            config.p2pool_enabled(),
             p2pool_port,
         ))
         .await?;
@@ -535,12 +539,12 @@ async fn start_mining<'r>(
     miner: RandomXMiner,
 ) -> Result<(), String> {
     let config = state.config.read().await;
-    let cpu_mining_enabled = config.cpu_mining_enabled;
-    let gpu_mining_enabled = config.gpu_mining_enabled;
-    let mode = config.mode;
+    let cpu_mining_enabled = config.cpu_mining_enabled();
+    let gpu_mining_enabled = config.gpu_mining_enabled();
+    let mode = config.mode();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
-    let monero_address = state.config.read().await.monero_address.clone();
+    let monero_address = config.monero_address().to_string();
     let progress_tracker = ProgressTracker::new(window.clone());
     if cpu_mining_enabled {
         let mm_proxy_port = state
@@ -598,7 +602,7 @@ async fn start_mining<'r>(
 
     if gpu_mining_enabled {
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
-        let p2pool_enabled = state.config.read().await.p2pool_enabled;
+        let p2pool_enabled = state.config.read().await.p2pool_enabled();
         let source = if p2pool_enabled {
             let p2pool_port = state.p2pool_manager.grpc_port().await;
             GpuNodeSource::P2Pool { port: p2pool_port }
@@ -612,6 +616,16 @@ async fn start_mining<'r>(
             GpuNodeSource::BaseNode { port: grpc_port }
         };
 
+        let mut telemetry_id = state
+            .telemetry_manager
+            .read()
+            .await
+            .get_unique_string()
+            .await;
+        if telemetry_id.is_empty() {
+            telemetry_id = "tari-universe".to_string();
+        }
+
         let res = state
             .gpu_miner
             .write()
@@ -624,6 +638,7 @@ async fn start_mining<'r>(
                 app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
                 mode,
+                telemetry_id,
             )
             .await;
 
@@ -797,7 +812,7 @@ async fn status(
         }
     };
 
-    let gpu_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
+    let gpu = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
@@ -834,7 +849,7 @@ async fn status(
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu.hash_rate,
-        0.0,
+        gpu.hash_rate as f64,
         hardware_status.clone(),
         cpu.estimated_earnings as f64,
     );
@@ -843,7 +858,7 @@ async fn status(
 
     Ok(Some(AppStatus {
         cpu,
-        gpu: gpu_status,
+        gpu,
         hardware_status: hardware_status.clone(),
         base_node: BaseNodeStatus {
             block_height,
@@ -851,13 +866,13 @@ async fn status(
             is_synced,
         },
         wallet_balance,
-        mode: config_guard.mode,
-        p2pool_enabled: config_guard.p2pool_enabled,
+        mode: config_guard.mode(),
+        p2pool_enabled: config_guard.p2pool_enabled(),
         p2pool_stats,
-        auto_mining: config_guard.auto_mining,
-        monero_address: config_guard.monero_address.clone(),
-        cpu_mining_enabled: config_guard.cpu_mining_enabled,
-        gpu_mining_enabled: config_guard.gpu_mining_enabled,
+        auto_mining: config_guard.auto_mining(),
+        monero_address: config_guard.monero_address().to_string(),
+        cpu_mining_enabled: config_guard.cpu_mining_enabled(),
+        gpu_mining_enabled: config_guard.gpu_mining_enabled(),
         tari_address_base58: tari_address.to_base58(),
         tari_address_emoji: tari_address.to_emoji_string(),
     }))
@@ -877,7 +892,46 @@ async fn reset_settings<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    state
+        .cpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    let exit_code = state
+        .wallet_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
+    state
+        .mm_proxy_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
+    let exit_code = state
+        .p2pool_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
+
     state.shutdown.clone().trigger();
+
+    // let num_retries = 10;
+    // for _ in 0..num_retries {
+    // sleep(Duration::from_secs(1));
+    // }
     // TODO: Find a better way of knowing that all miners have stopped
     sleep(std::time::Duration::from_secs(5));
 
@@ -903,13 +957,39 @@ async fn reset_settings<'r>(
         return Err("Could not get app directories".to_string());
     }
 
-    dirs_to_remove.iter().for_each(|dir| {
+    // Exclude EBWebView because it is still being used.
+    let folder_block_list = ["EBWebView"];
+    for dir in &dirs_to_remove {
         // check if dir exists
         if dir.clone().unwrap().exists() {
-            info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
-            remove_dir_all(dir.clone().unwrap()).unwrap();
+            for entry in read_dir(dir.clone().unwrap()).map_err(|e| e.to_string())? {
+                let entry = entry.map_err(|e| e.to_string())?;
+                let path = entry.path();
+                if path.is_dir() {
+                    if folder_block_list.contains(&path.file_name().unwrap().to_str().unwrap()) {
+                        continue;
+                    }
+                    info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
+                    remove_dir_all(path.clone()).map_err(|e| {
+                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
+                        format!("Could not remove directory: {}", e)
+                    })?;
+                } else {
+                    info!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
+                    remove_file(path.clone()).map_err(|e| {
+                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
+                        format!("Could not remove file: {}", e)
+                    })?;
+                }
+            }
+            // info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
+            // remove_dir_all(dir.clone().unwrap()).map_err(|e|
+            //  {
+            // error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", dir, e);
+            //  format!("Could not remove directory: {}", e)
+            //  })?;
         }
-    });
+    }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
@@ -936,8 +1016,8 @@ async fn set_randomx_miner<'r>(
 async fn read_randomx_miner<'r>(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<RandomXMiner, String> {
-    let app_config = state.config.read().await;
-    Ok(app_config.randomx_miner)
+    let randomx_miner = state.config.read().await.randomx_miner();
+    Ok(randomx_miner)
 }
 
 #[allow(clippy::struct_excessive_bools)]
@@ -1007,7 +1087,6 @@ struct UniverseAppState {
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
-    _user_listener: Arc<RwLock<UserListener>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
@@ -1027,11 +1106,6 @@ pub const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[allow(clippy::too_many_lines)]
 fn main() {
-    let default_hook = panic::take_hook();
-    panic::set_hook(Box::new(move |info| {
-        default_hook(info);
-        process::exit(1);
-    }));
     let mut shutdown = Shutdown::new();
 
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
@@ -1090,7 +1164,6 @@ fn main() {
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
-        _user_listener: Arc::new(RwLock::new(UserListener::new())),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
@@ -1188,6 +1261,7 @@ fn main() {
             set_airdrop_access_token,
             get_app_id,
             get_app_in_memory_config,
+            get_monero_address,
             set_monero_address,
             update_applications,
             reset_settings,

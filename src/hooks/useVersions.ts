@@ -51,7 +51,7 @@ export function useVersions() {
 }
 
 export function useMainAppVersion() {
-    const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60; // 1 hour
+    const UPDATE_CHECK_INTERVAL = 1000 * 60 * 5; // 5 min
     const handleUpdate = useCallback(async () => {
         try {
             const updateRes = await checkUpdate();

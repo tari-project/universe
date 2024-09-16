@@ -40,11 +40,13 @@ impl GpuMiner {
         config_path: PathBuf,
         log_path: PathBuf,
         mining_mode: MiningMode,
+        coinbase_extra: String,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.set_mode(mining_mode);
         process_watcher.adapter.node_source = Some(node_source);
+        process_watcher.adapter.coinbase_extra = coinbase_extra;
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
             .start(app_shutdown, base_path, config_path, log_path)

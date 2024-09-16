@@ -14,6 +14,10 @@
     "max": "Maximum is 21600 seconds",
     "min": "Minimum is 1 second"
   },
+  "tabs": {
+    "general": "General",
+    "experimental": "Experimental"
+  },
   "monero-address": {
     "title": "Monero address",
     "placeholder": "Enter Monero address"
@@ -21,20 +25,22 @@
   "last-block-added-time": "Last block added to chain time",
   "visual-mode": "Visual mode",
   "pool-mining": "Pool Mining",
-  "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners (tribe).",
+  "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
   "cpu-mining-enabled": "CPU Mining",
   "gpu-mining-enabled": "GPU Mining",
-  "p2pool-stats": "P2Pool Stats",
-  "tribe": "Tribe",
+  "p2pool-stats": "Squad Stats",
+  "tribe": "Squad",
   "miners": "Miners",
-  "tribe-earnings": "Tribe earnings",
-  "tribe-pool-height": "Pool height",
-  "p2pool-hash-rate": "Pool hash rates",
-  "p2pool-total-earnings": "Pool total earnings",
+  "tribe-earnings": "Squad earnings",
+  "tribe-pool-height": "Squad height",
+  "p2pool-hash-rate": "Squad hash rates",
+  "p2pool-total-earnings": "Squad total earnings",
   "p2pool-chain-tip": "Tip of chains",
   "p2pool-user-total-earnings": "Total earnings",
   "yes": "Yes",
   "cancel": "Cancel",
   "reset-settings": "Reset Settings",
-  "reset-permanently": "Are you sure you want to reset all settings permanently?"
+  "reset-permanently": "Are you sure you want to reset all settings permanently?",
+  "experimental-title": "Experimental Features",
+  "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully."
 }

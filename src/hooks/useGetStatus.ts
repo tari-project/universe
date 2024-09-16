@@ -8,9 +8,8 @@ import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '../store/useGPUStatusStore.ts';
 import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
 import { useMainAppVersion } from '@app/hooks/useVersions.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useEffect } from 'react';
 
 const INTERVAL = 1000;
 
@@ -20,9 +19,10 @@ export function useGetStatus() {
     const setCPUStatus = useCPUStatusStore((s) => s.setCPUStatus);
     const setGPUStatus = useGPUStatusStore((s) => s.setGPUStatus);
     const setBaseNodeStatus = useBaseNodeStatusStore((s) => s.setBaseNodeStatus);
-    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
     const setTelemetryMode = useAppStatusStore((s) => s.setTelemetryMode);
     const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
+    const appSetupFinished = useAppStateStore(useShallow((s) => s.settingUpFinished));
+    const setupProgress = useAppStateStore(useShallow((s) => s.setupProgress));
 
     const { setError } = useAppStateStore((s) => ({
         setError: s.setError,
@@ -42,32 +42,42 @@ export function useGetStatus() {
             });
     }, [setTelemetryMode]);
 
-    useInterval(
-        () =>
-            invoke('status')
-                .then((status) => {
-                    if (status) {
-                        setAppStatus(status);
-                        setCPUStatus(status.cpu);
-                        setGPUStatus(status.gpu);
-                        setBaseNodeStatus(status.base_node);
+    const invokeStatus = useCallback(async () => {
+        await invoke('status')
+            .then(async (status) => {
+                if (status) {
+                    setAppStatus(status);
+                    setCPUStatus(status.cpu);
+                    setGPUStatus(status.gpu);
+                    setBaseNodeStatus(status.base_node);
 
-                        const wallet_balance = status.wallet_balance;
+                    const wallet_balance = status.wallet_balance;
 
-                        setBalanceData(wallet_balance);
-                        setMode(status.mode);
+                    setBalanceData(wallet_balance);
+                    setMode(status.mode);
 
-                        const miningEnabled = status.cpu_mining_enabled || status.gpu_mining_enabled;
-
-                        setMiningControlsEnabled(!isSettingUp && miningEnabled);
-                    } else {
-                        console.info('Status not returned. It could still be setting up');
+                    // It was moved from useSetup hook to here to ensure that when the setup is finished, we have all data in store
+                    if (isSettingUp && setupProgress >= 1) {
+                        appSetupFinished();
                     }
-                })
-                .catch((e) => {
-                    console.error('Could not get status', e);
-                    setError(e.toString());
-                }),
-        INTERVAL
-    );
+                }
+            })
+            .catch((e) => {
+                console.error('Could not get status', e);
+                setError(e.toString());
+            });
+    }, [
+        isSettingUp,
+        setAppStatus,
+        setBalanceData,
+        setBaseNodeStatus,
+        setCPUStatus,
+        setError,
+        setGPUStatus,
+        setMode,
+        setupProgress,
+        appSetupFinished,
+    ]);
+
+    useInterval(async () => invokeStatus(), INTERVAL);
 }

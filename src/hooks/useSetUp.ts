@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../types.ts';
 
@@ -9,7 +9,7 @@ import { useAppStateStore } from '../store/appStateStore.ts';
 import { useVersions } from '@app/hooks/useVersions.ts';
 
 import { useShallow } from 'zustand/react/shallow';
-import { setAnimationState } from '@app/visuals.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useSetUp() {
     const startupInitiated = useRef(false);
@@ -18,16 +18,38 @@ export function useSetUp() {
     const setError = useAppStateStore((s) => s.setError);
     const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
 
+    const { setMiningInitiated, setMiningControlsEnabled, setCpuMiner } = useMiningStore(
+        useShallow((s) => ({
+            setMiningInitiated: s.setMiningInitiated,
+            setMiningControlsEnabled: s.setMiningControlsEnabled,
+            setCpuMiner: s.setCpuMiner,
+        }))
+    );
     useVersions();
+
+    const clearStorage = useCallback(() => {
+        // clear all storage except airdrop data
+        const airdropStorage = localStorage.getItem('airdrop-store');
+        localStorage.clear();
+        if (airdropStorage) {
+            localStorage.setItem('airdrop-store', airdropStorage);
+        }
+
+        const getCpuMiner = async () => {
+            await invoke('read_randomx_miner').then((miner) => {
+                console.log('read_randomx_miner', miner);
+                setCpuMiner(miner);
+            });
+        };
+        getCpuMiner();
+    }, [setCpuMiner]);
 
     useEffect(() => {
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
-            console.info('Setup Event:', e, p);
             switch (p.event_type) {
                 case 'setup_status':
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
-                        setAnimationState('showVisual');
                         setView('mining');
                     }
                     break;
@@ -36,10 +58,11 @@ export function useSetUp() {
                     break;
             }
         });
-        const intervalId = setInterval(() => {
+        const intervalId = setInterval(async () => {
             if (!startupInitiated.current && isAfterAutoUpdate) {
                 clearInterval(intervalId);
                 startupInitiated.current = true;
+                clearStorage();
                 invoke('setup_application').catch((e) => {
                     setError(`Failed to setup application: ${e}`);
                     setView('mining');
@@ -49,5 +72,13 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [isAfterAutoUpdate, setError, setSetupDetails, setView]);
+    }, [
+        clearStorage,
+        isAfterAutoUpdate,
+        setError,
+        setMiningControlsEnabled,
+        setMiningInitiated,
+        setSetupDetails,
+        setView,
+    ]);
 }

@@ -15,7 +15,7 @@ export type GlAppState =
     | 'restart';
 
 export interface GlApp {
-    set(e: GlAppState): void;
+    setState(e: GlAppState): void;
     properties: Properties;
     stateManager: StateManager;
 }
@@ -30,6 +30,9 @@ export interface Properties extends Record<string, unknown> {
     spawnSignal: unknown;
     gameEndedSignal: unknown;
     statusUpdateQueue: unknown;
+    lightPositionX: number;
+    lightPositionY: number;
+    lightPositionZ: number;
 }
 
 export interface StateManager extends Record<string, unknown> {
