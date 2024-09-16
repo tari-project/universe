@@ -531,6 +531,7 @@ async fn get_seed_words(
     Ok(res)
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 async fn start_mining<'r>(
     window: tauri::Window,
@@ -1009,11 +1010,11 @@ async fn set_randomx_miner<'r>(
         .inspect_err(|e| error!("error at set_randomx_miner {:?}", e))
         .map_err(|e| e.to_string())?;
 
-    return Ok(());
+    Ok(())
 }
 
 #[tauri::command]
-async fn read_randomx_miner<'r>(
+async fn get_randomx_miner<'r>(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<RandomXMiner, String> {
     let randomx_miner = state.config.read().await.randomx_miner();
@@ -1268,7 +1269,7 @@ fn main() {
             set_gpu_mining_enabled,
             set_cpu_mining_enabled,
             restart_application,
-            read_randomx_miner,
+            get_randomx_miner,
             set_randomx_miner,
         ])
         .build(tauri::generate_context!())

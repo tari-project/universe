@@ -81,7 +81,7 @@ impl ProcessAdapter for ClythorAdapter {
                 self.node_connection.host_name, self.node_connection.port
             ),
         ];
-        let pid_file_path = data_dir.join(&self.pid_file_name());
+        let pid_file_path = data_dir.join(self.pid_file_name());
 
         Ok((
             ProcessInstance {
