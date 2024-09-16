@@ -1,9 +1,10 @@
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
-import { LanguageList } from '@app/i18initializer.ts';
+import { Language, LanguageList } from '@app/i18initializer.ts';
 import styled from 'styled-components';
 import { useCallback } from 'react';
 import i18n, { changeLanguage } from 'i18next';
 import { m } from 'framer-motion';
+import { invoke } from '@tauri-apps/api/tauri';
 
 type LanguageOption = SelectOption;
 
@@ -19,8 +20,13 @@ const Wrapper = styled(m.div)`
 `;
 
 export default function LanguageDropdown() {
-    const handleLanguageChange = useCallback((value: LanguageOption['value']) => {
+    const saveLanguageToAppConfig = useCallback(async (applicationLanguage: Language) => {
+        await invoke('set_application_language', { applicationLanguage });
+    }, []);
+
+    const handleLanguageChange = useCallback(async (value: LanguageOption['value']) => {
         changeLanguage(value);
+        await saveLanguageToAppConfig(value as Language);
     }, []);
 
     return (
