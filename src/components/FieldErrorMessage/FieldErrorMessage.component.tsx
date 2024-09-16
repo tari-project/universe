@@ -1,28 +1,23 @@
 import type { FieldError } from 'react-hook-form';
-import Typography from '@mui/material/Typography';
 
 import { FieldsErrors } from './FieldErrorMessage.constants';
 import type { FieldErrorMessageProps } from './FieldErrorMessage.types';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { useTranslation } from 'react-i18next';
+import { TFunction } from 'i18next';
 
-export const getFieldError = (error: FieldError | undefined) => {
+export const getFieldError = (error: FieldError | undefined, t: TFunction<'translation', undefined>) => {
     if (!error) return;
 
     const messageByType = FieldsErrors[error.type as keyof typeof FieldsErrors];
-    if (messageByType) return messageByType;
+    if (messageByType) return t(messageByType);
 
     if (error.message) return error.message;
 
-    return 'Field Invalid';
+    return t('field-error-message.invalid');
 };
 
-export const FieldErrorMessage: React.FC<FieldErrorMessageProps> = ({
-    error,
-}) => (
-    <Typography
-        color="error"
-        variant="body1"
-        sx={{ width: '100%', display: 'inline-block' }}
-    >
-        {getFieldError(error)}
-    </Typography>
-);
+export const FieldErrorMessage = ({ error }: FieldErrorMessageProps) => {
+    const { t } = useTranslation('components', { useSuspense: false });
+    return <Typography variant="p">{getFieldError(error, t)}</Typography>;
+};

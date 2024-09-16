@@ -1,45 +1,61 @@
-import './theme/theme.css';
-import { StrictMode } from 'react';
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
-import { lightTheme } from './theme/themes';
-import { ContainerInner, DashboardContainer } from './theme/styles';
+import { BackgroundImage, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
-import { AppBackground } from './containers/AppBackground';
-import ErrorSnackbar from './containers/Error/ErrorSnackbar';
+
 import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 import { useEnvironment } from './hooks/useEnvironment.ts';
 import { SplashScreen } from './containers/SplashScreen';
+import ThemeProvider from './theme/ThemeProvider.tsx';
+import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
+import { useAirdropSyncState } from './hooks/airdrop/useAirdropSyncState.ts';
+import AirdropLogin from './containers/Airdrop/AirdropLogin/AirdropLogin.tsx';
+import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
+import { useShuttingDown } from './hooks/useShuttingDown.ts';
+import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
+import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
+import useMining from '@app/hooks/mining/useMining.ts';
 
-function App() {
+import { LayoutGroup } from 'framer-motion';
+import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
+
+export default function App() {
+    useAirdropSyncState();
     useSetUp();
+    useMining();
     useGetStatus();
     useEnvironment();
+    useUiMiningStateMachine();
 
-    const view = useUIStore((s) => s.view);
+    const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
+    const view = useUIStore((s) => s.view);
+    const visualMode = useUIStore((s) => s.visualMode);
+
+    const canRenderMain = !isShuttingDown && !showSplash;
+    const splashScreenMarkup = <SplashScreen />;
+    const shutDownMarkup = isShuttingDown ? <ShuttingDownScreen /> : null;
+    const mainMarkup = canRenderMain ? (
+        <DashboardContainer>
+            <SideBar />
+            <Dashboard status={view} />
+        </DashboardContainer>
+    ) : null;
 
     return (
-        <StrictMode>
-            <ThemeProvider theme={lightTheme}>
-                <CssBaseline enableColorScheme />
-                <AppBackground />
-                <SplashScreen />
-                {!showSplash && (
-                    <DashboardContainer>
-                        <ContainerInner>
-                            <SideBar />
-                            <Dashboard status={view} />
-                        </ContainerInner>
-                    </DashboardContainer>
-                )}
+        <ThemeProvider>
+            <GlobalReset />
+            <GlobalStyle />
+            <AutoUpdateDialog />
+            <LayoutGroup id="app-content">
+                <AirdropLogin />
+                {splashScreenMarkup}
+                {shutDownMarkup}
+                {!visualMode || view != 'mining' ? <BackgroundImage layout transition={{ duration: 0.3 }} /> : null}
+                {mainMarkup}
                 <ErrorSnackbar />
-            </ThemeProvider>
-        </StrictMode>
+            </LayoutGroup>
+        </ThemeProvider>
     );
 }
-
-export default App;

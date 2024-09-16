@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import { appWindow } from '@tauri-apps/api/window';
-import { Stack } from '@mui/material';
 import { IoClose, IoRemove } from 'react-icons/io5';
 import { RiExpandUpDownFill, RiContractUpDownFill } from 'react-icons/ri';
-import {
-    CloseButton,
-    MinimizeButton,
-    ToggleButton,
-    MinMaxStyle,
-    TitleBarContainer,
-} from './styles';
+import { CloseButton, MinimizeButton, ToggleButton, TitleBarContainer } from './styles';
+import { Stack } from '@app/components/elements/Stack';
 
 const TitleBar = () => {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -22,13 +16,7 @@ const TitleBar = () => {
 
     return (
         <TitleBarContainer data-tauri-drag-region>
-            <Stack
-                direction="row"
-                spacing={1}
-                pl={2}
-                pr={2}
-                alignItems={'center'}
-            >
+            <Stack>
                 <CloseButton onClick={close}>
                     <IoClose />
                 </CloseButton>
@@ -36,11 +24,7 @@ const TitleBar = () => {
                     <IoRemove />
                 </MinimizeButton>
                 <ToggleButton onClick={toggleMaximize}>
-                    {isExpanded ? (
-                        <RiContractUpDownFill style={MinMaxStyle} />
-                    ) : (
-                        <RiExpandUpDownFill style={MinMaxStyle} />
-                    )}
+                    {isExpanded ? <RiContractUpDownFill /> : <RiExpandUpDownFill />}
                 </ToggleButton>
             </Stack>
         </TitleBarContainer>

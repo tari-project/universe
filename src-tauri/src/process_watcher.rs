@@ -40,6 +40,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         &mut self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let name = self.adapter.name().to_string();
@@ -55,7 +56,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         let poll_time = self.poll_time;
 
-        let (mut child, status_monitor) = self.adapter.spawn(base_path, log_path)?;
+        let (mut child, status_monitor) = self.adapter.spawn(base_path, config_path, log_path)?;
         self.status_monitor = Some(status_monitor);
 
         let mut app_shutdown = app_shutdown.clone();
@@ -100,6 +101,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             Ok(0)
         }));
         Ok(())
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.watcher_task.is_some() && !self.watcher_task.as_ref().unwrap().inner().is_finished()
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {

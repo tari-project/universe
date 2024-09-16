@@ -18,20 +18,31 @@ enum CurrentOperatingSystem {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct HardwareParameters {
-    label: String,
-    usage_percentage: f32,
-    current_temperature: f32,
-    max_temperature: f32,
+    pub label: String,
+    pub usage_percentage: f32,
+    pub current_temperature: f32,
+    pub max_temperature: f32,
 }
 
-#[derive(Debug, Serialize)]
+impl Default for HardwareParameters {
+    fn default() -> Self {
+        HardwareParameters {
+            label: "N/A".to_string(),
+            usage_percentage: 0.0,
+            current_temperature: 0.0,
+            max_temperature: 0.0,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
 pub struct HardwareStatus {
-    cpu: Option<HardwareParameters>,
-    gpu: Option<HardwareParameters>,
+    pub cpu: Option<HardwareParameters>,
+    pub gpu: Option<HardwareParameters>,
 }
 
 trait HardwareMonitorImpl: Send + Sync + 'static {
-    fn get_implementation_name(&self) -> String;
+    fn _get_implementation_name(&self) -> String;
     fn read_cpu_parameters(
         &self,
         current_parameters: Option<HardwareParameters>,
@@ -40,10 +51,11 @@ trait HardwareMonitorImpl: Send + Sync + 'static {
         &self,
         current_parameters: Option<HardwareParameters>,
     ) -> HardwareParameters;
-    fn log_all_components(&self);
+    fn _log_all_components(&self);
 }
 
 pub struct HardwareMonitor {
+    #[allow(dead_code)]
     current_os: CurrentOperatingSystem,
     current_implementation: Box<dyn HardwareMonitorImpl>,
     cpu: Option<HardwareParameters>,
@@ -122,11 +134,11 @@ struct WindowsHardwareMonitor {
     nvml: Option<Nvml>,
 }
 impl HardwareMonitorImpl for WindowsHardwareMonitor {
-    fn get_implementation_name(&self) -> String {
+    fn _get_implementation_name(&self) -> String {
         "Windows".to_string()
     }
 
-    fn log_all_components(&self) {
+    fn _log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
             println!(
@@ -229,10 +241,10 @@ struct LinuxHardwareMonitor {
     nvml: Option<Nvml>,
 }
 impl HardwareMonitorImpl for LinuxHardwareMonitor {
-    fn get_implementation_name(&self) -> String {
+    fn _get_implementation_name(&self) -> String {
         "Linux".to_string()
     }
-    fn log_all_components(&self) {
+    fn _log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
             println!(
@@ -262,10 +274,10 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             .filter(|c| c.label().contains("k10temp Tctl"))
             .collect();
 
-        let available_cpu_components = if !amd_cpu_component.is_empty() {
-            amd_cpu_component
-        } else {
+        let available_cpu_components = if amd_cpu_component.is_empty() {
             intel_cpu_component
+        } else {
+            amd_cpu_component
         };
 
         let avarage_temperature = available_cpu_components
@@ -350,10 +362,10 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
 
 struct MacOSHardwareMonitor {}
 impl HardwareMonitorImpl for MacOSHardwareMonitor {
-    fn get_implementation_name(&self) -> String {
+    fn _get_implementation_name(&self) -> String {
         "MacOS".to_string()
     }
-    fn log_all_components(&self) {
+    fn _log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
             println!(
@@ -382,10 +394,10 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             .filter(|c| c.label().contains("MTR"))
             .collect();
 
-        let available_cpu_components = if !silicon_cpu_components.is_empty() {
-            silicon_cpu_components
-        } else {
+        let available_cpu_components = if silicon_cpu_components.is_empty() {
             intel_cpu_components
+        } else {
+            silicon_cpu_components
         };
 
         let avarage_temperature = available_cpu_components

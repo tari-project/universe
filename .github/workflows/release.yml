@@ -15,9 +15,14 @@ name: Release
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' || github.ref != 'refs/heads/release' }}
 
 permissions: {}
+
+
+env:
+  TARI_NETWORK: nextnet
+  TARI_TARGET_NETWORK: nextnet
 
 jobs:
   builds:
@@ -28,17 +33,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        #  - platform: 'ubuntu-20.04'
-        #    args: ''
-          - platform: 'windows-2019'
+          - platform: 'ubuntu-20.04'
             args: ''
+          - platform: 'windows-2019'
+            args: '--bundles msi,updater'
           - platform: 'macos-latest'
-            args: '--verbose --target universal-apple-darwin'
+            args: '--target universal-apple-darwin'
 
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set environment variables for release
+        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        shell: bash
+        run: |
+          echo "tagName=v__VERSION__" >> $GITHUB_ENV
+          echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
+          #echo "releaseId=" >> $GITHUB_ENV
 
       - name: Node.js setup
         uses: actions/setup-node@v4
@@ -49,6 +62,8 @@ jobs:
       - name: Rust setup (linux)
         if: startsWith(runner.os,'Linux')
         uses: dtolnay/rust-toolchain@stable
+        env:
+          RUSTUP_PERMIT_COPY_RENAME: true
         with:
           toolchain: stable
           target: aarch64-unknown-linux-gnu
@@ -60,7 +75,7 @@ jobs:
           target: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Cache cargo files and outputs
-        if: ${{ ( ! startsWith(github.ref, 'refs/tags/v') ) }}
+        if: ${{ ( ! startsWith(github.ref, 'refs/heads/release') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
@@ -82,18 +97,38 @@ jobs:
         run: |
           # openssl, cmake and autoconf already installed
           brew install zip coreutils automake protobuf libtool
+          # force install rust OSX multi-arch components
+          cd src-tauri
+          rustup target add x86_64-apple-darwin
+          rustup target add aarch64-apple-darwin
+          rustup toolchain install stable-x86_64-apple-darwin --force-non-host
+          rustup toolchain install stable-aarch64-apple-darwin --force-non-host
 
-      - name: Install dependencies (Windows)
+      - name: Install dependencies (windows)
         if: startsWith(runner.os,'Windows')
         run: |
           vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
           choco upgrade protoc -y
 
-      - name: Set environment variables (Windows)
+      - name: Set environment variables (windows)
         if: startsWith(runner.os,'Windows')
         shell: bash
         run: |
           echo "SQLITE3_LIB_DIR=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
+
+      - name: Azure code-signing setup (windows only)
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -c Tarilabs %1
+        run: |
+          cd "$GITHUB_WORKSPACE/src-tauri"
+          echo "{}" | \
+            jq '.tauri .bundle .windows += {"signCommand": "${{ env.WINDOWS_SIGN_COMMAND }}"}' > \
+              ./tauri.windows.conf.json
+          cat ./tauri.windows.conf.json
+          cargo install trusted-signing-cli
 
       - name: Install dependencies (node)
         run: |
@@ -101,24 +136,36 @@ jobs:
           npm install
 
       - name: Build Tauri apps
+        id: build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
+          ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE || secrets.AZURE_TENANT_ID }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          AZURE_TENANT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_SECRET }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
         with:
-          tagName: tari_universe-v__VERSION__
-          releaseName: 'Tari Universe v__VERSION__'
+          tagName: ${{ env.tagName }}
+          releaseName: ${{ env.releaseName }}
           releaseBody: 'Tari Universe - See the assets to download this version and install'
+          #releaseId: ${{ env.releaseId }}
           releaseDraft: true
           prerelease: true
           includeDebug: false
           includeRelease: true
           args: ${{ matrix.args }}
+
+      - name: Upload
+        if: ${{ startsWith(github.ref, 'refs/heads/build-') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
+          path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"

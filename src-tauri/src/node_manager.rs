@@ -1,13 +1,15 @@
-use crate::node_adapter::MinotariNodeAdapter;
-use crate::process_watcher::ProcessWatcher;
-use crate::ProgressTracker;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tokio::fs;
 use tokio::sync::RwLock;
+
+use crate::node_adapter::{MinotariNodeAdapter, MinotariNodeStatusMonitorError};
+use crate::process_watcher::ProcessWatcher;
+use crate::ProgressTracker;
 
 #[derive(Debug, thiserror::Error)]
 pub enum NodeManagerError {
@@ -15,6 +17,8 @@ pub enum NodeManagerError {
     ExitCode(i32),
     #[error("Node failed with an unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
+    #[error("Node not started")]
+    NodeNotStarted,
 }
 
 pub struct NodeManager {
@@ -57,12 +61,13 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
             process_watcher
-                .start(app_shutdown, base_path, log_path)
+                .start(app_shutdown, base_path, config_path, log_path)
                 .await?;
         }
         self.wait_ready().await?;
@@ -73,11 +78,12 @@ impl NodeManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
-            .start(app_shutdown, base_path, log_path)
+            .start(app_shutdown, base_path, config_path, log_path)
             .await?;
 
         Ok(())
@@ -134,15 +140,22 @@ impl NodeManager {
     /// Returns Sha hashrate, Rx hashrate and block reward
     pub async fn get_network_hash_rate_and_block_reward(
         &self,
-    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), anyhow::Error> {
+    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), NodeManagerError> {
         let status_monitor_lock = self.watcher.read().await;
         let status_monitor = status_monitor_lock
             .status_monitor
             .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+            .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
         status_monitor
             .get_network_hash_rate_and_block_reward()
             .await
+            .map_err(|e| {
+                if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
+                    NodeManagerError::NodeNotStarted
+                } else {
+                    NodeManagerError::UnknownError(e.into())
+                }
+            })
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
@@ -154,10 +167,10 @@ impl NodeManager {
         status_monitor.get_identity().await
     }
 
-    pub async fn stop(&self) -> Result<(), anyhow::Error> {
+    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        process_watcher.stop().await?;
-        Ok(())
+        let exit_code = process_watcher.stop().await?;
+        Ok(exit_code)
     }
 }
 

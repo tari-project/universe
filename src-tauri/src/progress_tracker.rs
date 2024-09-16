@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
-use log::info;
+use log::{error, info};
 use tokio::sync::RwLock;
 
 use crate::setup_status_event::SetupStatusEvent;
@@ -30,8 +30,16 @@ impl ProgressTracker {
         self.inner.write().await.set_next_max(max);
     }
 
-    pub async fn update(&self, title: String, progress: u64) {
-        self.inner.read().await.update(title, progress);
+    pub async fn update(
+        &self,
+        title: String,
+        title_params: Option<HashMap<String, String>>,
+        progress: u64,
+    ) {
+        self.inner
+            .read()
+            .await
+            .update(title, title_params, progress);
     }
 }
 
@@ -55,18 +63,26 @@ impl ProgressTrackerInner {
         self.next_max = max;
     }
 
-    pub fn update(&self, title: String, progress: u64) {
+    pub fn update(
+        &self,
+        title: String,
+        title_params: Option<HashMap<String, String>>,
+        progress: u64,
+    ) {
         info!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
-        let _ = self.window.emit(
-            "message",
-            SetupStatusEvent {
-                event_type: "setup_status".to_string(),
-                title,
-                progress: (self.min
-                    + ((self.next_max - self.min) as f64 * (progress as f64 / 100.0)) as u64)
-                    as f64
-                    / 100.0,
-            },
-        );
+        self.window
+            .emit(
+                "message",
+                SetupStatusEvent {
+                    event_type: "setup_status".to_string(),
+                    title,
+                    title_params,
+                    progress: (self.min as f64
+                        + (((self.next_max - self.min) as f64) * ((progress as f64) / 100.0)))
+                        / 100.0,
+                },
+            )
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))
+            .ok();
     }
 }

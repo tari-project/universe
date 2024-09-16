@@ -1,0 +1,18 @@
+{
+    "submit": "Wyślij",
+    "cancel": "Anuluj",
+    "temperature": "Temperatura",
+    "max-temperature": "Maksymalna temperatura",
+    "usage": "Użycie",
+    "seconds": "sekundy",
+    "copied": "Skopiowano",
+    "unknown": "Nieznany",
+    "versions": "Wersje",
+    "version": "Wersja",
+    "resources": "Zasoby",
+    "hashrate": "Prędkość ( hashrate )",
+    "utilization": "Wykorzystanie",
+    "mode": "Tryb",
+    "day": "Dzień",
+    "shutting-down": "Wyłączanie.."
+}

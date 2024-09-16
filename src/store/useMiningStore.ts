@@ -1,14 +1,18 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { create } from './create';
+
 import { BlockTimeData } from '@app/types/mining.ts';
-import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 
 interface State {
     displayBlockTime?: BlockTimeData;
-    displayBlockHeight?: number;
     earnings?: number;
     postBlockAnimation?: boolean;
     timerPaused?: boolean;
+    displayBlockHeight?: number;
+    hashrateReady?: boolean;
+
+    miningInitiated: boolean;
+    miningControlsEnabled: boolean;
+    isChangingMode: boolean;
 }
 interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
@@ -16,29 +20,32 @@ interface Actions {
     setEarnings: (earnings?: number) => void;
     setPostBlockAnimation: (postBlockAnimation: boolean) => void;
     setTimerPaused: (timerPaused: boolean) => void;
+
+    setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
+    setMiningInitiated: (miningInitiated: State['miningInitiated']) => void;
+    setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
 }
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
-    displayBlockHeight: useBaseNodeStatusStore.getState().block_height,
+    displayBlockHeight: undefined,
     timerPaused: false,
     postBlockAnimation: false,
+    hashrateReady: false,
+    miningInitiated: false,
+    isChangingMode: false,
+    miningControlsEnabled: true,
 };
 
-export const useMiningStore = create<MiningStoreState>()(
-    persist(
-        (set) => ({
-            ...initialState,
-            setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
-            setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
-            setEarnings: (earnings) => set({ earnings }),
-            setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
-            setTimerPaused: (timerPaused) => set({ timerPaused }),
-        }),
-        {
-            name: 'mining',
-            storage: createJSONStorage(() => sessionStorage),
-            version: 2,
-        }
-    )
-);
+export const useMiningStore = create<MiningStoreState>()((set) => ({
+    ...initialState,
+    setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
+    setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
+    setEarnings: (earnings) => set({ earnings }),
+    setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
+    setTimerPaused: (timerPaused) => set({ timerPaused }),
+
+    setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
+    setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
+}));

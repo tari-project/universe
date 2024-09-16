@@ -1,12 +1,14 @@
-use crate::download_utils::{download_file, extract};
+use crate::download_utils::{download_file_with_retries, extract, validate_checksum};
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{info, warn};
-use semver::Version;
+use log::{debug, error, info, warn};
+use regex::Regex;
+use semver::{Version, VersionReq};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
+use tari_common::configuration::Network;
 use tauri::api::path::cache_dir;
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
@@ -35,6 +37,7 @@ pub struct VersionAsset {
 #[async_trait]
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
     async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error>;
+    fn is_version_allowed(&self, version: &Version) -> bool;
 
     fn get_binary_folder(&self) -> PathBuf;
 
@@ -49,6 +52,10 @@ pub struct XmrigVersionApiAdapter {}
 #[async_trait]
 impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
+        todo!()
+    }
+
+    fn is_version_allowed(&self, _version: &Version) -> bool {
         todo!()
     }
 
@@ -67,26 +74,44 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 pub struct GithubReleasesAdapter {
     pub repo: String,
     pub owner: String,
+    pub semver: Option<VersionReq>,
+    pub version_pre_filter: Option<Regex>,
+    pub specific_name: Option<Regex>,
 }
 
 #[async_trait]
 impl LatestVersionApiAdapter for GithubReleasesAdapter {
+    fn is_version_allowed(&self, version: &Version) -> bool {
+        if let Some(semver) = &self.semver {
+            if !semver.matches(version) {
+                return false;
+            }
+        }
+        if let Some(pre_filter) = &self.version_pre_filter {
+            return pre_filter.is_match(version.pre.as_str());
+        }
+        true
+    }
+
     async fn fetch_latest_release(&self) -> Result<VersionDownloadInfo, Error> {
         let releases = github::list_releases(&self.owner, &self.repo).await?;
         // dbg!(&releases);
-        let network = "pre";
+        // let network = match Network::get_current_or_user_setting_or_default() {
+        // Network::NextNet => "rc",
+        // Network::Esmeralda => "pre",
+        // _ => panic!("Unsupported network"),
+        // };
         let version = releases
             .iter()
             .filter_map(|v| {
-                if v.version.pre.starts_with(network) {
-                    info!(target: LOG_TARGET, "Found candidate version: {}", v.version);
+                if self.is_version_allowed(&v.version) {
                     Some(&v.version)
                 } else {
                     None
                 }
             })
             .max()
-            .ok_or_else(|| anyhow!("No pre release found"))?;
+            .ok_or_else(|| anyhow!("No suitable version found"))?;
 
         info!(target: LOG_TARGET, "Selected version: {}", version);
         let info = releases
@@ -101,7 +126,13 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         cache_dir()
             .unwrap()
             .join("com.tari.universe")
+            .join("binaries")
             .join(&self.repo)
+            .join(
+                Network::get_current_or_user_setting_or_default()
+                    .to_string()
+                    .to_lowercase(),
+            )
     }
 
     fn find_version_for_platform(
@@ -111,26 +142,34 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let mut name_suffix = "";
         // TODO: add platform specific logic
         if cfg!(target_os = "windows") {
-            name_suffix = "windows-x64.exe.zip";
+            name_suffix = r"windows-x64.*\.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-            name_suffix = "macos-x86_64.zip";
+            name_suffix = r"macos-x86_64.*\.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            name_suffix = "macos-arm64.zip";
+            name_suffix = r"macos-arm64.*\.zip";
         }
         if cfg!(target_os = "linux") {
-            name_suffix = "linux-x86_64.zip";
+            name_suffix = r"linux-x86_64.*\.zip";
         }
 
         info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
 
+        let reg = Regex::new(name_suffix).unwrap();
+
         let platform = version
             .assets
             .iter()
-            .find(|a| a.name.ends_with(name_suffix))
+            .find(|a| {
+                if let Some(ref specific) = self.specific_name {
+                    specific.is_match(&a.name) && reg.is_match(&a.name)
+                } else {
+                    reg.is_match(&a.name)
+                }
+            })
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
         info!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
@@ -140,12 +179,33 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 impl BinaryResolver {
     pub fn new() -> Self {
         let mut adapters = HashMap::<Binaries, Box<dyn LatestVersionApiAdapter>>::new();
+        // Not working. Keeping for reference because it's not in any commits yet
+        // let tari_semver = match Network::get_current_or_user_setting_or_default() {
+        // Network::NextNet => VersionReq::parse(">=1.4.0-rc.0, <1.5.0").unwrap(),
+        // Network::Esmeralda => VersionReq::parse(">=1.4.1-pre.0, <1.5.0").unwrap(),
+        // _ => panic!("Unsupported network"),
+        // };
+        let (tari_pre_filter, gpuminer_specific) =
+            match Network::get_current_or_user_setting_or_default() {
+                Network::NextNet => (
+                    Some(Regex::new(r"rc").unwrap()),
+                    Some(Regex::new(r"opencl.*nextnet").unwrap()),
+                ),
+                Network::Esmeralda => (
+                    Some(Regex::new(r"pre").unwrap()),
+                    Some(Regex::new(r"opencl.*testnet").unwrap()),
+                ),
+                _ => panic!("Unsupported network"),
+            };
         adapters.insert(Binaries::Xmrig, Box::new(XmrigVersionApiAdapter {}));
         adapters.insert(
             Binaries::MergeMiningProxy,
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                semver: None,
+                version_pre_filter: tari_pre_filter.clone(),
+                specific_name: None,
             }),
         );
         adapters.insert(
@@ -153,6 +213,9 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                semver: None,
+                version_pre_filter: tari_pre_filter.clone(),
+                specific_name: None,
             }),
         );
         adapters.insert(
@@ -160,8 +223,33 @@ impl BinaryResolver {
             Box::new(GithubReleasesAdapter {
                 repo: "tari".to_string(),
                 owner: "tari-project".to_string(),
+                semver: None,
+                version_pre_filter: tari_pre_filter.clone(),
+                specific_name: None,
             }),
         );
+
+        adapters.insert(
+            Binaries::GpuMiner,
+            Box::new(GithubReleasesAdapter {
+                repo: "tarigpuminer".to_string(),
+                owner: "stringhandler".to_string(),
+                semver: None, // VersionReq::parse(">=0.1.8-pre, <0.1.9-pre").unwrap(),
+                version_pre_filter: None,
+                specific_name: gpuminer_specific,
+            }),
+        );
+        adapters.insert(
+            Binaries::ShaP2pool,
+            Box::new(GithubReleasesAdapter {
+                repo: "sha-p2pool".to_string(),
+                owner: "tari-project".to_string(),
+                semver: None, // VersionReq::parse(">=0.1.4-pre, <0.1.5-pre.0").unwrap(),
+                version_pre_filter: None,
+                specific_name: None,
+            }),
+        );
+
         Self {
             adapters,
             download_mutex: Mutex::new(()),
@@ -183,24 +271,7 @@ impl BinaryResolver {
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
         let base_dir = adapter.get_binary_folder().join(version.to_string());
-        match binary {
-            Binaries::Xmrig => {
-                let xmrig_bin = base_dir.join("xmrig");
-                Ok(xmrig_bin)
-            }
-            Binaries::MergeMiningProxy => {
-                let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
-                Ok(mmproxy_bin)
-            }
-            Binaries::MinotariNode => {
-                let minotari_node_bin = base_dir.join("minotari_node");
-                Ok(minotari_node_bin)
-            }
-            Binaries::Wallet => {
-                let wallet_bin = base_dir.join("minotari_console_wallet");
-                Ok(wallet_bin)
-            }
-        }
+        get_binary_name(binary, base_dir)
     }
 
     pub async fn ensure_latest(
@@ -237,9 +308,14 @@ impl BinaryResolver {
             .join(latest_release.version.to_string());
         let _lock = self.download_mutex.lock().await;
 
-        if force_download {
-            println!("Cleaning up existing dir");
-            let _ = fs::remove_dir_all(&bin_folder).await;
+        if force_download && bin_folder.exists() {
+            info!(target: LOG_TARGET, "Cleaning up existing dir");
+            fs::remove_dir_all(&bin_folder)
+                .await
+                .inspect_err(
+                    |e| error!(target: LOG_TARGET, "Could not remove existing dir: {:?}", e),
+                )
+                .ok();
         }
         if !bin_folder.exists() || bin_folder.join("in_progress").exists() {
             info!(target: LOG_TARGET, "Creating {} dir", binary.name());
@@ -256,21 +332,44 @@ impl BinaryResolver {
             }
 
             let asset = adapter.find_version_for_platform(&latest_release)?;
-            // let platform = latest_release
-            //     .get_asset(&::get_os_string())
-            //     .ok_or(anyhow::anyhow!("Failed to get windows_x64 asset"))?;
             info!(target: LOG_TARGET, "Downloading file");
             info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
-            let in_progress_file = in_progress_dir.join(&asset.name);
-            download_file(&asset.url, &in_progress_file, progress_tracker).await?;
+            let in_progress_file_zip = in_progress_dir.join(&asset.name);
+            download_file_with_retries(&asset.url, &in_progress_file_zip, progress_tracker.clone())
+                .await?;
             info!(target: LOG_TARGET, "Renaming file");
             info!(target: LOG_TARGET, "Extracting file");
-            let bin_dir = adapter
-                .get_binary_folder()
-                .join(latest_release.version.to_string());
-            extract(&in_progress_file, &bin_dir).await?;
 
+            let in_progress_file_sha256 = in_progress_dir
+                .clone()
+                .join(format!("{}.sha256", asset.name));
+            let asset_sha256_url = format!("{}.sha256", asset.url.clone());
+            download_file_with_retries(
+                &asset_sha256_url,
+                &in_progress_file_sha256,
+                progress_tracker.clone(),
+            )
+            .await?;
+
+            let is_sha_validated = validate_checksum(
+                in_progress_file_zip.clone(),
+                in_progress_file_sha256.clone(),
+                asset.name.clone(),
+            )
+            .await?;
+            if is_sha_validated {
+                println!("ZIP file integrity verified successfully!");
+                println!("Renaming & Extracting file");
+                let bin_dir = adapter
+                    .get_binary_folder()
+                    .join(latest_release.version.to_string());
+                debug!(target:LOG_TARGET, "bin dir: {:?}", &bin_dir);
+
+                extract(&in_progress_file_zip, &bin_dir).await?;
+            } else {
+                return Err(anyhow!("ZIP file integrity verification failed!"));
+            }
             fs::remove_dir_all(in_progress_dir).await?;
         }
         Ok(latest_release.version)
@@ -303,8 +402,25 @@ impl BinaryResolver {
             };
             let path = entry.path();
             if path.is_dir() {
+                // Check for actual binary existing. It can happen that the folder is there,
+                // for in_progress downloads or perhaps the antivirus has quarantined the file
+                let mut executable_name = get_binary_name(binary, path.clone())?;
+
+                if cfg!(target_os = "windows") {
+                    executable_name = executable_name.with_extension("exe");
+                }
+
+                if !executable_name.exists() {
+                    continue;
+                }
+
                 let version = path.file_name().unwrap().to_str().unwrap();
-                versions.push(Version::parse(version).unwrap());
+                let version_typed = Version::parse(version).unwrap();
+                if adapter.is_version_allowed(&version_typed) {
+                    versions.push(version_typed);
+                } else {
+                    warn!(target: LOG_TARGET, "Version {} is not allowed", version);
+                }
             }
         }
 
@@ -346,12 +462,44 @@ impl BinaryResolver {
     }
 }
 
+fn get_binary_name(binary: Binaries, base_dir: PathBuf) -> Result<PathBuf, Error> {
+    match binary {
+        Binaries::Xmrig => {
+            let xmrig_bin = base_dir.join("xmrig");
+            Ok(xmrig_bin)
+        }
+        Binaries::MergeMiningProxy => {
+            let mmproxy_bin = base_dir.join("minotari_merge_mining_proxy");
+            Ok(mmproxy_bin)
+        }
+        Binaries::MinotariNode => {
+            let minotari_node_bin = base_dir.join("minotari_node");
+            Ok(minotari_node_bin)
+        }
+        Binaries::Wallet => {
+            let wallet_bin = base_dir.join("minotari_console_wallet");
+            Ok(wallet_bin)
+        }
+        Binaries::GpuMiner => {
+            let xtrgpu_bin = base_dir.join("xtrgpuminer");
+
+            Ok(xtrgpu_bin)
+        }
+        Binaries::ShaP2pool => {
+            let sha_p2pool_bin = base_dir.join("sha_p2pool");
+            Ok(sha_p2pool_bin)
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Binaries {
     Xmrig,
     MergeMiningProxy,
     MinotariNode,
     Wallet,
+    GpuMiner,
+    ShaP2pool,
 }
 
 impl Binaries {
@@ -361,6 +509,8 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
+            Binaries::GpuMiner => "xtrgpuminer",
+            Binaries::ShaP2pool => "sha-p2pool",
         }
     }
 }

@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
 
 interface State {
@@ -7,7 +7,7 @@ interface State {
     view: viewType;
     visualMode: boolean;
     sidebarOpen: boolean;
-    isMiningSwitchingState: boolean;
+    showExperimental: boolean;
 }
 interface Actions {
     setShowSplash: (showSplash: boolean) => void;
@@ -15,7 +15,7 @@ interface Actions {
     setView: (view: State['view']) => void;
     toggleVisualMode: () => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
-    setIsMiningSwitchingState: (isMiningSwitchingState: State['isMiningSwitchingState']) => void;
+    setShowExperimental: (showExperimental: boolean) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -26,7 +26,7 @@ const initialState: State = {
     view: 'setup',
     visualMode: true,
     sidebarOpen: false,
-    isMiningSwitchingState: false,
+    showExperimental: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -36,5 +36,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setView: (view) => set({ view }),
     toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    setIsMiningSwitchingState: (isMiningSwitchingState) => set({ isMiningSwitchingState }),
+    setShowExperimental: (showExperimental) => set({ showExperimental }),
 }));

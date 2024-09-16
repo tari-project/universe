@@ -1,80 +1,60 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-
-import { useVisualisation } from './useVisualisation.ts';
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import useAppStateStore from '@app/store/appStateStore.ts';
-import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
-
-export enum MiningButtonStateText {
-    STARTING = 'Starting mining',
-    STARTED = 'Pause mining',
-    START = 'Start mining',
-    AUTO_MINING = 'Waiting for idle',
-    AUTO_MINING_STARTED = 'Started auto mining',
-}
+import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { useMiningStore } from '@app/store/useMiningStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore';
 
 export function useMiningControls() {
-    const handleVisual = useVisualisation();
-    const progress = useAppStateStore((s) => s.setupProgress);
-    const miningAllowed = progress >= 1;
-    const isMining = useCPUStatusStore((s) => s.is_mining);
-    const isMiningEnabled = useCPUStatusStore((s) => s.is_mining_enabled);
-    const isAutoMining = useAppStatusStore((s) => s.auto_mining);
+    const setMiningInitiated = useMiningStore((s) => s.setMiningInitiated);
+    const setError = useAppStateStore(useShallow((s) => s.setError));
 
-    const hasMiningStartedAtLeastOnce = useRef(false);
+    const isMiningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
 
-    const isWaitingForHashRate = useMemo(() => {
-        return !isMining && isMiningEnabled;
-    }, [isMining, isMiningEnabled]);
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
 
-    const startMining = useCallback(async () => {
-        if (miningAllowed) {
-            await invoke('start_mining', {}).then(() => {
-                console.info(`mining started`);
-            });
+    const isMining = isCPUMining || isGPUMining;
+    const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
+
+    const handleStart = useCallback(async () => {
+        console.info('Mining starting....');
+        setMiningInitiated(true);
+        try {
+            await invoke('start_mining', {});
+        } catch (e) {
+            console.error(e);
+            const error = e as string;
+            setError(error);
+            setMiningInitiated(false);
         }
-    }, [miningAllowed]);
+    }, [setError, setMiningInitiated]);
 
-    const stopMining = useCallback(async () => {
-        await invoke('stop_mining', {}).then(async () => {
-            console.info(`mining stopped`);
-            handleVisual('stop');
-        });
-    }, [handleVisual]);
-
-    useEffect(() => {
-        if (isMining) {
-            handleVisual('start');
-            hasMiningStartedAtLeastOnce.current = true;
+    const handleStop = useCallback(async () => {
+        console.info('Mining stopping...');
+        setMiningInitiated(false);
+        try {
+            await invoke('stop_mining', {});
+        } catch (e) {
+            console.error(e);
+            const error = e as string;
+            setError(error);
+            setMiningInitiated(true);
         }
-    }, [handleVisual, isMining]);
+    }, [setError, setMiningInitiated]);
 
-    const getMiningButtonStateText = useCallback(() => {
-        if (isWaitingForHashRate) {
-            return MiningButtonStateText.STARTING;
+    const handlePause = useCallback(async () => {
+        console.info('Mining pausing...');
+        try {
+            await invoke('stop_mining', {});
+        } catch (e) {
+            console.error(e);
+            const error = e as string;
+            setError(error);
+            setMiningInitiated(true);
         }
+    }, [setError, setMiningInitiated]);
 
-        if (isAutoMining && isMining) {
-            return MiningButtonStateText.AUTO_MINING_STARTED;
-        }
-
-        if (isAutoMining) {
-            return MiningButtonStateText.AUTO_MINING;
-        }
-
-        if (isMining) {
-            return MiningButtonStateText.STARTED;
-        }
-
-        return MiningButtonStateText.START;
-    }, [isAutoMining, isMining, isWaitingForHashRate]);
-
-    return {
-        startMining,
-        stopMining,
-        hasMiningBeenStopped: hasMiningStartedAtLeastOnce.current,
-        getMiningButtonStateText,
-        isWaitingForHashRate,
-    };
+    return { handleStart, handleStop, handlePause, isMiningLoading };
 }

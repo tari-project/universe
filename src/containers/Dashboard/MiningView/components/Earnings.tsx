@@ -6,6 +6,8 @@ import { useCallback } from 'react';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
+import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 const variants = {
     visible: {
@@ -13,28 +15,45 @@ const variants = {
         y: -200,
         scale: 1.05,
         transition: {
+            delay: 1,
             duration: 3,
+            ease: 'easeInOut',
             scale: {
-                duration: 0.5,
+                duration: 1,
             },
         },
     },
     hidden: {
         opacity: 0,
         y: -150,
-        transition: { duration: 0.2, delay: 0.8 },
+        transition: { duration: 1, delay: 2, ease: 'linear' },
     },
 };
 
 export default function Earnings() {
-    const earnings = useMiningStore((s) => s.earnings);
-    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
-    const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
+    const { t } = useTranslation('mining-view', { useSuspense: false });
+
+    const { earnings, setPostBlockAnimation, setEarnings, setTimerPaused } = useMiningStore(
+        useShallow((s) => ({
+            setPostBlockAnimation: s.setPostBlockAnimation,
+            setEarnings: s.setEarnings,
+            setTimerPaused: s.setTimerPaused,
+            earnings: s.earnings,
+        }))
+    );
     const formatted = formatBalance(earnings || 0);
+
     const handleComplete = useCallback(() => {
-        setPostBlockAnimation(true);
-        setTimerPaused(false);
-    }, [setPostBlockAnimation, setTimerPaused]);
+        const winTimeout = setTimeout(() => {
+            setPostBlockAnimation(true);
+            setTimerPaused(false);
+            setEarnings(undefined);
+        }, 3000);
+
+        return () => {
+            clearTimeout(winTimeout);
+        };
+    }, [setEarnings, setPostBlockAnimation, setTimerPaused]);
 
     return (
         <EarningsContainer>
@@ -49,7 +68,7 @@ export default function Earnings() {
                             handleComplete();
                         }}
                     >
-                        <span>YOUR REWARD IS</span>
+                        <span>{t('your-reward-is')}</span>
                         <CharSpinner value={formatted.toString()} fontSize={72} />
                     </EarningsWrapper>
                 ) : null}

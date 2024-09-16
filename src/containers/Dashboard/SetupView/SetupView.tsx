@@ -1,24 +1,38 @@
 import setup from '@app/assets/setup.png';
-import { Stack, Typography } from '@mui/material';
-import { StyledLinearProgress, ProgressBox, SetupDescription, SetupPercentage } from '../styles';
 
-function SetupView({ title, progressPercentage }: { title: string; progressPercentage: number }) {
+import { SetupDescription, SetupPercentage, ProgressWrapper } from '../styles';
+import { Stack } from '@app/components/elements/Stack.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { FloatingImage } from './styles';
+import { useTranslation } from 'react-i18next';
+import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
+
+function SetupView({
+    title,
+    titleParams,
+    progressPercentage,
+}: {
+    title: string;
+    titleParams: Record<string, string>;
+    progressPercentage: number;
+}) {
+    const { t } = useTranslation('setup-view', { useSuspense: false });
+
     return (
-        <Stack spacing={0} alignItems="center" sx={{ position: 'relative', zIndex: '1' }}>
-            <img src={setup} alt="Setup" style={{ maxWidth: '260px', height: 'auto' }} />
-            <Typography variant="h3" fontSize={21} mt={3.4}>
-                Setting up the Tari truth machine...
-            </Typography>
-            <SetupDescription mt={0.4} mb={4}>
-                This might take a few minutes.
+        <Stack justifyContent="center" alignItems="center" gap={8}>
+            <FloatingImage src={setup} alt="Soon Meditating" />
+            <Typography variant="h3">{t('setting-up')}</Typography>
+            <SetupDescription>
+                {t('this-might-take-a-few-minutes')}
                 <br />
-                Don’t worry you’ll only need to do this once.
+                {t('dont-worry')}
             </SetupDescription>
-            <ProgressBox>
-                <StyledLinearProgress variant="determinate" value={progressPercentage} />
-            </ProgressBox>
-            <SetupPercentage mt={2.2}>{`${progressPercentage}%`}</SetupPercentage>
-            <SetupDescription>{title}</SetupDescription>
+
+            <ProgressWrapper>
+                <LinearProgress value={progressPercentage} variant="secondary" />
+            </ProgressWrapper>
+            <SetupPercentage>{`${progressPercentage}%`}</SetupPercentage>
+            <SetupDescription>{title ? t(`title.${title}`, titleParams) : ''}</SetupDescription>
         </Stack>
     );
 }

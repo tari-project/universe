@@ -1,0 +1,20 @@
+{
+    "submit": "Onayla",
+    "cancel": "İptal",
+    "temperature": "Sıcaklık",
+    "max-temperature": "Maks. Sıcaklık",
+    "usage": "Kullanım",
+    "seconds": "saniye",
+    "copied": "Kopyalandı",
+    "unknown": "Bilinmeyen",
+    "versions": "Versiyon",
+    "version": "Versiyon",
+    "resources": "Kaynaklar",
+    "hashrate": "Hashrate",
+    "utilization": "Fayda",
+    "mode": "Mode",
+    "day": "Gün",
+    "shutting-down": "Kapatılıyor..",
+    "tari-universe": "Tari Universe",
+    "testnet": "Testnet"
+}

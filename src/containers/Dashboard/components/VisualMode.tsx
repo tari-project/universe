@@ -1,11 +1,13 @@
-import { Switch, Typography } from '@mui/material';
 import { VisualModeContainer } from '../styles';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 
 function VisualMode() {
     const visualMode = useUIStore((s) => s.visualMode);
     const toggleVisualMode = useUIStore((s) => s.toggleVisualMode);
+    const { t } = useTranslation('settings', { useSuspense: false });
 
     const canvasElement = document.getElementById('canvas');
 
@@ -18,14 +20,7 @@ function VisualMode() {
 
     return (
         <VisualModeContainer>
-            <Typography variant="h6">Visual Mode</Typography>
-            <Switch
-                checked={visualMode}
-                onChange={handleSwitch}
-                color="primary"
-                name="visualMode"
-                inputProps={{ 'aria-label': 'primary checkbox' }}
-            />
+            <ToggleSwitch label={t('visual-mode')} variant="gradient" checked={visualMode} onChange={handleSwitch} />
         </VisualModeContainer>
     );
 }

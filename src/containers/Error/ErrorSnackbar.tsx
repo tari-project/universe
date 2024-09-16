@@ -1,59 +1,70 @@
-import { Box, Alert, IconButton, Snackbar } from '@mui/material';
 import { IoClose } from 'react-icons/io5';
-import useAppStateStore from '../../store/appStateStore';
+import { useAppStateStore } from '../../store/appStateStore';
+import { ButtonWrapper, ContentWrapper, Wrapper } from './ErrorSnackbar.styles.ts';
+import { AnimatePresence, easeIn, Variants } from 'framer-motion';
+import { IconButton } from '@app/components/elements/Button.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
-function ErrorSnackbar() {
-  const { error, setError } = useAppStateStore((state) => ({
-    error: state.error,
-    setError: state.setError,
-  }));
+import { useCallback, useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 
-  const handleClose = (
-    _event: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason === 'clickaway') {
-      return;
-    }
+const transition = {
+    duration: 0.3,
+    ease: easeIn,
+};
+const variants: Variants = {
+    hidden: {
+        y: 200,
+        opacity: 0,
+        ...transition,
+    },
+    visible: {
+        y: 0,
+        opacity: 1,
+        ...transition,
+    },
+};
 
-    setError('');
-  };
+const AUTO_CLOSE_TIMEOUT = 5000;
+export default function ErrorSnackbar() {
+    const [show, setShow] = useState(false);
+    const error = useAppStateStore(useShallow((s) => s.error));
+    const setError = useAppStateStore((s) => s.setError);
 
-  return (
-    <Snackbar
-      open={error !== ''}
-      autoHideDuration={20000}
-      onClose={handleClose}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-    >
-      <Alert
-        onClose={handleClose}
-        severity="error"
-        variant="filled"
-        sx={{
-          width: '100%',
-        }}
-        action={
-          <IconButton
-            aria-label="close"
-            color="inherit"
-            size="small"
-            onClick={handleClose}
-          >
-            <IoClose fontSize="inherit" style={{ color: 'white' }} />
-          </IconButton>
+    const handleClose = useCallback(() => {
+        setError(undefined);
+    }, [setError]);
+
+    useEffect(() => {
+        setShow(Boolean(error && error?.length));
+    }, [error]);
+
+    useEffect(() => {
+        if (show) {
+            const closeTimeout = setTimeout(() => {
+                handleClose();
+            }, AUTO_CLOSE_TIMEOUT);
+
+            return () => {
+                clearTimeout(closeTimeout);
+            };
         }
-      >
-        <Box
-          style={{
-            minWidth: '238px',
-          }}
-        >
-          {error}
-        </Box>
-      </Alert>
-    </Snackbar>
-  );
-}
+    }, [handleClose, show]);
 
-export default ErrorSnackbar;
+    return (
+        <AnimatePresence>
+            {show && (
+                <Wrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
+                    <ButtonWrapper>
+                        <IconButton aria-label="close" onClick={handleClose}>
+                            <IoClose />
+                        </IconButton>
+                    </ButtonWrapper>
+                    <ContentWrapper>
+                        <Typography>{error}</Typography>
+                    </ContentWrapper>
+                </Wrapper>
+            )}
+        </AnimatePresence>
+    );
+}

@@ -1,14 +1,14 @@
-import { createTheme } from '@mui/material/styles';
 import { light, dark, componentSettings } from './tokens';
+import { DefaultTheme } from 'styled-components';
 
-const lightTheme = createTheme({
-  ...light,
-  ...componentSettings,
-});
+const lightTheme: DefaultTheme = {
+    ...light,
+    ...componentSettings,
+};
 
-const darkTheme = createTheme({
-  ...dark,
-  ...componentSettings,
-});
+const darkTheme: DefaultTheme = {
+    ...dark,
+    ...componentSettings,
+};
 
 export { lightTheme, darkTheme };
