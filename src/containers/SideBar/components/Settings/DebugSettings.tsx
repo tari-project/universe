@@ -1,14 +1,13 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { useShallow } from 'zustand/react/shallow';
+import { useMiningStore } from '@app/store/useMiningStore';
 
 export default function DebugSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
-    const blockTime = useAppStatusStore(useShallow((state) => state.base_node?.block_time));
+    const blockTime = useMiningStore((state) => state.base_node?.block_time);
 
     const now = new Date();
     const lastBlockTime = calculateTimeSince(blockTime || 0, now.getTime());

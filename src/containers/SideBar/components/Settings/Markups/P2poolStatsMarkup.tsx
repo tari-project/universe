@@ -1,5 +1,3 @@
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useShallow } from 'zustand/react/shallow';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CardContainer } from '../Settings.styles';
@@ -8,25 +6,19 @@ import { MinerContainer } from '../../../Miner/styles';
 import { useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import formatBalance from '@app/utils/formatBalance';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
+import { useWalletStore } from '@app/store/useWalletStore';
+import { useEffect } from 'react';
 
 const P2PoolStats = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const walletAddress = useWalletStore((s) => s.tari_address_base58);
+    const isP2poolEnabled = useAppConfigStore((s) => s.p2pool_enabled);
+    const p2poolSha3Stats = useP2poolStatsStore((s) => s.sha3);
+    const p2poolRandomXStats = useP2poolStatsStore((s) => s.randomx);
+    const fetchP2pStats = useP2poolStatsStore((s) => s.fetchP2poolStats);
 
-    const { walletAddress, p2poolStats } = useAppStatusStore(
-        useShallow((s) => ({
-            walletAddress: s.tari_address_base58,
-            p2poolStats: s.p2pool_stats,
-        }))
-    );
-
-    const { isP2poolEnabled } = useAppStatusStore(
-        useShallow((s) => ({
-            isP2poolEnabled: s.p2pool_enabled,
-        }))
-    );
-
-    const p2poolSha3Stats = p2poolStats?.sha3;
-    const p2poolRandomXStats = p2poolStats?.randomx;
     const p2poolTribe = p2poolSha3Stats?.tribe?.name;
     const p2poolSha3MinersCount = p2poolSha3Stats?.num_of_miners;
     const p2poolRandomxMinersCount = p2poolRandomXStats?.num_of_miners;
@@ -42,6 +34,22 @@ const P2PoolStats = () => {
         p2poolSha3UserTotalEarnings && p2poolRandomxUserTotalEarnings
             ? p2poolSha3UserTotalEarnings + p2poolRandomxUserTotalEarnings
             : 0;
+
+    useEffect(() => {
+        if (isP2poolEnabled) {
+            const fetchfetchP2pStatsInterval = setInterval(async () => {
+                try {
+                    await fetchP2pStats();
+                } catch (error) {
+                    console.error('Error fetching p2pool stats:', error);
+                }
+            }, 1000);
+
+            return () => {
+                clearInterval(fetchfetchP2pStatsInterval);
+            };
+        }
+    }, [fetchP2pStats, isP2poolEnabled]);
 
     return isP2poolEnabled ? (
         <MinerContainer>

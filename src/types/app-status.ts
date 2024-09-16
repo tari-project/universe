@@ -1,5 +1,35 @@
 import { modeType } from '../store/types';
 
+export interface AppConfig {
+    config_version: number;
+    config_file?: string;
+    mode: modeType;
+    auto_mining: boolean;
+    p2pool_enabled: boolean;
+    last_binaries_update_timestamp: string;
+    allow_telemetry: boolean;
+    anon_id: string;
+    monero_address: string;
+    gpu_mining_enabled: boolean;
+    cpu_mining_enabled: boolean;
+}
+
+export interface CpuMinerMetrics {
+    hardware?: HardwareParameters;
+    mining: CpuMinerStatus;
+}
+
+export interface GpuMinerMetrics {
+    hardware?: HardwareParameters;
+    mining: GpuMinerStatus;
+}
+
+export interface MinerMetrics {
+    cpu: CpuMinerMetrics;
+    gpu: GpuMinerMetrics;
+    base_node: BaseNodeStatus;
+}
+
 export interface AppStatus {
     cpu?: CpuMinerStatus;
     gpu?: GpuMinerStatus;
@@ -20,6 +50,12 @@ export interface AppStatus {
     cpu_mining_enabled: boolean;
     gpu_mining_enabled: boolean;
     telemetry_mode: boolean;
+}
+
+export interface TariWalletDetails {
+    wallet_balance: WalletBalance;
+    tari_address_base58: string;
+    tari_address_emoji: string;
 }
 
 export interface P2poolStatsResult {

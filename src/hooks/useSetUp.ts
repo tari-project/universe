@@ -1,20 +1,29 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../types.ts';
 
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
 import { useAppStateStore } from '../store/appStateStore.ts';
-
-import { useVersions } from '@app/hooks/useVersions.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export function useSetUp() {
-    const startupInitiated = useRef(false);
     const setView = useUIStore((s) => s.setView);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setError = useAppStateStore((s) => s.setError);
-    const hasCheckedForUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
-    useVersions();
+    const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
+    const fetchApplicationsVersions = useAppStateStore((s) => s.fetchApplicationsVersions);
+    const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
+    const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+
+    useEffect(() => {
+        async function initialize() {
+            await fetchApplicationsVersions();
+            await fetchAppConfig();
+        }
+        initialize();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
@@ -32,6 +41,7 @@ export function useSetUp() {
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         setView('mining');
+                        settingUpFinished();
                     }
                     break;
                 default:
@@ -39,18 +49,15 @@ export function useSetUp() {
                     break;
             }
         });
-        if (!startupInitiated.current && hasCheckedForUpdate) {
+        if (isAfterAutoUpdate) {
             clearStorage();
-            invoke('setup_application')
-                .then(() => {
-                    startupInitiated.current = true;
-                })
-                .catch((e) => {
-                    setError(`Failed to setup application: ${e}`);
-                });
+            invoke('setup_application').catch((e) => {
+                setError(`Failed to setup application: ${e}`);
+                setView('mining');
+            });
         }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [clearStorage, hasCheckedForUpdate, setError, setSetupDetails, setView]);
+    }, [clearStorage, isAfterAutoUpdate, setError, setSetupDetails, setView, settingUpFinished]);
 }

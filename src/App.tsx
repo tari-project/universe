@@ -4,7 +4,6 @@ import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
 import { useUIStore } from './store/useUIStore.ts';
-import { useGetStatus } from './hooks/useGetStatus.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 import { useEnvironment } from './hooks/useEnvironment.ts';
 import { SplashScreen } from './containers/SplashScreen';
@@ -21,12 +20,13 @@ import useMining from '@app/hooks/mining/useMining.ts';
 import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
 import { useMemo } from 'react';
 import SettingsDialog from './containers/SideBar/components/Settings/SettingsDialog.tsx';
+import { useMainAppVersion } from './hooks/useVersions.ts';
 
 export default function App() {
     useAirdropSyncState();
     useSetUp();
     useMining();
-    useGetStatus();
+    useMainAppVersion();
     useEnvironment();
     useUiMiningStateMachine();
 

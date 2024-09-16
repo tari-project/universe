@@ -2,15 +2,11 @@ import { useCallback, useMemo } from 'react';
 import { GiPauseButton } from 'react-icons/gi';
 
 import { IconWrapper, StyledButton, StyledIcon, ButtonWrapper } from './MiningButton.styles.ts';
-import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
 
 import { IoChevronForwardOutline } from 'react-icons/io5';
-import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { useTranslation } from 'react-i18next';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
-import { useShallow } from 'zustand/react/shallow';
 import ButtonOrbitAnimation from '@app/containers/SideBar/Miner/components/ButtonOrbitAnimation.tsx';
 import { AnimatePresence } from 'framer-motion';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
@@ -22,16 +18,16 @@ enum MiningButtonStateText {
 
 export default function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
+    const startMining = useMiningStore((s) => s.startMining);
+    const stopMining = useMiningStore((s) => s.stopMining);
     const isAppSettingUp = useAppStateStore((s) => s.isSettingUp);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
-
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
-    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
-    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
+    const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
 
     const isMining = isCPUMining || isGPUMining;
-
-    const { handleStop, handleStart, isMiningLoading } = useMiningControls();
+    const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
 
     const miningButtonStateText = useMemo(() => {
         return isMining && isMiningInitiated ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
@@ -39,11 +35,11 @@ export default function MiningButton() {
 
     const handleClick = useCallback(async () => {
         if (!isMining) {
-            return await handleStart();
+            await startMining();
         } else {
-            return await handleStop();
+            await stopMining();
         }
-    }, [handleStart, handleStop, isMining]);
+    }, [isMining, startMining, stopMining]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
     return (

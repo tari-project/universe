@@ -2,25 +2,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { setAnimationState } from '../../visuals';
 import { appWindow } from '@tauri-apps/api/window';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useShallow } from 'zustand/react/shallow';
-import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
-import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 export function useVisualisation() {
     const [useFailTimeout, setUseFailTimeout] = useState(false);
-
-    const cpuIsMining = useCPUStatusStore(useShallow((s) => s.is_mining));
-    const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
+    const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
+    const setEarnings = useMiningStore((s) => s.setEarnings);
+    const cpuIsMining = useMiningStore((s) => s.cpu.mining.is_mining);
+    const gpuIsMining = useMiningStore((s) => s.gpu.mining.is_mining);
     const isMining = cpuIsMining || gpuIsMining;
-
-    const { setTimerPaused, setPostBlockAnimation, setEarnings, setMiningControlsEnabled } = useMiningStore(
-        useShallow((s) => ({
-            setMiningControlsEnabled: s.setMiningControlsEnabled,
-            setPostBlockAnimation: s.setPostBlockAnimation,
-            setTimerPaused: s.setTimerPaused,
-            setEarnings: s.setEarnings,
-        }))
-    );
 
     const checkCanAnimate = useCallback(async () => {
         if (!isMining) return false;
