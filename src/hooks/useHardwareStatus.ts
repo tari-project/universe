@@ -18,6 +18,7 @@ export const useHardwareStatus = () => {
             usage_percentage: roundTo(gpuRaw.usage_percentage),
             current_temperature: roundTo(gpuRaw.current_temperature),
             max_temperature: roundTo(gpuRaw.max_temperature),
+            status_error: gpuRaw.status_error,
         };
 
         const cpu: HardwareParameters = {
@@ -25,6 +26,7 @@ export const useHardwareStatus = () => {
             usage_percentage: roundTo(cpuRaw.usage_percentage),
             current_temperature: roundTo(cpuRaw.current_temperature),
             max_temperature: roundTo(cpuRaw.max_temperature),
+            status_error: cpuRaw.status_error,
         };
 
         return { cpu, gpu };

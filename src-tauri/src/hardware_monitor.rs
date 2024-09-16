@@ -22,6 +22,7 @@ pub struct HardwareParameters {
     pub usage_percentage: f32,
     pub current_temperature: f32,
     pub max_temperature: f32,
+    pub status_error: bool,
 }
 
 impl Default for HardwareParameters {
@@ -31,6 +32,7 @@ impl Default for HardwareParameters {
             usage_percentage: 0.0,
             current_temperature: 0.0,
             max_temperature: 0.0,
+            status_error: false,
         }
     }
 }
@@ -178,12 +180,14 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
                 usage_percentage: usage,
                 current_temperature: avarage_temperature,
                 max_temperature: current_parameters.max_temperature.max(avarage_temperature),
+                status_error: false,
             },
             None => HardwareParameters {
                 label,
                 usage_percentage: usage,
                 current_temperature: avarage_temperature,
                 max_temperature: avarage_temperature,
+                status_error: true,
             },
         }
     }
@@ -199,6 +203,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
                     usage_percentage: 0.0,
                     current_temperature: 0.0,
                     max_temperature: 0.0,
+                    status_error: true,
                 }
             }
         };
@@ -206,12 +211,12 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
             Err(e) => {
-                println!("Failed to get main GPU: {}", e);
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
                     current_temperature: 0.0,
                     max_temperature: 0.0,
+                    status_error: true,
                 };
             }
         };
@@ -226,12 +231,14 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
                 usage_percentage,
                 current_temperature,
                 max_temperature: current_parameters.max_temperature.max(current_temperature),
+                status_error: false,
             },
             None => HardwareParameters {
                 label,
                 usage_percentage,
                 current_temperature,
                 max_temperature: current_temperature,
+                status_error: true,
             },
         }
     }
@@ -300,12 +307,14 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
                 usage_percentage: usage,
                 current_temperature: avarage_temperature,
                 max_temperature: current_parameters.max_temperature.max(avarage_temperature),
+                status_error: false,
             },
             None => HardwareParameters {
                 label,
                 usage_percentage: usage,
                 current_temperature: avarage_temperature,
                 max_temperature: avarage_temperature,
+                status_error: true,
             },
         }
     }
@@ -316,12 +325,12 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let nvml: &Nvml = match &self.nvml {
             Some(nvml) => nvml,
             None => {
-                println!("Failed to get NVML");
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
                     current_temperature: 0.0,
                     max_temperature: 0.0,
+                    status_error: true,
                 };
             }
         };
@@ -329,12 +338,12 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
             Err(e) => {
-                println!("Failed to get main GPU: {}", e);
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
                     current_temperature: 0.0,
                     max_temperature: 0.0,
+                    status_error: true,
                 };
             }
         };
@@ -349,12 +358,14 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
                 usage_percentage,
                 current_temperature,
                 max_temperature: current_parameters.max_temperature.max(current_temperature),
+                status_error: false,
             },
             None => HardwareParameters {
                 label,
                 usage_percentage,
                 current_temperature,
                 max_temperature: current_temperature,
+                status_error: true,
             },
         }
     }
@@ -419,12 +430,14 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
                 usage_percentage: usage,
                 current_temperature: avarage_temperature,
                 max_temperature: current_parameters.max_temperature.max(avarage_temperature),
+                status_error: false,
             },
             None => HardwareParameters {
                 label,
                 usage_percentage: usage,
                 current_temperature: avarage_temperature,
                 max_temperature: avarage_temperature,
+                status_error: true,
             },
         }
     }
@@ -452,12 +465,14 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
                 usage_percentage: usage,
                 current_temperature: avarage_temperature,
                 max_temperature: current_parameters.max_temperature.max(avarage_temperature),
+                status_error: false,
             },
             None => HardwareParameters {
                 label,
                 usage_percentage: usage,
                 current_temperature: avarage_temperature,
                 max_temperature: avarage_temperature,
+                status_error: true,
             },
         }
     }
