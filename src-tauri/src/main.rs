@@ -283,6 +283,50 @@ async fn exit_application(
 }
 
 #[tauri::command]
+async fn set_application_language(
+    state: tauri::State<'_, UniverseAppState>,
+    application_language: String,
+) -> Result<(), String> {
+    let _ = state
+        .config
+        .write()
+        .await
+        .set_application_language(application_language.clone())
+        .await;
+    Ok(())
+}
+
+#[tauri::command]
+async fn resolve_application_language(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<String, String> {
+    if state
+        .config
+        .read()
+        .await
+        .has_system_language_been_proposed()
+    {
+        Ok(state.config.read().await.application_language().to_string())
+    } else {
+        let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+        let _ = state
+            .config
+            .write()
+            .await
+            .set_application_language(system_language.clone())
+            .await;
+        let _ = state
+            .config
+            .write()
+            .await
+            .set_has_system_language_been_proposed(true)
+            .await;
+
+        Ok(system_language.clone())
+    }
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -318,6 +362,7 @@ async fn setup_inner(
             },
         )
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
     let config_dir = app.path_resolver().app_config_dir().unwrap();
@@ -1416,6 +1461,8 @@ fn main() {
             set_gpu_mining_enabled,
             set_cpu_mining_enabled,
             restart_application,
+            resolve_application_language,
+            set_application_language,
             get_miner_metrics,
             get_app_config,
             get_p2pool_stats,
