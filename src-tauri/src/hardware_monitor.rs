@@ -210,7 +210,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
 
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
-            Err(e) => {
+            Err(_) => {
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
@@ -337,7 +337,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
 
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
-            Err(e) => {
+            Err(_) => {
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
