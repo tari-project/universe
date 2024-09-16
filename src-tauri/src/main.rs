@@ -309,18 +309,22 @@ async fn resolve_application_language(
         Ok(state.config.read().await.application_language().to_string())
     } else {
         let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
-        let _ = state
-            .config
-            .write()
-            .await
-            .set_application_language(system_language.clone())
-            .await;
-        let _ = state
-            .config
-            .write()
-            .await
-            .set_has_system_language_been_proposed(true)
-            .await;
+        drop(
+            state
+                .config
+                .write()
+                .await
+                .set_application_language(system_language.clone())
+                .await,
+        );
+        drop(
+            state
+                .config
+                .write()
+                .await
+                .set_has_system_language_been_proposed(true)
+                .await,
+        );
 
         Ok(system_language.clone())
     }
