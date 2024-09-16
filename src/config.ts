@@ -1,4 +1,4 @@
 export const appConfig = {
-    displayAirdropWipUI: true,
+    displayAirdropWipUI: false,
     airdropBaseUrl: 'https://airdrop.tari.com',
 };
