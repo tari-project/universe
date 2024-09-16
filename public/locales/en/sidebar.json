@@ -1,9 +1,8 @@
 {
-    "auto-miner":"Auto Miner",
-    "auto-miner-description":"Auto miner will turn on your miner when your machine is idle",
-    "next-milestone":"Next Milestone",
-    "wallet-balance":"Wallet Balance",
-    "setup-scheduler":"Setup Scheduler",
-    "mining-schedules":"Mining Schedules",
-    "mining-schedules-description":"Schedule your mining activity"
-}
+    "auto-miner": "Auto Miner",
+    "auto-miner-description": "Auto miner will turn on your miner when your machine is idle",
+    "next-milestone": "Next Milestone",
+    "wallet-balance": "Wallet Balance",
+    "setup-scheduler": "Setup Scheduler",
+    "mining-schedules": "Mining Schedules",
+    "mining-schedules-description": "Schedule your mining activity"
