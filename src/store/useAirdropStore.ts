@@ -92,7 +92,6 @@ const clearState: AirdropState = {
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
-    backendInMemoryConfig: undefined,
 };
 
 export const useAirdropStore = create<AirdropStore>()(

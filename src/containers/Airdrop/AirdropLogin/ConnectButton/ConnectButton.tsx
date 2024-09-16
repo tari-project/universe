@@ -15,8 +15,8 @@ export default function ConnectButton() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const handleAuth = useCallback(() => {
+        const token = uuidv4();
         if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
-            const token = uuidv4();
             setAuthUuid(token);
             open(`${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}`);
         }
