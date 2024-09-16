@@ -22,6 +22,6 @@ declare module '@tauri-apps/api/tauri' {
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
-    function invoke(param: 'read_randomx_miner'): Promise<CpuMiner>;
+    function invoke(param: 'get_randomx_miner'): Promise<CpuMiner>;
     function invoke(param: 'set_randomx_miner', payload: { miner: CpuMiner }): Promise<void>;
 }

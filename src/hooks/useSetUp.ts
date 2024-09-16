@@ -36,8 +36,7 @@ export function useSetUp() {
         }
 
         const getCpuMiner = async () => {
-            await invoke('read_randomx_miner').then((miner) => {
-                console.log('read_randomx_miner', miner);
+            await invoke('get_randomx_miner').then((miner) => {
                 setCpuMiner(miner);
             });
         };

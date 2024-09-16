@@ -316,7 +316,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let nvml: &Nvml = match &self.nvml {
             Some(nvml) => nvml,
             None => {
-                // println!("Failed to get NVML");
+                println!("Failed to get NVML");
                 return HardwareParameters {
                     label: "N/A".to_string(),
                     usage_percentage: 0.0,
