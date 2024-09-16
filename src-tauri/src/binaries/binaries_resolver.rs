@@ -198,13 +198,6 @@ impl BinaryResolver {
                 .await;
         }
 
-        // If there is no version that meets the requirements, download the highest version
-        if highest_version.clone().is_none() {
-            manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
-                .await;
-        }
-
         // Check if the files exist after download
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
