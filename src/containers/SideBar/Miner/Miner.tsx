@@ -20,8 +20,10 @@ import {
 } from '@app/containers/SideBar/Miner/components/ExpandableTile.styles.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { LayoutGroup } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export default function Miner() {
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const { cpu: cpuHardwareStatus, gpu: gpuHardwareStatus } = useHardwareStatus();
     const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
     const { isCpuMiningEnabled, isGpuMiningEnabled } = useAppStatusStore(
@@ -58,22 +60,34 @@ export default function Miner() {
         <MinerContainer layout>
             <TileContainer layout>
                 <LayoutGroup id="miner-stat-tiles">
-                    <Tile
-                        title="CPU Power"
-                        stats={isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-'}
-                        isLoading={isLoading || (isCpuMiningEnabled && isWaitingForCPUHashRate)}
-                        chipValue={cpuHardwareStatus?.usage_percentage}
-                        unit="H/s"
-                        useLowerCase
-                    />
-                    <Tile
-                        title="GPU Power"
-                        stats={isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-'}
-                        isLoading={isLoading || (isGpuMiningEnabled && isWaitingForGPUHashRate)}
-                        chipValue={gpuHardwareStatus?.usage_percentage}
-                        unit="H/s"
-                        useLowerCase
-                    />
+                    {cpuHardwareStatus?.status_error ? (
+                        <ExpandableTile title="CPU Power" stats={'N/A'} useLowerCase>
+                            <Typography variant="p">{t('cpu-status-warning', { ns: 'settings' })}</Typography>
+                        </ExpandableTile>
+                    ) : (
+                        <Tile
+                            title="CPU Power"
+                            stats={isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-'}
+                            isLoading={isLoading || (isCpuMiningEnabled && isWaitingForCPUHashRate)}
+                            chipValue={cpuHardwareStatus?.usage_percentage}
+                            unit="H/s"
+                            useLowerCase
+                        />
+                    )}
+                    {gpuHardwareStatus?.status_error ? (
+                        <ExpandableTile title="GPU Power" stats={'N/A'}>
+                            <Typography variant="p">{t('gpu-status-warning', { ns: 'settings' })}</Typography>
+                        </ExpandableTile>
+                    ) : (
+                        <Tile
+                            title="GPU Power"
+                            stats={isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-'}
+                            isLoading={isLoading || (isGpuMiningEnabled && isWaitingForGPUHashRate)}
+                            chipValue={gpuHardwareStatus?.usage_percentage}
+                            unit="H/s"
+                            useLowerCase
+                        />
+                    )}
                     <ModeSelect />
                     <ExpandableTile
                         title="Est tXTM/day"
