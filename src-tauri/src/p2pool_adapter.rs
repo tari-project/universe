@@ -7,6 +7,7 @@ use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tokio::select;
 
@@ -81,7 +82,13 @@ impl ProcessAdapter for P2poolAdapter {
 
                     let output = process_utils::launch_and_get_outputs(
                         &file_path,
-                        vec!["list-tribes".to_string()],
+                        vec![
+                            "list-tribes".to_string(),
+                            "--timeout".to_string(),
+                            "5".to_string(),
+                        ],
+                        // TODO: Change or remove (to use default 30 seconds)
+                        // TODO: when more than 1 tribe will be in place.
                     )
                     .await?;
                     let tribes: Vec<String> = serde_json::from_slice(&output)?;
@@ -92,8 +99,22 @@ impl ProcessAdapter for P2poolAdapter {
                     args.push("--tribe".to_string());
                     args.push(tribe);
 
+                    // env
+                    let mut envs = HashMap::new();
+                    match Network::get_current_or_user_setting_or_default() {
+                        Network::Esmeralda => {
+                            envs.insert("TARI_NETWORK".to_string(), "esmeralda".to_string());
+                        }
+                        Network::NextNet => {
+                            envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
+                        }
+                        _ => {
+                            return Err(anyhow!("Unsupported network"));
+                        }
+                    }
+
                     // start
-                    let mut child = launch_child_process(&file_path, None, &args)?;
+                    let mut child = launch_child_process(&file_path, Some(envs), &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join(pid_file_name.clone()), id.to_string())?;

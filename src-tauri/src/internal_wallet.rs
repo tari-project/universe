@@ -3,6 +3,7 @@ use keyring::Entry;
 use log::{info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
+use std::fs::create_dir_all;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError, TariAddressFeatures};
@@ -33,8 +34,13 @@ pub struct InternalWallet {
 
 impl InternalWallet {
     pub async fn load_or_create(config_path: PathBuf) -> Result<Self, anyhow::Error> {
-        let file = config_path.join("wallet_config.json");
+        let network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .to_lowercase();
 
+        let file = config_path.join(network).join("wallet_config.json");
+
+        create_dir_all(file.parent().unwrap())?;
         if file.exists() {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
@@ -80,10 +86,7 @@ impl InternalWallet {
         });
 
         let seed = CipherSeed::new();
-        let seed_words = seed.to_mnemonic(MnemonicLanguage::English, None).unwrap();
-        for i in 0..seed_words.len() {
-            info!(target: LOG_TARGET, "Seed: {}:{}", i+1, seed_words.get_word(i).unwrap());
-        }
+
         let seed_file = seed.encipher(Some(passphrase))?;
         config.seed_words_encrypted_base58 = seed_file.to_base58();
 

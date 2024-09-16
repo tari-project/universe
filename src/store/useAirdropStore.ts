@@ -1,4 +1,4 @@
-import { create } from './create';
+import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Helpers
