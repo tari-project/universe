@@ -1,3 +1,3 @@
 export const appConfig = {
-    displayAirdropWipUI: false,
+    displayAirdropWipUI: true,
 };

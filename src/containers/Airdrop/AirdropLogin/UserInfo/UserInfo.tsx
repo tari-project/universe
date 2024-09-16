@@ -24,15 +24,15 @@ import { AnimatePresence } from 'framer-motion';
 import { appConfig } from '@app/config';
 
 export default function UserInfo() {
-    const { logout, userDetails, airdropTokens } = useAirdropStore();
+    const { logout, userDetails, airdropTokens, userPoints } = useAirdropStore();
     const [open, setOpen] = useState(false);
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const profileimageurl = userDetails?.user?.profileimageurl;
-    const gems = userDetails?.user?.rank?.gems;
-    const shells = userDetails?.user?.rank?.shells;
-    const hammers = userDetails?.user?.rank?.hammers;
+    const gems = userPoints?.gems || userDetails?.user?.rank?.gems;
+    const shells = userPoints?.shells || userDetails?.user?.rank?.shells;
+    const hammers = userPoints?.hammers || userDetails?.user?.rank?.hammers;
 
     const handleClick = () => {
         setOpen(true);

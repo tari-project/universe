@@ -87,11 +87,19 @@ interface AirdropStore extends AirdropState {
     logout: () => void;
 }
 
+const clearState: AirdropState = {
+    authUuid: '',
+    airdropTokens: undefined,
+    userDetails: undefined,
+    userPoints: undefined,
+    backendInMemoryConfig: undefined,
+};
+
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
-            logout: () => set({ airdropTokens: undefined }),
+            logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
             setAirdropTokens: (airdropTokens) =>

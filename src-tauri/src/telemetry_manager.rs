@@ -185,20 +185,20 @@ impl TelemetryManager {
 
     pub async fn initialize(
         &mut self,
-        app: tauri::AppHandle,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
+        window: tauri::Window,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
-        self.start_telemetry_process(app, Duration::from_secs(60), airdrop_access_token)
+        self.start_telemetry_process(Duration::from_secs(60), airdrop_access_token, window)
             .await?;
         Ok(())
     }
 
     async fn start_telemetry_process(
         &mut self,
-        app: tauri::AppHandle,
         timeout: Duration,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
+        window: tauri::Window,
     ) -> Result<(), TelemetryManagerError> {
         let node_manager = self.node_manager.clone();
         let cpu_miner = self.cpu_miner.clone();
@@ -207,7 +207,6 @@ impl TelemetryManager {
         let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
         let config_cloned = self.config.clone();
-        let app_cloned = app.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         tokio::spawn(async move {
             tokio::select! {
@@ -219,7 +218,7 @@ impl TelemetryManager {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
                             let telemetry_data = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_cloned.clone()).await;
+                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, window.clone()).await;
                         }
                         sleep(timeout);
                     }
@@ -333,7 +332,7 @@ async fn handle_telemetry_data(
     telemetry: Result<TelemetryData, TelemetryManagerError>,
     airdrop_api_url: String,
     airdrop_access_token: Option<String>,
-    app: AppHandle,
+    window: tauri::Window,
 ) {
     match telemetry {
         Ok(telemetry) => {
@@ -344,7 +343,7 @@ async fn handle_telemetry_data(
                     if let Some(response_inner) = response {
                         if let Some(user_points) = response_inner.user_points {
                             debug!(target: LOG_TARGET,"emitting UserPoints event{:?}",user_points);
-                            app.emit_all("UserPoints", user_points)
+                            window.emit("UserPoints", user_points)
                                 .map_err(|e| {
                                     error!("could not send user points as an event: {:?}", e)
                                 })
