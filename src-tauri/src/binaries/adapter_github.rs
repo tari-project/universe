@@ -4,6 +4,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
+use tari_common::configuration::Network;
 use tauri::api::path::cache_dir;
 
 use crate::{
@@ -52,7 +53,13 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         let binary_folder_path = cache_dir()
             .unwrap()
             .join("com.tari.universe")
-            .join(&self.repo);
+            .join("binaries")
+            .join(&self.repo)
+            .join(
+                Network::get_current_or_user_setting_or_default()
+                    .to_string()
+                    .to_lowercase(),
+            );
 
         if !binary_folder_path.exists() {
             drop(std::fs::create_dir_all(&binary_folder_path));
