@@ -1,6 +1,7 @@
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use regex::Regex;
 use semver::Version;
 use std::collections::HashMap;
 use std::path::{self, PathBuf};
@@ -56,9 +57,15 @@ impl BinaryResolver {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
         let versions_requirements_path = path::absolute("./binaries_versions.json").unwrap();
 
-        let network_prerelease_prefix = match Network::get_current_or_user_setting_or_default() {
-            Network::NextNet => "rc",
-            Network::Esmeralda => "pre",
+        let (tari_prerelease_prefix, gpuminer_specific_nanme) = match Network::get_current_or_user_setting_or_default() {
+            Network::NextNet => (
+                "rc",
+                Some(Regex::new(r"opencl.*nextnet").unwrap()),
+            ),
+            Network::Esmeralda => (
+                "pre",
+                Some(Regex::new(r"opencl.*testnet").unwrap()),
+            ),
             _ => panic!("Unsupported network"),
         };
 
@@ -80,10 +87,10 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tarigpuminer".to_string(),
                     owner: "stringhandler".to_string(),
-                    specific_name: Some("opencl.*testnet".parse().expect("Bad regex string")),
+                    specific_name: gpuminer_specific_nanme,
                 }),
                 versions_requirements_path.clone(),
-                Some(network_prerelease_prefix.to_string()),
+                None,
                 true,
             ),
         );
@@ -98,7 +105,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 versions_requirements_path.clone(),
-                Some(network_prerelease_prefix.to_string()),
+                Some(tari_prerelease_prefix.to_string()),
                 true,
             ),
         );
@@ -113,7 +120,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 versions_requirements_path.clone(),
-                Some(network_prerelease_prefix.to_string()),
+                Some(tari_prerelease_prefix.to_string()),
                 true,
             ),
         );
@@ -128,7 +135,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 versions_requirements_path.clone(),
-                Some(network_prerelease_prefix.to_string()),
+                Some(tari_prerelease_prefix.to_string()),
                 true,
             ),
         );
@@ -143,7 +150,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 versions_requirements_path.clone(),
-                Some(network_prerelease_prefix.to_string()),
+                None,
                 true,
             ),
         );
