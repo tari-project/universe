@@ -12,7 +12,7 @@ import { useShallow } from 'zustand/react/shallow';
 const variants = {
     visible: {
         opacity: 1,
-        y: -220,
+        y: -190,
         scale: 1.05,
         transition: {
             duration: 1.25,
@@ -24,7 +24,7 @@ const variants = {
     },
     hidden: {
         opacity: 0.2,
-        y: -180,
+        y: -160,
         transition: { duration: 0.2, delay: 3, ease: 'linear' },
     },
 };

@@ -1,4 +1,4 @@
-import { LayoutGroup, LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
+import { LayoutGroup, LazyMotion, domMax, MotionConfig } from 'framer-motion';
 import { BackgroundImage, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
@@ -48,7 +48,12 @@ export default function App() {
             <GlobalReset />
             <GlobalStyle />
             <AutoUpdateDialog />
-            <LazyMotion features={domAnimation} strict>
+            <LazyMotion features={domMax} strict>
+                {/*
+                 * added to reduce bundle size
+                 * see https://www.framer.com/motion/guide-reduce-bundle-size/#synchronous-loading
+                 * strict prop for using `m` instead of `motion`- see https://www.framer.com/motion/guide-reduce-bundle-size/#how-to-reduce-the-size-of-the-motion-component
+                 */}
                 <MotionConfig reducedMotion="user">
                     <LayoutGroup id="app-content">
                         <AirdropLogin />
