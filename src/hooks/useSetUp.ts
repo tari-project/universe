@@ -18,7 +18,6 @@ export function useSetUp() {
 
     useEffect(() => {
         async function initialize() {
-            await fetchApplicationsVersions();
             await fetchAppConfig();
         }
         initialize();
@@ -42,6 +41,7 @@ export function useSetUp() {
                     if (p.progress >= 1) {
                         setView('mining');
                         settingUpFinished();
+                        fetchApplicationsVersions();
                     }
                     break;
                 default:
@@ -59,5 +59,13 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [clearStorage, isAfterAutoUpdate, setError, setSetupDetails, setView, settingUpFinished]);
+    }, [
+        clearStorage,
+        fetchApplicationsVersions,
+        isAfterAutoUpdate,
+        setError,
+        setSetupDetails,
+        setView,
+        settingUpFinished,
+    ]);
 }

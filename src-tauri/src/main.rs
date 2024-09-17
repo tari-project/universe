@@ -690,15 +690,11 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 
     let default_message = "Failed to read version".to_string();
 
-    let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
-
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
     let tari_universe_version = app.package_info().version.clone();
     let xmrig_version: String =
-        XmrigAdapter::ensure_latest(cache_dir, false, progress_tracker.clone())
-            .await
-            .unwrap_or(default_message.clone());
+        XmrigAdapter::get_latest_local_version(cache_dir.clone()).await.unwrap_or(default_message);
 
     let minotari_node_version: semver::Version = BinaryResolver::current()
         .get_latest_version(Binaries::MinotariNode)
