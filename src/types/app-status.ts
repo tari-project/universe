@@ -117,6 +117,7 @@ export interface WalletBalance {
 
 export interface ApplicationsVersions {
     tari_universe: string;
+    clythor: string;
     xmrig: string;
     minotari_node: string;
     mm_proxy: string;

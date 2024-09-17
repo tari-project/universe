@@ -531,8 +531,8 @@ async fn get_seed_words(
     Ok(res)
 }
 
-#[allow(clippy::too_many_arguments)]
 #[tauri::command]
+#[allow(clippy::too_many_lines)]
 async fn start_mining<'r>(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -703,6 +703,9 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
     let tari_universe_version = app.package_info().version.clone();
+    let clythor_version = BinaryResolver::current()
+        .get_latest_version(Binaries::Clythor)
+        .await;
     let xmrig_version: String =
         XmrigAdapter::ensure_latest(cache_dir, false, progress_tracker.clone())
             .await
@@ -723,6 +726,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 
     Ok(ApplicationsVersions {
         tari_universe: tari_universe_version.to_string(),
+        clythor: clythor_version.to_string(),
         xmrig: xmrig_version,
         minotari_node: minotari_node_version.to_string(),
         mm_proxy: mm_proxy_version.to_string(),
@@ -752,6 +756,10 @@ async fn update_applications(
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
+    BinaryResolver::current()
+        .ensure_latest(Binaries::Clythor, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
     BinaryResolver::current()
         .ensure_latest(Binaries::MinotariNode, progress_tracker.clone())
         .await
@@ -1043,6 +1051,7 @@ pub struct AppStatus {
 #[derive(Debug, Serialize)]
 pub struct ApplicationsVersions {
     tari_universe: String,
+    clythor: String,
     xmrig: String,
     minotari_node: String,
     mm_proxy: String,

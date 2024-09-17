@@ -5,6 +5,7 @@ use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{
     CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
+    UniverseAppState,
 };
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
