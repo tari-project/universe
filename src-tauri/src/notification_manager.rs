@@ -25,6 +25,7 @@ impl NotificationManager {
 
         match Self::detect_current_os() {
             CurrentOperatingSystem::Linux => {
+                #[cfg(target_os = "linux")]
                 notification.show().unwrap().on_close(
                     |notification| {
                         info!(target: LOG_TARGET, "Notification closed: {:?}", notification);
@@ -32,9 +33,11 @@ impl NotificationManager {
                 );
             }
             CurrentOperatingSystem::MacOS => {
+                #[cfg(target_os = "macos")]
                 notification.show().unwrap();
             }
             CurrentOperatingSystem::Windows => {
+                #[cfg(target_os = "windows")]
                 notification.show().unwrap();
             }
         }
