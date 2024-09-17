@@ -259,7 +259,7 @@ async fn setup_inner(
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60* 10)
+        > Duration::from_secs(60 * 10)
     // 10 minutes
     {
         state
@@ -693,8 +693,9 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
 
     let tari_universe_version = app.package_info().version.clone();
-    let xmrig_version: String =
-        XmrigAdapter::get_latest_local_version(cache_dir.clone()).await.unwrap_or(default_message);
+    let xmrig_version: String = XmrigAdapter::get_latest_local_version(cache_dir.clone())
+        .await
+        .unwrap_or(default_message);
 
     let minotari_node_version: semver::Version = BinaryResolver::current()
         .get_latest_version(Binaries::MinotariNode)
@@ -792,7 +793,7 @@ async fn get_tari_wallet_details(
         }
     };
     let tari_address = state.tari_address.read().await;
-    
+
     Ok(TariWalletDetails {
         wallet_balance,
         tari_address_base58: tari_address.to_base58(),
@@ -875,7 +876,7 @@ async fn get_miner_metrics(
             block_height,
             block_time,
             is_synced,
-        }
+        },
     })
 }
 
@@ -1259,7 +1260,6 @@ fn main() {
             get_app_config,
             get_p2pool_stats,
             get_tari_wallet_details
-
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");
