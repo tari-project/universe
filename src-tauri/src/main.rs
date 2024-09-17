@@ -1188,6 +1188,7 @@ fn main() {
                     }
                 }
             });
+
             match tauri::async_runtime::block_on(thread).unwrap() {
                 Ok(_) => {
                     // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
