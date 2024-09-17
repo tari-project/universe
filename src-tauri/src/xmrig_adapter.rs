@@ -45,7 +45,7 @@ pub struct XmrigAdapter {
     http_api_token: String,
     http_api_port: u16,
     cache_dir: PathBuf,
-    cpu_max_percentage: usize,
+    cpu_max_percentage: isize,
     pub client: XmrigHttpApiClient,
     // TODO: secure
 }
@@ -55,7 +55,7 @@ impl XmrigAdapter {
         xmrig_node_connection: XmrigNodeConnection,
         monero_address: String,
         cache_dir: PathBuf,
-        cpu_max_percentage: usize,
+        cpu_max_percentage: isize,
         version: String,
     ) -> Self {
         let http_api_port = 9090;

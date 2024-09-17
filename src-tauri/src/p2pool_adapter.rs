@@ -82,7 +82,13 @@ impl ProcessAdapter for P2poolAdapter {
 
                     let output = process_utils::launch_and_get_outputs(
                         &file_path,
-                        vec!["list-tribes".to_string()],
+                        vec![
+                            "list-tribes".to_string(),
+                            "--timeout".to_string(),
+                            "5".to_string(),
+                        ],
+                        // TODO: Change or remove (to use default 30 seconds)
+                        // TODO: when more than 1 tribe will be in place.
                     )
                     .await?;
                     let tribes: Vec<String> = serde_json::from_slice(&output)?;
