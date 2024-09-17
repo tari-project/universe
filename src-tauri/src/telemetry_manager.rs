@@ -7,6 +7,8 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::future::Future;
+use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -25,6 +27,20 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
+struct TelemetryFrequency(u64);
+
+impl From<TelemetryFrequency> for Duration {
+    fn from(value: TelemetryFrequency) -> Self {
+        Duration::from_secs(value.0)
+    }
+}
+
+impl Default for TelemetryFrequency {
+    fn default() -> Self {
+        TelemetryFrequency(15)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 struct AirdropAccessToken {
     exp: u64,
@@ -35,7 +51,7 @@ struct AirdropAccessToken {
     scope: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TelemetryResource {
     Cpu,
@@ -44,7 +60,7 @@ pub enum TelemetryResource {
     CpuGpu,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TelemetryNetwork {
     MainNet,
@@ -80,7 +96,7 @@ impl From<Network> for TelemetryNetwork {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TelemetryMiningMode {
     Eco,
@@ -111,7 +127,7 @@ struct TelemetryDataResponse {
     pub user_points: Option<UserPoints>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryData {
     pub app_id: String,
@@ -188,8 +204,12 @@ impl TelemetryManager {
         window: tauri::Window,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
-        self.start_telemetry_process(Duration::from_secs(60), airdrop_access_token, window)
-            .await?;
+        self.start_telemetry_process(
+            TelemetryFrequency::default().into(),
+            airdrop_access_token,
+            window,
+        )
+        .await?;
         Ok(())
     }
 
@@ -335,8 +355,20 @@ async fn handle_telemetry_data(
 ) {
     match telemetry {
         Ok(telemetry) => {
-            let telemetry_response =
-                send_telemetry_data(telemetry, airdrop_access_token, airdrop_api_url).await;
+            let telemetry_response = retry_with_backoff(
+                || {
+                    Box::pin(send_telemetry_data(
+                        telemetry.clone(),
+                        airdrop_access_token.clone(),
+                        airdrop_api_url.clone(),
+                    ))
+                },
+                3,
+                2,
+                "send_telemetry_data",
+            )
+            .await;
+
             match telemetry_response {
                 Ok(response) => {
                     if let Some(response_inner) = response {
@@ -406,4 +438,41 @@ async fn send_telemetry_data(
         return Ok(Some(data));
     }
     Ok(None)
+}
+
+async fn retry_with_backoff<T, R, E>(
+    mut f: T,
+    increment_in_secs: u64,
+    max_retries: u64,
+    operation_name: &str,
+) -> anyhow::Result<R>
+where
+    T: FnMut() -> Pin<Box<dyn Future<Output = Result<R, E>> + Send>>,
+    E: std::error::Error,
+{
+    let range_size = increment_in_secs * max_retries + 1;
+
+    for i in (0..range_size).step_by(usize::try_from(increment_in_secs)?) {
+        tokio::time::sleep(Duration::from_secs(i)).await;
+
+        let result = f().await;
+        match result {
+            Ok(res) => return Ok(res),
+            Err(e) => {
+                if i == range_size - 1 {
+                    return Err(anyhow::anyhow!(
+                        "Max retries reached, {} failed. Last error: {:?}",
+                        operation_name,
+                        e
+                    ));
+                } else {
+                    warn!(target: LOG_TARGET, "Retrying {} as it failed due to failure: {:?}", operation_name, e);
+                }
+            }
+        }
+    }
+    Err(anyhow::anyhow!(
+        "Max retries reached, {} failed without capturing error",
+        operation_name
+    ))
 }
