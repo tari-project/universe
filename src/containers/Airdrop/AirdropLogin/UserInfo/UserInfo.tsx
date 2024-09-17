@@ -21,11 +21,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
-import { appConfig } from '@app/config';
 import DownloadReferralModal from './DownloadReferralModal/DownloadReferralModal';
 
 export default function UserInfo() {
-    const { logout, userDetails, airdropTokens, userPoints } = useAirdropStore();
+    const { logout, userDetails, airdropTokens, userPoints, wipUI } = useAirdropStore();
     const [open, setOpen] = useState(false);
     const [referalOpen, setReferalOpen] = useState(false);
 
@@ -71,7 +70,7 @@ export default function UserInfo() {
         return () => document.removeEventListener('click', handleClickOutside);
     }, [handleClickOutside]);
 
-    if (!appConfig.displayAirdropWipUI) return null;
+    if (!wipUI) return null;
     if (!airdropTokens?.token) return null;
 
     const showNotificationButton = false;

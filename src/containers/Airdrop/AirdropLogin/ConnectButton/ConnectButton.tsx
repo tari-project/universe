@@ -7,10 +7,9 @@ import gem1Image from './images/gem-1.png';
 import gem2Image from './images/gem-2.png';
 import gem3Image from './images/gem-3.png';
 import { useTranslation } from 'react-i18next';
-import { appConfig } from '@app/config.ts';
 
 export default function ConnectButton() {
-    const { authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } = useAirdropStore();
+    const { authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig, wipUI } = useAirdropStore();
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
@@ -56,7 +55,7 @@ export default function ConnectButton() {
         }
     }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setAirdropTokens, setAuthUuid, setUserPoints]);
 
-    if (!appConfig.displayAirdropWipUI) return null;
+    if (!wipUI) return null;
 
     return (
         <StyledButton onClick={handleAuth}>
