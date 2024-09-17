@@ -27,6 +27,20 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
+struct TelemetryFrequency(u64);
+
+impl From<TelemetryFrequency> for Duration {
+    fn from(value: TelemetryFrequency) -> Self {
+        Duration::from_secs(value.0)
+    }
+}
+
+impl Default for TelemetryFrequency {
+    fn default() -> Self {
+        TelemetryFrequency(15)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 struct AirdropAccessToken {
     exp: u64,
@@ -190,8 +204,12 @@ impl TelemetryManager {
         window: tauri::Window,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
-        self.start_telemetry_process(Duration::from_secs(60), airdrop_access_token, window)
-            .await?;
+        self.start_telemetry_process(
+            TelemetryFrequency::default().into(),
+            airdrop_access_token,
+            window,
+        )
+        .await?;
         Ok(())
     }
 
@@ -424,7 +442,7 @@ async fn send_telemetry_data(
 
 async fn retry_with_backoff<T, R, E>(
     mut f: T,
-    increment_in_secs: usize,
+    increment_in_secs: u64,
     max_retries: u64,
     operation_name: &str,
 ) -> anyhow::Result<R>
@@ -432,10 +450,10 @@ where
     T: FnMut() -> Pin<Box<dyn Future<Output = Result<R, E>> + Send>>,
     E: std::error::Error,
 {
-    let range_size = increment_in_secs * max_retries as usize + 1;
+    let range_size = increment_in_secs * max_retries + 1;
 
-    for i in (0..range_size).step_by(increment_in_secs) {
-        tokio::time::sleep(Duration::from_secs(i as u64)).await;
+    for i in (0..range_size).step_by(usize::try_from(increment_in_secs)?) {
+        tokio::time::sleep(Duration::from_secs(i)).await;
 
         let result = f().await;
         match result {
@@ -448,7 +466,7 @@ where
                         e
                     ));
                 } else {
-                    warn!(target: LOG_TARGET,"Retrying {} as it failed due to failure: {:?}", operation_name, e);
+                    warn!(target: LOG_TARGET, "Retrying {} as it failed due to failure: {:?}", operation_name, e);
                 }
             }
         }
