@@ -107,7 +107,7 @@ impl SystemtrayManager {
         match current_os {
             CurrentOperatingSystem::Windows => {
                 format!(
-                    "Hashrate | Usage\nCPU: {:?} H/s | {:.0}%\nGPU: {:?} H/s | {:.0}%\nEst. earning: {:?} tXTM/day",
+                    "Hashrate | Usage\nCPU: {} H/s | {:.0}%\nGPU: {} H/s | {:.0}%\nEst. earning: {} tXTM/day",
                     Formatter::new().with_decimals(2).with_separator("").format(data.cpu_hashrate),
                     data.cpu_usage,
                     Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
@@ -118,7 +118,7 @@ impl SystemtrayManager {
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             CurrentOperatingSystem::MacOS => {
                 format!(
-                    "CPU:\n  Hashrate: {:?} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:?} H/s\n  Usage: {:.0}%\nEst. earning: {:?} tXTM/day",
+                    "CPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
                     Formatter::new().with_decimals(2).with_separator("").format(data.cpu_hashrate),
                     data.cpu_usage,
                     Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
