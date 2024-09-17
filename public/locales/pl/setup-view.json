@@ -4,8 +4,8 @@
     "setting-up": "Konfiguracja Tari truth machine...",
     "this-might-take-a-few-minutes": "To może zająć kilka minut",
     "title": {
-        "checking-latest-version-gpuminer": "Sprawdzanie najnowszej wersji xtrgpuminer",
         "application-started": "Aplikacje uruchomione",
+        "checking-latest-version-gpuminer": "Sprawdzanie najnowszej wersji xtrgpuminer",
         "checking-latest-version-mmproxy": "Sprawdzanie najnowszej wersji mmproxy",
         "checking-latest-version-node": "Sprawdzanie najnowszej wersji węzła",
         "checking-latest-version-sha-p2pool": "Sprawdzanie najnowszej wersji sha-p2pool",
