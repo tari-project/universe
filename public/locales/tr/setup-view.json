@@ -10,6 +10,7 @@
         "checking-latest-version-wallet": "Cüzdanın en son sürümü kontrol ediliyor",
         "checking-latest-version-xmrig": "xmrig'in en son sürümü kontrol ediliyor",
         "checking-latest-version-sha-p2pool": "sha-p2pool'un en son sürümü kontrol ediliyor",
+        "checking-latest-version-clythor": "clythor'un en son sürümü kontrol ediliyor",
         "waiting-for-wallet": "Cüzdan bekleniyor",
         "waiting-for-node": "Düğümün senkronize edilmesi bekleniyor",
         "preparing-for-initial-sync": "İlk senkronizasyon için hazırlanıyor {{initial_connected_peers}}/{{required_peers}}",

@@ -44,8 +44,6 @@ export default function Settings() {
             <Divider />
             <SeedWordsMarkup />
             <Divider />
-            <RandomXCpuMiner />
-            <Divider />
             <HorisontalBox>
                 <CpuMiningMarkup />
                 <GpuMiningMarkup />
@@ -75,6 +73,8 @@ export default function Settings() {
                     <P2poolStatsMarkup />
                     <Divider />
                     <DebugSettings />
+                    <Divider />
+                    <RandomXCpuMiner />
                     <Divider />
                     <AppVersions />
                     <Divider />

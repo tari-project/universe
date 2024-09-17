@@ -10,6 +10,7 @@
         "checking-latest-version-wallet": "Sprawdzanie najnowszej wersji portfela",
         "checking-latest-version-xmrig": "Sprawdzanie najnowszej wersji xmrig",
         "checking-latest-version-sha-p2pool": "Sprawdzanie najnowszej wersji sha-p2pool",
+        "checking-latest-version-clythor": "Sprawdzanie najnowszej wersji clythor",
         "waiting-for-wallet": "Oczekiwanie na portfel",
         "waiting-for-node": "Oczekiwanie na synchronizację węzła",
         "preparing-for-initial-sync": "Łączenie się z urządzeniami równorzędnymi w sieci {{initial_connected_peers}}/{{required_peers}}",

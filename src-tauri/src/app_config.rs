@@ -143,6 +143,7 @@ impl AppConfig {
                 self.monero_address = config.monero_address;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
+                self.randomx_miner = config.randomx_miner;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());

@@ -36,5 +36,6 @@
   "yes": "是的",
   "cancel": "取消",
   "reset-settings": "重置",
-  "reset-permanently": "您确定要永久重置所有设置吗?"
+  "reset-permanently": "您确定要永久重置所有设置吗?",
+  "randomX-miner": "RandomX 挖矿"
 }
