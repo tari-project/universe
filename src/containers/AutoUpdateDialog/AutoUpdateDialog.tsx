@@ -23,10 +23,8 @@ function AutoUpdateDialog() {
     const { t } = useTranslation('setup-view', { useSuspense: false });
 
     const checkUpdateTariUniverse = useCallback(async () => {
-        console.debug('hi');
         try {
             const { shouldUpdate, manifest } = await checkUpdate();
-            console.debug(`shouldUpdate= ${shouldUpdate}`);
             if (shouldUpdate) {
                 console.info('New Tari Universe version available', manifest);
                 setLatestVersion(manifest?.version);
