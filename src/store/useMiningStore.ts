@@ -72,7 +72,6 @@ const initialState: State = {
 export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     ...initialState,
     fetchMiningMetrics: async () => {
-        console.info('Fetching mining metrics...');
         try {
             const metrics = await invoke('get_miner_metrics');
             set(metrics);
@@ -83,7 +82,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     handleBlockMined: () => {
         set({
             postBlockAnimation: true,
-            timerPaused: true,
+            timerPaused: false,
             earnings: undefined,
         });
     },
@@ -123,6 +122,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         }
     },
     changeMiningMode: async (mode: modeType) => {
+        console.info('Changing mode...');
         const state = getState();
 
         set({ isChangingMode: true });

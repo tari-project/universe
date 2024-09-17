@@ -2,12 +2,13 @@ import { BlockTimeContainer, SpacedNum, TimerTypography, TimerWrapper, TitleTypo
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useTranslation } from 'react-i18next';
+import { useShallow } from 'zustand/react/shallow';
 
 function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
-    const blockTime = useMiningStore((s) => s.displayBlockTime);
+    const blockTime = useMiningStore(useShallow((s) => s.displayBlockTime));
     const isMining = isCPUMining || isGPUMining;
 
     const { daysString, hoursString, minutes, seconds } = blockTime || {};
