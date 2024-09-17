@@ -14,8 +14,8 @@ import {
 } from './styles';
 
 import gemImage from './images/gems.png';
-import shellImage from './images/shells.png';
-import hammerImage from './images/hammers.png';
+// import shellImage from './images/shells.png';
+// import hammerImage from './images/hammers.png';
 import { FaBell } from 'react-icons/fa6';
 import { useCallback, useEffect, useState } from 'react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
@@ -32,8 +32,8 @@ export default function UserInfo() {
 
     const profileimageurl = userDetails?.user?.profileimageurl;
     const gems = userPoints?.gems || userDetails?.user?.rank?.gems;
-    const shells = userPoints?.shells || userDetails?.user?.rank?.shells;
-    const hammers = userPoints?.hammers || userDetails?.user?.rank?.hammers;
+    // const shells = userPoints?.shells || userDetails?.user?.rank?.shells;
+    // const hammers = userPoints?.hammers || userDetails?.user?.rank?.hammers;
 
     const handleClick = () => {
         setOpen(true);
@@ -83,6 +83,7 @@ export default function UserInfo() {
                         <StatsNumber>{gems}</StatsNumber>
                         <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" />
                     </StatsPill>
+                    {/*
                     <StatsPill>
                         <StatsNumber>{shells}</StatsNumber>
                         <StatsIcon src={shellImage} alt="Shells" className="StatsIcon-shells" />
@@ -91,6 +92,7 @@ export default function UserInfo() {
                         <StatsNumber>{hammers}</StatsNumber>
                         <StatsIcon src={hammerImage} alt="Hammers" className="StatsIcon-hammers" />
                     </StatsPill>
+                    */}
                 </StatsGroup>
 
                 <Divider />
