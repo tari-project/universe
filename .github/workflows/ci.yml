@@ -125,6 +125,69 @@ jobs:
         run: |
           cargo check --release --all-targets --workspace --locked
 
+  file-licenses:
+    name: file-licenses
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: install ripgrep
+        run: |
+          # https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb.sha256
+          wget -v https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb
+          sudo dpkg -i ripgrep_14.1.1-1_amd64.deb
+          rg --version || exit 1
+      - name: run the license check
+        run: ./scripts/file_license_check.sh
+
+  i18n-checks:
+    name: i18n-checks
+    runs-on: [ ubuntu-latest ]
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install jsonlint
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            python3-demjson
+
+      - name: basic jsonlint
+        run: |
+          find public -iname '*.json'  -print0 | \
+            xargs -0 -n1 jsonlint -v
+
+      - name: setup folder for logs
+        run: |
+          mkdir -p ${{ runner.temp }}/i18n_logs
+
+      - name: i18n compare
+        continue-on-error: true
+        working-directory: ./public/locales
+        run: |
+          python3 ../../scripts/i18n_checker.py \
+            compare --en-locale-path en \
+            --base-path . \
+            --search-path .. \
+            --output-dir ${{ runner.temp }}/i18n_logs
+
+      - name: i18n unused
+        continue-on-error: true
+        working-directory: ./public/locales
+        run: |
+          python3 ../../scripts/i18n_checker.py \
+            unused --en-locale-path en \
+            --base-path . \
+            --search-path .. \
+            --output-dir ${{ runner.temp }}/i18n_logs
+
+      - name: Artifact upload for i18n checks
+        uses: actions/upload-artifact@v4
+        with:
+          name: i18n-logs
+          path: ${{ runner.temp }}/i18n_logs
+
   tauri-build:
     name: tauri-build
     runs-on: [ ubuntu-latest ]
