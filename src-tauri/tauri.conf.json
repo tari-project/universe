@@ -7,7 +7,7 @@
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.3.2"
+        "version": "0.3.3"
     },
     "tauri": {
         "systemTray": {
@@ -15,9 +15,7 @@
         },
         "updater": {
             "active": true,
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"],
             "dialog": false,
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
         },
@@ -67,13 +65,7 @@
             "active": true,
             "targets": "all",
             "identifier": "com.tari.universe",
-            "icon": [
-                "icons/icon.icns",
-                "icons/icon.ico",
-                "icons/icon.png",
-                "icons/StoreLogo.png",
-                "icons/tari.png"
-            ]
+            "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png", "icons/StoreLogo.png", "icons/tari.png"]
         },
         "macOSPrivateApi": true
     }
