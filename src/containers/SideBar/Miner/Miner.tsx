@@ -18,6 +18,8 @@ import { LayoutGroup } from 'framer-motion';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
 import useMiningMetricsUpdater from '@app/hooks/useMiningMetricsUpdater.ts';
+import useMining from '@app/hooks/mining/useMining.ts';
+import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachine.ts';
 
 export default function Miner() {
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
@@ -40,6 +42,8 @@ export default function Miner() {
     );
 
     useMiningMetricsUpdater();
+    useMining();
+    useUiMiningStateMachine();
 
     const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 

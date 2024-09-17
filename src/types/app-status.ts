@@ -30,28 +30,6 @@ export interface MinerMetrics {
     base_node: BaseNodeStatus;
 }
 
-export interface AppStatus {
-    cpu?: CpuMinerStatus;
-    gpu?: GpuMinerStatus;
-    gpu_earnings?: EstimatedEarnings;
-    base_node?: BaseNodeStatus;
-    hardware_status?: HardwareStatus;
-    wallet_balance?: WalletBalance;
-    applications_versions?: ApplicationsVersions;
-    user_inactivity_timeout?: number;
-    current_user_inactivity_duration?: number;
-    mode: modeType;
-    auto_mining: boolean;
-    monero_address?: string;
-    tari_address_base58?: string;
-    tari_address_emoji?: string;
-    p2pool_enabled: boolean;
-    p2pool_stats?: P2poolStatsResult;
-    cpu_mining_enabled: boolean;
-    gpu_mining_enabled: boolean;
-    telemetry_mode: boolean;
-}
-
 export interface TariWalletDetails {
     wallet_balance: WalletBalance;
     tari_address_base58: string;

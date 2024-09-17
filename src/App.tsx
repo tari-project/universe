@@ -9,26 +9,19 @@ import { useEnvironment } from './hooks/useEnvironment.ts';
 import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
-import { useAirdropSyncState } from './hooks/airdrop/useAirdropSyncState.ts';
 import AirdropLogin from './containers/Airdrop/AirdropLogin/AirdropLogin.tsx';
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
 import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
-import useMining from '@app/hooks/mining/useMining.ts';
 
-import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
+import { LayoutGroup } from 'framer-motion';
 import { useMemo } from 'react';
 import SettingsDialog from './containers/SideBar/components/Settings/SettingsDialog.tsx';
-import { useMainAppVersion } from './hooks/useVersions.ts';
 
 export default function App() {
-    useAirdropSyncState();
     useSetUp();
-    useMining();
-    useMainAppVersion();
     useEnvironment();
-    useUiMiningStateMachine();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);

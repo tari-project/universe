@@ -87,10 +87,8 @@ const ExperimentalTab = () => {
 
 export default function SettingsDialog() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore((s) => ({
-        isSettingsOpen: s.isSettingsOpen,
-        setIsSettingsOpen: s.setIsSettingsOpen,
-    }));
+    const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
+    const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
 
     const tabs = useMemo(
         () => [
