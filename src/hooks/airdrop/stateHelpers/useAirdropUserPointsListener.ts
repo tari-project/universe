@@ -10,10 +10,8 @@ export const useAirdropUserPointsListener = () => {
         };
 
         listen('UserPoints', (event) => {
-            if (event.event === 'UserPoints') {
-                if (event.payload) {
-                    setUserPoints(event.payload as UserPoints);
-                }
+            if (event.payload) {
+                setUserPoints(event.payload as UserPoints);
             }
         })
             .then((unListenFunction) => {
