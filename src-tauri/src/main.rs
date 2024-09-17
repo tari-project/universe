@@ -712,9 +712,11 @@ async fn get_seed_words(
 }
 
 #[tauri::command]
-async fn trigger_block_win_notification(
+async fn trigger_notification(
+    summary: &str,
+    body: &str,
 ) -> Result<(), String> {
-    NotificationManager::current().trigger_notification("Test", "test");
+    NotificationManager::current().trigger_notification(summary, body);
     Ok(())
 }
 
@@ -1480,7 +1482,7 @@ fn main() {
             restart_application,
             resolve_application_language,
             set_application_language,
-            trigger_block_win_notification,
+            trigger_notification,
             get_miner_metrics,
             get_app_config,
             get_p2pool_stats,

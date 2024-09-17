@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
 import { useWalletStore } from '@app/store/useWalletStore';
+import { useNotifcations } from '../useNotifications';
+import formatBalance from '@app/utils/formatBalance';
 
 function logBalanceChanges({ balance, prevBalance, balanceDiff }) {
     console.groupCollapsed('Balance changes:');
@@ -13,6 +15,7 @@ function logBalanceChanges({ balance, prevBalance, balanceDiff }) {
 
 const TIMER_VALUE = 15 * 1000; // 15s
 export function useBalanceChanges() {
+    const { winNotification } = useNotifcations();
     const { handleWin, handleFail } = useVisualisation();
     const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
     const [blockHeightChanged, setBlockHeightChanged] = useState(false);
@@ -44,6 +47,7 @@ export function useBalanceChanges() {
             const hasEarnings = Boolean(balance > 0 && diff > 0 && diff !== balance);
             if (hasEarnings) {
                 handleWin();
+                winNotification(formatBalance(diff).toString());
                 setEarnings(diff);
             }
             balanceRef.current = balance;
