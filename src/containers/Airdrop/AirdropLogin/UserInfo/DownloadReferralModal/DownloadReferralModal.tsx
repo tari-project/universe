@@ -1,7 +1,7 @@
 import { BoxWrapper, CopyButton, Overlay, ShareCode, TextWrapper, Title, Text, GemImage } from './styles';
 import gemImage from '../images/gems.png';
-import { appConfig } from '@app/config';
 import { useEffect, useState } from 'react';
+import { useAirdropStore } from '@app/store/useAirdropStore';
 
 const REFERRAL_QUERY_KEY = 'download-universe-referral-code';
 
@@ -10,10 +10,11 @@ interface DownloadReferralModalProps {
     onClose: () => void;
 }
 export default function DownloadReferralModal({ referralCode, onClose }: DownloadReferralModalProps) {
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
     const [copied, setCopied] = useState(false);
     const handleCopy = () => {
         setCopied(true);
-        const url = `${appConfig.airdropBaseUrl}/download?${REFERRAL_QUERY_KEY}=${referralCode}`;
+        const url = `${airdropUrl}/download?${REFERRAL_QUERY_KEY}=${referralCode}`;
         navigator.clipboard.writeText(url);
     };
     useEffect(() => {
