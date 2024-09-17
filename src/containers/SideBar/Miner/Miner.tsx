@@ -61,7 +61,7 @@ export default function Miner() {
                     <Tile
                         title="CPU Power"
                         stats={isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-'}
-                        isLoading={isLoading || (isCpuMiningEnabled && isWaitingForCPUHashRate)}
+                        isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
                         chipValue={cpuHardwareStats?.usage_percentage}
                         unit="H/s"
                         useLowerCase
@@ -69,7 +69,7 @@ export default function Miner() {
                     <Tile
                         title="GPU Power"
                         stats={isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-'}
-                        isLoading={isLoading || (isGpuMiningEnabled && isWaitingForGPUHashRate)}
+                        isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
                         chipValue={gpuHardwareStats?.usage_percentage}
                         unit="H/s"
                         useLowerCase

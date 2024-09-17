@@ -124,13 +124,13 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     },
     changeMiningMode: async (mode: modeType) => {
         const state = getState();
-        const appConfigState = useAppConfigStore.getState();
 
         set({ isChangingMode: true });
         if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
             await state.pauseMining();
         }
         try {
+            const appConfigState = useAppConfigStore.getState();
             await appConfigState.setMode(mode as modeType);
             if (state.miningInitiated) {
                 await state.startMining();
