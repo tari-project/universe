@@ -97,7 +97,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
