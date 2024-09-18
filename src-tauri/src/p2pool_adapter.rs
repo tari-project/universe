@@ -80,18 +80,18 @@ impl ProcessAdapter for P2poolAdapter {
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
 
-                    let output = process_utils::launch_and_get_outputs(
-                        &file_path,
-                        vec!["list-tribes".to_string()],
-                    )
-                    .await?;
-                    let tribes: Vec<String> = serde_json::from_slice(&output)?;
-                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
-                        Some(tribe) => tribe.to_string(),
-                        None => String::from("default"), // TODO: generate name
-                    };
+                    // let output = process_utils::launch_and_get_outputs(
+                    //     &file_path,
+                    //     vec!["list-tribes".to_string()],
+                    // )
+                    // .await?;
+                    // let tribes: Vec<String> = serde_json::from_slice(&output)?;
+                    // let tribe = match tribes.choose(&mut rand::thread_rng()) {
+                    //     Some(tribe) => tribe.to_string(),
+                    //     None => String::from("default"), // TODO: generate name
+                    // };
                     args.push("--tribe".to_string());
-                    args.push(tribe);
+                    args.push("default".to_string());
 
                     // env
                     let mut envs = HashMap::new();
