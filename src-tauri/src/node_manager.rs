@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
 
-
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::error;
 use minotari_node_grpc_client::grpc::Peer;
@@ -186,19 +185,26 @@ impl NodeManager {
             .status_monitor
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
-        let connected_peers = status_monitor.list_connected_peers().await.unwrap_or_else(|e| {
-            error!(target: LOG_TARGET, "Error list_connected_peers: {}", e);
-            Vec::<Peer>::new()
-        });
-
-        let is_any_peer_connected = connected_peers
-            .iter()
-            .any(|peer| {
-                let since = NaiveDateTime::parse_from_str(peer.addresses[0].last_seen.as_str(), "%Y-%m-%d %H:%M:%S%.f").unwrap();
-                let since = Utc.from_utc_datetime(&since);
-                let duration = SystemTime::now().duration_since(since.into()).unwrap_or_default();
-                duration.as_secs() < 60
+        let connected_peers = status_monitor
+            .list_connected_peers()
+            .await
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Error list_connected_peers: {}", e);
+                Vec::<Peer>::new()
             });
+
+        let is_any_peer_connected = connected_peers.iter().any(|peer| {
+            let since = NaiveDateTime::parse_from_str(
+                peer.addresses[0].last_seen.as_str(),
+                "%Y-%m-%d %H:%M:%S%.f",
+            )
+            .unwrap();
+            let since = Utc.from_utc_datetime(&since);
+            let duration = SystemTime::now()
+                .duration_since(since.into())
+                .unwrap_or_default();
+            duration.as_secs() < 60
+        });
 
         Ok(is_any_peer_connected)
     }

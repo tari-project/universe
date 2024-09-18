@@ -7,7 +7,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{
-    Empty, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo, SyncState
+    Empty, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
