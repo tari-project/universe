@@ -76,11 +76,11 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'SHA-3',
-                                labelValue: (p2poolSha3HashRate ? p2poolSha3HashRate / BigInt(1_000_000) : 0) + ' MH/s',
+                                labelValue: (p2poolSha3HashRate ? p2poolSha3HashRate / 1_000_000 : 0) + ' MH/s',
                             },
                             {
                                 labelText: 'RandomX',
-                                labelValue: (p2poolRandomxHashRate ? p2poolRandomxHashRate / BigInt(1_000_000) : 0) + ' kH/s',
+                                labelValue: (p2poolRandomxHashRate ? p2poolRandomxHashRate / 1_000 : 0) + ' kH/s',
                             },
                         ]}
                     />
