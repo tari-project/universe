@@ -228,7 +228,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(app.clone(), state.airdrop_access_token.clone())
+        .initialize(state.airdrop_access_token.clone(), window.clone())
         .await?;
 
     BinaryResolver::current()
@@ -1188,6 +1188,7 @@ fn main() {
                     }
                 }
             });
+
             match tauri::async_runtime::block_on(thread).unwrap() {
                 Ok(_) => {
                     // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
