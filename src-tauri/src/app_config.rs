@@ -1,7 +1,7 @@
 use std::{path::PathBuf, time::SystemTime};
 
 use anyhow::anyhow;
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
@@ -112,7 +112,7 @@ impl AppConfig {
         self.config_file = Some(file.clone());
 
         if file.exists() {
-            info!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
+            debug!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
             self.apply_loaded_config(config);
         } else {
@@ -125,7 +125,7 @@ impl AppConfig {
     pub fn apply_loaded_config(&mut self, config: String) {
         match serde_json::from_str::<AppConfigFromFile>(&config) {
             Ok(config) => {
-                info!("Loaded config from file {:?}", config);
+                debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                 self.auto_mining = config.auto_mining;
@@ -252,7 +252,7 @@ impl AppConfig {
             ..default_config
         };
         let config = serde_json::to_string(config)?;
-        info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
+        debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
         fs::write(file, config).await?;
 
         Ok(())
