@@ -66,6 +66,7 @@ function AutoUpdateDialog() {
     };
 
     useEffect(() => {
+        checkUpdateTariUniverse();
         const unlistenPromise = onUpdaterEvent(({ error, status }) => {
             // This will log all updater events, including status updates and errors.
             console.info('Updater event', error, status);
@@ -73,7 +74,7 @@ function AutoUpdateDialog() {
         return () => {
             unlistenPromise?.then((unlisten) => unlisten());
         };
-    }, []);
+    }, [checkUpdateTariUniverse]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
