@@ -32,12 +32,19 @@ impl Feedback {
 
     pub async fn send_feedback(&self, feedback_message: String, include_logs: bool) -> Result<()> {
         let feedback_url = self.in_memory_config.read().await.feedback_url.clone();
+
         let mut upload_zip_path = None;
+        let config = self.config.read().await;
+        let app_id = config.anon_id();
+        let zip_filename = format!("logs_{}.zip", app_id);
         if include_logs {
-            if let Some(config_dir) = self.config.read().await.config_dir() {
+
+
+            if let Some(config_dir) = config.config_dir() {
                 let logs_dir = config_dir.join("logs");
                 // Zip all the logs
-                let zip_file = config_dir.join("logs.zip");
+
+                let zip_file = config_dir.join(zip_filename.clone());
                 let file = File::create(zip_file.clone())?;
                 let zip = ZipWriter::new(file);
                 zip.create_from_directory(&logs_dir)?;
@@ -53,14 +60,14 @@ impl Feedback {
 
         // Create a multipart form
         let mut form = multipart::Form::new().text("feedback", feedback_message.clone());
-        if let Some(zip_file) = upload_zip_path {
+        if let Some(zip_file) = &upload_zip_path {
             let mut file = File::open(zip_file)?;
             let mut file_contents = Vec::new();
             file.read_to_end(&mut file_contents)?;
             form = form.part(
                 "logs",
                 multipart::Part::bytes(file_contents)
-                    .file_name("logs.zip")
+                    .file_name(zip_filename)
                     .mime_str("application/zip")?,
             );
         }
@@ -72,6 +79,10 @@ impl Feedback {
             debug!(target: LOG_TARGET, "Feedback sent successfully");
         } else {
             error!(target: LOG_TARGET, "Failed to upload file: {}", response.status());
+        }
+        // Delete the ZIP file
+        if let Some(zip_file) = upload_zip_path {
+            std::fs::remove_file(zip_file)?;
         }
         Ok(())
     }
