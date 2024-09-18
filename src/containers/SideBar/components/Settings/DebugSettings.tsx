@@ -8,6 +8,7 @@ export default function DebugSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const lastBlockTime = useMiningStore((state) => state.displayBlockTime);
     const isConnectedToTariNetwork = useMiningStore((s) => s.base_node?.is_connected);
+    const connectedPeers = useMiningStore((state) => state.base_node?.connected_peers || []);
 
     const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
     const displayTime = `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
@@ -19,13 +20,21 @@ export default function DebugSettings() {
                 <Typography variant="p">{t('last-block-added-time', { ns: 'settings' })}</Typography>
                 <Typography>{displayTime}</Typography>
             </Stack>
-            <Stack direction="row" justifyContent="RIGHT" alignItems="center">
+            <Stack direction="row" justifyContent="right" alignItems="center">
                 <ConnectionIcon $isConnected={isConnectedToTariNetwork} size={20} />
                 <Typography variant="p">
                     {t(isConnectedToTariNetwork ? 'connected-to-tari' : 'not-connected-to-tari', {
                         ns: 'settings',
                     })}
                 </Typography>
+            </Stack>
+            <Stack>
+                <Typography variant="h6">{t('connected-peers', { ns: 'settings' })}</Typography>
+                {connectedPeers.map((peer, i) => (
+                    <Typography variant="p" key={peer}>
+                        {i + 1}. {peer}
+                    </Typography>
+                ))}
             </Stack>
         </>
     );

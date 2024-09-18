@@ -29,5 +29,6 @@
     "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
     "reset-wallet": "Resetuj porfel",
     "connected-to-tari-network": "Połączono z siecią Tari",
-    "not-connected-to-tari-network": "Brak połączenia z siecią Tari"
+    "not-connected-to-tari-network": "Brak połączenia z siecią Tari",
+    "connected-peers": "Połączone węzły"
 }
