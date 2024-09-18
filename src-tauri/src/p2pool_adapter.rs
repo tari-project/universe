@@ -3,7 +3,6 @@ use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::{info, warn};
-use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -12,11 +11,11 @@ use tari_shutdown::Shutdown;
 use tokio::select;
 
 use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
-use crate::{p2pool, process_utils};
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -80,18 +79,18 @@ impl ProcessAdapter for P2poolAdapter {
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
 
-                    let output = process_utils::launch_and_get_outputs(
-                        &file_path,
-                        vec!["list-tribes".to_string()],
-                    )
-                    .await?;
-                    let tribes: Vec<String> = serde_json::from_slice(&output)?;
-                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
-                        Some(tribe) => tribe.to_string(),
-                        None => String::from("default"), // TODO: generate name
-                    };
+                    // let output = process_utils::launch_and_get_outputs(
+                    //     &file_path,
+                    //     vec!["list-tribes".to_string()],
+                    // )
+                    // .await?;
+                    // let tribes: Vec<String> = serde_json::from_slice(&output)?;
+                    // let tribe = match tribes.choose(&mut rand::thread_rng()) {
+                    //     Some(tribe) => tribe.to_string(),
+                    //     None => String::from("default"), // TODO: generate name
+                    // };
                     args.push("--tribe".to_string());
-                    args.push(tribe);
+                    args.push("default".to_string());
 
                     // env
                     let mut envs = HashMap::new();

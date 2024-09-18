@@ -7,6 +7,7 @@ import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.
 import { MinerContainer } from '../../../Miner/styles';
 import { useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import formatBalance from '@app/utils/formatBalance';
 
 const P2PoolStats = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -75,11 +76,11 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'SHA-3',
-                                labelValue: (p2poolSha3HashRate ? p2poolSha3HashRate : 0) + ' H/s',
+                                labelValue: (p2poolSha3HashRate ? p2poolSha3HashRate / 1_000_000 : 0) + ' MH/s',
                             },
                             {
                                 labelText: 'RandomX',
-                                labelValue: (p2poolRandomxHashRate ? p2poolRandomxHashRate : 0) + ' H/s',
+                                labelValue: (p2poolRandomxHashRate ? p2poolRandomxHashRate / 1_000 : 0) + ' kH/s',
                             },
                         ]}
                     />
@@ -88,11 +89,14 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'SHA-3',
-                                labelValue: (p2poolSha3TotalEarnings ? p2poolSha3TotalEarnings : 0) + ' tXTM',
+                                labelValue:
+                                    (p2poolSha3TotalEarnings ? formatBalance(p2poolSha3TotalEarnings) : 0) + ' tXTM',
                             },
                             {
                                 labelText: 'RandomX',
-                                labelValue: (p2poolRandomxTotalEarnings ? p2poolRandomxTotalEarnings : 0) + ' tXTM',
+                                labelValue:
+                                    (p2poolRandomxTotalEarnings ? formatBalance(p2poolRandomxTotalEarnings) : 0) +
+                                    ' tXTM',
                             },
                         ]}
                     />
@@ -114,16 +118,20 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'SHA-3',
-                                labelValue: (p2poolSha3UserTotalEarnings ? p2poolSha3UserTotalEarnings : 0) + ' tXTM',
+                                labelValue:
+                                    (p2poolSha3UserTotalEarnings ? formatBalance(p2poolSha3UserTotalEarnings) : 0) +
+                                    ' tXTM',
                             },
                             {
                                 labelText: 'RandomX',
                                 labelValue:
-                                    (p2poolRandomxUserTotalEarnings ? p2poolRandomxUserTotalEarnings : 0) + ' tXTM',
+                                    (p2poolRandomxUserTotalEarnings
+                                        ? formatBalance(p2poolRandomxUserTotalEarnings)
+                                        : 0) + ' tXTM',
                             },
                             {
                                 labelText: 'Total',
-                                labelValue: p2poolUserTotalEarnings + ' tXTM',
+                                labelValue: formatBalance(p2poolUserTotalEarnings) + ' tXTM',
                             },
                         ]}
                     />
