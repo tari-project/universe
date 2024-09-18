@@ -65,8 +65,8 @@ export const useGetAirdropUserDetails = () => {
             }
         };
 
-        if (!userDetails?.user.id) {
+        if (!userDetails?.user?.id) {
             fetchData();
         }
-    }, [fetchUserDetails, fetchUserPoints, airdropToken, userDetails?.user.id, userPoints?.gems]);
+    }, [fetchUserDetails, fetchUserPoints, airdropToken, userDetails?.user?.id, userPoints?.gems]);
 };
