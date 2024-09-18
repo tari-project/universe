@@ -212,7 +212,7 @@ impl TelemetryManager {
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
-                    info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
@@ -225,7 +225,7 @@ impl TelemetryManager {
                     }
                 } => {},
                 _ = cancellation_token.cancelled() => {
-                    info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
+                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
                 }
             }
         });
@@ -384,7 +384,7 @@ async fn send_telemetry_data(
     let response = request_builder.send().await?;
 
     if response.status() == 429 {
-        info!(target: LOG_TARGET,"Telemetry data rate limited by http {:?}", response.status());
+        warn!(target: LOG_TARGET,"Telemetry data rate limited by http {:?}", response.status());
         return Ok(None);
     }
 
@@ -400,7 +400,7 @@ async fn send_telemetry_data(
         .into());
     }
 
-    info!(target: LOG_TARGET,"Telemetry data sent");
+    debug!(target: LOG_TARGET,"Telemetry data sent");
 
     if airdrop_access_token.is_some() {
         let data: TelemetryDataResponse = response.json().await?;
