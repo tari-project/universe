@@ -118,6 +118,14 @@ struct UserPoints {
     pub gems: f64,
     pub shells: f64,
     pub hammers: f64,
+    pub rank: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ReferralCount {
+    pub gems: f64,
+    pub count: i64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -125,6 +133,14 @@ struct UserPoints {
 struct TelemetryDataResponse {
     pub success: bool,
     pub user_points: Option<UserPoints>,
+    pub referral_count: Option<ReferralCount>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct TelemetryDataResponseEvent  {
+    pub base: UserPoints,
+    pub referral_count: ReferralCount,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -373,9 +389,12 @@ async fn handle_telemetry_data(
                 Ok(response) => {
                     if let Some(response_inner) = response {
                         if let Some(user_points) = response_inner.user_points {
-                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}",user_points);
+                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
+                            let response_inner = response_inner.referral_count.unwrap_or(ReferralCount { gems: 0.0, count: 0 });
+                            let emit_data = TelemetryDataResponseEvent { base: user_points, referral_count: response_inner };
+
                             window
-                                .emit("UserPoints", user_points)
+                                .emit("UserPoints", emit_data)
                                 .map_err(|e| {
                                     error!("could not send user points as an event: {:?}", e)
                                 })

@@ -29,7 +29,9 @@ export default function UserInfo() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const profileimageurl = userDetails?.user?.profileimageurl;
-    const gems = userPoints?.gems || userDetails?.user?.rank?.gems || 0;
+    const gems = userPoints?.base?.gems || userDetails?.user?.rank?.gems || 0;
+    const rank = userPoints?.base.rank || userDetails?.user?.rank?.rank;
+    const referralCount = userPoints?.referralCount;
 
     const handleClick = () => {
         setOpen(true);
@@ -78,10 +80,15 @@ export default function UserInfo() {
                         <StatsNumber>{gems}</StatsNumber>
                         <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" />
                     </StatsPill>
-                    <Divider />
-                    {userDetails?.user?.rank?.rank && (
+                    {referralCount?.count ? (
                         <StatsPill>
-                            <StatsNumber>Rank {userDetails?.user?.rank?.rank}</StatsNumber>
+                            <StatsNumber>{referralCount.count} 🎁</StatsNumber>
+                        </StatsPill>
+                    ) : null}
+                    <Divider />
+                    {rank && (
+                        <StatsPill>
+                            <StatsNumber>Rank {rank}</StatsNumber>
                         </StatsPill>
                     )}
                 </StatsGroup>

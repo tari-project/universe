@@ -30,9 +30,16 @@ interface TokenResponse {
 }
 
 export interface UserPoints {
-    gems: number;
-    shells: number;
-    hammers: number;
+    base: {
+        gems: number;
+        shells: number;
+        hammers: number;
+        rank?: string;
+    };
+    referralCount?: {
+        gems: number;
+        count: number;
+    };
 }
 
 export interface User {
@@ -103,7 +110,7 @@ interface AirdropStore extends AirdropState {
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
-    setUserPoints: (userPoints?: UserPoints) => void;
+    setUserPoints: (userPoints: UserPoints) => void;
     setWipUI: (wipUI: boolean) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     logout: () => void;
@@ -131,7 +138,10 @@ export const useAirdropStore = create<AirdropStore>()(
                         expiresAt: parseJwt(airdropTokens.token).exp,
                     },
                 }),
-            setUserPoints: (userPoints) => set({ userPoints }),
+            setUserPoints: (userPoints) =>
+                set((state) => ({
+                    userPoints: userPoints?.referralCount ? userPoints : { ...state.userPoints, ...userPoints },
+                })),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
         }),
         {

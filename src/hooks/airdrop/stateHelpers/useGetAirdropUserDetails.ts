@@ -51,9 +51,11 @@ export const useGetAirdropUserDetails = () => {
         });
         if (!data) return;
         setUserPoints({
-            gems: data.entry.gems,
-            shells: data.entry.shells,
-            hammers: data.entry.hammers,
+            base: {
+                gems: data.entry.gems,
+                shells: data.entry.shells,
+                hammers: data.entry.hammers,
+            },
         });
     }, [handleRequest, setUserPoints]);
 
@@ -68,5 +70,5 @@ export const useGetAirdropUserDetails = () => {
         if (!userDetails?.user?.id) {
             fetchData();
         }
-    }, [fetchUserDetails, fetchUserPoints, airdropToken, userDetails?.user?.id, userPoints?.gems]);
+    }, [fetchUserDetails, fetchUserPoints, airdropToken, userDetails?.user?.id, userPoints?.base.gems]);
 };
