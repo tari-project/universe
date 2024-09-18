@@ -55,6 +55,11 @@ jobs:
           echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
 
+      - name: beta builds - Install dependencies (windows)
+        if: startsWith(runner.os,'Windows')
+        run: |
+          choco upgrade yq -y
+
       - name: Set environment variables for beta builds
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
