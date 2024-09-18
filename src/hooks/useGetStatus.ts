@@ -7,7 +7,7 @@ import { useInterval } from './useInterval.ts';
 import { useCPUStatusStore } from '../store/useCPUStatusStore.ts';
 import { useGPUStatusStore } from '../store/useGPUStatusStore.ts';
 import { useBaseNodeStatusStore } from '../store/useBaseNodeStatusStore.ts';
-import { useMainAppVersion } from '@app/hooks/useVersions.ts';
+
 import { useCallback, useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -28,8 +28,6 @@ export function useGetStatus() {
         setError: s.setError,
     }));
     const setMode = useAppStatusStore((s) => s.setMode);
-
-    useMainAppVersion();
 
     useEffect(() => {
         invoke('get_telemetry_mode')
