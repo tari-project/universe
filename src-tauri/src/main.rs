@@ -948,13 +948,13 @@ async fn reset_settings<'r>(
                     if folder_block_list.contains(&path.file_name().unwrap().to_str().unwrap()) {
                         continue;
                     }
-                    info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
+                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
                     remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
                         format!("Could not remove directory: {}", e)
                     })?;
                 } else {
-                    info!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
+                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
                         format!("Could not remove file: {}", e)

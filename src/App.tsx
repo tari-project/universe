@@ -47,7 +47,6 @@ export default function App() {
         <ThemeProvider>
             <GlobalReset />
             <GlobalStyle />
-            <AutoUpdateDialog />
             <LazyMotion features={domMax} strict>
                 {/*
                  * added to reduce bundle size
@@ -55,6 +54,7 @@ export default function App() {
                  * strict prop for using `m` instead of `motion`- see https://www.framer.com/motion/guide-reduce-bundle-size/#how-to-reduce-the-size-of-the-motion-component
                  */}
                 <MotionConfig reducedMotion="user">
+                    <AutoUpdateDialog />
                     <LayoutGroup id="app-content">
                         <AirdropLogin />
                         {splashScreenMarkup}

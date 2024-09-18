@@ -99,47 +99,33 @@ impl CpuMiner {
             // read events such as stdout
             loop {
                 select! {
-                              _ = watch_timer.tick() => {
-                                    if !xmrig_child.ping()
-                                    {
-                                       warn!(target: LOG_TARGET, "xmrig is not running");
-                                       match xmrig_child.stop().await {
-                                           Ok(_) => {
-                                              info!(target: LOG_TARGET, "xmrig exited successfully");
-                                           }
-                                           Err(e) => {
-                                              error!(target: LOG_TARGET, "xmrig exited with error: {}", e);
-                                              return Err(e)
-                                           }
-                                       }
-                                       break;
-                                    }
-                              },
-                                //   event = rx.recv() => {
-                                //     if let Some(event) = event {
-                                //
-                                //   // if let CommandEvent::Stdout(line) = event {
-                                //   //    window
-                                //   //   .emit("message", Some(format!("'{}'", line)))
-                                //   //   .expect("failed to emit event");
-                                // // write to stdin
-                                // //child.write("message from Rust\n".as_bytes()).unwrap();
-                                //
-                                //    }
-                                // else {
-                                //  break;
-                                // }
-                          //         },
-                //
-                            _ = inner_shutdown.wait() => {
-                                xmrig_child.stop().await?;
-                                break;
-                            },
-                            _ = app_shutdown.wait() => {
-                                xmrig_child.stop().await?;
-                                break;
+                      _ = watch_timer.tick() => {
+                            if !xmrig_child.ping()
+                            {
+                               warn!(target: LOG_TARGET, "Wmrig is not running");
+                               match xmrig_child.stop().await {
+                                   Ok(_) => {
+                                      info!(target: LOG_TARGET, "Xmrig exited successfully");
+                                   }
+                                   Err(e) => {
+                                      error!(target: LOG_TARGET, "Xmrig exited with error: {}", e);
+                                      return Err(e)
+                                   }
+                               }
+                               break;
                             }
-                        }
+                      },
+                        //   event = rx.recv() => {
+
+                    _ = inner_shutdown.wait() => {
+                        xmrig_child.stop().await?;
+                        break;
+                    },
+                    _ = app_shutdown.wait() => {
+                        xmrig_child.stop().await?;
+                        break;
+                    }
+                }
             }
             Ok(())
         }));
@@ -152,7 +138,7 @@ impl CpuMiner {
         self.api_client = None;
         if let Some(task) = self.watcher_task.take() {
             task.await??;
-            info!(target: LOG_TARGET, "Task finished");
+            info!(target: LOG_TARGET, "CPU miner shut down successfully");
         }
         // TODO: This doesn't seem to be called
         self.is_mining = false;
