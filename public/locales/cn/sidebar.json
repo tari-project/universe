@@ -5,5 +5,6 @@
     "wallet-balance":"钱包余额",
     "setup-scheduler":"安装计划程序",
     "mining-schedules":"采矿时间表",
-    "mining-schedules-description":"安排您的采矿活动"
+    "mining-schedules-description":"安排您的采矿活动",
+    "lost-connection": "Lost connection to the Tari Network. Reconnecting.."
 }

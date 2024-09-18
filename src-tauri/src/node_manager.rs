@@ -1,6 +1,10 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::SystemTime;
 
+
+use chrono::{NaiveDateTime, TimeZone, Utc};
+use log::error;
 use minotari_node_grpc_client::grpc::Peer;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -11,6 +15,8 @@ use tokio::sync::RwLock;
 use crate::node_adapter::{MinotariNodeAdapter, MinotariNodeStatusMonitorError};
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
+
+const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
 #[derive(Debug, thiserror::Error)]
 pub enum NodeManagerError {
@@ -174,13 +180,27 @@ impl NodeManager {
         Ok(exit_code)
     }
 
-    pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, anyhow::Error> {
+    pub async fn is_connected_with_tari_network(&self) -> Result<bool, anyhow::Error> {
         let status_monitor_lock = self.watcher.read().await;
         let status_monitor = status_monitor_lock
             .status_monitor
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
-        status_monitor.list_connected_peers().await
+        let connected_peers = status_monitor.list_connected_peers().await.unwrap_or_else(|e| {
+            error!(target: LOG_TARGET, "Error list_connected_peers: {}", e);
+            Vec::<Peer>::new()
+        });
+
+        let is_any_peer_connected = connected_peers
+            .iter()
+            .any(|peer| {
+                let since = NaiveDateTime::parse_from_str(peer.addresses[0].last_seen.as_str(), "%Y-%m-%d %H:%M:%S%.f").unwrap();
+                let since = Utc.from_utc_datetime(&since);
+                let duration = SystemTime::now().duration_since(since.into()).unwrap_or_default();
+                duration.as_secs() < 60
+            });
+
+        Ok(is_any_peer_connected)
     }
 }
 
