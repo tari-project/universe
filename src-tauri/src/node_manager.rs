@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use minotari_node_grpc_client::grpc::Peer;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
@@ -171,6 +172,15 @@ impl NodeManager {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
         Ok(exit_code)
+    }
+
+    pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, anyhow::Error> {
+        let status_monitor_lock = self.watcher.read().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+        status_monitor.list_connected_peers().await
     }
 }
 
