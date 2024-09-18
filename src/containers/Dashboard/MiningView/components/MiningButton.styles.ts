@@ -1,7 +1,7 @@
 import { ImSpinner3 } from 'react-icons/im';
 import styled, { keyframes } from 'styled-components';
 import { Button } from '@app/components/elements/Button.tsx';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 export const spin = keyframes`
   from {
   transform:rotate(0deg)
@@ -29,12 +29,13 @@ export const IconWrapper = styled.div`
     }
 `;
 
-export const ButtonWrapper = styled(motion.div)`
+export const ButtonWrapper = styled(m.div)`
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: center;
     overflow: hidden;
+    justify-content: center;
+    border-radius: ${({ theme }) => theme.shape.borderRadius.button};
     width: 100%;
 `;
 
@@ -42,21 +43,23 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
     width: 100%;
     position: relative;
     cursor: pointer;
+    overflow: hidden;
     background: ${({ $hasStarted }) =>
         $hasStarted
             ? 'linear-gradient(90deg, #929292 0%, rgba(0,0,0,0.7) 99.49%)'
             : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
     color: ${({ theme }) => theme.palette.base};
-    box-shadow: 0 0 3px 0 rgba(255, 255, 255, 0.62) inset;
-    transition: opacity 0.2s ease-in-out background 0.4s ease-in-out;
+    box-shadow: 0 0 3px 0 rgba(255, 255, 255, 0.58) inset;
+    transition: opacity 0.4s ease-in-out background 0.4s ease-in-out;
     &:hover {
         background: ${({ $hasStarted }) =>
             $hasStarted
-                ? 'linear-gradient(90deg, #929292 0%, #5e5e5e 99.49%)'
+                ? 'linear-gradient(90deg, #929292 0%, rgba(0,0,0,0.65) 99.49%)'
                 : 'linear-gradient(90deg, #046937 0%, rgba(17, 110, 64, 0.96) 92.49%)'};
     }
 
     &:disabled {
-        opacity: 0.75;
+        opacity: 0.9;
+        pointer-events: none;
     }
 `;

@@ -1,3 +1,4 @@
+import { LayoutGroup, LazyMotion, domMax, MotionConfig } from 'framer-motion';
 import { BackgroundImage, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
@@ -17,7 +18,6 @@ import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScre
 import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
 import useMining from '@app/hooks/mining/useMining.ts';
 
-import { LayoutGroup } from 'framer-motion';
 import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
 
 export default function App() {
@@ -48,14 +48,25 @@ export default function App() {
             <GlobalReset />
             <GlobalStyle />
             <AutoUpdateDialog />
-            <LayoutGroup id="app-content">
-                <AirdropLogin />
-                {splashScreenMarkup}
-                {shutDownMarkup}
-                {!visualMode || view != 'mining' ? <BackgroundImage layout transition={{ duration: 0.3 }} /> : null}
-                {mainMarkup}
-                <ErrorSnackbar />
-            </LayoutGroup>
+            <LazyMotion features={domMax} strict>
+                {/*
+                 * added to reduce bundle size
+                 * see https://www.framer.com/motion/guide-reduce-bundle-size/#synchronous-loading
+                 * strict prop for using `m` instead of `motion`- see https://www.framer.com/motion/guide-reduce-bundle-size/#how-to-reduce-the-size-of-the-motion-component
+                 */}
+                <MotionConfig reducedMotion="user">
+                    <LayoutGroup id="app-content">
+                        <AirdropLogin />
+                        {splashScreenMarkup}
+                        {shutDownMarkup}
+                        {!visualMode || view != 'mining' ? (
+                            <BackgroundImage layout transition={{ duration: 0.3 }} />
+                        ) : null}
+                        {mainMarkup}
+                        <ErrorSnackbar />
+                    </LayoutGroup>
+                </MotionConfig>
+            </LazyMotion>
         </ThemeProvider>
     );
 }
