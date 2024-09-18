@@ -55,6 +55,8 @@ export default function Settings() {
             <Divider />
             <AirdropPermissionSettings />
             <Divider />
+
+            <Divider />
             <HorisontalBox>
                 <ResetSettingsButton />
             </HorisontalBox>
