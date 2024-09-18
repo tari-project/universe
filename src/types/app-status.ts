@@ -34,7 +34,7 @@ export interface P2poolStats {
     num_of_miners: number;
     last_block_won?: P2poolStatsBlock;
     share_chain_height: number;
-    pool_hash_rate: bigint;
+    pool_hash_rate: number;
     pool_total_earnings: number;
     pool_total_estimated_earnings: P2poolEstimatedEarnings;
     total_earnings: Record<string, number>;
