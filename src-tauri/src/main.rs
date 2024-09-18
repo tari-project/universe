@@ -300,34 +300,10 @@ async fn set_application_language(
 async fn resolve_application_language(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<String, String> {
-    if state
-        .config
-        .read()
-        .await
-        .has_system_language_been_proposed()
-    {
-        Ok(state.config.read().await.application_language().to_string())
-    } else {
-        let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
-        drop(
-            state
-                .config
-                .write()
-                .await
-                .set_application_language(system_language.clone())
-                .await,
-        );
-        drop(
-            state
-                .config
-                .write()
-                .await
-                .set_has_system_language_been_proposed(true)
-                .await,
-        );
+    let mut config = state.config.write().await;
+    let _unused = config.propose_system_language().await;
 
-        Ok(system_language.clone())
-    }
+    Ok(config.application_language().to_string())
 }
 
 #[tauri::command]

@@ -1,4 +1,5 @@
 use std::{path::PathBuf, time::SystemTime};
+use sys_locale::get_locale;
 
 use anyhow::anyhow;
 use log::{debug, info, warn};
@@ -269,17 +270,16 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn has_system_language_been_proposed(&self) -> bool {
-        self.has_system_language_been_proposed
-    }
-
-    pub async fn set_has_system_language_been_proposed(
-        &mut self,
-        has_been_proposed: bool,
-    ) -> Result<(), anyhow::Error> {
-        self.has_system_language_been_proposed = has_been_proposed;
-        self.update_config_file().await?;
-        Ok(())
+    pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+        if self.has_system_language_been_proposed {
+            Ok(())
+        } else {
+            let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+            self.application_language = system_language;
+            self.has_system_language_been_proposed = true;
+            self.update_config_file().await?;
+            Ok(())
+        }
     }
 
     // Allow needless update because in future there may be fields that are
