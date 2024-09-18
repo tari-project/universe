@@ -72,6 +72,14 @@ mod gpu_miner_adapter;
 mod progress_tracker;
 mod setup_status_event;
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct UpdateProgressRustEvent {
+    chunk_length: usize,
+    content_length: Option<u64>,
+    downloaded: u64,
+}
+
 #[tauri::command]
 async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     state
@@ -220,7 +228,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(app.clone(), state.airdrop_access_token.clone())
+        .initialize(state.airdrop_access_token.clone(), window.clone())
         .await?;
 
     BinaryResolver::current()
@@ -1180,6 +1188,7 @@ fn main() {
                     }
                 }
             });
+
             match tauri::async_runtime::block_on(thread).unwrap() {
                 Ok(_) => {
                     // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
@@ -1231,10 +1240,16 @@ fn main() {
         app.path_resolver().app_log_dir().unwrap()
     );
 
+    let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
         tauri::RunEvent::Updater(updater_event) => match updater_event {
             UpdaterEvent::Error(e) => {
                 error!(target: LOG_TARGET, "Updater error: {:?}", e);
+            }
+            UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
+                downloaded += chunk_length as u64;
+                let window = _app_handle.get_window("main").unwrap();
+                drop(window.emit("update-progress", UpdateProgressRustEvent {chunk_length, content_length, downloaded}));
             }
             UpdaterEvent::Downloaded => {
                 shutdown.trigger();

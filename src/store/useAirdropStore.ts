@@ -72,6 +72,7 @@ export interface BackendInMemoryConfig {
 
 interface AirdropState {
     authUuid: string;
+    wipUI?: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -83,15 +84,24 @@ interface AirdropStore extends AirdropState {
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
     setUserPoints: (userPoints?: UserPoints) => void;
+    setWipUI: (wipUI: boolean) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     logout: () => void;
 }
+
+const clearState: AirdropState = {
+    authUuid: '',
+    airdropTokens: undefined,
+    userDetails: undefined,
+    userPoints: undefined,
+};
 
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
-            logout: () => set({ airdropTokens: undefined }),
+            setWipUI: (wipUI) => set({ wipUI }),
+            logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
             setAirdropTokens: (airdropTokens) =>

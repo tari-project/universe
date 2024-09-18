@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
-export const Wrapper = styled(motion.div)`
+export const Wrapper = styled(m.div)`
     overflow: hidden;
     top: 40px;
     width: 100%;
@@ -14,7 +14,7 @@ export const Wrapper = styled(motion.div)`
     right: 10px;
 `;
 
-export const Column = styled(motion.div)<{ $isNumber?: boolean }>`
+export const Column = styled(m.div)<{ $isNumber?: boolean }>`
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -23,11 +23,11 @@ export const Column = styled(motion.div)<{ $isNumber?: boolean }>`
     height: 100%;
 `;
 
-export const MarkGroup = styled(motion.div)`
+export const MarkGroup = styled(m.div)`
     display: flex;
 `;
 
-export const RulerMarkGroup = styled(motion.div)`
+export const RulerMarkGroup = styled(m.div)`
     display: flex;
     position: relative;
     flex-direction: column;
@@ -36,7 +36,7 @@ export const RulerMarkGroup = styled(motion.div)`
     height: 35px;
 `;
 
-export const RulerMark = styled(motion.div)<{ $opacity?: number }>`
+export const RulerMark = styled(m.div)<{ $opacity?: number }>`
     width: 10px;
     display: flex;
     height: 100%;
