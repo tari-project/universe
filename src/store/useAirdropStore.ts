@@ -35,7 +35,7 @@ export interface UserPoints {
     hammers: number;
 }
 
-interface User {
+export interface User {
     is_bot: boolean;
     twitter_followers: number;
     id: string;
@@ -49,10 +49,30 @@ interface User {
         shells: number;
         hammers: number;
         totalScore: number;
+        rank: string;
     };
 }
 
-interface UserDetails {
+export interface UserEntryPoints {
+    entry: {
+        createdAt: string;
+        updatedAt: string;
+        id: string;
+        userId: string;
+        name: string;
+        photo: string;
+        totalScore: number;
+        gems: number;
+        shells: number;
+        hammers: number;
+        yatHolding: number;
+        followers: number;
+        isBot: boolean;
+        mandatoryComplete: boolean;
+    };
+}
+
+export interface UserDetails {
     user: User;
 }
 
