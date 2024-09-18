@@ -10,7 +10,8 @@
   "idle-timeout": {
     "max": "最大值为 21600 秒",
     "min": "最小值为 1 秒",
-    "placeholder": "输入空闲超时时间（秒）"
+    "placeholder": "输入空闲超时时间（秒）",
+    "title": "机器被视为空闲的时间"
   },
   "last-block-added-time": "最后添加到链的块时间",
   "logs": "日志",
