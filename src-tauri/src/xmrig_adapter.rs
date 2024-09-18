@@ -202,6 +202,7 @@ impl ProcessAdapter for XmrigAdapter {
         args.push("--donate-level=1".to_string());
         args.push(format!("--user={}", self.monero_address));
         args.push(format!("--threads={}", self.cpu_max_percentage));
+        args.push("--verbose".to_string());
 
         let version = self.version.clone();
 
