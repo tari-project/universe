@@ -1,5 +1,5 @@
 use std::sync::LazyLock;
-use notify_rust::{Notification, Timeout};
+use notify_rust::Notification;
 
 use log::info;
 
