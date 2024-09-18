@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import styled, { keyframes } from 'styled-components';
 
 export const Wrapper = styled('div')`
@@ -16,7 +16,7 @@ export const Wrapper = styled('div')`
     pointer-events: all;
 `;
 
-export const Cover = styled(motion.div)`
+export const Cover = styled(m.div)`
     position: absolute;
     width: 100%;
     height: 100%;
@@ -27,7 +27,7 @@ export const Cover = styled(motion.div)`
     cursor: pointer;
 `;
 
-export const BoxWrapper = styled(motion.div)`
+export const BoxWrapper = styled(m.div)`
     width: 100%;
     max-width: 560px;
     flex-shrink: 0;
@@ -152,7 +152,7 @@ export const CopyButton = styled('button')`
     }
 `;
 
-export const CopyText = styled(motion.span)``;
+export const CopyText = styled(m.span)``;
 
 const float = keyframes`
   0% {
@@ -181,7 +181,7 @@ export const GemsWrapper = styled('div')`
 
 export const Gem1 = styled('img')`
     position: absolute;
-    top: 0px;
+    top: 0;
     left: 0;
     animation: ${float} 3s ease-in-out infinite;
 `;
