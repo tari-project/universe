@@ -1,5 +1,5 @@
-use std::sync::LazyLock;
 use notify_rust::Notification;
+use std::sync::LazyLock;
 
 use log::info;
 
@@ -26,11 +26,9 @@ impl NotificationManager {
         match Self::detect_current_os() {
             CurrentOperatingSystem::Linux => {
                 #[cfg(target_os = "linux")]
-                notification.show().unwrap().on_close(
-                    |notification| {
-                        info!(target: LOG_TARGET, "Notification closed: {:?}", notification);
-                    },
-                );
+                notification.show().unwrap().on_close(|notification| {
+                    info!(target: LOG_TARGET, "Notification closed: {:?}", notification);
+                });
             }
             CurrentOperatingSystem::MacOS => {
                 #[cfg(target_os = "macos")]
@@ -44,21 +42,19 @@ impl NotificationManager {
     }
 
     fn build_notification(&self, summary: &str, body: &str) -> Notification {
-        let mut notification = Notification::new()
-            .summary(summary)
-            .body(body).finalize();
+        let mut notification = Notification::new().summary(summary).body(body).finalize();
 
         match Self::detect_current_os() {
             CurrentOperatingSystem::Linux => {
-                return notification.auto_icon().appname("Tari Universe").finalize();
+                notification.auto_icon().appname("Tari Universe").finalize()
             }
             CurrentOperatingSystem::MacOS => {
-                return notification.finalize();
+                notification.finalize()
             }
             CurrentOperatingSystem::Windows => {
-                return notification.finalize();
+                notification.finalize()
+            }
         }
-    }
     }
     fn detect_current_os() -> CurrentOperatingSystem {
         if cfg!(target_os = "windows") {

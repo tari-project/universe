@@ -61,6 +61,7 @@ mod mm_proxy_manager;
 mod network_utils;
 mod node_adapter;
 mod node_manager;
+mod notification_manager;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -78,7 +79,6 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-mod notification_manager;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
@@ -712,10 +712,7 @@ async fn get_seed_words(
 }
 
 #[tauri::command]
-async fn trigger_notification(
-    summary: &str,
-    body: &str,
-) -> Result<(), String> {
+async fn trigger_notification(summary: &str, body: &str) -> Result<(), String> {
     NotificationManager::current().trigger_notification(summary, body);
     Ok(())
 }
