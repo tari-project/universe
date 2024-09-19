@@ -100,6 +100,7 @@ export interface GpuMinerStatus {
     is_mining: boolean;
     hash_rate: number;
     estimated_earnings: number;
+    is_available: boolean;
 }
 
 export interface BaseNodeStatus {

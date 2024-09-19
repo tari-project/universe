@@ -27,6 +27,7 @@ const GpuMiningMarkup = () => {
     const isMiningInProgress = isCPUMining || isGPUMining;
     const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
     const miningLoading = (miningInitiated && !isMiningInProgress) || (!miningInitiated && isMiningInProgress);
+    const isGPUMiningAvailable = useGPUStatusStore(useShallow((s) => s.is_available));
 
     const handleGpuMiningEnabled = useCallback(async () => {
         // optimistic rendering
@@ -44,6 +45,7 @@ const GpuMiningMarkup = () => {
                 disabled={toggleDisabledBase}
                 onChange={handleGpuMiningEnabled}
             />
+            {!isGPUMiningAvailable && <Typography variant="p">{t('gpu-unavailable', { ns: 'settings' })}</Typography>}
         </MinerContainer>
     );
 };
