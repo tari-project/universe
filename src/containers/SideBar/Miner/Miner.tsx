@@ -9,7 +9,6 @@ import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 import { formatNumber } from '@app/utils/formatNumber.ts';
 
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { ExpandableTile } from '@app/containers/SideBar/Miner/components/ExpandableTile.tsx';
 import formatBalance from '@app/utils/formatBalance.ts';
@@ -23,7 +22,6 @@ import { LayoutGroup } from 'framer-motion';
 
 export default function Miner() {
     const { cpu: cpuHardwareStatus, gpu: gpuHardwareStatus } = useHardwareStatus();
-    const miningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
     const { isCpuMiningEnabled, isGpuMiningEnabled } = useAppStatusStore(
         useShallow((s) => ({
             isCpuMiningEnabled: s.cpu_mining_enabled,
@@ -47,9 +45,8 @@ export default function Miner() {
 
     const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 
-    const isLoading = (miningInitiated && !isMiningInProgress) || (isMiningInProgress && !miningInitiated);
-    const isWaitingForCPUHashRate = isMiningInProgress && cpu_hash_rate <= 0;
-    const isWaitingForGPUHashRate = isMiningInProgress && gpu_hash_rate <= 0;
+    const isWaitingForCPUHashRate = isCpuMiningEnabled && cpu_is_mining && cpu_hash_rate <= 0;
+    const isWaitingForGPUHashRate = isGpuMiningEnabled && gpu_is_mining && gpu_hash_rate <= 0;
 
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
@@ -60,16 +57,16 @@ export default function Miner() {
                 <LayoutGroup id="miner-stat-tiles">
                     <Tile
                         title="CPU Power"
-                        stats={isCpuMiningEnabled && isMiningInProgress ? formatNumber(cpu_hash_rate) : '-'}
-                        isLoading={isLoading || (isCpuMiningEnabled && isWaitingForCPUHashRate)}
+                        stats={isCpuMiningEnabled ? formatNumber(cpu_hash_rate) : '-'}
+                        isLoading={isWaitingForCPUHashRate}
                         chipValue={cpuHardwareStatus?.usage_percentage}
                         unit="H/s"
                         useLowerCase
                     />
                     <Tile
                         title="GPU Power"
-                        stats={isGpuMiningEnabled && isMiningInProgress ? formatNumber(gpu_hash_rate) : '-'}
-                        isLoading={isLoading || (isGpuMiningEnabled && isWaitingForGPUHashRate)}
+                        stats={isGpuMiningEnabled ? formatNumber(gpu_hash_rate) : '-'}
+                        isLoading={isWaitingForGPUHashRate}
                         chipValue={gpuHardwareStatus?.usage_percentage}
                         unit="H/s"
                         useLowerCase
