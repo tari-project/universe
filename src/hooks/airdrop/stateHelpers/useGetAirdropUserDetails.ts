@@ -29,7 +29,6 @@ const useAridropRequest = () => {
 export const useGetAirdropUserDetails = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userDetails = useAirdropStore((state) => state.userDetails);
-    const userPoints = useAirdropStore((state) => state.userPoints);
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
     const handleRequest = useAridropRequest();
@@ -39,7 +38,7 @@ export const useGetAirdropUserDetails = () => {
             path: '/user/details',
             method: 'GET',
         });
-        if (!data) return;
+        if (!data?.user.id) return;
         setUserDetails(data);
         return data.user;
     }, [handleRequest, setUserDetails]);
@@ -49,7 +48,7 @@ export const useGetAirdropUserDetails = () => {
             path: '/user/score',
             method: 'GET',
         });
-        if (!data) return;
+        if (!data?.entry.gems) return;
         setUserPoints({
             base: {
                 gems: data.entry.gems,
@@ -70,5 +69,6 @@ export const useGetAirdropUserDetails = () => {
         if (!userDetails?.user?.id) {
             fetchData();
         }
-    }, [fetchUserDetails, fetchUserPoints, airdropToken, userDetails?.user?.id, userPoints?.base.gems]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [airdropToken, userDetails?.user?.id]);
 };
