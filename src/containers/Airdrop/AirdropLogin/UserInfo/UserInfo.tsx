@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
 import DownloadReferralModal from './DownloadReferralModal/DownloadReferralModal';
 import { NumberPill } from '../ConnectButton/styles';
+import GemsPill from './GemsPill/GemsPill';
 
 export default function UserInfo() {
     const { logout, userDetails, airdropTokens, userPoints, wipUI } = useAirdropStore();
@@ -30,7 +31,6 @@ export default function UserInfo() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const profileimageurl = userDetails?.user?.profileimageurl;
-    const gems = userPoints?.gems || userDetails?.user?.rank?.gems || 0;
 
     const handleClick = () => {
         setOpen(!open);
@@ -66,6 +66,12 @@ export default function UserInfo() {
         return () => document.removeEventListener('click', handleClickOutside);
     }, [handleClickOutside]);
 
+    const [gems, setGems] = useState(0);
+
+    useEffect(() => {
+        setGems(userPoints?.gems || userDetails?.user?.rank?.gems || 0);
+    }, [userPoints?.gems, userDetails?.user?.rank?.gems]);
+
     if (!wipUI) return null;
     if (!airdropTokens?.token) return null;
 
@@ -75,14 +81,11 @@ export default function UserInfo() {
         <>
             <Wrapper>
                 <StatsGroup>
-                    <StatsPill>
-                        <StatsNumber>{gems}</StatsNumber>
-                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" />
-                    </StatsPill>
+                    <GemsPill value={gems} />
 
                     {userDetails?.user?.rank?.rank && (
                         <StatsPill>
-                            <StatsNumber>Rank {userDetails?.user?.rank?.rank}</StatsNumber>
+                            <StatsNumber>Rank #{parseInt(userDetails?.user?.rank?.rank).toLocaleString()}</StatsNumber>
                         </StatsPill>
                     )}
                 </StatsGroup>

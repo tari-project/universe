@@ -39,6 +39,8 @@ export const StatsPill = styled('div')`
 
     height: 36px;
     padding: 0 15px;
+    pointer-events: all;
+    position: relative;
 `;
 
 export const StatsNumber = styled('div')`
@@ -181,9 +183,24 @@ export const MenuItem = styled('div')`
 
     .StatsIcon-gems {
         width: 12px;
+        position: relative;
+        z-index: 2;
     }
 `;
 
 export const MenuWrapper = styled('div')`
     position: relative;
+`;
+
+export const GemsAnimation = styled(m.div)`
+    position: absolute;
+    top: 10px;
+    right: 33px;
+    z-index: 0;
+`;
+
+export const GemImage = styled(m.img)`
+    position: absolute;
+    top: 0;
+    left: 0;
 `;
