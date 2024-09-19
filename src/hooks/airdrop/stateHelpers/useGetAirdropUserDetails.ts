@@ -1,4 +1,4 @@
-import { useAirdropStore, UserEntryPoints, UserDetails } from '@app/store/useAirdropStore';
+import { useAirdropStore, UserEntryPoints, UserDetails, ReferralCount } from '@app/store/useAirdropStore';
 import { useCallback, useEffect } from 'react';
 
 interface RequestProps {
@@ -31,6 +31,7 @@ export const useGetAirdropUserDetails = () => {
     const userDetails = useAirdropStore((state) => state.userDetails);
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
+    const setReferralCount = useAirdropStore((state) => state.setReferralCount);
     const handleRequest = useAridropRequest();
 
     const fetchUserDetails = useCallback(async () => {
@@ -58,12 +59,25 @@ export const useGetAirdropUserDetails = () => {
         });
     }, [handleRequest, setUserPoints]);
 
+    const fetchUserReferralPoints = useCallback(async () => {
+        const data = await handleRequest<{ count: ReferralCount }>({
+            path: '/miner/download/referral-count',
+            method: 'GET',
+        });
+        if (!data?.count) return;
+        setReferralCount({
+            gems: data.count.gems,
+            count: data.count.count,
+        });
+    }, [handleRequest, setReferralCount]);
+
     useEffect(() => {
         const fetchData = async () => {
             const details = await fetchUserDetails();
             if (!details?.rank.gems) {
                 await fetchUserPoints();
             }
+            await fetchUserReferralPoints();
         };
 
         if (!userDetails?.user?.id) {
