@@ -12,14 +12,16 @@ export default function LogsSettings() {
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const [feedback, setFeedback] = useState('App feedback');
+    const [error, setError] = useState('');
     const sendLogs = useCallback(() => {
         setLoading(true);
+        setError('');
         invoke('send_feedback', { feedback, includeLogs: true })
             .then(() => {
                 setOpen(false);
             })
             .catch((error) => {
-                console.error(error);
+                setError(error.toString());
             })
             .finally(() => {
                 setLoading(false);
@@ -46,12 +48,13 @@ export default function LogsSettings() {
                 {t('open-logs-directory', { ns: 'settings' })}
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
-                <Button onClick={() => setOpen(true)} styleVariant="outline" color="error">
+                <Button onClick={() => setOpen(true)} styleVariant="outline" color="secondary">
                     {t('send-logs', { ns: 'settings' })}
                 </Button>
                 <DialogContent>
                     <Stack direction="column" alignItems="center" justifyContent="space-between">
                         <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
+                        <Typography variant={'p'}>{error}</Typography>
                         <Stack direction="row">
                             <Button disabled={loading} onClick={handleClose} color="warning">
                                 {t('cancel')}

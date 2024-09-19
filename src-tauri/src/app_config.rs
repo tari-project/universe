@@ -110,8 +110,9 @@ impl AppConfig {
     pub fn config_dir(&self) -> Option<PathBuf> {
         self.config_file
             .as_ref()
-            .map(|p| p.parent().unwrap().to_path_buf())
+            .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
     }
+
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
         let file: PathBuf = config_path.join("app_config.json");
         self.config_file = Some(file.clone());
