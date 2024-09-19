@@ -27,6 +27,7 @@ const initialState: State = {
     config_file: undefined,
     mode: 'Eco',
     auto_mining: true,
+    mine_on_app_start: false,
     p2pool_enabled: false,
     last_binaries_update_timestamp: '0',
     allow_telemetry: false,

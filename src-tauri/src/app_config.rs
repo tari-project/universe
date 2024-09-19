@@ -19,6 +19,8 @@ pub struct AppConfigFromFile {
     mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
+    #[serde(default = "default_false")]
+    mine_on_app_start: bool,
     #[serde(default = "default_true")]
     p2pool_enabled: bool,
     #[serde(default = "default_system_time")]
@@ -47,6 +49,7 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             auto_mining: true,
+            mine_on_app_start: false,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: false,
@@ -91,6 +94,7 @@ pub(crate) struct AppConfig {
     config_file: Option<PathBuf>,
     mode: MiningMode,
     auto_mining: bool,
+    mine_on_app_start: bool,
     p2pool_enabled: bool,
     last_binaries_update_timestamp: SystemTime,
     allow_telemetry: bool,
@@ -110,6 +114,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
+            mine_on_app_start: false,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
@@ -145,6 +150,7 @@ impl AppConfig {
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                 self.auto_mining = config.auto_mining;
+                self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
                 self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                 self.allow_telemetry = config.allow_telemetry;
@@ -220,6 +226,19 @@ impl AppConfig {
 
     pub fn auto_mining(&self) -> bool {
         self.auto_mining
+    }
+
+    pub fn mine_on_app_start(&self) -> bool {
+        self.mine_on_app_start
+    }
+
+    pub async fn set_mine_on_app_start(
+        &mut self,
+        mine_on_app_start: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.mine_on_app_start = mine_on_app_start;
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_allow_telemetry(
@@ -303,6 +322,7 @@ impl AppConfig {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
             auto_mining: self.auto_mining,
+            mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             allow_telemetry: self.allow_telemetry,

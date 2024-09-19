@@ -6,6 +6,7 @@ export interface AppConfig {
     config_file?: string;
     mode: modeType;
     auto_mining: boolean;
+    mine_on_app_start: boolean;
     p2pool_enabled: boolean;
     last_binaries_update_timestamp: string;
     has_system_language_been_proposed: boolean;

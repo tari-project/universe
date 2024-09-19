@@ -52,6 +52,7 @@
   "experimental-title": "Experimental Features",
   "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
   "connected-to-tari": "Connected to the Tari Network",
+  "mine-on-app-start": "Allow mining on app startup",
   "not-connected-to-tari": "Not connected to the Tari Network",
   "connected-peers": "Connected Peers",
   "should-use-system-language": "Use system language"

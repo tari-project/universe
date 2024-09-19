@@ -11,7 +11,7 @@ export const useUiMiningStateMachine = () => {
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const gpuIsMining = useMiningStore((s) => s.gpu.mining.is_mining);
-    const isAutoMiningEnabled = useAppConfigStore((s) => s.auto_mining);
+    const isMiningOnAppStartEnabled = useAppConfigStore((s) => s.mine_on_app_start);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const isSetupFinished = !useAppStateStore((s) => s.isSettingUp);
@@ -22,13 +22,17 @@ export const useUiMiningStateMachine = () => {
 
     useEffect(() => {
         async function startMiningAsync() {
-            if (isSetupFinished && !!isAutoMiningEnabled && !!isMiningEnabled && !hasStartedInit.current) {
+            if (isSetupFinished && !!isMiningOnAppStartEnabled && !!isMiningEnabled && !hasStartedInit.current) {
                 await startMining();
+            }
+
+            // Need to be seprated so when we toggle "Should start mining on app startup" it doesn't start mining but we start mining only after setup is finished
+            if (isSetupFinished) {
                 hasStartedInit.current = true;
             }
         }
         startMiningAsync();
-    }, [startMining, isAutoMiningEnabled, isMiningEnabled, isSetupFinished]);
+    }, [startMining, isMiningOnAppStartEnabled, isMiningEnabled, isSetupFinished]);
 
     const statusIndex = window?.glApp?.stateManager?.statusIndex;
 
@@ -54,7 +58,7 @@ export const useUiMiningStateMachine = () => {
         isMiningEnabled,
         isChangingMode,
         isMining,
-        isAutoMiningEnabled,
+        isMiningOnAppStartEnabled,
         isMiningInitiated,
         setIsChangingMode,
     ]);

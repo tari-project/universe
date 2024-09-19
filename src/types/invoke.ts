@@ -9,6 +9,7 @@ declare module '@tauri-apps/api/tauri' {
     ): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;
+    function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_mining'): Promise<void>;
