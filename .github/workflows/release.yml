@@ -160,7 +160,7 @@ jobs:
 
       - name: Build Tauri apps
         id: build
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v0.5.14
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE || secrets.AZURE_TENANT_ID }}
