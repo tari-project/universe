@@ -1,52 +1,44 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
-import { UnlistenFn } from '@tauri-apps/api/event';
+
 import { invoke } from '@tauri-apps/api/tauri';
 import { Button } from '@app/components/elements/Button';
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { Typography } from '@app/components/elements/Typography';
 import { ButtonsWrapper } from './AutoUpdateDialog.styles';
-import { CircularProgress } from '@app/components/elements/CircularProgress';
+import { useUpdateStatus } from '@app/hooks/useUpdateStatus';
+import { UpdatedStatus } from './UpdatedStatus';
+import { useInterval } from '@app/hooks/useInterval.ts';
 
+const UPDATE_CHECK_INTERVAL = 1000 * 60 * 5; // 5 min
 function AutoUpdateDialog() {
     const setIsAfterAutoUpdate = useAppStateStore((s) => s.setIsAfterAutoUpdate);
     const [latestVersion, setLatestVersion] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
+    const { contentLength, downloaded } = useUpdateStatus();
     const { t } = useTranslation('setup-view', { useSuspense: false });
 
-    useEffect(() => {
-        let unlistenPromise: Promise<UnlistenFn>;
-
-        const checkUpdateTariUniverse = async () => {
-            unlistenPromise = onUpdaterEvent(({ error, status }) => {
-                // This will log all updater events, including status updates and errors.
-                console.info('Updater event', error, status);
-            });
-
-            try {
-                const { shouldUpdate, manifest } = await checkUpdate();
-                if (shouldUpdate) {
-                    console.info('New Tari Universe version available', manifest);
-                    setLatestVersion(manifest?.version);
-                    setOpen(true);
-                } else {
-                    setIsAfterAutoUpdate(true);
-                }
-            } catch (error) {
-                console.error(error);
+    const checkUpdateTariUniverse = useCallback(async () => {
+        try {
+            const { shouldUpdate, manifest } = await checkUpdate();
+            if (shouldUpdate) {
+                console.info('New Tari Universe version available', manifest);
+                setLatestVersion(manifest?.version);
+                setOpen(true);
+            } else {
                 setIsAfterAutoUpdate(true);
             }
-        };
-
-        checkUpdateTariUniverse();
-        return () => {
-            unlistenPromise?.then((unlisten) => unlisten());
-        };
+        } catch (error) {
+            console.error(error);
+            setIsAfterAutoUpdate(true);
+        }
     }, [setIsAfterAutoUpdate]);
+
+    useInterval(() => checkUpdateTariUniverse(), UPDATE_CHECK_INTERVAL);
 
     const handleUpdate = async () => {
         setIsLoading(true);
@@ -73,19 +65,29 @@ function AutoUpdateDialog() {
         setOpen(open);
     };
 
+    useEffect(() => {
+        checkUpdateTariUniverse();
+        const unlistenPromise = onUpdaterEvent(({ error, status }) => {
+            // This will log all updater events, including status updates and errors.
+            console.info('Updater event', error, status);
+        });
+        return () => {
+            unlistenPromise?.then((unlisten) => unlisten());
+        };
+    }, [checkUpdateTariUniverse]);
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t('would-you-like-to-install', { version: latestVersion })}</Typography>
+                {isLoading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
                 <ButtonsWrapper>
-                    {!isLoading ? (
+                    {!isLoading && (
                         <>
                             <Button onClick={handleUpdate}>{t('yes')}</Button>
                             <Button onClick={handleClose}>{t('no')}</Button>
                         </>
-                    ) : (
-                        <CircularProgress />
                     )}
                 </ButtonsWrapper>
             </DialogContent>

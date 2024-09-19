@@ -4,10 +4,10 @@ import cardBg from '../../assets/images/card.png';
 import gem from '../../assets/images/gem-sml.png';
 
 import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 // SideBar
-export const SideBarContainer = styled(motion.div)`
+export const SideBarContainer = styled(m.div)`
     width: ${sidebarWidth};
     pointer-events: auto;
     display: flex;
@@ -21,14 +21,14 @@ export const SideBarContainer = styled(motion.div)`
     position: relative;
 `;
 
-export const TopContainer = styled(motion.div)`
+export const TopContainer = styled(m.div)`
     padding: 0 16px;
     display: flex;
     flex-direction: column;
     gap: 16px;
 `;
 
-export const SideBarInner = styled(motion.div)`
+export const SideBarInner = styled(m.div)`
     display: flex;
     flex-direction: column;
     position: relative;
@@ -36,7 +36,7 @@ export const SideBarInner = styled(motion.div)`
     height: 100%;
 `;
 
-export const BottomContainer = styled(motion.div)`
+export const BottomContainer = styled(m.div)`
     display: flex;
     justify-content: flex-start;
     justify-self: flex-end;
@@ -45,7 +45,7 @@ export const BottomContainer = styled(motion.div)`
 `;
 
 // Wallet
-export const WalletContainer = styled(motion.div)`
+export const WalletContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -61,7 +61,7 @@ export const WalletContainer = styled(motion.div)`
     box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
 `;
 
-export const Handle = styled(motion.div)`
+export const Handle = styled(m.div)`
     background-color: ${({ theme }) => theme.palette.text.secondary};
     width: 52px;
     height: 3px;
@@ -70,7 +70,7 @@ export const Handle = styled(motion.div)`
 `;
 
 // Milestones
-export const ProgressBox = styled(motion.div)`
+export const ProgressBox = styled(m.div)`
     background-color: ${({ theme }) => theme.palette.background.paper};
     padding: 3px;
     border-radius: 10px;
@@ -91,7 +91,7 @@ export const StyledLinearProgress = styled(LinearProgress)`
     flex-grow: 1;
 `;
 
-export const GemBox = styled(motion.div)`
+export const GemBox = styled(m.div)`
     background-image: url(${gem});
     background-repeat: no-repeat;
     background-position: center;

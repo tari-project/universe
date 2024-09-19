@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
-export const MiningViewContainer = styled(motion.div)`
+export const MiningViewContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
     justify-content: space-between;

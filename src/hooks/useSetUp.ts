@@ -8,18 +8,12 @@ import { useAppStateStore } from '../store/appStateStore.ts';
 
 import { useVersions } from '@app/hooks/useVersions.ts';
 
-import { useShallow } from 'zustand/react/shallow';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
-
 export function useSetUp() {
     const startupInitiated = useRef(false);
     const setView = useUIStore((s) => s.setView);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setError = useAppStateStore((s) => s.setError);
-    const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
-
-    const setMiningInitiated = useMiningStore(useShallow((s) => s.setMiningInitiated));
-    const setMiningControlsEnabled = useMiningStore(useShallow((s) => s.setMiningControlsEnabled));
+    const hasCheckedForUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
     useVersions();
 
     const clearStorage = useCallback(() => {
@@ -45,27 +39,18 @@ export function useSetUp() {
                     break;
             }
         });
-        const intervalId = setInterval(async () => {
-            if (!startupInitiated.current && isAfterAutoUpdate) {
-                clearInterval(intervalId);
-                startupInitiated.current = true;
-                clearStorage();
-                invoke('setup_application').catch((e) => {
+        if (!startupInitiated.current && hasCheckedForUpdate) {
+            clearStorage();
+            invoke('setup_application')
+                .then(() => {
+                    startupInitiated.current = true;
+                })
+                .catch((e) => {
                     setError(`Failed to setup application: ${e}`);
-                    setView('mining');
                 });
-            }
-        }, 100);
+        }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [
-        clearStorage,
-        isAfterAutoUpdate,
-        setError,
-        setMiningControlsEnabled,
-        setMiningInitiated,
-        setSetupDetails,
-        setView,
-    ]);
+    }, [clearStorage, hasCheckedForUpdate, setError, setSetupDetails, setView]);
 }

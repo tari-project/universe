@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import styled, { keyframes } from 'styled-components';
 
 const ring = keyframes`
@@ -128,7 +128,7 @@ export const StyledAvatar = styled('div')<{ $img?: string }>`
     ${({ $img }) => $img && `background-image: url(${$img})`}
 `;
 
-export const Menu = styled(motion.div)`
+export const Menu = styled(m.div)`
     width: 180px;
     position: absolute;
     top: 110%;

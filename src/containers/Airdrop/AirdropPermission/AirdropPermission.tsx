@@ -3,12 +3,13 @@ import gemImage from './images/gem.png';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { appConfig } from '@app/config';
 import { useAppStatusStore } from '@app/store/useAppStatusStore';
+import { useAirdropStore } from '@app/store/useAirdropStore';
 
 export default function AirdropPermission() {
     const telemetryMode = useAppStatusStore((s) => s.telemetry_mode);
     const setTelemetryMode = useAppStatusStore((s) => s.setTelemetryMode);
+    const wipUI = useAirdropStore((state) => state.wipUI);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const handleChange = () => {
@@ -19,7 +20,7 @@ export default function AirdropPermission() {
     return (
         <Position>
             <BoxWrapper>
-                {appConfig.displayAirdropWipUI && (
+                {wipUI && (
                     <>
                         <Gem1 src={gemImage} alt="" />
                         <Gem2 src={gemImage} alt="" />
@@ -29,8 +30,8 @@ export default function AirdropPermission() {
                 )}
 
                 <TextWrapper>
-                    <Title>{t(appConfig.displayAirdropWipUI ? 'permission.title' : 'permissionNoGems.title')}</Title>
-                    <Text>{t(appConfig.displayAirdropWipUI ? 'permission.text' : 'permissionNoGems.text')}</Text>
+                    <Title>{t(wipUI ? 'permission.title' : 'permissionNoGems.title')}</Title>
+                    <Text>{t(wipUI ? 'permission.text' : 'permissionNoGems.text')}</Text>
                 </TextWrapper>
                 <ToggleSwitch checked={telemetryMode} onChange={handleChange} />
             </BoxWrapper>
