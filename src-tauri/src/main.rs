@@ -319,6 +319,8 @@ async fn setup_inner(
             .ensure_latest(Binaries::GpuMiner, progress.clone())
             .await?;
 
+        state.gpu_miner.write().await.detect().await?;
+
         progress.set_max(30).await;
         progress
             .update("checking-latest-version-xmrig".to_string(), None, 0)
@@ -603,7 +605,10 @@ async fn start_mining<'r>(
         }
     }
 
-    if gpu_mining_enabled {
+    let gpu_available = state.gpu_miner.read().await.is_gpu_mining_available();
+    info!(target: LOG_TARGET, "Gpu availability {:?}", gpu_available.clone());
+
+    if gpu_mining_enabled && gpu_available {
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         let p2pool_enabled = state.config.read().await.p2pool_enabled();
         let source = if p2pool_enabled {
