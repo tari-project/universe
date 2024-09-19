@@ -3,7 +3,7 @@ use std::io::Read;
 use std::sync::Arc;
 
 use anyhow::Result;
-use log::{debug, error, info};
+use log::{debug, error};
 use reqwest::multipart;
 use tokio::sync::RwLock;
 use zip::ZipWriter;
@@ -88,6 +88,6 @@ impl Feedback {
                 "Failed to upload file: {}",
                 response.status()
             ))
-        };
+        }
     }
 }
