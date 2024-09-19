@@ -22,5 +22,7 @@
     "reset-wallet": "Reset wallet",
     "connected-to-tari": "Connected to the Tari Network",
     "not-connected-to-tari": "Not connected to the Tari Network",
-    "connected-peers": "Connected Peers"
+    "connected-peers": "Connected Peers",
+    "sha-network-hash-rate": "Hashrate sieci Sha3",
+    "randomx-network-hash-rate": "Hashrate sieci Randomx"
 }

@@ -46,5 +46,7 @@
   "experimental-warning": "⚠️ 警告：这些功能正在积极开发中，可能会表现得不可预测。请谨慎操作。",
   "connected-to-tari": "Connected to the Tari Network",
   "not-connected-to-tari": "Not connected to the Tari Network",
-  "connected-peers": "Connected Peers"
+  "connected-peers": "Connected Peers",
+  "sha-network-hash-rate": "Hashrate sieci Sha3",
+  "randomx-network-hash-rate": "Hashrate sieci Randomx"
 }
