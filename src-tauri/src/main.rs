@@ -210,10 +210,11 @@ async fn setup_inner(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
+    let config = state.config.read().await;
 
     let progress = ProgressTracker::new(window.clone());
 
-    let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
+    let last_binaries_update_timestamp = config.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
     state
@@ -309,6 +310,7 @@ async fn setup_inner(
             .node_manager
             .ensure_started(
                 state.shutdown.to_signal(),
+                config.base_node_fixed_grpc_port(),
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),

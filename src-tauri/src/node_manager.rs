@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
+use sha2::digest::crypto_common::rand_core::le;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
@@ -21,7 +22,7 @@ pub enum NodeManagerError {
     NodeNotStarted,
 }
 
-pub struct NodeManager {
+pub(crate) struct NodeManager {
     watcher: Arc<RwLock<ProcessWatcher<MinotariNodeAdapter>>>,
 }
 
@@ -60,32 +61,21 @@ impl NodeManager {
     pub async fn ensure_started(
         &self,
         app_shutdown: ShutdownSignal,
+        base_node_fixed_grpc_port: Option<u16>,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
+            if let Some(base_node_fixed_grpc_port) = base_node_fixed_grpc_port {
+                process_watcher.adapter.grpc_port = base_node_fixed_grpc_port;
+            }
             process_watcher
                 .start(app_shutdown, base_path, config_path, log_path)
                 .await?;
         }
         self.wait_ready().await?;
-        Ok(())
-    }
-
-    pub async fn start(
-        &self,
-        app_shutdown: ShutdownSignal,
-        base_path: PathBuf,
-        config_path: PathBuf,
-        log_path: PathBuf,
-    ) -> Result<(), anyhow::Error> {
-        let mut process_watcher = self.watcher.write().await;
-        process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
-            .await?;
-
         Ok(())
     }
 

@@ -32,6 +32,8 @@ pub struct AppConfigFromFile {
     gpu_mining_enabled: bool,
     #[serde(default = "default_true")]
     cpu_mining_enabled: bool,
+    base_node_fixed_grpc_port: Option<u16>,
+    mm_proxy_fixed_port: Option<u16>,
 }
 
 impl Default for AppConfigFromFile {
@@ -47,6 +49,8 @@ impl Default for AppConfigFromFile {
             monero_address: default_monero_address(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            base_node_fixed_grpc_port: None,
+            mm_proxy_fixed_port: None,
         }
     }
 }
@@ -88,6 +92,8 @@ pub(crate) struct AppConfig {
     monero_address: String,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
+    base_node_fixed_grpc_port: Option<u16>,
+    mm_proxy_fixed_port: Option<u16>,
 }
 
 impl AppConfig {
@@ -104,6 +110,8 @@ impl AppConfig {
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            base_node_fixed_grpc_port: None,
+            mm_proxy_fixed_port: None,
         }
     }
 
@@ -136,6 +144,8 @@ impl AppConfig {
                 self.monero_address = config.monero_address;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
+                self.base_node_fixed_grpc_port = config.base_node_fixed_grpc_port;
+                self.mm_proxy_fixed_port = config.mm_proxy_fixed_port;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -238,6 +248,14 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn base_node_fixed_grpc_port(&self) -> Option<u16> {
+        self.base_node_fixed_grpc_port
+    }
+
+    pub fn mm_proxy_fixed_port(&self) -> Option<u16> {
+        self.mm_proxy_fixed_port
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -256,6 +274,8 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
+            base_node_fixed_grpc_port: self.base_node_fixed_grpc_port,
+            mm_proxy_fixed_port: self.mm_proxy_fixed_port,
             ..default_config
         };
         let config = serde_json::to_string(config)?;
