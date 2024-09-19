@@ -63,7 +63,7 @@ export default function ConnectButton() {
             <Gem2 src={gem2Image} alt="" className="ConnectButton-Gem2" />
             <Gem3 src={gem3Image} alt="" className="ConnectButton-Gem3" />
 
-            <NumberPill>+200</NumberPill>
+            <NumberPill>+1000</NumberPill>
 
             <Text>{t('loginButton')}</Text>
 

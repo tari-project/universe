@@ -60,7 +60,7 @@ export default function DownloadReferralModal({ referralCode, onClose }: Downloa
                     <Title>
                         Invite Friends, earn{' '}
                         <span>
-                            1000 <GemTextImage src={gemImage} alt="" />
+                            2000 <GemTextImage src={gemImage} alt="" />
                         </span>{' '}
                         gems
                     </Title>

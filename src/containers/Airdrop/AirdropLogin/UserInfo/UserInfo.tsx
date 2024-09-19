@@ -20,6 +20,8 @@ import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
 import DownloadReferralModal from './DownloadReferralModal/DownloadReferralModal';
+import { NumberPill } from '../ConnectButton/styles';
+import GemsPill from './GemsPill/GemsPill';
 
 export default function UserInfo() {
     const { logout, userDetails, airdropTokens, userPoints, wipUI } = useAirdropStore();
@@ -29,12 +31,11 @@ export default function UserInfo() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const profileimageurl = userDetails?.user?.profileimageurl;
-    const gems = userPoints?.base?.gems || userDetails?.user?.rank?.gems || 0;
     const rank = userPoints?.base.rank || userDetails?.user?.rank?.rank;
     const referralCount = userPoints?.referralCount;
 
     const handleClick = () => {
-        setOpen(true);
+        setOpen(!open);
     };
     const handleClose = () => {
         setOpen(false);
@@ -67,6 +68,12 @@ export default function UserInfo() {
         return () => document.removeEventListener('click', handleClickOutside);
     }, [handleClickOutside]);
 
+    const [gems, setGems] = useState(0);
+
+    useEffect(() => {
+        setGems(userPoints?.base.gems || userDetails?.user?.rank?.gems || 0);
+    }, [userPoints?.base.gems, userDetails?.user?.rank?.gems]);
+
     if (!wipUI) return null;
     if (!airdropTokens?.token) return null;
 
@@ -76,19 +83,17 @@ export default function UserInfo() {
         <>
             <Wrapper>
                 <StatsGroup>
-                    <StatsPill>
-                        <StatsNumber>{gems}</StatsNumber>
-                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" />
-                    </StatsPill>
+                    <GemsPill value={gems} />
+
                     {referralCount?.count ? (
                         <StatsPill>
                             <StatsNumber>{referralCount.count} 🎁</StatsNumber>
                         </StatsPill>
                     ) : null}
-                    <Divider />
+
                     {rank && (
                         <StatsPill>
-                            <StatsNumber>Rank {rank}</StatsNumber>
+                            <StatsNumber>Rank #{parseInt(rank).toLocaleString()}</StatsNumber>
                         </StatsPill>
                     )}
                 </StatsGroup>
@@ -106,9 +111,14 @@ export default function UserInfo() {
                     <StyledAvatar id="avatar-wrapper" $img={profileimageurl} onClick={handleClick} />
                     <AnimatePresence>
                         {open && (
-                            <Menu>
+                            <Menu initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                <MenuItem onClick={handleReferral}>
+                                    {t('referral')}{' '}
+                                    <NumberPill>
+                                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" /> +2000
+                                    </NumberPill>
+                                </MenuItem>
                                 <MenuItem onClick={handleLogout}>{t('logout')}</MenuItem>
-                                <MenuItem onClick={handleReferral}>{t('referral')}</MenuItem>
                             </Menu>
                         )}
                     </AnimatePresence>
