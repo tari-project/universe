@@ -14,5 +14,7 @@
     "utilization": "Benutting",
     "mode": "Modus",
     "day": "Dag",
-    "shutting-down": "Afskakel.."
+    "shutting-down": "Afskakel..",
+    "byte": "greep",
+    "byte-symbol": "B"
 }

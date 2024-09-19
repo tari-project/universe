@@ -16,5 +16,7 @@
     "day": "Gün",
     "shutting-down": "Kapatılıyor..",
     "tari-universe": "Tari Universe",
-    "testnet": "Testnet"
+    "testnet": "Testnet",
+    "byte": "bayt",
+    "byte-symbol": "B"
 }
