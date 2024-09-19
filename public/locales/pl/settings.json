@@ -25,5 +25,6 @@
   "yes": "Tak",
   "cancel": "Anuluj",
   "reset-settings": "Resetuj ustawienia",
-  "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?"
+  "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
+  "reset-wallet": "Resetuj porfel"
 }
