@@ -1,5 +1,5 @@
 import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper } from './CharSpinner.styles.ts';
-import { LayoutGroup, motion } from 'framer-motion';
+import { LayoutGroup, m } from 'framer-motion';
 
 const transition = {
     type: 'spring',
@@ -41,6 +41,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                     layout
                     $decimal={isDec}
                     key={`dec-${i}`}
+                    layout-id={`dec-${i}`}
                     initial={{ y: letterHeight }}
                     animate={{ y: 0 }}
                     transition={transition}
@@ -56,6 +57,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                     ) : (
                         <Character
                             key={`${i}-${char}`}
+                            layout-id={`${i}-${char}`}
                             $letterWidth={letterWidth}
                             $fontSize={fontSize - 8}
                             style={{ marginTop: '2px' }}
@@ -96,7 +98,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                         <LayoutGroup id="characters">{charMarkup}</LayoutGroup>
                     </CharacterWrapper>
                 </SpinnerWrapper>
-                <motion.span layout>tXTM</motion.span>
+                <m.span layout>tXTM</m.span>
             </LayoutGroup>
         </Wrapper>
     );

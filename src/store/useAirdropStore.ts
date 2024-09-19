@@ -35,7 +35,7 @@ export interface UserPoints {
     hammers: number;
 }
 
-interface User {
+export interface User {
     is_bot: boolean;
     twitter_followers: number;
     id: string;
@@ -49,10 +49,30 @@ interface User {
         shells: number;
         hammers: number;
         totalScore: number;
+        rank: string;
     };
 }
 
-interface UserDetails {
+export interface UserEntryPoints {
+    entry: {
+        createdAt: string;
+        updatedAt: string;
+        id: string;
+        userId: string;
+        name: string;
+        photo: string;
+        totalScore: number;
+        gems: number;
+        shells: number;
+        hammers: number;
+        yatHolding: number;
+        followers: number;
+        isBot: boolean;
+        mandatoryComplete: boolean;
+    };
+}
+
+export interface UserDetails {
     user: User;
 }
 
@@ -72,6 +92,7 @@ export interface BackendInMemoryConfig {
 
 interface AirdropState {
     authUuid: string;
+    wipUI?: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -83,15 +104,24 @@ interface AirdropStore extends AirdropState {
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
     setUserPoints: (userPoints?: UserPoints) => void;
+    setWipUI: (wipUI: boolean) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     logout: () => void;
 }
+
+const clearState: AirdropState = {
+    authUuid: '',
+    airdropTokens: undefined,
+    userDetails: undefined,
+    userPoints: undefined,
+};
 
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
-            logout: () => set({ airdropTokens: undefined }),
+            setWipUI: (wipUI) => set({ wipUI }),
+            logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
             setAirdropTokens: (airdropTokens) =>

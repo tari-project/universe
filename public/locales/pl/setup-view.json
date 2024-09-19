@@ -4,7 +4,7 @@
     "dont-worry": "Nie martw się, następnym razem nie zajmie to tak długo",
     "title": {
         "starting-up": "Uruchamianie",
-        "checking-latest-version-mmproxy": "Sprawdzanie najnowszej wersji xtrgpuminer",
+        "checking-latest-version-gpuminer": "Sprawdzanie najnowszej wersji xtrgpuminer",
         "checking-latest-version-node": "Sprawdzanie najnowszej wersji węzła",
         "checking-latest-version-mmproxy": "Sprawdzanie najnowszej wersji mmproxy",
         "checking-latest-version-wallet": "Sprawdzanie najnowszej wersji portfela",

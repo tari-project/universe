@@ -1,9 +1,9 @@
 import styled from 'styled-components';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
-export const DashboardContainer = styled(motion.div)`
+export const DashboardContainer = styled(m.div)`
     display: flex;
     align-items: center;
     flex-direction: column;

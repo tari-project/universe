@@ -113,7 +113,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .max()
             .ok_or_else(|| anyhow!("No suitable version found"))?;
 
-        info!(target: LOG_TARGET, "Selected version: {}", version);
+        debug!(target: LOG_TARGET, "Selected version: {}", version);
         let info = releases
             .iter()
             .find(|v| &v.version == version)
@@ -156,7 +156,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             name_suffix = r"linux-x86_64.*\.zip";
         }
 
-        info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
+        debug!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
 
         let reg = Regex::new(name_suffix).unwrap();
 
@@ -171,7 +171,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
                 }
             })
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
-        info!(target: LOG_TARGET, "Found platform: {:?}", platform);
+        debug!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
     }
 }
@@ -296,7 +296,7 @@ impl BinaryResolver {
             .write()
             .await
             .insert(binary, version.clone());
-        info!(target: LOG_TARGET, "Latest version of {} is {}", binary.name(), version);
+        debug!(target: LOG_TARGET, "Latest version of {} is {}", binary.name(), version);
         Ok(version)
     }
 
@@ -319,7 +319,7 @@ impl BinaryResolver {
         let _lock = self.download_mutex.lock().await;
 
         if force_download && bin_folder.exists() {
-            info!(target: LOG_TARGET, "Cleaning up existing dir");
+            debug!(target: LOG_TARGET, "Cleaning up existing dir");
             fs::remove_dir_all(&bin_folder)
                 .await
                 .inspect_err(
@@ -328,11 +328,11 @@ impl BinaryResolver {
                 .ok();
         }
         if !bin_folder.exists() || bin_folder.join("in_progress").exists() {
-            info!(target: LOG_TARGET, "Creating {} dir", binary.name());
-            info!("latest version is {}", latest_release.version);
+            debug!(target: LOG_TARGET, "Creating {} dir", binary.name());
+            debug!("latest version is {}", latest_release.version);
             let in_progress_dir = bin_folder.join("in_progress");
             if in_progress_dir.exists() {
-                info!(target: LOG_TARGET, "Trying to delete dir {:?}", in_progress_dir);
+                debug!(target: LOG_TARGET, "Trying to delete dir {:?}", in_progress_dir);
                 match fs::remove_dir(&in_progress_dir).await {
                     Ok(_) => {}
                     Err(e) => {
@@ -342,14 +342,12 @@ impl BinaryResolver {
             }
 
             let asset = adapter.find_version_for_platform(&latest_release)?;
-            info!(target: LOG_TARGET, "Downloading file");
-            info!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
+            debug!(target: LOG_TARGET, "Downloading file from {}", &asset.url);
             //
             let in_progress_file_zip = in_progress_dir.join(&asset.name);
             download_file_with_retries(&asset.url, &in_progress_file_zip, progress_tracker.clone())
                 .await?;
-            info!(target: LOG_TARGET, "Renaming file");
-            info!(target: LOG_TARGET, "Extracting file");
+            debug!(target: LOG_TARGET, "Extracting file");
 
             let in_progress_file_sha256 = in_progress_dir
                 .clone()
@@ -369,12 +367,11 @@ impl BinaryResolver {
             )
             .await?;
             if is_sha_validated {
-                println!("ZIP file integrity verified successfully!");
-                println!("Renaming & Extracting file");
+                debug!(target:LOG_TARGET, "ZIP file integrity verified successfully!");
+                debug!(target:LOG_TARGET, "Renaming & Extracting file");
                 let bin_dir = adapter
                     .get_binary_folder()
                     .join(latest_release.version.to_string());
-                debug!(target:LOG_TARGET, "bin dir: {:?}", &bin_dir);
 
                 extract(&in_progress_file_zip, &bin_dir).await?;
             } else {

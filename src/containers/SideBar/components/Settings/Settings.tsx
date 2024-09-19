@@ -32,6 +32,7 @@ import SeedWordsMarkup from './Markups/SeedWordsMarkup';
 import ExperimentalWarning from './ExperimentalWarning';
 import { useUIStore } from '@app/store/useUIStore';
 import RandomXCpuMiner from './RandomXCpuMiner';
+import { ToggleAirdropUi } from '@app/containers/Airdrop/Settings/ToggleAirdropUi';
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -80,6 +81,7 @@ export default function Settings() {
                     <Divider />
                     <Stack direction="row" justifyContent="space-between">
                         <VisualMode />
+                        <ToggleAirdropUi />
                     </Stack>
                 </>
             )}
