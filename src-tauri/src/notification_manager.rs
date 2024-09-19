@@ -48,12 +48,8 @@ impl NotificationManager {
             CurrentOperatingSystem::Linux => {
                 notification.auto_icon().appname("Tari Universe").finalize()
             }
-            CurrentOperatingSystem::MacOS => {
-                notification.finalize()
-            }
-            CurrentOperatingSystem::Windows => {
-                notification.finalize()
-            }
+            CurrentOperatingSystem::MacOS => notification.finalize(),
+            CurrentOperatingSystem::Windows => notification.finalize(),
         }
     }
     fn detect_current_os() -> CurrentOperatingSystem {
