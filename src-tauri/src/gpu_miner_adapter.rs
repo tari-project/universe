@@ -60,7 +60,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         &self,
         data_dir: PathBuf,
         config_dir: PathBuf,
-        _log_dir: PathBuf,
+        log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -94,6 +94,14 @@ impl ProcessAdapter for GpuMinerAdapter {
             http_api_port.to_string(),
             "--gpu-percentage".to_string(),
             self.gpu_percentage.to_string(),
+            "--log-config-file".to_string(),
+            config_dir
+                .join("gpuminer")
+                .join("log4rs_config.yml")
+                .to_string_lossy()
+                .to_string(),
+            "--log-dir".to_string(),
+            log_dir.to_string_lossy().to_string(),
         ];
 
         // Only available after 0.1.8-pre.2
@@ -213,18 +221,20 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
+                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
                 if e.is_connect() {
                     return Ok(GpuMinerStatus {
                         is_mining: false,
                         hash_rate: 0,
                         estimated_earnings: 0,
+                        is_available: false,
                     });
                 }
-                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0,
                     estimated_earnings: 0,
+                    is_available: false,
                 });
             }
         };
@@ -237,6 +247,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                     is_mining: false,
                     hash_rate: 0,
                     estimated_earnings: 0,
+                    is_available: false,
                 });
             }
         };
@@ -244,6 +255,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
             is_mining: true,
             hash_rate: body.hashes_per_second,
             estimated_earnings: 0,
+            is_available: true,
         })
     }
 }
@@ -258,4 +270,5 @@ pub struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: u64,
     pub estimated_earnings: u64,
+    pub is_available: bool,
 }
