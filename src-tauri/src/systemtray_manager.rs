@@ -119,7 +119,7 @@ impl SystemtrayManager {
             CurrentOperatingSystem::MacOS => {
                 format!(
                     "CPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
-                    Formatter::new().with_decimals(2).with_separator("").format(data.cpu_hashrate),
+                    Formatter::new().with_decimals(0).with_separator("").format(data.cpu_hashrate),
                     data.cpu_usage,
                     Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
                     data.gpu_usage,
