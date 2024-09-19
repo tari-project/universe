@@ -12,21 +12,20 @@ import { useShallow } from 'zustand/react/shallow';
 const variants = {
     visible: {
         opacity: 1,
-        y: -200,
+        y: -190,
         scale: 1.05,
         transition: {
-            delay: 1,
-            duration: 3,
-            ease: 'easeInOut',
+            duration: 1.25,
+            ease: 'linear',
             scale: {
-                duration: 1,
+                duration: 0.9,
             },
         },
     },
     hidden: {
-        opacity: 0,
-        y: -150,
-        transition: { duration: 1, delay: 2, ease: 'linear' },
+        opacity: 0.2,
+        y: -160,
+        transition: { duration: 0.2, delay: 3, ease: 'linear' },
     },
 };
 
@@ -57,11 +56,11 @@ export default function Earnings() {
 
     return (
         <EarningsContainer>
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 {earnings ? (
                     <EarningsWrapper
-                        initial="hidden"
                         variants={variants}
+                        initial="hidden"
                         animate="visible"
                         exit="hidden"
                         onAnimationComplete={() => {

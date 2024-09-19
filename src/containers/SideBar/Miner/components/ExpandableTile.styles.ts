@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
-export const TriggerWrapper = styled(motion.div)`
+export const TriggerWrapper = styled(m.div)`
     width: 14px;
     height: 14px;
     background: ${({ theme }) => theme.palette.colors.darkAlpha[10]};
@@ -12,13 +12,13 @@ export const TriggerWrapper = styled(motion.div)`
     border-radius: 100%;
 `;
 
-export const ExpandableTileItem = styled(motion.div)`
+export const ExpandableTileItem = styled(m.div)`
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
-export const ExpandedWrapper = styled(motion.div)`
+export const ExpandedWrapper = styled(m.div)`
     display: flex;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};

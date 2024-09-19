@@ -26,12 +26,10 @@ async fn download_file(
     destination: &Path,
     progress_tracker: ProgressTracker,
 ) -> Result<(), anyhow::Error> {
-    println!("Downloading {} to {:?}", url, destination);
     let response = reqwest::get(url).await?;
 
     // Ensure the directory exists
     if let Some(parent) = destination.parent() {
-        println!("Creating dir {:?}", parent);
         fs::create_dir_all(parent).await?;
     }
 
@@ -50,7 +48,7 @@ async fn download_file(
     progress_tracker
         .update("download-completed".to_string(), None, 100)
         .await;
-    info!(target: LOG_TARGET, "Done downloading");
+    info!(target: LOG_TARGET, "Finished downloading: {}", url);
 
     Ok(())
 }

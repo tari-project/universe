@@ -15,5 +15,8 @@
         "min": "Minimum is 1 sekonde"
     },
     "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
-    "visual-mode": "Visuele modus"
+    "visual-mode": "Visuele modus",
+    "reset-settings": "Reset Settings",
+    "reset-permanently": "Are you sure you want to reset all settings permanently?",
+    "reset-wallet": "Reset wallet"
 }
