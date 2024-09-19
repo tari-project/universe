@@ -6,13 +6,12 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { useCallback, useState } from 'react';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { StyledInput } from '@app/components/elements/inputs/Input.styles.ts';
 
 export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
-    const [feedback, setFeedback] = useState('');
+    const [feedback, setFeedback] = useState('App feedback');
     const sendLogs = useCallback(() => {
         setLoading(true);
         invoke('send_feedback', { feedback, includeLogs: true })
@@ -36,9 +35,6 @@ export default function LogsSettings() {
             });
     };
 
-    const handleChange = (e) => {
-        setFeedback(e.target.value);
-    };
     const handleClose = useCallback(() => {
         setOpen(false);
     }, [setOpen]);
@@ -56,17 +52,10 @@ export default function LogsSettings() {
                 <DialogContent>
                     <Stack direction="column" alignItems="center" justifyContent="space-between">
                         <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
-
-                        <StyledInput
-                            type={'text'}
-                            placeholder={t('enter-feedback', { ns: 'settings' })}
-                            onChange={handleChange}
-                        />
                         <Stack direction="row">
                             <Button disabled={loading} onClick={handleClose} color="warning">
                                 {t('cancel')}
                             </Button>
-
                             {loading ? (
                                 <CircularProgress />
                             ) : (
