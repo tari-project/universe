@@ -20,7 +20,7 @@
         "waiting-for-block-sync": "等待区块同步。{{local_height}}/{{tip_height}} 个区块已同步",
         "waiting-for-header-sync": "等待头同步。{{local_height}}/{{tip_height}} 个头已同步",
         "waiting-for-node": "等待节点同步",
-        "waiting-for-wallet": "等待钱包",
+        "waiting-for-wallet": "等待钱包"
     },
     "would-you-like-to-install": "您想现在安装 Tari Universe {{version}} 吗？"
 }
