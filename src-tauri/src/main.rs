@@ -1,12 +1,52 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::collections::HashMap;
+use std::fs::{read_dir, remove_dir_all, remove_file};
+use std::sync::Arc;
+use std::thread::sleep;
+use std::time::{Duration, SystemTime};
+
+use log::{debug, error, info, warn};
+use serde::Serialize;
+use tari_common::configuration::Network;
+use tari_common_types::tari_address::TariAddress;
+use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_shutdown::Shutdown;
+use tauri::{Manager, RunEvent, UpdaterEvent};
+use tokio::sync::RwLock;
+
+use app_config::{AppConfig, MiningMode};
+use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
+use binary_resolver::{Binaries, BinaryResolver};
+use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
+use hardware_monitor::{HardwareMonitor, HardwareStatus};
+use node_manager::NodeManagerError;
+use progress_tracker::ProgressTracker;
+use setup_status_event::SetupStatusEvent;
+use systemtray_manager::{SystemtrayManager, SystrayData};
+use telemetry_manager::TelemetryManager;
+use wallet_manager::WalletManagerError;
+
+use crate::cpu_miner::CpuMiner;
+use crate::feedback::Feedback;
+use crate::gpu_miner::GpuMiner;
+use crate::internal_wallet::InternalWallet;
+use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
+use crate::node_manager::NodeManager;
+use crate::p2pool::models::Stats;
+use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::wallet_adapter::WalletBalance;
+use crate::wallet_manager::WalletManager;
+use crate::xmrig_adapter::XmrigAdapter;
+
 mod app_config;
 mod app_in_memory_config;
 mod binary_resolver;
 mod consts;
 mod cpu_miner;
 mod download_utils;
+mod feedback;
 mod format_utils;
 mod github;
 mod gpu_miner;
@@ -33,41 +73,6 @@ mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
 
-use crate::cpu_miner::CpuMiner;
-use crate::gpu_miner::GpuMiner;
-use crate::internal_wallet::InternalWallet;
-use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
-use crate::node_manager::NodeManager;
-use crate::p2pool::models::Stats;
-use crate::p2pool_manager::{P2poolConfig, P2poolManager};
-use crate::wallet_adapter::WalletBalance;
-use crate::wallet_manager::WalletManager;
-use crate::xmrig_adapter::XmrigAdapter;
-use app_config::{AppConfig, MiningMode};
-use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
-use binary_resolver::{Binaries, BinaryResolver};
-use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use hardware_monitor::{HardwareMonitor, HardwareStatus};
-use log::{debug, error, info, warn};
-use node_manager::NodeManagerError;
-use progress_tracker::ProgressTracker;
-use serde::Serialize;
-use setup_status_event::SetupStatusEvent;
-use std::collections::HashMap;
-use std::fs::{read_dir, remove_dir_all, remove_file};
-use std::sync::Arc;
-use std::thread::sleep;
-use std::time::{Duration, SystemTime};
-use systemtray_manager::{SystemtrayManager, SystrayData};
-use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_shutdown::Shutdown;
-use tauri::{Manager, RunEvent, UpdaterEvent};
-use telemetry_manager::TelemetryManager;
-use tokio::sync::RwLock;
-use wallet_manager::WalletManagerError;
-
 mod gpu_miner_adapter;
 mod progress_tracker;
 mod setup_status_event;
@@ -89,6 +94,25 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
         .set_mode(mode)
         .await
         .inspect_err(|e| error!("error at set_mode {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn send_feedback(
+    feedback: String,
+    include_logs: bool,
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
+    state
+        .feedback
+        .read()
+        .await
+        .send_feedback(feedback, include_logs)
+        .await
+        .inspect_err(|e| error!("error at send_feedback {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -872,6 +896,7 @@ fn log_web_message(level: String, message: Vec<String>) {
 
 #[tauri::command]
 async fn reset_settings<'r>(
+    reset_wallet: bool,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -942,7 +967,12 @@ async fn reset_settings<'r>(
     }
 
     // Exclude EBWebView because it is still being used.
-    let folder_block_list = ["EBWebView"];
+    let mut folder_block_list = vec!["EBWebView"];
+    if !reset_wallet {
+        folder_block_list.push("esmeralda");
+        folder_block_list.push("nextnet");
+    }
+
     for dir in &dirs_to_remove {
         // check if dir exists
         if dir.clone().unwrap().exists() {
@@ -966,12 +996,6 @@ async fn reset_settings<'r>(
                     })?;
                 }
             }
-            // info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
-            // remove_dir_all(dir.clone().unwrap()).map_err(|e|
-            //  {
-            // error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", dir, e);
-            //  format!("Could not remove directory: {}", e)
-            //  })?;
         }
     }
 
@@ -1052,6 +1076,7 @@ struct UniverseAppState {
     node_manager: NodeManager,
     wallet_manager: WalletManager,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
+    feedback: Arc<RwLock<Feedback>>,
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
 }
@@ -1105,6 +1130,7 @@ fn main() {
         Some(Network::default()),
     );
 
+    let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
     // let mm_proxy_config = if app_config_raw.p2pool_enabled {
     //     MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     // } else {
@@ -1130,6 +1156,7 @@ fn main() {
         wallet_manager,
         p2pool_manager,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
+        feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
     };
 
@@ -1216,6 +1243,7 @@ fn main() {
             open_log_dir,
             get_seed_words,
             get_applications_versions,
+            send_feedback,
             update_applications,
             log_web_message,
             set_telemetry_mode,

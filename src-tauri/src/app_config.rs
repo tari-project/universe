@@ -107,6 +107,12 @@ impl AppConfig {
         }
     }
 
+    pub fn config_dir(&self) -> Option<PathBuf> {
+        self.config_file
+            .as_ref()
+            .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
+    }
+
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
         let file: PathBuf = config_path.join("app_config.json");
         self.config_file = Some(file.clone());
@@ -162,16 +168,16 @@ impl AppConfig {
         self.mode
     }
 
-    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
         self.cpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.cpu_mining_enabled)
     }
 
-    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
         self.gpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.gpu_mining_enabled)
     }
 
     pub fn cpu_mining_enabled(&self) -> bool {

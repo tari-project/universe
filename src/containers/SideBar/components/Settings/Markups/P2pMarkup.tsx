@@ -15,9 +15,10 @@ import { useTranslation } from 'react-i18next';
 const P2pMarkup = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
-    const { isP2poolEnabled } = useAppStatusStore(
+    const { isP2poolEnabled, setP2poolEnabled } = useAppStatusStore(
         useShallow((s) => ({
             isP2poolEnabled: s.p2pool_enabled,
+            setP2poolEnabled: s.setP2poolEnabled,
         }))
     );
 
@@ -30,6 +31,8 @@ const P2pMarkup = () => {
 
     const handleP2poolEnabled = (event: React.ChangeEvent<HTMLInputElement>) => {
         const isChecked = event.target.checked;
+        // optimistic rendering
+        setP2poolEnabled(isChecked);
         invoke('set_p2pool_enabled', { p2poolEnabled: isChecked }).then(() => {
             console.info('P2pool enabled checked', isChecked);
         });

@@ -14,9 +14,10 @@ import { useTranslation } from 'react-i18next';
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
-    const { isGpuMiningEnabled } = useAppStatusStore(
+    const { isGpuMiningEnabled, setGpuMiningEnabled } = useAppStatusStore(
         useShallow((s) => ({
             isGpuMiningEnabled: s.gpu_mining_enabled,
+            setGpuMiningEnabled: s.setGpuMiningEnabled,
         }))
     );
 
@@ -29,8 +30,10 @@ const GpuMiningMarkup = () => {
     const isGPUMiningAvailable = useGPUStatusStore(useShallow((s) => s.is_available));
 
     const handleGpuMiningEnabled = useCallback(async () => {
+        // optimistic rendering
+        setGpuMiningEnabled(!isGpuMiningEnabled);
         await invoke('set_gpu_mining_enabled', { enabled: !isGpuMiningEnabled });
-    }, [isGpuMiningEnabled]);
+    }, [isGpuMiningEnabled, setGpuMiningEnabled]);
 
     const toggleDisabledBase = !miningAllowed || miningLoading || isMiningInProgress;
 
