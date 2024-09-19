@@ -138,7 +138,7 @@ struct TelemetryDataResponse {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
-struct TelemetryDataResponseEvent  {
+struct TelemetryDataResponseEvent {
     pub base: UserPoints,
     pub referral_count: ReferralCount,
 }
@@ -390,8 +390,15 @@ async fn handle_telemetry_data(
                     if let Some(response_inner) = response {
                         if let Some(user_points) = response_inner.user_points {
                             debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
-                            let response_inner = response_inner.referral_count.unwrap_or(ReferralCount { gems: 0.0, count: 0 });
-                            let emit_data = TelemetryDataResponseEvent { base: user_points, referral_count: response_inner };
+                            let response_inner =
+                                response_inner.referral_count.unwrap_or(ReferralCount {
+                                    gems: 0.0,
+                                    count: 0,
+                                });
+                            let emit_data = TelemetryDataResponseEvent {
+                                base: user_points,
+                                referral_count: response_inner,
+                            };
 
                             window
                                 .emit("UserPoints", emit_data)
