@@ -12,6 +12,7 @@ export interface AppStatus {
     current_user_inactivity_duration?: number;
     mode: modeType;
     auto_mining: boolean;
+    mine_on_app_start: boolean;
     monero_address?: string;
     tari_address_base58?: string;
     tari_address_emoji?: string;

@@ -2,6 +2,7 @@ import { modeType } from '@app/store/types';
 import { ApplicationsVersions, AppStatus } from './app-status';
 
 declare module '@tauri-apps/api/tauri' {
+    function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'status'): Promise<AppStatus>;

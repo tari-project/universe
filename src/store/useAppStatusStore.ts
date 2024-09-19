@@ -22,6 +22,8 @@ const initialState: State = {
     p2pool_enabled: false,
     p2pool_stats: undefined,
     wallet_balance: undefined,
+    auto_mining: undefined,
+    mine_on_app_start: undefined,
     mode: 'Eco',
     applications_versions: undefined,
     monero_address: undefined,

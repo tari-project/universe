@@ -94,6 +94,22 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
+async fn set_mine_on_app_start(
+    mine_on_app_start: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_mine_on_app_start(mine_on_app_start)
+        .await
+        .inspect_err(|e| error!("error at set_mine_on_app_start {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 async fn set_telemetry_mode(
     telemetry_mode: bool,
     _window: tauri::Window,
@@ -849,6 +865,7 @@ async fn status(
         p2pool_enabled: config_guard.p2pool_enabled(),
         p2pool_stats,
         auto_mining: config_guard.auto_mining(),
+        mine_on_app_start: config_guard.mine_on_app_start(),
         monero_address: config_guard.monero_address().to_string(),
         cpu_mining_enabled: config_guard.cpu_mining_enabled(),
         gpu_mining_enabled: config_guard.gpu_mining_enabled(),
@@ -986,6 +1003,7 @@ pub struct AppStatus {
     wallet_balance: WalletBalance,
     mode: MiningMode,
     auto_mining: bool,
+    mine_on_app_start: bool,
     p2pool_enabled: bool,
     p2pool_stats: HashMap<String, Stats>,
     tari_address_base58: String,
@@ -1224,7 +1242,8 @@ fn main() {
             reset_settings,
             set_gpu_mining_enabled,
             set_cpu_mining_enabled,
-            restart_application
+            restart_application,
+            set_mine_on_app_start
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

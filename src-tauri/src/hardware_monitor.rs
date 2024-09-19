@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::LazyLock};
 
-use log::{debug, info, warn};
+use log::{debug, warn};
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use serde::Serialize;
 use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};

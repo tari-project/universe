@@ -32,6 +32,7 @@ import SeedWordsMarkup from './Markups/SeedWordsMarkup';
 import ExperimentalWarning from './ExperimentalWarning';
 import { useUIStore } from '@app/store/useUIStore';
 import { ToggleAirdropUi } from '@app/containers/Airdrop/Settings/ToggleAirdropUi';
+import MiningSettings from './MiningSettings';
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -52,6 +53,8 @@ export default function Settings() {
             <LogsSettings />
             <Divider />
             <LanguageSettings />
+            <Divider />
+            <MiningSettings />
             <Divider />
             <AirdropPermissionSettings />
             <Divider />
