@@ -79,7 +79,7 @@ impl Feedback {
         if let Some(zip_file) = upload_zip_path {
             std::fs::remove_file(zip_file)?;
         }
-        return if response.status().is_success() {
+        if response.status().is_success() {
             debug!(target: LOG_TARGET, "Feedback sent successfully");
             Ok(())
         } else {
@@ -88,6 +88,6 @@ impl Feedback {
                 "Failed to upload file: {}",
                 response.status()
             ))
-        };
+        }
     }
 }
