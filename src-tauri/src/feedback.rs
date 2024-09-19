@@ -31,19 +31,19 @@ impl Feedback {
     }
 
     pub async fn send_feedback(&self, feedback_message: String, include_logs: bool) -> Result<()> {
-        let feedback_url = self.in_memory_config.read().await.feedback_url.clone();
+        let feedback_url = format!(
+            "{}/feedback",
+            self.in_memory_config.read().await.airdrop_api_url.clone()
+        );
 
         let mut upload_zip_path = None;
         let config = self.config.read().await;
         let app_id = config.anon_id();
         let zip_filename = format!("logs_{}.zip", app_id);
         if include_logs {
-
-
             if let Some(config_dir) = config.config_dir() {
                 let logs_dir = config_dir.join("logs");
                 // Zip all the logs
-
                 let zip_file = config_dir.join(zip_filename.clone());
                 let file = File::create(zip_file.clone())?;
                 let zip = ZipWriter::new(file);
@@ -56,7 +56,6 @@ impl Feedback {
             info!(target: LOG_TARGET, "Feedback not sent. No message or URL provided");
             return Ok(());
         }
-        // Read the ZIP file into memory
 
         // Create a multipart form
         let mut form = multipart::Form::new().text("feedback", feedback_message.clone());

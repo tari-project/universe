@@ -5,7 +5,6 @@ pub struct AppInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
     pub airdrop_twitter_auth_url: String,
-    pub feedback_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -32,7 +31,6 @@ impl Default for AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
             airdrop_twitter_auth_url: "https://airdrop.tari.com".into(),
-            feedback_url: "https://feedback.tari.com".into(),
         }
     }
 }
@@ -47,7 +45,6 @@ impl AppInMemoryConfig {
             airdrop_url: "http://localhost:4000".into(),
             airdrop_api_url: "http://localhost:3004".into(),
             airdrop_twitter_auth_url: "http://localhost:3004/auth/twitter".into(),
-            feedback_url: "http://localhost:3004/feedback".into(),
         }
     }
 }

@@ -12,8 +12,8 @@ use tauri::api::path::cache_dir;
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
 
-use crate::{github, ProgressTracker};
 use crate::download_utils::{download_file_with_retries, extract, validate_checksum};
+use crate::{github, ProgressTracker};
 
 const LOG_TARGET: &str = "tari::universe::binary_resolver";
 static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
