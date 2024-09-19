@@ -1,8 +1,8 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
-export const BlockTimeContainer = styled(motion.div)`
+export const BlockTimeContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
     font-weight: 500;

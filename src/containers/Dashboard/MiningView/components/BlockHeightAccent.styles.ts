@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
-export const AccentWrapper = styled(motion.div)`
+export const AccentWrapper = styled(m.div)`
     overflow: hidden;
     pointer-events: none;
     height: 100%;
@@ -11,7 +11,7 @@ export const AccentWrapper = styled(motion.div)`
     display: flex;
 `;
 
-export const AccentText = styled(motion.div)`
+export const AccentText = styled(m.div)`
     display: flex;
     font-family: Druk, sans-serif;
     white-space: pre;
@@ -23,7 +23,7 @@ export const AccentText = styled(motion.div)`
     height: min-content;
 `;
 
-export const SpacedNum = styled(motion.span)`
+export const SpacedNum = styled(m.span)`
     font-variant-numeric: tabular-nums;
     display: flex;
     position: relative;

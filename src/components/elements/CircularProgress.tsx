@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import styled from 'styled-components';
 
 const Wrapper = styled.div`
@@ -15,8 +15,8 @@ const Wrapper = styled.div`
 export function CircularProgress() {
     return (
         <Wrapper>
-            <motion.svg width="40" height="40" viewBox="0 0 50 50">
-                <motion.circle
+            <m.svg width="40" height="40" viewBox="0 0 50 50">
+                <m.circle
                     cx="20"
                     cy="20"
                     r="10"
@@ -27,7 +27,7 @@ export function CircularProgress() {
                     animate={{ pathLength: [0, 0, 0.8, 0.95], rotate: [0, 270, 360], opacity: [0.2, 0.8, 0.9, 1] }}
                     transition={{ repeat: Infinity, duration: 2 }}
                 />
-            </motion.svg>
+            </m.svg>
         </Wrapper>
     );
 }

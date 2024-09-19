@@ -1,8 +1,8 @@
 import loading from '@app/assets/backgrounds/white-bg.jpg';
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
-export const SplashScreenWrapper = styled(motion.div)`
+export const SplashScreenWrapper = styled(m.div)`
     position: fixed;
     top: 0;
     left: 0;
