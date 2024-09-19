@@ -53,8 +53,9 @@ impl Feedback {
         }
 
         if (feedback_message.is_empty() && upload_zip_path.is_none()) || feedback_url.is_empty() {
-            info!(target: LOG_TARGET, "Feedback not sent. No message or URL provided");
-            return Ok(());
+            return Err(anyhow::anyhow!(
+                "Feedback not sent. No message or URL provided"
+            ));
         }
 
         // Create a multipart form
@@ -74,15 +75,19 @@ impl Feedback {
         let client = reqwest::Client::new();
         let response = client.post(feedback_url).multipart(form).send().await?;
 
-        if response.status().is_success() {
-            debug!(target: LOG_TARGET, "Feedback sent successfully");
-        } else {
-            error!(target: LOG_TARGET, "Failed to upload file: {}", response.status());
-        }
         // Delete the ZIP file
         if let Some(zip_file) = upload_zip_path {
             std::fs::remove_file(zip_file)?;
         }
-        Ok(())
+        return if response.status().is_success() {
+            debug!(target: LOG_TARGET, "Feedback sent successfully");
+            Ok(())
+        } else {
+            error!(target: LOG_TARGET, "Failed to upload file: {}", response.status());
+            Err(anyhow::anyhow!(
+                "Failed to upload file: {}",
+                response.status()
+            ))
+        };
     }
 }

@@ -11,7 +11,7 @@ export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
-    const [feedback, setFeedback] = useState('App feedback');
+    const [feedback, _setFeedback] = useState('App feedback');
     const [error, setError] = useState('');
     const sendLogs = useCallback(() => {
         setLoading(true);
