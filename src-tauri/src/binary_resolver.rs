@@ -2,7 +2,7 @@ use crate::download_utils::{download_file_with_retries, extract, validate_checks
 use crate::{github, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use regex::Regex;
 use semver::{Version, VersionReq};
 use std::collections::HashMap;
