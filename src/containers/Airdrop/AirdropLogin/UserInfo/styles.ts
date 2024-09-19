@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 const ring = keyframes`
   0%, 100% {
@@ -25,7 +25,7 @@ export const Wrapper = styled('div')`
 export const StatsGroup = styled('div')`
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
 `;
 
 export const StatsPill = styled('div')`
@@ -34,7 +34,8 @@ export const StatsPill = styled('div')`
     gap: 5px;
 
     border-radius: 20px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
 
     height: 36px;
     padding: 0 15px;
@@ -118,37 +119,71 @@ export const StyledAvatar = styled('div')<{ $img?: string }>`
     user-select: none;
     pointer-events: all;
     cursor: pointer;
-    background-color: grey;
+    background-color: rgba(0, 0, 0, 0.1);
     width: 36px;
     height: 36px;
-    // fit background image
     background-size: cover;
     background-position: center;
 
-    ${({ $img }) => $img && `background-image: url(${$img})`}
+    ${({ $img }) =>
+        $img &&
+        css`
+            background-image: url(${$img});
+        `}
+
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
 `;
 
 export const Menu = styled(m.div)`
-    width: 180px;
     position: absolute;
-    top: 110%;
+    top: 100%;
     right: 0;
     z-index: 2;
-    padding: 10px;
-    background-color: white;
+
     border-radius: 10px;
-`;
-export const MenuItem = styled('div')`
+    background: #fff;
+    box-shadow: 0px 14px 25px 0px rgba(0, 0, 0, 0.15);
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    min-width: 205px;
     padding: 10px;
-    border-radius: 6px;
-    width: 100%;
-    cursor: pointer;
     pointer-events: all;
+
+    margin-top: 12px;
+`;
+
+export const MenuItem = styled('div')`
+    color: #000;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    border-radius: 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+
+    width: 100%;
+    padding: 10px 15px;
+    cursor: pointer;
     transition: background-color 0.2s ease;
+
+    white-space: nowrap;
+
     &:hover {
-        background-color: #f5f5f5;
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    .StatsIcon-gems {
+        width: 12px;
     }
 `;
+
 export const MenuWrapper = styled('div')`
     position: relative;
 `;

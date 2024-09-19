@@ -20,6 +20,7 @@ import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
 import DownloadReferralModal from './DownloadReferralModal/DownloadReferralModal';
+import { NumberPill } from '../ConnectButton/styles';
 
 export default function UserInfo() {
     const { logout, userDetails, airdropTokens, userPoints, wipUI } = useAirdropStore();
@@ -32,7 +33,7 @@ export default function UserInfo() {
     const gems = userPoints?.gems || userDetails?.user?.rank?.gems || 0;
 
     const handleClick = () => {
-        setOpen(true);
+        setOpen(!open);
     };
     const handleClose = () => {
         setOpen(false);
@@ -78,7 +79,7 @@ export default function UserInfo() {
                         <StatsNumber>{gems}</StatsNumber>
                         <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" />
                     </StatsPill>
-                    <Divider />
+
                     {userDetails?.user?.rank?.rank && (
                         <StatsPill>
                             <StatsNumber>Rank {userDetails?.user?.rank?.rank}</StatsNumber>
@@ -99,9 +100,14 @@ export default function UserInfo() {
                     <StyledAvatar id="avatar-wrapper" $img={profileimageurl} onClick={handleClick} />
                     <AnimatePresence>
                         {open && (
-                            <Menu>
+                            <Menu initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                                <MenuItem onClick={handleReferral}>
+                                    {t('referral')}{' '}
+                                    <NumberPill>
+                                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" /> +1000
+                                    </NumberPill>
+                                </MenuItem>
                                 <MenuItem onClick={handleLogout}>{t('logout')}</MenuItem>
-                                <MenuItem onClick={handleReferral}>{t('referral')}</MenuItem>
                             </Menu>
                         )}
                     </AnimatePresence>
