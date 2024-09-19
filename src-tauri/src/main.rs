@@ -891,6 +891,7 @@ fn log_web_message(level: String, message: Vec<String>) {
 
 #[tauri::command]
 async fn reset_settings<'r>(
+    reset_wallet: bool,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -961,7 +962,12 @@ async fn reset_settings<'r>(
     }
 
     // Exclude EBWebView because it is still being used.
-    let folder_block_list = ["EBWebView"];
+    let mut folder_block_list = vec!["EBWebView"];
+    if !reset_wallet {
+        folder_block_list.push("esmeralda");
+        folder_block_list.push("nextnet");
+    }
+
     for dir in &dirs_to_remove {
         // check if dir exists
         if dir.clone().unwrap().exists() {
@@ -985,12 +991,6 @@ async fn reset_settings<'r>(
                     })?;
                 }
             }
-            // info!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", dir);
-            // remove_dir_all(dir.clone().unwrap()).map_err(|e|
-            //  {
-            // error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", dir, e);
-            //  format!("Could not remove directory: {}", e)
-            //  })?;
         }
     }
 
