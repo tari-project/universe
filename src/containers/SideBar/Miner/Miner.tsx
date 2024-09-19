@@ -76,6 +76,7 @@ export default function Miner() {
                         title="Est tXTM/day"
                         stats={isMiningInProgress && totalEarnings ? formatBalance(totalEarnings) : '-'}
                         isLoading={earningsLoading}
+                        useLowerCase
                     >
                         <Typography variant="h5" style={{ color: '#000' }}>
                             Estimated earnings

@@ -5557,11 +5557,12 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "anyhow",
  "async-trait",
  "async_zip",
+ "blake2",
  "device_query",
  "dirs-next 2.0.0",
  "flate2",

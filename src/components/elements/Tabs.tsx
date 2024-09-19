@@ -17,7 +17,7 @@ const SettingsTabs: React.FC<TabsProps> = ({ tabs }) => {
         <TabsContainer>
             <TabHeaders>
                 {tabs.map((tab, index) => (
-                    <TabHeader key={index} $active={activeTab === index} onClick={() => setActiveTab(index)}>
+                    <TabHeader key={`tab-${index}`} $active={activeTab === index} onClick={() => setActiveTab(index)}>
                         {tab.label}
                     </TabHeader>
                 ))}
