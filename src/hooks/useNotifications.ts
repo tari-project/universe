@@ -4,8 +4,8 @@ import { useCallback } from 'react';
 export const useNotifcations = () => {
     const winNotification = useCallback(async (winAmount: string) => {
         await invoke('trigger_notification', {
-            summary: 'You won!',
-            body: `You won ${winAmount}!`,
+            summary: 'Congratulations !',
+            body: `You won a block! We are sending you rewards of ${winAmount} tXTM!`,
         });
     }, []);
 
