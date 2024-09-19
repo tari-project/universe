@@ -8,16 +8,18 @@ import { CircularProgress } from '@app/components/elements/CircularProgress.tsx'
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTranslation } from 'react-i18next';
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
 
 export const ResetSettingsButton = () => {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const setError = useAppStateStore((state) => state.setError);
+    const [resetWallet, setResetWallet] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: false });
 
     const resetSettings = () => {
         setLoading(true);
-        invoke('reset_settings')
+        invoke('reset_settings', { resetWallet })
             .then(() => {
                 setLoading(false);
                 setOpen(false);
@@ -40,8 +42,13 @@ export const ResetSettingsButton = () => {
             <DialogContent>
                 <Stack direction="column" alignItems="center" justifyContent="space-between">
                     <Typography variant="h2">{t('reset-settings')}</Typography>
+                    <ToggleSwitch
+                        checked={resetWallet}
+                        onChange={() => setResetWallet((p) => !p)}
+                        label={t('reset-wallet')}
+                    />
                     <Typography variant="p">{t('reset-permanently')}</Typography>
-                    <Stack direction="row">
+                    <Stack direction="row" justifyContent="space-between" style={{ marginTop: '8px' }}>
                         <Button disabled={loading} onClick={handleClose} color="warning">
                             {t('cancel')}
                         </Button>
