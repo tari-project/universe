@@ -7,7 +7,6 @@ mod binary_resolver;
 mod consts;
 mod cpu_miner;
 mod download_utils;
-mod format_utils;
 mod github;
 mod gpu_miner;
 mod hardware_monitor;
