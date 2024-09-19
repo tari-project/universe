@@ -14,7 +14,6 @@ export default function MiningSettings() {
     }));
 
     const toggleMiningOnAppStart = (event: ChangeEvent<HTMLInputElement>) => {
-        console.log('Toggling mining on app start', event.target.checked);
         invoke('set_mine_on_app_start', { mineOnAppStart: event.target.checked });
     };
 
