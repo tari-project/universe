@@ -88,6 +88,6 @@ impl Feedback {
                 "Failed to upload file: {}",
                 response.status()
             ))
-        }
+        };
     }
 }
