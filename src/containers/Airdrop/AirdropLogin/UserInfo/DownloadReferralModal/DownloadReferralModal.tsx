@@ -65,7 +65,7 @@ export default function DownloadReferralModal({ referralCode, onClose }: Downloa
                         gems
                     </Title>
                     <Text>
-                        Earn 1000 gems for each friend you invite to Tari Universe. Once they connect their account,
+                        Earn 2000 gems for each friend you invite to Tari Universe. Once they connect their account,
                         you’ll be awarded your gems.
                     </Text>
                 </TextWrapper>
