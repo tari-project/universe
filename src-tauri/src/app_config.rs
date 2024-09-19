@@ -18,7 +18,7 @@ pub struct AppConfigFromFile {
     mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     p2pool_enabled: bool,
     #[serde(default = "default_system_time")]
     last_binaries_update_timestamp: SystemTime,
@@ -40,7 +40,7 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: false,
             anon_id: default_anon_id(),
@@ -97,7 +97,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
@@ -146,6 +146,13 @@ impl AppConfig {
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
             }
+        }
+
+        // Migrate
+        if self.config_version <= 6 {
+            // Change the default value of p2pool_enabled to false in version 7
+            self.config_version = 7;
+            self.p2pool_enabled = true;
         }
     }
 
@@ -266,7 +273,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    6
+    7
 }
 
 fn default_mode() -> String {
