@@ -15,11 +15,11 @@ export default function ConnectButton() {
 
     const handleAuth = useCallback(() => {
         const token = uuidv4();
-        if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
+        if (backendInMemoryConfig?.airdropUrl) {
             setAuthUuid(token);
-            open(`${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}`);
+            open(`${backendInMemoryConfig?.airdropUrl}/auth?tauri=${token}`);
         }
-    }, [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]);
+    }, [backendInMemoryConfig?.airdropUrl, setAuthUuid]);
 
     useEffect(() => {
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
