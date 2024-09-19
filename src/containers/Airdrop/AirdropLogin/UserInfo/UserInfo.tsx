@@ -24,7 +24,7 @@ import { NumberPill } from '../ConnectButton/styles';
 import GemsPill from './GemsPill/GemsPill';
 
 export default function UserInfo() {
-    const { logout, userDetails, airdropTokens, userPoints, wipUI } = useAirdropStore();
+    const { logout, userDetails, airdropTokens, userPoints, wipUI, referralCount } = useAirdropStore();
     const [open, setOpen] = useState(false);
     const [referalOpen, setReferalOpen] = useState(false);
 
@@ -32,7 +32,6 @@ export default function UserInfo() {
 
     const profileimageurl = userDetails?.user?.profileimageurl;
     const rank = userPoints?.base.rank || userDetails?.user?.rank?.rank;
-    const referralCount = userPoints?.referralCount;
 
     const handleClick = () => {
         setOpen(!open);

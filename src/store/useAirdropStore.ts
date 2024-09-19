@@ -105,6 +105,7 @@ interface AirdropState {
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
+    referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
 }
 
@@ -141,23 +142,8 @@ export const useAirdropStore = create<AirdropStore>()(
                         expiresAt: parseJwt(airdropTokens.token).exp,
                     },
                 }),
-            setReferralCount: (referralCount) =>
-                set((state) => {
-                    if (state.userPoints?.base?.gems) {
-                        return {
-                            userPoints: {
-                                ...state?.userPoints,
-                                referralCount,
-                            },
-                        };
-                    }
-                    alert('no gems');
-                    return state;
-                }),
-            setUserPoints: (userPoints) =>
-                set((state) => ({
-                    userPoints: userPoints?.referralCount ? userPoints : { ...state.userPoints, ...userPoints },
-                })),
+            setReferralCount: (referralCount) => set({ referralCount }),
+            setUserPoints: (userPoints) => set({ userPoints }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
         }),
         {
