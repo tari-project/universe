@@ -14,9 +14,10 @@ import { useTranslation } from 'react-i18next';
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
-    const { isGpuMiningEnabled } = useAppStatusStore(
+    const { isGpuMiningEnabled, setGpuMiningEnabled } = useAppStatusStore(
         useShallow((s) => ({
             isGpuMiningEnabled: s.gpu_mining_enabled,
+            setGpuMiningEnabled: s.setGpuMiningEnabled,
         }))
     );
 
@@ -28,19 +29,19 @@ const GpuMiningMarkup = () => {
     const miningLoading = (miningInitiated && !isMiningInProgress) || (!miningInitiated && isMiningInProgress);
 
     const handleGpuMiningEnabled = useCallback(async () => {
+        // optimistic rendering
+        setGpuMiningEnabled(!isGpuMiningEnabled);
         await invoke('set_gpu_mining_enabled', { enabled: !isGpuMiningEnabled });
-    }, [isGpuMiningEnabled]);
+    }, [isGpuMiningEnabled, setGpuMiningEnabled]);
 
-    const toggleDisabledBase = !miningAllowed || miningLoading;
-
-    const gpuDisabled = isMiningInProgress && isGpuMiningEnabled && !isCPUMining;
+    const toggleDisabledBase = !miningAllowed || miningLoading || isMiningInProgress;
 
     return (
         <MinerContainer>
             <Typography variant="h6">{t('gpu-mining-enabled', { ns: 'settings' })}</Typography>
             <ToggleSwitch
                 checked={isGpuMiningEnabled}
-                disabled={toggleDisabledBase || gpuDisabled}
+                disabled={toggleDisabledBase}
                 onChange={handleGpuMiningEnabled}
             />
         </MinerContainer>

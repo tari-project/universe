@@ -14,9 +14,10 @@ import { useTranslation } from 'react-i18next';
 const CpuMiningSettings = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
-    const { isCpuMiningEnabled } = useAppStatusStore(
+    const { isCpuMiningEnabled, setCpuMiningEnabled } = useAppStatusStore(
         useShallow((s) => ({
             isCpuMiningEnabled: s.cpu_mining_enabled,
+            setCpuMiningEnabled: s.setCpuMiningEnabled,
         }))
     );
 
@@ -28,18 +29,19 @@ const CpuMiningSettings = () => {
     const miningLoading = (miningInitiated && !isMiningInProgress) || (!miningInitiated && isMiningInProgress);
 
     const handleCpuMiningEnabled = useCallback(async () => {
+        // optimistic rendering
+        setCpuMiningEnabled(!isCpuMiningEnabled);
         await invoke('set_cpu_mining_enabled', { enabled: !isCpuMiningEnabled });
-    }, [isCpuMiningEnabled]);
+    }, [isCpuMiningEnabled, setCpuMiningEnabled]);
 
-    const toggleDisabledBase = !miningAllowed || miningLoading;
-    const cpuDisabled = isMiningInProgress && isCpuMiningEnabled && !isGPUMining;
+    const toggleDisabledBase = !miningAllowed || miningLoading || isMiningInProgress;
 
     return (
         <MinerContainer>
             <Typography variant="h6">{t('cpu-mining-enabled', { ns: 'settings' })}</Typography>
             <ToggleSwitch
                 checked={isCpuMiningEnabled}
-                disabled={toggleDisabledBase || cpuDisabled}
+                disabled={toggleDisabledBase}
                 onChange={handleCpuMiningEnabled}
             />
         </MinerContainer>
