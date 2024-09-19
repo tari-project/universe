@@ -1,17 +1,19 @@
-use crate::download_utils::{download_file_with_retries, extract, validate_checksum};
-use crate::{github, ProgressTracker};
-use anyhow::{anyhow, Error};
-use async_trait::async_trait;
-use log::{debug, error, info, warn};
-use regex::Regex;
-use semver::{Version, VersionReq};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
+
+use anyhow::{anyhow, Error};
+use async_trait::async_trait;
+use log::{debug, error, warn};
+use regex::Regex;
+use semver::{Version, VersionReq};
 use tari_common::configuration::Network;
 use tauri::api::path::cache_dir;
 use tokio::fs;
 use tokio::sync::{Mutex, RwLock};
+
+use crate::download_utils::{download_file_with_retries, extract, validate_checksum};
+use crate::{github, ProgressTracker};
 
 const LOG_TARGET: &str = "tari::universe::binary_resolver";
 static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
