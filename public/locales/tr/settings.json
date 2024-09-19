@@ -45,6 +45,7 @@
     "reset-wallet": "Reset wallet",
     "experimental-title": "Deneysel Özellikler",
     "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatlice ilerleyin.",
+    "mine-on-app-start": "Allow mining on app startup",
     "connected-to-tari": "Connected to the Tari Network",
     "not-connected-to-tari": "Not connected to the Tari Network",
     "connected-peers": "Connected Peers",
