@@ -15,7 +15,6 @@ import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
 
-import { LayoutGroup } from 'framer-motion';
 import { useMemo } from 'react';
 import SettingsDialog from './containers/SideBar/components/Settings/SettingsDialog.tsx';
 
