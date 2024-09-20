@@ -17,8 +17,6 @@ import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions
 import DebugSettings from '@app/containers/SideBar/components/Settings/DebugSettings.tsx';
 import { useTranslation } from 'react-i18next';
 
-import WalletAddressMarkup from './Markups/WalletAddressMarkup';
-
 import P2pMarkup from './Markups/P2pMarkup';
 import P2poolStatsMarkup from './Markups/P2poolStatsMarkup';
 
@@ -49,7 +47,7 @@ const ExperimentalTab = () => {
             {showExperimental && (
                 <>
                     <Divider />
-                    <WalletAddressMarkup />
+
                     <Divider />
                     <P2pMarkup />
                     <P2poolStatsMarkup />

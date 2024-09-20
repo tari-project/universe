@@ -16,7 +16,7 @@ export const HeaderContainer = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 30px 20px;
+    padding: 30px;
     text-transform: capitalize;
     position: sticky;
     top: 0;
