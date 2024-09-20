@@ -31,14 +31,6 @@ export default function DebugSettings() {
                     })}
                 </Typography>
             </Stack>
-            <Stack>
-                <Typography variant="h6">{t('connected-peers', { ns: 'settings' })}</Typography>
-                {connectedPeers.map((peer, i) => (
-                    <Typography variant="p" key={peer}>
-                        {i + 1}. {peer}
-                    </Typography>
-                ))}
-            </Stack>
             <Stack direction="row" justifyContent="space-between">
                 <Typography variant="p">{t('sha-network-hash-rate', { ns: 'settings' })}</Typography>
                 <Typography>{formatHashrate(sha_network_hash_rate || 0)}</Typography>
@@ -46,6 +38,14 @@ export default function DebugSettings() {
             <Stack direction="row" justifyContent="space-between">
                 <Typography variant="p">{t('randomx-network-hash-rate', { ns: 'settings' })}</Typography>
                 <Typography>{formatHashrate(randomx_network_hash_rate || 0)}</Typography>
+            </Stack>
+            <Stack>
+                <Typography variant="h6">{t('connected-peers', { ns: 'settings' })}</Typography>
+                {connectedPeers.map((peer, i) => (
+                    <Typography variant="p" key={peer}>
+                        {i + 1}. {peer}
+                    </Typography>
+                ))}
             </Stack>
         </>
     );
