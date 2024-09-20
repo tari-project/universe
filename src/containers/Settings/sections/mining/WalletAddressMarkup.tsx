@@ -110,7 +110,7 @@ const WalletAddressMarkup = () => {
                 <CopyToClipboard text={walletAddress} />
             </Stack>
             <Stack direction="row" justifyContent="space-between" alignItems={isCondensed ? 'center' : 'flex-start'}>
-                <AddressContainer style={{ height: isCondensed ? '40px' : '60px' }}>
+                <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
                     <AddressInner>
                         <Typography
                             style={{
