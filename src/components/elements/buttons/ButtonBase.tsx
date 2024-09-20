@@ -1,7 +1,7 @@
 import { ButtonHTMLAttributes } from 'react';
 import { StyledButtonBase } from './ButtonBase.styles.ts';
 
-type ButtonBaseVariant = 'primary' | 'outlined';
+type ButtonBaseVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
 type ButtonBaseColor = 'primary' | 'secondary' | 'gradient';
 
 export interface ButtonBaseProps extends ButtonHTMLAttributes<HTMLButtonElement> {

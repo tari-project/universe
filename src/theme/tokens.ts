@@ -163,8 +163,9 @@ export const componentSettings = {
     shape: {
         borderRadius: {
             app: '10px',
+            dialog: '20px',
             button: '30px',
-            buttonBase: '20px',
+            buttonBase: '50px',
             buttonSquared: '10px',
         },
     },

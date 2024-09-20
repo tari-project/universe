@@ -24,6 +24,7 @@ import { ContentWrapper, Overlay } from '@app/components/elements/dialog/Dialog.
 interface DialogOptions {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    unPadded?: boolean;
 }
 
 export function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen }: DialogOptions) {
@@ -92,7 +93,7 @@ export function Dialog({
     return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>;
 }
 
-export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement>>(
+export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement> & { unPadded?: boolean }>(
     function DialogContent(props, propRef) {
         const context = useDialogContext();
         const ref = useMergeRefs([context.refs.setFloating, propRef]);
@@ -108,6 +109,7 @@ export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement
                             aria-labelledby={context.labelId}
                             aria-describedby={context.descriptionId}
                             {...context.getFloatingProps(props)}
+                            $unPadded={props.unPadded}
                         >
                             {props.children}
                         </ContentWrapper>

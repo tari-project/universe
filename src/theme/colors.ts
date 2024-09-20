@@ -63,7 +63,7 @@ const brightGreen = {
 };
 
 const grey = {
-    50: '#f7f7f8',
+    50: '#fafafa',
     100: '#eeeef0',
     200: '#d8d9df',
     300: '#b6b7c3',

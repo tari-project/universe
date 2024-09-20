@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { Container } from './SettingsModal.styles.ts';
+import { Container, ContentContainer } from './SettingsModal.styles.ts';
 import SettingsNavigation from '@app/containers/Settings/components/Navigation.tsx';
 
 export default function SettingsModal() {
@@ -10,10 +10,10 @@ export default function SettingsModal() {
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
     return (
         <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogContent>
+            <DialogContent unPadded>
                 <Container>
                     <SettingsNavigation />
-                    <p>meow</p>
+                    <ContentContainer>meow</ContentContainer>
                 </Container>
             </DialogContent>
         </Dialog>
