@@ -18,6 +18,7 @@ use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 
+use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binary_resolver::{Binaries, BinaryResolver};
@@ -51,6 +52,7 @@ mod feedback;
 mod format_utils;
 mod github;
 mod gpu_miner;
+mod gpu_miner_adapter;
 mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -65,6 +67,8 @@ mod process_adapter;
 mod process_killer;
 mod process_utils;
 mod process_watcher;
+mod progress_tracker;
+mod setup_status_event;
 mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
@@ -73,10 +77,6 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-use hardware_monitor::{HardwareMonitor, HardwareParameters};
-mod gpu_miner_adapter;
-mod progress_tracker;
-mod setup_status_event;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
