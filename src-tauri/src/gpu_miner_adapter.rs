@@ -60,7 +60,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         &self,
         data_dir: PathBuf,
         config_dir: PathBuf,
-        _log_dir: PathBuf,
+        log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
@@ -94,6 +94,8 @@ impl ProcessAdapter for GpuMinerAdapter {
             http_api_port.to_string(),
             "--gpu-percentage".to_string(),
             self.gpu_percentage.to_string(),
+            "--log-dir".to_string(),
+            log_dir.to_string_lossy().to_string(),
         ];
 
         // Only available after 0.1.8-pre.2
