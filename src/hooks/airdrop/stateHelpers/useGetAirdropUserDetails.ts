@@ -1,4 +1,4 @@
-import { useAirdropStore, UserEntryPoints, UserDetails } from '@app/store/useAirdropStore';
+import { useAirdropStore, UserEntryPoints, UserDetails, ReferralCount } from '@app/store/useAirdropStore';
 import { useCallback, useEffect } from 'react';
 
 interface RequestProps {
@@ -29,9 +29,9 @@ const useAridropRequest = () => {
 export const useGetAirdropUserDetails = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userDetails = useAirdropStore((state) => state.userDetails);
-    const userPoints = useAirdropStore((state) => state.userPoints);
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
+    const setReferralCount = useAirdropStore((state) => state.setReferralCount);
     const handleRequest = useAridropRequest();
 
     const fetchUserDetails = useCallback(async () => {
@@ -39,7 +39,7 @@ export const useGetAirdropUserDetails = () => {
             path: '/user/details',
             method: 'GET',
         });
-        if (!data) return;
+        if (!data?.user.id) return;
         setUserDetails(data);
         return data.user;
     }, [handleRequest, setUserDetails]);
@@ -49,13 +49,27 @@ export const useGetAirdropUserDetails = () => {
             path: '/user/score',
             method: 'GET',
         });
-        if (!data) return;
+        if (!data?.entry.gems) return;
         setUserPoints({
-            gems: data.entry.gems,
-            shells: data.entry.shells,
-            hammers: data.entry.hammers,
+            base: {
+                gems: data.entry.gems,
+                shells: data.entry.shells,
+                hammers: data.entry.hammers,
+            },
         });
     }, [handleRequest, setUserPoints]);
+
+    const fetchUserReferralPoints = useCallback(async () => {
+        const data = await handleRequest<{ count: ReferralCount }>({
+            path: '/miner/download/referral-count',
+            method: 'GET',
+        });
+        if (!data?.count) return;
+        setReferralCount({
+            gems: data.count.gems,
+            count: data.count.count,
+        });
+    }, [handleRequest, setReferralCount]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -63,10 +77,12 @@ export const useGetAirdropUserDetails = () => {
             if (!details?.rank.gems) {
                 await fetchUserPoints();
             }
+            await fetchUserReferralPoints();
         };
 
         if (!userDetails?.user?.id) {
             fetchData();
         }
-    }, [fetchUserDetails, fetchUserPoints, airdropToken, userDetails?.user?.id, userPoints?.gems]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [airdropToken, userDetails?.user?.id]);
 };
