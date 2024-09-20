@@ -18,11 +18,11 @@ use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 
-use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binary_resolver::{Binaries, BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
+use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
