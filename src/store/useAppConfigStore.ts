@@ -15,6 +15,7 @@ interface Actions {
     setGpuMiningEnabled: (enabled: boolean) => Promise<void>;
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
+    setMineOnAppStart: (mineOnAppStart: boolean) => Promise<void>;
     setMode: (mode: modeType) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
@@ -46,6 +47,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         } catch (e) {
             console.error('Could not get app config: ', e);
         }
+    },
+    setMineOnAppStart: async (mineOnAppStart) => {
+        set({ mine_on_app_start: mineOnAppStart });
+        invoke('set_mine_on_app_start', { mineOnAppStart }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set mine on app start', e);
+            appStateStore.setError('Could not change mine on app start');
+            set({ mine_on_app_start: !mineOnAppStart });
+        });
     },
     setShouldAlwaysUseSystemLanguage: async (shouldAlwaysUseSystemLanguage: boolean) => {
         set({ should_always_use_system_language: shouldAlwaysUseSystemLanguage });
