@@ -16,7 +16,6 @@ import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScre
 import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
 
 import { useMemo } from 'react';
-import SettingsDialog from './containers/SideBar/components/Settings/SettingsDialog.tsx';
 import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 
@@ -58,7 +57,6 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <AutoUpdateDialog />
                     <CriticalErrorDialog />
-                    {/*<SettingsDialog />*/}
                     <SettingsModal />
                     <LayoutGroup id="app-content">
                         <AirdropLogin />

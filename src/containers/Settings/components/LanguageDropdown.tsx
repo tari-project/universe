@@ -15,7 +15,6 @@ const languageOptions: LanguageOption[] = LanguageList.map(({ key, name }) => ({
 const Wrapper = styled(m.div)`
     width: 100%;
     display: flex;
-    max-width: 600px;
     position: relative;
 `;
 

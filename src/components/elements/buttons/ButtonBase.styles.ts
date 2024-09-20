@@ -30,7 +30,7 @@ export const StyledButtonBase = styled.button<Props>`
         cursor: inherit;
     }
 
-    ${({ $variant, $color }) => {
+    ${({ $variant }) => {
         switch ($variant) {
             case 'outlined':
                 return css``;
