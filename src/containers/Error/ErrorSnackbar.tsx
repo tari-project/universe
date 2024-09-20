@@ -6,7 +6,6 @@ import { IconButton } from '@app/components/elements/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
 
 const transition = {
     duration: 0.3,
@@ -28,7 +27,7 @@ const variants: Variants = {
 const AUTO_CLOSE_TIMEOUT = 5000;
 export default function ErrorSnackbar() {
     const [show, setShow] = useState(false);
-    const error = useAppStateStore(useShallow((s) => s.error));
+    const error = useAppStateStore((s) => s.error);
     const setError = useAppStateStore((s) => s.setError);
 
     const handleClose = useCallback(() => {
