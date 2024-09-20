@@ -22,10 +22,6 @@ concurrency:
 
 permissions: {}
 
-env:
-  TARI_NETWORK: nextnet
-  TARI_TARGET_NETWORK: nextnet
-
 jobs:
   builds:
     name: Building ${{ matrix.platform }}
@@ -54,6 +50,8 @@ jobs:
           echo "tagName=v__VERSION__" >> $GITHUB_ENV
           echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
+          echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
 
       - name: beta builds - Install dependencies (windows) [yq]
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
@@ -73,6 +71,8 @@ jobs:
         shell: bash
         run: |
           #set -xueo pipefail
+          echo "TARI_NETWORK=esme" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
           #export BETA_DATE=$(date +%Y-%m-%d)
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=4$(date +%m%d)
