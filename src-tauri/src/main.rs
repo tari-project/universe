@@ -495,9 +495,13 @@ async fn setup_inner(
             .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of ShaP2pool: {:?}", e));
     }
 
-    state.gpu_miner.write().await.detect().await.inspect_err(
-        |e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e),
-    )?;
+    state
+        .gpu_miner
+        .write()
+        .await
+        .detect()
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e))?;
 
     for _i in 0..2 {
         match state
