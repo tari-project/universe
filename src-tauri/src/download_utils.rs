@@ -26,12 +26,10 @@ async fn download_file(
     destination: &Path,
     progress_tracker: ProgressTracker,
 ) -> Result<(), anyhow::Error> {
-    println!("Downloading {} to {:?}", url, destination);
     let response = reqwest::get(url).await?;
 
     // Ensure the directory exists
     if let Some(parent) = destination.parent() {
-        println!("Creating dir {:?}", parent);
         fs::create_dir_all(parent).await?;
     }
 
@@ -41,14 +39,16 @@ async fn download_file(
     // Stream the response body directly to the file
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
-        let _ = progress_tracker.update("downloading".to_string(), 10).await;
+        let _ = progress_tracker
+            .update("downloading".to_string(), None, 10)
+            .await;
         dest.write_all(&item?).await?;
     }
 
     progress_tracker
-        .update("download-completed".to_string(), 100)
+        .update("download-completed".to_string(), None, 100)
         .await;
-    info!(target: LOG_TARGET, "Done downloading");
+    info!(target: LOG_TARGET, "Finished downloading: {}", url);
 
     Ok(())
 }
@@ -150,15 +150,18 @@ pub async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::E
     Ok(())
 }
 
+#[cfg(unix)]
 pub async fn set_permissions(file_path: &Path) -> Result<(), anyhow::Error> {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut perms = fs::metadata(file_path).await?.permissions();
-        let current_mode = perms.mode();
-        perms.set_mode(current_mode | 0o111);
-        fs::set_permissions(file_path, perms).await?;
-    }
+    use std::os::unix::fs::PermissionsExt;
+    let mut perms = fs::metadata(file_path).await?.permissions();
+    let current_mode = perms.mode();
+    perms.set_mode(current_mode | 0o111);
+    fs::set_permissions(file_path, perms).await?;
+    Ok(())
+}
+
+#[cfg(windows)]
+pub async fn set_permissions(_file_path: &Path) -> Result<(), anyhow::Error> {
     Ok(())
 }
 

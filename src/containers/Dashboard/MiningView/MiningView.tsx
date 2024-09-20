@@ -1,19 +1,21 @@
 import BlockTime from './components/BlockTime';
-import BlockHeight from './components/BlockHeight.tsx';
 
 import Earnings from '@app/containers/Dashboard/MiningView/components/Earnings.tsx';
-import { MiningViewContainer } from './MiningView.styles.ts';
-import P2pool from '@app/containers/Dashboard/MiningView/components/P2pool.tsx';
 
-function MiningView() {
+import { MiningViewContainer } from './MiningView.styles.ts';
+import { Ruler } from '@app/containers/Dashboard/MiningView/components/Ruler.tsx';
+import { LayoutGroup } from 'framer-motion';
+import { BlockHeightAccent } from '@app/containers/Dashboard/MiningView/components/BlockHeightAccent.tsx';
+
+export default function MiningView() {
     return (
-        <MiningViewContainer>
-            <P2pool />
-            <Earnings />
-            <BlockHeight />
-            <BlockTime />
+        <MiningViewContainer layout layoutId="mining-view--content">
+            <LayoutGroup>
+                <BlockHeightAccent />
+                <Ruler />
+                <Earnings />
+                <BlockTime />
+            </LayoutGroup>
         </MiningViewContainer>
     );
 }
-
-export default MiningView;

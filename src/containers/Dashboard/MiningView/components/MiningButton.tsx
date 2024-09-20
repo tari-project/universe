@@ -1,85 +1,63 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { GiPauseButton } from 'react-icons/gi';
 
-import { IconWrapper, StyledButton, StyledIcon } from './MiningButton.styles.ts';
-import { ButtonProps, Stack, Typography } from '@mui/material';
+import { IconWrapper, StyledButton, StyledIcon, ButtonWrapper } from './MiningButton.styles.ts';
 import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
-import { useShallow } from 'zustand/react/shallow';
-import { IoChevronForwardOutline, IoWarningOutline } from 'react-icons/io5';
+
+import { IoChevronForwardOutline } from 'react-icons/io5';
 import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
 import { useTranslation } from 'react-i18next';
 
-function MiningButton() {
-    const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import ButtonOrbitAnimation from '@app/containers/SideBar/Miner/components/ButtonOrbitAnimation.tsx';
+import { AnimatePresence } from 'framer-motion';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
-    const {
-        startMining,
-        stopMining,
-        getMiningButtonStateText,
-        isLoading,
-        shouldMiningControlsBeEnabled,
-        isConnectionLostDuringMining,
-        cancelMining,
-    } = useMiningControls();
-
-    const handleClick = useCallback(() => {
-        if (isConnectionLostDuringMining) {
-            return cancelMining();
-        }
-
-        if (isMining) {
-            return stopMining();
-        }
-        if (!isMining) {
-            return startMining();
-        }
-    }, [isMining, startMining, stopMining, cancelMining, isConnectionLostDuringMining]);
-
-    const btnProps: ButtonProps = {
-        variant: 'contained',
-        color: 'primary',
-        size: 'large',
-        endIcon: isMining ? <GiPauseButton /> : <IoChevronForwardOutline />,
-    };
-
-    return (
-        <Stack gap={1}>
-            <StyledButton
-                {...btnProps}
-                hasStarted={!!isMining || isConnectionLostDuringMining}
-                onClick={handleClick}
-                disabled={!shouldMiningControlsBeEnabled}
-                endIcon={<IconWrapper>{isLoading ? <StyledIcon /> : btnProps.endIcon}</IconWrapper>}
-                sx={{
-                    '& .MuiButton-endIcon': {
-                        position: 'absolute',
-                        right: '1rem',
-                    },
-                }}
-            >
-                <span>{t(`mining-button-text.${getMiningButtonStateText()}`)}</span>
-            </StyledButton>
-            {isConnectionLostDuringMining && (
-                <Stack
-                    direction="row"
-                    gap={1}
-                    sx={{
-                        border: '1px solid #d6a463',
-                        background: '#d6a46322',
-                        color: '#d6a463',
-                        borderRadius: '8px',
-                        padding: '4px 8px',
-                    }}
-                >
-                    <IoWarningOutline size={32} />
-                    <Typography variant="body2" textAlign="left">
-                        {t('connection-to-node-lost')}
-                    </Typography>
-                </Stack>
-            )}
-        </Stack>
-    );
+enum MiningButtonStateText {
+    STARTED = 'pause-mining',
+    START = 'start-mining',
 }
 
-export default MiningButton;
+export default function MiningButton() {
+    const { t } = useTranslation('mining-view', { useSuspense: false });
+    const isAppSettingUp = useAppStateStore((s) => s.isSettingUp);
+    const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
+
+    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+
+    const isMining = isCPUMining || isGPUMining;
+
+    const { handleStop, handleStart, isMiningLoading } = useMiningControls();
+
+    const miningButtonStateText = useMemo(() => {
+        return isMining && isMiningInitiated ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
+    }, [isMining, isMiningInitiated]);
+
+    const handleClick = useCallback(async () => {
+        if (!isMining) {
+            return await handleStart();
+        } else {
+            return await handleStop();
+        }
+    }, [handleStart, handleStop, isMining]);
+
+    const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
+    return (
+        <ButtonWrapper>
+            <StyledButton
+                variant="rounded"
+                $hasStarted={isMining}
+                onClick={handleClick}
+                icon={<IconWrapper>{isMiningLoading ? <StyledIcon /> : icon}</IconWrapper>}
+                disabled={isAppSettingUp || isMiningLoading || !isMiningControlsEnabled}
+            >
+                <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
+            </StyledButton>
+            <AnimatePresence>{isMining ? <ButtonOrbitAnimation /> : null}</AnimatePresence>
+        </ButtonWrapper>
+    );
+}

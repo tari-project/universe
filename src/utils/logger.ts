@@ -1,6 +1,4 @@
 /* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 // disabling eslint rules as this is a logger
 
@@ -11,40 +9,46 @@ const originalConsoleLog = console.log;
 const originalConsoleInfo = console.info;
 const originalConsoleError = console.error;
 
-const parseArgument = (a: any) => {
+type LogArgs = Console['log'];
+type ErrorArgs = Console['error'];
+type InfoArgs = Console['info'];
+
+type ParseArgs = LogArgs | ErrorArgs | InfoArgs;
+
+const parseArgument = (a?: ParseArgs) => {
     try {
-        return JSON.stringify(a, null, 2);
-    } catch (_e) {
-        // should we not return this err?
-        return String(a);
+        const message = a || 'Log Item';
+        return JSON.stringify(message, null, 2);
+    } catch (e) {
+        return String(`Logger Parse Error from ${a} - ${e}`);
     }
 };
 
 export const setupLogger = () => {
     // Override console.log
-    console.log = function (...args) {
+    console.log = (...args) => {
         invoke('log_web_message', {
             level: 'log',
-            message: args.map(parseArgument),
+            message: args?.map(parseArgument),
         });
-        originalConsoleLog(...args);
+        return originalConsoleLog(...args);
     };
 
     // Override console.info
-    console.info = function (...args) {
+    console.info = (...args) => {
         invoke('log_web_message', {
             level: 'info',
-            message: args.map(parseArgument),
+            message: args?.map(parseArgument),
         });
-        originalConsoleInfo(...args);
+        return originalConsoleInfo(...args);
     };
 
     // Override console.error
-    console.error = function (...args) {
+    console.error = (...args) => {
         invoke('log_web_message', {
             level: 'error',
-            message: args.map(parseArgument),
+            message: args?.map(parseArgument),
         });
-        originalConsoleError(...args);
+        return originalConsoleError(...args);
     };
 };

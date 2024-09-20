@@ -18,7 +18,7 @@ appenders:
       pattern: "{d(%H:%M)} {h({l}):5} {m}{n}"
     filters:
       - kind: threshold
-        level: warn
+        level: info
 
   # An appender named "web" that writes to a file with a custom pattern encoder
   web:
@@ -75,6 +75,7 @@ appenders:
 root:
   level: info
   appenders:
+    - other
     - stdout
 
 loggers:
@@ -82,8 +83,12 @@ loggers:
   tari::universe:
     level: debug
     appenders:
+      - stdout
       - default
+    additive: false
+
   tari::universe::web:
     level: info
     appenders:
       - web
+    additive: false

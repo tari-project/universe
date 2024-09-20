@@ -1,0 +1,42 @@
+{
+    "settings": "Ayarlar",
+    "seed-words": "Seed Kelimeleri",
+    "change-language": "Dil Değiştir",
+    "logs": "Günlükler",
+    "open-logs-directory": "Günlükler dizinini açın",
+    "debug-info": "Hata Ayıklama",
+    "hardware-status": "Donanım durumu",
+    "update-versions": "Güncelleme sürümleri",
+    "refresh-versions": "Sürümleri yenileyin",
+    "idle-timeout": {
+        "title": "Makinenin boşta sayılacağı süre",
+        "placeholder": "Boşta kalma zaman aşımını saniye cinsinden girin",
+        "max": "Maks. 21600 saniye",
+        "min": "Min. 1 saniye"
+    },
+    "monero-address": {
+        "title": "Monero Adresi",
+        "placeholder": "Monero adresini girin"
+    },
+    "last-block-added-time": "Zincir zamanına eklenen son blok",
+    "visual-mode": "Görsel mod",
+    "pool-mining": "Havuz Madenciliği",
+    "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
+    "cpu-mining-enabled": "CPU Madenciliği",
+    "gpu-mining-enabled": "GPU Madenciliği",
+    "p2pool-stats": "P2Pool İstatistikleri",
+    "tribe": "Kabile",
+    "miners": "Madenciler",
+    "tribe-earnings": "Kabile kazançları",
+    "tribe-pool-height": "Havuz yüksekliği",
+    "p2pool-hash-rate": "Havuz hash oranları",
+    "p2pool-total-earnings": "Toplam havuz kazançları",
+    "p2pool-chain-tip": "Zincir ucu",
+    "p2pool-user-total-earnings": "Toplam kazançlar",
+    "yes": "Evet",
+    "cancel": "İptal",
+    "reset-settings": "Ayarları sıfırla",
+    "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?",
+    "gpu-unavailable": "⚠️ GPU devre dışı bırakıldı çünkü donanımınız bunu desteklemiyor",
+    "reset-wallet": "Reset wallet"
+}

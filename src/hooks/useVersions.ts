@@ -1,8 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useAppStatusStore } from '../store/useAppStatusStore';
 import { invoke } from '@tauri-apps/api';
-import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
-import { useInterval } from '@app/hooks/useInterval.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 export function useApplicationsVersions() {
     const setApplicationsVersions = useAppStatusStore((state) => state.setApplicationsVersions);
@@ -31,7 +30,7 @@ export function useApplicationsVersions() {
 }
 
 export function useVersions() {
-    const applicationsVersions = useAppStatusStore((state) => state.applications_versions);
+    const applicationsVersions = useAppStatusStore(useShallow((state) => state.applications_versions));
     const { getApplicationsVersions } = useApplicationsVersions();
     const areAllVersionsPresent = useRef(false);
 
@@ -47,33 +46,4 @@ export function useVersions() {
             getApplicationsVersions();
         };
     }, [applicationsVersions, getApplicationsVersions]);
-}
-
-export function useMainAppVersion() {
-    const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60; // 1 hour
-    const handleUpdate = useCallback(async () => {
-        try {
-            const updateRes = await checkUpdate();
-            if (updateRes.shouldUpdate && updateRes.manifest) {
-                console.info(
-                    `Installing update ${updateRes.manifest.version}, ${updateRes.manifest.date}, ${updateRes.manifest.body}`
-                );
-                await installUpdate();
-            }
-        } catch (e) {
-            console.error('Error checking for update', e);
-        }
-    }, []);
-
-    useInterval(() => handleUpdate(), UPDATE_CHECK_INTERVAL);
-
-    useEffect(() => {
-        const ul = onUpdaterEvent(({ error, status }) => {
-            console.info('Updater event', error, status);
-        });
-
-        return () => {
-            ul.then((unlisten) => unlisten());
-        };
-    }, []);
 }

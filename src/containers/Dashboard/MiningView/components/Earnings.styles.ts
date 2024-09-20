@@ -1,6 +1,6 @@
-import { styled } from '@mui/system';
-import { motion } from 'framer-motion';
-export const EarningsContainer = styled('div')`
+import { m } from 'framer-motion';
+import styled from 'styled-components';
+export const EarningsContainer = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
@@ -9,19 +9,20 @@ export const EarningsContainer = styled('div')`
     position: relative;
 `;
 
-export const EarningsWrapper = styled(motion.div)`
+export const EarningsWrapper = styled(m.div)`
     display: flex;
     align-items: flex-end;
     flex-direction: row;
     justify-content: center;
     span {
         display: flex;
-        font-family: 'DrukWideLCGBold', sans-serif;
+        font-family: Druk, sans-serif;
+        font-weight: 700;
         font-size: 14px;
         letter-spacing: -0.1px;
     }
 
-    @media (max-width: 920px) {
+    @media (max-width: 1100px) {
         flex-direction: column;
         align-items: center;
     }

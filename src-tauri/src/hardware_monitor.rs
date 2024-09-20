@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::LazyLock};
 
-use log::info;
+use log::{debug, warn};
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use serde::Serialize;
 use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
@@ -42,7 +42,7 @@ pub struct HardwareStatus {
 }
 
 trait HardwareMonitorImpl: Send + Sync + 'static {
-    fn get_implementation_name(&self) -> String;
+    fn _get_implementation_name(&self) -> String;
     fn read_cpu_parameters(
         &self,
         current_parameters: Option<HardwareParameters>,
@@ -51,10 +51,11 @@ trait HardwareMonitorImpl: Send + Sync + 'static {
         &self,
         current_parameters: Option<HardwareParameters>,
     ) -> HardwareParameters;
-    fn log_all_components(&self);
+    fn _log_all_components(&self);
 }
 
 pub struct HardwareMonitor {
+    #[allow(dead_code)]
     current_os: CurrentOperatingSystem,
     current_implementation: Box<dyn HardwareMonitorImpl>,
     cpu: Option<HardwareParameters>,
@@ -87,11 +88,11 @@ impl HardwareMonitor {
         let nvml = Nvml::init();
         match nvml {
             Ok(nvml) => {
-                info!(target: LOG_TARGET, "NVML initialized");
+                debug!(target: LOG_TARGET, "NVML initialized");
                 Some(nvml)
             }
             Err(e) => {
-                info!(target: LOG_TARGET, "Failed to initialize NVML: {}", e);
+                warn!(target: LOG_TARGET, "Failed to initialize NVML: {}", e);
                 None
             }
         }
@@ -133,11 +134,11 @@ struct WindowsHardwareMonitor {
     nvml: Option<Nvml>,
 }
 impl HardwareMonitorImpl for WindowsHardwareMonitor {
-    fn get_implementation_name(&self) -> String {
+    fn _get_implementation_name(&self) -> String {
         "Windows".to_string()
     }
 
-    fn log_all_components(&self) {
+    fn _log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
             println!(
@@ -240,10 +241,10 @@ struct LinuxHardwareMonitor {
     nvml: Option<Nvml>,
 }
 impl HardwareMonitorImpl for LinuxHardwareMonitor {
-    fn get_implementation_name(&self) -> String {
+    fn _get_implementation_name(&self) -> String {
         "Linux".to_string()
     }
-    fn log_all_components(&self) {
+    fn _log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
             println!(
@@ -273,10 +274,10 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             .filter(|c| c.label().contains("k10temp Tctl"))
             .collect();
 
-        let available_cpu_components = if !amd_cpu_component.is_empty() {
-            amd_cpu_component
-        } else {
+        let available_cpu_components = if amd_cpu_component.is_empty() {
             intel_cpu_component
+        } else {
+            amd_cpu_component
         };
 
         let avarage_temperature = available_cpu_components
@@ -361,10 +362,10 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
 
 struct MacOSHardwareMonitor {}
 impl HardwareMonitorImpl for MacOSHardwareMonitor {
-    fn get_implementation_name(&self) -> String {
+    fn _get_implementation_name(&self) -> String {
         "MacOS".to_string()
     }
-    fn log_all_components(&self) {
+    fn _log_all_components(&self) {
         let components = Components::new_with_refreshed_list();
         for component in components.deref() {
             println!(
@@ -393,10 +394,10 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             .filter(|c| c.label().contains("MTR"))
             .collect();
 
-        let available_cpu_components = if !silicon_cpu_components.is_empty() {
-            silicon_cpu_components
-        } else {
+        let available_cpu_components = if silicon_cpu_components.is_empty() {
             intel_cpu_components
+        } else {
+            silicon_cpu_components
         };
 
         let avarage_temperature = available_cpu_components

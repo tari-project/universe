@@ -2,6 +2,7 @@ use log::{error, info};
 use std::sync::LazyLock;
 use tauri::{AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
 
+use crate::format_utils::format_balance;
 use crate::hardware_monitor::HardwareStatus;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
@@ -32,7 +33,9 @@ impl SystrayItemId {
             SystrayItemId::GpuHashrate => format!("GPU Hashrate: {:.2} H/s", value),
             SystrayItemId::CpuUsage => format!("CPU Usage: {:.2}%", value),
             SystrayItemId::GpuUsage => format!("GPU Usage: {:.2}%", value),
-            SystrayItemId::EstimatedEarning => format!("Estimated Earning: {:.2} tXTM/Day", value),
+            SystrayItemId::EstimatedEarning => {
+                format!("Est earning: {} tXTM/day", format_balance(value))
+            }
         }
     }
 }
@@ -73,8 +76,8 @@ impl SystemtrayManager {
         SystrayData {
             cpu_hashrate,
             gpu_hashrate,
-            cpu_usage: hardware_status.cpu.unwrap_or_default().usage_percentage as f64,
-            gpu_usage: hardware_status.gpu.unwrap_or_default().usage_percentage as f64,
+            cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
+            gpu_usage: f64::from(hardware_status.gpu.unwrap_or_default().usage_percentage),
             estimated_earning,
         }
     }
@@ -97,23 +100,21 @@ impl SystemtrayManager {
 
         match current_os {
             CurrentOperatingSystem::Windows => {
-                return format!(
-                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEarn: {:.2} tXTM/Day",
+                format!(
+                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEst. earning: {} tXTM/day",
                     data.cpu_hashrate,
                     data.cpu_usage,
                     data.gpu_hashrate,
                     data.gpu_usage,
-                    data.estimated_earning
-                );
+                    format_balance(data.estimated_earning)
+                )
             }
-            CurrentOperatingSystem::Linux => {
-                return "Not supported".to_string();
-            }
+            CurrentOperatingSystem::Linux => "Not supported".to_string(),
             CurrentOperatingSystem::MacOS => {
-                return format!(
-                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEstimated Earning: {:.2} tXTM/Day",
-                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, data.estimated_earning
-                );
+                format!(
+                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
+                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, format_balance(data.estimated_earning)
+                )
             }
         }
     }
@@ -175,7 +176,7 @@ impl SystemtrayManager {
             CurrentOperatingSystem::Windows => {
                 return systray.with_tooltip(tooltip.clone().as_str())
             }
-            CurrentOperatingSystem::Linux => return systray.with_menu(tray_menu),
+            CurrentOperatingSystem::Linux => systray.with_menu(tray_menu),
             CurrentOperatingSystem::MacOS => return systray.with_tooltip(tooltip.clone().as_str()),
         }
     }

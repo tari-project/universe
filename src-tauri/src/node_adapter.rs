@@ -5,27 +5,27 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use humantime::format_duration;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{
     Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
 use tokio::select;
-use tonic::transport::Channel;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
-pub struct MinotariNodeAdapter {
+pub(crate) struct MinotariNodeAdapter {
     use_tor: bool,
     pub(crate) grpc_port: u16,
+    pub(crate) use_pruned_mode: bool,
+    required_initial_peers: u32,
 }
 
 impl MinotariNodeAdapter {
@@ -34,6 +34,8 @@ impl MinotariNodeAdapter {
         Self {
             use_tor,
             grpc_port: port,
+            use_pruned_mode: false,
+            required_initial_peers: 3,
         }
     }
 }
@@ -44,6 +46,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        _config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
@@ -70,13 +73,36 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "base_node.report_grpc_error=true".to_string(),
             "-p".to_string(),
             "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
+            "-p".to_string(),
+            format!(
+                "base_node.state_machine.initial_sync_peer_count={}",
+                self.required_initial_peers
+            ),
         ];
-        if !self.use_tor {
+        if self.use_pruned_mode {
+            args.push("-p".to_string());
+            args.push("base_node.storage.pruning_horizon=100".to_string());
+        }
+        // Uncomment to test winning blocks
+        // if cfg!(debug_assertions) {
+        // args.push("--network".to_string());
+        // args.push("localnet".to_string());
+        // }
+        if self.use_tor {
+            args.push("-p".to_string());
+            args.push(
+                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
+                    .to_string(),
+            );
+        } else {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
+            // args.push("-p".to_string());
+            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
+            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
             args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
             // args.push("base_node.p2p.allow_test_addresses=true".to_string());
             // args.push("-p".to_string());
@@ -85,12 +111,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
             // args.push(
             //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
             // );
-        } else {
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
-                    .to_string(),
-            );
         }
         Ok((
             ProcessInstance {
@@ -100,7 +120,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .resolve_path(Binaries::MinotariNode)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
+                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
                     if let Some(id) = child.id() {
                         fs::write(data_dir.join("node_pid"), id.to_string())?;
@@ -139,6 +159,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             },
             MinotariNodeStatusMonitor {
                 grpc_port: self.grpc_port,
+                required_sync_peers: self.required_initial_peers,
             },
         ))
     }
@@ -152,8 +173,17 @@ impl ProcessAdapter for MinotariNodeAdapter {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum MinotariNodeStatusMonitorError {
+    #[error("Unknown error: {0}")]
+    UnknownError(#[from] anyhow::Error),
+    #[error("Node not started")]
+    NodeNotStarted,
+}
+
 pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
+    required_sync_peers: u32,
 }
 
 #[async_trait]
@@ -168,21 +198,27 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
         &self,
-    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), Error> {
+    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), MinotariNodeStatusMonitorError> {
         // TODO: use GRPC port returned from process
         let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
+                .await
+                .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
         let res = client
             .get_new_block_template(NewBlockTemplateRequest {
                 algo: Some(PowAlgo { pow_algo: 1 }),
                 max_weight: 0,
             })
-            .await?;
+            .await
+            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
         let reward = res.miner_data.unwrap().reward;
 
-        let res = client.get_tip_info(Empty {}).await?;
+        let res = client
+            .get_tip_info(Empty {})
+            .await
+            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
         let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
@@ -193,22 +229,27 @@ impl MinotariNodeStatusMonitor {
         // First try with 10 blocks
         let blocks = [10, 100];
         let mut result = Err(anyhow::anyhow!("No difficulty found"));
-        for i in 0..blocks.len() {
+        for block in &blocks {
             // Unfortunately have to use 100 blocks to ensure that there are both randomx and sha blocks included
             // otherwise the hashrate is 0 for one of them.
             let res = client
                 .get_network_difficulty(HeightRequest {
-                    from_tip: blocks[i],
+                    from_tip: *block,
                     start_height: 0,
                     end_height: 0,
                 })
-                .await?;
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
             let mut res = res.into_inner();
             // Get the last one.
             // base node returns 0 for hashrate when the algo doesn't match, so we need to keep track of last one.
             let mut last_sha3_estimated_hashrate = 0;
             let mut last_randomx_estimated_hashrate = 0;
-            while let Some(difficulty) = res.message().await? {
+            while let Some(difficulty) = res
+                .message()
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?
+            {
                 if difficulty.sha3x_estimated_hash_rate != 0 {
                     last_sha3_estimated_hashrate = difficulty.sha3x_estimated_hash_rate;
                 }
@@ -230,7 +271,7 @@ impl MinotariNodeStatusMonitor {
             }
         }
 
-        result
+        Ok(result?)
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
@@ -248,7 +289,6 @@ impl MinotariNodeStatusMonitor {
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
-        let mut sync_util = SyncUtil::new(SyncingType::Headers);
 
         loop {
             let tip = client.get_tip_info(Empty {}).await?;
@@ -262,115 +302,72 @@ impl MinotariNodeStatusMonitor {
 
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
-                    .update("preparing-for-initial-sync".to_string(), 10)
+                    .update(
+                        "preparing-for-initial-sync".to_string(),
+                        Some(HashMap::from([
+                            (
+                                "initial_connected_peers".to_string(),
+                                sync_progress.initial_connected_peers.to_string(),
+                            ),
+                            (
+                                "required_peers".to_string(),
+                                self.required_sync_peers.to_string(),
+                            ),
+                        ])),
+                        10,
+                    )
                     .await;
             } else if sync_progress.state == SyncState::Header as i32 {
-                if sync_util.syncing_type != SyncingType::Headers {
-                    sync_util = SyncUtil::new(SyncingType::Headers);
-                }
-                let syncing_speed = sync_util.get_syncing_speed(sync_progress.local_height);
-                let blocks_behind = sync_progress.tip_height - sync_progress.local_height;
-                let progress =
-                    sync_util.get_progress(sync_progress.tip_height, sync_progress.local_height);
+                let progress = if sync_progress.tip_height == 0 {
+                    10
+                } else {
+                    10 + (30 * sync_progress.local_height / sync_progress.tip_height)
+                };
 
                 progress_tracker
                     .update(
-                        format!(
-                            "Waiting for header sync. {}/{} headers synced",
-                            sync_progress.local_height, sync_progress.tip_height,
-                        ),
+                        "waiting-for-header-sync".to_string(),
+                        Some(HashMap::from([
+                            (
+                                "local_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                        ])),
                         progress,
                     )
                     .await;
             } else if sync_progress.state == SyncState::Block as i32 {
-                if sync_util.syncing_type != SyncingType::Blocks {
-                    sync_util = SyncUtil::new(SyncingType::Blocks);
-                }
-                let syncing_speed = sync_util.get_syncing_speed(sync_progress.local_height);
-                let blocks_behind = sync_progress.tip_height - sync_progress.local_height;
-                let progress =
-                    sync_util.get_progress(sync_progress.tip_height, sync_progress.local_height);
+                let progress = if sync_progress.tip_height == 0 {
+                    40
+                } else {
+                    40 + (60 * sync_progress.local_height / sync_progress.tip_height)
+                };
 
                 progress_tracker
                     .update(
-                        format!(
-                            "Waiting for block sync. {}/{} Blocks synced.",
-                            sync_progress.local_height, sync_progress.tip_height,
-                        ),
+                        "waiting-for-block-sync".to_string(),
+                        Some(HashMap::from([
+                            (
+                                "local_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                        ])),
                         progress,
                     )
                     .await;
+            } else {
+                //do nothing
             }
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Ok(())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum SyncingType {
-    Headers,
-    Blocks,
-}
-
-pub struct SyncUtil {
-    sync_progress_history: Vec<(u64, u64)>,
-    syncing_type: SyncingType,
-}
-
-impl SyncUtil {
-    pub fn new(syncing_type: SyncingType) -> Self {
-        Self {
-            sync_progress_history: vec![],
-            syncing_type,
-        }
-    }
-
-    fn get_syncing_speed(&mut self, local_height: u64) -> u64 {
-        let time_now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        if self.sync_progress_history.len() >= 10 {
-            self.sync_progress_history.remove(0);
-        }
-
-        self.sync_progress_history.push((local_height, time_now));
-
-        let syncing_speed = self
-            .sync_progress_history
-            .first()
-            .and_then(|first| {
-                self.sync_progress_history.last().map(|last| {
-                    let denominator = (last.1 - first.1) as f64;
-
-                    if denominator != 0.0 {
-                        ((last.0 as f64) - (first.0 as f64)) / denominator
-                    } else {
-                        0.0
-                    }
-                })
-            })
-            .unwrap_or(0.0) as u64;
-
-        syncing_speed
-    }
-
-    fn get_progress(&self, tip_height: u64, local_height: u64) -> u64 {
-        if self.syncing_type == SyncingType::Headers {
-            // 10% -> 40% - Header
-            if tip_height == 0 {
-                10
-            } else {
-                10 + (30 * local_height / tip_height)
-            }
-        } else {
-            // 40% -> 100% - Block
-            if tip_height == 0 {
-                40
-            } else {
-                40 + (60 * local_height / tip_height)
-            }
-        }
     }
 }

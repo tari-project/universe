@@ -1,62 +1,70 @@
-import MenuItem from '@mui/material/MenuItem';
-import FormControl from '@mui/material/FormControl';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import { styled } from '@mui/system';
-import { modeType } from '@app/store/types';
-import { IoCode } from 'react-icons/io5';
-import { Typography } from '@mui/material';
 import { TileItem } from '../styles';
 import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { Theme, useTheme } from '@mui/material/styles';
-import { useMiningControls } from '@app/hooks/mining/useMiningControls';
-import { StyledIcon } from '@app/containers/Dashboard/MiningView/components/MiningButton.styles';
 import { useTranslation } from 'react-i18next';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { Select } from '@app/components/elements/inputs/Select.tsx';
 
-const CustomSelect = styled(Select)(({ theme }: { theme: Theme }) => ({
-    '& .MuiSelect-select': {
-        padding: 0,
-        textTransform: 'uppercase',
-        fontSize: 18,
-        fontFamily: theme.typography.h5.fontFamily,
-        lineHeight: theme.typography.h5.lineHeight,
-    },
-    '& .MuiOutlinedInput-notchedOutline': {
-        border: 'none',
-    },
-}));
+import eco from '@app/assets/icons/emoji/eco.png';
+import fire from '@app/assets/icons/emoji/fire.png';
+import { useCallback } from 'react';
+import { invoke } from '@tauri-apps/api/tauri';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
+import { useMiningControls } from '@app/hooks/mining/useMiningControls.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
 
-    const mode = useAppStatusStore((s) => s.mode);
-    const { changeMode, isChangingMode } = useMiningControls();
+    const isSettingUp = useAppStateStore(useShallow((s) => s.isSettingUp));
+    const mode = useAppStatusStore(useShallow((s) => s.mode));
 
-    const handleChange = (event: SelectChangeEvent<unknown>) => {
-        changeMode(event.target.value as modeType);
-    };
-    const theme = useTheme();
+    const cpuIsMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+
+    const isMiningControlsEnabled = useMiningStore(useShallow((s) => s.miningControlsEnabled));
+    const isChangingMode = useMiningStore((s) => s.isChangingMode);
+    const setIsChangingMode = useMiningStore((s) => s.setIsChangingMode);
+
+    const isMiningInitiated = useMiningStore(useShallow((s) => s.miningInitiated));
+    const isMining = cpuIsMining || gpuIsMining;
+
+    const { handlePause, handleStart, isMiningLoading } = useMiningControls();
+
+    const handleChange = useCallback(
+        async (mode: string) => {
+            setIsChangingMode(true);
+            if (isMining) {
+                await handlePause();
+            }
+            try {
+                await invoke('set_mode', { mode });
+                if (isMiningInitiated) {
+                    await handleStart();
+                }
+            } catch (e) {
+                console.error(e);
+                setIsChangingMode(false);
+            }
+        },
+        [isMining, handlePause, handleStart, isMiningInitiated, setIsChangingMode]
+    );
+
     return (
-        <TileItem>
-            <Typography variant="body2">{t('mode')}</Typography>
-            <FormControl fullWidth>
-                <CustomSelect
-                    labelId="select-mode-label"
-                    id="select-mode"
-                    theme={theme}
-                    value={mode}
-                    onChange={handleChange}
-                    disabled={isChangingMode}
-                    IconComponent={isChangingMode ? StyledIcon : IoCode}
-                    sx={{
-                        '& .MuiSelect-icon': {
-                            transform: 'rotate(90deg)',
-                        },
-                    }}
-                >
-                    <MenuItem value="Eco">Eco</MenuItem>
-                    <MenuItem value="Ludicrous">Ludicrous</MenuItem>
-                </CustomSelect>
-            </FormControl>
+        <TileItem layoutId="miner-mode-select-tile" layout>
+            <Typography>{t('mode')}</Typography>
+            <Select
+                disabled={isMiningLoading || isChangingMode || isSettingUp || !isMiningControlsEnabled}
+                loading={isChangingMode}
+                onChange={handleChange}
+                selectedValue={mode}
+                options={[
+                    { label: 'ECO', value: 'Eco', iconSrc: eco },
+                    { label: 'Ludicrous', value: 'Ludicrous', iconSrc: fire },
+                ]}
+            />
         </TileItem>
     );
 }

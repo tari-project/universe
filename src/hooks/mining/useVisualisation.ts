@@ -1,36 +1,71 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { setAnimationState } from '../../visuals';
-import { GlAppState } from '@app/glApp';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { appWindow } from '@tauri-apps/api/window';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
+import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
 
 export function useVisualisation() {
-    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
-    const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
-    const showFailAnimation = useMiningStore((s) => s.showFailAnimation);
-    const setShowFailAnimation = useMiningStore((s) => s.setShowFailAnimation);
+    const [useFailTimeout, setUseFailTimeout] = useState(false);
+
+    const cpuIsMining = useCPUStatusStore(useShallow((s) => s.is_mining));
+    const gpuIsMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isMining = cpuIsMining || gpuIsMining;
+
+    const { setTimerPaused, setPostBlockAnimation, setEarnings, setMiningControlsEnabled } = useMiningStore(
+        useShallow((s) => ({
+            setMiningControlsEnabled: s.setMiningControlsEnabled,
+            setPostBlockAnimation: s.setPostBlockAnimation,
+            setTimerPaused: s.setTimerPaused,
+            setEarnings: s.setEarnings,
+        }))
+    );
+
+    const checkCanAnimate = useCallback(async () => {
+        if (!isMining) return false;
+        const focused = await appWindow?.isFocused();
+        const minimized = await appWindow?.isMinimized();
+        const documentIsVisible = document?.visibilityState === 'visible' || false;
+
+        return !minimized && (focused || documentIsVisible);
+    }, [isMining]);
 
     useEffect(() => {
-        if (showFailAnimation) {
-            const failTimeout = setTimeout(() => {
-                setTimerPaused(false);
-                setShowFailAnimation(false);
-                setPostBlockAnimation(true);
-            }, 1000);
-            return () => clearTimeout(failTimeout);
+        if (useFailTimeout) {
+            const failAnimationTimeout = setTimeout(
+                () => {
+                    setPostBlockAnimation(true);
+                    setTimerPaused(false);
+                    setUseFailTimeout(false);
+                },
+                isMining ? 1500 : 1
+            );
+
+            return () => {
+                clearTimeout(failAnimationTimeout);
+            };
         }
-    }, [showFailAnimation, setPostBlockAnimation, setTimerPaused, setShowFailAnimation]);
+    }, [isMining, setPostBlockAnimation, setTimerPaused, useFailTimeout]);
 
-    return useCallback(async (state: GlAppState) => {
-        const documentIsVisible = document.visibilityState === 'visible';
-        const focused = await appWindow.isFocused();
-        const minimized = await appWindow.isMinimized();
+    const handleFail = useCallback(async () => {
+        const canAnimate = await checkCanAnimate();
+        if (canAnimate) {
+            setMiningControlsEnabled(false);
+            setAnimationState('fail');
+            setUseFailTimeout(true);
+        }
+    }, [checkCanAnimate, setMiningControlsEnabled]);
 
-        const canAnimate = !minimized && (focused || documentIsVisible);
-        if (!canAnimate && (state == 'fail' || state == 'success')) {
-            return;
+    const handleWin = useCallback(async () => {
+        const canAnimate = await checkCanAnimate();
+        if (canAnimate) {
+            setMiningControlsEnabled(false);
+            setAnimationState('success');
         } else {
-            setAnimationState(state);
+            setEarnings(undefined);
         }
-    }, []);
+    }, [checkCanAnimate, setEarnings, setMiningControlsEnabled]);
+
+    return { handleFail, handleWin };
 }

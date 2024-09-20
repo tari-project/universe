@@ -1,20 +1,16 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/svg+xml" href="/tari.svg" />
-  <script type="module" crossorigin src="/assets/glApp.js"></script>
-  <title>Tari Universe</title>
-  <style>
-    #canvas {
-      position: absolute;
-      /* border-radius: 12px; */
-      z-index: 0;
-    }
-    #root {
-      pointer-events: none;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/tari.svg" />
+    <script type="module" crossorigin src="/assets/glApp.js"></script>
+    <title>Tari Universe | Testnet</title>
+    <style>
+      #canvas {
+        position: absolute;
+        pointer-events: auto;
+      }
   </style>
 </head>
 <body>
@@ -23,6 +19,7 @@
   <div id="root"></div>
   <script type="module" src="src/main.tsx"></script>
   <script>
+    let time;
     function preload() {
       glApp?.preload(
           {
@@ -31,7 +28,7 @@
             ASSETS_PATH: "/assets/",
           },
           () => {
-            setTimeout(init, 1000); // added a timeout so it doesn't flash the canvas before the splash screen loads
+            init()
           },
       );
     }
@@ -39,20 +36,30 @@
     function init() {
       glApp.init();
       time = performance.now() / 1000;
-      window.addEventListener("resize", onResize);
-      glApp.properties.cameraOffsetX = (348 + 16) / window.innerWidth; // 348 is sidebar width with some padding
 
+      glApp.properties.lightPositionX = -5;
+      glApp.properties.lightPositionY = 3;
+      glApp.properties.lightPositionZ = 5;
+      glApp.properties.goboIntensity = 0.5;
+
+      glApp.properties.defaultColor = '#FFFFFF';
+      glApp.properties.startColor = '#40d1f7';
+      glApp.properties.endColor = '#5ff09a';
+
+      glApp.properties.showVisual = true;
+      window.addEventListener("resize", onResize);
       onResize();
       animate();
     }
 
+    const sidebarOffset = 348 + 20; // sidebar + padding
     function onResize() {
+      glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
       glApp.setSize(window.innerWidth, window.innerHeight);
     }
 
     function animate() {
       requestAnimationFrame(animate);
-
       let newTime = performance.now() / 1000;
       let dt = newTime - time;
       time = newTime;

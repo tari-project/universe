@@ -2,6 +2,8 @@ import { modeType } from '../store/types';
 
 export interface AppStatus {
     cpu?: CpuMinerStatus;
+    gpu?: GpuMinerStatus;
+    gpu_earnings?: EstimatedEarnings;
     base_node?: BaseNodeStatus;
     hardware_status?: HardwareStatus;
     wallet_balance?: WalletBalance;
@@ -11,8 +13,18 @@ export interface AppStatus {
     mode: modeType;
     auto_mining: boolean;
     monero_address?: string;
+    tari_address_base58?: string;
+    tari_address_emoji?: string;
     p2pool_enabled: boolean;
-    p2pool_stats?: P2poolStats;
+    p2pool_stats?: P2poolStatsResult;
+    cpu_mining_enabled: boolean;
+    gpu_mining_enabled: boolean;
+    telemetry_mode: boolean;
+}
+
+export interface P2poolStatsResult {
+    randomx: P2poolStats;
+    sha3: P2poolStats;
 }
 
 export interface P2poolStats {
@@ -22,10 +34,10 @@ export interface P2poolStats {
     num_of_miners: number;
     last_block_won?: P2poolStatsBlock;
     share_chain_height: number;
-    pool_hash_rate: bigint;
+    pool_hash_rate: number;
     pool_total_earnings: number;
     pool_total_estimated_earnings: P2poolEstimatedEarnings;
-    total_earnings: Map<string, number>;
+    total_earnings: Record<string, number>;
     estimated_earnings: Map<string, P2poolEstimatedEarnings>;
     miner_block_stats: P2poolBlockStats;
     p2pool_block_stats: P2poolBlockStats;
@@ -75,8 +87,20 @@ export interface CpuMinerStatus {
     estimated_earnings: number;
     connection: CpuMinerConnectionStatus;
 }
+
 export interface CpuMinerConnectionStatus {
     is_connected: boolean;
+}
+
+export interface EstimatedEarnings {
+    estimated_earnings: number;
+}
+
+export interface GpuMinerStatus {
+    is_mining: boolean;
+    hash_rate: number;
+    estimated_earnings: number;
+    is_available: boolean;
 }
 
 export interface BaseNodeStatus {

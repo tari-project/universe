@@ -9,6 +9,7 @@ use minotari_node_grpc_client::grpc::GetBalanceRequest;
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
+use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
@@ -43,6 +44,7 @@ impl ProcessAdapter for WalletAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
+        _config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
@@ -83,11 +85,16 @@ impl ProcessAdapter for WalletAdapter {
             "-p".to_string(),
             "wallet.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9999".to_string(),
         ];
-        if !self.use_tor {
+        if self.use_tor {
+            args.push("-p".to_string());
+            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
+        } else {
             // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
             // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
+            // args.push("-p".to_string());
+            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
             args.push("wallet.p2p.public_addresses=/ip4/172.2.3.4/tcp/18188".to_string());
             // args.push("-p".to_string());
@@ -100,9 +107,6 @@ impl ProcessAdapter for WalletAdapter {
             );
 
             // todo!()
-        } else {
-            args.push("-p".to_string());
-            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         }
         Ok((
             ProcessInstance {
@@ -112,7 +116,7 @@ impl ProcessAdapter for WalletAdapter {
                         .resolve_path(Binaries::Wallet)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, &args)?;
+                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
                     if let Some(id) = child.id() {
                         std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
@@ -137,7 +141,7 @@ impl ProcessAdapter for WalletAdapter {
                        }
                         },
                     };
-                    println!("Stopping minotari node");
+                    info!(target: LOG_TARGET, "Stopping minotari wallet");
 
                     match fs::remove_file(data_dir.join("wallet_pid")) {
                         Ok(_) => {}
@@ -161,6 +165,16 @@ impl ProcessAdapter for WalletAdapter {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum WalletStatusMonitorError {
+    #[error("Wallet not started")]
+    WalletNotStarted,
+    #[error("Tari address conversion error: {0}")]
+    TariAddress(#[from] TariAddressError),
+    #[error("Unknown error: {0}")]
+    UnknownError(#[from] anyhow::Error),
+}
+
 pub struct WalletStatusMonitor {}
 
 #[async_trait]
@@ -180,9 +194,18 @@ pub struct WalletBalance {
     pub pending_outgoing_balance: MicroMinotari,
 }
 impl WalletStatusMonitor {
-    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
-        let mut client = WalletClient::connect("http://127.0.0.1:18141").await?;
-        let res = client.get_balance(GetBalanceRequest {}).await?;
+    fn wallet_grpc_address(&self) -> String {
+        String::from("http://127.0.0.1:18141")
+    }
+
+    pub async fn get_balance(&self) -> Result<WalletBalance, WalletStatusMonitorError> {
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_balance(GetBalanceRequest {})
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
 
         Ok(WalletBalance {
@@ -191,5 +214,25 @@ impl WalletStatusMonitor {
             pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
             pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
         })
+    }
+
+    #[deprecated(
+        note = "Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address"
+    )]
+    pub async fn get_wallet_address(&self) -> Result<TariAddress, WalletStatusMonitorError> {
+        panic!("Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address");
+        // let mut client = WalletClient::connect(self.wallet_grpc_address())
+        //     .await
+        //     .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        // let res = client
+        //     .get_address(Empty {})
+        //     .await
+        //     .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+        // let res = res.into_inner();
+
+        // match TariAddress::from_bytes(res.address.as_slice()) {
+        //     Ok(address) => Ok(address),
+        //     Err(err) => Err(WalletStatusMonitorError::TariAddress(err)),
+        // }
     }
 }

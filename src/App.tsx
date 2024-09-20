@@ -1,54 +1,72 @@
-import './theme/theme.css';
-import { StrictMode, useEffect } from 'react';
-import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider } from '@mui/material/styles';
-import { lightTheme } from './theme/themes';
-import { ContainerInner, DashboardContainer } from './theme/styles';
+import { LayoutGroup, LazyMotion, domMax, MotionConfig } from 'framer-motion';
+import { BackgroundImage, DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
-import { AppBackground } from './containers/AppBackground';
-import ErrorSnackbar from './containers/Error/ErrorSnackbar';
+
 import { useUIStore } from './store/useUIStore.ts';
 import { useGetStatus } from './hooks/useGetStatus.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 import { useEnvironment } from './hooks/useEnvironment.ts';
-import { useAirdropTokensRefresh } from './hooks/airdrop/useAirdropTokensRefresh.ts';
 import { SplashScreen } from './containers/SplashScreen';
-import { useMiningEffects } from './hooks/mining/useMiningEffects.ts';
-import { setupLogger } from './utils/logger.ts';
+import ThemeProvider from './theme/ThemeProvider.tsx';
+import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
+import { useAirdropSyncState } from './hooks/airdrop/useAirdropSyncState.ts';
+import AirdropLogin from './containers/Airdrop/AirdropLogin/AirdropLogin.tsx';
+import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
+import { useShuttingDown } from './hooks/useShuttingDown.ts';
+import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
+import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
+import useMining from '@app/hooks/mining/useMining.ts';
 
-function App() {
-    useAirdropTokensRefresh();
+import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
+
+export default function App() {
+    useAirdropSyncState();
     useSetUp();
+    useMining();
     useGetStatus();
     useEnvironment();
-    useMiningEffects();
+    useUiMiningStateMachine();
 
-    const view = useUIStore((s) => s.view);
+    const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
+    const view = useUIStore((s) => s.view);
+    const visualMode = useUIStore((s) => s.visualMode);
 
-    useEffect(() => {
-        setupLogger();
-    }, []);
+    const canRenderMain = !isShuttingDown && !showSplash;
+    const splashScreenMarkup = <SplashScreen />;
+    const shutDownMarkup = isShuttingDown ? <ShuttingDownScreen /> : null;
+    const mainMarkup = canRenderMain ? (
+        <DashboardContainer>
+            <SideBar />
+            <Dashboard status={view} />
+        </DashboardContainer>
+    ) : null;
 
     return (
-        <StrictMode>
-            <ThemeProvider theme={lightTheme}>
-                <CssBaseline enableColorScheme />
-                <AppBackground />
-                <SplashScreen />
-                {!showSplash && (
-                    <DashboardContainer>
-                        <ContainerInner>
-                            <SideBar />
-                            <Dashboard status={view} />
-                        </ContainerInner>
-                    </DashboardContainer>
-                )}
-                <ErrorSnackbar />
-            </ThemeProvider>
-        </StrictMode>
+        <ThemeProvider>
+            <GlobalReset />
+            <GlobalStyle />
+            <LazyMotion features={domMax} strict>
+                {/*
+                 * added to reduce bundle size
+                 * see https://www.framer.com/motion/guide-reduce-bundle-size/#synchronous-loading
+                 * strict prop for using `m` instead of `motion`- see https://www.framer.com/motion/guide-reduce-bundle-size/#how-to-reduce-the-size-of-the-motion-component
+                 */}
+                <MotionConfig reducedMotion="user">
+                    <AutoUpdateDialog />
+                    <LayoutGroup id="app-content">
+                        <AirdropLogin />
+                        {splashScreenMarkup}
+                        {shutDownMarkup}
+                        {!visualMode || view != 'mining' ? (
+                            <BackgroundImage layout transition={{ duration: 0.3 }} />
+                        ) : null}
+                        {mainMarkup}
+                        <ErrorSnackbar />
+                    </LayoutGroup>
+                </MotionConfig>
+            </LazyMotion>
+        </ThemeProvider>
     );
 }
-
-export default App;

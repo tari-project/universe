@@ -1,6 +1,7 @@
 use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
 use crate::process_watcher::ProcessWatcher;
+use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -55,6 +56,7 @@ impl WalletManager {
         &self,
         app_shutdown: ShutdownSignal,
         base_path: PathBuf,
+        config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), WalletManagerError> {
         self.node_manager.wait_ready().await?;
@@ -64,7 +66,7 @@ impl WalletManager {
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
         process_watcher.adapter.base_node_address = Some("/ip4/127.0.0.1/tcp/9998".to_string());
         process_watcher
-            .start(app_shutdown, base_path, log_path)
+            .start(app_shutdown, base_path, config_path, log_path)
             .await?;
         process_watcher.wait_ready().await?;
         Ok(())
@@ -82,11 +84,45 @@ impl WalletManager {
 
     pub async fn get_balance(&self) -> Result<WalletBalance, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
-        Ok(process_watcher
+        process_watcher
             .status_monitor
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
             .get_balance()
-            .await?)
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
+    pub async fn stop(&self) -> Result<i32, WalletManagerError> {
+        let mut process_watcher = self.watcher.write().await;
+        process_watcher
+            .stop()
+            .await
+            .map_err(WalletManagerError::UnknownError)
+    }
+
+    #[deprecated(
+        note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
+    )]
+    pub async fn wallet_address(&self) -> Result<String, WalletManagerError> {
+        panic!("Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet.");
+        // In future the wallet might return the correct address. View only wallets have the same offline address, but different online addresses.
+        // But the grpc only returns the online address.
+
+        // let process_watcher = self.watcher.read().await;
+        // Ok(process_watcher
+        //     .status_monitor
+        //     .as_ref()
+        //     .ok_or_else(|| WalletManagerError::WalletNotStarted)?
+        //     .get_wallet_address()
+        //     .await
+        //     .map_err(|e| match e {
+        //         WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+        //         _ => WalletManagerError::UnknownError(e.into()),
+        //     })?
+        //     .to_base58())
     }
 }

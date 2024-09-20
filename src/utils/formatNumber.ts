@@ -1,11 +1,12 @@
-export function formatNumber(value: number): string {
-    if (value < 0) {
-        return value.toPrecision(1);
-    } else if (value >= 1_000_000) {
-        return (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm';
-    } else if (value >= 1_000) {
-        return (value / 1_000).toFixed(1).replace(/\.0$/, '') + 'k';
-    } else {
-        return value.toString();
-    }
+export function formatNumber(value: number, maxDigits?: number): string {
+    //TODO: add props for customisation
+    return Intl.NumberFormat(undefined, {
+        notation: 'compact',
+        maximumFractionDigits: maxDigits || 3,
+        style: 'decimal',
+    }).format(value);
+}
+export function formatPercent(value = 0) {
+    const p = Math.floor(value || 0).toLocaleString();
+    return value > 0 ? `${p}%` : undefined;
 }

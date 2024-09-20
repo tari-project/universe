@@ -1,10 +1,7 @@
-use std::{
-    path::PathBuf,
-    time::{Duration, SystemTime},
-};
+use std::{path::PathBuf, time::SystemTime};
 
 use anyhow::anyhow;
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
@@ -13,19 +10,48 @@ use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 const LOG_TARGET: &str = "tari::universe::app_config";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct AppConfigFromFile {
-    pub version: u32,
-    pub mode: String,
-    pub auto_mining: bool,
-    pub p2pool_enabled: bool,
-    pub user_inactivity_timeout: Duration,
-    pub last_binaries_update_timestamp: SystemTime,
-    pub allow_telemetry: bool,
-    pub anon_id: String,
-    pub monero_address: String,
+    #[serde(default = "default_version")]
+    version: u32,
+    #[serde(default = "default_mode")]
+    mode: String,
+    #[serde(default = "default_true")]
+    auto_mining: bool,
+    #[serde(default = "default_true")]
+    p2pool_enabled: bool,
+    #[serde(default = "default_system_time")]
+    last_binaries_update_timestamp: SystemTime,
+    #[serde(default = "default_false")]
+    allow_telemetry: bool,
+    #[serde(default = "default_anon_id")]
+    anon_id: String,
+    #[serde(default = "default_monero_address")]
+    monero_address: String,
+    #[serde(default = "default_true")]
+    gpu_mining_enabled: bool,
+    #[serde(default = "default_true")]
+    cpu_mining_enabled: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+impl Default for AppConfigFromFile {
+    fn default() -> Self {
+        Self {
+            version: default_version(),
+            mode: default_mode(),
+            auto_mining: true,
+            p2pool_enabled: true,
+            last_binaries_update_timestamp: default_system_time(),
+            allow_telemetry: false,
+            anon_id: default_anon_id(),
+            monero_address: default_monero_address(),
+            gpu_mining_enabled: true,
+            cpu_mining_enabled: true,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum MiningMode {
     Eco,
     Ludicrous,
@@ -48,34 +74,43 @@ impl MiningMode {
     }
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppConfig {
+pub(crate) struct AppConfig {
+    config_version: u32,
     config_file: Option<PathBuf>,
-    pub version: u32,
-    pub mode: MiningMode,
-    pub auto_mining: bool,
-    pub p2pool_enabled: bool,
-    pub user_inactivity_timeout: Duration,
-    pub last_binaries_update_timestamp: SystemTime,
-    pub allow_telemetry: bool,
-    pub anon_id: String,
-    pub monero_address: String,
+    mode: MiningMode,
+    auto_mining: bool,
+    p2pool_enabled: bool,
+    last_binaries_update_timestamp: SystemTime,
+    allow_telemetry: bool,
+    anon_id: String,
+    monero_address: String,
+    gpu_mining_enabled: bool,
+    cpu_mining_enabled: bool,
 }
 
 impl AppConfig {
     pub fn new() -> Self {
         Self {
-            version: 1,
+            config_version: default_version(),
             config_file: None,
             mode: MiningMode::Eco,
-            auto_mining: false,
-            p2pool_enabled: false,
-            user_inactivity_timeout: Duration::from_secs(60),
-            last_binaries_update_timestamp: SystemTime::now(),
+            auto_mining: true,
+            p2pool_enabled: true,
+            last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
+            gpu_mining_enabled: true,
+            cpu_mining_enabled: true,
         }
+    }
+
+    pub fn config_dir(&self) -> Option<PathBuf> {
+        self.config_file
+            .as_ref()
+            .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
     }
 
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
@@ -83,45 +118,46 @@ impl AppConfig {
         self.config_file = Some(file.clone());
 
         if file.exists() {
-            info!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
+            debug!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
-            match serde_json::from_str::<AppConfigFromFile>(&config) {
-                Ok(config) => {
-                    self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
-                    self.auto_mining = config.auto_mining;
-                    self.p2pool_enabled = config.p2pool_enabled;
-                    self.user_inactivity_timeout = config.user_inactivity_timeout;
-                    self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
-                    self.allow_telemetry = config.allow_telemetry;
-                    self.anon_id = config.anon_id;
-                    self.version = config.version;
-                    if self.version == 0 {
-                        // migrate
-                        self.version = 1;
-                        self.allow_telemetry = true;
-                        self.anon_id = generate_password(20);
-                    }
-                }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
-                }
+            self.apply_loaded_config(config);
+        } else {
+            info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
+        }
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn apply_loaded_config(&mut self, config: String) {
+        match serde_json::from_str::<AppConfigFromFile>(&config) {
+            Ok(config) => {
+                debug!("Loaded config from file {:?}", config);
+                self.config_version = config.version;
+                self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
+                self.auto_mining = config.auto_mining;
+                self.p2pool_enabled = config.p2pool_enabled;
+                self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
+                self.allow_telemetry = config.allow_telemetry;
+                self.anon_id = config.anon_id;
+                self.monero_address = config.monero_address;
+                self.gpu_mining_enabled = config.gpu_mining_enabled;
+                self.cpu_mining_enabled = config.cpu_mining_enabled;
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
             }
         }
-        info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
-        let config = &AppConfigFromFile {
-            mode: MiningMode::to_str(self.mode.clone()),
-            auto_mining: self.auto_mining,
-            p2pool_enabled: self.p2pool_enabled,
-            user_inactivity_timeout: self.user_inactivity_timeout,
-            last_binaries_update_timestamp: self.last_binaries_update_timestamp,
-            version: self.version,
-            allow_telemetry: self.allow_telemetry,
-            anon_id: self.anon_id.clone(),
-            monero_address: self.monero_address.clone(),
-        };
-        let config = serde_json::to_string(&config)?;
-        fs::write(file, config).await?;
-        Ok(())
+
+        // Migrate
+        if self.config_version <= 6 {
+            // Change the default value of p2pool_enabled to false in version 7
+            self.config_version = 7;
+            self.p2pool_enabled = true;
+        }
+    }
+
+    pub fn anon_id(&self) -> &str {
+        &self.anon_id
     }
 
     pub async fn set_mode(&mut self, mode: String) -> Result<(), anyhow::Error> {
@@ -135,14 +171,32 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn get_mode(&self) -> MiningMode {
-        self.mode.clone()
+    pub fn mode(&self) -> MiningMode {
+        self.mode
     }
 
-    pub async fn set_auto_mining(&mut self, auto_mining: bool) -> Result<(), anyhow::Error> {
-        self.auto_mining = auto_mining;
+    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
+        self.cpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.cpu_mining_enabled)
+    }
+
+    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
+        self.gpu_mining_enabled = enabled;
+        self.update_config_file().await?;
+        Ok(self.gpu_mining_enabled)
+    }
+
+    pub fn cpu_mining_enabled(&self) -> bool {
+        self.cpu_mining_enabled
+    }
+
+    pub fn gpu_mining_enabled(&self) -> bool {
+        self.gpu_mining_enabled
+    }
+
+    pub fn p2pool_enabled(&self) -> bool {
+        self.p2pool_enabled
     }
 
     pub async fn set_p2pool_enabled(&mut self, p2pool_enabled: bool) -> Result<(), anyhow::Error> {
@@ -151,7 +205,7 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn get_auto_mining(&self) -> bool {
+    pub fn auto_mining(&self) -> bool {
         self.auto_mining
     }
 
@@ -164,21 +218,11 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn get_allow_telemetry(&self) -> bool {
+    pub fn allow_telemetry(&self) -> bool {
         self.allow_telemetry
     }
-
-    pub fn get_user_inactivity_timeout(&self) -> Duration {
-        self.user_inactivity_timeout
-    }
-
-    pub async fn set_user_inactivity_timeout(
-        &mut self,
-        timeout: Duration,
-    ) -> Result<(), anyhow::Error> {
-        self.user_inactivity_timeout = timeout;
-        self.update_config_file().await?;
-        Ok(())
+    pub fn monero_address(&self) -> &str {
+        &self.monero_address
     }
 
     pub async fn set_monero_address(&mut self, address: String) -> Result<(), anyhow::Error> {
@@ -187,7 +231,7 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn get_last_binaries_update_timestamp(&self) -> SystemTime {
+    pub fn last_binaries_update_timestamp(&self) -> SystemTime {
         self.last_binaries_update_timestamp
     }
 
@@ -200,23 +244,58 @@ impl AppConfig {
         Ok(())
     }
 
+    // Allow needless update because in future there may be fields that are
+    // missing
+    #[allow(clippy::needless_update)]
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
         let file = self.config_file.clone().unwrap();
+        let default_config = AppConfigFromFile::default();
+
         let config = &AppConfigFromFile {
-            mode: MiningMode::to_str(self.mode.clone()),
+            version: self.config_version,
+            mode: MiningMode::to_str(self.mode),
             auto_mining: self.auto_mining,
             p2pool_enabled: self.p2pool_enabled,
-            user_inactivity_timeout: self.user_inactivity_timeout,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
-            version: self.version,
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
             monero_address: self.monero_address.clone(),
+            gpu_mining_enabled: self.gpu_mining_enabled,
+            cpu_mining_enabled: self.cpu_mining_enabled,
+            ..default_config
         };
         let config = serde_json::to_string(config)?;
-        info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
+        debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
         fs::write(file, config).await?;
 
         Ok(())
     }
+}
+
+fn default_version() -> u32 {
+    7
+}
+
+fn default_mode() -> String {
+    "Eco".to_string()
+}
+
+fn default_false() -> bool {
+    false
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_anon_id() -> String {
+    generate_password(20)
+}
+
+fn default_system_time() -> SystemTime {
+    SystemTime::UNIX_EPOCH
+}
+
+fn default_monero_address() -> String {
+    DEFAULT_MONERO_ADDRESS.to_string()
 }

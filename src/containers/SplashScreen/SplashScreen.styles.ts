@@ -1,11 +1,19 @@
-import { styled } from '@mui/material/styles';
 import loading from '@app/assets/backgrounds/white-bg.jpg';
+import styled from 'styled-components';
+import { m } from 'framer-motion';
 
-export const SplashScreenContainer = styled('div')`
+export const SplashScreenWrapper = styled(m.div)`
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    height: 100vh;
+    width: 100vw;
+`;
+export const SplashScreenContainer = styled.div`
     position: absolute;
     background: url(${loading}) no-repeat center center fixed;
     background-size: cover;
-    z-index: 100;
     width: 100%;
     height: 100vh;
     display: flex;
@@ -13,7 +21,7 @@ export const SplashScreenContainer = styled('div')`
     align-items: center;
 `;
 
-export const LottieContainer = styled('div')`
+export const LottieContainer = styled.div`
     width: 600px;
     height: auto;
 `;
