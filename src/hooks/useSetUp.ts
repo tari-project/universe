@@ -15,6 +15,7 @@ export function useSetUp() {
     const fetchApplicationsVersions = useAppStateStore((s) => s.fetchApplicationsVersions);
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const setCriticalError = useAppStateStore((s) => s.setCriticalError);
 
     useEffect(() => {
         async function initialize() {
@@ -52,7 +53,7 @@ export function useSetUp() {
         if (isAfterAutoUpdate) {
             clearStorage();
             invoke('setup_application').catch((e) => {
-                setError(`Failed to setup application: ${e}`);
+                setCriticalError(`Failed to setup application: ${e}`);
                 setView('mining');
             });
         }
@@ -67,5 +68,6 @@ export function useSetUp() {
         setSetupDetails,
         setView,
         settingUpFinished,
+        setCriticalError,
     ]);
 }
