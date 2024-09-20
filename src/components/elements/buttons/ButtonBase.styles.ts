@@ -12,8 +12,10 @@ export const StyledButtonBase = styled.button<Props>`
     font-weight: ${({ theme }) => theme.typography.h6.fontWeight};
     border-radius: ${({ theme }) => theme.shape.borderRadius.buttonBase};
     background: ${({ theme }) => theme.palette.background.paper};
-    height: 50px;
-    width: 190px;
+    height: 40px;
+    width: min-content;
+    white-space: pre;
+    padding: 0 25px;
     align-items: center;
     justify-content: center;
     cursor: pointer;
@@ -21,9 +23,6 @@ export const StyledButtonBase = styled.button<Props>`
 
     transition: all 0.25s ease-in-out;
 
-    &:hover {
-        opacity: 0.8;
-    }
     &:active {
         opacity: 0.9;
     }
@@ -50,7 +49,11 @@ export const StyledButtonBase = styled.button<Props>`
             case 'primary':
             default:
                 return css`
-                    background: ${({ theme }) => theme.palette.background.default};
+                    background: ${({ theme }) => theme.palette.colors.grey[100]};
+
+                    &:hover {
+                        background: ${({ theme }) => theme.palette.background.default};
+                    }
                 `;
         }
     }}

@@ -6,6 +6,7 @@ export const Container = styled.div`
     display: flex;
     background: ${({ theme }) => theme.palette.background.default};
     flex-direction: column;
+    align-items: center;
     height: 100%;
     width: 250px;
     gap: 10px;
@@ -13,4 +14,5 @@ export const Container = styled.div`
 
 export const SectionButton = styled(ButtonBase)`
     display: flex;
+    text-transform: capitalize;
 `;
