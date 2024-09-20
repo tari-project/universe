@@ -434,8 +434,6 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    state.gpu_miner.write().await.detect().await?;
-
     progress.set_max(30).await;
     progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)
@@ -467,6 +465,10 @@ async fn setup_inner(
 
     //drop binary resolver to release the lock
     drop(binary_resolver);
+
+    state.gpu_miner.write().await.detect().await.inspect_err(
+        |e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e),
+    )?;
 
     for _i in 0..2 {
         match state
