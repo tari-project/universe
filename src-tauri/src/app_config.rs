@@ -228,10 +228,6 @@ impl AppConfig {
         self.auto_mining
     }
 
-    pub fn mine_on_app_start(&self) -> bool {
-        self.mine_on_app_start
-    }
-
     pub async fn set_mine_on_app_start(
         &mut self,
         mine_on_app_start: bool,
