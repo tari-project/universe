@@ -73,7 +73,7 @@ appenders:
 
 # Set the default logging level to "info"
 root:
-  level: debug
+  level: info
   appenders:
     - other
     - stdout

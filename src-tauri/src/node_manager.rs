@@ -103,7 +103,7 @@ impl NodeManager {
         let status_monitor = status_monitor_lock
             .status_monitor
             .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+            .ok_or_else(|| anyhow::anyhow!("wait_synced: Node not started"))?;
         status_monitor.wait_synced(progress_tracker).await
     }
 
@@ -163,7 +163,7 @@ impl NodeManager {
         let status_monitor = status_monitor_lock
             .status_monitor
             .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+            .ok_or_else(|| anyhow::anyhow!("get_identity: Node not started"))?;
         status_monitor.get_identity().await
     }
 

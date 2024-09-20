@@ -1,7 +1,7 @@
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
-export const Wrapper = styled(motion.div)`
+export const Wrapper = styled(m.div)`
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     background-color: ${({ theme }) => theme.palette.error.main};
     max-width: 400px;

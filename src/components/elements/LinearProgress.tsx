@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import styled from 'styled-components';
 
 const Wrapper = styled.div`
@@ -11,7 +11,7 @@ const Wrapper = styled.div`
     display: flex;
 `;
 
-const Bar = styled(motion.div)<{ $isSecondary?: boolean }>`
+const Bar = styled(m.div)<{ $isSecondary?: boolean }>`
     border-radius: 20px;
     background: ${({ theme, $isSecondary }) => ($isSecondary ? theme.palette.contrast : theme.palette.success.main)};
     height: 8px;

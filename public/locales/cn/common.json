@@ -15,6 +15,9 @@
     "mode": "模式",
     "day": "天",
     "shutting-down": "停工..",
-    "tari-universe": "Tari宇宙",
-    "testnet": "测试网"
+    "tari-universe": "Tari Universe",
+    "testnet": "测试网",
+    "critical-error": "Critical error",
+    "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
+    "close-tari-universe": "Close Tari Universe"
 }

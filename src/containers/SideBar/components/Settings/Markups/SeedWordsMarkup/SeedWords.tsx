@@ -48,8 +48,8 @@ export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
             {showSeedWords ? (
                 <SeedWordsContainer>
                     {seedWords.map((word, index) => (
-                        <Stack key={word} direction="row" justifyContent="flex-start">
-                            <Typography key={index} variant="p" style={{ minWidth: 15 }}>
+                        <Stack key={`seed-word-${word}`} direction="row" justifyContent="flex-start">
+                            <Typography key={`seed-no-${index}`} variant="p" style={{ minWidth: 15 }}>
                                 {index + 1}.
                             </Typography>
                             <Typography variant="p" key={word}>

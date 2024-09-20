@@ -7,66 +7,54 @@ import { useCallback } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { useTranslation } from 'react-i18next';
-import { useShallow } from 'zustand/react/shallow';
 
 const variants = {
     visible: {
         opacity: 1,
-        y: -200,
+        y: -190,
         scale: 1.05,
         transition: {
-            delay: 1,
-            duration: 3,
-            ease: 'easeInOut',
+            duration: 1.25,
+            ease: 'linear',
             scale: {
-                duration: 1,
+                duration: 0.9,
             },
         },
     },
     hidden: {
-        opacity: 0,
-        y: -150,
-        transition: { duration: 1, delay: 2, ease: 'linear' },
+        opacity: 0.2,
+        y: -160,
+        transition: { duration: 0.2, delay: 3, ease: 'linear' },
     },
 };
 
 export default function Earnings() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
-    const { earnings, setPostBlockAnimation, setEarnings, setTimerPaused } = useMiningStore(
-        useShallow((s) => ({
-            setPostBlockAnimation: s.setPostBlockAnimation,
-            setEarnings: s.setEarnings,
-            setTimerPaused: s.setTimerPaused,
-            earnings: s.earnings,
-        }))
-    );
+    const handleBlockMined = useMiningStore((s) => s.handleBlockMined);
+    const earnings = useMiningStore((s) => s.earnings);
     const formatted = formatBalance(earnings || 0);
 
     const handleComplete = useCallback(() => {
         const winTimeout = setTimeout(() => {
-            setPostBlockAnimation(true);
-            setTimerPaused(false);
-            setEarnings(undefined);
+            handleBlockMined();
         }, 3000);
 
         return () => {
             clearTimeout(winTimeout);
         };
-    }, [setEarnings, setPostBlockAnimation, setTimerPaused]);
+    }, [handleBlockMined]);
 
     return (
         <EarningsContainer>
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 {earnings ? (
                     <EarningsWrapper
-                        initial="hidden"
                         variants={variants}
+                        initial="hidden"
                         animate="visible"
                         exit="hidden"
-                        onAnimationComplete={() => {
-                            handleComplete();
-                        }}
+                        onAnimationComplete={handleComplete}
                     >
                         <span>{t('your-reward-is')}</span>
                         <CharSpinner value={formatted.toString()} fontSize={72} />

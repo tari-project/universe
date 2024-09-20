@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/Button.tsx';
@@ -7,6 +6,7 @@ import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
 import emojiRegex from 'emoji-regex';
 import { styled } from 'styled-components';
 import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs';
+import { useWalletStore } from '@app/store/useWalletStore';
 
 const Dot = styled.div`
     width: 4px;
@@ -37,10 +37,8 @@ const AddressInner = styled.div`
 
 const WalletAddressMarkup = () => {
     const [isCondensed, setIsCondensed] = useState(true);
-    const { walletAddress, walletAddressEmoji } = useAppStatusStore((state) => ({
-        walletAddress: state.tari_address_base58,
-        walletAddressEmoji: state.tari_address_emoji,
-    }));
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
 
     if (!walletAddress) return null;
 

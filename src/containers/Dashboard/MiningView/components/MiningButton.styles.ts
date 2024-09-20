@@ -1,7 +1,7 @@
 import { ImSpinner3 } from 'react-icons/im';
 import styled, { keyframes } from 'styled-components';
 import { Button } from '@app/components/elements/Button.tsx';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 export const spin = keyframes`
   from {
   transform:rotate(0deg)
@@ -29,29 +29,37 @@ export const IconWrapper = styled.div`
     }
 `;
 
-export const ButtonWrapper = styled(motion.div)`
+export const ButtonWrapper = styled(m.div)`
     position: relative;
     display: flex;
-    align-items: stretch;
-    justify-content: stretch;
+    align-items: center;
+    overflow: hidden;
+    justify-content: center;
+    border-radius: ${({ theme }) => theme.shape.borderRadius.button};
     width: 100%;
 `;
 
 export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
-    display: flex;
     width: 100%;
-    align-items: center;
-    background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
-    border: 1px solid ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+    background: ${({ $hasStarted }) =>
+        $hasStarted
+            ? 'linear-gradient(90deg, #929292 0%, rgba(0,0,0,0.7) 99.49%)'
+            : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
     color: ${({ theme }) => theme.palette.base};
-    transition: all 0.2s ease-in;
+    box-shadow: 0 0 3px 0 rgba(255, 255, 255, 0.58) inset;
+    transition: opacity 0.4s ease-in-out background 0.4s ease-in-out;
     &:hover {
-        background: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(17,110,64,0.96)')};
-        border-color: ${({ $hasStarted }) => ($hasStarted ? 'rgba(0,0,0,0.9)' : 'rgba(28,150,88,0.9)')};
-        transform: scale(1.01);
+        background: ${({ $hasStarted }) =>
+            $hasStarted
+                ? 'linear-gradient(90deg, #929292 0%, rgba(0,0,0,0.65) 99.49%)'
+                : 'linear-gradient(90deg, #046937 0%, rgba(17, 110, 64, 0.96) 92.49%)'};
     }
+
     &:disabled {
-        border-color: rgba(0, 0, 0, 0.3);
-        background: ${({ $hasStarted }) => ($hasStarted ? '#000' : '#188750')};
+        opacity: 0.9;
+        pointer-events: none;
     }
 `;

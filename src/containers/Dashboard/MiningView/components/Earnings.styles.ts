@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import styled from 'styled-components';
 export const EarningsContainer = styled.div`
     display: flex;
@@ -9,7 +9,7 @@ export const EarningsContainer = styled.div`
     position: relative;
 `;
 
-export const EarningsWrapper = styled(motion.div)`
+export const EarningsWrapper = styled(m.div)`
     display: flex;
     align-items: flex-end;
     flex-direction: row;

@@ -10,7 +10,21 @@ export enum Language {
     TR = 'tr',
 }
 
-export const LanguageList = Object.values(Language);
+export enum LanguageNames {
+    EN = 'English',
+    PL = 'Polish',
+    AF = 'Afrikaans',
+    TR = 'Turkish',
+}
+
+export interface LanguageItem {
+    key: Language;
+    name: LanguageNames;
+}
+export const LanguageList: LanguageItem[] = Object.keys(Language).map((lang) => ({
+    key: Language[lang],
+    name: LanguageNames[lang],
+}));
 
 i18n.use(HttpBackend)
     .use(LanguageDetector)

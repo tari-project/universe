@@ -1,12 +1,18 @@
 use anyhow::Result;
+use blake2::digest::Update;
+use blake2::digest::VariableOutput;
+use blake2::Blake2bVar;
 use jsonwebtoken::errors::Error as JwtError;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::future::Future;
+use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tauri::Manager;
+use tari_utilities::encoding::Base58;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
@@ -21,6 +27,20 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
+struct TelemetryFrequency(u64);
+
+impl From<TelemetryFrequency> for Duration {
+    fn from(value: TelemetryFrequency) -> Self {
+        Duration::from_secs(value.0)
+    }
+}
+
+impl Default for TelemetryFrequency {
+    fn default() -> Self {
+        TelemetryFrequency(15)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 struct AirdropAccessToken {
     exp: u64,
@@ -31,7 +51,7 @@ struct AirdropAccessToken {
     scope: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TelemetryResource {
     Cpu,
@@ -40,7 +60,7 @@ pub enum TelemetryResource {
     CpuGpu,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TelemetryNetwork {
     MainNet,
@@ -76,7 +96,7 @@ impl From<Network> for TelemetryNetwork {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TelemetryMiningMode {
     Eco,
@@ -107,7 +127,7 @@ struct TelemetryDataResponse {
     pub user_points: Option<UserPoints>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TelemetryData {
     pub app_id: String,
@@ -157,16 +177,20 @@ impl TelemetryManager {
     }
 
     pub async fn get_unique_string(&self) -> String {
+        // TODO: remove before mainnet
         let config = self.config.read().await;
         if !config.allow_telemetry() {
             return "".to_string();
         }
-        let os = std::env::consts::OS;
+        // let os = std::env::consts::OS;
         let anon_id = config.anon_id();
+        let mut hasher = Blake2bVar::new(20).unwrap();
+        hasher.update(anon_id.as_bytes());
+        let mut buf = [0u8; 20];
+        hasher.finalize_variable(&mut buf).unwrap();
         let version = env!("CARGO_PKG_VERSION");
-        let mode = MiningMode::to_str(config.mode());
-        let auto_mining = config.auto_mining();
-        let unique_string = format!("v0,{},{},{},{},{}", anon_id, mode, auto_mining, os, version,);
+        // let mode = MiningMode::to_str(config.mode());
+        let unique_string = format!("v2,{},{}", buf.to_base58(), version,);
         unique_string
     }
 
@@ -176,20 +200,24 @@ impl TelemetryManager {
 
     pub async fn initialize(
         &mut self,
-        app: tauri::AppHandle,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
+        window: tauri::Window,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
-        self.start_telemetry_process(app, Duration::from_secs(60), airdrop_access_token)
-            .await?;
+        self.start_telemetry_process(
+            TelemetryFrequency::default().into(),
+            airdrop_access_token,
+            window,
+        )
+        .await?;
         Ok(())
     }
 
     async fn start_telemetry_process(
         &mut self,
-        app: tauri::AppHandle,
         timeout: Duration,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
+        window: tauri::Window,
     ) -> Result<(), TelemetryManagerError> {
         let node_manager = self.node_manager.clone();
         let cpu_miner = self.cpu_miner.clone();
@@ -198,47 +226,24 @@ impl TelemetryManager {
         let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
         let config_cloned = self.config.clone();
-        let app_cloned = app.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
-                    info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
-                            let telemetry = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
-                            match telemetry {
-                                Ok(telemetry) => {
-                                    let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                                    let telemetry_response = send_telemetry_data(telemetry, airdrop_access_token_validated, airdrop_api_url).await;
-                                    match telemetry_response {
-                                        Ok(response) => {
-                                            if let Some(response_inner) = response {
-                                                if response_inner.user_points.is_some() {
-                                                    info!(target: LOG_TARGET,"emitting UserPoints event{:?}",response_inner);
-                                                    app_cloned.emit_all("UserPoints", response_inner.user_points.unwrap())
-                                                    .map_err(|e| error!("could not send user points as an event: {:?}", e))
-                                                    .unwrap_or(());
-                                                }
-                                            }
-                                        },
-                                        Err(e) => {
-                                            error!(target: LOG_TARGET,"Error sending telemetry data: {:?}", e);
-                                        }
-                                    }
-                                },
-                                Err(e) => {
-                                    error!(target: LOG_TARGET,"Error getting telemetry data: {:?}", e);
-                                }
-                            }
+                            let telemetry_data = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
+                            let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
+                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, window.clone()).await;
                         }
                         sleep(timeout);
                     }
                 } => {},
                 _ = cancellation_token.cancelled() => {
-                    info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
+                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
                 }
             }
         });
@@ -316,7 +321,7 @@ async fn get_telemetry_data(
         .read_hardware_parameters();
 
     let config_guard = config.read().await;
-    let is_mining_active = is_synced && cpu.is_mining;
+    let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
     let cpu_hash_rate = Some(cpu.hash_rate);
     let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
     let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
@@ -342,6 +347,53 @@ async fn get_telemetry_data(
     })
 }
 
+async fn handle_telemetry_data(
+    telemetry: Result<TelemetryData, TelemetryManagerError>,
+    airdrop_api_url: String,
+    airdrop_access_token: Option<String>,
+    window: tauri::Window,
+) {
+    match telemetry {
+        Ok(telemetry) => {
+            let telemetry_response = retry_with_backoff(
+                || {
+                    Box::pin(send_telemetry_data(
+                        telemetry.clone(),
+                        airdrop_access_token.clone(),
+                        airdrop_api_url.clone(),
+                    ))
+                },
+                3,
+                2,
+                "send_telemetry_data",
+            )
+            .await;
+
+            match telemetry_response {
+                Ok(response) => {
+                    if let Some(response_inner) = response {
+                        if let Some(user_points) = response_inner.user_points {
+                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}",user_points);
+                            window
+                                .emit("UserPoints", user_points)
+                                .map_err(|e| {
+                                    error!("could not send user points as an event: {:?}", e)
+                                })
+                                .unwrap_or(());
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET,"Error sending telemetry data: {:?}", e);
+                }
+            }
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET,"Error getting telemetry data: {:?}", e);
+        }
+    }
+}
+
 async fn send_telemetry_data(
     data: TelemetryData,
     airdrop_access_token: Option<String>,
@@ -350,19 +402,77 @@ async fn send_telemetry_data(
     let request = reqwest::Client::new();
     let mut request_builder = request
         .post(format!("{}/miner/heartbeat", airdrop_api_url))
+        .header(
+            "User-Agent".to_string(),
+            format!("tari-universe/{}", data.version.clone()),
+        )
         .json(&data);
 
     if let Some(token) = airdrop_access_token.clone() {
         request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
     }
 
-    let result = request_builder.send().await?;
-    let response = result.error_for_status()?;
-    info!(target: LOG_TARGET,"Telemetry data sent");
+    let response = request_builder.send().await?;
+
+    if response.status() == 429 {
+        warn!(target: LOG_TARGET,"Telemetry data rate limited by http {:?}", response.status());
+        return Ok(None);
+    }
+
+    if response.status() != 200 {
+        let status = response.status();
+        let response = response.text().await?;
+        let response_as_json: Result<Value, serde_json::Error> = serde_json::from_str(&response);
+        return Err(anyhow::anyhow!(
+            "Telemetry data sending error. Status {:?} response text: {:?}",
+            status.to_string(),
+            response_as_json.unwrap_or(response.into()),
+        )
+        .into());
+    }
+
+    debug!(target: LOG_TARGET,"Telemetry data sent");
 
     if airdrop_access_token.is_some() {
         let data: TelemetryDataResponse = response.json().await?;
         return Ok(Some(data));
     }
     Ok(None)
+}
+
+async fn retry_with_backoff<T, R, E>(
+    mut f: T,
+    increment_in_secs: u64,
+    max_retries: u64,
+    operation_name: &str,
+) -> anyhow::Result<R>
+where
+    T: FnMut() -> Pin<Box<dyn Future<Output = Result<R, E>> + Send>>,
+    E: std::error::Error,
+{
+    let range_size = increment_in_secs * max_retries + 1;
+
+    for i in (0..range_size).step_by(usize::try_from(increment_in_secs)?) {
+        tokio::time::sleep(Duration::from_secs(i)).await;
+
+        let result = f().await;
+        match result {
+            Ok(res) => return Ok(res),
+            Err(e) => {
+                if i == range_size - 1 {
+                    return Err(anyhow::anyhow!(
+                        "Max retries reached, {} failed. Last error: {:?}",
+                        operation_name,
+                        e
+                    ));
+                } else {
+                    warn!(target: LOG_TARGET, "Retrying {} as it failed due to failure: {:?}", operation_name, e);
+                }
+            }
+        }
+    }
+    Err(anyhow::anyhow!(
+        "Max retries reached, {} failed without capturing error",
+        operation_name
+    ))
 }
