@@ -1093,7 +1093,7 @@ pub const LOG_TARGET_WEB: &str = "tari::universe::web";
 #[allow(clippy::too_many_lines)]
 fn main() {
     let client = sentry_tauri::sentry::init((
-        "https://8dc12b7dd330098b073bda6d13b47bbb@o4507984017031168.ingest.de.sentry.io/4507984027123792",
+        "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
         sentry_tauri::sentry::ClientOptions {
             release: sentry_tauri::sentry::release_name!(),
             ..Default::default()
