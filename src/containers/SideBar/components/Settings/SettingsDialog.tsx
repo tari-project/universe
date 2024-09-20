@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 
-import { IoClose, IoSettingsOutline } from 'react-icons/io5';
+import { IoClose } from 'react-icons/io5';
 
 import VisualMode from '../../../Dashboard/components/VisualMode';
 import { HeadingContainer, HorisontalBox } from './Settings.styles';
@@ -31,36 +31,36 @@ import GpuMiningMarkup from './Markups/GpuMiningMarkup';
 import SeedWordsMarkup from './Markups/SeedWordsMarkup';
 import ExperimentalWarning from './ExperimentalWarning';
 import { useUIStore } from '@app/store/useUIStore';
+import { ToggleAirdropUi } from '@app/containers/Airdrop/Settings/ToggleAirdropUi';
+import { useAppStateStore } from '@app/store/appStateStore';
 
-export default function Settings() {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const [open, setOpen] = useState(false);
+const GeneralTab = () => (
+    <Stack gap={10}>
+        <MoneroAddressMarkup />
+        <Divider />
+        <SeedWordsMarkup />
+        <Divider />
+        <HorisontalBox>
+            <CpuMiningMarkup />
+            <GpuMiningMarkup />
+        </HorisontalBox>
+        <Divider />
+        <LogsSettings />
+        <Divider />
+        <LanguageSettings />
+        <Divider />
+        <AirdropPermissionSettings />
+        <Divider />
+        <HorisontalBox>
+            <ResetSettingsButton />
+        </HorisontalBox>
+    </Stack>
+);
+
+const ExperimentalTab = () => {
     const showExperimental = useUIStore((s) => s.showExperimental);
 
-    const GeneralTab = () => (
-        <Stack gap={10}>
-            <MoneroAddressMarkup />
-            <Divider />
-            <SeedWordsMarkup />
-            <Divider />
-            <HorisontalBox>
-                <CpuMiningMarkup />
-                <GpuMiningMarkup />
-            </HorisontalBox>
-            <Divider />
-            <LogsSettings />
-            <Divider />
-            <LanguageSettings />
-            <Divider />
-            <AirdropPermissionSettings />
-            <Divider />
-            <HorisontalBox>
-                <ResetSettingsButton />
-            </HorisontalBox>
-        </Stack>
-    );
-
-    const ExperimentalTab = () => (
+    return (
         <Stack gap={10}>
             <ExperimentalWarning />
             {showExperimental && (
@@ -77,26 +77,33 @@ export default function Settings() {
                     <Divider />
                     <Stack direction="row" justifyContent="space-between">
                         <VisualMode />
+                        <ToggleAirdropUi />
                     </Stack>
                 </>
             )}
         </Stack>
     );
+};
 
-    const tabs = [
-        { label: t('tabs.general', { ns: 'settings' }), content: <GeneralTab /> },
-        { label: t('tabs.experimental', { ns: 'settings' }), content: <ExperimentalTab /> },
-    ];
+export default function SettingsDialog() {
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
+    const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
+
+    const tabs = useMemo(
+        () => [
+            { label: t('tabs.general', { ns: 'settings' }), content: <GeneralTab /> },
+            { label: t('tabs.experimental', { ns: 'settings' }), content: <ExperimentalTab /> },
+        ],
+        [t]
+    );
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <IconButton onClick={() => setOpen(true)}>
-                <IoSettingsOutline size={16} />
-            </IconButton>
+        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
             <DialogContent>
                 <HeadingContainer>
                     <Typography variant="h4">{t('settings', { ns: 'settings' })}</Typography>
-                    <IconButton onClick={() => setOpen(false)}>
+                    <IconButton onClick={() => setIsSettingsOpen(false)}>
                         <IoClose />
                     </IconButton>
                 </HeadingContainer>

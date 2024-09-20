@@ -1,26 +1,29 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../types.ts';
 
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
 import { useAppStateStore } from '../store/appStateStore.ts';
-
-import { useVersions } from '@app/hooks/useVersions.ts';
-
-import { useShallow } from 'zustand/react/shallow';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export function useSetUp() {
-    const startupInitiated = useRef(false);
     const setView = useUIStore((s) => s.setView);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setError = useAppStateStore((s) => s.setError);
-    const isAfterAutoUpdate = useAppStateStore(useShallow((s) => s.isAfterAutoUpdate));
+    const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
+    const fetchApplicationsVersions = useAppStateStore((s) => s.fetchApplicationsVersions);
+    const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
+    const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const setCriticalError = useAppStateStore((s) => s.setCriticalError);
 
-    const setMiningInitiated = useMiningStore(useShallow((s) => s.setMiningInitiated));
-    const setMiningControlsEnabled = useMiningStore(useShallow((s) => s.setMiningControlsEnabled));
-    useVersions();
+    useEffect(() => {
+        async function initialize() {
+            await fetchAppConfig();
+        }
+        initialize();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
@@ -38,6 +41,8 @@ export function useSetUp() {
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         setView('mining');
+                        settingUpFinished();
+                        fetchApplicationsVersions();
                     }
                     break;
                 default:
@@ -45,27 +50,24 @@ export function useSetUp() {
                     break;
             }
         });
-        const intervalId = setInterval(async () => {
-            if (!startupInitiated.current && isAfterAutoUpdate) {
-                clearInterval(intervalId);
-                startupInitiated.current = true;
-                clearStorage();
-                invoke('setup_application').catch((e) => {
-                    setError(`Failed to setup application: ${e}`);
-                    setView('mining');
-                });
-            }
-        }, 100);
+        if (isAfterAutoUpdate) {
+            clearStorage();
+            invoke('setup_application').catch((e) => {
+                setCriticalError(`Failed to setup application: ${e}`);
+                setView('mining');
+            });
+        }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
     }, [
         clearStorage,
+        fetchApplicationsVersions,
         isAfterAutoUpdate,
         setError,
-        setMiningControlsEnabled,
-        setMiningInitiated,
         setSetupDetails,
         setView,
+        settingUpFinished,
+        setCriticalError,
     ]);
 }

@@ -2,7 +2,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Chip } from '@app/components/elements/Chip.tsx';
 import { useTranslation } from 'react-i18next';
-import Settings from '@app/containers/SideBar/components/Settings/Settings.tsx';
+import SettingsButton from '@app/containers/SideBar/components/Settings/SettingsButton.tsx';
 import packageInfo from '../../../../package.json';
 
 const appVersion = packageInfo.version;
@@ -17,7 +17,7 @@ function Heading() {
                     {t('testnet')} {versionString}
                 </Chip>
             </Stack>
-            <Settings />
+            <SettingsButton />
         </Stack>
     );
 }

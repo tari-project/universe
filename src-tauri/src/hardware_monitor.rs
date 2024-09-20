@@ -1,6 +1,6 @@
 use std::{ops::Deref, sync::LazyLock};
 
-use log::info;
+use log::{debug, warn};
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use serde::Serialize;
 use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
@@ -88,11 +88,11 @@ impl HardwareMonitor {
         let nvml = Nvml::init();
         match nvml {
             Ok(nvml) => {
-                info!(target: LOG_TARGET, "NVML initialized");
+                debug!(target: LOG_TARGET, "NVML initialized");
                 Some(nvml)
             }
             Err(e) => {
-                info!(target: LOG_TARGET, "Failed to initialize NVML: {}", e);
+                warn!(target: LOG_TARGET, "Failed to initialize NVML: {}", e);
                 None
             }
         }

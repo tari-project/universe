@@ -1,15 +1,13 @@
 import { BlockTimeContainer, SpacedNum, TimerTypography, TimerWrapper, TitleTypography } from './BlockTime.styles';
 
-import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
-import { useShallow } from 'zustand/react/shallow';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useTranslation } from 'react-i18next';
-import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
+import { useShallow } from 'zustand/react/shallow';
 
 function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
-    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
+    const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
     const blockTime = useMiningStore(useShallow((s) => s.displayBlockTime));
     const isMining = isCPUMining || isGPUMining;
 

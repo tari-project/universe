@@ -14,5 +14,8 @@
     "utilization": "Benutting",
     "mode": "Modus",
     "day": "Dag",
-    "shutting-down": "Afskakel.."
+    "shutting-down": "Afskakel..",
+    "critical-error": "Critical error",
+    "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
+    "close-tari-universe": "Close Tari Universe"
 }
