@@ -22,11 +22,11 @@ export const HiddenContainer = styled.div`
     background-color: ${({ theme }) => theme.palette.background.default};
     width: 100%;
     border-radius: 10px;
-    display: flex;
-    padding: 6px 20px 0;
     align-items: center;
     height: 40px;
     border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    display: flex;
+    padding: 6px 20px 0;
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 18px;
     font-weight: 500;

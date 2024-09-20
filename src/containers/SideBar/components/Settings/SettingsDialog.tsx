@@ -17,7 +17,6 @@ import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions
 import DebugSettings from '@app/containers/SideBar/components/Settings/DebugSettings.tsx';
 import { useTranslation } from 'react-i18next';
 
-import MoneroAddressMarkup from './Markups/MoneroAddressMarkup';
 import WalletAddressMarkup from './Markups/WalletAddressMarkup';
 
 import P2pMarkup from './Markups/P2pMarkup';
@@ -30,7 +29,6 @@ import { useAppStateStore } from '@app/store/appStateStore';
 
 const GeneralTab = () => (
     <Stack gap={10}>
-        <MoneroAddressMarkup />
         <Divider />
         <Divider />
         <HorisontalBox></HorisontalBox>

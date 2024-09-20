@@ -16,7 +16,7 @@ export const HeaderContainer = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 30px 20px 0 30px;
+    padding: 30px 20px;
     text-transform: capitalize;
     position: sticky;
     top: 0;
@@ -62,5 +62,5 @@ export const SectionWrapper = styled(m.div).attrs({
     max-width: 100%;
     display: flex;
     flex-direction: column;
-    padding: 20px 30px;
+    padding: 0 30px 20px;
 `;

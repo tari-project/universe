@@ -3,6 +3,7 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import MoneroAddressEditor from './MoneroAddressEditor';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { SettingsGroupTitle, SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 
 const MoneroAddressMarkup = () => {
     const moneroAddress = useAppConfigStore((s) => s.monero_address);
@@ -16,14 +17,14 @@ const MoneroAddressMarkup = () => {
     );
 
     return (
-        <Stack>
-            <Stack direction="row" justifyContent="space-between" style={{ height: 40 }}>
+        <SettingsGroupWrapper $advanced>
+            <SettingsGroupTitle>
                 <Typography variant="h6">Monero Address</Typography>
-            </Stack>
+            </SettingsGroupTitle>
             <Stack direction="row" justifyContent="space-between">
                 <MoneroAddressEditor initialAddress={moneroAddress || ''} onApply={handleMoneroAddressChange} />
             </Stack>
-        </Stack>
+        </SettingsGroupWrapper>
     );
 };
 

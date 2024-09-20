@@ -43,7 +43,7 @@ export const light = {
         primary: {
             main: tariPurple[600],
             dark: tariPurple[800],
-            light: tariPurple[400],
+            light: tariPurple[500],
             shadow: tariPurpleAlpha[10],
             wisp: tariPurpleAlpha[5],
         },
