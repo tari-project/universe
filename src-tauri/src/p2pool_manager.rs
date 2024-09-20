@@ -71,6 +71,14 @@ impl Default for P2poolConfig {
     }
 }
 
+impl Clone for P2poolManager {
+    fn clone(&self) -> Self {
+        Self {
+            watcher: self.watcher.clone(),
+        }
+    }
+}
+
 pub struct P2poolManager {
     watcher: Arc<RwLock<ProcessWatcher<P2poolAdapter>>>,
 }

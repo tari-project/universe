@@ -17,6 +17,7 @@ import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx
 
 import { useMemo } from 'react';
 import SettingsDialog from './containers/SideBar/components/Settings/SettingsDialog.tsx';
+import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 
 export default function App() {
     useSetUp();
@@ -56,6 +57,7 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <AutoUpdateDialog />
                     <SettingsDialog />
+                    <CriticalErrorDialog />
                     <LayoutGroup id="app-content">
                         <AirdropLogin />
                         <SplashScreen />
