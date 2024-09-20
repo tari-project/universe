@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 export const useAirdropUserPointsListener = () => {
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
+    const setUserPointsReferralCount = useAirdropStore((state) => state.setReferralCount);
     useEffect(() => {
         let unListen: () => void = () => {
             //do nothing
@@ -11,7 +12,11 @@ export const useAirdropUserPointsListener = () => {
 
         listen('UserPoints', (event) => {
             if (event.payload) {
-                setUserPoints(event.payload as UserPoints);
+                const payload = event.payload as UserPoints;
+                setUserPoints(payload);
+                if (payload.referralCount) {
+                    setUserPointsReferralCount(payload.referralCount);
+                }
             }
         })
             .then((unListenFunction) => {
@@ -22,5 +27,5 @@ export const useAirdropUserPointsListener = () => {
         return () => {
             unListen();
         };
-    }, [setUserPoints]);
+    }, [setUserPoints, setUserPointsReferralCount]);
 };

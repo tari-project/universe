@@ -778,8 +778,10 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.6",
 ]
 
@@ -5672,6 +5674,7 @@ dependencies = [
  "async-trait",
  "async_zip",
  "blake2",
+ "chrono",
  "device_query",
  "dirs-next 2.0.0",
  "flate2",

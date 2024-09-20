@@ -1,14 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use log::trace;
+use log::{debug, error, info, warn};
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
-
-use log::{debug, error, info, warn};
-use serde::Serialize;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -917,6 +917,8 @@ async fn get_miner_metrics(
 
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
+    let connected_peers = state.node_manager.list_connected_peers().await.unwrap();
+
     Ok(MinerMetrics {
         cpu: CpuMinerMetrics {
             hardware: hardware_status.cpu,
@@ -930,6 +932,8 @@ async fn get_miner_metrics(
             block_height,
             block_time,
             is_synced,
+            is_connected: !connected_peers.is_empty(),
+            connected_peers,
         },
     })
 }
@@ -1053,6 +1057,8 @@ pub struct BaseNodeStatus {
     block_height: u64,
     block_time: u64,
     is_synced: bool,
+    is_connected: bool,
+    connected_peers: Vec<String>,
 }
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
@@ -1322,7 +1328,9 @@ fn main() {
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
-
+        RunEvent::WindowEvent { label, event, .. }  => {
+            trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
+        }
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
         }

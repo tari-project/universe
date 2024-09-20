@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { Stack } from '@app/components/elements/Stack.tsx';
+import { IoCheckmarkCircle } from 'react-icons/io5';
 
 export const HorisontalBox = styled.div`
     display: grid;
@@ -39,3 +40,7 @@ export const HeadingContainer = styled.div`
     width: 100%;
     border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
 `;
+
+export const ConnectionIcon = styled(IoCheckmarkCircle)<{ $isConnected?: boolean }>(({ theme, $isConnected }) => ({
+    color: $isConnected ? theme.palette.success.main : theme.palette.error.main,
+}));

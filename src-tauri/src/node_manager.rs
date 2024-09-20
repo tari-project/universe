@@ -1,15 +1,22 @@
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::SystemTime;
 
+use chrono::{NaiveDateTime, TimeZone, Utc};
+use log::error;
+use minotari_node_grpc_client::grpc::Peer;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
+use tari_utilities::hex::Hex;
 use tokio::fs;
 use tokio::sync::RwLock;
 
 use crate::node_adapter::{MinotariNodeAdapter, MinotariNodeStatusMonitorError};
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
+
+const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
 #[derive(Debug, thiserror::Error)]
 pub enum NodeManagerError {
@@ -171,6 +178,40 @@ impl NodeManager {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
         Ok(exit_code)
+    }
+
+    pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
+        let status_monitor_lock = self.watcher.read().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+        let peers_list = status_monitor
+            .list_connected_peers()
+            .await
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Error list_connected_peers: {}", e);
+                Vec::<Peer>::new()
+            });
+        let connected_peers = peers_list
+            .iter()
+            .filter(|peer| {
+                let since = NaiveDateTime::parse_from_str(
+                    peer.addresses[0].last_seen.as_str(),
+                    "%Y-%m-%d %H:%M:%S%.f",
+                )
+                .unwrap();
+                let since = Utc.from_utc_datetime(&since);
+                let duration = SystemTime::now()
+                    .duration_since(since.into())
+                    .unwrap_or_default();
+                duration.as_secs() < 31
+            })
+            .cloned()
+            .map(|peer| peer.addresses[0].address.to_hex())
+            .collect::<Vec<String>>();
+
+        Ok(connected_peers)
     }
 }
 

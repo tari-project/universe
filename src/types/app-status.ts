@@ -121,6 +121,8 @@ export interface BaseNodeStatus {
     block_height: number;
     block_time: number;
     is_synced: boolean;
+    is_connected: boolean;
+    connected_peers: string[];
 }
 
 export interface WalletBalance {

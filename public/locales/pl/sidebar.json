@@ -4,5 +4,6 @@
     "next-milestone": "Następny kamień milowy",
     "wallet-balance": "Saldo portfela",
     "setup-scheduler": "Ustawienia harmonogramu",
-    "mining-schedules": "Ustaw twój harmonogram kopania"
+    "mining-schedules": "Ustaw twój harmonogram kopania",
+    "lost-connection": "Utracono połączenie z siecią Tari. Łączenie.."
 }
