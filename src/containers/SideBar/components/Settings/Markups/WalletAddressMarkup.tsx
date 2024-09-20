@@ -1,15 +1,13 @@
 import { useCallback, useState } from 'react';
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/Button.tsx';
 import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
+import { useWalletStore } from '@app/store/useWalletStore';
 
 const WalletAddressMarkup = () => {
-    const { walletAddress, walletAddressEmoji } = useAppStatusStore((state) => ({
-        walletAddress: state.tari_address_base58,
-        walletAddressEmoji: state.tari_address_emoji,
-    }));
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
 
     const [isCopyTooltipHiddenWalletAddress, setIsCopyTooltipHiddenWalletAddress] = useState(true);
 

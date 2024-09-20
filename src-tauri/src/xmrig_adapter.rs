@@ -75,7 +75,7 @@ impl XmrigAdapter {
         }
     }
 
-    async fn get_latest_local_version(cache_dir: PathBuf) -> Result<String, Error> {
+    pub async fn get_latest_local_version(cache_dir: PathBuf) -> Result<String, Error> {
         let mut latest_version = None;
         let xmrig_dir = cache_dir.join("xmrig");
         if !xmrig_dir.exists() {
