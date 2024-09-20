@@ -11,13 +11,13 @@ export const MinerContainer = styled(m.div)`
 export const TileItem = styled(m.div)`
     height: 65px;
     width: 155px;
-    flex-shrink: 1;
-    flex-grow: 1;
+    flex-shrink: 0;
+    flex-grow: 0;
     padding: 10px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
-    gap: 8px;
+    gap: 6px;
     display: flex;
 
     flex-direction: column;
@@ -51,4 +51,8 @@ export const TileContainer = styled(m.div)`
     gap: 6px;
 `;
 
-export const ModeSelectWrapper = styled.div``;
+export const ModeSelectWrapper = styled.div`
+    position: relative;
+    display: flex;
+    height: 100%;
+`;

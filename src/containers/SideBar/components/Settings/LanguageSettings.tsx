@@ -7,7 +7,7 @@ export default function LanguageSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
     return (
-        <Stack direction="row" justifyContent="space-between">
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Typography variant="h6">{t('change-language', { ns: 'settings' })}</Typography>
             <LanguageDropdown />
         </Stack>
