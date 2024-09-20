@@ -583,6 +583,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "build_const"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ae4235e6dac0694637c763029ecea1a2ec9e4e06ec2729bd21ba4d9c863eb7"
+
+[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -960,6 +966,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "608697df725056feaccfa42cffdaeeec3fccc4ffc38358ecd19b243e716a78e0"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "crc"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d663548de7f5cca343f1e0a48d14dcfb0e9eb4e079ec58883b7251539fa10aeb"
+dependencies = [
+ "build_const",
 ]
 
 [[package]]
@@ -3034,7 +3049,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "297e814c836ae64db86b36cf2a557ba54368d03f6afcd7d947c266692f71115e"
 dependencies = [
  "byteorder",
- "crc",
+ "crc 3.2.1",
 ]
 
 [[package]]
@@ -3296,6 +3311,19 @@ dependencies = [
  "serde",
  "thiserror",
  "tiny-keccak",
+]
+
+[[package]]
+name = "monero-address-creator"
+version = "0.1.0"
+source = "git+https://github.com/tari-project/monero-address-creator#cdfd9aa081ba443793e3ee7d54d1a69f641d22d8"
+dependencies = [
+ "base58-monero 2.0.0",
+ "crc 1.8.1",
+ "curve25519-dalek",
+ "rand 0.8.5",
+ "sha3",
+ "thiserror",
 ]
 
 [[package]]
@@ -5684,6 +5712,7 @@ dependencies = [
  "log4rs",
  "minotari_node_grpc_client",
  "minotari_wallet_grpc_client",
+ "monero-address-creator",
  "nix 0.29.0",
  "nvml-wrapper",
  "open 5.3.0",
@@ -6994,9 +7023,9 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.23"
+version = "0.1.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a56d1686db2308d901306f92a263857ef59ea39678a5458e7cb17f01415101f5"
+checksum = "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921"
 dependencies = [
  "tinyvec",
 ]

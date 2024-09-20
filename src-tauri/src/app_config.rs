@@ -1,11 +1,13 @@
 use std::{path::PathBuf, time::SystemTime};
 
+use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 use anyhow::anyhow;
+use keyring::{Entry, Error as KeyringError};
 use log::{debug, info, warn};
+use monero_address_creator::network::Mainnet;
+use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
-
-use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -101,7 +103,7 @@ impl AppConfig {
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
-            monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
+            monero_address: default_monero_address(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
         }
@@ -297,5 +299,24 @@ fn default_system_time() -> SystemTime {
 }
 
 fn default_monero_address() -> String {
-    DEFAULT_MONERO_ADDRESS.to_string()
+    match MoneroSeed::generate() {
+        Ok(seed) => {
+            match Entry::new("com.tari.universe", "monero_address") {
+                Ok(entry) => {
+                    if let Err(e) = entry.set_secret(seed.inner()) {
+                        warn!(target: LOG_TARGET, "Failed to set monero passphrase in keyring: {}", e);
+                    }
+                }
+                Err(_err @ KeyringError::PlatformFailure(_))
+                | Err(_err @ KeyringError::NoStorageAccess(_)) => {
+                    warn!(target: LOG_TARGET, "Failed to gain access to keyring storage. Storing generated passphrase insecurely");
+                }
+                Err(e) => warn!(target: LOG_TARGET, "Failed to use the keychain {}", e),
+            };
+
+            seed.to_address::<Mainnet>()
+                .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string())
+        }
+        Err(_) => DEFAULT_MONERO_ADDRESS.to_string(),
+    }
 }

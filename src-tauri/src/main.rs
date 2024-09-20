@@ -1,14 +1,15 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use keyring::Entry;
+use log::{debug, error, info, warn};
+use monero_address_creator::Seed;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
-
-use log::{debug, error, info, warn};
-use serde::Serialize;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -1010,6 +1011,20 @@ async fn reset_settings<'r>(
     app.restart();
 
     Ok(())
+}
+
+#[tauri::command]
+async fn get_monero_seed_words(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<Vec<String>, String> {
+    let entry = Entry::new("com.tari.universe", "monero_address").map_err(|e| e.to_string())?;
+    let monero_seed = entry.get_secret().map_err(|e| e.to_string())?;
+
+    let seed = Seed::new(<[u8; 32]>::try_from(monero_seed).unwrap());
+
+    Ok(seed.seed_words().map_err(|e| e.to_string())?)
 }
 
 #[derive(Debug, Serialize)]
