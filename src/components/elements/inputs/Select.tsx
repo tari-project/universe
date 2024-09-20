@@ -13,7 +13,6 @@ import {
     TriggerWrapper,
 } from './Select.styles.ts';
 import { useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
-import { LayoutGroup } from 'framer-motion';
 
 interface Option {
     label: string;
@@ -53,41 +52,38 @@ export function Select({ options, selectedValue, disabled, loading, onChange }: 
     const selectedIcon = selectedOption?.iconSrc;
 
     return (
-        <LayoutGroup id="dropdown-select">
-            <TriggerWrapper layout $disabled={disabled} ref={refs.setReference} {...getReferenceProps()}>
-                <SelectedOption layout>
+        <>
+            <TriggerWrapper $disabled={disabled} ref={refs.setReference} {...getReferenceProps()}>
+                <SelectedOption>
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
                 </SelectedOption>
                 <IconWrapper>{loading ? <SpinnerIcon /> : <HiOutlineSelector />}</IconWrapper>
             </TriggerWrapper>
             {isOpen ? (
-                <Options layout ref={refs.setFloating} {...getFloatingProps()}>
-                    <LayoutGroup id="options">
-                        {options.map(({ label, value, iconSrc }) => {
-                            const selected = value === selectedOption?.value;
-                            return (
-                                <StyledOption
-                                    layout
-                                    onClick={() => handleChange(value)}
-                                    key={`opt-${value}-${label}`}
-                                    $selected={selected}
-                                >
-                                    <OptionLabelWrapper>
-                                        {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
-                                        <Typography>{label}</Typography>
-                                    </OptionLabelWrapper>
-                                    {selected ? (
-                                        <IconWrapper>
-                                            <CheckSvg />
-                                        </IconWrapper>
-                                    ) : null}
-                                </StyledOption>
-                            );
-                        })}
-                    </LayoutGroup>
+                <Options ref={refs.setFloating} {...getFloatingProps()}>
+                    {options.map(({ label, value, iconSrc }) => {
+                        const selected = value === selectedOption?.value;
+                        return (
+                            <StyledOption
+                                onClick={() => handleChange(value)}
+                                key={`opt-${value}-${label}`}
+                                $selected={selected}
+                            >
+                                <OptionLabelWrapper>
+                                    {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
+                                    <Typography>{label}</Typography>
+                                </OptionLabelWrapper>
+                                {selected ? (
+                                    <IconWrapper>
+                                        <CheckSvg />
+                                    </IconWrapper>
+                                ) : null}
+                            </StyledOption>
+                        );
+                    })}
                 </Options>
             ) : null}
-        </LayoutGroup>
+        </>
     );
 }

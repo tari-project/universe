@@ -50,3 +50,5 @@ export const TileContainer = styled(m.div)`
     flex-direction: row;
     gap: 6px;
 `;
+
+export const ModeSelectWrapper = styled.div``;
