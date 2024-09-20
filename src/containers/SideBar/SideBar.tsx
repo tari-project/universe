@@ -5,6 +5,7 @@ import { SideBarContainer, SideBarInner, BottomContainer, TopContainer } from '.
 
 import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import LostConnectionAlert from './components/LostConnectionAlert';
 
 function SideBar() {
     return (
@@ -12,6 +13,7 @@ function SideBar() {
             <TopContainer>
                 <Heading />
                 <MiningButton />
+                <LostConnectionAlert />
             </TopContainer>
             <Divider />
             <SideBarInner>

@@ -925,6 +925,8 @@ async fn get_miner_metrics(
 
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
+    let connected_peers = state.node_manager.list_connected_peers().await.unwrap();
+
     Ok(MinerMetrics {
         cpu: CpuMinerMetrics {
             hardware: hardware_status.cpu,
@@ -938,6 +940,8 @@ async fn get_miner_metrics(
             block_height,
             block_time,
             is_synced,
+            is_connected: !connected_peers.is_empty(),
+            connected_peers,
         },
     })
 }
@@ -1061,6 +1065,8 @@ pub struct BaseNodeStatus {
     block_height: u64,
     block_time: u64,
     is_synced: bool,
+    is_connected: bool,
+    connected_peers: Vec<String>,
 }
 #[derive(Debug, Serialize)]
 pub struct CpuMinerStatus {
