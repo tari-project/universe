@@ -20,14 +20,20 @@ const Wrapper = styled(m.div)`
 `;
 
 export default function LanguageDropdown() {
-    const saveLanguageToAppConfig = useCallback(async (applicationLanguage: Language) => {
-        await invoke('set_application_language', { applicationLanguage });
-    }, []);
+    const saveLanguageToAppConfig = useCallback(
+        async (applicationLanguage: Language) => {
+            await invoke('set_application_language', { applicationLanguage });
+        },
+        [invoke]
+    );
 
-    const handleLanguageChange = useCallback(async (value: LanguageOption['value']) => {
-        changeLanguage(value);
-        await saveLanguageToAppConfig(value as Language);
-    }, []);
+    const handleLanguageChange = useCallback(
+        async (value: LanguageOption['value']) => {
+            changeLanguage(value);
+            await saveLanguageToAppConfig(value as Language);
+        },
+        [saveLanguageToAppConfig, changeLanguage]
+    );
 
     return (
         <Wrapper>
