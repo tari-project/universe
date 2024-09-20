@@ -143,7 +143,7 @@ impl AppConfig {
         }
 
         // Migrate
-        if self.config_version == 6 {
+        if self.config_version <= 6 {
             // Change the default value of p2pool_enabled to false in version 7
             self.config_version = 7;
             self.p2pool_enabled = true;
