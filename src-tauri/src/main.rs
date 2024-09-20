@@ -466,9 +466,13 @@ async fn setup_inner(
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
-    state.gpu_miner.write().await.detect().await.inspect_err(
-        |e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e),
-    )?;
+    state
+        .gpu_miner
+        .write()
+        .await
+        .detect()
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e))?;
 
     for _i in 0..2 {
         match state
