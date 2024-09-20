@@ -6,6 +6,14 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { useCallback, useState } from 'react';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import {
+    SettingsGroup,
+    SettingsGroupAction,
+    SettingsGroupContent,
+    SettingsGroupTextAction,
+    SettingsGroupTitle,
+} from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
 
 export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -42,15 +50,23 @@ export default function LogsSettings() {
     }, [setOpen]);
 
     return (
-        <Stack direction="row" justifyContent="space-between">
-            <Typography variant="h6">{t('logs', { ns: 'settings' })}</Typography>
-            <Button onClick={openLogsDirectory} variant="text" styleVariant="simple">
-                {t('open-logs-directory', { ns: 'settings' })}
-            </Button>
+        <SettingsGroup>
+            <SettingsGroupContent>
+                <Stack>
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">{t('logs', { ns: 'settings' })}</Typography>
+                    </SettingsGroupTitle>
+                    <SettingsGroupTextAction onClick={() => setOpen(true)}>
+                        {t('send-logs', { ns: 'settings' })}
+                    </SettingsGroupTextAction>
+                </Stack>
+
+                <SettingsGroupAction>
+                    <ButtonBase onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</ButtonBase>
+                </SettingsGroupAction>
+            </SettingsGroupContent>
+
             <Dialog open={open} onOpenChange={setOpen}>
-                <Button onClick={() => setOpen(true)} styleVariant="outline" color="secondary">
-                    {t('send-logs', { ns: 'settings' })}
-                </Button>
                 <DialogContent>
                     <Stack direction="column" alignItems="center" justifyContent="space-between">
                         <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
@@ -70,6 +86,6 @@ export default function LogsSettings() {
                     </Stack>
                 </DialogContent>
             </Dialog>
-        </Stack>
+        </SettingsGroup>
     );
 }

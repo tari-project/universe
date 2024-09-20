@@ -7,7 +7,9 @@ import {
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase';
+
+import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
+import LogsSettings from '@app/containers/SideBar/components/Settings/LogsSettings.tsx';
 
 export const GeneralSettings = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -21,17 +23,8 @@ export const GeneralSettings = () => {
                     <LanguageDropdown />
                 </SettingsGroupContent>
             </SettingsGroup>
-            <SettingsGroup>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{t('logs')}</Typography>
-                </SettingsGroupTitle>
-                <SettingsGroupContent>
-                    <div />
-                    <SettingsGroupAction>
-                        <ButtonBase>{t('open-logs-directory')}</ButtonBase>
-                    </SettingsGroupAction>
-                </SettingsGroupContent>
-            </SettingsGroup>
+            <LogsSettings />
+            <AirdropPermissionSettings />
         </>
     );
 };

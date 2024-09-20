@@ -3,7 +3,14 @@ import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useCallback } from 'react';
-import { BoxWrapper, Text, TextWrapper, Title, Wrapper } from './styles';
+import { Text, TextWrapper, Title } from './styles';
+import {
+    SettingsGroup,
+    SettingsGroupAction,
+    SettingsGroupContent,
+    SettingsGroupTitle,
+} from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export default function AirdropPermissionSettings() {
     const wipUI = useAirdropStore((state) => state.wipUI);
@@ -16,14 +23,16 @@ export default function AirdropPermissionSettings() {
     }, [allowTelemetry, setAllowTelemetry]);
 
     return (
-        <Wrapper>
-            <BoxWrapper>
-                <TextWrapper>
-                    <Title>{t(wipUI ? 'permission.title' : 'permissionNoGems.title')}</Title>
-                    <Text>{t(wipUI ? 'permission.text' : 'permissionNoGems.text')}</Text>
-                </TextWrapper>
-                <ToggleSwitch checked={allowTelemetry} onChange={handleChange} />
-            </BoxWrapper>
-        </Wrapper>
+        <SettingsGroup>
+            <SettingsGroupTitle>
+                <Typography variant="h6">{t(wipUI ? 'permission.title' : 'permissionNoGems.title')}</Typography>
+            </SettingsGroupTitle>
+            <SettingsGroupContent>
+                <Typography>{t(wipUI ? 'permission.text' : 'permissionNoGems.text')}</Typography>
+                <SettingsGroupAction>
+                    <ToggleSwitch checked={allowTelemetry} onChange={handleChange} />
+                </SettingsGroupAction>
+            </SettingsGroupContent>
+        </SettingsGroup>
     );
 }

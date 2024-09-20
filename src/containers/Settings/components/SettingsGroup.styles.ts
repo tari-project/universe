@@ -16,7 +16,18 @@ export const SettingsGroupContent = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: 12px;
+    position: relative;
 `;
 export const SettingsGroupAction = styled.div`
     display: flex;
+    font-size: 12px;
+`;
+
+export const SettingsGroupTextAction = styled.div`
+    display: flex;
+    font-size: 12px;
+    font-weight: 500;
+    color: ${({ theme }) => theme.palette.text.secondary};
+    cursor: pointer;
 `;

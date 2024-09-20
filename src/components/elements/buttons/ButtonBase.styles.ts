@@ -20,7 +20,7 @@ export const StyledButtonBase = styled.button<Props>`
     justify-content: center;
     cursor: pointer;
     display: flex;
-
+    font-size: inherit;
     transition: all 0.25s ease-in-out;
 
     &:active {

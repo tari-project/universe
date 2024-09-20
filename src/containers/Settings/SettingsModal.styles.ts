@@ -53,7 +53,6 @@ export const SectionWrapper = styled(m.div).attrs({
     exit: 'exit',
 })`
     max-width: 100%;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
 `;
