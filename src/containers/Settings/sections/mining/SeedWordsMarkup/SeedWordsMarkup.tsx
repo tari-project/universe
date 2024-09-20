@@ -6,6 +6,7 @@ import { IconButton } from '@app/components/elements/Button.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { SeedWords } from './SeedWords';
+import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 
 const SeedWordsMarkup = () => {
     const [showSeedWords, setShowSeedWords] = useState(false);
@@ -19,8 +20,8 @@ const SeedWordsMarkup = () => {
     }, [seedWordsFetched, getSeedWords]);
 
     return (
-        <Stack>
-            <Stack direction="row" style={{ height: 40 }} justifyContent="flex-start" alignItems="center">
+        <SettingsGroupWrapper>
+            <Stack direction="row" justifyContent="flex-start" alignItems="center">
                 <Typography variant="h6">Seed Words</Typography>
                 <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
                     {seedWordsFetching ? (
@@ -33,7 +34,7 @@ const SeedWordsMarkup = () => {
                 </IconButton>
             </Stack>
             <SeedWords showSeedWords={showSeedWords} seedWords={seedWords} />
-        </Stack>
+        </SettingsGroupWrapper>
     );
 };
 

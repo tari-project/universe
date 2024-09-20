@@ -4,17 +4,23 @@ import styled from 'styled-components';
 export const Container = styled.div`
     width: 100%;
     display: flex;
+    position: relative;
     align-items: stretch;
     height: 60vh;
+    overflow: hidden;
 `;
 
 export const HeaderContainer = styled.div`
     width: 100%;
+    background-color: ${({ theme }) => theme.palette.background.paper};
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 0 20px 0;
+    padding: 30px 20px 0 30px;
     text-transform: capitalize;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 `;
 
 export const ContentContainer = styled.div`
@@ -22,7 +28,8 @@ export const ContentContainer = styled.div`
     min-width: 600px;
     display: flex;
     flex-direction: column;
-    padding: 30px;
+    overflow-y: auto;
+    position: relative;
 `;
 
 const transition = {
@@ -55,4 +62,5 @@ export const SectionWrapper = styled(m.div).attrs({
     max-width: 100%;
     display: flex;
     flex-direction: column;
+    padding: 20px 30px;
 `;

@@ -12,6 +12,25 @@ export interface SeedWordsProps {
     seedWords: string[];
 }
 
+export const Wrapper = styled.div`
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+`;
+export const HiddenContainer = styled.div`
+    background-color: ${({ theme }) => theme.palette.background.default};
+    width: 100%;
+    border-radius: 10px;
+    display: flex;
+    padding: 6px 20px 0;
+    align-items: center;
+    height: 40px;
+    border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    color: ${({ theme }) => theme.palette.text.primary};
+    font-size: 18px;
+    font-weight: 500;
+`;
 export const SeedWordsContainer = styled.div`
     position: relative;
     display: grid;
@@ -21,13 +40,12 @@ export const SeedWordsContainer = styled.div`
     background-color: ${({ theme }) => theme.palette.background.default};
     width: 100%;
     border-radius: 10px;
+    border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
     padding: 20px;
 `;
 
 export const CopyIconContainer = styled.div`
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    color: ${({ theme }) => theme.palette.text.primary};
 `;
 
 export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
@@ -46,25 +64,29 @@ export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
     return (
         <>
             {showSeedWords ? (
-                <SeedWordsContainer>
-                    {seedWords.map((word, index) => (
-                        <Stack key={`seed-word-${word}`} direction="row" justifyContent="flex-start">
-                            <Typography key={`seed-no-${index}`} variant="p" style={{ minWidth: 15 }}>
-                                {index + 1}.
-                            </Typography>
-                            <Typography variant="p" key={word}>
-                                {word}
-                            </Typography>
-                        </Stack>
-                    ))}
+                <Wrapper>
+                    <SeedWordsContainer>
+                        {seedWords.map((word, index) => (
+                            <Stack key={`seed-word-${word}`} direction="row" justifyContent="flex-start">
+                                <Typography key={`seed-no-${index}`} variant="p" style={{ minWidth: 15 }}>
+                                    {index + 1}.
+                                </Typography>
+                                <Typography variant="p" key={word}>
+                                    {word}
+                                </Typography>
+                            </Stack>
+                        ))}
+                    </SeedWordsContainer>
                     <CopyIconContainer>
                         <IconButton onClick={copySeedWords}>
                             {isCopyTooltipHidden ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                         </IconButton>
                     </CopyIconContainer>
-                </SeedWordsContainer>
+                </Wrapper>
             ) : (
-                <Typography variant="p">****************************************************</Typography>
+                <HiddenContainer>
+                    <Typography>****************************************************</Typography>
+                </HiddenContainer>
             )}
         </>
     );

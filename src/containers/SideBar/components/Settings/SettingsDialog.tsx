@@ -19,11 +19,10 @@ import { useTranslation } from 'react-i18next';
 
 import MoneroAddressMarkup from './Markups/MoneroAddressMarkup';
 import WalletAddressMarkup from './Markups/WalletAddressMarkup';
-import CpuMiningMarkup from './Markups/CpuMiningMarkup';
+
 import P2pMarkup from './Markups/P2pMarkup';
 import P2poolStatsMarkup from './Markups/P2poolStatsMarkup';
-import GpuMiningMarkup from './Markups/GpuMiningMarkup';
-import SeedWordsMarkup from './Markups/SeedWordsMarkup';
+
 import ExperimentalWarning from './ExperimentalWarning';
 import { useUIStore } from '@app/store/useUIStore';
 import { ToggleAirdropUi } from '@app/containers/Airdrop/Settings/ToggleAirdropUi';
@@ -33,18 +32,13 @@ const GeneralTab = () => (
     <Stack gap={10}>
         <MoneroAddressMarkup />
         <Divider />
-        <SeedWordsMarkup />
         <Divider />
-        <HorisontalBox>
-            <CpuMiningMarkup />
-            <GpuMiningMarkup />
-        </HorisontalBox>
+        <HorisontalBox></HorisontalBox>
         <Divider />
         <Divider />
         <Divider />
         <Divider />
-        <HorisontalBox>
-        </HorisontalBox>
+        <HorisontalBox></HorisontalBox>
     </Stack>
 );
 
