@@ -271,10 +271,12 @@ impl AppConfig {
     }
 
     pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+        self.has_system_language_been_proposed = false;
         if self.has_system_language_been_proposed {
             Ok(())
         } else {
             let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+            info!(target: LOG_TARGET, "Proposing system language: {}", system_language);
             self.application_language = system_language;
             self.has_system_language_been_proposed = true;
             self.update_config_file().await?;
