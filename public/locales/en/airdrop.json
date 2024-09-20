@@ -2,6 +2,7 @@
     "loginButton": "Log in to claim gems",
     "logout": "Logout",
     "referral": "Invite a friend",
+    "claimGems": "Claim gift Gems",
     "permissionNoGems": {
         "title": "Make Tari Universe better",
         "text": "Tari Universe would like to use analytics to improve your experience."

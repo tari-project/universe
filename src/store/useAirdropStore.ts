@@ -102,6 +102,7 @@ export interface BackendInMemoryConfig {
 interface AirdropState {
     authUuid: string;
     wipUI?: boolean;
+    acceptedReferral?: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -117,11 +118,13 @@ interface AirdropStore extends AirdropState {
     setWipUI: (wipUI: boolean) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     setReferralCount: (referralCount: ReferralCount) => void;
+    setAcceptedReferral: (acceptedReferral: boolean) => void;
     logout: () => void;
 }
 
 const clearState: AirdropState = {
     authUuid: '',
+    acceptedReferral: true,
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
@@ -132,6 +135,7 @@ export const useAirdropStore = create<AirdropStore>()(
         (set) => ({
             authUuid: '',
             setWipUI: (wipUI) => set({ wipUI }),
+            setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
             logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),

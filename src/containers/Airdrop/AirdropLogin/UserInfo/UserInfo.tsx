@@ -26,7 +26,7 @@ import GemsPill from './GemsPill/GemsPill';
 export default function UserInfo() {
     const { logout, userDetails, airdropTokens, userPoints, wipUI, referralCount } = useAirdropStore();
     const [open, setOpen] = useState(false);
-    const [referalOpen, setReferalOpen] = useState(false);
+    const [madalOpen, setMadalOpen] = useState<'claim' | 'invite' | undefined>(undefined);
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
@@ -44,12 +44,8 @@ export default function UserInfo() {
         logout();
     };
 
-    const handleReferral = () => {
-        setReferalOpen(true);
-    };
-
     const handleReferalClose = () => {
-        setReferalOpen(false);
+        setMadalOpen(undefined);
     };
 
     const handleClickOutside = useCallback(
@@ -111,8 +107,14 @@ export default function UserInfo() {
                     <AnimatePresence>
                         {open && (
                             <Menu initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                                <MenuItem onClick={handleReferral}>
+                                <MenuItem onClick={() => setMadalOpen('invite')}>
                                     {t('referral')}{' '}
+                                    <NumberPill>
+                                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" /> +2000
+                                    </NumberPill>
+                                </MenuItem>
+                                <MenuItem onClick={() => setMadalOpen('claim')}>
+                                    {t('claimGems')}{' '}
                                     <NumberPill>
                                         <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" /> +2000
                                     </NumberPill>
@@ -124,9 +126,9 @@ export default function UserInfo() {
                 </MenuWrapper>
             </Wrapper>
             <AnimatePresence>
-                {referalOpen && (
+                {madalOpen && (
                     <DownloadReferralModal
-                        referralCode={userDetails?.user?.referral_code || ''}
+                        referralCode={madalOpen === 'invite' ? userDetails?.user?.referral_code : undefined}
                         onClose={handleReferalClose}
                     />
                 )}
