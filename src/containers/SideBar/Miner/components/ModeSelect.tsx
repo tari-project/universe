@@ -57,8 +57,7 @@ function ModeSelect() {
             <Typography>{t('mode')}</Typography>
             <ModeSelectWrapper>
                 <Select
-                    disabled={false}
-                    // disabled={isMiningLoading || isChangingMode || isSettingUp || !isMiningControlsEnabled}
+                    disabled={isMiningLoading || isChangingMode || isSettingUp || !isMiningControlsEnabled}
                     loading={isChangingMode}
                     onChange={handleChange}
                     selectedValue={mode}

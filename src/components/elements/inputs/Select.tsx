@@ -71,7 +71,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, va
                 $disabled={disabled}
                 $isBordered={isBordered}
             >
-                <SelectedOption>
+                <SelectedOption $isBordered={isBordered}>
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
                 </SelectedOption>

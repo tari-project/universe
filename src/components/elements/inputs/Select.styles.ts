@@ -53,12 +53,13 @@ export const Options = styled.div<{ $open?: boolean; $isBordered?: boolean }>`
     z-index: 2;
 `;
 
-export const SelectedOption = styled.div`
+export const SelectedOption = styled.div<{ $isBordered?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     display: flex;
     align-items: center;
     gap: 5px;
-    font-size: 18px;
+
+    font-size: ${({ $isBordered }) => ($isBordered ? '14px' : '18px')};
     font-weight: 500;
     height: 36px;
     width: 100%;
@@ -82,7 +83,6 @@ export const StyledOption = styled.div<{ $selected?: boolean }>`
     display: flex;
     font-size: 14px;
     background: ${({ theme }) => theme.palette.background.paper};
-    text-transform: uppercase;
     line-height: 1;
     cursor: pointer;
     border-radius: 10px;

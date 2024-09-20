@@ -35,7 +35,7 @@ import { ToggleAirdropUi } from '@app/containers/Airdrop/Settings/ToggleAirdropU
 
 export default function Settings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
     const showExperimental = useUIStore((s) => s.showExperimental);
 
     const GeneralTab = () => (
