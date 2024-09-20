@@ -1,15 +1,14 @@
 import { Container, SectionButton } from './Navigation.styles.ts';
-import { useState } from 'react';
 
-const SETTINGS_TYPES = ['mining', 'general', 'experimental'] as const;
-type SettingsTuple = typeof SETTINGS_TYPES;
-export type SettingsType = SettingsTuple[number];
+import { SETTINGS_TYPES, SettingsType } from '@app/containers/Settings/SettingsModal.tsx';
 
-export default function SettingsNavigation() {
-    const [activeSection, setActiveSection] = useState<SettingsType>('mining');
-
+interface SettingsNavigationProps {
+    activeSection: SettingsType;
+    onChangeActiveSection: (section: SettingsType) => void;
+}
+export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
     function handleClick(section: SettingsType) {
-        setActiveSection(section);
+        onChangeActiveSection(section);
     }
     return (
         <Container>
