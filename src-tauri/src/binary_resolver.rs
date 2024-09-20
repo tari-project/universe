@@ -4,7 +4,7 @@ use std::sync::{Arc, LazyLock};
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use regex::Regex;
 use semver::{Version, VersionReq};
 use tari_common::configuration::Network;
@@ -379,80 +379,79 @@ impl BinaryResolver {
         binary: Binaries,
         progress_tracker: ProgressTracker,
     ) -> Result<Version, Error> {
-        let adapter = self
-            .adapters
-            .get(&binary)
-            .ok_or_else(|| anyhow!("No latest version adapter for this binary"))?;
-        let bin_folder = adapter.get_binary_folder();
-        let version_folders_list = match std::fs::read_dir(&bin_folder) {
-            Ok(list) => list,
-            Err(_) => match std::fs::create_dir_all(&bin_folder) {
-                Ok(_) => std::fs::read_dir(&bin_folder).unwrap(),
-                Err(e) => {
-                    return Err(anyhow!("Failed to create dir: {}", e));
-                }
-            },
-        };
-        let mut versions = vec![];
-        for entry in version_folders_list {
-            let entry = match entry {
-                Ok(entry) => entry,
-                Err(_) => continue,
-            };
-            let path = entry.path();
-            if path.is_dir() {
-                // Check for actual binary existing. It can happen that the folder is there,
-                // for in_progress downloads or perhaps the antivirus has quarantined the file
-                let mut executable_name = get_binary_name(binary, path.clone())?;
+        match self.adapters.get(&binary) {
+            Some(adapter) => {
+                let bin_folder = adapter.get_binary_folder();
+                match std::fs::read_dir(&bin_folder) {
+                    Ok(version_folders_list) => {
+                        // Search for all valid versions of the binary
+                        let mut versions = vec![];
+                        for entry in version_folders_list {
+                            let entry = match entry {
+                                Ok(entry) => entry,
+                                Err(e) => {
+                                    error!(target:LOG_TARGET, "Failed to unwrap DirEntry: {}", e);
+                                    continue;
+                                }
+                            };
+                            let path = entry.path();
+                            if path.is_dir() {
+                                // Check for actual binary existing. It can happen that the folder is there,
+                                // for in_progress downloads or perhaps the antivirus has quarantined the file
+                                let mut executable_name = match get_binary_name(
+                                    binary,
+                                    path.clone(),
+                                ) {
+                                    Ok(name) => name,
+                                    Err(e) => {
+                                        error!(target: LOG_TARGET, "Failed to get binary name: {:?}", e);
+                                        continue;
+                                    }
+                                };
 
-                if cfg!(target_os = "windows") {
-                    executable_name = executable_name.with_extension("exe");
-                }
+                                if cfg!(target_os = "windows") {
+                                    executable_name = executable_name.with_extension("exe");
+                                }
+                                if !executable_name.exists() {
+                                    continue;
+                                }
 
-                if !executable_name.exists() {
-                    continue;
-                }
+                                let version = path.file_name().unwrap().to_str().unwrap();
+                                versions.push(Version::parse(version).unwrap());
+                            }
+                        }
 
-                let version = path.file_name().unwrap().to_str().unwrap();
-                let version_typed = Version::parse(version).unwrap();
-                if adapter.is_version_allowed(&version_typed) {
-                    versions.push(version_typed);
-                } else {
-                    warn!(target: LOG_TARGET, "Version {} is not allowed", version);
+                        if !versions.is_empty() {
+                            versions.sort();
+                            let cached_version = versions.pop().unwrap();
+                            let current_version = self.get_latest_version(binary).await;
+                            let highest_version = cached_version.max(current_version);
+
+                            self.latest_versions
+                                .write()
+                                .await
+                                .insert(binary, highest_version.clone());
+
+                            return Ok(highest_version.clone());
+                        }
+                    }
+                    Err(_) => match std::fs::create_dir_all(&bin_folder) {
+                        Ok(_) => info!(target:LOG_TARGET, "Created bin dir: {:?}", bin_folder),
+                        Err(e) => error!(target:LOG_TARGET, "Failed to create dir: {}", e),
+                    },
                 }
             }
+            None => return Err(anyhow!("No latest version adapter for this binary")),
         }
-
-        if versions.is_empty() {
-            match self
-                .ensure_latest_inner(binary, true, progress_tracker)
-                .await
-            {
-                Ok(version) => {
-                    self.latest_versions
-                        .write()
-                        .await
-                        .insert(binary, version.clone());
-                    return Ok(version);
-                }
-                Err(e) => {
-                    return Err(e);
-                }
-            }
-        }
-
-        versions.sort();
-        let cached_version = versions.pop().unwrap();
-        let current_version = self.get_latest_version(binary).await;
-
-        let highest_version = cached_version.max(current_version);
-
+        // If no local versions were found, download the latest version
+        let version = self
+            .ensure_latest_inner(binary, true, progress_tracker)
+            .await?;
         self.latest_versions
             .write()
             .await
-            .insert(binary, highest_version.clone());
-
-        Ok(highest_version.clone())
+            .insert(binary, version.clone());
+        Ok(version)
     }
 
     pub async fn get_latest_version(&self, binary: Binaries) -> Version {

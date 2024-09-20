@@ -23,6 +23,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'exit_application'): Promise<string>;
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
