@@ -1,4 +1,4 @@
-import { TileItem } from '../styles';
+import { ModeSelectWrapper, TileItem } from '../styles';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Select } from '@app/components/elements/inputs/Select.tsx';
@@ -34,16 +34,18 @@ function ModeSelect() {
     return (
         <TileItem layoutId="miner-mode-select-tile" layout>
             <Typography>{t('mode')}</Typography>
-            <Select
-                disabled={isMiningLoading || isChangingMode || isSettingUp || !isMiningControlsEnabled}
-                loading={isChangingMode}
-                onChange={handleChange}
-                selectedValue={mode}
-                options={[
-                    { label: 'ECO', value: 'Eco', iconSrc: eco },
-                    { label: 'Ludicrous', value: 'Ludicrous', iconSrc: fire },
-                ]}
-            />
+            <ModeSelectWrapper>
+                <Select
+                    disabled={isMiningLoading || isChangingMode || isSettingUp || !isMiningControlsEnabled}
+                    loading={isChangingMode}
+                    onChange={handleChange}
+                    selectedValue={mode}
+                    options={[
+                        { label: 'ECO', value: 'Eco', iconSrc: eco },
+                        { label: 'Ludicrous', value: 'Ludicrous', iconSrc: fire },
+                    ]}
+                />
+            </ModeSelectWrapper>
         </TileItem>
     );
 }
