@@ -436,7 +436,7 @@ impl BinaryResolver {
                         }
                     }
                     Err(_) => match std::fs::create_dir_all(&bin_folder) {
-                        Ok(_) => info!(target:LOG_TARGET, "Created bin dir: {:?}", bin_folder),
+                        Ok(_) => debug!(target:LOG_TARGET, "Created bin dir: {:?}", bin_folder),
                         Err(e) => error!(target:LOG_TARGET, "Failed to create dir: {}", e),
                     },
                 }
