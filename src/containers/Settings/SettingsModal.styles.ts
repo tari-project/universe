@@ -8,6 +8,11 @@ export const Container = styled.div`
     align-items: stretch;
     height: 70vh;
     overflow: hidden;
+
+    @media (max-width: 1100px) {
+        width: 85vw;
+        height: 80vh;
+    }
 `;
 
 export const HeaderContainer = styled.div`

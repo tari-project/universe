@@ -10,6 +10,10 @@ export const Container = styled.div`
     height: 100%;
     width: 250px;
     gap: 10px;
+
+    @media (max-width: 1110px) {
+        width: 220px;
+    }
 `;
 
 export const SectionButton = styled(ButtonBase)`

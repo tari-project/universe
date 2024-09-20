@@ -48,7 +48,7 @@ export default function DebugSettings() {
                     <Typography variant="h6">{t('connected-peers', { ns: 'settings' })}</Typography>
                 </SettingsGroupTitle>
                 <SettingsGroup>
-                    <SettingsGroupContent>
+                    <SettingsGroupContent style={{ fontSize: '11px' }}>
                         {connectedPeers.map((peer, i) => (
                             <Typography key={peer}>
                                 {i + 1}. {peer}
