@@ -287,12 +287,14 @@ async fn set_application_language(
     state: tauri::State<'_, UniverseAppState>,
     application_language: String,
 ) -> Result<(), String> {
-    let _ = state
-        .config
-        .write()
-        .await
-        .set_application_language(application_language.clone())
-        .await;
+        state
+            .config
+            .write()
+            .await
+            .set_application_language(application_language.clone())
+            .await.map_err(
+                |e| e.to_string()
+            )?;
     Ok(())
 }
 
