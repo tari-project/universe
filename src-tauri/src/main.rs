@@ -1,14 +1,14 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use log::trace;
+use log::{debug, error, info, warn};
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
-
-use log::{debug, error, info, warn};
-use serde::Serialize;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -1328,7 +1328,9 @@ fn main() {
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
-
+        RunEvent::WindowEvent { label, event, .. }  => {
+            trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
+        }
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
         }
