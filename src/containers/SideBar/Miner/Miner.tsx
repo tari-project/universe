@@ -4,7 +4,6 @@ import { MinerContainer, TileContainer, Unit } from './styles.ts';
 import ModeSelect from './components/ModeSelect.tsx';
 import { formatNumber } from '@app/utils/formatNumber.ts';
 
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { ExpandableTile } from '@app/containers/SideBar/Miner/components/ExpandableTile.tsx';
 import formatBalance from '@app/utils/formatBalance.ts';
