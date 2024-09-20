@@ -36,7 +36,6 @@ export function Stack({
 }: StackProps) {
     return (
         <StyledStack
-            layout
             $direction={direction}
             $justifyContent={justifyContent}
             $alignItems={alignItems}

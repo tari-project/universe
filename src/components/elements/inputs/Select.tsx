@@ -21,7 +21,7 @@ interface Option {
     iconSrc?: string;
     value: string;
 }
-
+export type SelectOption = Option;
 interface Props {
     options: Option[];
     onChange: (value: Option['value']) => void;
