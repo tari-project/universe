@@ -56,6 +56,7 @@ use serde::Serialize;
 use setup_status_event::SetupStatusEvent;
 use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
@@ -841,8 +842,16 @@ async fn status(
     app: tauri::AppHandle,
 ) -> Result<Option<AppStatus>, String> {
     let timer = Instant::now();
+
+    if state.is_getting_status.load(Ordering::SeqCst) {
+        return Ok(None);
+    }
+
+    state.is_getting_status.store(true, Ordering::SeqCst);
+
     let is_setup_finished = *state.is_setup_finished.read().await;
     if !is_setup_finished {
+        state.is_getting_status.store(false, Ordering::SeqCst);
         return Ok(None);
     }
     let mut cpu_miner = state.cpu_miner.write().await;
@@ -869,6 +878,7 @@ async fn status(
             if is_setup_finished {
                 warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
             }
+            state.is_getting_status.store(false, Ordering::SeqCst);
             return Err(e);
         }
     };
@@ -877,6 +887,7 @@ async fn status(
         Ok(gpu) => gpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
+            state.is_getting_status.store(false, Ordering::SeqCst);
             return Err(e.to_string());
         }
     };
@@ -920,6 +931,7 @@ async fn status(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!("status took too long: {:?}", timer.elapsed());
     }
+    state.is_getting_status.store(false, Ordering::SeqCst);
     Ok(Some(AppStatus {
         cpu,
         gpu,
@@ -1120,6 +1132,7 @@ struct CpuMinerConfig {
 }
 
 struct UniverseAppState {
+    is_getting_status: AtomicBool,
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -1197,6 +1210,7 @@ fn main() {
     // };
     let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
+        is_getting_status: AtomicBool::new(false),
         is_setup_finished: Arc::new(RwLock::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
