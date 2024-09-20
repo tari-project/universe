@@ -164,6 +164,7 @@ export const componentSettings = {
         borderRadius: {
             app: '10px',
             button: '30px',
+            buttonBase: '20px',
             buttonSquared: '10px',
         },
     },
