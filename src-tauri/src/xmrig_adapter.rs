@@ -75,9 +75,9 @@ impl XmrigAdapter {
         }
     }
 
-    async fn get_latest_local_version(cache_dir: PathBuf) -> Result<String, Error> {
+    pub async fn get_latest_local_version(cache_dir: PathBuf) -> Result<String, Error> {
         let mut latest_version = None;
-        let xmrig_dir = cache_dir.join("xmrig");
+        let xmrig_dir = cache_dir.join("binaries").join("xmrig");
         if !xmrig_dir.exists() {
             return Err(anyhow::anyhow!(
                 "Failed to get latest release and no local version for xmrig found"
@@ -125,6 +125,7 @@ impl XmrigAdapter {
         };
 
         let xmrig_dir = cache_dir
+            .join("binaries")
             .join("xmrig")
             .join(latest_release.version.to_string());
         if force_download && xmrig_dir.exists() {
@@ -136,14 +137,14 @@ impl XmrigAdapter {
         if !xmrig_dir.exists() {
             println!("Latest version of xmrig doesn't exist");
             println!("latest version is {}", latest_release.version);
-            let in_progress_dir = cache_dir.join("xmrig").join("in_progress");
+            let in_progress_dir = cache_dir.join("binaries").join("xmrig").join("in_progress");
             if in_progress_dir.exists() {
                 println!("Trying to delete dir {:?}", in_progress_dir);
                 match fs::remove_dir(&in_progress_dir).await {
                     Ok(_) => {}
                     Err(e) => {
                         println!("Failed to delete dir {:?}", e);
-                        // return Err(e.into());
+                        // TODO: Is this critital error?
                     }
                 }
             }
@@ -202,6 +203,7 @@ impl ProcessAdapter for XmrigAdapter {
         args.push("--donate-level=1".to_string());
         args.push(format!("--user={}", self.monero_address));
         args.push(format!("--threads={}", self.cpu_max_percentage));
+        args.push("--verbose".to_string());
 
         let version = self.version.clone();
 
@@ -211,6 +213,7 @@ impl ProcessAdapter for XmrigAdapter {
                 handle: Some(tokio::spawn(async move {
                     let xmrig_dir = cache_dir
                         .clone()
+                        .join("binaries")
                         .join("xmrig")
                         .join(&version)
                         .join(format!("xmrig-{}", version));

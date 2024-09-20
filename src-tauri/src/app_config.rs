@@ -18,7 +18,7 @@ pub struct AppConfigFromFile {
     mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     p2pool_enabled: bool,
     #[serde(default = "default_system_time")]
     last_binaries_update_timestamp: SystemTime,
@@ -40,7 +40,7 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: false,
             anon_id: default_anon_id(),
@@ -97,7 +97,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
@@ -105,6 +105,12 @@ impl AppConfig {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
         }
+    }
+
+    pub fn config_dir(&self) -> Option<PathBuf> {
+        self.config_file
+            .as_ref()
+            .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
     }
 
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
@@ -141,6 +147,13 @@ impl AppConfig {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
             }
         }
+
+        // Migrate
+        if self.config_version <= 6 {
+            // Change the default value of p2pool_enabled to false in version 7
+            self.config_version = 7;
+            self.p2pool_enabled = true;
+        }
     }
 
     pub fn anon_id(&self) -> &str {
@@ -162,16 +175,16 @@ impl AppConfig {
         self.mode
     }
 
-    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
         self.cpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.cpu_mining_enabled)
     }
 
-    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
         self.gpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.gpu_mining_enabled)
     }
 
     pub fn cpu_mining_enabled(&self) -> bool {
@@ -260,7 +273,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    6
+    7
 }
 
 fn default_mode() -> String {

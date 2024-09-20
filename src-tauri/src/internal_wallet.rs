@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use keyring::Entry;
+use keyring::{Entry, Error as KeyringError};
 use log::{info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -73,17 +73,35 @@ impl InternalWallet {
             view_key_private_hex: "".to_string(),
             seed_words_encrypted_base58: "".to_string(),
             spend_public_key_hex: "".to_string(),
+            passphrase: None,
         };
-        let entry = Entry::new("com.tari.universe", "internal_wallet")?;
 
-        let passphrase = SafePassword::from(match entry.get_password() {
-            Ok(pass) => pass,
-            Err(_) => {
-                let passphrase = generate_password(32);
-                entry.set_password(&passphrase)?;
+        let passphrase = match Entry::new("com.tari.universe", "internal_wallet") {
+            Ok(entry) => match entry.get_password() {
+                Ok(pass) => SafePassword::from(pass),
+                Err(_err @ KeyringError::PlatformFailure(_))
+                | Err(_err @ KeyringError::NoStorageAccess(_)) => {
+                    warn!(target: LOG_TARGET, "Failed to gain access to keyring storage. Storing generated passphrase insecurely");
+                    let passphrase = SafePassword::from(generate_password(32));
+                    config.passphrase = Some(passphrase.clone());
+                    passphrase
+                }
+                Err(_) => {
+                    let passphrase = SafePassword::from(generate_password(32));
+                    entry.delete_credential()?;
+                    entry.set_password(&String::from_utf8(passphrase.reveal().clone())?)?;
+                    passphrase
+                }
+            },
+            Err(_err @ KeyringError::PlatformFailure(_))
+            | Err(_err @ KeyringError::NoStorageAccess(_)) => {
+                warn!(target: LOG_TARGET, "Failed to gain access to keyring storage. Storing generated passphrase insecurely");
+                let passphrase = SafePassword::from(generate_password(32));
+                config.passphrase = Some(passphrase.clone());
                 passphrase
             }
-        });
+            Err(e) => return Err(anyhow!(e.to_string())),
+        };
 
         let seed = CipherSeed::new();
 
@@ -126,9 +144,14 @@ impl InternalWallet {
     }
 
     pub fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
-        let entry = Entry::new("com.tari.universe", "internal_wallet")?;
+        let passphrase = match &self.config.passphrase {
+            Some(passphrase) => passphrase.clone(),
+            None => {
+                let entry = Entry::new("com.tari.universe", "internal_wallet")?;
+                SafePassword::from(entry.get_password()?)
+            }
+        };
 
-        let passphrase = SafePassword::from(entry.get_password()?);
         let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
             .map_err(|e| anyhow!(e.to_string()))?;
         let seed = CipherSeed::from_enciphered_bytes(&seed_binary, Some(passphrase))?;
@@ -172,4 +195,5 @@ pub struct WalletConfig {
     view_key_private_hex: String,
     spend_public_key_hex: String,
     seed_words_encrypted_base58: String,
+    passphrase: Option<SafePassword>,
 }

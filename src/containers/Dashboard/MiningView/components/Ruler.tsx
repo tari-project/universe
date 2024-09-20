@@ -1,13 +1,12 @@
 import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from 'styled-components';
 import { useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
 
 export function Ruler() {
     const theme = useTheme();
-    const height = useMiningStore(useShallow((s) => s.displayBlockHeight));
+    const height = useMiningStore((s) => s.displayBlockHeight);
 
     const columnRef = useRef<HTMLDivElement>(null);
 

@@ -4,44 +4,45 @@ import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
 import { useUIStore } from './store/useUIStore.ts';
-import { useGetStatus } from './hooks/useGetStatus.ts';
 import { useSetUp } from './hooks/useSetUp.ts';
 import { useEnvironment } from './hooks/useEnvironment.ts';
 import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
-import { useAirdropSyncState } from './hooks/airdrop/useAirdropSyncState.ts';
 import AirdropLogin from './containers/Airdrop/AirdropLogin/AirdropLogin.tsx';
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
 import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
-import useMining from '@app/hooks/mining/useMining.ts';
 
-import { useUiMiningStateMachine } from './hooks/mining/useMiningUiStateMachine.ts';
+import { useMemo } from 'react';
+import SettingsDialog from './containers/SideBar/components/Settings/SettingsDialog.tsx';
+import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 
 export default function App() {
-    useAirdropSyncState();
     useSetUp();
-    useMining();
-    useGetStatus();
     useEnvironment();
-    useUiMiningStateMachine();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
     const view = useUIStore((s) => s.view);
     const visualMode = useUIStore((s) => s.visualMode);
 
-    const canRenderMain = !isShuttingDown && !showSplash;
-    const splashScreenMarkup = <SplashScreen />;
-    const shutDownMarkup = isShuttingDown ? <ShuttingDownScreen /> : null;
-    const mainMarkup = canRenderMain ? (
-        <DashboardContainer>
-            <SideBar />
-            <Dashboard status={view} />
-        </DashboardContainer>
-    ) : null;
+    const shutDownMarkup = useMemo(() => {
+        return isShuttingDown ? <ShuttingDownScreen /> : null;
+    }, [isShuttingDown]);
+    const mainMarkup = useMemo(() => {
+        if (!isShuttingDown && !showSplash) {
+            return (
+                <DashboardContainer>
+                    <SideBar />
+                    <Dashboard status={view} />
+                </DashboardContainer>
+            );
+        } else {
+            return null;
+        }
+    }, [isShuttingDown, showSplash, view]);
 
     return (
         <ThemeProvider>
@@ -55,9 +56,11 @@ export default function App() {
                  */}
                 <MotionConfig reducedMotion="user">
                     <AutoUpdateDialog />
+                    <SettingsDialog />
+                    <CriticalErrorDialog />
                     <LayoutGroup id="app-content">
                         <AirdropLogin />
-                        {splashScreenMarkup}
+                        <SplashScreen />
                         {shutDownMarkup}
                         {!visualMode || view != 'mining' ? (
                             <BackgroundImage layout transition={{ duration: 0.3 }} />

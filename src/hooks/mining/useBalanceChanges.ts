@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useCPUStatusStore } from '@app/store/useCPUStatusStore.ts';
-import { useGPUStatusStore } from '@app/store/useGPUStatusStore.ts';
-import { useWalletStore } from '@app/store/walletStore.ts';
-import { useBaseNodeStatusStore } from '@app/store/useBaseNodeStatusStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useVisualisation } from '@app/hooks/mining/useVisualisation.ts';
-import { useShallow } from 'zustand/react/shallow';
+import { useWalletStore } from '@app/store/useWalletStore';
 
 function logBalanceChanges({ balance, prevBalance, balanceDiff }) {
     console.groupCollapsed('Balance changes:');
@@ -20,34 +16,21 @@ export function useBalanceChanges() {
     const { handleWin, handleFail } = useVisualisation();
     const [balanceChangeBlock, setBalanceChangeBlock] = useState<number | null>(null);
     const [blockHeightChanged, setBlockHeightChanged] = useState(false);
-    const block_height = useBaseNodeStatusStore(useShallow((s) => s.block_height));
-    const balance = useWalletStore(useShallow((s) => s.balance));
+    const block_height = useMiningStore((s) => s.base_node.block_height);
+    const balance = useWalletStore((s) => s.balance);
 
     const balanceRef = useRef(balance);
     const blockHeightRef = useRef(block_height);
 
-    const {
-        setDisplayBlockHeight,
-        setEarnings,
-        setTimerPaused,
-        postBlockAnimation,
-        timerPaused,
-        setPostBlockAnimation,
-        setMiningControlsEnabled,
-    } = useMiningStore(
-        useShallow((s) => ({
-            setMiningControlsEnabled: s.setMiningControlsEnabled,
-            setDisplayBlockHeight: s.setDisplayBlockHeight,
-            setPostBlockAnimation: s.setPostBlockAnimation,
-            setEarnings: s.setEarnings,
-            setTimerPaused: s.setTimerPaused,
-            postBlockAnimation: s.postBlockAnimation,
-            timerPaused: s.timerPaused,
-        }))
-    );
-
-    const isCPUMining = useCPUStatusStore(useShallow((s) => s.is_mining));
-    const isGPUMining = useGPUStatusStore(useShallow((s) => s.is_mining));
+    const setDisplayBlockHeight = useMiningStore((s) => s.setDisplayBlockHeight);
+    const setEarnings = useMiningStore((s) => s.setEarnings);
+    const setTimerPaused = useMiningStore((s) => s.setTimerPaused);
+    const setPostBlockAnimation = useMiningStore((s) => s.setPostBlockAnimation);
+    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+    const postBlockAnimation = useMiningStore((s) => s.postBlockAnimation);
+    const timerPaused = useMiningStore((s) => s.timerPaused);
+    const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
+    const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
     const isMining = isCPUMining || isGPUMining;
 
     const handleBalanceChange = useCallback(() => {

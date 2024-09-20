@@ -118,6 +118,14 @@ struct UserPoints {
     pub gems: f64,
     pub shells: f64,
     pub hammers: f64,
+    pub rank: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ReferralCount {
+    pub gems: f64,
+    pub count: i64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -125,6 +133,14 @@ struct UserPoints {
 struct TelemetryDataResponse {
     pub success: bool,
     pub user_points: Option<UserPoints>,
+    pub referral_count: Option<ReferralCount>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct TelemetryDataResponseEvent {
+    pub base: UserPoints,
+    pub referral_count: ReferralCount,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -230,7 +246,7 @@ impl TelemetryManager {
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
-                    info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
@@ -243,7 +259,7 @@ impl TelemetryManager {
                     }
                 } => {},
                 _ = cancellation_token.cancelled() => {
-                    info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
+                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
                 }
             }
         });
@@ -373,9 +389,19 @@ async fn handle_telemetry_data(
                 Ok(response) => {
                     if let Some(response_inner) = response {
                         if let Some(user_points) = response_inner.user_points {
-                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}",user_points);
+                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
+                            let response_inner =
+                                response_inner.referral_count.unwrap_or(ReferralCount {
+                                    gems: 0.0,
+                                    count: 0,
+                                });
+                            let emit_data = TelemetryDataResponseEvent {
+                                base: user_points,
+                                referral_count: response_inner,
+                            };
+
                             window
-                                .emit("UserPoints", user_points)
+                                .emit("UserPoints", emit_data)
                                 .map_err(|e| {
                                     error!("could not send user points as an event: {:?}", e)
                                 })
@@ -415,7 +441,7 @@ async fn send_telemetry_data(
     let response = request_builder.send().await?;
 
     if response.status() == 429 {
-        info!(target: LOG_TARGET,"Telemetry data rate limited by http {:?}", response.status());
+        warn!(target: LOG_TARGET,"Telemetry data rate limited by http {:?}", response.status());
         return Ok(None);
     }
 
@@ -431,7 +457,7 @@ async fn send_telemetry_data(
         .into());
     }
 
-    info!(target: LOG_TARGET,"Telemetry data sent");
+    debug!(target: LOG_TARGET,"Telemetry data sent");
 
     if airdrop_access_token.is_some() {
         let data: TelemetryDataResponse = response.json().await?;
