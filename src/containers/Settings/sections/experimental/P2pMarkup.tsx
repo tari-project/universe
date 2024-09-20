@@ -1,12 +1,19 @@
 import React, { useCallback } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { Stack } from '@app/components/elements/Stack.tsx';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { MinerContainer } from '../../../Miner/styles';
+
 import { useTranslation } from 'react-i18next';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import {
+    SettingsGroup,
+    SettingsGroupAction,
+    SettingsGroupContent,
+    SettingsGroupTitle,
+    SettingsGroupWrapper,
+} from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 
 const P2pMarkup = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -27,18 +34,22 @@ const P2pMarkup = () => {
     );
 
     return (
-        <MinerContainer>
-            <Stack>
-                <Typography variant="h6">
-                    {t('pool-mining', { ns: 'settings' })}
-                    <b>&nbsp;(APP RESTART REQUIRED)</b>
-                </Typography>
-                <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
+        <SettingsGroupWrapper>
+            <SettingsGroup>
+                <SettingsGroupContent>
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">
+                            {t('pool-mining', { ns: 'settings' })}
+                            <b>&nbsp;(APP RESTART REQUIRED)</b>
+                        </Typography>
+                    </SettingsGroupTitle>
+                    <Typography>{t('pool-mining-description', { ns: 'settings' })}</Typography>
+                </SettingsGroupContent>
+                <SettingsGroupAction>
                     <ToggleSwitch checked={isP2poolEnabled} disabled={isDisabled} onChange={handleP2poolEnabled} />
-                </Stack>
-            </Stack>
-        </MinerContainer>
+                </SettingsGroupAction>
+            </SettingsGroup>
+        </SettingsGroupWrapper>
     );
 };
 

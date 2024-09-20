@@ -3,6 +3,7 @@ import styled from 'styled-components';
 
 export const Container = styled.div`
     width: 100%;
+    max-width: min(90vw, min-content);
     display: flex;
     position: relative;
     align-items: stretch;
@@ -25,7 +26,7 @@ export const HeaderContainer = styled.div`
 
 export const ContentContainer = styled.div`
     width: 100%;
-    min-width: 600px;
+    max-width: min(450px, max-content);
     display: flex;
     flex-direction: column;
     overflow-y: auto;

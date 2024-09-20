@@ -1,12 +1,13 @@
-import { CardContainer } from '@app/containers/SideBar/components/Settings/Settings.styles.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import { Button } from '@app/components/elements/Button.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStateStore } from '@app/store/appStateStore';
+import { CardComponent } from '@app/containers/Settings/components/Card.component.tsx';
+import { CardContainer } from '@app/containers/Settings/components/Settings.styles.tsx';
+import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 
 export default function AppVersions() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -16,7 +17,7 @@ export default function AppVersions() {
     const updateApplicationsVersions = useAppStateStore((state) => state.updateApplicationsVersions);
 
     return applicationsVersions ? (
-        <Stack>
+        <SettingsGroupWrapper>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="h6">{t('versions', { ns: 'common' })}</Typography>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -46,6 +47,6 @@ export default function AppVersions() {
                     ))}
                 </CardContainer>
             </Stack>
-        </Stack>
+        </SettingsGroupWrapper>
     ) : null;
 }

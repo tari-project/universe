@@ -7,6 +7,7 @@ import emojiRegex from 'emoji-regex';
 import { styled } from 'styled-components';
 import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs';
 import { useWalletStore } from '@app/store/useWalletStore';
+import { SettingsGroupTitle, SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 
 const Dot = styled.div`
     width: 4px;
@@ -25,10 +26,18 @@ const DotContainer = styled.div`
 
 const AddressContainer = styled.div`
     overflow-x: auto;
+    font-size: 14px;
+    letter-spacing: 1px;
+    font-weight: 500;
+    line-height: 1.3;
     width: 100%;
+    height: 40px;
+    align-items: center;
+    display: flex;
     padding: 10px;
     background-color: ${({ theme }) => theme.palette.background.default};
-    border-radius: 8px;
+    border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    border-radius: 10px;
 `;
 
 const AddressInner = styled.div`
@@ -90,19 +99,20 @@ const WalletAddressMarkup = () => {
     }
 
     return (
-        <Stack>
-            <Typography variant="h6">Tari Wallet Address</Typography>
+        <SettingsGroupWrapper>
+            <SettingsGroupTitle>
+                <Typography variant="h6">Tari Wallet Address</Typography>
+            </SettingsGroupTitle>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <AddressContainer>
-                    <Typography variant="p">{walletAddress}</Typography>
+                    <Typography>{walletAddress}</Typography>
                 </AddressContainer>
                 <CopyToClipboard text={walletAddress} />
             </Stack>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <AddressContainer>
+                <AddressContainer style={{ height: isCondensed ? '40px' : '60px' }}>
                     <AddressInner>
                         <Typography
-                            variant="p"
                             style={{
                                 color: '#b6b7c3',
                             }}
@@ -123,7 +133,7 @@ const WalletAddressMarkup = () => {
                     <CopyToClipboard text={walletAddressEmoji} />
                 </Stack>
             </Stack>
-        </Stack>
+        </SettingsGroupWrapper>
     );
 };
 

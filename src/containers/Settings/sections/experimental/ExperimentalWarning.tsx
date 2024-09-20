@@ -12,6 +12,7 @@ const ExperimentalContainer = styled.div`
     display: flex;
     flex-direction: column;
     gap: 4px;
+    margin: 0 0 20px 0;
 `;
 
 export default function ExperimentalWarning() {

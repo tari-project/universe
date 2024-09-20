@@ -1,15 +1,14 @@
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { CardContainer } from '../Settings.styles';
-import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
-import { MinerContainer } from '../../../Miner/styles';
 import { useTranslation } from 'react-i18next';
-import { Divider } from '@app/components/elements/Divider.tsx';
 import formatBalance from '@app/utils/formatBalance';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { useEffect } from 'react';
+import { CardContainer } from '@app/containers/Settings/components/Settings.styles.tsx';
+import { CardComponent } from '@app/containers/Settings/components/Card.component.tsx';
+import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 
 const P2PoolStats = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -37,23 +36,22 @@ const P2PoolStats = () => {
 
     useEffect(() => {
         if (isP2poolEnabled) {
-            const fetchfetchP2pStatsInterval = setInterval(async () => {
+            const fetchP2pStatsInterval = setInterval(async () => {
                 try {
                     await fetchP2pStats();
                 } catch (error) {
                     console.error('Error fetching p2pool stats:', error);
                 }
-            }, 1000);
+            }, 5000);
 
             return () => {
-                clearInterval(fetchfetchP2pStatsInterval);
+                clearInterval(fetchP2pStatsInterval);
             };
         }
     }, [fetchP2pStats, isP2poolEnabled]);
 
     return isP2poolEnabled ? (
-        <MinerContainer>
-            <Divider />
+        <SettingsGroupWrapper>
             <Stack>
                 <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
                 <CardContainer>
@@ -145,7 +143,7 @@ const P2PoolStats = () => {
                     />
                 </CardContainer>
             </Stack>
-        </MinerContainer>
+        </SettingsGroupWrapper>
     ) : null;
 };
 
