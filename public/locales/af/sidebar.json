@@ -5,5 +5,6 @@
     "wallet-balance": "Beursie balans",
     "setup-scheduler": "Stel skeduleerder op",
     "mining-schedules": "Mynskedules",
-    "mining-schedules-description": "Skeduleer jou myn-aktiwiteit"
+    "mining-schedules-description": "Skeduleer jou myn-aktiwiteit",
+    "lost-connection": "Lost connection to the Tari Network. Reconnecting.."
 }
