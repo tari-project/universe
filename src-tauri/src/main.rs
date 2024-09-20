@@ -433,6 +433,9 @@ async fn setup_inner(
         )
         .await?;
     sleep(Duration::from_secs(1));
+
+    state.gpu_miner.write().await.detect().await?;
+
     progress.set_max(30).await;
     progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)

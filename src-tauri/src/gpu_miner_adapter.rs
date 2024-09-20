@@ -56,6 +56,7 @@ impl GpuMinerAdapter {
 impl ProcessAdapter for GpuMinerAdapter {
     type StatusMonitor = GpuMinerStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -119,11 +120,12 @@ impl ProcessAdapter for GpuMinerAdapter {
             ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let binary_resolver = BinaryResolver::current().read().await;
-                    let file_path = binary_resolver
+                    let file_path = BinaryResolver::current()
+                        .read()
+                        .await
                         .resolve_path_to_binary_files(Binaries::GpuMiner)
                         .await
-                        .unwrap();
+                        .unwrap_or_else(|_| panic!("Could not resolve gpu_miner path"));
                     crate::download_utils::set_permissions(&file_path.clone()).await?;
                     let mut child;
 
