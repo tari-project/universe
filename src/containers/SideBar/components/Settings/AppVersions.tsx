@@ -4,27 +4,28 @@ import { Environment, useEnvironment } from '@app/hooks/useEnvironment.ts';
 import { Button } from '@app/components/elements/Button.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { CardComponent } from '@app/containers/SideBar/components/Settings/Card.component.tsx';
-import { useAppStatusStore } from '@app/store/useAppStatusStore.ts';
-import { useApplicationsVersions } from '@app/hooks/useVersions.ts';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
+import { useAppStateStore } from '@app/store/appStateStore';
 
 export default function AppVersions() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const currentEnvironment = useEnvironment();
-    const applicationsVersions = useAppStatusStore(useShallow((state) => state.applications_versions));
-    const { refreshApplicationsVersions, getApplicationsVersions } = useApplicationsVersions();
+    const applicationsVersions = useAppStateStore(useShallow((state) => state.applications_versions));
+    const fetchApplicationsVersions = useAppStateStore((state) => state.fetchApplicationsVersions);
+    const updateApplicationsVersions = useAppStateStore((state) => state.updateApplicationsVersions);
+
     return applicationsVersions ? (
         <Stack>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="h6">{t('versions', { ns: 'common' })}</Typography>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                     {currentEnvironment === Environment.Development && (
-                        <Button variant="text" size="small" onClick={refreshApplicationsVersions}>
+                        <Button variant="text" size="small" onClick={updateApplicationsVersions}>
                             {t('update-versions', { ns: 'settings' })}
                         </Button>
                     )}
-                    <Button variant="text" size="small" onClick={getApplicationsVersions}>
+                    <Button variant="text" size="small" onClick={fetchApplicationsVersions}>
                         {t('refresh-versions', { ns: 'settings' })}
                     </Button>
                 </Stack>
