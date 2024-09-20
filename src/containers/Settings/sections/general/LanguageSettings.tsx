@@ -1,6 +1,5 @@
-import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
-
+import { Typography } from '@app/components/elements/Typography.tsx';
 import LanguageDropdown from '@app/containers/SideBar/components/Settings/components/LanguageDropdown.tsx';
 import {
     SettingsGroupContent,

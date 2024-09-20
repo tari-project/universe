@@ -14,7 +14,7 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 
-const CpuMiningSettings = () => {
+export default function CpuMiningSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
     const setCpuMiningEnabled = useAppConfigStore((s) => s.setCpuMiningEnabled);
@@ -43,6 +43,4 @@ const CpuMiningSettings = () => {
             </SettingsGroup>
         </SettingsGroupWrapper>
     );
-};
-
-export default CpuMiningSettings;
+}

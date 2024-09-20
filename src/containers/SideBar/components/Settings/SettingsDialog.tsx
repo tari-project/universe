@@ -5,9 +5,6 @@ import { IoClose } from 'react-icons/io5';
 import VisualMode from '../../../Dashboard/components/VisualMode';
 import { HeadingContainer, HorisontalBox } from './Settings.styles';
 
-import AirdropPermissionSettings from '@app/containers/Airdrop/AirdropPermissionSettings/AirdropPermissionSettings.tsx';
-import LogsSettings from './LogsSettings';
-
 import { IconButton } from '@app/components/elements/Button.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
@@ -16,12 +13,10 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 import { SettingsTabs } from '@app/components/elements/Tabs';
 
 import AppVersions from '@app/containers/SideBar/components/Settings/AppVersions.tsx';
-import LanguageSettings from '@app/containers/SideBar/components/Settings/LanguageSettings.tsx';
 
 import DebugSettings from '@app/containers/SideBar/components/Settings/DebugSettings.tsx';
 import { useTranslation } from 'react-i18next';
 
-import { ResetSettingsButton } from '@app/containers/SideBar/components/Settings/ResetSettingsButton.tsx';
 import MoneroAddressMarkup from './Markups/MoneroAddressMarkup';
 import WalletAddressMarkup from './Markups/WalletAddressMarkup';
 import CpuMiningMarkup from './Markups/CpuMiningMarkup';
@@ -45,14 +40,10 @@ const GeneralTab = () => (
             <GpuMiningMarkup />
         </HorisontalBox>
         <Divider />
-        <LogsSettings />
         <Divider />
-        <LanguageSettings />
         <Divider />
-        <AirdropPermissionSettings />
         <Divider />
         <HorisontalBox>
-            <ResetSettingsButton />
         </HorisontalBox>
     </Stack>
 );

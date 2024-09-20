@@ -1,5 +1,5 @@
-import CpuMiningMarkup from '@app/containers/SideBar/components/Settings/Markups/CpuMiningMarkup.tsx';
-import GpuMiningMarkup from '@app/containers/SideBar/components/Settings/Markups/GpuMiningMarkup.tsx';
+import CpuMiningMarkup from './sections/mining/CpuMiningMarkup.tsx';
+import GpuMiningMarkup from './sections/mining/GpuMiningMarkup.tsx';
 
 export const MiningSettings = () => {
     return (
