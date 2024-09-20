@@ -298,7 +298,6 @@ impl MinotariNodeStatusMonitor {
             if tip_res.initial_sync_achieved {
                 break;
             }
-            info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
 
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
