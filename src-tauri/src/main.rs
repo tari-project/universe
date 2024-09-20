@@ -49,7 +49,6 @@ use binary_resolver::{Binaries, BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use hardware_monitor::{HardwareMonitor, HardwareStatus};
 use log::{debug, error, info, warn};
-use log4rs::append::rolling_file::policy::compound::trigger::time::TimeTrigger;
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use serde::Serialize;
@@ -68,7 +67,6 @@ use tari_shutdown::Shutdown;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use telemetry_manager::TelemetryManager;
 use tokio::sync::RwLock;
-use tokio::time;
 use wallet_manager::WalletManagerError;
 
 mod gpu_miner_adapter;
