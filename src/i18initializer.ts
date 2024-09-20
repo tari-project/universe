@@ -43,11 +43,11 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
     }
 };
 
-export const LanguageList: Record<Language, { key: Language; name: string }> = {
-    [Language.EN]: { key: Language.EN, name: 'English' },
-    [Language.PL]: { key: Language.PL, name: 'Polski' },
-    [Language.AF]: { key: Language.AF, name: 'Afrikaans' },
-    [Language.TR]: { key: Language.TR, name: 'Türkçe' },
+export const LanguageList: Record<Language, string> = {
+    [Language.EN]: 'English',
+    [Language.PL]: 'Polski',
+    [Language.AF]: 'Afrikaans',
+    [Language.TR]: 'Türkçe',
 };
 
 i18n.use(HttpBackend)

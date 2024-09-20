@@ -8,7 +8,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 type LanguageOption = SelectOption;
 
-const languageOptions: LanguageOption[] = Object.values(LanguageList).map(({ key, name }) => ({
+const languageOptions: LanguageOption[] = Object.entries(LanguageList).map(([key, name]) => ({
     label: name,
     value: key,
 }));
