@@ -2,12 +2,11 @@ import { m } from 'framer-motion';
 import styled from 'styled-components';
 
 export const Container = styled.div`
-    width: 100%;
-    max-width: min(90vw, min-content);
+    width: 75vw;
     display: flex;
     position: relative;
     align-items: stretch;
-    height: 60vh;
+    height: 70vh;
     overflow: hidden;
 `;
 

@@ -3,6 +3,7 @@ import { ButtonBaseProps } from './ButtonBase.tsx';
 
 interface Props {
     $variant?: ButtonBaseProps['variant'];
+    $size?: ButtonBaseProps['size'];
     $color?: ButtonBaseProps['color'];
 }
 export const StyledButtonBase = styled.button<Props>`
@@ -12,8 +13,6 @@ export const StyledButtonBase = styled.button<Props>`
     font-weight: ${({ theme }) => theme.typography.h6.fontWeight};
     border-radius: ${({ theme }) => theme.shape.borderRadius.buttonBase};
     background: ${({ theme }) => theme.palette.background.paper};
-    height: 40px;
-    width: min-content;
     white-space: pre;
     padding: 0 25px;
     align-items: center;
@@ -31,7 +30,7 @@ export const StyledButtonBase = styled.button<Props>`
         cursor: inherit;
     }
 
-    ${({ $variant }) => {
+    ${({ $variant, $color }) => {
         switch ($variant) {
             case 'outlined':
                 return css``;
@@ -49,11 +48,28 @@ export const StyledButtonBase = styled.button<Props>`
             case 'primary':
             default:
                 return css`
-                    background: ${({ theme }) => theme.palette.colors.grey[100]};
-
+                    background: ${({ theme }) => theme.palette.background.default};
                     &:hover {
-                        background: ${({ theme }) => theme.palette.background.default};
+                        background: ${({ theme }) => theme.palette.colors.grey[100]};
                     }
+                `;
+        }
+    }}
+
+    ${({ $size }) => {
+        switch ($size) {
+            case 'small':
+                return css``;
+            case 'large':
+                return css`
+                    height: 50px;
+                    width: 190px;
+                `;
+            case 'medium':
+            default:
+                return css`
+                    height: 40px;
+                    width: min-content;
                 `;
         }
     }}

@@ -1,13 +1,10 @@
 import { useMemo } from 'react';
 
-import { IoClose } from 'react-icons/io5';
 
 import VisualMode from '../../../Dashboard/components/VisualMode';
 
-import { IconButton } from '@app/components/elements/Button.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { SettingsTabs } from '@app/components/elements/Tabs';
 
