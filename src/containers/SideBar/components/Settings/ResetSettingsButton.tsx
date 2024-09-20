@@ -9,6 +9,14 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+import {
+    SettingsGroup,
+    SettingsGroupAction,
+    SettingsGroupContent,
+    SettingsGroupTitle,
+    SettingsGroupWrapper,
+} from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
 
 export const ResetSettingsButton = () => {
     const [open, setOpen] = useState(false);
@@ -36,9 +44,18 @@ export const ResetSettingsButton = () => {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <Button onClick={() => setOpen(true)} styleVariant="outline" color="error">
-                {t('reset-settings')}
-            </Button>
+            <SettingsGroupWrapper>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <SettingsGroupTitle>
+                            <Typography variant="h6">{t('reset-settings')}</Typography>
+                        </SettingsGroupTitle>
+                    </SettingsGroupContent>
+                    <SettingsGroupAction>
+                        <ButtonBase onClick={() => setOpen(true)}>{t('reset-settings')}</ButtonBase>
+                    </SettingsGroupAction>
+                </SettingsGroup>
+            </SettingsGroupWrapper>
             <DialogContent>
                 <Stack direction="column" alignItems="center" justifyContent="space-between">
                     <Typography variant="h2">{t('reset-settings')}</Typography>

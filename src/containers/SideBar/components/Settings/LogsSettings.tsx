@@ -12,6 +12,7 @@ import {
     SettingsGroupContent,
     SettingsGroupTextAction,
     SettingsGroupTitle,
+    SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
 
@@ -50,22 +51,21 @@ export default function LogsSettings() {
     }, [setOpen]);
 
     return (
-        <SettingsGroup>
-            <SettingsGroupContent>
-                <Stack>
+        <SettingsGroupWrapper>
+            <SettingsGroup>
+                <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('logs', { ns: 'settings' })}</Typography>
                     </SettingsGroupTitle>
                     <SettingsGroupTextAction onClick={() => setOpen(true)}>
                         {t('send-logs', { ns: 'settings' })}
                     </SettingsGroupTextAction>
-                </Stack>
+                </SettingsGroupContent>
 
                 <SettingsGroupAction>
                     <ButtonBase onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</ButtonBase>
                 </SettingsGroupAction>
-            </SettingsGroupContent>
-
+            </SettingsGroup>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent>
                     <Stack direction="column" alignItems="center" justifyContent="space-between">
@@ -86,6 +86,6 @@ export default function LogsSettings() {
                     </Stack>
                 </DialogContent>
             </Dialog>
-        </SettingsGroup>
+        </SettingsGroupWrapper>
     );
 }
