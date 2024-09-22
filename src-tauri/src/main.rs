@@ -74,6 +74,7 @@ mod progress_tracker;
 mod setup_status_event;
 
 pub(crate) const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
+const LOG_TARGET: &str = "tari::universe::main";
 
 #[tauri::command]
 async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
@@ -84,10 +85,10 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
         .await
         .set_mode(mode)
         .await
-        .inspect_err(|e| error!("error at set_mode {:?}", e))
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("set_mode took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -107,10 +108,10 @@ async fn set_telemetry_mode(
         .await
         .set_allow_telemetry(telemetry_mode)
         .await
-        .inspect_err(|e| error!("error at set_telemetry_mode {:?}", e))
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_telemetry_mode {:?}", e))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("set_telemetry_mode took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_telemetry_mode took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -123,7 +124,7 @@ async fn get_telemetry_mode(
     let timer = Instant::now();
     let telemetry_mode = state.config.read().await.allow_telemetry();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("get_telemetry_mode took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "get_telemetry_mode took too long: {:?}", timer.elapsed());
     }
     Ok(telemetry_mode)
 }
@@ -137,7 +138,7 @@ async fn get_app_id(
     let timer = Instant::now();
     let app_id = state.config.read().await.anon_id().to_string();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("get_app_id took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "get_app_id took too long: {:?}", timer.elapsed());
     }
     Ok(app_id)
 }
@@ -153,7 +154,7 @@ async fn set_airdrop_access_token(
     let mut write_lock = state.airdrop_access_token.write().await;
     *write_lock = Some(token);
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(
+        warn!(target: LOG_TARGET,
             "set_airdrop_access_token took too long: {:?}",
             timer.elapsed()
         );
@@ -170,7 +171,7 @@ async fn get_app_in_memory_config(
     let timer = Instant::now();
     let res = state.in_memory_config.read().await.clone().into();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(
+        warn!(target: LOG_TARGET,
             "get_app_in_memory_config took too long: {:?}",
             timer.elapsed()
         );
@@ -183,7 +184,7 @@ async fn get_monero_address(state: tauri::State<'_, UniverseAppState>) -> Result
     let timer = Instant::now();
     let app_config = state.config.read().await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("get_monero_address took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "get_monero_address took too long: {:?}", timer.elapsed());
     }
     Ok(app_config.monero_address().to_string())
 }
@@ -200,7 +201,7 @@ async fn set_monero_address(
         .await
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("set_monero_address took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -219,7 +220,7 @@ async fn setup_application(
 
     let res = state.config.read().await.auto_mining();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("setup_application took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "setup_application took too long: {:?}", timer.elapsed());
     }
     Ok(res)
 }
@@ -234,7 +235,7 @@ async fn restart_application(
     // This restart doesn't need to shutdown all the miners
     app.restart();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("restart_application took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "restart_application took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -522,7 +523,7 @@ async fn set_p2pool_enabled(
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("set_p2pool_enabled took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -540,7 +541,7 @@ async fn set_cpu_mining_enabled<'r>(
         .inspect_err(|e| error!("error at set_cpu_mining_enabled {:?}", e))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(
+        warn!(target: LOG_TARGET,
             "set_cpu_mining_enabled took too long: {:?}",
             timer.elapsed()
         );
@@ -561,7 +562,7 @@ async fn set_gpu_mining_enabled(
         .inspect_err(|e| error!("error at set_gpu_mining_enabled {:?}", e))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(
+        warn!(target: LOG_TARGET,
             "set_gpu_mining_enabled took too long: {:?}",
             timer.elapsed()
         );
@@ -589,7 +590,7 @@ async fn get_seed_words(
         res.push(seed_words.get_word(i).unwrap().clone());
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("get_seed_words took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
 }
@@ -701,7 +702,7 @@ async fn start_mining<'r>(
         }
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("start_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -725,7 +726,7 @@ async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<()
         .await
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("stop_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -769,7 +770,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(
+        warn!(target: LOG_TARGET,
             "get_applications_versions took too long: {:?}",
             timer.elapsed()
         );
@@ -828,7 +829,7 @@ async fn update_applications(
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("update_applications took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "update_applications took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -905,6 +906,9 @@ async fn status(
             }
         }
     };
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        debug!(target: LOG_TARGET, "1. status took too long: {:?}", timer.elapsed());
+    }
 
     let tari_address = state.tari_address.read().await;
 
@@ -912,8 +916,14 @@ async fn status(
         .write()
         .await
         .read_hardware_parameters();
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        debug!(target: LOG_TARGET, "2. status took too long: {:?}", timer.elapsed());
+    }
 
     let p2pool_stats = state.p2pool_manager.stats().await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        debug!(target: LOG_TARGET, "3. status took too long: {:?}", timer.elapsed());
+    }
 
     let config_guard = state.config.read().await;
 
@@ -923,11 +933,14 @@ async fn status(
         hardware_status.clone(),
         cpu.estimated_earnings as f64,
     );
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        debug!(target: LOG_TARGET, "4. status took too long: {:?}", timer.elapsed());
+    }
 
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!("status took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "status took too long: {:?}", timer.elapsed());
     }
     state.is_getting_status.store(false, Ordering::SeqCst);
     Ok(Some(AppStatus {
@@ -1027,7 +1040,7 @@ async fn reset_settings<'r>(
         .collect();
 
     if !missing_dirs.is_empty() {
-        error!("Could not get app directories for {:?}", missing_dirs);
+        error!(target: LOG_TARGET, "Could not get app directories for {:?}", missing_dirs);
         return Err("Could not get app directories".to_string());
     }
 
@@ -1153,7 +1166,6 @@ struct Payload {
     cwd: String,
 }
 
-pub const LOG_TARGET: &str = "tari::universe::main";
 pub const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[allow(clippy::too_many_lines)]
@@ -1323,6 +1335,9 @@ fn main() {
             restart_application
         ])
         .build(tauri::generate_context!())
+        .inspect_err(
+            |e| error!(target: LOG_TARGET, "Error while building tauri application: {:?}", e),
+        )
         .expect("error while running tauri application");
 
     info!(
