@@ -835,6 +835,7 @@ async fn update_applications(
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 async fn status(
     state: tauri::State<'_, UniverseAppState>,
