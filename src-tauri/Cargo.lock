@@ -784,8 +784,10 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.6",
 ]
 
@@ -5885,6 +5887,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sys-locale"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e801cf239ecd6ccd71f03d270d67dd53d13e90aab208bf4b8fe4ad957ea949b0"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "sysinfo"
 version = "0.31.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6061,12 +6072,13 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.3.8"
+version = "0.3.10"
 dependencies = [
  "anyhow",
  "async-trait",
  "async_zip",
  "blake2",
+ "chrono",
  "device_query",
  "dirs-next 2.0.0",
  "flate2",
@@ -6091,6 +6103,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "sys-locale",
  "sysinfo",
  "tar",
  "tari_common",

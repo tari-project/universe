@@ -10,7 +10,45 @@ export enum Language {
     TR = 'tr',
 }
 
-export const LanguageList = Object.values(Language);
+// https://github.com/ladjs/i18n-locales
+// System can have en-US instead of en so we have to resolve it
+export const resolveI18nLanguage = (languageCode: string): Language => {
+    switch (languageCode) {
+        case 'en':
+        case 'en-AU':
+        case 'en-BZ':
+        case 'en-CA':
+        case 'en-CB':
+        case 'en-GB':
+        case 'en-IE':
+        case 'en-JM':
+        case 'en-NZ':
+        case 'en-PH':
+        case 'en-TT':
+        case 'en-US':
+        case 'en-ZA':
+        case 'en-ZW':
+            return Language.EN;
+        case 'pl':
+        case 'pl-PL':
+            return Language.PL;
+        case 'af':
+        case 'af-ZA':
+            return Language.AF;
+        case 'tr':
+        case 'tr-TR':
+            return Language.TR;
+        default:
+            return Language.EN;
+    }
+};
+
+export const LanguageList: Record<Language, string> = {
+    [Language.EN]: 'English',
+    [Language.PL]: 'Polski',
+    [Language.AF]: 'Afrikaans',
+    [Language.TR]: 'Türkçe',
+};
 
 i18n.use(HttpBackend)
     .use(LanguageDetector)

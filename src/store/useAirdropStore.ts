@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export const INSTALL_BONUS_GEMS = 1000;
+export const GIFT_GEMS = 2000;
+export const REFERRAL_GEMS = 2000;
+
 // Helpers
 function parseJwt(token: string): TokenResponse {
     const base64Url = token.split('.')[1];
@@ -29,10 +33,19 @@ interface TokenResponse {
     scope: string;
 }
 
-export interface UserPoints {
+export interface ReferralCount {
     gems: number;
-    shells: number;
-    hammers: number;
+    count: number;
+}
+
+export interface UserPoints {
+    base: {
+        gems: number;
+        shells: number;
+        hammers: number;
+        rank?: string;
+    };
+    referralCount?: ReferralCount;
 }
 
 export interface User {
@@ -93,9 +106,11 @@ export interface BackendInMemoryConfig {
 interface AirdropState {
     authUuid: string;
     wipUI?: boolean;
+    acceptedReferral?: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
+    referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
 }
 
@@ -103,14 +118,17 @@ interface AirdropStore extends AirdropState {
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
-    setUserPoints: (userPoints?: UserPoints) => void;
+    setUserPoints: (userPoints: UserPoints) => void;
     setWipUI: (wipUI: boolean) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
+    setReferralCount: (referralCount: ReferralCount) => void;
+    setAcceptedReferral: (acceptedReferral: boolean) => void;
     logout: () => void;
 }
 
 const clearState: AirdropState = {
     authUuid: '',
+    acceptedReferral: true,
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
@@ -121,6 +139,7 @@ export const useAirdropStore = create<AirdropStore>()(
         (set) => ({
             authUuid: '',
             setWipUI: (wipUI) => set({ wipUI }),
+            setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
             logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
@@ -131,6 +150,7 @@ export const useAirdropStore = create<AirdropStore>()(
                         expiresAt: parseJwt(airdropTokens.token).exp,
                     },
                 }),
+            setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
         }),

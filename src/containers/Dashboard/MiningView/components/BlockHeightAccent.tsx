@@ -1,5 +1,4 @@
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useShallow } from 'zustand/react/shallow';
 import {
     AccentText,
     AccentWrapper,
@@ -9,7 +8,7 @@ import { useDeferredValue, useEffect, useLayoutEffect, useState } from 'react';
 import { AnimatePresence, LayoutGroup } from 'framer-motion';
 
 export function BlockHeightAccent() {
-    const height = useMiningStore(useShallow((s) => s.displayBlockHeight));
+    const height = useMiningStore((s) => s.displayBlockHeight);
     const heightString = height?.toString();
 
     const [windowHeight, setWindowHeight] = useState(window.innerHeight);
