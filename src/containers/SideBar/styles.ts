@@ -42,6 +42,9 @@ export const BottomContainer = styled(m.div)`
     justify-self: flex-end;
     width: 100%;
     padding: 0 16px;
+
+    flex-direction: column;
+    gap: 13px;
 `;
 
 // Wallet

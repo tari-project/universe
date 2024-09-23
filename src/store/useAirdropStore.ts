@@ -4,6 +4,8 @@ import { persist } from 'zustand/middleware';
 export const INSTALL_BONUS_GEMS = 1000;
 export const GIFT_GEMS = 2000;
 export const REFERRAL_GEMS = 2000;
+export const REFERRAL_BONUS_GEMS = 1000;
+export const FREINDS_COUNT_REQUIRED_FOR_BONUS = 10;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
