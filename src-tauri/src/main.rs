@@ -572,6 +572,20 @@ async fn set_gpu_mining_enabled(
 }
 
 #[tauri::command]
+async fn set_excluded_gpu_device(
+    excluded_device: Option<u8>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let mut gpu_miner = state.gpu_miner.write().await;
+    gpu_miner
+        .set_excluded_device(excluded_device)
+        .await
+        .inspect_err(|e| error!("error at set_excluded_gpu_device {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 async fn get_seed_words(
     _window: tauri::Window,
     _state: tauri::State<'_, UniverseAppState>,
@@ -1280,7 +1294,8 @@ fn main() {
             get_app_config,
             get_p2pool_stats,
             get_tari_wallet_details,
-            exit_application
+            exit_application,
+            set_excluded_gpu_device
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application");

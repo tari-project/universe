@@ -2,7 +2,7 @@ use crate::process_utils;
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{fs, path::PathBuf};
 use tari_common::configuration::Network;
@@ -33,6 +33,7 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) gpu_percentage: u16,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
+    pub(crate) exclude_device: Option<u8>,
 }
 
 impl GpuMinerAdapter {
@@ -42,6 +43,7 @@ impl GpuMinerAdapter {
             gpu_percentage: ECO_MODE_GPU_PERCENTAGE,
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
+            exclude_device: None,
         }
     }
 
@@ -50,6 +52,10 @@ impl GpuMinerAdapter {
             MiningMode::Eco => self.gpu_percentage = ECO_MODE_GPU_PERCENTAGE,
             MiningMode::Ludicrous => self.gpu_percentage = LUDICROUS_MODE_GPU_PERCENTAGE,
         }
+    }
+
+    pub fn set_exclude_device(&mut self, exclude_device: Option<u8>) {
+        self.exclude_device = exclude_device;
     }
 }
 
@@ -62,6 +68,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
+        info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
 
@@ -113,6 +120,11 @@ impl ProcessAdapter for GpuMinerAdapter {
             Some(GpuNodeSource::P2Pool { .. })
         ) {
             args.push("--p2pool-enabled".to_string());
+        }
+        info!(target: LOG_TARGET, "Gpu miner: exclude device {:?}", self.exclude_device);
+        if self.exclude_device.is_none() {
+            args.push("--exclude-devices".to_string());
+            args.push(self.exclude_device.as_ref().unwrap().to_string());
         }
 
         Ok((

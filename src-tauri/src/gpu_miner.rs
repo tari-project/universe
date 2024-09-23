@@ -22,6 +22,7 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner";
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
     is_available: bool,
+    excluded_device: Option<u8>,
 }
 
 impl GpuMiner {
@@ -31,6 +32,7 @@ impl GpuMiner {
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             is_available: false,
+            excluded_device: None,
         }
     }
 
@@ -51,6 +53,9 @@ impl GpuMiner {
         process_watcher.adapter.set_mode(mining_mode);
         process_watcher.adapter.node_source = Some(node_source);
         process_watcher.adapter.coinbase_extra = coinbase_extra;
+        process_watcher
+            .adapter
+            .set_exclude_device(self.excluded_device);
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
             .start(app_shutdown, base_path, config_path, log_path)
@@ -137,5 +142,13 @@ impl GpuMiner {
 
     pub fn is_gpu_mining_available(&self) -> bool {
         self.is_available
+    }
+
+    pub async fn set_excluded_device(
+        &mut self,
+        excluded_device: Option<u8>,
+    ) -> Result<(), anyhow::Error> {
+        self.excluded_device = excluded_device;
+        Ok(())
     }
 }
