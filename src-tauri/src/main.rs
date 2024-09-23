@@ -1291,6 +1291,15 @@ struct Payload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    let client = sentry_tauri::sentry::init((
+        "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
+        sentry_tauri::sentry::ClientOptions {
+            release: sentry_tauri::sentry::release_name!(),
+            ..Default::default()
+        },
+    ));
+    let _guard = sentry_tauri::minidump::init(&client);
+
     let mut shutdown = Shutdown::new();
 
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
