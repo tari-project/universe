@@ -906,8 +906,10 @@ async fn update_applications(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+
     let timer = Instant::now();
     let mut binary_resolver = BinaryResolver::current().write().await;
+    
     state
         .config
         .write()
@@ -945,10 +947,12 @@ async fn update_applications(
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
 
+    drop(binary_resolver);
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "update_applications took too long: {:?}", timer.elapsed());
     }
-    
+
     drop(binary_resolver);
 
     Ok(())
