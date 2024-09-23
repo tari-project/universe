@@ -1,6 +1,7 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { Title, Wrapper, TitleWrapper } from './styles';
 import LoggedOut from './sections/LoggedOut/LoggedOut';
+import LoggedIn from './sections/LoggedIn/LoggedIn';
 
 export default function AirdropGiftTracker() {
     const { airdropTokens, wipUI } = useAirdropStore();
@@ -15,7 +16,7 @@ export default function AirdropGiftTracker() {
                 <Title>Airdrop Game</Title>
             </TitleWrapper>
 
-            <LoggedOut />
+            {isLoggedIn ? <LoggedIn /> : <LoggedOut />}
         </Wrapper>
     );
 }

@@ -6,3 +6,11 @@ export const Wrapper = styled('div')`
     gap: 20px;
     width: 100%;
 `;
+
+export const UserRow = styled('div')`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    width: 100%;
+`;
