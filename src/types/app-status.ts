@@ -1,3 +1,4 @@
+import { Language } from '@app/i18initializer';
 import { modeType } from '../store/types';
 
 export interface AppConfig {
@@ -7,6 +8,9 @@ export interface AppConfig {
     auto_mining: boolean;
     p2pool_enabled: boolean;
     last_binaries_update_timestamp: string;
+    has_system_language_been_proposed: boolean;
+    should_always_use_system_language: boolean;
+    application_language: Language;
     allow_telemetry: boolean;
     anon_id: string;
     monero_address: string;

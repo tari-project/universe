@@ -91,7 +91,7 @@ impl ProcessAdapter for P2poolAdapter {
                     //     None => String::from("default"), // TODO: generate name
                     // };
                     args.push("--tribe".to_string());
-                    args.push("default".to_string());
+                    args.push("default2".to_string());
 
                     // env
                     let mut envs = HashMap::new();

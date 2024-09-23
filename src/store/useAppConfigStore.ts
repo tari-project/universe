@@ -3,6 +3,8 @@ import { create } from './create';
 import { AppConfig } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
 import { modeType } from './types.ts';
+import { Language } from '@app/i18initializer.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 type State = Partial<AppConfig>;
 
@@ -14,6 +16,8 @@ interface Actions {
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMode: (mode: modeType) => Promise<void>;
+    setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
+    setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -42,6 +46,23 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not get app config: ', e);
         }
     },
+    setShouldAlwaysUseSystemLanguage: async (shouldAlwaysUseSystemLanguage: boolean) => {
+        set({ should_always_use_system_language: shouldAlwaysUseSystemLanguage });
+        invoke('set_should_always_use_system_language', { shouldAlwaysUseSystemLanguage }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set should always use system language', e);
+            appStateStore.setError('Could not change system language');
+            set({ should_always_use_system_language: !shouldAlwaysUseSystemLanguage });
+        });
+    },
+    setApplicationLanguage: async (applicationLanguage: Language) => {
+        set({ application_language: applicationLanguage });
+        invoke('set_application_language', { applicationLanguage }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set application language', e);
+            appStateStore.setError('Could not change application language');
+        });
+    },
     setAllowTelemetry: async (allowTelemetry) => {
         set({ allow_telemetry: allowTelemetry });
         invoke('set_allow_telemetry', { allowTelemetry }).catch((e) => {
@@ -53,21 +74,57 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     },
     setCpuMiningEnabled: async (enabled) => {
         set({ cpu_mining_enabled: enabled });
-        invoke('set_cpu_mining_enabled', { enabled }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set CPU mining enabled', e);
-            appStateStore.setError('Could not change CPU mining enabled');
-            set({ cpu_mining_enabled: !enabled });
-        });
+        const miningState = useMiningStore.getState();
+        if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
+            await miningState.pauseMining();
+        }
+        invoke('set_cpu_mining_enabled', { enabled })
+            .then(async () => {
+                if (miningState.miningInitiated) {
+                    await miningState.startMining();
+                }
+            })
+            .catch((e) => {
+                const appStateStore = useAppStateStore.getState();
+                console.error('Could not set CPU mining enabled', e);
+                appStateStore.setError('Could not change CPU mining enabled');
+                set({ cpu_mining_enabled: !enabled });
+
+                if (
+                    miningState.miningInitiated &&
+                    !miningState.cpu.mining.is_mining &&
+                    !miningState.gpu.mining.is_mining
+                ) {
+                    miningState.stopMining();
+                }
+            });
     },
     setGpuMiningEnabled: async (enabled) => {
         set({ gpu_mining_enabled: enabled });
-        invoke('set_gpu_mining_enabled', { enabled }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set GPU mining enabled', e);
-            appStateStore.setError('Could not change GPU mining enabled');
-            set({ gpu_mining_enabled: !enabled });
-        });
+        const miningState = useMiningStore.getState();
+        if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
+            await miningState.pauseMining();
+        }
+        invoke('set_gpu_mining_enabled', { enabled })
+            .then(async () => {
+                if (miningState.miningInitiated) {
+                    await miningState.startMining();
+                }
+            })
+            .catch((e) => {
+                const appStateStore = useAppStateStore.getState();
+                console.error('Could not set GPU mining enabled', e);
+                appStateStore.setError('Could not change GPU mining enabled');
+                set({ gpu_mining_enabled: !enabled });
+
+                if (
+                    miningState.miningInitiated &&
+                    !miningState.cpu.mining.is_mining &&
+                    !miningState.gpu.mining.is_mining
+                ) {
+                    miningState.stopMining();
+                }
+            });
     },
     setP2poolEnabled: async (p2poolEnabled) => {
         set({ p2pool_enabled: p2poolEnabled });
