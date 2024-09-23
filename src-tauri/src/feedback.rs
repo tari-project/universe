@@ -120,7 +120,7 @@ impl Feedback {
                 "logs",
                 multipart::Part::bytes(file_contents)
                     .file_name(zip_filename.clone())
-                    .mime_str("application/zstd")?,
+                    .mime_str("application/x-compressed")?,
             );
         }
 
