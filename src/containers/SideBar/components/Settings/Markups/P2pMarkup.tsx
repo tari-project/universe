@@ -15,6 +15,8 @@ const P2pMarkup = () => {
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
     const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
+    const setExcludedDevice = useMiningStore((s) => s.setExcludeGpuDevice);
+    const excludedDevice = useMiningStore((s) => s.exludedGpuDevice);
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isMiningInProgress = isCPUMining || isGPUMining;
     const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed;
@@ -25,6 +27,15 @@ const P2pMarkup = () => {
         },
         [setP2poolEnabled]
     );
+
+    const handleSetExcludedDevice = useCallback(async () => {
+        console.log('set gpu excluded', excludedDevice);
+        if (excludedDevice === undefined) {
+            await setExcludedDevice(0);
+        } else {
+            await setExcludedDevice(undefined);
+        }
+    }, [excludedDevice, setExcludedDevice]);
 
     return (
         <MinerContainer>
@@ -37,6 +48,10 @@ const P2pMarkup = () => {
                     <Typography variant="p">{t('pool-mining-description', { ns: 'settings' })}</Typography>
                     <ToggleSwitch checked={isP2poolEnabled} disabled={isDisabled} onChange={handleP2poolEnabled} />
                 </Stack>
+            </Stack>
+            <Stack>
+                <Typography variant="h6">{excludedDevice}</Typography>
+                <ToggleSwitch onChange={handleSetExcludedDevice} />
             </Stack>
         </MinerContainer>
     );

@@ -18,6 +18,7 @@ interface State extends MinerMetrics {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
+    exludedGpuDevice?: number;
 }
 
 interface Actions {
@@ -34,6 +35,7 @@ interface Actions {
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockHeight: BlockTimeData) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
+    setExcludeGpuDevice: (excludeGpuDevice?: number) => Promise<void>;
 }
 type MiningStoreState = State & Actions;
 
@@ -61,6 +63,7 @@ const initialState: State = {
             hash_rate: 0,
             estimated_earnings: 0,
             is_available: false,
+            excluded_device: undefined,
         },
     },
     base_node: {
@@ -158,4 +161,16 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setExcludeGpuDevice: async (exludedGpuDevice) => {
+        console.info('Exclude gpu device nr:', exludedGpuDevice);
+        set({ exludedGpuDevice });
+        try {
+            await invoke('set_excluded_gpu_device', {});
+        } catch (e) {
+            const appStateStore = useAppStateStore.getState();
+            console.error(e);
+            appStateStore.setError(e as string);
+            set({ exludedGpuDevice: undefined });
+        }
+    },
 }));
