@@ -1,7 +1,7 @@
-use std::path::{Component, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 /// Returns a relative path from one path to another.
-pub fn make_relative_path(root: &PathBuf, current: &PathBuf) -> PathBuf {
+pub fn make_relative_path(root: &Path, current: &Path) -> PathBuf {
     let mut result = PathBuf::new();
     let root_components = root.components().collect::<Vec<Component>>();
     let current_components = current.components().collect::<Vec<_>>();
@@ -20,14 +20,14 @@ pub fn make_relative_path(root: &PathBuf, current: &PathBuf) -> PathBuf {
 }
 
 // Returns a String representing the given Path.
-pub fn path_as_string(path: &std::path::Path) -> String {
+pub fn path_as_string(path: &Path) -> String {
     let mut path_str = String::new();
     for component in path.components() {
         if let Component::Normal(os_str) = component {
             if !path_str.is_empty() {
                 path_str.push('/');
             }
-            path_str.push_str(&*os_str.to_string_lossy());
+            path_str.push_str(&os_str.to_string_lossy());
         }
     }
     path_str

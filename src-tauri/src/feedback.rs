@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -36,17 +36,17 @@ impl Feedback {
     /// Build zip file
     pub async fn zip_create_from_directory(
         &self,
-        archive_file: &PathBuf,
-        directory: &PathBuf,
+        archive_file: &Path,
+        directory: &Path,
     ) -> zip::result::ZipResult<File> {
         let file_options = SimpleFileOptions::default()
             .compression_method(zip::CompressionMethod::Zstd)
             .compression_level(Some(15));
 
-        let file = File::create(archive_file.clone())?;
+        let file = File::create(archive_file)?;
         let mut zip = ZipWriter::new(file);
         let mut paths_queue: Vec<PathBuf> = vec![];
-        paths_queue.push(directory.clone());
+        paths_queue.push(directory.to_path_buf().clone());
 
         let mut buffer = Vec::new();
         let log_regex_filter = Regex::new(r"^(.*[0-9]+\.log|.*\.zst)$").unwrap();
@@ -55,7 +55,6 @@ impl Feedback {
 
             for entry in directory_entry_iterator {
                 let entry_path = entry?.path();
-                let file_options = file_options;
                 let entry_metadata = std::fs::metadata(entry_path.clone())?;
 
                 if entry_metadata.is_file()
@@ -63,14 +62,16 @@ impl Feedback {
                 {
                     let mut f = File::open(&entry_path)?;
                     f.read_to_end(&mut buffer)?;
-                    let relative_path = make_relative_path(&directory, &entry_path);
+                    let relative_path = make_relative_path(directory, &entry_path);
                     zip.start_file(path_as_string(&relative_path), file_options)?;
                     zip.write_all(buffer.as_ref())?;
                     buffer.clear();
                 } else if entry_metadata.is_dir() {
-                    let relative_path = make_relative_path(&directory, &entry_path);
+                    let relative_path = make_relative_path(directory, &entry_path);
                     zip.add_directory(path_as_string(&relative_path), file_options)?;
                     paths_queue.push(entry_path.clone());
+                } else {
+                    // Skip log files
                 }
             }
         }
