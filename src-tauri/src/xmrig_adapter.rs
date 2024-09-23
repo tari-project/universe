@@ -27,6 +27,7 @@ impl XmrigNodeConnection {
                 vec![
                     "--daemon".to_string(),
                     format!("--url={}:{}", host_name, port),
+                    "--daemon-poll-interval=10000".to_string(),
                     "--coin=monero".to_string(),
                     // TODO: Generate password
                     "--http-port".to_string(),
