@@ -45,6 +45,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, va
         if (isOpen && elements.reference && elements.floating) {
             return autoUpdate(elements.reference, elements.floating, update, {
                 layoutShift: false,
+                ancestorResize: false,
             });
         }
     }, [isOpen, elements, update]);
