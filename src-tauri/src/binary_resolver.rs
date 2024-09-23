@@ -4,7 +4,7 @@ use std::sync::{Arc, LazyLock};
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use regex::Regex;
 use semver::{Version, VersionReq};
 use tari_common::configuration::Network;

@@ -43,7 +43,7 @@ export const light = {
         primary: {
             main: tariPurple[600],
             dark: tariPurple[800],
-            light: tariPurple[400],
+            light: tariPurple[500],
             shadow: tariPurpleAlpha[10],
             wisp: tariPurpleAlpha[5],
         },
@@ -163,7 +163,9 @@ export const componentSettings = {
     shape: {
         borderRadius: {
             app: '10px',
+            dialog: '20px',
             button: '30px',
+            buttonBase: '50px',
             buttonSquared: '10px',
         },
     },

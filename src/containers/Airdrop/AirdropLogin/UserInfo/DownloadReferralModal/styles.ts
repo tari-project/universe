@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 export const Wrapper = styled('div')`
     position: fixed;
@@ -79,7 +79,7 @@ export const Title = styled('div')`
     }
 `;
 
-export const Text = styled('div')`
+export const Text = styled('div')<{ $isError?: boolean }>`
     color: #000;
     text-align: center;
     font-size: 20px;
@@ -88,6 +88,17 @@ export const Text = styled('div')`
     line-height: 120.7%;
 
     max-width: 410px;
+
+    ${({ $isError }) =>
+        $isError &&
+        css`
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+            max-width: unset;
+            color: red;
+        `};
 `;
 
 export const GemTextImage = styled('img')`
@@ -95,7 +106,7 @@ export const GemTextImage = styled('img')`
     transform: translateY(1px);
 `;
 
-export const ShareWrapper = styled('div')`
+export const ShareWrapper = styled('div')<{ $isClaim?: boolean }>`
     width: 100%;
     border-radius: 49px;
     background: #000;
@@ -109,6 +120,12 @@ export const ShareWrapper = styled('div')`
     gap: 10px;
 
     position: relative;
+    ${({ $isClaim }) =>
+        $isClaim &&
+        css`
+            font-weight: bold;
+            background: white;
+        `};
 `;
 
 export const ShareText = styled('div')`

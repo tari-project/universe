@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export const INSTALL_BONUS_GEMS = 1000;
+export const GIFT_GEMS = 2000;
+export const REFERRAL_GEMS = 2000;
+
 // Helpers
 function parseJwt(token: string): TokenResponse {
     const base64Url = token.split('.')[1];
@@ -102,6 +106,7 @@ export interface BackendInMemoryConfig {
 interface AirdropState {
     authUuid: string;
     wipUI?: boolean;
+    acceptedReferral?: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -117,11 +122,13 @@ interface AirdropStore extends AirdropState {
     setWipUI: (wipUI: boolean) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     setReferralCount: (referralCount: ReferralCount) => void;
+    setAcceptedReferral: (acceptedReferral: boolean) => void;
     logout: () => void;
 }
 
 const clearState: AirdropState = {
     authUuid: '',
+    acceptedReferral: true,
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
@@ -132,6 +139,7 @@ export const useAirdropStore = create<AirdropStore>()(
         (set) => ({
             authUuid: '',
             setWipUI: (wipUI) => set({ wipUI }),
+            setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
             logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
