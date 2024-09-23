@@ -73,10 +73,12 @@ export const useGetAirdropUserDetails = () => {
     }, [handleRequest, setReferralCount]);
 
     const fetchAcceptedReferral = useCallback(async () => {
+        console.log('fetchAcceptedReferral');
         const data = await handleRequest<{ claimed: boolean }>({
             path: '/miner/claimed-referral',
             method: 'GET',
         });
+        console.log({ data });
         setAcceptedReferral(!!data?.claimed);
     }, [handleRequest, setAcceptedReferral]);
 
@@ -95,6 +97,7 @@ export const useGetAirdropUserDetails = () => {
         };
 
         if (!userDetails?.user?.id) {
+            console.log('fetchUserDetails');
             fetchData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
