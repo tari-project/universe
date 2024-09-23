@@ -88,7 +88,7 @@ export default function LogsSettings() {
                                     <Button disabled={loading} onClick={handleClose} color="warning">
                                         {t('cancel')}
                                     </Button>
-                                    <Button disabled={loading || feedback === ''} onClick={sendLogs}>
+                                    <Button disabled={loading || feedback.trim() === ''} onClick={sendLogs}>
                                         {t('submit')}
                                     </Button>
                                 </>
