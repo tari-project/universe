@@ -4,13 +4,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Result;
-use log::{debug, error, info};
+use log::{error, info};
 use regex::Regex;
 use reqwest::multipart;
 use tokio::sync::RwLock;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
-use zip_extensions::write::ZipWriterExtensions;
 
 use crate::app_config::AppConfig;
 use crate::app_in_memory_config::AppInMemoryConfig;
@@ -134,7 +133,7 @@ impl Feedback {
             std::fs::remove_file(archive_file)?;
         }
         if response.status().is_success() {
-            debug!(target: LOG_TARGET, "Feedback sent successfully");
+            info!(target: LOG_TARGET, "Feedback sent successfully");
             Ok(())
         } else {
             error!(target: LOG_TARGET, "Failed to upload file: {}", response.status());
