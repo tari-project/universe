@@ -363,7 +363,7 @@ async fn setup_inner(
             .write()
             .await
             .set_last_binaries_update_timestamp(now)
-            .await;
+            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not set last binaries update timestamp: {:?}", e));
 
         progress.set_max(10).await;
         progress
@@ -371,7 +371,7 @@ async fn setup_inner(
             .await;
         let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::MinotariNode, progress.clone())
-            .await;
+            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of MinotariNode: {:?}", e));
         sleep(Duration::from_secs(1));
 
         progress.set_max(15).await;
@@ -381,7 +381,7 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
         let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
-            .await;
+            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of MergeMiningProxy: {:?}", e));
         progress.set_max(20).await;
         progress
             .update("checking-latest-version-wallet".to_string(), None, 0)
@@ -389,7 +389,7 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
         let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::Wallet, progress.clone())
-            .await;
+            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of Wallet: {:?}", e));
 
         sleep(Duration::from_secs(1));
         progress.set_max(25).await;
@@ -398,7 +398,7 @@ async fn setup_inner(
             .await;
         let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::GpuMiner, progress.clone())
-            .await;
+            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of GpuMiner: {:?}", e));
 
         state.gpu_miner.write().await.detect().await?;
 
@@ -407,7 +407,11 @@ async fn setup_inner(
             .update("checking-latest-version-xmrig".to_string(), None, 0)
             .await;
         sleep(Duration::from_secs(1));
-        let _unused = XmrigAdapter::ensure_latest(cache_dir, false, progress.clone()).await;
+        let _unused = XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
+            .await
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not ensure latest version of Xmrig: {:?}", e),
+            );
 
         progress.set_max(35).await;
         progress
@@ -416,7 +420,7 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
         let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::ShaP2pool, progress.clone())
-            .await;
+            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of ShaP2pool: {:?}", e));
     }
 
     for _i in 0..2 {
