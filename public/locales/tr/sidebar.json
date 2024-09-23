@@ -5,5 +5,6 @@
     "wallet-balance":"Cüzdan Bakiyesi",
     "setup-scheduler":"Kurulum Planlayıcısı",
     "mining-schedules":"Madencilik Planları",
-    "mining-schedules-description":"Madencilik faaliyetinizi planlayın"
+    "mining-schedules-description":"Madencilik faaliyetinizi planlayın",
+    "lost-connection": "Lost connection to the Tari Network. Reconnecting.."
 }

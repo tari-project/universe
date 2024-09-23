@@ -22,10 +22,6 @@ concurrency:
 
 permissions: {}
 
-env:
-  TARI_NETWORK: nextnet
-  TARI_TARGET_NETWORK: nextnet
-
 jobs:
   builds:
     name: Building ${{ matrix.platform }}
@@ -54,11 +50,19 @@ jobs:
           echo "tagName=v__VERSION__" >> $GITHUB_ENV
           echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
+          echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
 
-      - name: beta builds - Install dependencies (windows)
-        if: startsWith(runner.os,'Windows')
+      - name: beta builds - Install dependencies (windows) [yq]
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         run: |
           choco upgrade yq -y
+
+      - name: beta builds - Install dependencies (linux) [yq]
+        if: ${{ ( startsWith(runner.os,'Linux') ) && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        shell: bash
+        run: |
+          sudo bash ./scripts/check-get-yq.sh
 
       - name: Set environment variables for beta builds
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
@@ -67,7 +71,11 @@ jobs:
         shell: bash
         run: |
           #set -xueo pipefail
-          export BETA_DATE=$(date +%Y-%m-%d)
+          echo "TARI_NETWORK=esme" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
+          #export BETA_DATE=$(date +%Y-%m-%d)
+          # numeric-only and cannot be greater than 65535 for msi target
+          export BETA_DATE=4$(date +%m%d)
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes

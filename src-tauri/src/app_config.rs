@@ -1,4 +1,5 @@
 use std::{path::PathBuf, time::SystemTime};
+use sys_locale::get_locale;
 
 use anyhow::anyhow;
 use log::{debug, info, warn};
@@ -32,6 +33,12 @@ pub struct AppConfigFromFile {
     gpu_mining_enabled: bool,
     #[serde(default = "default_true")]
     cpu_mining_enabled: bool,
+    #[serde(default = "default_false")]
+    has_system_language_been_proposed: bool,
+    #[serde(default = "default_false")]
+    should_always_use_system_language: bool,
+    #[serde(default = "default_application_language")]
+    application_language: String,
 }
 
 impl Default for AppConfigFromFile {
@@ -47,6 +54,9 @@ impl Default for AppConfigFromFile {
             monero_address: default_monero_address(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
+            application_language: default_application_language(),
         }
     }
 }
@@ -88,6 +98,9 @@ pub(crate) struct AppConfig {
     monero_address: String,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
+    has_system_language_been_proposed: bool,
+    should_always_use_system_language: bool,
+    application_language: String,
 }
 
 impl AppConfig {
@@ -104,6 +117,9 @@ impl AppConfig {
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
+            application_language: default_application_language(),
         }
     }
 
@@ -142,6 +158,9 @@ impl AppConfig {
                 self.monero_address = config.monero_address;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
+                self.has_system_language_been_proposed = config.has_system_language_been_proposed;
+                self.should_always_use_system_language = config.should_always_use_system_language;
+                self.application_language = config.application_language;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -244,6 +263,41 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn application_language(&self) -> &str {
+        &self.application_language
+    }
+
+    pub async fn set_application_language(
+        &mut self,
+        language: String,
+    ) -> Result<(), anyhow::Error> {
+        self.application_language = language;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_should_always_use_system_language(
+        &mut self,
+        should_always_use_system_language: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.should_always_use_system_language = should_always_use_system_language;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+        if self.has_system_language_been_proposed | !self.should_always_use_system_language {
+            Ok(())
+        } else {
+            let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+            info!(target: LOG_TARGET, "Proposing system language: {}", system_language);
+            self.application_language = system_language;
+            self.has_system_language_been_proposed = true;
+            self.update_config_file().await?;
+            Ok(())
+        }
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -262,6 +316,9 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
+            has_system_language_been_proposed: self.has_system_language_been_proposed,
+            should_always_use_system_language: self.should_always_use_system_language,
+            application_language: self.application_language.clone(),
             ..default_config
         };
         let config = serde_json::to_string(config)?;
@@ -298,4 +355,8 @@ fn default_system_time() -> SystemTime {
 
 fn default_monero_address() -> String {
     DEFAULT_MONERO_ADDRESS.to_string()
+}
+
+fn default_application_language() -> String {
+    "en".to_string()
 }
