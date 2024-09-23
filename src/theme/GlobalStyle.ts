@@ -1,6 +1,7 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalReset = createGlobalStyle`
+    
     button {
         -webkit-appearance: none;
         border-radius: 0;
@@ -12,6 +13,9 @@ export const GlobalReset = createGlobalStyle`
         border: none;
         color: inherit;
         font: inherit;
+        &:focus {
+            outline: none;
+        }
     }
     input{
         all: unset;
@@ -25,6 +29,10 @@ export const GlobalReset = createGlobalStyle`
         /* Firefox */
         &[type=number] {
             -moz-appearance: textfield;
+        }
+
+        &:focus {
+            outline: none;
         }
     }
 `;
