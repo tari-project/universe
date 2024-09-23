@@ -13,17 +13,15 @@ import {
 import giftImage from '../../../../images/gift.png';
 import gemImage from '../../../../images/gem.png';
 import boxImage from '../../../../images/gold_box.png';
-import { useAirdropStore } from '@app/store/useAirdropStore';
+import { FREINDS_COUNT_REQUIRED_FOR_BONUS, REFERRAL_BONUS_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 
 export default function Invite() {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
-    const { userDetails } = useAirdropStore();
+    const { userDetails, referralCount } = useAirdropStore();
 
-    const gemCount = 1000;
-    const friendsInvited = 0;
-    const friendsRemaining = 10;
+    const friendsRemaining = FREINDS_COUNT_REQUIRED_FOR_BONUS - (referralCount?.count || 0) || 0;
 
     const referralCode = userDetails?.user?.referral_code || '';
 
@@ -65,20 +63,20 @@ export default function Invite() {
                 <TextWrapper>
                     <Title>Invite Friends</Title>
                     <Text>
-                        You’ve invited <span>{friendsInvited}</span> friends
+                        You’ve invited <span>{referralCount?.count || 0}</span> friends
                     </Text>
                 </TextWrapper>
 
                 <GemPill>
-                    {gemCount.toLocaleString()}
+                    {referralCount?.gems.toLocaleString() || 0}
                     <Image src={gemImage} alt="" />
                 </GemPill>
             </InviteButton>
 
             <BonusWrapper>
                 <BonusText>
-                    Invite&nbsp;<strong>{friendsRemaining} friends</strong>&nbsp;& earn {gemCount.toLocaleString()}{' '}
-                    bonus gems
+                    Invite&nbsp;<strong>{friendsRemaining} friends</strong>&nbsp;& earn{' '}
+                    {REFERRAL_BONUS_GEMS.toLocaleString()} bonus gems
                 </BonusText>
                 <Image src={boxImage} alt="" className="giftImage" />
             </BonusWrapper>

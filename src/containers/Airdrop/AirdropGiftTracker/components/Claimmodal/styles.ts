@@ -1,4 +1,5 @@
 import { m } from 'framer-motion';
+
 import styled, { css, keyframes } from 'styled-components';
 
 export const Wrapper = styled('div')`
@@ -29,10 +30,10 @@ export const Cover = styled(m.div)`
 
 export const BoxWrapper = styled(m.div)`
     width: 100%;
-    max-width: 560px;
+    max-width: 635px;
     flex-shrink: 0;
 
-    min-height: 479px;
+    // min-height: 650px;
 
     border-radius: 35px;
     background: linear-gradient(180deg, #c9eb00 32.79%, #fff 69.42%);
@@ -41,7 +42,7 @@ export const BoxWrapper = styled(m.div)`
     position: relative;
     z-index: 1;
 
-    padding: 0 15px 22px 15px;
+    padding: 180px 50px 22px 50px;
 
     display: flex;
     flex-direction: column;
@@ -62,7 +63,7 @@ export const TextWrapper = styled('div')`
 export const Title = styled('div')`
     color: #000;
     text-align: center;
-    font-size: 28px;
+    font-size: 32px;
     font-style: normal;
     font-weight: 800;
     line-height: 99.7%;
@@ -123,53 +124,11 @@ export const ShareWrapper = styled('div')<{ $isClaim?: boolean }>`
     ${({ $isClaim }) =>
         $isClaim &&
         css`
+            min-height: 70px;
             font-weight: bold;
-            background: white;
+            background: rgba(255, 255, 255, 0.1);
         `};
 `;
-
-export const ShareText = styled('div')`
-    color: #c9eb00;
-    font-size: 18px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: 99.7%;
-`;
-
-export const CopyButton = styled('button')`
-    width: 113px;
-    height: 51px;
-    flex-shrink: 0;
-
-    border-radius: 100px;
-    background: #fff;
-
-    color: #000;
-    font-size: 18px;
-    font-style: normal;
-    font-weight: 600;
-    line-height: 99.7%;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    cursor: pointer;
-    position: relative;
-
-    .copytext {
-        display: inline-block;
-        transition: transform 0.2s;
-    }
-
-    &:hover {
-        .copytext {
-            transform: scale(1.1);
-        }
-    }
-`;
-
-export const CopyText = styled(m.span)``;
 
 const float = keyframes`
   0% {
@@ -220,4 +179,53 @@ export const Gem3 = styled('img')`
     width: 182px;
     rotate: 45deg;
     animation: ${float} 3.8s ease-in-out infinite;
+`;
+
+export const StyledInput = styled('input')`
+    width: 100%;
+`;
+
+export const ClaimButton = styled('button')`
+    transition: transform 0.2s ease;
+    text-transform: uppercase;
+    color: #c9eb00;
+    font-size: 21px;
+    text-align: center;
+    font-family: Druk, sans-serif;
+    width: 100%;
+    border-radius: 49px;
+    background: #000;
+    box-shadow: 28px 28px 77px 0px rgba(0, 0, 0, 0.1);
+    min-height: 70px;
+
+    position: relative;
+    font-weight: bold;
+    &:hover {
+        transform: scale(1.05);
+    }
+`;
+
+export const ActionWrapper = styled('div')`
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+`;
+
+export const TextButton = styled('button')`
+    text-transform: uppercase;
+    color: black;
+    font-size: 16px;
+    text-align: center;
+    font-family: Poppins, sans-serif;
+
+    position: relative;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 15px;
+    width: fit-content;
+    &:hover {
+        text-decoration: underline;
+    }
 `;
