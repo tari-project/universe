@@ -6,6 +6,7 @@ use anyhow::Result;
 use log::{debug, error};
 use reqwest::multipart;
 use tokio::sync::RwLock;
+use zip::write::{ SimpleFileOptions};
 use zip::ZipWriter;
 use zip_extensions::write::ZipWriterExtensions;
 
@@ -39,7 +40,7 @@ impl Feedback {
         let mut upload_zip_path = None;
         let config = self.config.read().await;
         let app_id = config.anon_id();
-        let zip_filename = format!("logs_{}.zip", app_id);
+        let zip_filename = format!("logs_{}.zst", app_id);
         if include_logs {
             if let Some(config_dir) = config.config_dir() {
                 let logs_dir = config_dir.join("logs");
@@ -47,7 +48,8 @@ impl Feedback {
                 let zip_file = config_dir.join(zip_filename.clone());
                 let file = File::create(zip_file.clone())?;
                 let zip = ZipWriter::new(file);
-                zip.create_from_directory(&logs_dir)?;
+                let  file_options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Zstd).compression_level(Some(22));
+                zip.create_from_directory_with_options(&logs_dir, |_| file_options.clone())?;
                 upload_zip_path = Some(zip_file);
             }
         }
