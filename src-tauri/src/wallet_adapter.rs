@@ -112,8 +112,7 @@ impl ProcessAdapter for WalletAdapter {
             ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let binary_resolver = BinaryResolver::current().read().await;
-                    let file_path = binary_resolver
+                    let file_path = BinaryResolver::current().read().await
                         .resolve_path_to_binary_files(Binaries::Wallet)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;

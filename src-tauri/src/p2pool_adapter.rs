@@ -75,8 +75,7 @@ impl ProcessAdapter for P2poolAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     // file details
-                    let binary_resolver = BinaryResolver::current().read().await;
-                    let file_path = binary_resolver
+                    let file_path = BinaryResolver::current().read().await
                         .resolve_path_to_binary_files(Binaries::ShaP2pool)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;

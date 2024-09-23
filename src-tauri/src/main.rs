@@ -887,6 +887,8 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
             timer.elapsed()
         );
     }
+    
+    drop(binary_resolver);
 
     Ok(ApplicationsVersions {
         tari_universe: tari_universe_version.to_string(),
@@ -906,7 +908,6 @@ async fn update_applications(
 ) -> Result<(), String> {
     let timer = Instant::now();
     let mut binary_resolver = BinaryResolver::current().write().await;
-
     state
         .config
         .write()
@@ -917,6 +918,7 @@ async fn update_applications(
             |e| error!(target: LOG_TARGET, "Could not set last binaries update timestamp: {:?}", e),
         )
         .map_err(|e| e.to_string())?;
+
     let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
@@ -942,9 +944,13 @@ async fn update_applications(
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "update_applications took too long: {:?}", timer.elapsed());
     }
+    
+    drop(binary_resolver);
+
     Ok(())
 }
 

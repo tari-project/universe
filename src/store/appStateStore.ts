@@ -21,6 +21,7 @@ interface AppState {
     settingUpFinished: () => void;
     applications_versions?: ApplicationsVersions;
     fetchApplicationsVersions: () => Promise<void>;
+    fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
 }
 
@@ -44,17 +45,25 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     settingUpFinished: () => set({ isSettingUp: false }),
     applications_versions: undefined,
     fetchApplicationsVersions: async () => {
-        let applications_versions = getState().applications_versions;
+        try {
+            console.info('Fetching applications versions');
+            const applications_versions = await invoke('get_applications_versions');
+            set({ applications_versions });
+        } catch (error) {
+            console.error('Error getting applications versions', error);
+        }
+    },
+    fetchApplicationsVersionsWithRetry: async () => {
         let retries = 5;
-        while (
-            (!applications_versions ||
-                !Object.values(applications_versions).every((version) => version !== undefined)) &&
-            retries
-        ) {
+        while (retries) {
+            const applications_versions = getState().applications_versions;
+            if (applications_versions && Object.values(applications_versions).every((version) => Boolean(version))) {
+                break;
+            }
+
             try {
                 console.info('Fetching applications versions');
-                applications_versions = await invoke('get_applications_versions');
-                set({ applications_versions });
+                await getState().fetchApplicationsVersions();
                 retries--;
             } catch (error) {
                 console.error('Error getting applications versions', error);

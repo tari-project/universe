@@ -62,7 +62,7 @@ impl BinaryManager {
     }
 
     fn read_version_requirements(binary_name: String, path: PathBuf) -> VersionReq {
-        debug!(target: LOG_TARGET, "Reading version requirements for {:?} from: {:?}",binary_name, path);
+        info!(target: LOG_TARGET, "Reading version requirements for {:?} from: {:?}",binary_name, path);
 
         let json_content: BinaryVersionsJsonContent =
             serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
@@ -70,7 +70,7 @@ impl BinaryManager {
 
         match version_req {
             Some(version_req) => {
-                debug!(target: LOG_TARGET,
+                info!(target: LOG_TARGET,
                     "Version requirements for {:?}: {:?}",
                     binary_name, version_req
                 );
@@ -84,7 +84,7 @@ impl BinaryManager {
     }
 
     fn select_highest_local_version(&mut self) -> Option<Version> {
-        debug!(target: LOG_TARGET,"Selecting highest local version for binary: {:?}", self.binary_name);
+        info!(target: LOG_TARGET,"Selecting highest local version for binary: {:?}", self.binary_name);
 
         if self.local_aviailable_versions_list.is_empty() {
             warn!(target: LOG_TARGET,"No local versions found for binary: {:?}", self.binary_name);
@@ -93,12 +93,12 @@ impl BinaryManager {
 
         let selected_local_version = Some(self.local_aviailable_versions_list[0].clone());
 
-        debug!(target: LOG_TARGET,"Selected local version: {:?}", selected_local_version);
+        info!(target: LOG_TARGET,"Selected local version: {:?}", selected_local_version);
         selected_local_version.clone()
     }
 
     fn select_highest_online_version(&mut self) -> Option<Version> {
-        debug!(target: LOG_TARGET,"Selecting highest online version for binary: {:?}", self.binary_name);
+        info!(target: LOG_TARGET,"Selecting highest online version for binary: {:?}", self.binary_name);
 
         if self.online_versions_list.is_empty() {
             warn!(target: LOG_TARGET,"No online versions found for binary: {:?}", self.binary_name);
@@ -107,30 +107,30 @@ impl BinaryManager {
 
         let selected_online_version = Some(self.online_versions_list[0].version.clone());
 
-        debug!(target: LOG_TARGET,"Selected online version: {:?}", selected_online_version);
+        info!(target: LOG_TARGET,"Selected online version: {:?}", selected_online_version);
         selected_online_version.clone()
     }
 
     fn create_in_progress_folder_for_selected_version(&self, selected_version: Version) -> PathBuf {
-        debug!(target: LOG_TARGET,"Creating in progress folder for version: {:?}", selected_version);
+        info!(target: LOG_TARGET,"Creating in progress folder for version: {:?}", selected_version);
 
         let binary_folder = self.adapter.get_binary_folder();
         let version_folder = binary_folder.join(selected_version.to_string());
         let in_progress_folder = version_folder.join("in_progress");
 
         if in_progress_folder.exists() {
-            debug!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
+            info!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
             std::fs::remove_dir_all(&in_progress_folder).unwrap();
         }
 
-        debug!(target: LOG_TARGET,"Creating in progress folder: {:?}", in_progress_folder);
+        info!(target: LOG_TARGET,"Creating in progress folder: {:?}", in_progress_folder);
         std::fs::create_dir_all(&in_progress_folder).unwrap();
 
         in_progress_folder
     }
 
     fn get_asset_for_selected_version(&self, selected_version: Version) -> Option<VersionAsset> {
-        debug!(target: LOG_TARGET,"Getting asset for selected version: {:?}", selected_version);
+        info!(target: LOG_TARGET,"Getting asset for selected version: {:?}", selected_version);
 
         let version_info = self
             .online_versions_list
@@ -147,7 +147,7 @@ impl BinaryManager {
             .find_version_for_platform(version_info.unwrap())
         {
             Ok(asset) => {
-                debug!(target: LOG_TARGET,"Found asset for version: {:?}", selected_version);
+                info!(target: LOG_TARGET,"Found asset for version: {:?}", selected_version);
                 Some(asset)
             }
             Err(e) => {
@@ -158,7 +158,7 @@ impl BinaryManager {
     }
 
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
-        debug!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
+        info!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
         let is_meet_semver = self.version_requirements.matches(version);
         let is_meet_network_prerelease = if self.network_prerelease_prefix.is_none() {
             true
@@ -170,8 +170,8 @@ impl BinaryManager {
                 .is_empty()
         };
 
-        debug!(target: LOG_TARGET,"Version meets semver requirements: {:?}", is_meet_semver);
-        debug!(target: LOG_TARGET,"Version meets network prerelease requirements: {:?}", is_meet_network_prerelease);
+        info!(target: LOG_TARGET,"Version meets semver requirements: {:?}", is_meet_semver);
+        info!(target: LOG_TARGET,"Version meets network prerelease requirements: {:?}", is_meet_network_prerelease);
 
         is_meet_semver && is_meet_network_prerelease
     }
@@ -184,7 +184,7 @@ impl BinaryManager {
     }
 
     pub fn select_highest_version(&mut self) -> Option<Version> {
-        debug!(target: LOG_TARGET,"Selecting version for binary: {:?}", self.binary_name);
+        info!(target: LOG_TARGET,"Selecting version for binary: {:?}", self.binary_name);
 
         let online_selected_version = self.select_highest_online_version();
         let local_selected_version = self.select_highest_local_version();
@@ -208,7 +208,7 @@ impl BinaryManager {
     }
 
     pub fn check_if_files_for_version_exist(&self, version: Option<Version>) -> bool {
-        debug!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
+        info!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
 
         if version.is_none() {
             warn!(target: LOG_TARGET,"No version selected");
@@ -223,9 +223,9 @@ impl BinaryManager {
                 .binary_file_name(version.clone().unwrap()),
         );
 
-        debug!(target: LOG_TARGET,"Binary folder path: {:?}", binary_folder);
-        debug!(target: LOG_TARGET,"Version folder path: {:?}", version_folder);
-        debug!(target: LOG_TARGET,"Binary file path: {:?}", binary_file);
+        info!(target: LOG_TARGET,"Binary folder path: {:?}", binary_folder);
+        info!(target: LOG_TARGET,"Version folder path: {:?}", version_folder);
+        info!(target: LOG_TARGET,"Binary file path: {:?}", binary_file);
 
         let binary_file_exists = binary_file.exists();
 
@@ -235,7 +235,7 @@ impl BinaryManager {
     }
 
     pub async fn check_for_updates(&mut self) {
-        debug!(target: LOG_TARGET,"Checking for updates for binary: {:?}", self.binary_name);
+        info!(target: LOG_TARGET,"Checking for updates for binary: {:?}", self.binary_name);
 
         let versions_info = self
             .adapter
@@ -243,7 +243,7 @@ impl BinaryManager {
             .await
             .unwrap_or(Vec::new());
 
-        debug!(target: LOG_TARGET,
+        info!(target: LOG_TARGET,
             "Found {:?} versions for binary: {:?}",
             versions_info.len(),
             self.binary_name
@@ -251,10 +251,10 @@ impl BinaryManager {
 
         for version_info in versions_info {
             if self.check_if_version_meet_requirements(&version_info.version) {
-                debug!(target: LOG_TARGET,"Adding version to online versions list: {:?}", version_info.version);
+                info!(target: LOG_TARGET,"Adding version to online versions list: {:?}", version_info.version);
                 self.online_versions_list.push(version_info);
             } else {
-                debug!(target: LOG_TARGET,"Skipping version: {:?}", version_info.version);
+                info!(target: LOG_TARGET,"Skipping version: {:?}", version_info.version);
                 if self.check_if_version_exceeds_requirements(&version_info.version) {
                     warn!(target: LOG_TARGET,"Version: {:?} is higher then maximum version from requirements", version_info.version);
                 }
@@ -271,7 +271,7 @@ impl BinaryManager {
         selected_version: Option<Version>,
         progress_tracker: ProgressTracker,
     ) -> Option<PathBuf> {
-        debug!(target: LOG_TARGET,"Downloading version: {:?}", selected_version);
+        info!(target: LOG_TARGET,"Downloading version: {:?}", selected_version);
 
         if selected_version.is_none() {
             warn!(target: LOG_TARGET,"No version selected");
@@ -311,17 +311,17 @@ impl BinaryManager {
         .await
         {
             Ok(_) => {
-                debug!(target: LOG_TARGET,"Downloaded version: {:?}", selected_version.clone());
-                debug!(target: LOG_TARGET,"Extracting version: {:?}", selected_version.clone());
-                debug!(target: LOG_TARGET,"Destination dir: {:?}", destination_dir);
-                debug!(target: LOG_TARGET,"In progress file: {:?}", in_progress_file_zip);
+                info!(target: LOG_TARGET,"Downloaded version: {:?}", selected_version.clone());
+                info!(target: LOG_TARGET,"Extracting version: {:?}", selected_version.clone());
+                info!(target: LOG_TARGET,"Destination dir: {:?}", destination_dir);
+                info!(target: LOG_TARGET,"In progress file: {:?}", in_progress_file_zip);
 
                 extract(&in_progress_file_zip.clone(), &destination_dir)
                     .await
                     .unwrap();
 
                 if self.should_validate_checksum {
-                    debug!(target: LOG_TARGET,"Validating checksum for version: {:?}", selected_version.clone());
+                    info!(target: LOG_TARGET,"Validating checksum for version: {:?}", selected_version.clone());
                     let version_download_info = VersionDownloadInfo {
                         version: selected_version.clone().unwrap(),
                         assets: vec![asset.clone()],
@@ -365,7 +365,7 @@ impl BinaryManager {
     }
 
     pub async fn read_local_versions(&mut self) {
-        debug!(target: LOG_TARGET,"Reading local versions for binary: {:?}", self.binary_name);
+        info!(target: LOG_TARGET,"Reading local versions for binary: {:?}", self.binary_name);
 
         let binary_folder = self.adapter.get_binary_folder();
 
@@ -385,11 +385,11 @@ impl BinaryManager {
             let version_folder_name = version_folder.file_name();
             match Version::from_str(version_folder_name.to_str().unwrap()) {
                 Ok(version) => {
-                    debug!(target: LOG_TARGET,"Found local version: {:?}", version);
+                    info!(target: LOG_TARGET,"Found local version: {:?}", version);
                     if self.check_if_version_meet_requirements(&version)
                         && self.check_if_files_for_version_exist(Some(version.clone()))
                     {
-                        debug!(target: LOG_TARGET,"Adding local version to list: {:?}", version);
+                        info!(target: LOG_TARGET,"Adding local version to list: {:?}", version);
                         self.local_aviailable_versions_list.push(version);
                     }
                 }
@@ -401,7 +401,7 @@ impl BinaryManager {
     }
 
     pub fn set_used_version(&mut self, version: Version) {
-        debug!(target: LOG_TARGET,"Setting used version: {:?}", version);
+        info!(target: LOG_TARGET,"Setting used version: {:?}", version);
         self.used_version = Some(version);
     }
 

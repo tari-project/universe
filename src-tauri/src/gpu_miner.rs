@@ -111,8 +111,7 @@ impl GpuMiner {
         info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
 
         let args: Vec<String> = vec!["--detect".to_string(), "true".to_string()];
-        let binary_resolver = BinaryResolver::current().read().await;
-        let gpuminer_bin = binary_resolver
+        let gpuminer_bin = BinaryResolver::current().read().await
             .resolve_path_to_binary_files(Binaries::GpuMiner)
             .await?;
 
