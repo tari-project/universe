@@ -11,6 +11,8 @@ export const Wrapper = styled('div')`
     border-radius: 10px;
     background: #fff;
     box-shadow: 0px 4px 45px 0px rgba(0, 0, 0, 0.08);
+
+    position: relative;
 `;
 
 export const TitleWrapper = styled('div')`
