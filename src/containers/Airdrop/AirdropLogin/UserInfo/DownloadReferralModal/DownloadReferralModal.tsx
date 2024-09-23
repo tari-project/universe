@@ -18,10 +18,11 @@ import {
 import gemImage from '../images/gems.png';
 import gemLargeImage from './images/gem-large.png';
 import { useEffect, useState } from 'react';
-import { useAirdropStore } from '@app/store/useAirdropStore';
+import { useAirdropStore, GIFT_GEMS, REFERRAL_GEMS } from '@app/store/useAirdropStore';
 import { Button } from '@app/components/elements/Button';
 import { Input } from '@app/components/elements/inputs/Input';
 import { useAridropRequest } from '@app/hooks/airdrop/stateHelpers/useGetAirdropUserDetails';
+import { Trans, useTranslation } from 'react-i18next';
 
 interface DownloadReferralModalProps {
     referralCode?: string;
@@ -36,6 +37,7 @@ interface ClaimResponse {
 
 export default function DownloadReferralModal({ referralCode, onClose }: DownloadReferralModalProps) {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState('');
 
@@ -48,16 +50,19 @@ export default function DownloadReferralModal({ referralCode, onClose }: Downloa
             path: `/miner/download/referral/${claimCode}`,
             method: 'POST',
             body: {},
-        }).then((r) => {
-            if (r?.success) {
-                setError('');
-                setClaimCode('');
-                onClose();
-            }
-            if (r?.message) {
-                setError(r.message);
-            }
-        });
+        })
+            .then((r) => {
+                if (r?.success) {
+                    setError('');
+                    setClaimCode('');
+                    onClose();
+                }
+                setError(r?.message || 'Something went wrong');
+            })
+            .catch((e) => {
+                console.error(e);
+                setError('Something went wrong');
+            });
     };
 
     const url = `${airdropUrl}/download/${referralCode}`;
@@ -81,16 +86,14 @@ export default function DownloadReferralModal({ referralCode, onClose }: Downloa
         <>
             <TextWrapper>
                 <Title>
-                    Claim your referral code{' '}
-                    <span>
-                        2000 <GemTextImage src={gemImage} alt="" />
-                    </span>{' '}
-                    gems
+                    <Trans
+                        ns="airdrop"
+                        i18nKey="claimReferralCode"
+                        components={{ span: <span />, image: <GemTextImage src={gemImage} alt="" /> }}
+                        values={{ gems: GIFT_GEMS }}
+                    />
                 </Title>
-                <Text>
-                    Claim your referral code and earn 2000 gems. Once you connect your account, you’ll be awarded your
-                    gems.
-                </Text>
+                <Text>{t('claimReferralGifts', { gems: GIFT_GEMS })}</Text>
             </TextWrapper>
             <div>
                 <ShareWrapper $isClaim>
@@ -113,16 +116,14 @@ export default function DownloadReferralModal({ referralCode, onClose }: Downloa
         <>
             <TextWrapper>
                 <Title>
-                    Invite Friends, earn{' '}
-                    <span>
-                        2000 <GemTextImage src={gemImage} alt="" />
-                    </span>{' '}
-                    gems
+                    <Trans
+                        ns="airdrop"
+                        i18nKey="claimReferralCode"
+                        components={{ span: <span />, image: <GemTextImage src={gemImage} alt="" /> }}
+                        values={{ gems: REFERRAL_GEMS }}
+                    />
                 </Title>
-                <Text>
-                    Earn 2000 gems for each friend you invite to Tari Universe. Once they connect their account, you’ll
-                    be awarded your gems.
-                </Text>
+                <Text>{t('giftReferralCode', { gems: REFERRAL_GEMS })}</Text>
             </TextWrapper>
             <ShareWrapper>
                 <ShareText>{url.replace('https://', '')}</ShareText>

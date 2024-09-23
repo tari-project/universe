@@ -83,11 +83,15 @@ export const useGetAirdropUserDetails = () => {
     useEffect(() => {
         const fetchData = async () => {
             const details = await fetchUserDetails();
+
+            const requests: (() => Promise<void>)[] = [];
             if (!details?.rank.gems) {
-                await fetchUserPoints();
+                requests.push(fetchUserPoints);
             }
-            await fetchUserReferralPoints();
-            await fetchAcceptedReferral();
+            requests.push(fetchUserReferralPoints);
+            requests.push(fetchAcceptedReferral);
+
+            await Promise.all(requests);
         };
 
         if (!userDetails?.user?.id) {

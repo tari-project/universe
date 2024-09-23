@@ -16,7 +16,7 @@ import {
 import gemImage from './images/gems.png';
 import { FaBell } from 'react-icons/fa6';
 import { useCallback, useEffect, useState } from 'react';
-import { useAirdropStore } from '@app/store/useAirdropStore';
+import { GIFT_GEMS, REFERRAL_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'framer-motion';
 import DownloadReferralModal from './DownloadReferralModal/DownloadReferralModal';
@@ -26,7 +26,7 @@ import GemsPill from './GemsPill/GemsPill';
 export default function UserInfo() {
     const { logout, userDetails, airdropTokens, userPoints, wipUI, referralCount } = useAirdropStore();
     const [open, setOpen] = useState(false);
-    const [madalOpen, setMadalOpen] = useState<'claim' | 'invite' | undefined>(undefined);
+    const [modalOpen, setModalOpen] = useState<'claim' | 'invite' | undefined>(undefined);
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
@@ -45,7 +45,7 @@ export default function UserInfo() {
     };
 
     const handleReferalClose = () => {
-        setMadalOpen(undefined);
+        setModalOpen(undefined);
     };
 
     const handleClickOutside = useCallback(
@@ -107,16 +107,17 @@ export default function UserInfo() {
                     <AnimatePresence>
                         {open && (
                             <Menu initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                                <MenuItem onClick={() => setMadalOpen('invite')}>
+                                <MenuItem onClick={() => setModalOpen('invite')}>
                                     {t('referral')}{' '}
                                     <NumberPill>
-                                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" /> +2000
+                                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" /> +
+                                        {REFERRAL_GEMS}
                                     </NumberPill>
                                 </MenuItem>
-                                <MenuItem onClick={() => setMadalOpen('claim')}>
+                                <MenuItem onClick={() => setModalOpen('claim')}>
                                     {t('claimGems')}{' '}
                                     <NumberPill>
-                                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" /> +2000
+                                        <StatsIcon src={gemImage} alt="Gems" className="StatsIcon-gems" /> +{GIFT_GEMS}
                                     </NumberPill>
                                 </MenuItem>
                                 <MenuItem onClick={handleLogout}>{t('logout')}</MenuItem>
@@ -126,9 +127,9 @@ export default function UserInfo() {
                 </MenuWrapper>
             </Wrapper>
             <AnimatePresence>
-                {madalOpen && (
+                {modalOpen && (
                     <DownloadReferralModal
-                        referralCode={madalOpen === 'invite' ? userDetails?.user?.referral_code : undefined}
+                        referralCode={modalOpen === 'invite' ? userDetails?.user?.referral_code : undefined}
                         onClose={handleReferalClose}
                     />
                 )}
