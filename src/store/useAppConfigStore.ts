@@ -3,6 +3,7 @@ import { create } from './create';
 import { AppConfig } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
 import { modeType } from './types.ts';
+import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 type State = Partial<AppConfig>;
@@ -15,6 +16,7 @@ interface Actions {
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMode: (mode: modeType) => Promise<void>;
+    setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
 }
 
@@ -51,6 +53,14 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set should always use system language', e);
             appStateStore.setError('Could not change system language');
             set({ should_always_use_system_language: !shouldAlwaysUseSystemLanguage });
+        });
+    },
+    setApplicationLanguage: async (applicationLanguage: Language) => {
+        set({ application_language: applicationLanguage });
+        invoke('set_application_language', { applicationLanguage }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set application language', e);
+            appStateStore.setError('Could not change application language');
         });
     },
     setAllowTelemetry: async (allowTelemetry) => {
