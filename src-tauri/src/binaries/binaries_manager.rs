@@ -13,7 +13,7 @@ use super::{
     Binaries,
 };
 
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 
 pub const LOG_TARGET: &str = "tari::universe::binary_manager";
 

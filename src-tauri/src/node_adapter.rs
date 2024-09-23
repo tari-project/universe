@@ -118,7 +118,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
             ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current().read().await
+                    let file_path = BinaryResolver::current()
+                        .read()
+                        .await
                         .resolve_path_to_binary_files(Binaries::MinotariNode)
                         .await
                         .unwrap();
