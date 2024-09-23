@@ -1,6 +1,6 @@
 use log::{error, info};
 use std::sync::LazyLock;
-use tauri::{AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
+use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 
 use crate::format_utils::format_balance;
 use crate::hardware_monitor::HardwareStatus;
@@ -14,6 +14,10 @@ pub enum SystrayItemId {
     CpuUsage,
     GpuUsage,
     EstimatedEarning,
+    Show,
+    Hide,
+    Minimize,
+    UnMinimize
 }
 
 impl SystrayItemId {
@@ -24,6 +28,10 @@ impl SystrayItemId {
             SystrayItemId::CpuUsage => "cpu_usage",
             SystrayItemId::GpuUsage => "gpu_usage",
             SystrayItemId::EstimatedEarning => "estimated_earning",
+            SystrayItemId::Show => "show",
+            SystrayItemId::Hide => "hide",
+            SystrayItemId::Minimize => "minimize",
+            SystrayItemId::UnMinimize => "unminimize"
         }
     }
 
@@ -36,6 +44,10 @@ impl SystrayItemId {
             SystrayItemId::EstimatedEarning => {
                 format!("Est earning: {} tXTM/day", format_balance(value))
             }
+            SystrayItemId::Show => "Show".to_string(),
+            SystrayItemId::Hide => "Hide".to_string(),
+            SystrayItemId::Minimize => "Minimize".to_string(),
+            SystrayItemId::UnMinimize => "Unminimize".to_string()
         }
     }
 }
@@ -146,6 +158,10 @@ impl SystemtrayManager {
             SystrayItemId::EstimatedEarning.get_title(0.0),
         )
         .disabled();
+        let show = CustomMenuItem::new(SystrayItemId::Show.to_str(), SystrayItemId::Show.get_title(0.0)); 
+        let hide = CustomMenuItem::new(SystrayItemId::Hide.to_str(), SystrayItemId::Hide.get_title(0.0));
+        let minimize = CustomMenuItem::new(SystrayItemId::Minimize.to_str(), SystrayItemId::Minimize.get_title(0.0));
+        let unminimize = CustomMenuItem::new(SystrayItemId::UnMinimize.to_str(), SystrayItemId::UnMinimize.get_title(0.0));
 
         SystemTrayMenu::new()
             .add_item(cpu_usage)
@@ -155,6 +171,12 @@ impl SystemtrayManager {
             .add_item(gpu_hashrate)
             .add_native_item(SystemTrayMenuItem::Separator)
             .add_item(estimated_earning)
+            .add_native_item(SystemTrayMenuItem::Separator)
+            .add_item(show)
+            .add_item(hide)
+            .add_native_item(SystemTrayMenuItem::Separator)
+            .add_item(minimize)
+            .add_item(unminimize)
     }
 
     fn initialize_systray() -> SystemTray {
@@ -180,6 +202,7 @@ impl SystemtrayManager {
             CurrentOperatingSystem::MacOS => return systray.with_tooltip(tooltip.clone().as_str()),
         }
     }
+
     fn detect_current_os() -> CurrentOperatingSystem {
         if cfg!(target_os = "windows") {
             CurrentOperatingSystem::Windows
@@ -221,6 +244,49 @@ impl SystemtrayManager {
                     .unwrap_or_else(|e| {
                         error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
                     });
+            }
+        }
+    }
+
+    pub fn handle_system_tray_event(&self, app: AppHandle, event: SystemTrayEvent) {
+        match event {
+            SystemTrayEvent::DoubleClick { tray_id, .. } => {
+                info!(target: LOG_TARGET, "System tray double click event: {}", tray_id);
+                app.get_window("main").unwrap().show().unwrap();
+            }
+            SystemTrayEvent::RightClick { tray_id, .. } => {
+                info!(target: LOG_TARGET, "System tray right click event: {}", tray_id);
+            }
+            SystemTrayEvent::LeftClick { tray_id, .. } => {
+                info!(target: LOG_TARGET, "System tray left click event: {}", tray_id);
+            }
+            SystemTrayEvent::MenuItemClick { tray_id, id, .. } => {
+                info!(target: LOG_TARGET, "System tray menu item click event: {}", id);
+                match id.as_str() {
+                    "show" => {
+                        info!(target: LOG_TARGET, "Showing window");
+                        app.get_window("main").unwrap().show().unwrap();
+                    }
+                    "hide" => {
+                        info!(target: LOG_TARGET, "Hiding window");
+                        app.get_window("main").unwrap().hide().unwrap();
+                    }
+                    "minimize" => {
+                        info!(target: LOG_TARGET, "Minimizing window");
+                        app.get_window("main").unwrap().minimize().unwrap();
+                    }
+                    "unminimize" => {
+                        info!(target: LOG_TARGET, "Unminimizing window");
+                        app.get_window("main").unwrap().unminimize().unwrap();
+                        app.get_window("main").unwrap().set_focus().unwrap();
+                    }
+                    _ => {
+                        info!(target: LOG_TARGET, "Unknown menu item click event: {}", id);
+                    }
+                }
+            }
+            _ => {
+                info!(target: LOG_TARGET, "System tray event");
             }
         }
     }

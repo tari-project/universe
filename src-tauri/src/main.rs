@@ -1185,6 +1185,7 @@ fn main() {
 
     let app = tauri::Builder::default()
         .system_tray(systray)
+        .on_system_tray_event(| app, event | SystemtrayManager::current().handle_system_tray_event(app.clone(), event))
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
