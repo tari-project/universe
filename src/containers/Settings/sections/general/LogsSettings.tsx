@@ -39,7 +39,7 @@ export default function LogsSettings() {
             .finally(() => {
                 setLoading(false);
             });
-    }, [feedback]);
+    }, [feedback, t]);
     const openLogsDirectory = () => {
         invoke('open_log_dir')
             .then(() => {

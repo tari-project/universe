@@ -73,6 +73,7 @@ mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
 mod user_listener;
+mod utils;
 mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
@@ -157,14 +158,18 @@ async fn send_feedback(
     include_logs: bool,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
     state
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs)
+        .send_feedback(
+            feedback,
+            include_logs,
+            app.path_resolver().app_log_dir().clone(),
+        )
         .await
         .inspect_err(|e| error!("error at send_feedback {:?}", e))
         .map_err(|e| e.to_string())?;
