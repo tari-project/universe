@@ -252,7 +252,8 @@ impl SystemtrayManager {
         match event {
             SystemTrayEvent::DoubleClick { tray_id, .. } => {
                 info!(target: LOG_TARGET, "System tray double click event: {}", tray_id);
-                app.get_window("main").unwrap().show().unwrap();
+                app.get_window("main").unwrap().unminimize().unwrap();
+                app.get_window("main").unwrap().set_focus().unwrap();
             }
             SystemTrayEvent::RightClick { tray_id, .. } => {
                 info!(target: LOG_TARGET, "System tray right click event: {}", tray_id);
