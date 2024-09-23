@@ -354,6 +354,14 @@ async fn setup_inner(
         .read_current_highest_version(Binaries::GpuMiner, progress.clone())
         .await?;
 
+    let _unused = state
+        .gpu_miner
+        .write()
+        .await
+        .detect()
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+
     if now
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
@@ -401,8 +409,6 @@ async fn setup_inner(
         let _unused = BinaryResolver::current()
             .ensure_latest(Binaries::GpuMiner, progress.clone())
             .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of GpuMiner: {:?}", e));
-
-        state.gpu_miner.write().await.detect().await?;
 
         progress.set_max(30).await;
         progress
