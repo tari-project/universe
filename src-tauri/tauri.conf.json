@@ -11,7 +11,8 @@
     },
     "tauri": {
         "systemTray": {
-            "iconPath": "icons/icon.ico"
+            "iconPath": "icons/icon.ico",
+            "menuOnLeftClick": true
         },
         "updater": {
             "active": true,
