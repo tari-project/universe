@@ -4,7 +4,7 @@ use std::sync::{Arc, LazyLock};
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use regex::Regex;
 use semver::{Version, VersionReq};
 use tari_common::configuration::Network;
@@ -436,7 +436,7 @@ impl BinaryResolver {
                         }
                     }
                     Err(_) => match std::fs::create_dir_all(&bin_folder) {
-                        Ok(_) => info!(target:LOG_TARGET, "Created bin dir: {:?}", bin_folder),
+                        Ok(_) => debug!(target:LOG_TARGET, "Created bin dir: {:?}", bin_folder),
                         Err(e) => error!(target:LOG_TARGET, "Failed to create dir: {}", e),
                     },
                 }

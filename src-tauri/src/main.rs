@@ -22,6 +22,7 @@ use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binary_resolver::{Binaries, BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
+use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
@@ -51,6 +52,7 @@ mod feedback;
 mod format_utils;
 mod github;
 mod gpu_miner;
+mod gpu_miner_adapter;
 mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -65,6 +67,8 @@ mod process_adapter;
 mod process_killer;
 mod process_utils;
 mod process_watcher;
+mod progress_tracker;
+mod setup_status_event;
 mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
@@ -73,10 +77,6 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-use hardware_monitor::{HardwareMonitor, HardwareParameters};
-mod gpu_miner_adapter;
-mod progress_tracker;
-mod setup_status_event;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
@@ -283,6 +283,46 @@ async fn exit_application(
 }
 
 #[tauri::command]
+async fn set_should_always_use_system_language(
+    should_always_use_system_language: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_should_always_use_system_language(should_always_use_system_language)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_application_language(
+    state: tauri::State<'_, UniverseAppState>,
+    application_language: String,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_application_language(application_language.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn resolve_application_language(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<String, String> {
+    let mut config = state.config.write().await;
+    let _unused = config.propose_system_language().await;
+
+    Ok(config.application_language().to_string())
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -318,6 +358,7 @@ async fn setup_inner(
             },
         )
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
     let cache_dir = app.path_resolver().app_cache_dir().unwrap();
     let config_dir = app.path_resolver().app_config_dir().unwrap();
@@ -1416,11 +1457,14 @@ fn main() {
             set_gpu_mining_enabled,
             set_cpu_mining_enabled,
             restart_application,
+            resolve_application_language,
+            set_application_language,
             get_miner_metrics,
             get_app_config,
             get_p2pool_stats,
             get_tari_wallet_details,
-            exit_application
+            exit_application,
+            set_should_always_use_system_language
         ])
         .build(tauri::generate_context!())
         .inspect_err(

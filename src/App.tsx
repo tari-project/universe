@@ -18,10 +18,11 @@ import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx
 import { useMemo } from 'react';
 import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
+import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 
 export default function App() {
+    useLangaugeResolver();
     useSetUp();
-    useEnvironment();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
