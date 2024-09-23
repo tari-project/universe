@@ -11,7 +11,7 @@ const useWalletDetailsUpdater = () => {
             } catch (error) {
                 console.error('Error fetching wallet details:', error);
             }
-        }, 5000);
+        }, 1000);
 
         return () => {
             clearInterval(fetchWalletInterval);
