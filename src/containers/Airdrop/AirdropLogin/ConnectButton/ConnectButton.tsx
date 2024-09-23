@@ -1,4 +1,4 @@
-import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import { useAirdropStore, INSTALL_BONUS_GEMS } from '@app/store/useAirdropStore.ts';
 import { NumberPill, StyledButton, XIcon, IconCircle, Text, Gem1, Gem2, Gem3 } from './styles.ts';
 import { useCallback, useEffect } from 'react';
 import { open } from '@tauri-apps/api/shell';
@@ -63,7 +63,7 @@ export default function ConnectButton() {
             <Gem2 src={gem2Image} alt="" className="ConnectButton-Gem2" />
             <Gem3 src={gem3Image} alt="" className="ConnectButton-Gem3" />
 
-            <NumberPill>+1000</NumberPill>
+            <NumberPill>+{INSTALL_BONUS_GEMS}</NumberPill>
 
             <Text>{t('loginButton')}</Text>
 
