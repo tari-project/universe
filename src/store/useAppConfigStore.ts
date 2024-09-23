@@ -15,6 +15,7 @@ interface Actions {
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMode: (mode: modeType) => Promise<void>;
+    setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -42,6 +43,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         } catch (e) {
             console.error('Could not get app config: ', e);
         }
+    },
+    setShouldAlwaysUseSystemLanguage: async (shouldAlwaysUseSystemLanguage: boolean) => {
+        set({ should_always_use_system_language: shouldAlwaysUseSystemLanguage });
+        invoke('set_should_always_use_system_language', { shouldAlwaysUseSystemLanguage }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set should always use system language', e);
+            appStateStore.setError('Could not change system language');
+            set({ should_always_use_system_language: !shouldAlwaysUseSystemLanguage });
+        });
     },
     setAllowTelemetry: async (allowTelemetry) => {
         set({ allow_telemetry: allowTelemetry });

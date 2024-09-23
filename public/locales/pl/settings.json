@@ -30,5 +30,6 @@
     "reset-wallet": "Resetuj porfel",
     "connected-to-tari-network": "Połączono z siecią Tari",
     "not-connected-to-tari-network": "Brak połączenia z siecią Tari",
-    "connected-peers": "Połączone węzły"
+    "connected-peers": "Połączone węzły",
+    "should-use-system-language": "Use system language"
 }

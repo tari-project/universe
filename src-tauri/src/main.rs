@@ -283,6 +283,21 @@ async fn exit_application(
 }
 
 #[tauri::command]
+async fn set_should_always_use_system_language(
+    should_always_use_system_language: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_should_always_use_system_language(should_always_use_system_language)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 async fn set_application_language(
     state: tauri::State<'_, UniverseAppState>,
     application_language: String,
@@ -1448,7 +1463,8 @@ fn main() {
             get_app_config,
             get_p2pool_stats,
             get_tari_wallet_details,
-            exit_application
+            exit_application,
+            set_should_always_use_system_language
         ])
         .build(tauri::generate_context!())
         .inspect_err(

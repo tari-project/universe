@@ -50,5 +50,6 @@
     "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
   "connected-to-tari": "Connected to the Tari Network",
   "not-connected-to-tari": "Not connected to the Tari Network",
-  "connected-peers": "Connected Peers"
+  "connected-peers": "Connected Peers",
+  "should-use-system-language": "Use system language"
 }

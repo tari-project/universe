@@ -35,6 +35,8 @@ pub struct AppConfigFromFile {
     cpu_mining_enabled: bool,
     #[serde(default = "default_false")]
     has_system_language_been_proposed: bool,
+    #[serde(default = "default_false")]
+    should_always_use_system_language: bool,
     #[serde(default = "default_application_language")]
     application_language: String,
 }
@@ -53,6 +55,7 @@ impl Default for AppConfigFromFile {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
             application_language: default_application_language(),
         }
     }
@@ -96,6 +99,7 @@ pub(crate) struct AppConfig {
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
+    should_always_use_system_language: bool,
     application_language: String,
 }
 
@@ -114,6 +118,7 @@ impl AppConfig {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
             application_language: default_application_language(),
         }
     }
@@ -154,6 +159,7 @@ impl AppConfig {
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
+                self.should_always_use_system_language = config.should_always_use_system_language;
                 self.application_language = config.application_language;
             }
             Err(e) => {
@@ -270,8 +276,17 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_should_always_use_system_language(
+        &mut self,
+        should_always_use_system_language: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.should_always_use_system_language = should_always_use_system_language;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
-        if self.has_system_language_been_proposed {
+        if self.has_system_language_been_proposed | !self.should_always_use_system_language {
             Ok(())
         } else {
             let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
@@ -302,6 +317,7 @@ impl AppConfig {
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
             has_system_language_been_proposed: self.has_system_language_been_proposed,
+            should_always_use_system_language: self.should_always_use_system_language,
             application_language: self.application_language.clone(),
             ..default_config
         };

@@ -44,5 +44,9 @@
     "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?",
     "reset-wallet": "Reset wallet",
     "experimental-title": "Deneysel Özellikler",
-    "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatlice ilerleyin."
+    "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatlice ilerleyin.",
+    "connected-to-tari": "Connected to the Tari Network",
+    "not-connected-to-tari": "Not connected to the Tari Network",
+    "connected-peers": "Connected Peers",
+    "should-use-system-language": "Use system language"
 }
