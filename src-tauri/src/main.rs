@@ -78,8 +78,10 @@ mod gpu_miner_adapter;
 mod progress_tracker;
 mod setup_status_event;
 
-pub(crate) const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
+const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
+
 const LOG_TARGET: &str = "tari::universe::main";
+const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -903,8 +905,18 @@ async fn update_applications(
 async fn get_p2pool_stats(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<HashMap<String, Stats>, String> {
+    let timer = Instant::now();
+    if state.is_getting_p2pool_stats.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting p2pool stats");
+        return Err("Already getting p2pool stats".to_string());
+    }
+    state.is_getting_p2pool_stats.store(true, Ordering::SeqCst);
     let p2pool_stats = state.p2pool_manager.stats().await;
 
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
+    }
+    state.is_getting_p2pool_stats.store(false, Ordering::SeqCst);
     Ok(p2pool_stats)
 }
 
@@ -912,6 +924,14 @@ async fn get_p2pool_stats(
 async fn get_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
+    let timer = Instant::now();
+    if state.is_getting_wallet_balance.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting wallet balance");
+        return Err("Already getting wallet balance".to_string());
+    }
+    state
+        .is_getting_wallet_balance
+        .store(true, Ordering::SeqCst);
     let wallet_balance = match state.wallet_manager.get_balance().await {
         Ok(w) => w,
         Err(e) => {
@@ -929,6 +949,12 @@ async fn get_tari_wallet_details(
     };
     let tari_address = state.tari_address.read().await;
 
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
+    }
+    state
+        .is_getting_wallet_balance
+        .store(false, Ordering::SeqCst);
     Ok(TariWalletDetails {
         wallet_balance,
         tari_address_base58: tari_address.to_base58(),
@@ -951,6 +977,12 @@ async fn get_miner_metrics(
     app: tauri::AppHandle,
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
+    if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting miner metrics");
+        return Err("Already getting miner metrics".to_string());
+    }
+    state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
+
     let mut cpu_miner = state.cpu_miner.write().await;
     let mut gpu_miner = state.gpu_miner.write().await;
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
@@ -973,7 +1005,9 @@ async fn get_miner_metrics(
         Ok(cpu) => cpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-            state.is_getting_status.store(false, Ordering::SeqCst);
+            state
+                .is_getting_miner_metrics
+                .store(false, Ordering::SeqCst);
             return Err(e);
         }
     };
@@ -982,7 +1016,9 @@ async fn get_miner_metrics(
         Ok(gpu) => gpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
-            state.is_getting_status.store(false, Ordering::SeqCst);
+            state
+                .is_getting_miner_metrics
+                .store(false, Ordering::SeqCst);
             return Err(e.to_string());
         }
     };
@@ -1010,6 +1046,9 @@ async fn get_miner_metrics(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
+    state
+        .is_getting_miner_metrics
+        .store(false, Ordering::SeqCst);
 
     Ok(MinerMetrics {
         cpu: CpuMinerMetrics {
@@ -1177,7 +1216,9 @@ struct CpuMinerConfig {
 
 #[derive(Clone)]
 struct UniverseAppState {
-    is_getting_status: Arc<AtomicBool>,
+    is_getting_wallet_balance: Arc<AtomicBool>,
+    is_getting_p2pool_stats: Arc<AtomicBool>,
+    is_getting_miner_metrics: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -1200,8 +1241,6 @@ struct Payload {
     args: Vec<String>,
     cwd: String,
 }
-
-pub const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[allow(clippy::too_many_lines)]
 fn main() {
@@ -1256,7 +1295,9 @@ fn main() {
     // };
     let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
-        is_getting_status: Arc::new(AtomicBool::new(false)),
+        is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
+        is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
+        is_getting_wallet_balance: Arc::new(AtomicBool::new(false)),
         is_setup_finished: Arc::new(RwLock::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
