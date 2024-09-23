@@ -16,7 +16,7 @@ import {
     Title,
     Wrapper,
 } from './styles';
-import gemImage from '../images/gems.png';
+import gemImage from './images/gems.png';
 import gemLargeImage from './images/gem-large.png';
 import { useCallback, useState } from 'react';
 import { GIFT_GEMS } from '@app/store/useAirdropStore';

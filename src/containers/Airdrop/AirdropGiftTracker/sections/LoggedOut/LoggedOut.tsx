@@ -13,14 +13,14 @@ export default function LoggedOut() {
     const handleAuth = useCallback(
         (code?: string) => {
             const token = uuidv4();
-            if (backendInMemoryConfig?.airdropUrl) {
+            if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
                 setAuthUuid(token);
                 open(
-                    `${backendInMemoryConfig?.airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
+                    `${backendInMemoryConfig?.airdropTwitterAuthUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
                 );
             }
         },
-        [backendInMemoryConfig?.airdropUrl, setAuthUuid]
+        [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]
     );
 
     useEffect(() => {
