@@ -6,9 +6,10 @@ use log::{debug, error, info, warn};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -77,6 +78,9 @@ mod gpu_miner_adapter;
 mod progress_tracker;
 mod setup_status_event;
 
+pub(crate) const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
+const LOG_TARGET: &str = "tari::universe::main";
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UpdateProgressRustEvent {
@@ -129,14 +133,19 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
 
 #[tauri::command]
 async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
     state
         .config
         .write()
         .await
         .set_mode(mode)
         .await
-        .inspect_err(|e| error!("error at set_mode {:?}", e))
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
 
@@ -148,6 +157,7 @@ async fn send_feedback(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let timer = Instant::now();
     state
         .feedback
         .read()
@@ -156,6 +166,9 @@ async fn send_feedback(
         .await
         .inspect_err(|e| error!("error at send_feedback {:?}", e))
         .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "send_feedback took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -172,7 +185,7 @@ async fn set_allow_telemetry(
         .await
         .set_allow_telemetry(allow_telemetry)
         .await
-        .inspect_err(|e| error!("error at set_allow_telemetry {:?}", e))
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_allow_telemetry {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -183,7 +196,12 @@ async fn get_app_id(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<String, ()> {
-    Ok(state.config.read().await.anon_id().to_string())
+    let timer = Instant::now();
+    let app_id = state.config.read().await.anon_id().to_string();
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_app_id took too long: {:?}", timer.elapsed());
+    }
+    Ok(app_id)
 }
 
 #[tauri::command]
@@ -193,8 +211,15 @@ async fn set_airdrop_access_token(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let timer = Instant::now();
     let mut write_lock = state.airdrop_access_token.write().await;
     *write_lock = Some(token);
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "set_airdrop_access_token took too long: {:?}",
+            timer.elapsed()
+        );
+    }
     Ok(())
 }
 
@@ -204,7 +229,15 @@ async fn get_app_in_memory_config(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<AirdropInMemoryConfig, ()> {
-    Ok(state.in_memory_config.read().await.clone().into())
+    let timer = Instant::now();
+    let res = state.in_memory_config.read().await.clone().into();
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "get_app_in_memory_config took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(res)
 }
 
 #[tauri::command]
@@ -212,11 +245,15 @@ async fn set_monero_address(
     monero_address: String,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    let timer = Instant::now();
     let mut app_config = state.config.write().await;
     app_config
         .set_monero_address(monero_address)
         .await
         .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -249,12 +286,17 @@ async fn setup_application(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<bool, String> {
+    let timer = Instant::now();
     setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         e.to_string()
     })?;
 
-    Ok(state.config.read().await.auto_mining())
+    let res = state.config.read().await.auto_mining();
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "setup_application took too long: {:?}", timer.elapsed());
+    }
+    Ok(res)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -506,6 +548,7 @@ async fn set_p2pool_enabled(
     p2pool_enabled: bool,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    let timer = Instant::now();
     state
         .config
         .write()
@@ -540,6 +583,9 @@ async fn set_p2pool_enabled(
             .map_err(|error| error.to_string())?;
     }
 
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -548,12 +594,19 @@ async fn set_cpu_mining_enabled<'r>(
     enabled: bool,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    let timer = Instant::now();
     let mut config = state.config.write().await;
     config
         .set_cpu_mining_enabled(enabled)
         .await
         .inspect_err(|e| error!("error at set_cpu_mining_enabled {:?}", e))
         .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "set_cpu_mining_enabled took too long: {:?}",
+            timer.elapsed()
+        );
+    }
     Ok(())
 }
 
@@ -562,12 +615,20 @@ async fn set_gpu_mining_enabled(
     enabled: bool,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    let timer = Instant::now();
     let mut config = state.config.write().await;
     config
         .set_gpu_mining_enabled(enabled)
         .await
         .inspect_err(|e| error!("error at set_gpu_mining_enabled {:?}", e))
         .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "set_gpu_mining_enabled took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+
     Ok(())
 }
 
@@ -577,6 +638,7 @@ async fn get_seed_words(
     _state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
     let config_path = app.path_resolver().app_config_dir().unwrap();
     let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
@@ -588,6 +650,9 @@ async fn get_seed_words(
     for i in 0..seed_words.len() {
         res.push(seed_words.get_word(i).unwrap().clone());
     }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
+    }
     Ok(res)
 }
 
@@ -597,6 +662,7 @@ async fn start_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    let timer = Instant::now();
     let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
@@ -699,11 +765,15 @@ async fn start_mining<'r>(
             return Err(e.to_string());
         }
     }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
 #[tauri::command]
 async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
     state
         .cpu_miner
         .write()
@@ -719,14 +789,9 @@ async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<()
         .stop()
         .await
         .map_err(|e| e.to_string())?;
-    // stop the mmproxy. TODO: change it so that the cpu miner stops this dependency.
-    // state
-    //     .mm_proxy_manager
-    //     .stop()
-    //     .await
-    //     .map_err(|e| e.to_string())?;
-
-    // state.node_manager.stop().await.map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -740,6 +805,7 @@ fn open_log_dir(app: tauri::AppHandle) {
 
 #[tauri::command]
 async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
+    let timer = Instant::now();
     //TODO could be move to status command when XmrigAdapter will be implemented in BinaryResolver
 
     let default_message = "Failed to read version".to_string();
@@ -764,6 +830,13 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
         .get_latest_version(Binaries::ShaP2pool)
         .await;
 
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "get_applications_versions took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+
     Ok(ApplicationsVersions {
         tari_universe: tari_universe_version.to_string(),
         xmrig: xmrig_version,
@@ -779,6 +852,7 @@ async fn update_applications(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    let timer = Instant::now();
     state
         .config
         .write()
@@ -815,6 +889,9 @@ async fn update_applications(
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_applications took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 
@@ -869,6 +946,7 @@ async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<MinerMetrics, String> {
+    let timer = Instant::now();
     let mut cpu_miner = state.cpu_miner.write().await;
     let mut gpu_miner = state.gpu_miner.write().await;
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
@@ -891,6 +969,7 @@ async fn get_miner_metrics(
         Ok(cpu) => cpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
+            state.is_getting_status.store(false, Ordering::SeqCst);
             return Err(e);
         }
     };
@@ -899,6 +978,7 @@ async fn get_miner_metrics(
         Ok(gpu) => gpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
+            state.is_getting_status.store(false, Ordering::SeqCst);
             return Err(e.to_string());
         }
     };
@@ -917,7 +997,15 @@ async fn get_miner_metrics(
 
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
-    let connected_peers = state.node_manager.list_connected_peers().await.unwrap();
+    let connected_peers = state
+        .node_manager
+        .list_connected_peers()
+        .await
+        .unwrap_or_default();
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
+    }
 
     Ok(MinerMetrics {
         cpu: CpuMinerMetrics {
@@ -973,7 +1061,7 @@ async fn reset_settings<'r>(
         .collect();
 
     if !missing_dirs.is_empty() {
-        error!("Could not get app directories for {:?}", missing_dirs);
+        error!(target: LOG_TARGET, "Could not get app directories for {:?}", missing_dirs);
         return Err("Could not get app directories".to_string());
     }
 
@@ -1085,6 +1173,7 @@ struct CpuMinerConfig {
 
 #[derive(Clone)]
 struct UniverseAppState {
+    is_getting_status: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -1108,7 +1197,6 @@ struct Payload {
     cwd: String,
 }
 
-pub const LOG_TARGET: &str = "tari::universe::main";
 pub const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[allow(clippy::too_many_lines)]
@@ -1164,6 +1252,7 @@ fn main() {
     // };
     let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
+        is_getting_status: Arc::new(AtomicBool::new(false)),
         is_setup_finished: Arc::new(RwLock::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
@@ -1283,6 +1372,9 @@ fn main() {
             exit_application
         ])
         .build(tauri::generate_context!())
+        .inspect_err(
+            |e| error!(target: LOG_TARGET, "Error while building tauri application: {:?}", e),
+        )
         .expect("error while running tauri application");
 
     info!(
