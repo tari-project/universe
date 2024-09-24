@@ -27,7 +27,7 @@ export const useAirdropUserPointsListener = () => {
                                 bonusTiers?.find((t) => t.target === payload?.referralCount?.count)
                             ) {
                                 setTimeout(() => {
-                                    setFlareAnimationType('BonusGems');
+                                    setFlareAnimationType('GoalComplete');
                                 }, 2000);
                             }
                         }
