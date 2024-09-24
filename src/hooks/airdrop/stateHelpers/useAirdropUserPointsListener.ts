@@ -4,7 +4,10 @@ import { useEffect } from 'react';
 
 export const useAirdropUserPointsListener = () => {
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
+    const referralCount = useAirdropStore((state) => state.referralCount);
     const setUserPointsReferralCount = useAirdropStore((state) => state.setReferralCount);
+    const setFlareAnimationType = useAirdropStore((state) => state.setFlareAnimationType);
+
     useEffect(() => {
         let unListen: () => void = () => {
             //do nothing
@@ -15,7 +18,10 @@ export const useAirdropUserPointsListener = () => {
                 const payload = event.payload as UserPoints;
                 setUserPoints(payload);
                 if (payload.referralCount) {
-                    setUserPointsReferralCount(payload.referralCount);
+                    if (referralCount?.count !== payload.referralCount.count) {
+                        setFlareAnimationType('FriendAccepted');
+                        setUserPointsReferralCount(payload.referralCount);
+                    }
                 }
             }
         })
@@ -27,5 +33,6 @@ export const useAirdropUserPointsListener = () => {
         return () => {
             unListen();
         };
-    }, [setUserPoints, setUserPointsReferralCount]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 };

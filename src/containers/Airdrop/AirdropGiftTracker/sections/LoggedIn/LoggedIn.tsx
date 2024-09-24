@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Gems from '../../components/Gems/Gems';
 import UserInfo from './segments/UserInfo/UserInfo';
 import { UserRow, Wrapper } from './styles';
-import { useAirdropStore } from '@app/store/useAirdropStore';
+import { useAirdropStore, REFERRAL_GEMS, GIFT_GEMS, REFERRAL_BONUS_GEMS } from '@app/store/useAirdropStore';
 import Invite from './segments/Invite/Invite';
 import Flare from './segments/Flare/Flare';
 import { AnimatePresence } from 'framer-motion';
@@ -10,28 +10,40 @@ import { AnimatePresence } from 'framer-motion';
 export default function LoggedIn() {
     const [gems, setGems] = useState(0);
 
-    const [showFlare, setShowFlare] = useState<'GoalComplete' | 'FriendAccepted' | 'BonusGems' | false>(false);
-
-    const { userDetails, userPoints } = useAirdropStore();
+    const { userDetails, userPoints, flareAnimationType, setFlareAnimationType } = useAirdropStore();
 
     useEffect(() => {
         setGems(userPoints?.base.gems || userDetails?.user?.rank?.gems || 0);
     }, [userPoints?.base.gems, userDetails?.user?.rank?.gems]);
 
-    const handleShowFlare = () => {
-        if (showFlare) {
-            setShowFlare(false);
-            return;
-        }
+    // const handleShowFlare = () => {
+    //     if (flareAnimationType) {
+    //         setFlareAnimationType();
+    //         return;
+    //     }
+    //
+    //     //setShowFlare('GoalComplete');
+    //     setFlareAnimationType('FriendAccepted');
+    //     //setShowFlare('BonusGems');
+    // };
+    //
 
-        //setShowFlare('GoalComplete');
-        setShowFlare('FriendAccepted');
-        //setShowFlare('BonusGems');
-    };
+    const flareGems = useMemo(() => {
+        switch (flareAnimationType) {
+            case 'GoalComplete':
+                return REFERRAL_BONUS_GEMS;
+            case 'FriendAccepted':
+                return REFERRAL_GEMS;
+            case 'BonusGems':
+                return GIFT_GEMS;
+            default:
+                return 0;
+        }
+    }, [flareAnimationType]);
 
     return (
         <Wrapper>
-            <UserRow onClick={handleShowFlare}>
+            <UserRow>
                 <UserInfo />
                 <Gems number={gems} label={`Gems`} />
             </UserRow>
@@ -39,12 +51,12 @@ export default function LoggedIn() {
             <Invite />
 
             <AnimatePresence>
-                {showFlare && (
+                {flareAnimationType && (
                     <Flare
-                        gems={2000}
-                        animationType={showFlare}
-                        onAnimationComplete={() => setShowFlare(false)}
-                        onClick={() => setShowFlare(false)}
+                        gems={flareGems}
+                        animationType={flareAnimationType}
+                        onAnimationComplete={() => setFlareAnimationType()}
+                        onClick={() => setFlareAnimationType()}
                     />
                 )}
             </AnimatePresence>
