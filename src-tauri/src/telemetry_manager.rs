@@ -159,6 +159,7 @@ pub struct TelemetryData {
     pub gpu_make: Option<String>,
     pub mode: TelemetryMiningMode,
     pub version: String,
+    pub is_error: bool,
 }
 
 pub struct TelemetryManager {
@@ -345,6 +346,7 @@ async fn get_telemetry_data(
     let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
     let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
     let version = env!("CARGO_PKG_VERSION").to_string();
+    let is_error = gpu_status.is_error; //TODO add cpu_status error if occurs
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
@@ -360,6 +362,7 @@ async fn get_telemetry_data(
         gpu_utilization,
         resource_used: TelemetryResource::Cpu,
         version,
+        is_error,
     })
 }
 

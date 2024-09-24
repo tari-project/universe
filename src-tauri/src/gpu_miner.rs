@@ -103,6 +103,7 @@ impl GpuMiner {
                 estimated_earnings: 0,
                 is_mining: false,
                 is_available: self.is_available,
+                is_error: true,
             }),
         }
     }
