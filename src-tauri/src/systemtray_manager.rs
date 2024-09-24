@@ -1,6 +1,9 @@
 use log::{error, info};
 use std::sync::LazyLock;
-use tauri::{AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayMenuItem};
+use tauri::{
+    AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
+    SystemTrayMenuItem,
+};
 
 use crate::format_utils::format_balance;
 use crate::hardware_monitor::HardwareStatus;
@@ -14,6 +17,7 @@ pub enum SystrayItemId {
     CpuUsage,
     GpuUsage,
     EstimatedEarning,
+    UnMinimize,
 }
 
 impl SystrayItemId {
@@ -24,6 +28,7 @@ impl SystrayItemId {
             SystrayItemId::CpuUsage => "cpu_usage",
             SystrayItemId::GpuUsage => "gpu_usage",
             SystrayItemId::EstimatedEarning => "estimated_earning",
+            SystrayItemId::UnMinimize => "unminimize",
         }
     }
 
@@ -36,6 +41,7 @@ impl SystrayItemId {
             SystrayItemId::EstimatedEarning => {
                 format!("Est earning: {} tXTM/day", format_balance(value))
             }
+            SystrayItemId::UnMinimize => "Unminimize".to_string(),
         }
     }
 }
@@ -65,60 +71,6 @@ impl SystemtrayManager {
 
         Self { systray }
     }
-
-    pub fn create_systemtray_data(
-        &self,
-        cpu_hashrate: f64,
-        gpu_hashrate: f64,
-        hardware_status: HardwareStatus,
-        estimated_earning: f64,
-    ) -> SystrayData {
-        SystrayData {
-            cpu_hashrate,
-            gpu_hashrate,
-            cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
-            gpu_usage: f64::from(hardware_status.gpu.unwrap_or_default().usage_percentage),
-            estimated_earning,
-        }
-    }
-
-    pub fn update_menu_field(&self, app: AppHandle, item_id: SystrayItemId, value: f64) {
-        app.tray_handle()
-            .get_item(item_id.to_str())
-            .set_title(item_id.get_title(value))
-            .unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to update menu field: {}", e);
-            });
-    }
-
-    pub fn create_tooltip_from_data(&self, data: SystrayData) -> String {
-        SystemtrayManager::internal_create_tooltip_from_data(data)
-    }
-
-    fn internal_create_tooltip_from_data(data: SystrayData) -> String {
-        let current_os = SystemtrayManager::detect_current_os();
-
-        match current_os {
-            CurrentOperatingSystem::Windows => {
-                format!(
-                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEst. earning: {} tXTM/day",
-                    data.cpu_hashrate,
-                    data.cpu_usage,
-                    data.gpu_hashrate,
-                    data.gpu_usage,
-                    format_balance(data.estimated_earning)
-                )
-            }
-            CurrentOperatingSystem::Linux => "Not supported".to_string(),
-            CurrentOperatingSystem::MacOS => {
-                format!(
-                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
-                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, format_balance(data.estimated_earning)
-                )
-            }
-        }
-    }
-
     fn initialize_menu() -> SystemTrayMenu {
         info!(target: LOG_TARGET, "Initializing system tray menu");
         let cpu_hashrate = CustomMenuItem::new(
@@ -146,6 +98,10 @@ impl SystemtrayManager {
             SystrayItemId::EstimatedEarning.get_title(0.0),
         )
         .disabled();
+        let unminimize = CustomMenuItem::new(
+            SystrayItemId::UnMinimize.to_str(),
+            SystrayItemId::UnMinimize.get_title(0.0),
+        );
 
         SystemTrayMenu::new()
             .add_item(cpu_usage)
@@ -155,6 +111,8 @@ impl SystemtrayManager {
             .add_item(gpu_hashrate)
             .add_native_item(SystemTrayMenuItem::Separator)
             .add_item(estimated_earning)
+            .add_native_item(SystemTrayMenuItem::Separator)
+            .add_item(unminimize)
     }
 
     fn initialize_systray() -> SystemTray {
@@ -177,9 +135,63 @@ impl SystemtrayManager {
                 return systray.with_tooltip(tooltip.clone().as_str())
             }
             CurrentOperatingSystem::Linux => systray.with_menu(tray_menu),
-            CurrentOperatingSystem::MacOS => return systray.with_tooltip(tooltip.clone().as_str()),
+            CurrentOperatingSystem::MacOS => {
+                return systray
+                    .with_menu(tray_menu)
+                    .with_tooltip(tooltip.clone().as_str())
+            }
         }
     }
+
+    fn internal_create_tooltip_from_data(data: SystrayData) -> String {
+        let current_os = SystemtrayManager::detect_current_os();
+
+        match current_os {
+            CurrentOperatingSystem::Windows => {
+                format!(
+                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEst. earning: {} tXTM/day",
+                    data.cpu_hashrate,
+                    data.cpu_usage,
+                    data.gpu_hashrate,
+                    data.gpu_usage,
+                    format_balance(data.estimated_earning)
+                )
+            }
+            CurrentOperatingSystem::Linux => "Not supported".to_string(),
+            CurrentOperatingSystem::MacOS => {
+                format!(
+                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
+                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, format_balance(data.estimated_earning)
+                )
+            }
+        }
+    }
+
+    fn update_menu_field(&self, app: AppHandle, item_id: SystrayItemId, value: f64) {
+        app.tray_handle()
+            .get_item(item_id.to_str())
+            .set_title(item_id.get_title(value))
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Failed to update menu field: {}", e);
+            });
+    }
+
+    fn update_menu_with_data(&self, app: AppHandle, data: SystrayData) {
+        self.update_menu_field(app.clone(), SystrayItemId::CpuHashrate, data.cpu_hashrate);
+        self.update_menu_field(app.clone(), SystrayItemId::GpuHashrate, data.gpu_hashrate);
+        self.update_menu_field(app.clone(), SystrayItemId::CpuUsage, data.cpu_usage);
+        self.update_menu_field(app.clone(), SystrayItemId::GpuUsage, data.gpu_usage);
+        self.update_menu_field(
+            app.clone(),
+            SystrayItemId::EstimatedEarning,
+            data.estimated_earning,
+        );
+    }
+
+    pub fn create_tooltip_from_data(&self, data: SystrayData) -> String {
+        SystemtrayManager::internal_create_tooltip_from_data(data)
+    }
+
     fn detect_current_os() -> CurrentOperatingSystem {
         if cfg!(target_os = "windows") {
             CurrentOperatingSystem::Windows
@@ -205,23 +217,74 @@ impl SystemtrayManager {
                     });
             }
             CurrentOperatingSystem::Linux => {
-                self.update_menu_field(app.clone(), SystrayItemId::CpuHashrate, data.cpu_hashrate);
-                self.update_menu_field(app.clone(), SystrayItemId::GpuHashrate, data.gpu_hashrate);
-                self.update_menu_field(app.clone(), SystrayItemId::CpuUsage, data.cpu_usage);
-                self.update_menu_field(app.clone(), SystrayItemId::GpuUsage, data.gpu_usage);
-                self.update_menu_field(
-                    app.clone(),
-                    SystrayItemId::EstimatedEarning,
-                    data.estimated_earning,
-                );
+                self.update_menu_with_data(app, data);
             }
             CurrentOperatingSystem::MacOS => {
-                app.tray_handle()
+                self.update_menu_with_data(app.clone(), data);
+                app.clone()
+                    .tray_handle()
                     .set_tooltip(tooltip.as_str())
                     .unwrap_or_else(|e| {
                         error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
                     });
             }
+        }
+    }
+
+    pub fn handle_system_tray_event(&self, app: AppHandle, event: SystemTrayEvent) {
+        let window = app.get_window("main").unwrap();
+        match event {
+            SystemTrayEvent::DoubleClick { .. } => {
+                window.unminimize().unwrap();
+                window.set_focus().unwrap();
+            }
+            SystemTrayEvent::MenuItemClick { id, .. } => {
+                info!(target: LOG_TARGET, "System tray menu item click event: {}", id);
+                match id.as_str() {
+                    "unminimize" => {
+                        info!(target: LOG_TARGET, "Unminimizing window");
+                        match SystemtrayManager::detect_current_os() {
+                            CurrentOperatingSystem::Linux => {
+                                if window.is_minimized().unwrap() | !window.is_visible().unwrap() {
+                                    // Ony soultion to unminimize and show the window on Linux
+                                    // At least one that I found
+                                    window.hide().unwrap();
+                                    window.unminimize().unwrap();
+                                    window.show().unwrap();
+                                    window.set_focus().unwrap();
+                                }
+                            }
+                            CurrentOperatingSystem::MacOS => {
+                                window.unminimize().unwrap();
+                                window.set_focus().unwrap();
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {
+                        info!(target: LOG_TARGET, "Unknown menu item click event: {}", id);
+                    }
+                }
+            }
+            _ => {
+                info!(target: LOG_TARGET, "System tray event");
+            }
+        }
+    }
+
+    pub fn create_systemtray_data(
+        &self,
+        cpu_hashrate: f64,
+        gpu_hashrate: f64,
+        hardware_status: HardwareStatus,
+        estimated_earning: f64,
+    ) -> SystrayData {
+        SystrayData {
+            cpu_hashrate,
+            gpu_hashrate,
+            cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
+            gpu_usage: f64::from(hardware_status.gpu.unwrap_or_default().usage_percentage),
+            estimated_earning,
         }
     }
 

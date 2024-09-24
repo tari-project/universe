@@ -1,8 +1,9 @@
-use crate::binary_resolver::{VersionAsset, VersionDownloadInfo};
 use anyhow::anyhow;
 use log::{debug, info};
 use reqwest::Client;
 use serde::Deserialize;
+
+use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 
 const LOG_TARGET: &str = "tari::universe::github";
 
