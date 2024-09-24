@@ -19,7 +19,7 @@ import { AnimatePresence, m } from 'framer-motion';
 
 export default function Invite() {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
-    const { userDetails, referralCount, bonusTiers, userPoints } = useAirdropStore();
+    const { userDetails, referralCount, bonusTiers } = useAirdropStore();
 
     const referralCode = userDetails?.user?.referral_code || '';
 
@@ -28,11 +28,8 @@ export default function Invite() {
     const url = `${airdropUrl}/download/${referralCode}`;
 
     const nextBonusTier = useMemo(
-        () =>
-            bonusTiers
-                ?.sort((a, b) => a.target - b.target)
-                .find((t) => t.target <= (userPoints?.base.gems || userDetails?.user?.rank?.gems || 0)),
-        [bonusTiers, userDetails?.user?.rank?.gems, userPoints?.base.gems]
+        () => bonusTiers?.sort((a, b) => a.target - b.target).find((t) => t.target > (referralCount?.count || 0)),
+        [bonusTiers, referralCount?.count]
     );
     const friendsRemaining = nextBonusTier?.target && (nextBonusTier.target - (referralCount?.count || 0) || 0);
 
