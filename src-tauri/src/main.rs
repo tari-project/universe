@@ -175,6 +175,29 @@ async fn send_feedback(
 }
 
 #[tauri::command]
+async fn set_mine_on_app_start(
+    mine_on_app_start: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+
+    state
+        .config
+        .write()
+        .await
+        .set_mine_on_app_start(mine_on_app_start)
+        .await
+        .inspect_err(|e| error!("error at set_mine_on_app_start {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_mine_on_app_start took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn set_allow_telemetry(
     allow_telemetry: bool,
     _window: tauri::Window,
@@ -471,6 +494,14 @@ async fn setup_inner(
             .ensure_latest(Binaries::ShaP2pool, progress.clone())
             .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of ShaP2pool: {:?}", e));
     }
+
+    state
+        .gpu_miner
+        .write()
+        .await
+        .detect()
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e))?;
 
     for _i in 0..2 {
         match state
@@ -1471,6 +1502,7 @@ fn main() {
             restart_application,
             resolve_application_language,
             set_application_language,
+            set_mine_on_app_start,
             get_miner_metrics,
             get_app_config,
             get_p2pool_stats,

@@ -3,6 +3,7 @@ import GpuMiningMarkup from './sections/mining/GpuMiningMarkup.tsx';
 import SeedWordsMarkup from './sections/mining/SeedWordsMarkup';
 import MoneroAddressMarkup from './sections/mining/MoneroAddressMarkup';
 import WalletAddressMarkup from './sections/mining/WalletAddressMarkup.tsx';
+import MineOnStartMarkup from './sections/mining/MineOnStartMarkup.tsx';
 
 export const MiningSettings = () => {
     return (
@@ -12,6 +13,7 @@ export const MiningSettings = () => {
             <GpuMiningMarkup />
             <SeedWordsMarkup />
             <MoneroAddressMarkup />
+            <MineOnStartMarkup />
         </>
     );
 };
