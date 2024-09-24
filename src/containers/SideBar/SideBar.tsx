@@ -4,6 +4,7 @@ import Heading from './components/Heading';
 import { SideBarContainer, SideBarInner, BottomContainer, TopContainer } from './styles';
 
 import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
+import AirdropGiftTracker from '@app/containers/Airdrop/AirdropGiftTracker/AirdropGiftTracker';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import LostConnectionAlert from './components/LostConnectionAlert';
 
@@ -20,6 +21,7 @@ function SideBar() {
                 <Miner />
             </SideBarInner>
             <BottomContainer>
+                <AirdropGiftTracker />
                 <Wallet />
             </BottomContainer>
         </SideBarContainer>

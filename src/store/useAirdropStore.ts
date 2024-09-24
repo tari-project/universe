@@ -23,6 +23,13 @@ function parseJwt(token: string): TokenResponse {
 }
 
 //////////////////////////////////////////
+//
+
+export interface BonusTier {
+    id: string;
+    target: number;
+    bonusGems: number;
+}
 
 interface TokenResponse {
     exp: number;
@@ -101,6 +108,7 @@ export interface BackendInMemoryConfig {
     airdropTwitterAuthUrl: string;
 }
 
+type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 //////////////////////////////////////////
 
 interface AirdropState {
@@ -112,6 +120,8 @@ interface AirdropState {
     userPoints?: UserPoints;
     referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
+    flareAnimationType?: AnimationType;
+    bonusTiers?: BonusTier[];
 }
 
 interface AirdropStore extends AirdropState {
@@ -123,6 +133,8 @@ interface AirdropStore extends AirdropState {
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     setReferralCount: (referralCount: ReferralCount) => void;
     setAcceptedReferral: (acceptedReferral: boolean) => void;
+    setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
+    setBonusTiers: (bonusTiers: BonusTier[]) => void;
     logout: () => void;
 }
 
@@ -134,11 +146,14 @@ const clearState: AirdropState = {
     userPoints: undefined,
 };
 
+const NOT_PERSISTED_KEYS = ['userPoints', 'backendInMemoryConfig', 'userDetails', 'authUuid', 'referralCount'];
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
             setWipUI: (wipUI) => set({ wipUI }),
+            setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
+            setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
             logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
@@ -157,9 +172,7 @@ export const useAirdropStore = create<AirdropStore>()(
         {
             name: 'airdrop-store',
             partialize: (state) =>
-                Object.fromEntries(
-                    Object.entries(state).filter(([key]) => !['userPoints', 'backendInMemoryConfig'].includes(key))
-                ),
+                Object.fromEntries(Object.entries(state).filter(([key]) => !NOT_PERSISTED_KEYS.includes(key))),
         }
     )
 );

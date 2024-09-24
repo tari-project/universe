@@ -6,7 +6,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::process_utils;
 use crate::{
@@ -121,7 +121,9 @@ impl GpuMiner {
                 .to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
-            .resolve_path(Binaries::GpuMiner)
+            .read()
+            .await
+            .resolve_path_to_binary_files(Binaries::GpuMiner)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone().to_str());
