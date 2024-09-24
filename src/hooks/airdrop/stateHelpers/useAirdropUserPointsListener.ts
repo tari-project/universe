@@ -45,5 +45,5 @@ export const useAirdropUserPointsListener = () => {
             unListen();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [bonusTiers, referralCount?.count]);
 };
