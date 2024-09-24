@@ -284,7 +284,7 @@ impl BinaryManager {
         &self,
         selected_version: Option<Version>,
         progress_tracker: ProgressTracker,
-    ){
+    ) {
         info!(target: LOG_TARGET,"Downloading version: {:?}", selected_version);
 
         if selected_version.is_none() {
@@ -372,7 +372,6 @@ impl BinaryManager {
             }
         }
         self.delete_in_progress_folder_for_selected_version(selected_version.clone().unwrap());
-
     }
 
     pub async fn read_local_versions(&mut self) {
