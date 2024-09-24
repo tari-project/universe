@@ -19,23 +19,17 @@ export default function LoggedIn() {
     }, [userPoints?.base.gems, userDetails?.user?.rank?.gems]);
 
     const handleShowFlare = () => {
-        setShowFlare('BonusGems');
+        if (showFlare) {
+            setShowFlare(false);
+            return;
+        }
+
+        setShowFlare('FriendAccepted');
     };
 
-    useEffect(() => {
-        if (showFlare) {
-            const timeout = setTimeout(() => {
-                setShowFlare(false);
-            }, 3000);
-            return () => {
-                clearTimeout(timeout);
-            };
-        }
-    }, [showFlare]);
-
     return (
-        <Wrapper>
-            <UserRow onClick={handleShowFlare}>
+        <Wrapper onClick={handleShowFlare}>
+            <UserRow>
                 <UserInfo />
                 <Gems number={gems} label={`Gems`} />
             </UserRow>
