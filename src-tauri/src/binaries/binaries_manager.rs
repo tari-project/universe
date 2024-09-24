@@ -222,12 +222,13 @@ impl BinaryManager {
                 .unwrap()
                 .binary_file_name(version.clone().unwrap()),
         );
+        let binary_file_with_exe = binary_file.with_extension("exe");
 
         info!(target: LOG_TARGET,"Binary folder path: {:?}", binary_folder);
         info!(target: LOG_TARGET,"Version folder path: {:?}", version_folder);
         info!(target: LOG_TARGET,"Binary file path: {:?}", binary_file);
 
-        let binary_file_exists = binary_file.exists();
+        let binary_file_exists = binary_file.exists() || binary_file_with_exe.exists();
 
         info!(target: LOG_TARGET,"Binary file exists: {:?}", binary_file_exists);
 
