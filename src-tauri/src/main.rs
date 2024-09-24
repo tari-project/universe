@@ -1350,6 +1350,7 @@ fn main() {
         app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
+        p2pool_manager.clone(),
     );
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
