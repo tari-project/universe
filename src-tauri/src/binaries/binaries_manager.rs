@@ -129,6 +129,19 @@ impl BinaryManager {
         in_progress_folder
     }
 
+    fn delete_in_progress_folder_for_selected_version(&self, selected_version: Version) {
+        info!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", selected_version);
+
+        let binary_folder = self.adapter.get_binary_folder();
+        let version_folder = binary_folder.join(selected_version.to_string());
+        let in_progress_folder = version_folder.join("in_progress");
+
+        if in_progress_folder.exists() {
+            info!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
+            std::fs::remove_dir_all(&in_progress_folder).unwrap();
+        }
+    }
+
     fn get_asset_for_selected_version(&self, selected_version: Version) -> Option<VersionAsset> {
         info!(target: LOG_TARGET,"Getting asset for selected version: {:?}", selected_version);
 
@@ -271,12 +284,12 @@ impl BinaryManager {
         &self,
         selected_version: Option<Version>,
         progress_tracker: ProgressTracker,
-    ) -> Option<PathBuf> {
+    ){
         info!(target: LOG_TARGET,"Downloading version: {:?}", selected_version);
 
         if selected_version.is_none() {
             warn!(target: LOG_TARGET,"No version selected");
-            return None;
+            return;
         }
 
         let asset = self
@@ -346,23 +359,20 @@ impl BinaryManager {
                     {
                         Ok(_) => {
                             info!(target: LOG_TARGET,"Checksum validated for version: {:?}", selected_version.clone());
-                            Some(in_progress_file_zip)
                         }
                         Err(e) => {
                             error!(target: LOG_TARGET,"Error validating checksum for version: {:?}. Error: {:?}", selected_version.clone(), e);
                             std::fs::remove_dir_all(destination_dir.clone()).unwrap();
-                            None
                         }
                     }
-                } else {
-                    Some(in_progress_file_zip)
                 }
             }
             Err(e) => {
                 error!(target: LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", selected_version, e);
-                None
             }
         }
+        self.delete_in_progress_folder_for_selected_version(selected_version.clone().unwrap());
+
     }
 
     pub async fn read_local_versions(&mut self) {
