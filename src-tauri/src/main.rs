@@ -856,7 +856,6 @@ fn open_log_dir(app: tauri::AppHandle) {
 
 #[tauri::command]
 async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
-    
     let timer = Instant::now();
     let binary_resolver = BinaryResolver::current().read().await;
 
@@ -887,7 +886,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
             timer.elapsed()
         );
     }
-    
+
     drop(binary_resolver);
 
     Ok(ApplicationsVersions {
@@ -906,10 +905,9 @@ async fn update_applications(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-
     let timer = Instant::now();
     let mut binary_resolver = BinaryResolver::current().write().await;
-    
+
     state
         .config
         .write()
