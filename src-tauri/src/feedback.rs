@@ -77,12 +77,20 @@ impl Feedback {
         zip.finish()
     }
 
+    async fn archive_path(&self, logs_dir: &Path) -> Result<(PathBuf, String)> {
+        let config = self.config.read().await;
+        let zip_filename = format!("logs_{}.zip", config.anon_id());
+        let archive_file = logs_dir.join(zip_filename.clone());
+        self.zip_create_from_directory(&archive_file, logs_dir)
+            .await?;
+        Ok((archive_file.to_path_buf(), zip_filename))
+    }
     pub async fn send_feedback(
         &self,
         feedback_message: String,
         include_logs: bool,
         app_log_dir: Option<PathBuf>,
-    ) -> Result<()> {
+    ) -> Result<String> {
         if feedback_message.is_empty() {
             return Err(anyhow::anyhow!("Feedback not sent. No message provided"));
         }
@@ -93,26 +101,20 @@ impl Feedback {
         );
 
         // Create a multipart form
-        let mut form = multipart::Form::new().text("feedback", feedback_message.clone());
+        let app_id = self.config.read().await.anon_id().to_string();
+        let mut form = multipart::Form::new()
+            .text("feedback", feedback_message.clone())
+            .text("appId", app_id.clone());
 
-        let mut upload_zip_path = None;
-
-        if include_logs {
-            let config = self.config.read().await;
-            let fallback_dir = config.config_dir().map(|d| d.join("logs"));
-            let logs_dir = app_log_dir
-                .or(fallback_dir)
-                .ok_or_else(|| anyhow::anyhow!("Logs directory not found"))?;
-            let app_id = config.anon_id();
-            let zip_filename = format!("logs_{}.zip", app_id);
-            let archive_file = logs_dir.join(zip_filename.clone());
-            upload_zip_path = Some(archive_file.clone());
-            self.zip_create_from_directory(&archive_file, &logs_dir)
+        let upload_zip_path = if include_logs {
+            let logs_dir = &app_log_dir.ok_or(anyhow::anyhow!("Missing log directory"))?;
+            let (archive_file, zip_filename) = self.archive_path(logs_dir).await?;
+            self.zip_create_from_directory(&archive_file, logs_dir)
                 .await?;
-            let metadata = std::fs::metadata(archive_file.clone())?;
+            let metadata = std::fs::metadata(&archive_file)?;
             let file_size = metadata.len();
             info!(target: LOG_TARGET, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
-            let mut file = File::open(archive_file)?;
+            let mut file = File::open(&archive_file)?;
             let mut file_contents = Vec::new();
             file.read_to_end(&mut file_contents)?;
             form = form.part(
@@ -121,11 +123,20 @@ impl Feedback {
                     .file_name(zip_filename.clone())
                     .mime_str("application/x-compressed")?,
             );
-        }
+            Some(archive_file)
+        } else {
+            None
+        };
+
+        let jwt = self.in_memory_config.read().await.airdrop_access_token.clone();
+
 
         // Send the POST request
-        let client = reqwest::Client::new();
-        let response = client.post(feedback_url).multipart(form).send().await?;
+        let mut req = reqwest::Client::new().post(feedback_url).multipart(form);
+        if let Some(jwt) = jwt {
+            req = req.header("Authorization", format!("Bearer {}", jwt));
+        }
+        let response = req.send().await?;
 
         // Delete the ZIP file
         if let Some(archive_file) = upload_zip_path {
@@ -133,7 +144,7 @@ impl Feedback {
         }
         if response.status().is_success() {
             info!(target: LOG_TARGET, "Feedback sent successfully");
-            Ok(())
+            Ok(response.text().await?)
         } else {
             error!(target: LOG_TARGET, "Failed to upload file: {}", response.status());
             Err(anyhow::anyhow!(
