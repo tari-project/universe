@@ -225,13 +225,13 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {}", e);
                 if e.is_connect() {
                     return Ok(GpuMinerStatus {
                         is_mining: false,
                         hash_rate: 0,
                         estimated_earnings: 0,
                         is_available: false,
+                        is_error: true,
                     });
                 }
                 return Ok(GpuMinerStatus {
@@ -239,19 +239,20 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                     hash_rate: 0,
                     estimated_earnings: 0,
                     is_available: false,
+                    is_error: true,
                 });
             }
         };
         let text = response.text().await?;
         let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
             Ok(body) => body,
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {}", e);
+            Err(_) => {
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0,
                     estimated_earnings: 0,
                     is_available: false,
+                    is_error: true,
                 });
             }
         };
@@ -260,6 +261,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
             hash_rate: body.hashes_per_second,
             estimated_earnings: 0,
             is_available: true,
+            is_error: false,
         })
     }
 }
@@ -275,4 +277,5 @@ pub struct GpuMinerStatus {
     pub hash_rate: u64,
     pub estimated_earnings: u64,
     pub is_available: bool,
+    pub is_error: bool,
 }

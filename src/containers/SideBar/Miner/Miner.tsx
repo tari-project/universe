@@ -14,6 +14,7 @@ import {
 } from '@app/containers/SideBar/Miner/components/ExpandableTile.styles.ts';
 import { useShallow } from 'zustand/react/shallow';
 import { LayoutGroup } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
 import useMiningMetricsUpdater from '@app/hooks/useMiningMetricsUpdater.ts';
@@ -21,6 +22,7 @@ import useMining from '@app/hooks/mining/useMining.ts';
 import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachine.ts';
 
 export default function Miner() {
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
@@ -57,22 +59,34 @@ export default function Miner() {
         <MinerContainer layout>
             <TileContainer layout>
                 <LayoutGroup id="miner-stat-tiles">
-                    <Tile
-                        title="CPU Power"
-                        stats={isCpuMiningEnabled && cpu_is_mining ? formatNumber(cpu_hash_rate) : '-'}
-                        isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
-                        chipValue={cpuHardwareStats?.usage_percentage}
-                        unit="H/s"
-                        useLowerCase
-                    />
-                    <Tile
-                        title="GPU Power"
-                        stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
-                        isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
-                        chipValue={gpuHardwareStats?.usage_percentage}
-                        unit="H/s"
-                        useLowerCase
-                    />
+                    {cpuHardwareStats?.status_error ? (
+                        <ExpandableTile title="CPU Power" stats={'N/A'} useLowerCase>
+                            <Typography variant="p">{t('cpu-status-warning', { ns: 'settings' })}</Typography>
+                        </ExpandableTile>
+                    ) : (
+                        <Tile
+                            title="CPU Power"
+                            stats={isCpuMiningEnabled && cpu_is_mining ? formatNumber(cpu_hash_rate) : '-'}
+                            isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
+                            chipValue={cpuHardwareStats?.usage_percentage}
+                            unit="H/s"
+                            useLowerCase
+                        />
+                    )}
+                    {gpuHardwareStats?.status_error ? (
+                        <ExpandableTile title="GPU Power" stats={'N/A'}>
+                            <Typography variant="p">{t('gpu-status-warning', { ns: 'settings' })}</Typography>
+                        </ExpandableTile>
+                    ) : (
+                        <Tile
+                            title="GPU Power"
+                            stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
+                            isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
+                            chipValue={gpuHardwareStats?.usage_percentage}
+                            unit="H/s"
+                            useLowerCase
+                        />
+                    )}
                     <ModeSelect />
                     <ExpandableTile
                         title="Est tXTM/day"

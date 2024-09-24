@@ -92,6 +92,7 @@ export interface HardwareParameters {
     usage_percentage: number;
     current_temperature: number;
     max_temperature: number;
+    status_error: boolean;
 }
 
 export interface HardwareStatus {
