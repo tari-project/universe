@@ -2,6 +2,8 @@
     "settings": "Ayarlar",
     "seed-words": "Seed Kelimeleri",
     "send-logs": "Günlüğü gönder",
+    "your-feedback": "Lütfen sorununuzu açıklayın",
+    "feedback-required": "Geri bildirim gerekli",
     "change-language": "Dil Değiştir",
     "logs": "Günlükler",
     "open-logs-directory": "Günlükler dizinini açın",
@@ -17,6 +19,7 @@
     },
     "tabs": {
         "general": "Genel",
+        "mining": "Madencilik",
         "experimental": "Deneysel"
     },
     "monero-address": {
@@ -29,13 +32,15 @@
     "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
     "cpu-mining-enabled": "CPU Madenciliği",
     "gpu-mining-enabled": "GPU Madenciliği",
-    "p2pool-stats": "P2Pool İstatistikleri",
-    "tribe": "Kabile",
+    "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
+    "p2pool-stats": "Takım İstatistikleri",
+    "tribe": "Takım",
     "miners": "Madenciler",
-    "tribe-earnings": "Kabile kazançları",
+    "mining-toggle-warning": "Değişiklikler yürürlüğe girene kadar madencilik durdurulacak.",
+    "tribe-earnings": "Takım kazançları",
     "tribe-pool-height": "Havuz yüksekliği",
-    "p2pool-hash-rate": "Havuz hash oranları",
-    "p2pool-total-earnings": "Toplam havuz kazançları",
+    "p2pool-hash-rate": "Takım hash oranları",
+    "p2pool-total-earnings": "Toplam takım kazançları",
     "p2pool-chain-tip": "Zincir ucu",
     "p2pool-user-total-earnings": "Toplam kazançlar",
     "yes": "Evet",
@@ -45,8 +50,8 @@
     "reset-wallet": "Reset wallet",
     "experimental-title": "Deneysel Özellikler",
     "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatlice ilerleyin.",
-    "connected-to-tari": "Connected to the Tari Network",
-    "not-connected-to-tari": "Not connected to the Tari Network",
-    "connected-peers": "Connected Peers",
-    "should-use-system-language": "Use system language"
+    "connected-to-tari": "Tari Ağına Bağlandı",
+    "not-connected-to-tari": "Tari Ağına bağlı değil",
+    "connected-peers": "Bağlanmış Eşler",
+    "should-use-system-language": "Sistem dilini kullan"
 }
