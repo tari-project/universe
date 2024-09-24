@@ -136,6 +136,7 @@ const clearState: AirdropState = {
     userPoints: undefined,
 };
 
+const NOT_PERSISTED_KEYS = ['userPoints', 'backendInMemoryConfig', 'userDetails', 'authUuid', 'referralCount'];
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
@@ -159,9 +160,7 @@ export const useAirdropStore = create<AirdropStore>()(
         {
             name: 'airdrop-store',
             partialize: (state) =>
-                Object.fromEntries(
-                    Object.entries(state).filter(([key]) => !['userPoints', 'backendInMemoryConfig'].includes(key))
-                ),
+                Object.fromEntries(Object.entries(state).filter(([key]) => !NOT_PERSISTED_KEYS.includes(key))),
         }
     )
 );
