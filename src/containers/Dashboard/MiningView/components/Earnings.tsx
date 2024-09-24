@@ -2,11 +2,10 @@ import { AnimatePresence } from 'framer-motion';
 
 import { EarningsContainer, EarningsWrapper } from './Earnings.styles.ts';
 import formatBalance from '@app/utils/formatBalance.ts';
-import { useCallback } from 'react';
 
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { useTranslation } from 'react-i18next';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
 const variants = {
     visible: {
@@ -31,31 +30,14 @@ const variants = {
 export default function Earnings() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
-    const handleBlockMined = useMiningStore((s) => s.handleBlockMined);
-    const earnings = useMiningStore((s) => s.earnings);
+    const earnings = useBlockchainVisualisationStore((s) => s.earnings);
     const formatted = formatBalance(earnings || 0);
-
-    const handleComplete = useCallback(() => {
-        const winTimeout = setTimeout(() => {
-            handleBlockMined();
-        }, 3000);
-
-        return () => {
-            clearTimeout(winTimeout);
-        };
-    }, [handleBlockMined]);
 
     return (
         <EarningsContainer>
             <AnimatePresence mode="wait">
                 {earnings ? (
-                    <EarningsWrapper
-                        variants={variants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="hidden"
-                        onAnimationComplete={handleComplete}
-                    >
+                    <EarningsWrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
                         <span>{t('your-reward-is')}</span>
                         <CharSpinner value={formatted.toString()} fontSize={72} />
                     </EarningsWrapper>
