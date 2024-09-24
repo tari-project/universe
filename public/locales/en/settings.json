@@ -51,8 +51,11 @@
   "reset-wallet": "Reset wallet",
   "experimental-title": "Experimental Features",
   "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
   "connected-to-tari": "Connected to the Tari Network",
-  "mine-on-app-start": "Allow mining on app startup",
   "not-connected-to-tari": "Not connected to the Tari Network",
   "connected-peers": "Connected Peers",
   "should-use-system-language": "Use system language"
