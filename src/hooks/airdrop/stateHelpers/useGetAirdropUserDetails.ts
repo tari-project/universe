@@ -5,13 +5,14 @@ interface RequestProps {
     path: string;
     method: 'GET' | 'POST';
     body?: Record<string, unknown>;
+    onError?: (e: unknown) => void;
 }
 
 export const useAridropRequest = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
 
-    return async <T>({ body, method, path }: RequestProps) => {
+    return async <T>({ body, method, path, onError }: RequestProps) => {
         if (!baseUrl || !airdropToken) return;
 
         const response = await fetch(`${baseUrl}${path}`, {
@@ -22,11 +23,28 @@ export const useAridropRequest = () => {
             },
             body: JSON.stringify(body),
         });
-        return response.json() as Promise<T>;
+
+        try {
+            if (!response.ok) {
+                console.error('Error fetching airdrop data', response);
+                if (onError) {
+                    onError(response);
+                }
+                return;
+            }
+            return response.json() as Promise<T>;
+        } catch (e) {
+            console.error('Error fetching airdrop data', e);
+            if (onError) {
+                onError(e);
+            }
+            return;
+        }
     };
 };
 
 export const useGetAirdropUserDetails = () => {
+    const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userDetails = useAirdropStore((state) => state.userDetails);
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
@@ -34,16 +52,20 @@ export const useGetAirdropUserDetails = () => {
     const setReferralCount = useAirdropStore((state) => state.setReferralCount);
     const setAcceptedReferral = useAirdropStore((state) => state.setAcceptedReferral);
     const handleRequest = useAridropRequest();
+    const logout = useAirdropStore((state) => state.logout);
 
     const fetchUserDetails = useCallback(async () => {
-        const data = await handleRequest<UserDetails>({
+        return handleRequest<UserDetails>({
             path: '/user/details',
             method: 'GET',
+            onError: logout,
+        }).then((data) => {
+            if (data?.user.id) {
+                setUserDetails(data);
+                return data.user;
+            }
         });
-        if (!data?.user.id) return;
-        setUserDetails(data);
-        return data.user;
-    }, [handleRequest, setUserDetails]);
+    }, [handleRequest, logout, setUserDetails]);
 
     const fetchUserPoints = useCallback(async () => {
         const data = await handleRequest<UserEntryPoints>({
@@ -73,18 +95,18 @@ export const useGetAirdropUserDetails = () => {
     }, [handleRequest, setReferralCount]);
 
     const fetchAcceptedReferral = useCallback(async () => {
-        console.log('fetchAcceptedReferral');
         const data = await handleRequest<{ claimed: boolean }>({
             path: '/miner/claimed-referral',
             method: 'GET',
         });
-        console.log({ data });
         setAcceptedReferral(!!data?.claimed);
     }, [handleRequest, setAcceptedReferral]);
 
     useEffect(() => {
         const fetchData = async () => {
             const details = await fetchUserDetails();
+
+            if (!details) return;
 
             const requests: (() => Promise<void>)[] = [];
             if (!details?.rank.gems) {
@@ -96,10 +118,9 @@ export const useGetAirdropUserDetails = () => {
             await Promise.all(requests);
         };
 
-        if (!userDetails?.user?.id) {
-            console.log('fetchUserDetails');
+        if (!userDetails?.user?.id && airdropToken) {
             fetchData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [airdropToken, userDetails?.user?.id]);
+    }, [airdropToken, userDetails, baseUrl]);
 };
