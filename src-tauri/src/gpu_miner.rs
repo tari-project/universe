@@ -148,6 +148,10 @@ impl GpuMiner {
         &mut self,
         excluded_gpu_device: Option<u8>,
     ) -> Result<(), anyhow::Error> {
+        println!(
+            "set_excluded_gpu_device gpuminer.rs -> {:?}",
+            excluded_gpu_device
+        );
         self.excluded_gpu_device = excluded_gpu_device;
         Ok(())
     }
