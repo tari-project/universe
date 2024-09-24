@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 export const useAirdropUserPointsListener = () => {
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
     const referralCount = useAirdropStore((state) => state.referralCount);
+    const bonusTiers = useAirdropStore((state) => state.bonusTiers);
     const setUserPointsReferralCount = useAirdropStore((state) => state.setReferralCount);
     const setFlareAnimationType = useAirdropStore((state) => state.setFlareAnimationType);
 
@@ -21,6 +22,14 @@ export const useAirdropUserPointsListener = () => {
                     if (referralCount?.count !== payload.referralCount.count) {
                         if (referralCount?.count) {
                             setFlareAnimationType('FriendAccepted');
+                            if (
+                                payload.referralCount.count &&
+                                bonusTiers?.find((t) => t.target === payload?.referralCount?.count)
+                            ) {
+                                setTimeout(() => {
+                                    setFlareAnimationType('BonusGems');
+                                }, 2000);
+                            }
                         }
                         setUserPointsReferralCount(payload.referralCount);
                     }

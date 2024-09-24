@@ -27,18 +27,18 @@ export default function LoggedIn() {
     //     //setShowFlare('BonusGems');
     // };
     //
-    const nextBonusTier = useMemo(
+    const bonusTier = useMemo(
         () =>
             bonusTiers
                 ?.sort((a, b) => a.target - b.target)
-                .find((t) => t.target <= (userPoints?.base.gems || userDetails?.user?.rank?.gems || 0)),
+                .find((t) => t.target == (userPoints?.base.gems || userDetails?.user?.rank?.gems || 0)),
         [bonusTiers, userDetails?.user?.rank?.gems, userPoints?.base.gems]
     );
 
     const flareGems = useMemo(() => {
         switch (flareAnimationType) {
             case 'GoalComplete':
-                return nextBonusTier?.bonusGems || 0;
+                return bonusTier?.bonusGems || 0;
             case 'FriendAccepted':
                 return REFERRAL_GEMS;
             case 'BonusGems':
@@ -46,7 +46,7 @@ export default function LoggedIn() {
             default:
                 return 0;
         }
-    }, [flareAnimationType, nextBonusTier?.bonusGems]);
+    }, [flareAnimationType, bonusTier?.bonusGems]);
 
     return (
         <Wrapper>
