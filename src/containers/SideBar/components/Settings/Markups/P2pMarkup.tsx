@@ -15,8 +15,8 @@ const P2pMarkup = () => {
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
     const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
-    const setExcludedDevice = useMiningStore((s) => s.setExcludeGpuDevice);
-    const excludedDevice = useMiningStore((s) => s.exludedGpuDevice);
+    const setExcludedDevice = useMiningStore((s) => s.setExcludedGpuDevice);
+    const excludedDevice = useMiningStore((s) => s.excludedGpuDevice);
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isMiningInProgress = isCPUMining || isGPUMining;
     const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed;

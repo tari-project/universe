@@ -18,7 +18,7 @@ interface State extends MinerMetrics {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
-    exludedGpuDevice?: number;
+    excludedGpuDevice?: number;
 }
 
 interface Actions {
@@ -35,7 +35,7 @@ interface Actions {
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockHeight: BlockTimeData) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
-    setExcludeGpuDevice: (excludeGpuDevice?: number) => Promise<void>;
+    setExcludedGpuDevice: (excludeGpuDevice?: number) => Promise<void>;
 }
 type MiningStoreState = State & Actions;
 
@@ -47,6 +47,7 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
+    excludedGpuDevice: undefined,
     cpu: {
         hardware: undefined,
         mining: {
@@ -63,7 +64,6 @@ const initialState: State = {
             hash_rate: 0,
             estimated_earnings: 0,
             is_available: false,
-            excluded_device: undefined,
         },
     },
     base_node: {
@@ -161,16 +161,16 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-    setExcludeGpuDevice: async (exludedGpuDevice) => {
-        console.info('Exclude gpu device nr:', exludedGpuDevice);
-        set({ exludedGpuDevice });
+    setExcludedGpuDevice: async (excludedGpuDevice) => {
+        console.info('--->>> Exclude gpu device nr:', excludedGpuDevice);
+        set({ excludedGpuDevice: excludedGpuDevice });
         try {
-            await invoke('set_excluded_gpu_device', {});
+            await invoke('set_excluded_gpu_device', { excluded_gpu_device: excludedGpuDevice });
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Could not set excluded gpu device: ', e);
             appStateStore.setError(e as string);
-            set({ exludedGpuDevice: undefined });
+            set({ excludedGpuDevice: undefined });
         }
     },
 }));

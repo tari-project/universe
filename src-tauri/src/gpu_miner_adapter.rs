@@ -33,7 +33,7 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) gpu_percentage: u16,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
-    pub(crate) exclude_device: Option<u8>,
+    pub(crate) excluded_gpu_device: Option<u8>,
 }
 
 impl GpuMinerAdapter {
@@ -43,7 +43,7 @@ impl GpuMinerAdapter {
             gpu_percentage: ECO_MODE_GPU_PERCENTAGE,
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
-            exclude_device: None,
+            excluded_gpu_device: None,
         }
     }
 
@@ -54,8 +54,8 @@ impl GpuMinerAdapter {
         }
     }
 
-    pub fn set_exclude_device(&mut self, exclude_device: Option<u8>) {
-        self.exclude_device = exclude_device;
+    pub fn set_excluded_gpu_device(&mut self, excluded_gpu_device: Option<u8>) {
+        self.excluded_gpu_device = excluded_gpu_device;
     }
 }
 
@@ -121,11 +121,13 @@ impl ProcessAdapter for GpuMinerAdapter {
         ) {
             args.push("--p2pool-enabled".to_string());
         }
-        info!(target: LOG_TARGET, "Gpu miner: exclude device {:?}", self.exclude_device);
-        if self.exclude_device.is_none() {
+        info!(target: LOG_TARGET, "Gpu miner: exclude device {:?}", self.excluded_gpu_device);
+        if let Some(device) = self.excluded_gpu_device.as_ref() {
+            info!(target: LOG_TARGET, "Gpu miner: add argument --exclude-devices {:?}", self.excluded_gpu_device);
             args.push("--exclude-devices".to_string());
-            args.push(self.exclude_device.as_ref().unwrap().to_string());
+            args.push(device.to_string());
         }
+        info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
 
         Ok((
             ProcessInstance {

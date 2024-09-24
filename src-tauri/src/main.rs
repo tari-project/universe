@@ -573,12 +573,16 @@ async fn set_gpu_mining_enabled(
 
 #[tauri::command]
 async fn set_excluded_gpu_device(
-    excluded_device: Option<u8>,
+    excluded_gpu_device: Option<u8>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    println!(
+        "set_excluded_gpu_device main.rs {:?}",
+        excluded_gpu_device.clone()
+    );
     let mut gpu_miner = state.gpu_miner.write().await;
     gpu_miner
-        .set_excluded_device(excluded_device)
+        .set_excluded_device(excluded_gpu_device)
         .await
         .inspect_err(|e| error!("error at set_excluded_gpu_device {:?}", e))
         .map_err(|e| e.to_string())?;
