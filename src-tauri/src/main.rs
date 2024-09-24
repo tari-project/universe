@@ -1404,7 +1404,8 @@ fn main() {
                 &app.path_resolver()
                     .app_config_dir()
                     .unwrap()
-                    .join("log4rs_config.yml"),
+                    .join("universe")
+                    .join("log4rs_config_universe.yml"),
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
