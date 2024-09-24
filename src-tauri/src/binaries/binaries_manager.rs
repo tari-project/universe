@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    path::PathBuf,
-    str::FromStr,
-};
+use std::{collections::HashMap, path::PathBuf, str::FromStr};
 
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
@@ -104,24 +100,12 @@ impl BinaryManager {
         //     serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
         // let version_req = json_content.binaries.get(&binary_name);
 
-        info!(target: LOG_TARGET, "Reading version requirements for {:?} from: {:?}",binary_name, path);
-
         let json_content: BinaryVersionsJsonContent =
             BinaryVersionsJsonContent::get_versions_requirements(
                 Network::get_current_or_user_setting_or_default(),
             );
 
-        info!(target: LOG_TARGET,
-            "Version requirements for {:?}",
-            binary_name
-        );
-
         let version_req = json_content.binaries.get(&binary_name);
-
-        info!(target: LOG_TARGET,
-            "Version requirements for {:?}: {:?}",
-            binary_name, version_req
-        );
 
         match version_req {
             Some(version_req) => {
