@@ -217,11 +217,15 @@ impl BinaryManager {
 
         let binary_folder = self.adapter.get_binary_folder();
         let version_folder = binary_folder.join(version.clone().unwrap().to_string());
-        let binary_file = version_folder.join(
+        let mut binary_file = version_folder.join(
             Binaries::from_name(&self.binary_name)
                 .unwrap()
                 .binary_file_name(version.clone().unwrap()),
         );
+
+        if cfg!(target_os = "windows") {
+            binary_file = binary_file.with_extension("exe");
+        }
 
         info!(target: LOG_TARGET,"Binary folder path: {:?}", binary_folder);
         info!(target: LOG_TARGET,"Version folder path: {:?}", version_folder);
