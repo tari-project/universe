@@ -107,10 +107,19 @@ impl GpuMiner {
         }
     }
 
-    pub async fn detect(&mut self) -> Result<(), anyhow::Error> {
+    pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
 
-        let args: Vec<String> = vec!["--detect".to_string(), "true".to_string()];
+        let args: Vec<String> = vec![
+            "--detect".to_string(),
+            "true".to_string(),
+            "--config".to_string(),
+            config_dir
+                .join("gpuminer")
+                .join("config.json")
+                .to_string_lossy()
+                .to_string(),
+        ];
         let gpuminer_bin = BinaryResolver::current()
             .resolve_path(Binaries::GpuMiner)
             .await?;
