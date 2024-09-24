@@ -39,9 +39,7 @@ impl Feedback {
         archive_file: &Path,
         directory: &Path,
     ) -> zip::result::ZipResult<File> {
-        let file_options = SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Bzip2);
-
+        let file_options = SimpleFileOptions::default();
 
         let file = File::create(archive_file)?;
         let mut zip = ZipWriter::new(file);
