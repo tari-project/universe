@@ -37,7 +37,7 @@ export default function FriendAccepted({ gems }: Props) {
                 </TextBottom>
             </TextBottomPosition>
 
-            <GemsAnimation />
+            <GemsAnimation delay={1} />
 
             <Background
                 initial={{ scale: 3 }}

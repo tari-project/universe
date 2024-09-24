@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import gemImage from '../images/gem.png';
 import { Canvas, Wrapper } from './styles';
 
@@ -67,8 +67,13 @@ class GemImpl implements Gem {
     }
 }
 
-const GemsAnimation: React.FC = () => {
+interface GemsAnimationProps {
+    delay?: number; // Delay in seconds
+}
+
+const GemsAnimation: React.FC<GemsAnimationProps> = ({ delay = 0 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [animationStarted, setAnimationStarted] = useState(false);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -103,6 +108,9 @@ const GemsAnimation: React.FC = () => {
         const animate = (): void => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // Sort gems by size, smallest to largest
+            gems.sort((a, b) => a.size - b.size);
+
             gems.forEach((gem) => {
                 gem.fall(canvas.height);
                 gem.draw(ctx, image);
@@ -112,21 +120,22 @@ const GemsAnimation: React.FC = () => {
         };
 
         resizeCanvas(); // Initial setup
-        animate();
+
+        // Start the animation after the specified delay
+        const timeoutId = setTimeout(() => {
+            setAnimationStarted(true);
+            animate();
+        }, delay * 1000);
 
         return () => {
             cancelAnimationFrame(animationFrameId);
             resizeObserver.disconnect();
+            clearTimeout(timeoutId);
         };
-    }, []);
+    }, [delay]);
 
     return (
-        <Wrapper
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-        >
+        <Wrapper>
             <Canvas ref={canvasRef} />
         </Wrapper>
     );
