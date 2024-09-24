@@ -82,15 +82,15 @@ impl ProcessAdapter for P2poolAdapter {
 
                     // let output = process_utils::launch_and_get_outputs(
                     //     &file_path,
-                    //     vec!["list-tribes".to_string()],
+                    //     vec!["list-squads".to_string()],
                     // )
                     // .await?;
-                    // let tribes: Vec<String> = serde_json::from_slice(&output)?;
-                    // let tribe = match tribes.choose(&mut rand::thread_rng()) {
-                    //     Some(tribe) => tribe.to_string(),
+                    // let squads: Vec<String> = serde_json::from_slice(&output)?;
+                    // let squad = match squads.choose(&mut rand::thread_rng()) {
+                    //     Some(squad) => squad.to_string(),
                     //     None => String::from("default"), // TODO: generate name
                     // };
-                    args.push("--tribe".to_string());
+                    args.push("--squad".to_string());
                     args.push("default2".to_string());
 
                     // env
