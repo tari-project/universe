@@ -1,4 +1,6 @@
 import styled from 'styled-components';
+import backgroundImage from '../images/goal_complete_bg.png';
+import { m } from 'framer-motion';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -8,24 +10,18 @@ export const Wrapper = styled('div')`
     gap: 10px;
     width: 100%;
     height: 100%;
-    background-color: #4b65e0;
+    color: #fff;
 `;
 
-export const Gems = styled('div')`
-    color: #fff;
-    text-align: center;
-    font-family: Druk, sans-serif;
-    font-size: 38px;
-    font-weight: 700;
-`;
+export const Background = styled(m.div)`
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: -1;
 
-export const Text = styled('div')`
-    color: #fff;
-    font-size: 12px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: normal;
-    letter-spacing: -0.36px;
-
-    text-align: center;
+    background-image: url(${backgroundImage});
+    background-size: cover;
+    background-position: center;
 `;

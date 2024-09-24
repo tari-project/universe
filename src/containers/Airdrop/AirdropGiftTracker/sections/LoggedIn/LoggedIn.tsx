@@ -19,19 +19,15 @@ export default function LoggedIn() {
     }, [userPoints?.base.gems, userDetails?.user?.rank?.gems]);
 
     const handleShowFlare = () => {
-        setShowFlare('BonusGems');
-    };
-
-    useEffect(() => {
         if (showFlare) {
-            const timeout = setTimeout(() => {
-                setShowFlare(false);
-            }, 3000);
-            return () => {
-                clearTimeout(timeout);
-            };
+            setShowFlare(false);
+            return;
         }
-    }, [showFlare]);
+
+        //setShowFlare('GoalComplete');
+        setShowFlare('FriendAccepted');
+        //setShowFlare('BonusGems');
+    };
 
     return (
         <Wrapper>
@@ -42,7 +38,16 @@ export default function LoggedIn() {
 
             <Invite />
 
-            <AnimatePresence>{showFlare && <Flare gems={2000} animationType={showFlare} />}</AnimatePresence>
+            <AnimatePresence>
+                {showFlare && (
+                    <Flare
+                        gems={2000}
+                        animationType={showFlare}
+                        onAnimationComplete={() => setShowFlare(false)}
+                        onClick={() => setShowFlare(false)}
+                    />
+                )}
+            </AnimatePresence>
         </Wrapper>
     );
 }
