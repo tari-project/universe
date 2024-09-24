@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import gemImage from '../images/gem.png';
 import { Canvas, Wrapper } from './styles';
 
@@ -22,17 +22,17 @@ class GemImpl implements Gem {
     rotation: number;
     rotationSpeed: number;
 
-    constructor(containerWidth: number, containerHeight: number) {
+    constructor(containerWidth: number) {
         this.x = 0;
         this.y = 0;
         this.speed = 0;
         this.size = 0;
         this.rotation = 0;
         this.rotationSpeed = 0;
-        this.reset(containerWidth, containerHeight);
+        this.reset(containerWidth);
     }
 
-    reset(containerWidth: number, containerHeight: number): void {
+    reset(containerWidth: number): void {
         this.x = Math.random() * containerWidth;
         this.y = -30; // Start slightly above the container
 
@@ -73,7 +73,6 @@ interface GemsAnimationProps {
 
 const GemsAnimation: React.FC<GemsAnimationProps> = ({ delay = 0 }) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [animationStarted, setAnimationStarted] = useState(false);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -98,7 +97,7 @@ const GemsAnimation: React.FC<GemsAnimationProps> = ({ delay = 0 }) => {
             // Reset gems when canvas size changes
             gems = [];
             for (let i = 0; i < totalGems; i++) {
-                gems.push(new GemImpl(canvas.width, canvas.height));
+                gems.push(new GemImpl(canvas.width));
             }
         };
 
@@ -123,7 +122,6 @@ const GemsAnimation: React.FC<GemsAnimationProps> = ({ delay = 0 }) => {
 
         // Start the animation after the specified delay
         const timeoutId = setTimeout(() => {
-            setAnimationStarted(true);
             animate();
         }, delay * 1000);
 

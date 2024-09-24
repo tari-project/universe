@@ -1,11 +1,22 @@
+import { useEffect } from 'react';
 import GemsAnimation from '../GemsAnimation/GemsAnimation';
-import { Background, Number, Text, TextBottom, TextBottomPosition, Wrapper } from './styles';
+import { Background, Wrapper } from './styles';
+import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
 
 interface Props {
     gems: number;
+    onAnimationComplete: () => void;
 }
 
-export default function FriendAccepted({ gems }: Props) {
+export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onAnimationComplete();
+        }, 10000);
+
+        return () => clearTimeout(timer);
+    }, [onAnimationComplete]);
+
     return (
         <Wrapper>
             <Number
@@ -33,7 +44,7 @@ export default function FriendAccepted({ gems }: Props) {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ delay: 1 }}
                 >
-                    One of your friends accepted your gift
+                    One of your friends accepted your gift!
                 </TextBottom>
             </TextBottomPosition>
 

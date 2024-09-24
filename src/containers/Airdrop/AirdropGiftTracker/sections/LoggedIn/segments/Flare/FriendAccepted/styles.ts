@@ -10,58 +10,8 @@ export const Wrapper = styled('div')`
     gap: 5px;
     width: 100%;
     height: 100%;
-`;
 
-export const Number = styled(m.div)`
     color: #fff;
-    text-align: center;
-    font-family: Druk, sans-serif;
-    font-size: 38px;
-    font-weight: 700;
-
-    position: relative;
-    z-index: 2;
-
-    text-shadow: 0px 0px 20px rgba(0, 0, 0, 0.8);
-`;
-
-export const Text = styled(m.div)`
-    color: #fff;
-    font-size: 12px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: normal;
-    letter-spacing: -0.36px;
-
-    text-align: center;
-
-    position: relative;
-    z-index: 2;
-
-    text-shadow: 0px 0px 20px rgba(0, 0, 0, 0.8);
-`;
-
-export const TextBottomPosition = styled('div')`
-    position: absolute;
-    z-index: 2;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100%;
-`;
-
-export const TextBottom = styled(m.div)`
-    color: #fff;
-    font-size: 12px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: normal;
-    letter-spacing: -0.36px;
-
-    text-align: center;
-    z-index: 2;
-
-    text-shadow: 0px 0px 20px rgba(0, 0, 0, 0.8);
 `;
 
 export const Background = styled(m.div)`

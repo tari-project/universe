@@ -24,19 +24,30 @@ export default function LoggedIn() {
             return;
         }
 
+        //setShowFlare('GoalComplete');
         setShowFlare('FriendAccepted');
+        //setShowFlare('BonusGems');
     };
 
     return (
-        <Wrapper onClick={handleShowFlare}>
-            <UserRow>
+        <Wrapper>
+            <UserRow onClick={handleShowFlare}>
                 <UserInfo />
                 <Gems number={gems} label={`Gems`} />
             </UserRow>
 
             <Invite />
 
-            <AnimatePresence>{showFlare && <Flare gems={2000} animationType={showFlare} />}</AnimatePresence>
+            <AnimatePresence>
+                {showFlare && (
+                    <Flare
+                        gems={2000}
+                        animationType={showFlare}
+                        onAnimationComplete={() => setShowFlare(false)}
+                        onClick={() => setShowFlare(false)}
+                    />
+                )}
+            </AnimatePresence>
         </Wrapper>
     );
 }
