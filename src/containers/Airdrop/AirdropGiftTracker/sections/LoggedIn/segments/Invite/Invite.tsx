@@ -13,21 +13,28 @@ import {
 import giftImage from '../../../../images/gift.png';
 import gemImage from '../../../../images/gem.png';
 import boxImage from '../../../../images/gold_box.png';
-import { FREINDS_COUNT_REQUIRED_FOR_BONUS, REFERRAL_BONUS_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import { useEffect, useState } from 'react';
+import { useAirdropStore } from '@app/store/useAirdropStore';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 
 export default function Invite() {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
-    const { userDetails, referralCount } = useAirdropStore();
-
-    const friendsRemaining = FREINDS_COUNT_REQUIRED_FOR_BONUS - (referralCount?.count || 0) || 0;
+    const { userDetails, referralCount, bonusTiers, userPoints } = useAirdropStore();
 
     const referralCode = userDetails?.user?.referral_code || '';
 
     const [copied, setCopied] = useState(false);
 
     const url = `${airdropUrl}/download/${referralCode}`;
+
+    const nextBonusTier = useMemo(
+        () =>
+            bonusTiers
+                ?.sort((a, b) => a.target - b.target)
+                .find((t) => t.target <= (userPoints?.base.gems || userDetails?.user?.rank?.gems || 0)),
+        [bonusTiers, userDetails?.user?.rank?.gems, userPoints?.base.gems]
+    );
+    const friendsRemaining = nextBonusTier?.target && (nextBonusTier.target - (referralCount?.count || 0) || 0);
 
     const handleCopy = () => {
         setCopied(true);
@@ -73,13 +80,15 @@ export default function Invite() {
                 </GemPill>
             </InviteButton>
 
-            <BonusWrapper>
-                <BonusText>
-                    Invite&nbsp;<strong>{friendsRemaining} friends</strong>&nbsp;& earn{' '}
-                    {REFERRAL_BONUS_GEMS.toLocaleString()} bonus gems
-                </BonusText>
-                <Image src={boxImage} alt="" className="giftImage" />
-            </BonusWrapper>
+            {nextBonusTier && (
+                <BonusWrapper>
+                    <BonusText>
+                        Invite&nbsp;<strong>{friendsRemaining} friends</strong>&nbsp;& earn{' '}
+                        {nextBonusTier?.bonusGems.toLocaleString()} bonus gems
+                    </BonusText>
+                    <Image src={boxImage} alt="" className="giftImage" />
+                </BonusWrapper>
+            )}
         </Wrapper>
     );
 }

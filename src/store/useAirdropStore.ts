@@ -4,8 +4,6 @@ import { persist } from 'zustand/middleware';
 export const INSTALL_BONUS_GEMS = 1000;
 export const GIFT_GEMS = 2000;
 export const REFERRAL_GEMS = 2000;
-export const REFERRAL_BONUS_GEMS = 1000;
-export const FREINDS_COUNT_REQUIRED_FOR_BONUS = 10;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
@@ -25,6 +23,13 @@ function parseJwt(token: string): TokenResponse {
 }
 
 //////////////////////////////////////////
+//
+
+export interface BonusTier {
+    id: string;
+    target: number;
+    bonusGems: number;
+}
 
 interface TokenResponse {
     exp: number;
@@ -116,6 +121,7 @@ interface AirdropState {
     referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
     flareAnimationType?: AnimationType;
+    bonusTiers?: BonusTier[];
 }
 
 interface AirdropStore extends AirdropState {
@@ -128,6 +134,7 @@ interface AirdropStore extends AirdropState {
     setReferralCount: (referralCount: ReferralCount) => void;
     setAcceptedReferral: (acceptedReferral: boolean) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
+    setBonusTiers: (bonusTiers: BonusTier[]) => void;
     logout: () => void;
 }
 
@@ -146,6 +153,7 @@ export const useAirdropStore = create<AirdropStore>()(
             authUuid: '',
             setWipUI: (wipUI) => set({ wipUI }),
             setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
+            setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
             logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
