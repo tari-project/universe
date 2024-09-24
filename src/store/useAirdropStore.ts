@@ -103,6 +103,7 @@ export interface BackendInMemoryConfig {
     airdropTwitterAuthUrl: string;
 }
 
+type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 //////////////////////////////////////////
 
 interface AirdropState {
@@ -114,6 +115,7 @@ interface AirdropState {
     userPoints?: UserPoints;
     referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
+    flareAnimationType?: AnimationType;
 }
 
 interface AirdropStore extends AirdropState {
@@ -125,6 +127,7 @@ interface AirdropStore extends AirdropState {
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     setReferralCount: (referralCount: ReferralCount) => void;
     setAcceptedReferral: (acceptedReferral: boolean) => void;
+    setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     logout: () => void;
 }
 
@@ -142,6 +145,7 @@ export const useAirdropStore = create<AirdropStore>()(
         (set) => ({
             authUuid: '',
             setWipUI: (wipUI) => set({ wipUI }),
+            setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
             setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
             logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
