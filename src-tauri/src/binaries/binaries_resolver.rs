@@ -55,7 +55,11 @@ pub struct BinaryResolver {
 impl BinaryResolver {
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
-        let versions_requirements_path = path::absolute("./binaries_versions.json").unwrap();
+        let versions_requirements_path = match Network::get_current_or_user_setting_or_default() {
+                Network::NextNet => path::absolute("./binaries_versions_nextnet.json").unwrap(),
+                Network::Esmeralda => path::absolute("./binaries_versions_esmeralda.json").unwrap(),
+                _ => panic!("Unsupported network"),
+            };
 
         let (tari_prerelease_prefix, gpuminer_specific_nanme) =
             match Network::get_current_or_user_setting_or_default() {
