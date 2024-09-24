@@ -1,7 +1,12 @@
-use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+    str::FromStr,
+};
 
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 
 use crate::{
     download_utils::{download_file_with_retries, extract, validate_checksum},
@@ -21,6 +26,35 @@ pub const LOG_TARGET: &str = "tari::universe::binary_manager";
 struct BinaryVersionsJsonContent {
     binaries: HashMap<String, String>,
 }
+
+// Temporary fix until json problem is resolved
+impl BinaryVersionsJsonContent {
+    fn get_versions_requirements(network: Network) -> Self {
+        let mut binaries = HashMap::new();
+        match network {
+            Network::NextNet => {
+                binaries.insert("xmrig".to_string(), "6.22.0".to_string());
+                binaries.insert("mmproxy".to_string(), "1.5.1-rc.2".to_string());
+                binaries.insert("minotari_node".to_string(), "1.5.1-rc.2".to_string());
+                binaries.insert("wallet".to_string(), "1.5.1-rc.2".to_string());
+                binaries.insert("sha-p2pool".to_string(), "0.1.8".to_string());
+                binaries.insert("xtrgpuminer".to_string(), "0.1.8-pre.4".to_string());
+            }
+            Network::Esmeralda => {
+                binaries.insert("xmrig".to_string(), "6.22.0".to_string());
+                binaries.insert("mmproxy".to_string(), "1.5.1-pre.0".to_string());
+                binaries.insert("minotari_node".to_string(), "1.5.1-pre.0".to_string());
+                binaries.insert("wallet".to_string(), "1.5.1-pre.0".to_string());
+                binaries.insert("sha-p2pool".to_string(), "0.1.8".to_string());
+                binaries.insert("xtrgpuminer".to_string(), "0.1.8-pre.4".to_string());
+            }
+            _ => panic!("Unsupported network"),
+        }
+
+        Self { binaries }
+    }
+}
+
 pub struct BinaryManager {
     binary_name: String,
 
@@ -64,9 +98,30 @@ impl BinaryManager {
     fn read_version_requirements(binary_name: String, path: PathBuf) -> VersionReq {
         info!(target: LOG_TARGET, "Reading version requirements for {:?} from: {:?}",binary_name, path);
 
+        // Bring back when json problem is resolved
+
+        // let json_content: BinaryVersionsJsonContent =
+        //     serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        // let version_req = json_content.binaries.get(&binary_name);
+
+        info!(target: LOG_TARGET, "Reading version requirements for {:?} from: {:?}",binary_name, path);
+
         let json_content: BinaryVersionsJsonContent =
-            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+            BinaryVersionsJsonContent::get_versions_requirements(
+                Network::get_current_or_user_setting_or_default(),
+            );
+
+        info!(target: LOG_TARGET,
+            "Version requirements for {:?}",
+            binary_name
+        );
+
         let version_req = json_content.binaries.get(&binary_name);
+
+        info!(target: LOG_TARGET,
+            "Version requirements for {:?}: {:?}",
+            binary_name, version_req
+        );
 
         match version_req {
             Some(version_req) => {

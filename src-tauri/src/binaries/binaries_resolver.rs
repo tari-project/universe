@@ -55,6 +55,7 @@ pub struct BinaryResolver {
 impl BinaryResolver {
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
+
         let versions_requirements_path = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => path::absolute("./binaries_versions_nextnet.json").unwrap(),
             Network::Esmeralda => path::absolute("./binaries_versions_esmeralda.json").unwrap(),
