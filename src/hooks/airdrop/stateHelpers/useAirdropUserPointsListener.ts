@@ -19,7 +19,9 @@ export const useAirdropUserPointsListener = () => {
                 setUserPoints(payload);
                 if (payload.referralCount) {
                     if (referralCount?.count !== payload.referralCount.count) {
-                        setFlareAnimationType('FriendAccepted');
+                        if (referralCount?.count) {
+                            setFlareAnimationType('FriendAccepted');
+                        }
                         setUserPointsReferralCount(payload.referralCount);
                     }
                 }
