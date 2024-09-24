@@ -15,5 +15,13 @@
         "min": "Minimum is 1 sekonde"
     },
     "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
-    "visual-mode": "Visuele modus"
+    "visual-mode": "Visuele modus",
+    "gpu-unavailable": "⚠️ GPU gedeaktiveer omdat jou hardeware dit nie ondersteun nie",
+    "reset-settings": "Reset Settings",
+    "reset-permanently": "Are you sure you want to reset all settings permanently?",
+    "reset-wallet": "Reset wallet",
+    "connected-to-tari": "Connected to the Tari Network",
+    "not-connected-to-tari": "Not connected to the Tari Network",
+    "connected-peers": "Connected Peers",
+    "should-use-system-language": "Use system language"
 }

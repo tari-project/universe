@@ -62,20 +62,22 @@ const Switch = styled.div<{ $isSolid?: boolean }>`
 
 const Input = styled.input<{ $isSolid?: boolean }>`
     display: none;
-    &:disabled {
+    &:disabled + ${Switch} {
         pointer-events: none;
-        opacity: 0.8;
+        background: ${({ theme }) => theme.palette.colors.grey[200]};
     }
     &:checked + ${Switch} {
-        background: ${({ $isSolid, theme }) =>
-            $isSolid
-                ? theme.palette.success.main
-                : `linear-gradient(90deg, ${theme.palette.colors.teal[700]} 0%, ${theme.palette.contrast} 100%)`};
         &:before {
             background: ${({ $isSolid, theme }) => ($isSolid ? theme.palette.base : theme.palette.base)};
             box-shadow: ${({ $isSolid }) => ($isSolid ? '0 3px 3px 0 rgba(0, 0, 0, 0.25)' : 'none')};
             transform: translate(16px, -50%);
         }
+    }
+    &:checked:not(:disabled) + ${Switch} {
+        background: ${({ $isSolid, theme }) =>
+            $isSolid
+                ? theme.palette.success.main
+                : `linear-gradient(90deg, ${theme.palette.colors.teal[700]} 0%, ${theme.palette.contrast} 100%)`};
     }
 `;
 
@@ -88,7 +90,13 @@ export function ToggleSwitch({ label, variant = 'solid', ...props }: ToggleSwitc
 
     const switchMarkup = (
         <Wrapper $disabled={props.disabled}>
-            <Input checked={props.checked || false} type="checkbox" onChange={props.onChange} $isSolid={isSolid} />
+            <Input
+                disabled={props.disabled}
+                checked={props.checked || false}
+                type="checkbox"
+                onChange={props.onChange}
+                $isSolid={isSolid}
+            />
             <Switch $isSolid={isSolid} />
         </Wrapper>
     );

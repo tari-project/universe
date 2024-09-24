@@ -6,7 +6,9 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::gpu_miner_adapter::GpuNodeSource;
+use crate::process_utils;
 use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
@@ -19,6 +21,7 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
+    is_available: bool,
 }
 
 impl GpuMiner {
@@ -27,6 +30,7 @@ impl GpuMiner {
         let process_watcher = ProcessWatcher::new(adapter);
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
+            is_available: false,
         }
     }
 
@@ -91,13 +95,58 @@ impl GpuMiner {
                     block_reward.as_u64() * SHA_BLOCKS_PER_DAY,
                 );
                 status.estimated_earnings = estimated_earnings;
+                status.is_available = self.is_available;
                 Ok(status)
             }
             None => Ok(GpuMinerStatus {
                 hash_rate: 0,
                 estimated_earnings: 0,
                 is_mining: false,
+                is_available: self.is_available,
             }),
         }
+    }
+
+    pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
+
+        let args: Vec<String> = vec![
+            "--detect".to_string(),
+            "true".to_string(),
+            "--config".to_string(),
+            config_dir
+                .join("gpuminer")
+                .join("config.json")
+                .to_string_lossy()
+                .to_string(),
+        ];
+        let gpuminer_bin = BinaryResolver::current()
+            .read()
+            .await
+            .resolve_path_to_binary_files(Binaries::GpuMiner)
+            .await?;
+
+        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone().to_str());
+        crate::download_utils::set_permissions(&gpuminer_bin).await?;
+        let child = process_utils::launch_child_process(&gpuminer_bin, None, &args)?;
+        let output = child.wait_with_output().await?;
+        info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
+        match output.status.code() {
+            Some(0) => {
+                self.is_available = true;
+                Ok(())
+            }
+            _ => {
+                self.is_available = false;
+                Err(anyhow::anyhow!(
+                    "Non-zero exit code: {:?}",
+                    output.status.code()
+                ))
+            }
+        }
+    }
+
+    pub fn is_gpu_mining_available(&self) -> bool {
+        self.is_available
     }
 }

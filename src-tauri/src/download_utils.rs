@@ -1,3 +1,21 @@
+use crate::ProgressTracker;
+use anyhow::{anyhow, Error};
+use async_zip::base::read::seek::ZipFileReader;
+use flate2::read::GzDecoder;
+use futures_util::StreamExt;
+use log::info;
+use regex::Regex;
+use sha2::{Digest, Sha256};
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+use tar::Archive;
+use tokio::fs;
+use tokio::fs::{File, OpenOptions};
+use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncWriteExt, BufReader};
+use tokio::time::sleep;
+use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
+
 const LOG_TARGET: &str = "tari::universe::download_utils";
 
 pub async fn download_file_with_retries(
@@ -26,12 +44,10 @@ async fn download_file(
     destination: &Path,
     progress_tracker: ProgressTracker,
 ) -> Result<(), anyhow::Error> {
-    println!("Downloading {} to {:?}", url, destination);
     let response = reqwest::get(url).await?;
 
     // Ensure the directory exists
     if let Some(parent) = destination.parent() {
-        println!("Creating dir {:?}", parent);
         fs::create_dir_all(parent).await?;
     }
 
@@ -50,7 +66,7 @@ async fn download_file(
     progress_tracker
         .update("download-completed".to_string(), None, 100)
         .await;
-    info!(target: LOG_TARGET, "Done downloading");
+    info!(target: LOG_TARGET, "Finished downloading: {}", url);
 
     Ok(())
 }
@@ -84,24 +100,6 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
     archive.unpack(dest_dir)?;
     Ok(())
 }
-
-use crate::ProgressTracker;
-use anyhow::{anyhow, Error};
-use async_zip::base::read::seek::ZipFileReader;
-use flate2::read::GzDecoder;
-use futures_util::StreamExt;
-use log::info;
-use regex::Regex;
-use sha2::{Digest, Sha256};
-use std::path::{Path, PathBuf};
-use std::time::Duration;
-use tar::Archive;
-use tokio::fs;
-use tokio::fs::{File, OpenOptions};
-use tokio::io::AsyncReadExt;
-use tokio::io::{AsyncWriteExt, BufReader};
-use tokio::time::sleep;
-use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 // Taken from async_zip example
 

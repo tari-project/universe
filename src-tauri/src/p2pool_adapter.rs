@@ -3,7 +3,6 @@ use anyhow::Error;
 use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::{info, warn};
-use rand::seq::SliceRandom;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -11,12 +10,12 @@ use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tokio::select;
 
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
+use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
-use crate::{p2pool, process_utils};
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -66,6 +65,7 @@ impl ProcessAdapter for P2poolAdapter {
             config.stats_server_port.to_string(),
             "--base-node-address".to_string(),
             config.base_node_address.clone(),
+            "--mdns-disabled".to_string(),
             "-b".to_string(),
             log_path.join("sha-p2pool").to_str().unwrap().to_string(),
         ];
@@ -76,28 +76,24 @@ impl ProcessAdapter for P2poolAdapter {
                 handle: Some(tokio::spawn(async move {
                     // file details
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::ShaP2pool)
+                        .read()
+                        .await
+                        .resolve_path_to_binary_files(Binaries::ShaP2pool)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
 
-                    let output = process_utils::launch_and_get_outputs(
-                        &file_path,
-                        vec![
-                            "list-tribes".to_string(),
-                            "--timeout".to_string(),
-                            "5".to_string(),
-                        ],
-                        // TODO: Change or remove (to use default 30 seconds)
-                        // TODO: when more than 1 tribe will be in place.
-                    )
-                    .await?;
-                    let tribes: Vec<String> = serde_json::from_slice(&output)?;
-                    let tribe = match tribes.choose(&mut rand::thread_rng()) {
-                        Some(tribe) => tribe.to_string(),
-                        None => String::from("default"), // TODO: generate name
-                    };
+                    // let output = process_utils::launch_and_get_outputs(
+                    //     &file_path,
+                    //     vec!["list-tribes".to_string()],
+                    // )
+                    // .await?;
+                    // let tribes: Vec<String> = serde_json::from_slice(&output)?;
+                    // let tribe = match tribes.choose(&mut rand::thread_rng()) {
+                    //     Some(tribe) => tribe.to_string(),
+                    //     None => String::from("default"), // TODO: generate name
+                    // };
                     args.push("--tribe".to_string());
-                    args.push(tribe);
+                    args.push("default2".to_string());
 
                     // env
                     let mut envs = HashMap::new();

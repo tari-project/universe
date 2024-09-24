@@ -1,7 +1,8 @@
 use std::{path::PathBuf, time::SystemTime};
+use sys_locale::get_locale;
 
 use anyhow::anyhow;
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
@@ -18,7 +19,7 @@ pub struct AppConfigFromFile {
     mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     p2pool_enabled: bool,
     #[serde(default = "default_system_time")]
     last_binaries_update_timestamp: SystemTime,
@@ -32,6 +33,12 @@ pub struct AppConfigFromFile {
     gpu_mining_enabled: bool,
     #[serde(default = "default_true")]
     cpu_mining_enabled: bool,
+    #[serde(default = "default_false")]
+    has_system_language_been_proposed: bool,
+    #[serde(default = "default_false")]
+    should_always_use_system_language: bool,
+    #[serde(default = "default_application_language")]
+    application_language: String,
 }
 
 impl Default for AppConfigFromFile {
@@ -40,13 +47,16 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: false,
             anon_id: default_anon_id(),
             monero_address: default_monero_address(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
+            application_language: default_application_language(),
         }
     }
 }
@@ -88,6 +98,9 @@ pub(crate) struct AppConfig {
     monero_address: String,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
+    has_system_language_been_proposed: bool,
+    should_always_use_system_language: bool,
+    application_language: String,
 }
 
 impl AppConfig {
@@ -97,14 +110,23 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
+            application_language: default_application_language(),
         }
+    }
+
+    pub fn config_dir(&self) -> Option<PathBuf> {
+        self.config_file
+            .as_ref()
+            .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
     }
 
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
@@ -112,7 +134,7 @@ impl AppConfig {
         self.config_file = Some(file.clone());
 
         if file.exists() {
-            info!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
+            debug!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
             self.apply_loaded_config(config);
         } else {
@@ -125,7 +147,7 @@ impl AppConfig {
     pub fn apply_loaded_config(&mut self, config: String) {
         match serde_json::from_str::<AppConfigFromFile>(&config) {
             Ok(config) => {
-                info!("Loaded config from file {:?}", config);
+                debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                 self.auto_mining = config.auto_mining;
@@ -136,10 +158,20 @@ impl AppConfig {
                 self.monero_address = config.monero_address;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
+                self.has_system_language_been_proposed = config.has_system_language_been_proposed;
+                self.should_always_use_system_language = config.should_always_use_system_language;
+                self.application_language = config.application_language;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
             }
+        }
+
+        // Migrate
+        if self.config_version <= 6 {
+            // Change the default value of p2pool_enabled to false in version 7
+            self.config_version = 7;
+            self.p2pool_enabled = true;
         }
     }
 
@@ -162,16 +194,16 @@ impl AppConfig {
         self.mode
     }
 
-    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
         self.cpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.cpu_mining_enabled)
     }
 
-    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
         self.gpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.gpu_mining_enabled)
     }
 
     pub fn cpu_mining_enabled(&self) -> bool {
@@ -231,6 +263,41 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn application_language(&self) -> &str {
+        &self.application_language
+    }
+
+    pub async fn set_application_language(
+        &mut self,
+        language: String,
+    ) -> Result<(), anyhow::Error> {
+        self.application_language = language;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_should_always_use_system_language(
+        &mut self,
+        should_always_use_system_language: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.should_always_use_system_language = should_always_use_system_language;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+        if self.has_system_language_been_proposed | !self.should_always_use_system_language {
+            Ok(())
+        } else {
+            let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+            info!(target: LOG_TARGET, "Proposing system language: {}", system_language);
+            self.application_language = system_language;
+            self.has_system_language_been_proposed = true;
+            self.update_config_file().await?;
+            Ok(())
+        }
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -249,10 +316,13 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
+            has_system_language_been_proposed: self.has_system_language_been_proposed,
+            should_always_use_system_language: self.should_always_use_system_language,
+            application_language: self.application_language.clone(),
             ..default_config
         };
         let config = serde_json::to_string(config)?;
-        info!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
+        debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
         fs::write(file, config).await?;
 
         Ok(())
@@ -260,7 +330,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    6
+    7
 }
 
 fn default_mode() -> String {
@@ -285,4 +355,8 @@ fn default_system_time() -> SystemTime {
 
 fn default_monero_address() -> String {
     DEFAULT_MONERO_ADDRESS.to_string()
+}
+
+fn default_application_language() -> String {
+    "en".to_string()
 }

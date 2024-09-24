@@ -2,12 +2,13 @@ import { useAirdropStore } from '@app/store/useAirdropStore';
 import ConnectButton from './ConnectButton/ConnectButton';
 import UserInfo from './UserInfo/UserInfo';
 import { AirdropLoginPosition } from './styles';
-import { appConfig } from '@app/config';
+import { useAirdropSyncState } from '@app/hooks/airdrop/useAirdropSyncState';
 
 export default function AirdropLogin() {
-    const { airdropTokens } = useAirdropStore();
+    useAirdropSyncState();
+    const { airdropTokens, wipUI } = useAirdropStore();
 
-    if (!appConfig.displayAirdropWipUI) return null;
+    if (!wipUI) return null;
 
     const isLoggedIn = !!airdropTokens;
 

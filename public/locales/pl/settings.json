@@ -1,29 +1,35 @@
 {
-  "settings": "Ustawienia",
-  "seed-words": "Słowa kluczowe",
-  "change-language": "Zmień język",
-  "logs": "Logi",
-  "open-logs-directory": "Otwórz katalog logów",
-  "debug-info": "Informacje debugowania",
-  "hardware-status": "Status sprzętu",
-  "update-versions": "Aktualizuj wersje",
-  "refresh-versions": "Odśwież wersje",
-  "idle-timeout": {
-    "title": "Czas po którym urządzenie jest uważane za bezczynne",
-    "placeholder": "Wprowadź czas bezczynności w sekundach",
-    "max": "Maksymalny czas to 21600 sekund",
-    "min": "Minimalny czas to 1 sekunda"
-  },
-  "monero-address": {
-    "title": "Address Monero",
-    "placeholder": "Wprowadź address Monero"
-  },
-  "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
-  "visual-mode": "Tryb wizualny",
-  "pool-mining": "Pool Mining",
-  "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
-  "yes": "Tak",
-  "cancel": "Anuluj",
-  "reset-settings": "Resetuj ustawienia",
-  "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?"
+    "settings": "Ustawienia",
+    "seed-words": "Słowa kluczowe",
+    "change-language": "Zmień język",
+    "logs": "Logi",
+    "open-logs-directory": "Otwórz katalog logów",
+    "debug-info": "Informacje debugowania",
+    "hardware-status": "Status sprzętu",
+    "update-versions": "Aktualizuj wersje",
+    "refresh-versions": "Odśwież wersje",
+    "idle-timeout": {
+        "title": "Czas po którym urządzenie jest uważane za bezczynne",
+        "placeholder": "Wprowadź czas bezczynności w sekundach",
+        "max": "Maksymalny czas to 21600 sekund",
+        "min": "Minimalny czas to 1 sekunda"
+    },
+    "monero-address": {
+        "title": "Address Monero",
+        "placeholder": "Wprowadź address Monero"
+    },
+    "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
+    "visual-mode": "Tryb wizualny",
+    "pool-mining": "Pool Mining",
+    "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
+    "yes": "Tak",
+    "cancel": "Anuluj",
+    "reset-settings": "Resetuj ustawienia",
+    "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
+    "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
+    "reset-wallet": "Resetuj porfel",
+    "connected-to-tari-network": "Połączono z siecią Tari",
+    "not-connected-to-tari-network": "Brak połączenia z siecią Tari",
+    "connected-peers": "Połączone węzły",
+    "should-use-system-language": "Use system language"
 }

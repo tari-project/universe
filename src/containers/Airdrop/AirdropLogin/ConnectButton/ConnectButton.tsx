@@ -1,4 +1,4 @@
-import { useAirdropStore, UserPoints } from '@app/store/useAirdropStore.ts';
+import { useAirdropStore, INSTALL_BONUS_GEMS } from '@app/store/useAirdropStore.ts';
 import { NumberPill, StyledButton, XIcon, IconCircle, Text, Gem1, Gem2, Gem3 } from './styles.ts';
 import { useCallback, useEffect } from 'react';
 import { open } from '@tauri-apps/api/shell';
@@ -7,21 +7,19 @@ import gem1Image from './images/gem-1.png';
 import gem2Image from './images/gem-2.png';
 import gem3Image from './images/gem-3.png';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api';
-import { appConfig } from '@app/config.ts';
 
 export default function ConnectButton() {
-    const { authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } = useAirdropStore();
+    const { authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig, wipUI } = useAirdropStore();
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const handleAuth = useCallback(() => {
-        if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
-            const token = uuidv4();
+        const token = uuidv4();
+        if (backendInMemoryConfig?.airdropUrl) {
             setAuthUuid(token);
-            open(`${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}`);
+            open(`${backendInMemoryConfig?.airdropUrl}/auth?tauri=${token}`);
         }
-    }, [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]);
+    }, [backendInMemoryConfig?.airdropUrl, setAuthUuid]);
 
     useEffect(() => {
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
@@ -38,17 +36,6 @@ export default function ConnectButton() {
                             if (!data.error) {
                                 clearInterval(interval);
                                 setAirdropTokens(data);
-                                if (data.token) {
-                                    collectInstallReward(
-                                        data.token,
-                                        setUserPoints,
-                                        backendInMemoryConfig?.airdropApiUrl || ''
-                                    )
-                                        .catch(console.error)
-                                        .then(() => {
-                                            //do nothing
-                                        });
-                                }
                             }
                         });
                 }
@@ -68,7 +55,7 @@ export default function ConnectButton() {
         }
     }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setAirdropTokens, setAuthUuid, setUserPoints]);
 
-    if (!appConfig.displayAirdropWipUI) return null;
+    if (!wipUI) return null;
 
     return (
         <StyledButton onClick={handleAuth}>
@@ -76,7 +63,7 @@ export default function ConnectButton() {
             <Gem2 src={gem2Image} alt="" className="ConnectButton-Gem2" />
             <Gem3 src={gem3Image} alt="" className="ConnectButton-Gem3" />
 
-            <NumberPill>+200</NumberPill>
+            <NumberPill>+{INSTALL_BONUS_GEMS}</NumberPill>
 
             <Text>{t('loginButton')}</Text>
 
@@ -86,45 +73,3 @@ export default function ConnectButton() {
         </StyledButton>
     );
 }
-
-interface InstallRewardResponse {
-    success: boolean;
-    userPoints: UserPoints | null;
-}
-
-const collectInstallReward = async (
-    authToken: string,
-    setUserPoints: (userPoints?: UserPoints) => void,
-    airdropApiUrl: string
-) => {
-    try {
-        const appId = await invoke('get_app_id', {});
-
-        const result = await fetch(`${airdropApiUrl}/miner/install-reward`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${authToken}`,
-            },
-            body: JSON.stringify({ appId }),
-        });
-
-        const body: InstallRewardResponse = await result.json();
-
-        if (result.status === 429) {
-            // Rate limited
-            return;
-        }
-
-        if (result.status !== 200 || !body.success) {
-            console.error('Error getting first install reward', body);
-            return;
-        }
-
-        if (body.userPoints !== null || body.userPoints) {
-            setUserPoints(body.userPoints as UserPoints);
-        }
-    } catch (error) {
-        console.error('Error getting first install reward', error);
-    }
-};

@@ -1,42 +1,81 @@
+import { ApplicationsVersions } from '@app/types/app-status';
 import { create } from './create';
+import { invoke } from '@tauri-apps/api';
 
 interface AppState {
     isAfterAutoUpdate: boolean;
     setIsAfterAutoUpdate: (value: boolean) => void;
+    criticalError?: string;
+    setCriticalError: (value: string | undefined) => void;
     error?: string;
     setError: (value: string | undefined) => void;
     topStatus: string;
     setTopStatus: (value: string) => void;
-    errorOpen: boolean;
-    setErrorOpen: (value: boolean) => void;
     setupTitle: string;
     setupTitleParams: Record<string, string>;
     setupProgress: number;
     setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) => void;
-
-    // gui
+    isSettingsOpen: boolean;
+    setIsSettingsOpen: (value: boolean) => void;
     isSettingUp: boolean;
-
-    // functions
     settingUpFinished: () => void;
+    applications_versions?: ApplicationsVersions;
+    fetchApplicationsVersions: () => Promise<void>;
+    fetchApplicationsVersionsWithRetry: () => Promise<void>;
+    updateApplicationsVersions: () => Promise<void>;
 }
 
-export const useAppStateStore = create<AppState>()((set) => ({
+export const useAppStateStore = create<AppState>()((set, getState) => ({
     isAfterAutoUpdate: false,
     setIsAfterAutoUpdate: (value: boolean) => set({ isAfterAutoUpdate: value }),
+    criticalError: undefined,
+    setCriticalError: (criticalError) => set({ criticalError }),
     error: undefined,
     setError: (error) => set({ error }),
     topStatus: 'Not mining',
     setTopStatus: (value) => set({ topStatus: value }),
-    errorOpen: false,
-    setErrorOpen: (value) => set({ errorOpen: value }),
-    isSettingUp: true,
     setupTitle: '',
     setupTitleParams: {},
     setupProgress: 0,
     setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
         set({ setupTitle, setupTitleParams, setupProgress }),
-
-    // functions
+    isSettingsOpen: false,
+    setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
+    isSettingUp: true,
     settingUpFinished: () => set({ isSettingUp: false }),
+    applications_versions: undefined,
+    fetchApplicationsVersions: async () => {
+        try {
+            console.info('Fetching applications versions');
+            const applications_versions = await invoke('get_applications_versions');
+            set({ applications_versions });
+        } catch (error) {
+            console.error('Error getting applications versions', error);
+        }
+    },
+    fetchApplicationsVersionsWithRetry: async () => {
+        let retries = 5;
+        while (retries) {
+            const applications_versions = getState().applications_versions;
+            if (applications_versions && Object.values(applications_versions).every((version) => Boolean(version))) {
+                break;
+            }
+
+            try {
+                console.info('Fetching applications versions');
+                await getState().fetchApplicationsVersions();
+                retries--;
+            } catch (error) {
+                console.error('Error getting applications versions', error);
+            }
+        }
+    },
+    updateApplicationsVersions: async () => {
+        try {
+            await invoke('update_applications');
+            await getState().fetchApplicationsVersions();
+        } catch (error) {
+            console.error('Error updating applications versions', error);
+        }
+    },
 }));

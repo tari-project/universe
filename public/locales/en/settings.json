@@ -1,7 +1,8 @@
 {
     "settings": "Settings",
     "seed-words": "Seed words",
-    "change-language": "Change language",
+    "send-logs": "Send logs",
+    "change-language": "Language",
     "logs": "Logs",
     "open-logs-directory": "Open logs directory",
     "debug-info": "Debug",
@@ -16,6 +17,7 @@
     },
     "tabs": {
         "general": "General",
+        "mining": "Mining",
         "experimental": "Experimental"
     },
     "monero-address": {
@@ -28,9 +30,11 @@
     "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
     "cpu-mining-enabled": "CPU Mining",
     "gpu-mining-enabled": "GPU Mining",
+    "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
     "p2pool-stats": "Squad Stats",
     "tribe": "Squad",
     "miners": "Miners",
+    "mining-toggle-warning": "Mining will be paused while the changes take effect.",
     "tribe-earnings": "Squad earnings",
     "tribe-pool-height": "Squad height",
     "p2pool-hash-rate": "Squad hash rates",
@@ -41,8 +45,13 @@
     "cancel": "Cancel",
     "reset-settings": "Reset Settings",
     "reset-permanently": "Are you sure you want to reset all settings permanently?",
+    "reset-wallet": "Reset wallet",
     "experimental-title": "Experimental Features",
     "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
+    "connected-to-tari": "Connected to the Tari Network",
+    "not-connected-to-tari": "Not connected to the Tari Network",
+    "connected-peers": "Connected Peers",
+    "should-use-system-language": "Use system language",
     "cpu-status-warning": "⚠️ Warning: CPU Miner status not available",
     "gpu-status-warning": "⚠️ Warning: GPU Miner status not available"
 }

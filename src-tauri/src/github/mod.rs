@@ -1,8 +1,9 @@
-use crate::binary_resolver::{VersionAsset, VersionDownloadInfo};
 use anyhow::anyhow;
-use log::info;
+use log::{debug, info};
 use reqwest::Client;
 use serde::Deserialize;
+
+use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 
 const LOG_TARGET: &str = "tari::universe::github";
 
@@ -46,7 +47,7 @@ pub async fn list_releases(
     let data = response.text().await?;
     let releases: Vec<Release> = serde_json::from_str(&data)?;
 
-    info!(target: LOG_TARGET, "Releases for {}/{}:", repo_owner, repo_name);
+    debug!(target: LOG_TARGET, "Releases for {}/{}:", repo_owner, repo_name);
     let mut res = vec![];
     for release in releases {
         if release.draft {
@@ -58,7 +59,7 @@ pub async fn list_releases(
         }
         // Remove any v prefix
         let release_name = release.tag_name.trim_start_matches('v').to_string();
-        info!(target: LOG_TARGET, " - release: {}", release_name);
+        debug!(target: LOG_TARGET, " - release: {}", release_name);
         // res.push(semver::Version::parse(&tag_name)?);
         let mut assets = vec![];
         for asset in release.assets {

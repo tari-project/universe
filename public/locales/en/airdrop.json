@@ -1,6 +1,12 @@
 {
     "loginButton": "Log in to claim gems",
     "logout": "Logout",
+    "referral": "Invite a friend",
+    "claimGems": "Claim gift Gems",
+    "giftReferralCodeHeader": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
+    "claimReferralCode": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
+    "claimReferralGifts": "Claim your referral code and earn {{gems}} gems. Once you connect your account, you’ll be awarded your gems.",
+    "giftReferralCode": "Earn {{gems}} gems for each friend you invite to Tari Universe. Once they connect their account, you’ll be awarded your gems.",
     "permissionNoGems": {
         "title": "Make Tari Universe better",
         "text": "Tari Universe would like to use analytics to improve your experience."
