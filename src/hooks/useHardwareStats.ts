@@ -31,6 +31,7 @@ export const useHardwareStats = () => {
                 usage_percentage: roundTo(gpuHardwareStats.usage_percentage),
                 current_temperature: roundTo(gpuHardwareStats.current_temperature),
                 max_temperature: roundTo(gpuHardwareStats.max_temperature),
+                status_error: gpuHardwareStats.status_error,
             } as HardwareParameters;
         }
         return undefined;
