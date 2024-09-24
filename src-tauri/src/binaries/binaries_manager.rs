@@ -67,7 +67,7 @@ impl BinaryManager {
     }
 
     fn read_version_requirements(binary_name: String, data_str: &str) -> VersionReq {
-        let json_content: BinaryVersionsJsonContent = serde_json::from_str(&data_str).unwrap();
+        let json_content: BinaryVersionsJsonContent = serde_json::from_str(data_str).unwrap();
         let version_req = json_content.binaries.get(&binary_name);
 
         match version_req {

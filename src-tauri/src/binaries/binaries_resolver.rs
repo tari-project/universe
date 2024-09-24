@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use regex::Regex;
 use semver::Version;
 use std::collections::HashMap;
-use std::path::{self, PathBuf};
+use std::path::PathBuf;
 use std::sync::LazyLock;
 use tari_common::configuration::Network;
 use tokio::sync::RwLock;
