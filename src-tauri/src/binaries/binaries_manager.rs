@@ -2,6 +2,7 @@ use std::{collections::HashMap, path::PathBuf, str::FromStr};
 
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 
 use crate::{
     download_utils::{download_file_with_retries, extract, validate_checksum},
@@ -40,13 +41,17 @@ impl BinaryManager {
     pub fn new(
         binary_name: String,
         adapter: Box<dyn LatestVersionApiAdapter>,
-        versions_requirements_path: PathBuf,
         network_prerelease_prefix: Option<String>,
         should_validate_checksum: bool,
     ) -> Self {
+        let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
+            Network::NextNet => include_str!("../../binaries_versions_nextnet.json"),
+            Network::Esmeralda => include_str!("../../binaries_versions_esmeralda.json"),
+            _ => panic!("Unsupported network"),
+        };
         let version_requirements = BinaryManager::read_version_requirements(
             binary_name.clone(),
-            versions_requirements_path,
+            versions_requirements_data,
         );
 
         Self {
@@ -61,11 +66,8 @@ impl BinaryManager {
         }
     }
 
-    fn read_version_requirements(binary_name: String, path: PathBuf) -> VersionReq {
-        info!(target: LOG_TARGET, "Reading version requirements for {:?} from: {:?}",binary_name, path);
-
-        let json_content: BinaryVersionsJsonContent =
-            serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    fn read_version_requirements(binary_name: String, data_str: &str) -> VersionReq {
+        let json_content: BinaryVersionsJsonContent = serde_json::from_str(&data_str).unwrap();
         let version_req = json_content.binaries.get(&binary_name);
 
         match version_req {
