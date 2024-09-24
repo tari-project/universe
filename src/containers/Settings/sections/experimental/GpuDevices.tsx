@@ -23,21 +23,22 @@ const GpuDevices = () => {
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isMiningInProgress = isCPUMining || isGPUMining;
     const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed;
+    const excludedDevices = useMiningStore((s) => s.excludedGpuDevices);
     const setExcludedDevice = useMiningStore((s) => s.setExcludedGpuDevice);
-    const excludedDevice = useMiningStore((s) => s.excludedGpuDevice);
-    const isEnabled = excludedDevice === undefined;
-    const gpuDevicesList: string[] = ['first gpu device name', 'second gpu device name'];
+    const gpuDevicesList: string[] = ['first gpu device name', 'second gpu device name']; //TODO get list of devices
 
     const handleSetExcludedDevice = useCallback(
         async (device: number) => {
-            console.log('set gpu excluded', excludedDevice);
-            if (excludedDevice === undefined) {
-                await setExcludedDevice(device);
+            if (!excludedDevices.includes(device)) {
+                // if device is enabled we want to disabled it, so set to 'excluded list'
+                excludedDevices.push(device);
+                await setExcludedDevice([...excludedDevices]);
             } else {
-                await setExcludedDevice(undefined);
+                excludedDevices.splice(excludedDevices.indexOf(device), 1);
+                await setExcludedDevice([...excludedDevices]);
             }
         },
-        [excludedDevice, setExcludedDevice]
+        [excludedDevices, setExcludedDevice]
     );
 
     return (
@@ -56,7 +57,7 @@ const GpuDevices = () => {
                                 </Typography>
                                 <ToggleSwitch
                                     key={device}
-                                    checked={isEnabled}
+                                    checked={!excludedDevices.includes(i)}
                                     disabled={isDisabled}
                                     onChange={() => handleSetExcludedDevice(i)}
                                 />

@@ -18,7 +18,7 @@ interface State extends MinerMetrics {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
-    excludedGpuDevice?: number;
+    excludedGpuDevices: number[];
 }
 
 interface Actions {
@@ -35,7 +35,7 @@ interface Actions {
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockHeight: BlockTimeData) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
-    setExcludedGpuDevice: (excludeGpuDevice?: number) => Promise<void>;
+    setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
 }
 type MiningStoreState = State & Actions;
 
@@ -47,7 +47,7 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
-    excludedGpuDevice: undefined,
+    excludedGpuDevices: [],
     cpu: {
         hardware: undefined,
         mining: {
@@ -161,16 +161,16 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-    setExcludedGpuDevice: async (excludedGpuDevice) => {
-        console.info('--->>> Exclude gpu device nr:', excludedGpuDevice);
-        set({ excludedGpuDevice });
+    setExcludedGpuDevice: async (excludedGpuDevices) => {
+        console.info('--->>> Exclude gpu device nr:', excludedGpuDevices);
+        set({ excludedGpuDevices });
         try {
-            await invoke('set_excluded_gpu_device', { excludedGpuDevice });
+            await invoke('set_excluded_gpu_device', { excludedGpuDevices });
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set excluded gpu device: ', e);
             appStateStore.setError(e as string);
-            set({ excludedGpuDevice: undefined });
+            set({ excludedGpuDevices: undefined });
         }
     },
 }));
