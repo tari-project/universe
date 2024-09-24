@@ -40,8 +40,8 @@ impl Feedback {
         directory: &Path,
     ) -> zip::result::ZipResult<File> {
         let file_options = SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Zstd)
-            .compression_level(Some(15));
+            .compression_method(zip::CompressionMethod::Bzip2);
+
 
         let file = File::create(archive_file)?;
         let mut zip = ZipWriter::new(file);
@@ -49,7 +49,7 @@ impl Feedback {
         paths_queue.push(directory.to_path_buf().clone());
 
         let mut buffer = Vec::new();
-        let log_regex_filter = Regex::new(r"^(.*[0-9]+\.log|.*\.zst)$").unwrap();
+        let log_regex_filter = Regex::new(r"^(.*[0-9]+\.log|.*\.zip)$").unwrap();
         while let Some(next) = paths_queue.pop() {
             let directory_entry_iterator = std::fs::read_dir(next)?;
 
@@ -106,7 +106,7 @@ impl Feedback {
                 .or(fallback_dir)
                 .ok_or_else(|| anyhow::anyhow!("Logs directory not found"))?;
             let app_id = config.anon_id();
-            let zip_filename = format!("logs_{}.zst", app_id);
+            let zip_filename = format!("logs_{}.zip", app_id);
             let archive_file = logs_dir.join(zip_filename.clone());
             upload_zip_path = Some(archive_file.clone());
             self.zip_create_from_directory(&archive_file, &logs_dir)
