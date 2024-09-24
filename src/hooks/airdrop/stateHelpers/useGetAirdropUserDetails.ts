@@ -7,7 +7,7 @@ interface RequestProps {
     body?: Record<string, unknown>;
 }
 
-const useAridropRequest = () => {
+export const useAridropRequest = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
 
@@ -32,6 +32,7 @@ export const useGetAirdropUserDetails = () => {
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
     const setReferralCount = useAirdropStore((state) => state.setReferralCount);
+    const setAcceptedReferral = useAirdropStore((state) => state.setAcceptedReferral);
     const handleRequest = useAridropRequest();
 
     const fetchUserDetails = useCallback(async () => {
@@ -71,13 +72,26 @@ export const useGetAirdropUserDetails = () => {
         });
     }, [handleRequest, setReferralCount]);
 
+    const fetchAcceptedReferral = useCallback(async () => {
+        const data = await handleRequest<{ claimed: boolean }>({
+            path: '/miner/claimed-referral',
+            method: 'GET',
+        });
+        setAcceptedReferral(!!data?.claimed);
+    }, [handleRequest, setAcceptedReferral]);
+
     useEffect(() => {
         const fetchData = async () => {
             const details = await fetchUserDetails();
+
+            const requests: (() => Promise<void>)[] = [];
             if (!details?.rank.gems) {
-                await fetchUserPoints();
+                requests.push(fetchUserPoints);
             }
-            await fetchUserReferralPoints();
+            requests.push(fetchUserReferralPoints);
+            requests.push(fetchAcceptedReferral);
+
+            await Promise.all(requests);
         };
 
         if (!userDetails?.user?.id) {

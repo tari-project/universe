@@ -1,4 +1,4 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
@@ -119,8 +119,12 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MinotariNode)
-                        .await?;
+                        .read()
+                        .await
+                        .resolve_path_to_binary_files(Binaries::MinotariNode)
+                        .await
+                        .unwrap();
+
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
@@ -279,6 +283,7 @@ impl MinotariNodeStatusMonitor {
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
 
@@ -300,7 +305,6 @@ impl MinotariNodeStatusMonitor {
             if tip_res.initial_sync_achieved {
                 break;
             }
-            info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
 
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker

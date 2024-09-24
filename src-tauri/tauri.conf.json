@@ -7,15 +7,18 @@
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.3.8"
+        "version": "0.4.0-rc.0"
     },
     "tauri": {
         "systemTray": {
-            "iconPath": "icons/icon.ico"
+            "iconPath": "icons/icon.ico",
+            "menuOnLeftClick": true
         },
         "updater": {
             "active": true,
-            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"],
+            "endpoints": [
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"
+            ],
             "dialog": false,
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
         },
@@ -65,7 +68,13 @@
             "active": true,
             "targets": "all",
             "identifier": "com.tari.universe",
-            "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png", "icons/StoreLogo.png", "icons/tari.png"],
+            "icon": [
+                "icons/icon.icns",
+                "icons/icon.ico",
+                "icons/icon.png",
+                "icons/StoreLogo.png",
+                "icons/tari.png"
+            ],
             "copyright": "Copyright (c) 2024 Tari Labs, LLC",
             "shortDescription": "Tari Universe is a mining app for Tari.",
             "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
