@@ -7,7 +7,6 @@ import DebugSettings from '@app/containers/Settings/sections/experimental/DebugS
 import AppVersions from '@app/containers/Settings/sections/experimental/AppVersions.tsx';
 import VisualMode from '@app/containers/Dashboard/components/VisualMode.tsx';
 import { SettingsGroup, SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
-import { ToggleAirdropUi } from '@app/containers/Airdrop/Settings/ToggleAirdropUi.tsx';
 
 export const ExperimentalSettings = () => {
     const showExperimental = useUIStore((s) => s.showExperimental);
@@ -26,7 +25,6 @@ export const ExperimentalSettings = () => {
                             <SettingsGroupWrapper>
                                 <SettingsGroup>
                                     <VisualMode />
-                                    <ToggleAirdropUi />
                                 </SettingsGroup>
                             </SettingsGroupWrapper>
                         </>

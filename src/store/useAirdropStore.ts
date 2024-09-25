@@ -113,7 +113,6 @@ type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 
 interface AirdropState {
     authUuid: string;
-    wipUI?: boolean;
     acceptedReferral?: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
@@ -129,7 +128,6 @@ interface AirdropStore extends AirdropState {
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
     setUserPoints: (userPoints: UserPoints) => void;
-    setWipUI: (wipUI: boolean) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     setReferralCount: (referralCount: ReferralCount) => void;
     setAcceptedReferral: (acceptedReferral: boolean) => void;
@@ -151,7 +149,6 @@ export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
-            setWipUI: (wipUI) => set({ wipUI }),
             setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
