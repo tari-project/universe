@@ -51,13 +51,15 @@ export const Characters = styled(m.div)<Props>`
 
 export const Character = styled(m.div)<Props>`
     display: flex;
-    justify-self: flex-start;
+    justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
     letter-spacing: -4px;
     text-transform: lowercase;
     width: min-content;
+    // for the unit & decimal
     &:last-child {
-        // for the unit
         width: ${({ $decimal }) => ($decimal ? 'min-content' : '1ch')};
+        margin-left: 1px;
+        margin-right: -1px;
     }
 `;
