@@ -21,6 +21,7 @@ export default function LogsSettings() {
     const [open, setOpen] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [error, setError] = useState('');
+    const [reference, setReference] = useState('');
     const sendLogs = useCallback(() => {
         setLoading(true);
         setError('');
@@ -30,8 +31,9 @@ export default function LogsSettings() {
             return;
         }
         invoke('send_feedback', { feedback, includeLogs: true })
-            .then(() => {
+            .then((r) => {
                 setOpen(false);
+                setReference(r);
             })
             .catch((error) => {
                 setError(error.toString());
@@ -61,6 +63,7 @@ export default function LogsSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('logs', { ns: 'settings' })}</Typography>
                     </SettingsGroupTitle>
+                    {reference && <p>{`${t('your-reference', { ns: 'settings' })}: ${reference}`}</p>}
                 </SettingsGroupContent>
 
                 <SettingsGroupAction>
