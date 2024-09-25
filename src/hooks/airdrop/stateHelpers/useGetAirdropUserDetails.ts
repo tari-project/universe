@@ -1,47 +1,6 @@
 import { useAirdropStore, UserEntryPoints, UserDetails, ReferralCount, BonusTier } from '@app/store/useAirdropStore';
 import { useCallback, useEffect } from 'react';
-
-interface RequestProps {
-    path: string;
-    method: 'GET' | 'POST';
-    body?: Record<string, unknown>;
-    onError?: (e: unknown) => void;
-}
-
-export const useAridropRequest = () => {
-    const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
-    const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
-
-    return async <T>({ body, method, path, onError }: RequestProps) => {
-        if (!baseUrl || !airdropToken) return;
-
-        const response = await fetch(`${baseUrl}${path}`, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${airdropToken}`,
-            },
-            body: JSON.stringify(body),
-        });
-
-        try {
-            if (!response.ok) {
-                console.error('Error fetching airdrop data', response);
-                if (onError) {
-                    onError(response);
-                }
-                return;
-            }
-            return response.json() as Promise<T>;
-        } catch (e) {
-            console.error('Error fetching airdrop data', e);
-            if (onError) {
-                onError(e);
-            }
-            return;
-        }
-    };
-};
+import { useAridropRequest } from '../utils/useHandleRequest';
 
 export const useGetAirdropUserDetails = () => {
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
@@ -100,7 +59,7 @@ export const useGetAirdropUserDetails = () => {
 
     const fetchAcceptedReferral = useCallback(async () => {
         const data = await handleRequest<{ claimed: boolean }>({
-            path: '/miner/claimed-referral',
+            path: '/miner/download/claimed-referral',
             method: 'GET',
         });
         setAcceptedReferral(!!data?.claimed);

@@ -109,6 +109,12 @@ export interface BackendInMemoryConfig {
 }
 
 type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
+
+export interface ReferralQuestPoints {
+    pointsPerReferral: number;
+    pointsForClaimingReferral: number;
+}
+
 //////////////////////////////////////////
 
 interface AirdropState {
@@ -121,9 +127,12 @@ interface AirdropState {
     backendInMemoryConfig?: BackendInMemoryConfig;
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
+    referralQuestPoints?: ReferralQuestPoints;
 }
 
 interface AirdropStore extends AirdropState {
+    setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
+
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
@@ -149,6 +158,7 @@ export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
+            setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
             setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
