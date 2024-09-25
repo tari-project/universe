@@ -53,5 +53,6 @@
     "connected-peers": "Connected Peers",
     "should-use-system-language": "Use system language",
     "gpu-device-enabled": "GPU Mining devices",
-    "gpu-device-enabled-description": "Enable or disable specific GPU device."
+    "gpu-device-enabled-description": "Enable or disable specific GPU device.",
+    "gpu-device-no-found": "⚠️ No GPU devices found"
 }

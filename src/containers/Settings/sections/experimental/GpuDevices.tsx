@@ -14,6 +14,7 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { Stack } from '@app/components/elements/Stack';
+import { useHardwareStats } from '@app/hooks/useHardwareStats';
 
 const GpuDevices = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -25,7 +26,8 @@ const GpuDevices = () => {
     const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed;
     const excludedDevices = useMiningStore((s) => s.excludedGpuDevices);
     const setExcludedDevice = useMiningStore((s) => s.setExcludedGpuDevice);
-    const gpuDevicesList: string[] = ['first gpu device name', 'second gpu device name']; //TODO get list of devices
+    const { gpu: gpuHardwareStats } = useHardwareStats();
+    const gpuDevicesList: string[] = gpuHardwareStats?.map((gpu) => gpu.label) ?? [];
 
     const handleSetExcludedDevice = useCallback(
         async (device: number) => {
@@ -44,25 +46,33 @@ const GpuDevices = () => {
     return (
         <>
             <SettingsGroupWrapper>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{t('gpu-device-enabled', { ns: 'settings' })}</Typography>
-                </SettingsGroupTitle>
-                <Typography variant="p">{t('gpu-device-enabled-description', { ns: 'settings' })}</Typography>
                 <SettingsGroup>
                     <SettingsGroupContent>
-                        {gpuDevicesList.map((device, i) => (
-                            <Stack key={device} direction="row" alignItems="center" justifyContent="space-between">
-                                <Typography variant="h6">
-                                    {i + 1}. {device}
-                                </Typography>
-                                <ToggleSwitch
-                                    key={device}
-                                    checked={!excludedDevices.includes(i)}
-                                    disabled={isDisabled}
-                                    onChange={() => handleSetExcludedDevice(i)}
-                                />
-                            </Stack>
-                        ))}
+                        <SettingsGroupTitle>
+                            <Typography variant="h6">{t('gpu-device-enabled', { ns: 'settings' })}</Typography>
+                        </SettingsGroupTitle>
+                        <Typography variant="p">{t('gpu-device-enabled-description', { ns: 'settings' })}</Typography>
+                    </SettingsGroupContent>
+                </SettingsGroup>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        {gpuDevicesList.length > 0 ? (
+                            gpuDevicesList.map((device, i) => (
+                                <Stack key={device} direction="row" alignItems="center" justifyContent="space-between">
+                                    <Typography variant="h6">
+                                        {i + 1}. {device}
+                                    </Typography>
+                                    <ToggleSwitch
+                                        key={device}
+                                        checked={!excludedDevices.includes(i)}
+                                        disabled={isDisabled}
+                                        onChange={() => handleSetExcludedDevice(i)}
+                                    />
+                                </Stack>
+                            ))
+                        ) : (
+                            <Typography variant="p">{t('gpu-device-no-found', { ns: 'settings' })}</Typography>
+                        )}
                     </SettingsGroupContent>
                 </SettingsGroup>
             </SettingsGroupWrapper>
