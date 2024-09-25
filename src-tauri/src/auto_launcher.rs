@@ -44,6 +44,7 @@ impl AutoLauncher {
         let auto_launcher = AutoLaunchBuilder::new()
             .set_app_name(app_name)
             .set_app_path(&app_path)
+            .set_use_launch_agent(true)
             .build()?;
 
         if is_auto_launcher_enabled && !auto_launcher.is_enabled().unwrap_or(false) {
