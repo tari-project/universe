@@ -39,6 +39,8 @@ pub struct AppConfigFromFile {
     has_system_language_been_proposed: bool,
     #[serde(default = "default_false")]
     should_always_use_system_language: bool,
+    #[serde(default = "default_false")]
+    should_auto_launch: bool,
     #[serde(default = "default_application_language")]
     application_language: String,
 }
@@ -59,6 +61,7 @@ impl Default for AppConfigFromFile {
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
+            should_auto_launch: false,
             application_language: default_application_language(),
         }
     }
@@ -104,6 +107,7 @@ pub(crate) struct AppConfig {
     cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
+    should_auto_launch: bool,
     application_language: String,
 }
 
@@ -124,6 +128,7 @@ impl AppConfig {
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
+            should_auto_launch: false,
             application_language: default_application_language(),
         }
     }
@@ -160,6 +165,7 @@ impl AppConfig {
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
                 self.should_always_use_system_language = config.should_always_use_system_language;
+                self.should_auto_launch = config.should_auto_launch;
                 self.application_language = config.application_language;
             }
             Err(e) => {
@@ -226,6 +232,19 @@ impl AppConfig {
 
     pub fn auto_mining(&self) -> bool {
         self.auto_mining
+    }
+
+    pub fn should_auto_launch(&self) -> bool {
+        self.should_auto_launch
+    }
+
+    pub async fn set_should_auto_launch(
+        &mut self,
+        should_auto_launch: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.should_auto_launch = should_auto_launch;
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_mine_on_app_start(
@@ -328,6 +347,7 @@ impl AppConfig {
             cpu_mining_enabled: self.cpu_mining_enabled,
             has_system_language_been_proposed: self.has_system_language_been_proposed,
             should_always_use_system_language: self.should_always_use_system_language,
+            should_auto_launch: self.should_auto_launch,
             application_language: self.application_language.clone(),
             ..default_config
         };

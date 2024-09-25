@@ -19,6 +19,7 @@ interface Actions {
     setMode: (mode: modeType) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
+    setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -47,6 +48,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         } catch (e) {
             console.error('Could not get app config: ', e);
         }
+    },
+    setShouldAutoLaunch: async (shouldAutoLaunch) => {
+        set({ should_auto_launch: shouldAutoLaunch });
+        invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set auto launch', e);
+            appStateStore.setError('Could not change auto launch');
+            set({ should_auto_launch: !shouldAutoLaunch });
+        });
     },
     setMineOnAppStart: async (mineOnAppStart) => {
         set({ mine_on_app_start: mineOnAppStart });

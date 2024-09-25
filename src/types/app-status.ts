@@ -11,6 +11,7 @@ export interface AppConfig {
     last_binaries_update_timestamp: string;
     has_system_language_been_proposed: boolean;
     should_always_use_system_language: boolean;
+    should_auto_launch: boolean;
     application_language: Language;
     allow_telemetry: boolean;
     anon_id: string;

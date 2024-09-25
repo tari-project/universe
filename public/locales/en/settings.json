@@ -55,6 +55,10 @@
       "title": "Mining on startup",
     "description": "When enabled, the app will start mining automatically when it is launched."
   },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "connected-to-tari": "Connected to the Tari Network",
   "not-connected-to-tari": "Not connected to the Tari Network",
   "connected-peers": "Connected Peers",

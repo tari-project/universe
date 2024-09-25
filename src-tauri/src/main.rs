@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use auto_launcher::AutoLauncher;
 use log::trace;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -43,6 +44,7 @@ use crate::wallet_manager::WalletManager;
 
 mod app_config;
 mod app_in_memory_config;
+mod auto_launcher;
 mod binaries;
 mod consts;
 mod cpu_miner;
@@ -352,6 +354,36 @@ async fn resolve_application_language(
 }
 
 #[tauri::command]
+async fn set_should_auto_launch(
+    should_auto_launch: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    match state
+        .config
+        .write()
+        .await
+        .set_should_auto_launch(should_auto_launch)
+        .await
+    {
+        Ok(_) => {
+            AutoLauncher::current()
+                .update_auto_launcher(should_auto_launch)
+                .await
+                .map_err(|e| {
+                    error!(target: LOG_TARGET, "Error setting should_auto_launch: {:?}", e);
+                    e.to_string()
+                })?;
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Error setting should_auto_launch: {:?}", e);
+            return Err(e.to_string());
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -394,6 +426,11 @@ async fn setup_inner(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
+
+    let is_auto_launcher_enabled = state.config.read().await.should_auto_launch();
+    AutoLauncher::current()
+        .initialize_auto_launcher(is_auto_launcher_enabled)
+        .await?;
 
     let progress = ProgressTracker::new(window.clone());
 
@@ -1515,7 +1552,8 @@ fn main() {
             get_p2pool_stats,
             get_tari_wallet_details,
             exit_application,
-            set_should_always_use_system_language
+            set_should_always_use_system_language,
+            set_should_auto_launch
         ])
         .build(tauri::generate_context!())
         .inspect_err(
