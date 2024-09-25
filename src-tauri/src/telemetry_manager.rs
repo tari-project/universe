@@ -342,8 +342,23 @@ async fn get_telemetry_data(
     let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
     let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
     let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
-    let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
-    let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
+    // let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
+    // let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
+    let gpu_utilization = Some(
+        hardware_status
+            .gpu
+            .clone()
+            .into_iter()
+            .map(|c| c.usage_percentage)
+            .sum::<f32>() as f32,
+    );
+    let gpu_makes: Vec<_> = hardware_status
+        .gpu
+        .clone()
+        .into_iter()
+        .map(|c| c.label.clone())
+        .collect();
+    let gpu_make = Some(gpu_makes.into_iter().collect::<Vec<_>>().join(", ")); //TODO JUST WIP to meet the String type
     let version = env!("CARGO_PKG_VERSION").to_string();
 
     Ok(TelemetryData {

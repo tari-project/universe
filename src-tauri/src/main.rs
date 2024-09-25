@@ -1223,7 +1223,7 @@ pub struct CpuMinerMetrics {
 
 #[derive(Debug, Serialize)]
 pub struct GpuMinerMetrics {
-    hardware: Option<HardwareParameters>,
+    hardware: Vec<HardwareParameters>,
     mining: GpuMinerStatus,
 }
 
