@@ -49,7 +49,7 @@ export interface P2poolStatsResult {
 export interface P2poolStats {
     connected: boolean;
     connected_since?: number;
-    tribe: P2poolTribeDetails;
+    squad: P2poolSquadDetails;
     num_of_miners: number;
     last_block_won?: P2poolStatsBlock;
     share_chain_height: number;
@@ -62,7 +62,7 @@ export interface P2poolStats {
     p2pool_block_stats: P2poolBlockStats;
 }
 
-export interface P2poolTribeDetails {
+export interface P2poolSquadDetails {
     id: string;
     name: string;
 }
