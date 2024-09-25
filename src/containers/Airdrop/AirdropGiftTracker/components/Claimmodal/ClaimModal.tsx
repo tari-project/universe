@@ -31,8 +31,6 @@ interface ClaimModalProps {
 }
 
 export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
-    //const { t } = useTranslation(['airdrop'], { useSuspense: false });
-
     const [claimCode, setClaimCode] = useState('');
 
     const handleSubmit = useCallback(
