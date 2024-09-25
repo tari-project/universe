@@ -473,13 +473,13 @@ async fn setup_inner(
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
-    state
+    let _ = state
         .gpu_miner
         .write()
         .await
         .detect(config_dir.clone())
         .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e))?;
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
     for _i in 0..2 {
         match state
@@ -1404,7 +1404,8 @@ fn main() {
                 &app.path_resolver()
                     .app_config_dir()
                     .unwrap()
-                    .join("log4rs_config.yml"),
+                    .join("universe")
+                    .join("log4rs_config_universe.yml"),
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
