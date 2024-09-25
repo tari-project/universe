@@ -326,6 +326,17 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             }
         };
 
+        println!("GPU STATS nvml.device_count()");
+        match nvml.device_count() {
+            Ok(num) => {
+                debug!(target: LOG_TARGET, "GPU STATS nvml.device_count() {:?}", num);
+                println!("GPU STATS nvml.device_count() {:?}", num);
+            }
+            Err(e) => {
+                println!("GPU STATS nvml.device_count() Failed to get nr: {}", e);
+            }
+        };
+
         let main_gpu = match nvml.device_by_index(0) {
             Ok(device) => device,
             Err(e) => {
