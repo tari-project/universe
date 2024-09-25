@@ -324,12 +324,6 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             Some(nvml) => nvml,
             None => {
                 return vec![];
-                // return HardwareParameters {
-                //     label: "N/A".to_string(),
-                //     usage_percentage: 0.0,
-                //     current_temperature: 0.0,
-                //     max_temperature: 0.0,
-                // }
             }
         };
 
@@ -351,10 +345,6 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
                 current_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
             let usage_percentage = current_gpu.utilization_rates().unwrap().gpu as f32;
             let label = current_gpu.name().unwrap();
-
-            // let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
-            // let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
-            // let label = main_gpu.name().unwrap();
 
             let max_temperature = match current_parameters.get(i as usize) {
                 Some(current_parameters) => {
@@ -454,48 +444,35 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             .filter(|c| c.label().contains("GPU"))
             .collect();
 
-        // let avarage_temperature = gpu_components.iter().map(|c| c.temperature()).sum::<f32>()
-        //     / gpu_components.len() as f32;
-        // //TODO: Implement GPU usage for MacOS
-        // let usage = system.global_cpu_usage();
-        // let label: String = system.cpus().first().unwrap().brand().to_string() + " GPU";
-
-        // match current_parameters {
-        //     Some(current_parameters) => HardwareParameters {
-        //         label,
-        //         usage_percentage: usage,
-        //         current_temperature: avarage_temperature,
-        //         max_temperature: current_parameters.max_temperature.max(avarage_temperature),
-        //     },
-        //     None => HardwareParameters {
-        //         label,
-        //         usage_percentage: usage,
-        //         current_temperature: avarage_temperature,
-        //         max_temperature: avarage_temperature,
-        //     },
-        // }
-
         let num_of_devices = gpu_components.len();
         let avarage_temperature =
             gpu_components.iter().map(|c| c.temperature()).sum::<f32>() / num_of_devices as f32;
+
         let mut gpu_devices = vec![];
         for i in 0..num_of_devices {
             let current_gpu = if let Some(device) = system.cpus().get(i) {
                 device
             } else {
-                println!("Failed to get main GPU");
+                println!("Failed to get GPU device nr {:?}", i);
                 continue; // skip to the next iteration
             };
 
             //TODO: Implement GPU usage for MacOS
-            let usage = system.global_cpu_usage();
+            let usage_percentage = system.global_cpu_usage();
             let label: String = current_gpu.brand().to_string() + " GPU";
+            let mut current_temperature = avarage_temperature;
+            let mut max_temperature = avarage_temperature;
+
+            if let Some(current_parameters) = current_parameters.get(i as usize) {
+                current_temperature = current_parameters.current_temperature;
+                max_temperature = current_parameters.max_temperature.max(avarage_temperature)
+            };
 
             gpu_devices.push(HardwareParameters {
                 label,
-                usage_percentage: usage,
-                current_temperature: avarage_temperature,
-                max_temperature: avarage_temperature,
+                usage_percentage,
+                current_temperature,
+                max_temperature,
             });
         }
         gpu_devices

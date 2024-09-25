@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
@@ -8,13 +8,13 @@ import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { useTranslation } from 'react-i18next';
 import {
     SettingsGroup,
-    SettingsGroupAction,
     SettingsGroupContent,
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { Stack } from '@app/components/elements/Stack';
 import { useHardwareStats } from '@app/hooks/useHardwareStats';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 const GpuDevices = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -22,8 +22,9 @@ const GpuDevices = () => {
     const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
+    const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const isMiningInProgress = isCPUMining || isGPUMining;
-    const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed;
+    const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
     const excludedDevices = useMiningStore((s) => s.excludedGpuDevices);
     const setExcludedDevice = useMiningStore((s) => s.setExcludedGpuDevice);
     const { gpu: gpuHardwareStats } = useHardwareStats();
@@ -32,7 +33,6 @@ const GpuDevices = () => {
     const handleSetExcludedDevice = useCallback(
         async (device: number) => {
             if (!excludedDevices.includes(device)) {
-                // if device is enabled we want to disabled it, so set to 'excluded list'
                 excludedDevices.push(device);
                 await setExcludedDevice([...excludedDevices]);
             } else {
@@ -64,7 +64,7 @@ const GpuDevices = () => {
                                     </Typography>
                                     <ToggleSwitch
                                         key={device}
-                                        checked={!excludedDevices.includes(i)}
+                                        checked={!excludedDevices.includes(i) && isGpuMiningEnabled}
                                         disabled={isDisabled}
                                         onChange={() => handleSetExcludedDevice(i)}
                                     />
