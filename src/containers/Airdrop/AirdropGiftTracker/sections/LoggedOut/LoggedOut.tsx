@@ -5,9 +5,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
 import ClaimModal from '../../components/Claimmodal/ClaimModal';
+import { useTranslation } from 'react-i18next';
 
 export default function LoggedOut() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
+    const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const { authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } = useAirdropStore();
 
     const handleAuth = useCallback(
@@ -61,7 +63,7 @@ export default function LoggedOut() {
         <>
             <Wrapper>
                 <ClaimButton onClick={() => setModalIsOpen(true)}>
-                    <span>Claim Gems</span>
+                    <span>{t('claimGems')}</span>
                 </ClaimButton>
 
                 <Gems number={GIFT_GEMS} label={`Unclaimed Gems`} />

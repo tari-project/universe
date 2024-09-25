@@ -16,9 +16,11 @@ import boxImage from '../../../../images/gold_box.png';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
+import { Trans, useTranslation } from 'react-i18next';
 
 export default function Invite() {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const { userDetails, referralCount, bonusTiers } = useAirdropStore();
 
     const referralCode = userDetails?.user?.referral_code || '';
@@ -56,7 +58,7 @@ export default function Invite() {
                     {copied && (
                         <Copied initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                             <m.span initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ opacity: 0 }}>
-                                Link copied!
+                                {t('linkCopied')}
                             </m.span>
                         </Copied>
                     )}
@@ -65,9 +67,14 @@ export default function Invite() {
                 <Image src={giftImage} alt="" />
 
                 <TextWrapper>
-                    <Title>Invite Friends</Title>
+                    <Title>{t('inviteFirends')}</Title>
                     <Text>
-                        You’ve invited <span>{referralCount?.count || 0}</span> friends
+                        <Trans
+                            ns="airdrop"
+                            i18nKey="invitedAmount"
+                            components={{ span: <span /> }}
+                            values={{ count: referralCount?.count || 0 }}
+                        />
                     </Text>
                 </TextWrapper>
 
@@ -80,8 +87,15 @@ export default function Invite() {
             {nextBonusTier && (
                 <BonusWrapper>
                     <BonusText>
-                        Invite&nbsp;<strong>{friendsRemaining} friends</strong>&nbsp;& earn{' '}
-                        {nextBonusTier?.bonusGems.toLocaleString()} bonus gems
+                        <Trans
+                            ns="airdrop"
+                            i18nKey="nextTierBonus"
+                            components={{ strong: <strong /> }}
+                            values={{
+                                count: ` ${friendsRemaining} `,
+                                bonusGems: nextBonusTier?.bonusGems.toLocaleString(),
+                            }}
+                        />
                     </BonusText>
                     <Image src={boxImage} alt="" className="giftImage" />
                 </BonusWrapper>
