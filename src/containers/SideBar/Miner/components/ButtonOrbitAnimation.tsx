@@ -5,29 +5,32 @@ import { Transition, useAnimationFrame, Variants } from 'framer-motion';
 
 const orbitTracks = [{ size: 200 }, { size: 230 }, { size: 260 }, { size: 160 }];
 
+const opacityTransition = {
+    duration: 15,
+    ease: 'easeInOut',
+    repeat: Infinity,
+    delay: i * 2,
+};
 const cube = {
     animate: (i) => ({
         opacity: [0.75, 1, 0.9],
         scale: [0.8, 0.75],
-        transition: {
-            duration: 15,
-            ease: 'easeInOut',
-            repeat: Infinity,
-            delay: i * 2,
-        },
+        transition: opacityTransition,
     }),
 };
 
 const track: Variants = {
     animate: (i) => ({
-        rotate: i % 2 !== 0 ? 360 : -360,
+        rotate: i % 3 !== 0 ? 360 : -360,
+        opacity: [0.75, 8.2, 0.69],
         transition: {
-            duration: 30 - (i + 2) * 3.5,
+            duration: 40 + (i + 1) * 1.5,
             ease: 'linear',
             repeat: Infinity,
             repeatType: 'mirror' as Transition['repeatType'],
             staggerChildren: 1.5,
             delay: i * 1.75,
+            opacity: opacityTransition,
         },
     }),
 };
@@ -40,13 +43,13 @@ function OrbitCube({ isEven, custom, x, y }: { isEven?: boolean; custom: number;
     );
 }
 
-const baseCubes = [1, 2, 3];
+const baseCubes = [1, 2];
 
 export default function ButtonOrbitAnimation() {
     const [cubesPerTrack, setCubesPerTrack] = useState(baseCubes);
 
     useAnimationFrame((time, delta) => {
-        if (delta > 20 && cubesPerTrack.length < 15) {
+        if (delta > 20 && cubesPerTrack.length < 10) {
             setCubesPerTrack((c) => [...c, c.length + 1]);
         }
     });
@@ -60,8 +63,8 @@ export default function ButtonOrbitAnimation() {
         >
             {orbitTracks.map(({ size }, trackIndex) => {
                 const isEven = trackIndex % 2 === 0;
-                const borderStyleArr = ['dashed', 'dashed', 'dashed'];
-                borderStyleArr.splice(trackIndex, 0, 'solid');
+                const borderStyleArr = ['solid', 'solid', 'solid'];
+                borderStyleArr.splice(trackIndex, 0, 'dashed');
                 const borderStyle = borderStyleArr.join(' ');
                 const cubes = isEven
                     ? cubesPerTrack.filter((c) => c % 2 !== 0)
@@ -70,7 +73,7 @@ export default function ButtonOrbitAnimation() {
                     <Orbit
                         key={`orbit-${size}-${trackIndex}`}
                         style={{
-                            opacity: isEven ? 1 : 0.7,
+                            opacity: isEven ? 0.8 : 0.65,
                             borderStyle,
                             width: size,
                             height: size,

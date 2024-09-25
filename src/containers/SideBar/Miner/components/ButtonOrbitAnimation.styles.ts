@@ -14,8 +14,8 @@ export const OrbitWrapper = styled(m.div)`
 export const Orbit = styled(m.div)`
     border-radius: 100%;
     border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.175);
-    color: rgba(255, 255, 255, 0.095);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.1);
     position: absolute;
     width: 100%;
     height: 100%;

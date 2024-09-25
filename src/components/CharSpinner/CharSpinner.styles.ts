@@ -43,7 +43,6 @@ export const Characters = styled(m.div)<Props>`
     display: flex;
     flex-direction: column;
     align-items: center;
-    letter-spacing: -4px;
     font-weight: ${({ $variant }) => ($variant == 'simple' ? 600 : 700)};
     font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'Druk')}, sans-serif;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
@@ -52,8 +51,13 @@ export const Characters = styled(m.div)<Props>`
 
 export const Character = styled(m.div)<Props>`
     display: flex;
-    justify-self: center;
+    justify-self: flex-start;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
-    letter-spacing: -0.02ch;
+    letter-spacing: -4px;
     text-transform: lowercase;
+    width: min-content;
+    &:last-child {
+        // for the unit
+        width: ${({ $decimal }) => ($decimal ? 'min-content' : '1ch')};
+    }
 `;
