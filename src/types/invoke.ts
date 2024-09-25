@@ -30,7 +30,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(
-        param: 'set_excluded_gpu_device',
+        param: 'set_excluded_gpu_devices',
         payload: { excludedGpuDevice: number | undefined }
     ): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;

@@ -165,7 +165,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         console.info('--->>> Exclude gpu device nr:', excludedGpuDevices);
         set({ excludedGpuDevices });
         try {
-            await invoke('set_excluded_gpu_device', { excludedGpuDevices });
+            await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set excluded gpu device: ', e);

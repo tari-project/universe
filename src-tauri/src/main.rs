@@ -688,16 +688,16 @@ async fn set_gpu_mining_enabled(
 }
 
 #[tauri::command]
-async fn set_excluded_gpu_device(
+async fn set_excluded_gpu_devices(
     excluded_gpu_devices: Vec<u8>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-    println!("set_excluded_gpu_device {:?}", excluded_gpu_devices);
+    println!("set_excluded_gpu_devices {:?}", excluded_gpu_devices);
     let mut gpu_miner = state.gpu_miner.write().await;
     gpu_miner
         .set_excluded_device(excluded_gpu_devices)
         .await
-        .inspect_err(|e| error!("error at set_excluded_gpu_device {:?}", e))
+        .inspect_err(|e| error!("error at set_excluded_gpu_devices {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -1498,7 +1498,7 @@ fn main() {
             get_p2pool_stats,
             get_tari_wallet_details,
             exit_application,
-            set_excluded_gpu_device,
+            set_excluded_gpu_devices,
             set_should_always_use_system_language
         ])
         .build(tauri::generate_context!())

@@ -160,7 +160,7 @@ impl GpuMiner {
         excluded_gpu_devices: Vec<u8>,
     ) -> Result<(), anyhow::Error> {
         println!(
-            "set_excluded_gpu_device gpuminer.rs -> {:?}",
+            "set_excluded_gpu_devices gpuminer.rs -> {:?}",
             excluded_gpu_devices
         );
         self.excluded_gpu_devices = excluded_gpu_devices;
