@@ -1,6 +1,6 @@
 import { m } from 'framer-motion';
 
-import styled, { css, keyframes } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 export const Wrapper = styled('div')`
     position: fixed;
@@ -33,8 +33,6 @@ export const BoxWrapper = styled(m.div)`
     max-width: 635px;
     flex-shrink: 0;
 
-    // min-height: 650px;
-
     border-radius: 35px;
     background: linear-gradient(180deg, #c9eb00 32.79%, #fff 69.42%);
     box-shadow: 28px 28px 77px 0px rgba(0, 0, 0, 0.1);
@@ -42,7 +40,7 @@ export const BoxWrapper = styled(m.div)`
     position: relative;
     z-index: 1;
 
-    padding: 180px 50px 22px 50px;
+    padding: 180px 50px 42px 50px;
 
     display: flex;
     flex-direction: column;
@@ -51,8 +49,6 @@ export const BoxWrapper = styled(m.div)`
 `;
 
 export const TextWrapper = styled('div')`
-    padding: 0px 34px;
-
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -70,8 +66,6 @@ export const Title = styled('div')`
     text-transform: uppercase;
     font-family: Druk, sans-serif;
 
-    max-width: 462px;
-
     span {
         color: #ff4a55;
         display: inline-flex;
@@ -80,54 +74,20 @@ export const Title = styled('div')`
     }
 `;
 
-export const Text = styled('div')<{ $isError?: boolean }>`
+export const Text = styled('div')`
     color: #000;
     text-align: center;
-    font-size: 20px;
+    font-size: 16px;
     font-style: normal;
     font-weight: 400;
     line-height: 120.7%;
 
-    max-width: 410px;
-
-    ${({ $isError }) =>
-        $isError &&
-        css`
-            font-weight: bold;
-            margin-top: 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            max-width: unset;
-            color: red;
-        `};
+    max-width: 468px;
 `;
 
 export const GemTextImage = styled('img')`
     width: 22px;
     transform: translateY(1px);
-`;
-
-export const ShareWrapper = styled('div')<{ $isClaim?: boolean }>`
-    width: 100%;
-    border-radius: 49px;
-    background: #000;
-    box-shadow: 28px 28px 77px 0px rgba(0, 0, 0, 0.1);
-
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    padding-left: 36px;
-    gap: 10px;
-
-    position: relative;
-    ${({ $isClaim }) =>
-        $isClaim &&
-        css`
-            min-height: 70px;
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.1);
-        `};
 `;
 
 const float = keyframes`
@@ -181,8 +141,70 @@ export const Gem3 = styled('img')`
     animation: ${float} 3.8s ease-in-out infinite;
 `;
 
-export const StyledInput = styled('input')`
+export const InputWrapper = styled('div')`
     width: 100%;
+    position: relative;
+`;
+
+export const InputLabel = styled('div')`
+    position: absolute;
+    left: 40px;
+    top: 16px;
+
+    color: #797979;
+    font-size: 12px;
+    font-weight: 500;
+    pointer-events: none;
+`;
+
+export const StyledInput = styled('input')`
+    height: 75px;
+    width: 100%;
+    border-radius: 49px;
+    border: 1px solid #e0e0e0;
+    background: rgba(241, 241, 241, 0.5);
+    box-shadow: 28px 28px 77px 0px rgba(0, 0, 0, 0.1);
+
+    padding: 18px 100px 0 40px;
+    transition:
+        background 0.2s ease,
+        border 0.2s ease;
+
+    &::placeholder {
+        color: rgba(0, 0, 0, 0.5);
+    }
+
+    &:focus {
+        background: #fff;
+        border: 1px solid #b0b0b0;
+    }
+`;
+
+export const InputGems = styled('div')`
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+
+    display: flex;
+    height: 35.065px;
+    padding: 10.39px 15.584px 10.39px 20.779px;
+    justify-content: center;
+    align-items: center;
+    gap: 3.896px;
+
+    border-radius: 206.233px;
+    background: linear-gradient(0deg, #000 0%, #000 100%), linear-gradient(180deg, #755cff 0%, #2946d9 100%),
+        linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
+
+    pointer-events: none;
+
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+
+    img {
+        transform: rotate(45deg) translateY(-1px);
+    }
 `;
 
 export const ClaimButton = styled('button')`
@@ -199,13 +221,33 @@ export const ClaimButton = styled('button')`
     min-height: 70px;
 
     position: relative;
-    font-weight: bold;
+    font-weight: 800;
+
     &:hover {
-        transform: scale(1.05);
+        transform: scale(1.03);
     }
 `;
 
-export const ActionWrapper = styled('div')`
+export const XLogo = styled('div')`
+    width: 48px;
+    height: 48px;
+    border-radius: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background-color: #fff;
+    color: #000;
+
+    position: absolute;
+    top: 50%;
+    right: 16px;
+
+    transform: translateY(-50%);
+`;
+
+export const FormWrapper = styled('form')`
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -225,6 +267,9 @@ export const TextButton = styled('button')`
     text-align: center;
     margin-bottom: 15px;
     width: fit-content;
+
+    margin: auto;
+
     &:hover {
         text-decoration: underline;
     }
