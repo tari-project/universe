@@ -10,7 +10,8 @@ import { AnimatePresence } from 'framer-motion';
 export default function LoggedIn() {
     const [gems, setGems] = useState(0);
 
-    const { userDetails, userPoints, flareAnimationType, bonusTiers, setFlareAnimationType } = useAirdropStore();
+    const { userDetails, userPoints, flareAnimationType, bonusTiers, setFlareAnimationType, referralQuestPoints } =
+        useAirdropStore();
 
     useEffect(() => {
         setGems(userPoints?.base.gems || userDetails?.user?.rank?.gems || 0);
@@ -40,13 +41,13 @@ export default function LoggedIn() {
             case 'GoalComplete':
                 return bonusTier?.bonusGems || 0;
             case 'FriendAccepted':
-                return REFERRAL_GEMS;
+                return referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS;
             case 'BonusGems':
-                return GIFT_GEMS;
+                return referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS;
             default:
                 return 0;
         }
-    }, [flareAnimationType, bonusTier?.bonusGems]);
+    }, [flareAnimationType, bonusTier?.bonusGems, referralQuestPoints?.pointsForClaimingReferral]);
 
     return (
         <Wrapper>

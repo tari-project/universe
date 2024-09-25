@@ -10,7 +10,8 @@ import { useTranslation } from 'react-i18next';
 export default function LoggedOut() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const { authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } = useAirdropStore();
+    const { referralQuestPoints, authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } =
+        useAirdropStore();
 
     const handleAuth = useCallback(
         (code?: string) => {
@@ -66,7 +67,7 @@ export default function LoggedOut() {
                     <span>{t('claimGems')}</span>
                 </ClaimButton>
 
-                <Gems number={GIFT_GEMS} label={`Unclaimed Gems`} />
+                <Gems number={referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS} label={`Unclaimed Gems`} />
             </Wrapper>
             {modalIsOpen && <ClaimModal onSubmit={handleAuth} onClose={() => setModalIsOpen(false)} />}
         </>

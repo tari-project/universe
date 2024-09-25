@@ -19,7 +19,7 @@ import {
 import gemImage from './images/gems.png';
 import gemLargeImage from './images/gem-large.png';
 import { useCallback, useState } from 'react';
-import { GIFT_GEMS } from '@app/store/useAirdropStore';
+import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { Trans, useTranslation } from 'react-i18next';
 
 interface ClaimModalProps {
@@ -28,6 +28,7 @@ interface ClaimModalProps {
 }
 
 export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
+    const referralQuestPoints = useAirdropStore((state) => state.referralQuestPoints);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
 
     const [claimCode, setClaimCode] = useState('');
@@ -51,10 +52,12 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
                             ns="airdrop"
                             i18nKey="claimReferralCode"
                             components={{ span: <span />, image: <GemTextImage src={gemImage} alt="" /> }}
-                            values={{ gems: GIFT_GEMS }}
+                            values={{ gems: referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS }}
                         />
                     </Title>
-                    <Text>{t('claimReferralGifts', { gems: GIFT_GEMS })}</Text>
+                    <Text>
+                        {t('claimReferralGifts', { gems: referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS })}
+                    </Text>
                 </TextWrapper>
                 <ActionWrapper>
                     <ShareWrapper $isClaim>
