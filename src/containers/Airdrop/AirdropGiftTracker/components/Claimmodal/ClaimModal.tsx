@@ -70,10 +70,10 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
                             // </Button>
                         }
                     </ShareWrapper>
-                    <ClaimButton onClick={handleSubmit}> Claim gems </ClaimButton>
+                    <ClaimButton onClick={handleSubmit}> {t('claimGems')} </ClaimButton>
                 </ActionWrapper>
                 <ActionWrapper>
-                    <TextButton onClick={onClose}>{`I'll do this later`}</TextButton>
+                    <TextButton onClick={onClose}>{t('doLater')}</TextButton>
                 </ActionWrapper>
             </BoxWrapper>
 

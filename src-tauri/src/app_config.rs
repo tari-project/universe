@@ -228,11 +228,11 @@ impl AppConfig {
         self.auto_mining
     }
 
-    pub async fn airdrop_ui_enabled(&mut self, airdrop_ui_enabled: bool) -> Result<(), anyhow::Error> {
-        self.airdrop_ui_enabled = airdrop_ui_enabled;
-        self.update_config_file().await?;
-        Ok(())
-    }
+    // pub async fn set_airdrop_ui_enabled(&mut self, airdrop_ui_enabled: bool) -> Result<(), anyhow::Error> {
+    //     self.airdrop_ui_enabled = airdrop_ui_enabled;
+    //     self.update_config_file().await?;
+    //     Ok(())
+    // }
 
     pub async fn set_allow_telemetry(
         &mut self,
