@@ -3,7 +3,7 @@ name = "tari-universe"
 authors = ["The Tari Development Community"]
 description = "Tari Universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.4.4"
+version = "0.4.5-pre.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -81,6 +81,7 @@ rand = "0.8.5"
 device_query = "2.1.0"
 nvml-wrapper = "0.10.0"
 sentry-tauri = "0.3.0"
+sentry = { version = "0.32.3", features = ["debug-images", "log"] }
 chrono = "0.4.38"
 sys-locale = "0.3.1"
 # tonic = "0.12.0"
@@ -91,10 +92,4 @@ custom-protocol = ["tauri/custom-protocol"]
 airdrop-local = []
 
 [package.metadata.cargo-machete]
-ignored = [
-    "log4rs",
-    "xz2",
-    "libsqlite3-sys",
-    "minotari_wallet_grpc_client",
-    "dirs-next",
-]
+ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]

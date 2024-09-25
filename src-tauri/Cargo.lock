@@ -5210,6 +5210,7 @@ dependencies = [
  "sentry-contexts",
  "sentry-core",
  "sentry-debug-images",
+ "sentry-log",
  "sentry-panic",
  "sentry-tracing",
  "tokio",
@@ -5263,6 +5264,16 @@ checksum = "7ec2a486336559414ab66548da610da5e9626863c3c4ffca07d88f7dc71c8de8"
 dependencies = [
  "findshlibs",
  "once_cell",
+ "sentry-core",
+]
+
+[[package]]
+name = "sentry-log"
+version = "0.32.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e74b7261245ff17a8c48e8f3e1e96fb6b84146870121af880d53aef6a5b4f784"
+dependencies = [
+ "log",
  "sentry-core",
 ]
 
@@ -6072,7 +6083,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.4.4"
+version = "0.4.5-pre.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6099,6 +6110,7 @@ dependencies = [
  "reqwest 0.12.7",
  "sanitize-filename",
  "semver",
+ "sentry",
  "sentry-tauri",
  "serde",
  "serde_json",
