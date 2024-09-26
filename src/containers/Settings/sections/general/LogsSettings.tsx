@@ -10,7 +10,6 @@ import {
     SettingsGroup,
     SettingsGroupAction,
     SettingsGroupContent,
-    SettingsGroupTextAction,
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
@@ -20,14 +19,21 @@ export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
-    const [feedback, _setFeedback] = useState('App feedback');
+    const [feedback, setFeedback] = useState('');
     const [error, setError] = useState('');
+    const [reference, setReference] = useState('');
     const sendLogs = useCallback(() => {
         setLoading(true);
         setError('');
+        if (!feedback) {
+            setError(t('feedback-required', { ns: 'settings' }));
+            setLoading(false);
+            return;
+        }
         invoke('send_feedback', { feedback, includeLogs: true })
-            .then(() => {
+            .then((r) => {
                 setOpen(false);
+                setReference(r);
             })
             .catch((error) => {
                 setError(error.toString());
@@ -35,7 +41,7 @@ export default function LogsSettings() {
             .finally(() => {
                 setLoading(false);
             });
-    }, [feedback]);
+    }, [feedback, t]);
     const openLogsDirectory = () => {
         invoke('open_log_dir')
             .then(() => {
@@ -57,30 +63,38 @@ export default function LogsSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('logs', { ns: 'settings' })}</Typography>
                     </SettingsGroupTitle>
-                    <SettingsGroupTextAction onClick={() => setOpen(true)}>
-                        {t('send-logs', { ns: 'settings' })}
-                    </SettingsGroupTextAction>
+                    {reference && <p>{`${t('your-reference', { ns: 'settings' })}: ${reference}`}</p>}
                 </SettingsGroupContent>
 
                 <SettingsGroupAction>
                     <ButtonBase onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</ButtonBase>
+                    <ButtonBase onClick={() => setOpen(true)}>{t('send-logs', { ns: 'settings' })}</ButtonBase>
                 </SettingsGroupAction>
             </SettingsGroup>
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent>
                     <Stack direction="column" alignItems="center" justifyContent="space-between">
                         <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
-                        <Typography variant={'p'}>{error}</Typography>
+                        <textarea
+                            onChange={(e) => setFeedback(e.target.value)}
+                            style={{ width: '500px', height: '500px' }}
+                            placeholder={t('your-feedback', { ns: 'settings' })}
+                        />
+                        <Typography variant={'p'} color={'red'}>
+                            {error}
+                        </Typography>
                         <Stack direction="row">
-                            <Button disabled={loading} onClick={handleClose} color="warning">
-                                {t('cancel')}
-                            </Button>
                             {loading ? (
                                 <CircularProgress />
                             ) : (
-                                <Button disabled={loading} onClick={sendLogs}>
-                                    {t('submit')}
-                                </Button>
+                                <>
+                                    <Button disabled={loading} onClick={handleClose} color="warning">
+                                        {t('cancel')}
+                                    </Button>
+                                    <Button disabled={loading || feedback.trim() === ''} onClick={sendLogs}>
+                                        {t('submit')}
+                                    </Button>
+                                </>
                             )}
                         </Stack>
                     </Stack>

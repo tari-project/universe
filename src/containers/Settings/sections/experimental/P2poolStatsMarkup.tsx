@@ -18,7 +18,7 @@ const P2PoolStats = () => {
     const p2poolRandomXStats = useP2poolStatsStore((s) => s.randomx);
     const fetchP2pStats = useP2poolStatsStore((s) => s.fetchP2poolStats);
 
-    const p2poolTribe = p2poolSha3Stats?.tribe?.name;
+    const p2poolSquad = p2poolSha3Stats?.squad?.name;
     const p2poolSha3MinersCount = p2poolSha3Stats?.num_of_miners;
     const p2poolRandomxMinersCount = p2poolRandomXStats?.num_of_miners;
     const p2poolSha3HashRate = p2poolSha3Stats?.pool_hash_rate;
@@ -60,7 +60,7 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'Current',
-                                labelValue: p2poolTribe ? p2poolTribe : '',
+                                labelValue: p2poolSquad ? p2poolSquad : '',
                             },
                         ]}
                     />

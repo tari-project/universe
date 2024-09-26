@@ -72,6 +72,7 @@ mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
 mod user_listener;
+mod utils;
 mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
@@ -156,21 +157,25 @@ async fn send_feedback(
     include_logs: bool,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
+    app: tauri::AppHandle,
+) -> Result<String, String> {
     let timer = Instant::now();
-    state
+    let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs)
+        .send_feedback(
+            feedback,
+            include_logs,
+            app.path_resolver().app_log_dir().clone(),
+        )
         .await
         .inspect_err(|e| error!("error at send_feedback {:?}", e))
         .map_err(|e| e.to_string())?;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+    if timer.elapsed() > Duration::from_secs(60) {
         warn!(target: LOG_TARGET, "send_feedback took too long: {:?}", timer.elapsed());
     }
-    Ok(())
+    Ok(reference)
 }
 
 #[tauri::command]
@@ -214,13 +219,15 @@ async fn set_airdrop_access_token(
 ) -> Result<(), String> {
     let timer = Instant::now();
     let mut write_lock = state.airdrop_access_token.write().await;
-    *write_lock = Some(token);
+    *write_lock = Some(token.clone());
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "set_airdrop_access_token took too long: {:?}",
             timer.elapsed()
         );
     }
+    let mut in_memory_app_config = state.in_memory_config.write().await;
+    in_memory_app_config.airdrop_access_token = Some(token);
     Ok(())
 }
 
@@ -466,13 +473,13 @@ async fn setup_inner(
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
-    state
+    let _ = state
         .gpu_miner
         .write()
         .await
         .detect(config_dir.clone())
         .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e))?;
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
     for _i in 0..2 {
         match state
@@ -1412,7 +1419,8 @@ fn main() {
                 &app.path_resolver()
                     .app_config_dir()
                     .unwrap()
-                    .join("log4rs_config.yml"),
+                    .join("universe")
+                    .join("log4rs_config_universe.yml"),
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
@@ -1527,7 +1535,7 @@ fn main() {
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
                 let window = _app_handle.get_window("main").unwrap();
-                drop(window.emit("update-progress", UpdateProgressRustEvent {chunk_length, content_length, downloaded}));
+                drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }));
             }
             UpdaterEvent::Downloaded => {
                 shutdown.trigger();
@@ -1550,7 +1558,7 @@ fn main() {
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
-        RunEvent::WindowEvent { label, event, .. }  => {
+        RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
         }
         _ => {

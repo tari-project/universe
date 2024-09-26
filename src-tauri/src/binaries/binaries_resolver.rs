@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use regex::Regex;
 use semver::Version;
 use std::collections::HashMap;
-use std::path::{self, PathBuf};
+use std::path::PathBuf;
 use std::sync::LazyLock;
 use tari_common::configuration::Network;
 use tokio::sync::RwLock;
@@ -55,11 +55,6 @@ pub struct BinaryResolver {
 impl BinaryResolver {
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
-        let versions_requirements_path = match Network::get_current_or_user_setting_or_default() {
-            Network::NextNet => path::absolute("./binaries_versions_nextnet.json").unwrap(),
-            Network::Esmeralda => path::absolute("./binaries_versions_esmeralda.json").unwrap(),
-            _ => panic!("Unsupported network"),
-        };
 
         let (tari_prerelease_prefix, gpuminer_specific_nanme) =
             match Network::get_current_or_user_setting_or_default() {
@@ -73,7 +68,6 @@ impl BinaryResolver {
             BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
                 Box::new(XmrigVersionApiAdapter {}),
-                versions_requirements_path.clone(),
                 None,
                 true,
             ),
@@ -88,7 +82,6 @@ impl BinaryResolver {
                     owner: "stringhandler".to_string(),
                     specific_name: gpuminer_specific_nanme,
                 }),
-                versions_requirements_path.clone(),
                 None,
                 true,
             ),
@@ -103,7 +96,6 @@ impl BinaryResolver {
                     owner: "tari-project".to_string(),
                     specific_name: None,
                 }),
-                versions_requirements_path.clone(),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             ),
@@ -118,7 +110,6 @@ impl BinaryResolver {
                     owner: "tari-project".to_string(),
                     specific_name: None,
                 }),
-                versions_requirements_path.clone(),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             ),
@@ -133,7 +124,6 @@ impl BinaryResolver {
                     owner: "tari-project".to_string(),
                     specific_name: None,
                 }),
-                versions_requirements_path.clone(),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             ),
@@ -148,7 +138,6 @@ impl BinaryResolver {
                     owner: "tari-project".to_string(),
                     specific_name: None,
                 }),
-                versions_requirements_path.clone(),
                 None,
                 true,
             ),

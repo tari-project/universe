@@ -21,7 +21,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_seed_words'): Promise<string[]>;
     function invoke(param: 'get_applications_versions'): Promise<ApplicationsVersions>;
     function invoke(param: 'set_monero_address', payload: { moneroAddress: string }): Promise<void>;
-    function invoke(param: 'send_feedback', payload: { feedback: string; includeLogs: boolean }): Promise<void>;
+    function invoke(param: 'send_feedback', payload: { feedback: string; includeLogs: boolean }): Promise<string>;
     function invoke(param: 'reset_settings', payload: { resetWallet: boolean }): Promise<string>;
     function invoke(param: 'get_app_config'): Promise<AppConfig>;
     function invoke(param: 'set_p2pool_enabled', payload: { p2pool_enabled: boolean }): Promise<void>;
