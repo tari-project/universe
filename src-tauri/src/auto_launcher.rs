@@ -10,6 +10,14 @@ use tokio::sync::RwLock;
 const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+
+pub enum CurrentOperatingSystem {
+    Windows,
+    Linux,
+    MacOS,
+}
+
+
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
 }
@@ -19,6 +27,62 @@ impl AutoLauncher {
         Self {
             auto_launcher: RwLock::new(None),
         }
+    }
+
+    fn detect_current_os() -> CurrentOperatingSystem {
+        if cfg!(target_os = "windows") {
+            CurrentOperatingSystem::Windows
+        } else if cfg!(target_os = "linux") {
+            CurrentOperatingSystem::Linux
+        } else if cfg!(target_os = "macos") {
+            CurrentOperatingSystem::MacOS
+        } else {
+            panic!("Unsupported OS");
+        }
+    }
+
+    fn build_auto_launcher(app_name: &str, app_path: &str) -> Result<AutoLaunch, anyhow::Error> {
+        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {} and app_path: {}", app_name, app_path);
+
+        match AutoLauncher::detect_current_os() {
+            CurrentOperatingSystem::Windows => {
+                return AutoLaunchBuilder::new()
+                    .set_app_name(app_name)
+                    .set_app_path(app_path)
+                    .set_use_launch_agent(false)
+                    .build().map_err(|e| e.into());
+            }
+            CurrentOperatingSystem::Linux => {
+                return AutoLaunchBuilder::new()
+                    .set_app_name(app_name)
+                    .set_app_path(app_path)
+                    .set_use_launch_agent(false)
+                    .build().map_err(|e| e.into());
+            }
+            CurrentOperatingSystem::MacOS => {
+                return AutoLaunchBuilder::new()
+                    .set_app_name(app_name)
+                    .set_app_path(app_path)
+                    .set_use_launch_agent(true)
+                    .build().map_err(|e| e.into());
+            }
+        }
+    }
+
+    fn toggle_auto_launcher(auto_launcher: &AutoLaunch, config_is_auto_launcher_enabled: bool) -> Result<(), anyhow::Error> {
+        let is_auto_launcher_enabled = auto_launcher.is_enabled().unwrap_or(false);
+
+        if config_is_auto_launcher_enabled && !is_auto_launcher_enabled {
+            info!(target: LOG_TARGET, "Enabling auto-launcher");
+            auto_launcher.enable()?;
+        }
+
+        if !config_is_auto_launcher_enabled && is_auto_launcher_enabled {
+            info!(target: LOG_TARGET, "Disabling auto-launcher");
+            auto_launcher.disable()?;
+        }
+
+        Ok(())
     }
 
     pub async fn initialize_auto_launcher(
@@ -41,20 +105,9 @@ impl AutoLauncher {
             .to_string();
 
         info!(target: LOG_TARGET, "Building auto-launcher with app_name: {} and app_path: {}", app_name, app_path);
-        let auto_launcher = AutoLaunchBuilder::new()
-            .set_app_name(app_name)
-            .set_app_path(&app_path)
-            .set_use_launch_agent(true)
-            .build()?;
+        let auto_launcher = AutoLauncher::build_auto_launcher(app_name, &app_path)?;
 
-        if is_auto_launcher_enabled && !auto_launcher.is_enabled().unwrap_or(false) {
-            info!(target: LOG_TARGET, "Enabling auto-launcher");
-            auto_launcher.disable()?;
-            auto_launcher.enable()?;
-        } else {
-            info!(target: LOG_TARGET, "Disabling auto-launcher");
-            auto_launcher.disable()?;
-        };
+        AutoLauncher::toggle_auto_launcher(&auto_launcher, is_auto_launcher_enabled)?;
 
         let _ = &self.auto_launcher.write().await.replace(auto_launcher);
 
@@ -75,15 +128,7 @@ impl AutoLauncher {
                 .await?;
         } else {
             let auto_launcher_ref = auto_launcher.as_ref().unwrap();
-
-            if is_auto_launcher_enabled && !auto_launcher_ref.is_enabled().unwrap_or(false) {
-                info!(target: LOG_TARGET, "Enabling auto-launcher");
-                auto_launcher_ref.disable()?;
-                auto_launcher_ref.enable()?;
-            } else {
-                info!(target: LOG_TARGET, "Disabling auto-launcher");
-                auto_launcher_ref.disable()?;
-            };
+            AutoLauncher::toggle_auto_launcher(auto_launcher_ref, is_auto_launcher_enabled)?;
         }
         Ok(())
     }
