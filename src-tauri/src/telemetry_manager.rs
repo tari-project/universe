@@ -58,6 +58,7 @@ pub enum TelemetryResource {
     Gpu,
     #[serde(rename(serialize = "cpu-gpu"))]
     CpuGpu,
+    None,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -357,8 +358,29 @@ async fn get_telemetry_data(
     let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
     let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
     let version = env!("CARGO_PKG_VERSION").to_string();
-    let p2pool_stats_sha3 = p2pool_stats.get("sha3").map(|stats| stats.tribe.clone());
-    let p2pool_stats_randomx = p2pool_stats.get("randomx").map(|stats| stats.tribe.clone());
+    let gpu_mining_used =
+        config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
+    let cpu_resource_used =
+        config_guard.cpu_mining_enabled() && cpu_make.is_some() && cpu_hash_rate.is_some();
+    let resource_used = match (gpu_mining_used, cpu_resource_used) {
+        (true, true) => TelemetryResource::CpuGpu,
+        (true, false) => TelemetryResource::Gpu,
+        (false, true) => TelemetryResource::Cpu,
+        (false, false) => TelemetryResource::None,
+    };
+
+    let p2pool_gpu_stats_sha3 = p2pool_stats.get("sha3").map(|stats| stats.squad.clone());
+    let p2pool_cpu_stats_randomx = p2pool_stats.get("randomx").map(|stats| stats.squad.clone());
+    let p2pool_enabled =
+        config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
+    let cpu_tribe_name = p2pool_cpu_stats_randomx
+        .clone()
+        .map(|tribe| tribe.name.clone());
+    let cpu_tribe_id = p2pool_cpu_stats_randomx.map(|tribe| tribe.id.clone());
+    let gpu_tribe_name = p2pool_gpu_stats_sha3
+        .clone()
+        .map(|tribe| tribe.name.clone());
+    let gpu_tribe_id = p2pool_gpu_stats_sha3.map(|tribe| tribe.id.clone());
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
@@ -372,13 +394,13 @@ async fn get_telemetry_data(
         gpu_make,
         gpu_hash_rate,
         gpu_utilization,
-        resource_used: TelemetryResource::Cpu,
+        resource_used,
         version,
-        p2pool_enabled: config_guard.p2pool_enabled(),
-        cpu_tribe_name: p2pool_stats_randomx.clone().map(|tribe| tribe.name.clone()),
-        cpu_tribe_id: p2pool_stats_randomx.map(|tribe| tribe.id.clone()),
-        gpu_tribe_name: p2pool_stats_sha3.clone().map(|tribe| tribe.name.clone()),
-        gpu_tribe_id: p2pool_stats_sha3.map(|tribe| tribe.id.clone()),
+        p2pool_enabled,
+        cpu_tribe_name,
+        cpu_tribe_id,
+        gpu_tribe_name,
+        gpu_tribe_id,
     })
 }
 
