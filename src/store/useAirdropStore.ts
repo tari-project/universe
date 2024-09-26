@@ -119,7 +119,6 @@ export interface ReferralQuestPoints {
 
 interface AirdropState {
     authUuid: string;
-    acceptedReferral?: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -139,7 +138,6 @@ interface AirdropStore extends AirdropState {
     setUserPoints: (userPoints: UserPoints) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     setReferralCount: (referralCount: ReferralCount) => void;
-    setAcceptedReferral: (acceptedReferral: boolean) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
     logout: () => void;
@@ -147,7 +145,6 @@ interface AirdropStore extends AirdropState {
 
 const clearState: AirdropState = {
     authUuid: '',
-    acceptedReferral: true,
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
@@ -161,7 +158,6 @@ export const useAirdropStore = create<AirdropStore>()(
             setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
             setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
-            setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
             logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),

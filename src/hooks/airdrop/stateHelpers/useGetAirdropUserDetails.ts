@@ -9,7 +9,6 @@ export const useGetAirdropUserDetails = () => {
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
     const setReferralCount = useAirdropStore((state) => state.setReferralCount);
-    const setAcceptedReferral = useAirdropStore((state) => state.setAcceptedReferral);
     const handleRequest = useAridropRequest();
     const setBonusTiers = useAirdropStore((state) => state.setBonusTiers);
     const logout = useAirdropStore((state) => state.logout);
@@ -57,14 +56,6 @@ export const useGetAirdropUserDetails = () => {
         });
     }, [handleRequest, setReferralCount]);
 
-    const fetchAcceptedReferral = useCallback(async () => {
-        const data = await handleRequest<{ claimed: boolean }>({
-            path: '/miner/download/claimed-referral',
-            method: 'GET',
-        });
-        setAcceptedReferral(!!data?.claimed);
-    }, [handleRequest, setAcceptedReferral]);
-
     // FETCH BONUS TIERS
     const fetchBonusTiers = useCallback(async () => {
         const data = await handleRequest<{ tiers: BonusTier[] }>({
@@ -87,7 +78,6 @@ export const useGetAirdropUserDetails = () => {
                 requests.push(fetchUserPoints());
             }
             requests.push(fetchUserReferralPoints());
-            requests.push(fetchAcceptedReferral());
             requests.push(fetchBonusTiers());
 
             await Promise.all(requests);
