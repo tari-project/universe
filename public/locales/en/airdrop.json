@@ -5,7 +5,7 @@
     "referral": "Invite a friend",
     "inviteFirends": "Invite Friends",
     "invitedAmount": "You’ve invited <span>{{count}}</span> friends",
-    "nextTierBonus": "Invite <strong> {{count}} </strong> & earn {{bonusGems}} bonus gems",
+    "nextTierBonus": "Invite <strong>{{count}} friends</strong> & earn {{bonusGems}} bonus gems",
     "claimGems": "Claim Gems",
     "doLater": "I'll do this later",
     "linkCopied": "Link copied!",
