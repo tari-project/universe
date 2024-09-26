@@ -10,7 +10,7 @@ export default function Gems({ number, label }: Props) {
     return (
         <Wrapper>
             <Number>
-                <GemImage src={gemImage} alt="" /> {number.toLocaleString()}
+                <GemImage src={gemImage} alt="" /> {Math.round(number).toLocaleString()}
             </Number>
             <Label>{label}</Label>
         </Wrapper>
