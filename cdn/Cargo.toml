@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.89"
+regex = "1.10.6"
 reqwest = "0.12.7"
 semver = "1.0.23"
 serde = { version= "1.0.210", features = ["derive"] }

@@ -1,9 +1,21 @@
 use std::env;
 
 use anyhow::anyhow;
+use regex::Regex;
 use reqwest::Client;
 use semver::Version;
 use serde::Deserialize;
+
+#[repr(u8)]
+#[derive(Clone, Debug, PartialEq, Eq, Copy)]
+pub enum Network {
+    MainNet = 0x00,
+    StageNet = 0x01,
+    NextNet = 0x02,
+    LocalNet = 0x10,
+    Igor = 0x24,
+    Esmeralda = 0x26,
+}
 
 #[derive(Deserialize)]
 struct Release {
@@ -59,7 +71,6 @@ pub async fn list_releases(url: &str) -> Result<Vec<VersionDownloadInfo>, anyhow
         .header("User-Agent", "request")
         .send()
         .await?;
-    println!("Response: {:?}", response);
     if response.status() != 200 {
         return Err(anyhow!(
             "Failed to fetch releases from: {} \n {}",
@@ -68,7 +79,6 @@ pub async fn list_releases(url: &str) -> Result<Vec<VersionDownloadInfo>, anyhow
         ));
     }
     let data = response.text().await?;
-    println!("Data: {:?}", data);
 
     let releases: Vec<Release> = serde_json::from_str(&data)?;
 
@@ -103,27 +113,30 @@ pub async fn list_releases(url: &str) -> Result<Vec<VersionDownloadInfo>, anyhow
     Ok(res)
 }
 
+fn is_version_allowed(version: &Version, version_pre_filter: Option<Regex>) -> bool {
+    if let Some(pre_filter) = version_pre_filter {
+        return pre_filter.is_match(version.pre.as_str());
+    }
+    true
+}
+
 #[tokio::main]
 async fn main() {
-    // let github_output_path = env::var("GITHUB_OUTPUT").unwrap();
-    // let args: Vec<String> = env::args().collect();
-    // let res = list_github_releases("xmrig", "xmrig").await.unwrap();
-    // let formatted_res = res
-    //     .into_iter()
-    //     .map(|info| {
-    //         let assets = info
-    //             .assets
-    //             .into_iter()
-    //             .map(|asset| format!("{}: {}", asset.name, asset.url))
-    //             .collect::<Vec<_>>()
-    //             .join("\n");
-    //         format!("Version: {}\nAssets:\n{}", info.version, assets)
-    //     })
-    //     .collect::<Vec<_>>()
-    //     .join("\n\n");
-    // println!("{}", formatted_res);
-    let res = list_cdn_releases("xmrig")
-        .await
-        .inspect_err(|e| println!("{:?}", e))
-        .unwrap();
+    let network = Network::NextNet;
+    let tari_pre_filter = match network {
+        Network::NextNet => Some(Regex::new(r"rc").unwrap()),
+        Network::Esmeralda => Some(Regex::new(r"pre").unwrap()),
+        _ => panic!("Unsupported network"),
+    };
+
+    let github_output_path = env::var("GITHUB_OUTPUT").unwrap();
+    let args: Vec<String> = env::args().collect();
+
+    let github_releases = list_github_releases("xmrig", "xmrig").await.unwrap();
+    let s3_releases = list_cdn_releases("xmrig").await.unwrap();
+
+    let latest_github_release = github_releases.iter().map(|v| Some(&v.version)).max();
+    println!("Latest Github release: {:?}", latest_github_release);
+    let latest_s3_release = s3_releases.iter().map(|v| Some(&v.version)).max();
+    println!("Latest S3 release: {:?}", latest_s3_release);
 }
