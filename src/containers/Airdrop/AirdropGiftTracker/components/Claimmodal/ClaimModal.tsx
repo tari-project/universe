@@ -8,6 +8,9 @@ import {
     Gem3,
     GemsWrapper,
     GemTextImage,
+    InputGems,
+    InputLabel,
+    InputWrapper,
     ShareWrapper,
     StyledInput,
     Text,
@@ -15,12 +18,15 @@ import {
     TextWrapper,
     Title,
     Wrapper,
+    XLogo,
 } from './styles';
 import gemImage from './images/gems.png';
 import gemLargeImage from './images/gem-large.png';
 import { useCallback, useState } from 'react';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { Trans, useTranslation } from 'react-i18next';
+import { GemImage } from '../Gems/styles';
+import XLogoIcon from './icons/XLogoIcon';
 
 interface ClaimModalProps {
     onSubmit: (code?: string) => void;
@@ -47,33 +53,37 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
                 </GemsWrapper>
 
                 <TextWrapper>
-                    <Title>
-                        <Trans
-                            ns="airdrop"
-                            i18nKey="claimReferralCode"
-                            components={{ span: <span />, image: <GemTextImage src={gemImage} alt="" /> }}
-                            values={{ gems: referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS }}
-                        />
-                    </Title>
-                    <Text>
-                        {t('claimReferralGifts', { gems: referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS })}
-                    </Text>
+                    <Title>{t('claimModalTitle')}</Title>
+
+                    <Text
+                        dangerouslySetInnerHTML={{
+                            __html: t('claimModalText', {
+                                gems: (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString(),
+                            }),
+                        }}
+                    />
                 </TextWrapper>
+
                 <ActionWrapper>
-                    <ShareWrapper $isClaim>
+                    <InputWrapper>
+                        <InputLabel>Optional</InputLabel>
                         <StyledInput
                             type="text"
                             placeholder="Enter referral code"
                             onChange={(e) => setClaimCode(e.target.value)}
                             value={claimCode}
                         />
-                        {
-                            // <Button color="primary" onClick={handleReferral}>
-                            //     Claim
-                            // </Button>
-                        }
-                    </ShareWrapper>
-                    <ClaimButton onClick={handleSubmit}> {t('claimGems')} </ClaimButton>
+                        <InputGems>
+                            {GIFT_GEMS.toLocaleString()} <GemImage src={gemImage} alt="" />
+                        </InputGems>
+                    </InputWrapper>
+
+                    <ClaimButton onClick={handleSubmit}>
+                        {t('claimGems')}
+                        <XLogo>
+                            <XLogoIcon />
+                        </XLogo>
+                    </ClaimButton>
                 </ActionWrapper>
                 <ActionWrapper>
                     <TextButton onClick={onClose}>{t('doLater')}</TextButton>
