@@ -105,6 +105,7 @@ export const BonusText = styled('div')`
         color: #000;
         font-weight: 600;
         display: inline;
+        margin: 0 3px;
     }
 `;
 
