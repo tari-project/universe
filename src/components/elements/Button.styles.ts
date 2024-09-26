@@ -125,7 +125,7 @@ export const IconWrapper = styled.div<{ $position?: ButtonProps['iconPosition'] 
     }
 `;
 
-export const BaseIconButton = styled.button`
+export const BaseIconButton = styled.button<Props>`
     display: flex;
     align-items: center;
     justify-content: center;
@@ -137,4 +137,11 @@ export const BaseIconButton = styled.button`
     &:hover {
         background-color: ${({ theme }) => theme.palette.primary.wisp};
     }
+
+    ${({ $size }) =>
+        $size === 'small' &&
+        css`
+            height: 24px;
+            width: 24px;
+        `}
 `;

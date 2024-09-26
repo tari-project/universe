@@ -1,12 +1,31 @@
-import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { Stack } from '@app/components/elements/Stack.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { Button } from '@app/components/elements/Button.tsx';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useUIStore } from '@app/store/useUIStore.ts';
 import { invoke } from '@tauri-apps/api/tauri';
+
+import { useUIStore } from '@app/store/useUIStore.ts';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
+import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { Button } from '@app/components/elements/Button.tsx';
+import { Stack } from '@app/components/elements/Stack.tsx';
+import styled from 'styled-components';
+
+const Wrapper = styled.div`
+    width: 100%;
+    min-width: 500px;
+    display: flex;
+`;
+const StyledTextArea = styled.textarea`
+    min-height: 250px;
+    width: 100%;
+    border-radius: 10px;
+    padding: 10px;
+    resize: none;
+    transition: box-shadow 0.2s ease-in-out;
+    &:focus {
+        box-shadow: 0 0 2px 4px ${({ theme }) => theme.palette.primary.wisp};
+    }
+`;
 
 export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -43,11 +62,12 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
             <DialogContent>
                 <Stack direction="column" alignItems="center" justifyContent="space-between">
                     <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
-                    <textarea
-                        onChange={(e) => setFeedback(e.target.value)}
-                        style={{ width: '500px', height: '500px' }}
-                        placeholder={t('your-feedback', { ns: 'settings' })}
-                    />
+                    <Wrapper>
+                        <StyledTextArea
+                            onChange={(e) => setFeedback(e.target.value)}
+                            placeholder={t('your-feedback', { ns: 'settings' })}
+                        />
+                    </Wrapper>
                     <Typography variant={'p'} color={'red'}>
                         {error}
                     </Typography>
