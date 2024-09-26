@@ -8,7 +8,7 @@ interface State {
     visualMode: boolean;
     sidebarOpen: boolean;
     showExperimental: boolean;
-    showLogsDialog?: boolean;
+    showLogsDialog: boolean;
 }
 interface Actions {
     setShowSplash: (showSplash: boolean) => void;

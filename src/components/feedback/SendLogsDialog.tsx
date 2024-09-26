@@ -8,24 +8,8 @@ import { CircularProgress } from '@app/components/elements/CircularProgress.tsx'
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/Button.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import styled from 'styled-components';
 
-const Wrapper = styled.div`
-    width: 100%;
-    min-width: 500px;
-    display: flex;
-`;
-const StyledTextArea = styled.textarea`
-    min-height: 250px;
-    width: 100%;
-    border-radius: 10px;
-    padding: 10px;
-    resize: none;
-    transition: box-shadow 0.2s ease-in-out;
-    &:focus {
-        box-shadow: 0 0 2px 4px ${({ theme }) => theme.palette.primary.wisp};
-    }
-`;
+import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
 
 export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -58,16 +42,15 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
     }, [feedback, onSetReference, setShowLogsDialog, t]);
 
     return (
-        <Dialog open={!!showLogsDialog} onOpenChange={setShowLogsDialog}>
+        <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
             <DialogContent>
                 <Stack direction="column" alignItems="center" justifyContent="space-between">
                     <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
-                    <Wrapper>
-                        <StyledTextArea
-                            onChange={(e) => setFeedback(e.target.value)}
-                            placeholder={t('your-feedback', { ns: 'settings' })}
-                        />
-                    </Wrapper>
+                    <TextArea
+                        onChange={(e) => setFeedback(e.target.value)}
+                        placeholder={t('your-feedback', { ns: 'settings' })}
+                        value={feedback}
+                    />
                     <Typography variant={'p'} color={'red'}>
                         {error}
                     </Typography>
@@ -79,7 +62,10 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                                 <Button disabled={loading} onClick={() => setShowLogsDialog(false)} color="warning">
                                     {t('cancel')}
                                 </Button>
-                                <Button disabled={loading || feedback.trim() === ''} onClick={sendLogs}>
+                                <Button
+                                    disabled={loading || !feedback?.length || feedback?.trim() === ''}
+                                    onClick={sendLogs}
+                                >
                                     {t('submit')}
                                 </Button>
                             </>

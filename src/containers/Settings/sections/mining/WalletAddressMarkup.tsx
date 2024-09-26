@@ -43,6 +43,7 @@ const AddressContainer = styled.div`
 
 const AddressInner = styled.div`
     width: max-content;
+    display: flex;
 `;
 
 const CopyToClipboard = ({ text }: { text: string | undefined }) => {
@@ -115,6 +116,7 @@ const WalletAddressMarkup = () => {
                         <Typography
                             style={{
                                 color: '#b6b7c3',
+                                display: 'flex',
                             }}
                         >
                             {isCondensed ? condenseEmojiAddress(walletAddressEmoji) : walletAddressEmoji}

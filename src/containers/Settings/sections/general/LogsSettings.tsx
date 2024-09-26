@@ -45,13 +45,13 @@ export default function LogsSettings() {
                     {reference && (
                         <Stack direction="row" alignItems="center" justifyContent="flex-start" gap={5}>
                             {/* TODO: consider moving reference to dialog?*/}
-                            <Typography variant="p">
+                            <Typography>
                                 <Trans
                                     t={t}
                                     i18nKey="your-reference"
                                     ns="settings"
                                     values={{ logRef: reference }}
-                                    components={{ bold: <strong /> }}
+                                    components={{ bold: <strong />, br: <br /> }}
                                 />
                             </Typography>
                             <IconButton onClick={() => copyToClipboard(reference)} size="small">
@@ -67,8 +67,8 @@ export default function LogsSettings() {
                         {t('send-logs', { ns: 'settings' })}
                     </ButtonBase>
                 </SettingsGroupAction>
+                <SendLogsDialog onSetReference={setReference} />
             </SettingsGroup>
-            <SendLogsDialog onSetReference={setReference} />
         </SettingsGroupWrapper>
     );
 }
