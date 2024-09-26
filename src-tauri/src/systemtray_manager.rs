@@ -186,10 +186,18 @@ impl SystemtrayManager {
             SystrayItemId::EstimatedEarning,
             data.estimated_earning,
         );
+        self.update_minimize(app.clone());
     }
 
     pub fn create_tooltip_from_data(&self, data: SystrayData) -> String {
         SystemtrayManager::internal_create_tooltip_from_data(data)
+    }
+
+    pub fn update_minimize(&self, app: AppHandle) {
+        let window = app.get_window("main").unwrap();
+        let _ = app.tray_handle()
+            .get_item(SystrayItemId::UnMinimize.to_str())
+            .set_enabled(window.is_minimized().unwrap());
     }
 
     fn detect_current_os() -> CurrentOperatingSystem {
