@@ -67,7 +67,7 @@ export default function LoggedOut() {
                     <span>{t('claimGems')}</span>
                 </ClaimButton>
 
-                <Gems number={referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS} label={`Unclaimed Gems`} />
+                <Gems number={referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS} label={t('unclaimedGems')} />
             </Wrapper>
             {modalIsOpen && <ClaimModal onSubmit={handleAuth} onClose={() => setModalIsOpen(false)} />}
         </>

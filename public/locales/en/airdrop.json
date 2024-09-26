@@ -3,6 +3,7 @@
     "loginButton": "Log in to claim gems",
     "logout": "Logout",
     "referral": "Invite a friend",
+    "unclaimedGems": "Unclaimed Gems",
     "inviteFirends": "Invite Friends",
     "invitedAmount": "You’ve invited <span>{{count}}</span> friends",
     "nextTierBonus": "Invite <strong>{{count}} friends</strong> & earn {{bonusGems}} bonus gems",
