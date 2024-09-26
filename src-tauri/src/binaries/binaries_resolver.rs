@@ -64,6 +64,19 @@ impl BinaryResolver {
             };
 
         binary_manager.insert(
+            Binaries::Clythor,
+            BinaryManager::new(
+                Binaries::Clythor.name().to_string(),
+                Box::new(GithubReleasesAdapter {
+                    repo: "clythor".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
+                None,
+                true,
+            ),
+        );
+        binary_manager.insert(
             Binaries::Xmrig,
             BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),

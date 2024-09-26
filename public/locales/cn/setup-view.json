@@ -10,6 +10,7 @@
         "checking-latest-version-wallet": "正在检查钱包的最新版本",
         "checking-latest-version-xmrig": "正在检查 xmrig 的最新版本",
         "checking-latest-version-sha-p2pool": "正在检查 sha-p2pool 的最新版本",
+        "checking-latest-version-clythor": "正在检查clythor的最新版本",
         "waiting-for-wallet": "等待钱包",
         "waiting-for-node": "等待节点同步",
         "preparing-for-initial-sync": "连接到网络节点 {{initial_connected_peers}}/{{required_peers}}",

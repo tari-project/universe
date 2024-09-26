@@ -10,6 +10,7 @@
         "checking-latest-version-wallet": "Checking for latest version of wallet",
         "checking-latest-version-xmrig": "Checking for latest version of xmrig",
         "checking-latest-version-sha-p2pool": "Checking for latest version of sha-p2pool",
+        "checking-latest-version-clythor": "Checking for latest version of clythor",
         "waiting-for-wallet": "Waiting for wallet",
         "waiting-for-node": "Waiting for node to sync",
         "preparing-for-initial-sync": "Connecting to network peers {{initial_connected_peers}}/{{required_peers}}",

@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use cpu_miner::RandomXMiner;
 use log::trace;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -44,6 +45,7 @@ use crate::wallet_manager::WalletManager;
 mod app_config;
 mod app_in_memory_config;
 mod binaries;
+mod clythor_adapter;
 mod consts;
 mod cpu_miner;
 mod download_utils;
@@ -443,13 +445,22 @@ async fn setup_inner(
 
     progress.set_max(30).await;
     progress
+        .update("checking-latest-version-clythor".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(Binaries::Clythor, progress.clone(), should_check_for_update)
+        .await?;
+    sleep(Duration::from_secs(1));
+
+    progress.set_max(35).await;
+    progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)
         .await;
     binary_resolver
         .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
         .await?;
     sleep(Duration::from_secs(1));
-    progress.set_max(35).await;
+    progress.set_max(40).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
         .await;
@@ -511,7 +522,7 @@ async fn setup_inner(
 
     info!(target: LOG_TARGET, "Node has started and is ready");
 
-    progress.set_max(40).await;
+    progress.set_max(45).await;
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
         .await;
@@ -719,9 +730,11 @@ async fn get_seed_words(
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_lines)]
 async fn start_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
+    miner: RandomXMiner,
 ) -> Result<(), String> {
     let timer = Instant::now();
     let config = state.config.read().await;
@@ -738,21 +751,36 @@ async fn start_mining<'r>(
             .await
             .map_err(|e| e.to_string())?;
 
-        let res = state
-            .cpu_miner
-            .write()
-            .await
-            .start(
-                state.shutdown.to_signal(),
-                &cpu_miner_config,
-                monero_address.to_string(),
-                mm_proxy_port,
-                app.path_resolver().app_local_data_dir().unwrap(),
-                app.path_resolver().app_config_dir().unwrap(),
-                app.path_resolver().app_log_dir().unwrap(),
-                mode,
-            )
-            .await;
+        let mut res = state.cpu_miner.write().await;
+
+        let res = match miner {
+            cpu_miner::RandomXMiner::Clythor => {
+                res.start_clythor(
+                    state.shutdown.to_signal(),
+                    &cpu_miner_config,
+                    monero_address,
+                    mm_proxy_port,
+                    app.path_resolver().app_local_data_dir().unwrap(),
+                    app.path_resolver().app_config_dir().unwrap(),
+                    app.path_resolver().app_log_dir().unwrap(),
+                    mode,
+                )
+                .await
+            }
+            cpu_miner::RandomXMiner::Xmrig => {
+                res.start_xmrig(
+                    state.shutdown.to_signal(),
+                    &cpu_miner_config,
+                    monero_address,
+                    mm_proxy_port,
+                    app.path_resolver().app_local_data_dir().unwrap(),
+                    app.path_resolver().app_config_dir().unwrap(),
+                    app.path_resolver().app_log_dir().unwrap(),
+                    mode,
+                )
+                .await
+            }
+        };
 
         if let Err(e) = res {
             error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
@@ -867,6 +895,9 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
     let binary_resolver = BinaryResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
+    let clythor_version = binary_resolver
+        .get_binary_version_string(Binaries::Clythor)
+        .await;
     let xmrig_version = binary_resolver
         .get_binary_version_string(Binaries::Xmrig)
         .await;
@@ -898,6 +929,7 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
 
     Ok(ApplicationsVersions {
         tari_universe: tari_universe_version.to_string(),
+        clythor: clythor_version.to_string(),
         minotari_node: minotari_node_version,
         xmrig: xmrig_version,
         mm_proxy: mm_proxy_version,
@@ -929,6 +961,11 @@ async fn update_applications(
     let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    sleep(Duration::from_secs(1));
+    binary_resolver
+        .update_binary(Binaries::Clythor, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
@@ -1207,6 +1244,30 @@ async fn reset_settings<'r>(
     Ok(())
 }
 
+#[tauri::command]
+async fn set_randomx_miner<'r>(
+    state: tauri::State<'_, UniverseAppState>,
+    miner: RandomXMiner,
+) -> Result<(), String> {
+    let mut app_config = state.config.write().await;
+    app_config
+        .set_randomx_miner(miner)
+        .await
+        .inspect_err(|e| error!("error at set_randomx_miner {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn get_randomx_miner<'r>(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<RandomXMiner, String> {
+    let randomx_miner = state.config.read().await.randomx_miner();
+    Ok(randomx_miner)
+}
+
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Serialize)]
 pub struct CpuMinerMetrics {
     hardware: Option<HardwareParameters>,
@@ -1236,6 +1297,7 @@ pub struct TariWalletDetails {
 #[derive(Debug, Serialize)]
 pub struct ApplicationsVersions {
     tari_universe: String,
+    clythor: String,
     xmrig: String,
     minotari_node: String,
     mm_proxy: String,
@@ -1484,6 +1546,8 @@ fn main() {
             set_gpu_mining_enabled,
             set_cpu_mining_enabled,
             restart_application,
+            get_randomx_miner,
+            set_randomx_miner,
             resolve_application_language,
             set_application_language,
             get_miner_metrics,

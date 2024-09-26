@@ -50,6 +50,7 @@
   "reset-permanently": "Are you sure you want to reset all settings permanently?",
   "reset-wallet": "Reset wallet",
   "experimental-title": "Experimental Features",
+  "randomX-miner": "RandomX miner",
   "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
   "connected-to-tari": "Connected to the Tari Network",
   "not-connected-to-tari": "Not connected to the Tari Network",

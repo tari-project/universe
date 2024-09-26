@@ -1,7 +1,7 @@
 import { MinerMetrics } from '@app/types/app-status';
 import { create } from './create';
 
-import { BlockTimeData } from '@app/types/mining.ts';
+import { BlockTimeData, CpuMiner } from '@app/types/mining.ts';
 import { invoke } from '@tauri-apps/api';
 import { useAppStateStore } from './appStateStore';
 import { useAppConfigStore } from './useAppConfigStore';
@@ -18,6 +18,7 @@ interface State extends MinerMetrics {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
+    cpuMiner: CpuMiner;
 }
 
 interface Actions {
@@ -34,6 +35,7 @@ interface Actions {
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockHeight: BlockTimeData) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
+    setCpuMiner: (cpuMiner: State['cpuMiner']) => void;
 }
 type MiningStoreState = State & Actions;
 
@@ -45,6 +47,7 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
+    cpuMiner: 'Clythor',
     cpu: {
         hardware: undefined,
         mining: {
@@ -100,8 +103,9 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     startMining: async () => {
         console.info('Mining starting....');
         set({ miningInitiated: true });
+        const miner = getState().cpuMiner;
         try {
-            await invoke('start_mining', {});
+            await invoke('start_mining', { miner });
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error(e);
@@ -158,4 +162,12 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setCpuMiner: async (cpuMiner) => {
+        try {
+            await invoke('set_randomx_miner', { miner: cpuMiner });
+        } catch (e) {
+            console.error(e);
+        }
+        return set({ cpuMiner });
+    },
 }));

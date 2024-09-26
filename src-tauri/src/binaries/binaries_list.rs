@@ -10,6 +10,7 @@ pub enum Binaries {
     Wallet,
     ShaP2pool,
     GpuMiner,
+    Clythor,
 }
 
 impl Binaries {
@@ -21,6 +22,7 @@ impl Binaries {
             Binaries::Wallet => "wallet",
             Binaries::ShaP2pool => "sha-p2pool",
             Binaries::GpuMiner => "xtrgpuminer",
+            Binaries::Clythor => "clythor",
         }
     }
 
@@ -32,6 +34,7 @@ impl Binaries {
             "wallet" => Some(Binaries::Wallet),
             "sha-p2pool" => Some(Binaries::ShaP2pool),
             "xtrgpuminer" => Some(Binaries::GpuMiner),
+            "clythor" => Some(Binaries::Clythor),
             _ => None,
         }
     }
@@ -62,6 +65,10 @@ impl Binaries {
                 let file_name = "xtrgpuminer";
                 PathBuf::from(file_name)
             }
+            Binaries::Clythor => {
+                let file_name = "clythor";
+                PathBuf::from(file_name)
+            }
         }
     }
 
@@ -73,6 +80,7 @@ impl Binaries {
             Binaries::Wallet,
             Binaries::ShaP2pool,
             Binaries::GpuMiner,
+            Binaries::Clythor,
         ]
         .iter()
         .copied()

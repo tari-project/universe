@@ -1,6 +1,7 @@
 import { modeType } from '@app/store/types';
 import { AppConfig, ApplicationsVersions, MinerMetrics, P2poolStatsResult, TariWalletDetails } from './app-status';
 import { Language } from '@app/i18initializer';
+import { CpuMiner } from './mining';
 //should_always_use_system_language
 declare module '@tauri-apps/api/tauri' {
     function invoke(
@@ -11,7 +12,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
-    function invoke(param: 'start_mining'): Promise<void>;
+    function invoke(param: 'start_mining', payload: { miner: CpuMiner }): Promise<void>;
     function invoke(param: 'stop_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
     function invoke(param: 'set_auto_mining', payload: { autoMining: boolean }): Promise<void>;
@@ -35,4 +36,6 @@ declare module '@tauri-apps/api/tauri' {
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
+    function invoke(param: 'get_randomx_miner'): Promise<CpuMiner>;
+    function invoke(param: 'set_randomx_miner', payload: { miner: CpuMiner }): Promise<void>;
 }

@@ -6,3 +6,5 @@ export interface BlockTimeData {
     minutes?: string;
     seconds?: string;
 }
+
+export type CpuMiner = 'Clythor' | 'Xmrig';

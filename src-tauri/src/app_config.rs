@@ -6,7 +6,9 @@ use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 
-use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
+use crate::{
+    consts::DEFAULT_MONERO_ADDRESS, cpu_miner::RandomXMiner, internal_wallet::generate_password,
+};
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -33,6 +35,8 @@ pub struct AppConfigFromFile {
     gpu_mining_enabled: bool,
     #[serde(default = "default_true")]
     cpu_mining_enabled: bool,
+    #[serde(default = "default_randomx_miner")]
+    randomx_miner: RandomXMiner,
     #[serde(default = "default_false")]
     has_system_language_been_proposed: bool,
     #[serde(default = "default_false")]
@@ -54,6 +58,7 @@ impl Default for AppConfigFromFile {
             monero_address: default_monero_address(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            randomx_miner: default_randomx_miner(),
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: default_application_language(),
@@ -98,6 +103,7 @@ pub(crate) struct AppConfig {
     monero_address: String,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
+    randomx_miner: RandomXMiner,
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
     application_language: String,
@@ -117,6 +123,7 @@ impl AppConfig {
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            randomx_miner: RandomXMiner::Clythor,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: default_application_language(),
@@ -152,6 +159,7 @@ impl AppConfig {
                 self.monero_address = config.monero_address;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
+                self.randomx_miner = config.randomx_miner;
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
                 self.should_always_use_system_language = config.should_always_use_system_language;
                 self.application_language = config.application_language;
@@ -257,6 +265,15 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn randomx_miner(&self) -> RandomXMiner {
+        self.randomx_miner
+    }
+
+    pub async fn set_randomx_miner(&mut self, miner: RandomXMiner) -> Result<(), anyhow::Error> {
+        self.randomx_miner = miner;
+        self.update_config_file().await?;
+        Ok(())
+    }
     pub fn application_language(&self) -> &str {
         &self.application_language
     }
@@ -310,6 +327,7 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
+            randomx_miner: self.randomx_miner,
             has_system_language_been_proposed: self.has_system_language_been_proposed,
             should_always_use_system_language: self.should_always_use_system_language,
             application_language: self.application_language.clone(),
@@ -349,6 +367,10 @@ fn default_system_time() -> SystemTime {
 
 fn default_monero_address() -> String {
     DEFAULT_MONERO_ADDRESS.to_string()
+}
+
+fn default_randomx_miner() -> RandomXMiner {
+    RandomXMiner::Clythor
 }
 
 fn default_application_language() -> String {
