@@ -103,8 +103,9 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     startMining: async () => {
         console.info('Mining starting....');
         set({ miningInitiated: true });
+        const miner = getState().cpuMiner;
         try {
-            await invoke('start_mining', {});
+            await invoke('start_mining', { miner });
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error(e);

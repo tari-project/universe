@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use log::warn;
 use tari_shutdown::Shutdown;
 
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
 use crate::xmrig::http_api::XmrigHttpApiClient;
@@ -88,7 +88,9 @@ impl ProcessAdapter for ClythorAdapter {
                 shutdown: clythor_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let clythor_bin = BinaryResolver::current()
-                        .resolve_path(Binaries::Clythor)
+                        .read()
+                        .await
+                        .resolve_path_to_binary_files(Binaries::Clythor)
                         .await?;
 
                     crate::download_utils::set_permissions(&clythor_bin).await?;

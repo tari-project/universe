@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
 import { useAppStateStore } from '../store/appStateStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useSetUp() {
     const setView = useUIStore((s) => s.setView);
@@ -16,6 +17,7 @@ export function useSetUp() {
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
+    const setCpuMiner = useMiningStore((s) => s.setCpuMiner);
 
     useEffect(() => {
         async function initialize() {

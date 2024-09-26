@@ -270,7 +270,9 @@ impl AppConfig {
     }
 
     pub async fn set_randomx_miner(&mut self, miner: RandomXMiner) -> Result<(), anyhow::Error> {
-        self.randomx_miner = miner
+        self.randomx_miner = miner;
+        self.update_config_file().await?;
+        Ok(())
     }
     pub fn application_language(&self) -> &str {
         &self.application_language
