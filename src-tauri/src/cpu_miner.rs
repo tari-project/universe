@@ -3,9 +3,7 @@ use crate::clythor_adapter::{ClythorAdapter, LocalMmproxy};
 use crate::process_adapter::ProcessAdapter;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{
-    CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
-};
+use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -50,10 +48,8 @@ impl CpuMiner {
         monero_address: String,
         monero_port: u16,
         base_path: PathBuf,
-        cache_dir: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
-        progress_tracker: ProgressTracker,
         mode: MiningMode,
     ) -> Result<(), anyhow::Error> {
         if self.watcher_task.is_some() {
@@ -88,14 +84,10 @@ impl CpuMiner {
             MiningMode::Eco => (30 * max_cpu_available) / 100isize,
             MiningMode::Ludicrous => -1, // Use all
         };
-        let xmrig_version =
-            XmrigAdapter::ensure_latest(cache_dir.clone(), false, progress_tracker.clone()).await?;
         let xmrig = XmrigAdapter::new(
             xmrig_node_connection,
             monero_address.clone(),
-            cache_dir,
             cpu_max_percentage,
-            xmrig_version,
         );
         let (mut xmrig_child, _xmrig_status_monitor) =
             xmrig.spawn_inner(base_path.clone(), config_path.clone(), log_dir.clone())?;

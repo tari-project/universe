@@ -1,4 +1,5 @@
 use std::{path::PathBuf, time::SystemTime};
+use sys_locale::get_locale;
 
 use anyhow::anyhow;
 use log::{debug, info, warn};
@@ -20,7 +21,7 @@ pub struct AppConfigFromFile {
     mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     p2pool_enabled: bool,
     #[serde(default = "default_system_time")]
     last_binaries_update_timestamp: SystemTime,
@@ -36,6 +37,12 @@ pub struct AppConfigFromFile {
     cpu_mining_enabled: bool,
     #[serde(default = "default_randomx_miner")]
     randomx_miner: RandomXMiner,
+    #[serde(default = "default_false")]
+    has_system_language_been_proposed: bool,
+    #[serde(default = "default_false")]
+    should_always_use_system_language: bool,
+    #[serde(default = "default_application_language")]
+    application_language: String,
 }
 
 impl Default for AppConfigFromFile {
@@ -44,7 +51,7 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: false,
             anon_id: default_anon_id(),
@@ -52,6 +59,9 @@ impl Default for AppConfigFromFile {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             randomx_miner: default_randomx_miner(),
+            has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
+            application_language: default_application_language(),
         }
     }
 }
@@ -94,6 +104,9 @@ pub(crate) struct AppConfig {
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     randomx_miner: RandomXMiner,
+    has_system_language_been_proposed: bool,
+    should_always_use_system_language: bool,
+    application_language: String,
 }
 
 impl AppConfig {
@@ -103,7 +116,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
-            p2pool_enabled: false,
+            p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
@@ -111,6 +124,9 @@ impl AppConfig {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             randomx_miner: RandomXMiner::Clythor,
+            has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
+            application_language: default_application_language(),
         }
     }
 
@@ -144,10 +160,20 @@ impl AppConfig {
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
                 self.randomx_miner = config.randomx_miner;
+                self.has_system_language_been_proposed = config.has_system_language_been_proposed;
+                self.should_always_use_system_language = config.should_always_use_system_language;
+                self.application_language = config.application_language;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
             }
+        }
+
+        // Migrate
+        if self.config_version <= 6 {
+            // Change the default value of p2pool_enabled to false in version 7
+            self.config_version = 7;
+            self.p2pool_enabled = true;
         }
     }
 
@@ -170,16 +196,16 @@ impl AppConfig {
         self.mode
     }
 
-    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
         self.cpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.cpu_mining_enabled)
     }
 
-    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
         self.gpu_mining_enabled = enabled;
         self.update_config_file().await?;
-        Ok(())
+        Ok(self.gpu_mining_enabled)
     }
 
     pub fn cpu_mining_enabled(&self) -> bool {
@@ -244,9 +270,41 @@ impl AppConfig {
     }
 
     pub async fn set_randomx_miner(&mut self, miner: RandomXMiner) -> Result<(), anyhow::Error> {
-        self.randomx_miner = miner;
+        self.randomx_miner = miner
+    }
+    pub fn application_language(&self) -> &str {
+        &self.application_language
+    }
+
+    pub async fn set_application_language(
+        &mut self,
+        language: String,
+    ) -> Result<(), anyhow::Error> {
+        self.application_language = language;
         self.update_config_file().await?;
         Ok(())
+    }
+
+    pub async fn set_should_always_use_system_language(
+        &mut self,
+        should_always_use_system_language: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.should_always_use_system_language = should_always_use_system_language;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+        if self.has_system_language_been_proposed | !self.should_always_use_system_language {
+            Ok(())
+        } else {
+            let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+            info!(target: LOG_TARGET, "Proposing system language: {}", system_language);
+            self.application_language = system_language;
+            self.has_system_language_been_proposed = true;
+            self.update_config_file().await?;
+            Ok(())
+        }
     }
 
     // Allow needless update because in future there may be fields that are
@@ -268,6 +326,9 @@ impl AppConfig {
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
             randomx_miner: self.randomx_miner,
+            has_system_language_been_proposed: self.has_system_language_been_proposed,
+            should_always_use_system_language: self.should_always_use_system_language,
+            application_language: self.application_language.clone(),
             ..default_config
         };
         let config = serde_json::to_string(config)?;
@@ -279,7 +340,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    6
+    7
 }
 
 fn default_mode() -> String {
@@ -308,4 +369,8 @@ fn default_monero_address() -> String {
 
 fn default_randomx_miner() -> RandomXMiner {
     RandomXMiner::Clythor
+}
+
+fn default_application_language() -> String {
+    "en".to_string()
 }

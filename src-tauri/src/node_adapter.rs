@@ -1,4 +1,4 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
@@ -7,7 +7,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::{
-    Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo, SyncState,
+    Empty, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
@@ -78,6 +78,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 "base_node.state_machine.initial_sync_peer_count={}",
                 self.required_initial_peers
             ),
+            "-p".to_string(),
+            "base_node.grpc_server_allow_methods=\"list_connected_peers\"".to_string(),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
@@ -117,8 +119,12 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MinotariNode)
-                        .await?;
+                        .read()
+                        .await
+                        .resolve_path_to_binary_files(Binaries::MinotariNode)
+                        .await
+                        .unwrap();
+
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
@@ -277,6 +283,7 @@ impl MinotariNodeStatusMonitor {
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
 
@@ -298,7 +305,6 @@ impl MinotariNodeStatusMonitor {
             if tip_res.initial_sync_achieved {
                 break;
             }
-            info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
 
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
@@ -369,5 +375,12 @@ impl MinotariNodeStatusMonitor {
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Ok(())
+    }
+
+    pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+        let connected_peers = client.list_connected_peers(Empty {}).await?;
+        Ok(connected_peers.into_inner().connected_peers)
     }
 }

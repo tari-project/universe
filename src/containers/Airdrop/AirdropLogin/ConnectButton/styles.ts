@@ -78,11 +78,16 @@ export const NumberPill = styled('div')`
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 1px;
 
     min-width: 63px;
     height: 23px;
 
     padding: 0 8px;
+
+    .StatsIcon-gems {
+        transform: translateX(-2px);
+    }
 `;
 
 export const Text = styled('div')`

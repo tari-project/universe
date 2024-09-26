@@ -1,4 +1,4 @@
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 
 export const Wrapper = styled('div')`
     position: relative;
@@ -19,20 +19,7 @@ export const Wrapper = styled('div')`
     }
 `;
 
-const float = keyframes`
-  0% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-`;
-
-export const FloatingImage = styled.img`
+export const SoonWrapper = styled.div`
     max-width: 260px;
     height: auto;
-    animation: ${float} 3s ease-in-out infinite;
 `;
