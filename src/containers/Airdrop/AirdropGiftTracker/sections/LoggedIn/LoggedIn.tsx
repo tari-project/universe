@@ -23,11 +23,11 @@ export default function LoggedIn() {
     //         return;
     //     }
     //
-    //     //setShowFlare('GoalComplete');
+    //     //setFlareAnimationType('GoalComplete');
     //     setFlareAnimationType('FriendAccepted');
-    //     //setShowFlare('BonusGems');
+    //     //setFlareAnimationType('BonusGems');
     // };
-    //
+
     const bonusTier = useMemo(
         () =>
             bonusTiers
