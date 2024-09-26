@@ -13,7 +13,7 @@ import {
 import giftImage from '../../../../images/gift.png';
 import gemImage from '../../../../images/gem.png';
 import boxImage from '../../../../images/gold_box.png';
-import { useAirdropStore } from '@app/store/useAirdropStore';
+import { REFERRAL_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import { Trans, useTranslation } from 'react-i18next';
@@ -21,7 +21,7 @@ import { Trans, useTranslation } from 'react-i18next';
 export default function Invite() {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const { userDetails, referralCount, bonusTiers } = useAirdropStore();
+    const { userDetails, referralCount, bonusTiers, referralQuestPoints } = useAirdropStore();
 
     const referralCode = userDetails?.user?.referral_code || '';
 
@@ -79,7 +79,7 @@ export default function Invite() {
                 </TextWrapper>
 
                 <GemPill>
-                    {referralCount?.gems.toLocaleString() || 0}
+                    {(referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS).toLocaleString()}
                     <Image src={gemImage} alt="" />
                 </GemPill>
             </InviteButton>
