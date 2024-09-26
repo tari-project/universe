@@ -92,7 +92,7 @@ export default function Invite() {
                             i18nKey="nextTierBonus"
                             components={{ strong: <strong /> }}
                             values={{
-                                count: ` ${friendsRemaining} friends `,
+                                count: `${friendsRemaining}`,
                                 bonusGems: nextBonusTier?.bonusGems.toLocaleString(),
                             }}
                         />
