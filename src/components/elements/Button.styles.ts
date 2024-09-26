@@ -76,7 +76,7 @@ export const BaseButton = styled.button<Props>`
                             : `10px ${PADDING}`};
                     &:hover {
                         background: ${$simple ? 'none' : theme.palette.primary.wisp};
-                        color: ${$simple ? theme.palette.primary.dark : theme.palette.primary.main};
+                        color: ${theme.palette[$color || 'primary'].dark};
                         border-radius: ${theme.shape.borderRadius.buttonSquared};
                     }
                 `;

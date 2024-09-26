@@ -23,7 +23,7 @@ import { ContentWrapper, Overlay } from '@app/components/elements/dialog/Dialog.
 
 interface DialogOptions {
     open: boolean;
-    onOpenChange: (open: boolean) => void;
+    onOpenChange?: (open: boolean) => void;
 }
 
 export function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen }: DialogOptions) {

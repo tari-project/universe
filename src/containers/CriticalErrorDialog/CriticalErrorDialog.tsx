@@ -15,9 +15,14 @@ const StyledButton = styled(Button)(() => ({
 }));
 
 const CriticalErrorDialog = () => {
-    const { t } = useTranslation('common', { useSuspense: false });
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    // const criticalError = undefined;
     const criticalError = useAppStateStore((s) => s.criticalError);
     const [isExiting, setIsExiting] = useState(false);
+
+    const handleLogs = useCallback(async () => {
+        console.debug('clicked!');
+    }, []);
 
     const handleExit = useCallback(async () => {
         try {
@@ -30,12 +35,7 @@ const CriticalErrorDialog = () => {
     }, []);
 
     return (
-        <Dialog
-            open={!!criticalError}
-            onOpenChange={() => {
-                /* void */
-            }}
-        >
+        <Dialog open={!!criticalError}>
             <DialogContent>
                 <Typography variant="h1">{t('critical-error')}</Typography>
                 <Stack direction="row" alignItems="center">
@@ -54,6 +54,10 @@ const CriticalErrorDialog = () => {
                 ) : (
                     <CircularProgress />
                 )}
+
+                <Button color="warning" variant="text" styleVariant="simple" onClick={handleLogs}>
+                    {t('send-logs', { ns: 'settings' })}
+                </Button>
             </DialogContent>
         </Dialog>
     );
