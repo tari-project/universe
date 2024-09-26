@@ -22,5 +22,7 @@
         "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining."
     },
     "claimModalTitle": "Earn rewards for Mining on Testnet",
-    "claimModalText": "Earn gems by mining and referring friends to increase your airdrop reward during testnet! Have a referral code? Enter it below and earn an additional <strong>{{gems}}</strong> gems for you and your friend!"
+    "claimModalText": "Earn gems by mining and referring friends to increase your airdrop reward during testnet! Have a referral code? Enter it below and earn an additional <strong>{{gems}}</strong> gems for you and your friend!",
+    "claimModalFieldLabel": "Optional",
+    "claimModalFieldPlaceholder": "Enter referral code"
 }

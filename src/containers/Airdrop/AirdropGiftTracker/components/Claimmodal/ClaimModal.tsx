@@ -7,11 +7,9 @@ import {
     Gem2,
     Gem3,
     GemsWrapper,
-    GemTextImage,
     InputGems,
     InputLabel,
     InputWrapper,
-    ShareWrapper,
     StyledInput,
     Text,
     TextButton,
@@ -24,7 +22,7 @@ import gemImage from './images/gems.png';
 import gemLargeImage from './images/gem-large.png';
 import { useCallback, useState } from 'react';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { GemImage } from '../Gems/styles';
 import XLogoIcon from './icons/XLogoIcon';
 
@@ -66,10 +64,10 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
 
                 <ActionWrapper>
                     <InputWrapper>
-                        <InputLabel>Optional</InputLabel>
+                        <InputLabel>{t('claimModalFieldLabel')}</InputLabel>
                         <StyledInput
                             type="text"
-                            placeholder="Enter referral code"
+                            placeholder={t('claimModalFieldPlaceholder')}
                             onChange={(e) => setClaimCode(e.target.value)}
                             value={claimCode}
                         />
