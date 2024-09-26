@@ -74,6 +74,17 @@ impl AutoLauncher {
 
         if config_is_auto_launcher_enabled && !is_auto_launcher_enabled {
             info!(target: LOG_TARGET, "Enabling auto-launcher");
+            match AutoLauncher::detect_current_os() {
+                CurrentOperatingSystem::MacOS => {
+                    // This for some reason fixes the issue where macOS starts two instances of the app
+                    // when auto-launcher is enabled and when during shutdown user selects to reopen the apps after restart
+                    auto_launcher.disable()?;
+                    auto_launcher.enable()?;
+                }
+                _ => {
+                    auto_launcher.enable()?;
+                }
+            }
             auto_launcher.enable()?;
         }
 
