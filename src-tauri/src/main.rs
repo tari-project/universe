@@ -473,7 +473,7 @@ async fn setup_inner(
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
-    let _ = state
+    let _unused = state
         .gpu_miner
         .write()
         .await
