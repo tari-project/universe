@@ -1,15 +1,15 @@
 {
-  "floor": "Floor",
-  "current-block-time": "Current block time",
-  "your-reward-is": "Your reward is",
-  "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
-  "mining-button-text": {
-    "starting-mining": "Starting Mining",
-    "start-mining": "Start Mining",
-    "pause-mining": "Pause Mining",
-    "changing-mode": "Changing mode",
-    "cancel-mining": "Cancel Mining",
-    "waiting-for-idle": "Waiting for Idle",
-    "started-auto-mining": "Auto Mining Started"
-  }
+    "floor": "Floor",
+    "current-block-time": "Current block time",
+    "your-reward-is": "Your reward is",
+    "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
+    "mining-button-text": {
+        "starting-mining": "Starting Mining",
+        "start-mining": "Start Mining",
+        "stop-mining": "Stop Mining",
+        "changing-mode": "Changing mode",
+        "cancel-mining": "Cancel Mining",
+        "waiting-for-idle": "Waiting for Idle",
+        "started-auto-mining": "Auto Mining Started"
+    }
 }
