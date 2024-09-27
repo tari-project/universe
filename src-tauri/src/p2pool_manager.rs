@@ -121,6 +121,14 @@ impl P2poolManager {
         Err(anyhow!("Failed to get stats"))
     }
 
+    pub async fn is_running(&self) -> Result<bool, anyhow::Error> {
+        let process_watcher = self.watcher.read().await;
+        if process_watcher.is_running() {
+            return Ok(true);
+        }
+        Ok(false)
+    }
+
     pub async fn ensure_started(
         &self,
         app_shutdown: ShutdownSignal,
