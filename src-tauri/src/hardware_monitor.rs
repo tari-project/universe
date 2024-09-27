@@ -194,12 +194,6 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
             Some(nvml) => nvml,
             None => {
                 return vec![];
-                // return HardwareParameters {
-                //     label: "N/A".to_string(),
-                //     usage_percentage: 0.0,
-                //     current_temperature: 0.0,
-                //     max_temperature: 0.0,
-                // }
             }
         };
 
@@ -221,10 +215,6 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
                 current_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
             let usage_percentage = current_gpu.utilization_rates().unwrap().gpu as f32;
             let label = current_gpu.name().unwrap();
-
-            // let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
-            // let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
-            // let label = main_gpu.name().unwrap();
 
             let max_temperature = match current_parameters.get(i as usize) {
                 Some(current_parameters) => {
@@ -463,7 +453,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             let mut current_temperature = avarage_temperature;
             let mut max_temperature = avarage_temperature;
 
-            if let Some(current_parameters) = current_parameters.get(i as usize) {
+            if let Some(current_parameters) = current_parameters.get(i) {
                 current_temperature = current_parameters.current_temperature;
                 max_temperature = current_parameters.max_temperature.max(avarage_temperature)
             };

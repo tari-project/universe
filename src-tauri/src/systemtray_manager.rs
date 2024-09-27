@@ -286,7 +286,7 @@ impl SystemtrayManager {
             gpu_usage: hardware_status
                 .gpu
                 .iter()
-                .map(|hp| hp.usage_percentage as f64)
+                .map(|hp| f64::from(hp.usage_percentage))
                 .sum::<f64>(),
             estimated_earning,
         }
