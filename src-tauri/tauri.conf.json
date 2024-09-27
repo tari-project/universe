@@ -7,7 +7,7 @@
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.4.0-rc.0"
+        "version": "0.4.6"
     },
     "tauri": {
         "systemTray": {
@@ -80,8 +80,7 @@
             "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
             "publisher": "Tari Labs, LLC",
             "macOS": {
-                "providerShortName": "Tari Labs, LLC",
-                "license": "../LICENSE.md"
+                "providerShortName": "Tari Labs, LLC"
             }
         },
         "macOSPrivateApi": true

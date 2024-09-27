@@ -1,8 +1,9 @@
-use crate::binary_resolver::{VersionAsset, VersionDownloadInfo};
 use anyhow::anyhow;
 use log::{debug, info};
 use reqwest::Client;
 use serde::Deserialize;
+
+use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 
 const LOG_TARGET: &str = "tari::universe::github";
 
@@ -14,10 +15,38 @@ struct Release {
     assets: Vec<Asset>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct Asset {
     name: String,
     browser_download_url: String,
+}
+
+pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
+    format!(
+        "https://api.github.com/repos/{}/{}/releases",
+        repo_owner, repo_name
+    )
+}
+
+pub fn get_cdn_url(repo_owner: &str, repo_name: &str) -> String {
+    format!(
+        "https://leet-local.tarilabs.com/{}/{}/releases/api.json",
+        repo_owner, repo_name
+    )
+}
+
+pub fn get_gh_download_url(repo_owner: &str, repo_name: &str) -> String {
+    format!(
+        "https://github.com/{}/{}/releases/download",
+        repo_owner, repo_name
+    )
+}
+
+pub fn get_cdn_download_url(repo_owner: &str, repo_name: &str) -> String {
+    format!(
+        "https://leet-local.tarilabs.com/{}/{}/releases/download",
+        repo_owner, repo_name
+    )
 }
 
 pub async fn list_releases(
@@ -25,10 +54,7 @@ pub async fn list_releases(
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let client = Client::new();
-    let url = format!(
-        "https://api.github.com/repos/{}/{}/releases",
-        repo_owner, repo_name
-    );
+    let url = get_cdn_url(repo_owner, repo_name);
 
     let response = client
         .get(&url)
@@ -62,8 +88,12 @@ pub async fn list_releases(
         // res.push(semver::Version::parse(&tag_name)?);
         let mut assets = vec![];
         for asset in release.assets {
+            let url = asset.browser_download_url.replace(
+                &get_gh_download_url(repo_owner, repo_name),
+                &get_cdn_download_url(repo_owner, repo_name),
+            );
             assets.push(VersionAsset {
-                url: asset.browser_download_url,
+                url,
                 name: asset.name,
             });
         }

@@ -12,7 +12,7 @@ pub struct StatsBlock {
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct TribeDetails {
+pub struct SquadDetails {
     pub id: String,
     pub name: String,
 }
@@ -21,7 +21,7 @@ pub struct TribeDetails {
 pub struct Stats {
     pub connected: bool,
     pub connected_since: Option<EpochTime>,
-    pub tribe: TribeDetails,
+    pub squad: SquadDetails,
     pub num_of_miners: usize,
     pub last_block_won: Option<StatsBlock>,
     pub share_chain_height: u64,

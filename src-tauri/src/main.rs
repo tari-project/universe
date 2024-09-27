@@ -20,7 +20,7 @@ use tokio::sync::RwLock;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
-use binary_resolver::{Binaries, BinaryResolver};
+use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
@@ -40,11 +40,10 @@ use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
-use crate::xmrig_adapter::XmrigAdapter;
 
 mod app_config;
 mod app_in_memory_config;
-mod binary_resolver;
+mod binaries;
 mod consts;
 mod cpu_miner;
 mod download_utils;
@@ -73,6 +72,7 @@ mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
 mod user_listener;
+mod utils;
 mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
@@ -157,21 +157,25 @@ async fn send_feedback(
     include_logs: bool,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
+    app: tauri::AppHandle,
+) -> Result<String, String> {
     let timer = Instant::now();
-    state
+    let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs)
+        .send_feedback(
+            feedback,
+            include_logs,
+            app.path_resolver().app_log_dir().clone(),
+        )
         .await
         .inspect_err(|e| error!("error at send_feedback {:?}", e))
         .map_err(|e| e.to_string())?;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+    if timer.elapsed() > Duration::from_secs(60) {
         warn!(target: LOG_TARGET, "send_feedback took too long: {:?}", timer.elapsed());
     }
-    Ok(())
+    Ok(reference)
 }
 
 #[tauri::command]
@@ -215,13 +219,15 @@ async fn set_airdrop_access_token(
 ) -> Result<(), String> {
     let timer = Instant::now();
     let mut write_lock = state.airdrop_access_token.write().await;
-    *write_lock = Some(token);
+    *write_lock = Some(token.clone());
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "set_airdrop_access_token took too long: {:?}",
             timer.elapsed()
         );
     }
+    let mut in_memory_app_config = state.in_memory_config.write().await;
+    in_memory_app_config.airdrop_access_token = Some(token);
     Ok(())
 }
 
@@ -360,7 +366,6 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
     let data_dir = app.path_resolver().app_local_data_dir().unwrap();
-    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
     let config_dir = app.path_resolver().app_config_dir().unwrap();
     let log_dir = app.path_resolver().app_log_dir().unwrap();
 
@@ -379,98 +384,102 @@ async fn setup_inner(
         .initialize(state.airdrop_access_token.clone(), window.clone())
         .await?;
 
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::MinotariNode, progress.clone())
+    let mut binary_resolver = BinaryResolver::current().write().await;
+    let should_check_for_update = now
+        .duration_since(last_binaries_update_timestamp)
+        .unwrap_or(Duration::from_secs(0))
+        > Duration::from_secs(60 * 60 * 6);
+
+    progress.set_max(10).await;
+    progress
+        .update("checking-latest-version-node".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::MinotariNode,
+            progress.clone(),
+            should_check_for_update,
+        )
         .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::MergeMiningProxy, progress.clone())
+    sleep(Duration::from_secs(1));
+
+    progress.set_max(15).await;
+    progress
+        .update("checking-latest-version-mmproxy".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::MergeMiningProxy,
+            progress.clone(),
+            should_check_for_update,
+        )
         .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::Wallet, progress.clone())
+    sleep(Duration::from_secs(1));
+    progress.set_max(20).await;
+    progress
+        .update("checking-latest-version-wallet".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(Binaries::Wallet, progress.clone(), should_check_for_update)
         .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::ShaP2pool, progress.clone())
+
+    sleep(Duration::from_secs(1));
+    progress.set_max(25).await;
+    progress
+        .update(
+            "Checking for latest version of gpu miner".to_string(),
+            None,
+            0,
+        )
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::GpuMiner,
+            progress.clone(),
+            should_check_for_update,
+        )
         .await?;
-    BinaryResolver::current()
-        .read_current_highest_version(Binaries::GpuMiner, progress.clone())
+    sleep(Duration::from_secs(1));
+
+    progress.set_max(30).await;
+    progress
+        .update("checking-latest-version-xmrig".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
         .await?;
+    sleep(Duration::from_secs(1));
+    progress.set_max(35).await;
+    progress
+        .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(
+            Binaries::ShaP2pool,
+            progress.clone(),
+            should_check_for_update,
+        )
+        .await?;
+    sleep(Duration::from_secs(1));
+    if should_check_for_update {
+        state
+            .config
+            .write()
+            .await
+            .set_last_binaries_update_timestamp(now)
+            .await?;
+    }
+
+    //drop binary resolver to release the lock
+    drop(binary_resolver);
 
     let _unused = state
         .gpu_miner
         .write()
         .await
-        .detect()
+        .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
-    if now
-        .duration_since(last_binaries_update_timestamp)
-        .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60 * 10)
-    // 10 minutes
-    {
-        let _unused = state
-            .config
-            .write()
-            .await
-            .set_last_binaries_update_timestamp(now)
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not set last binaries update timestamp: {:?}", e));
-
-        progress.set_max(10).await;
-        progress
-            .update("checking-latest-version-node".to_string(), None, 0)
-            .await;
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::MinotariNode, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of MinotariNode: {:?}", e));
-        sleep(Duration::from_secs(1));
-
-        progress.set_max(15).await;
-        progress
-            .update("checking-latest-version-mmproxy".to_string(), None, 0)
-            .await;
-        sleep(Duration::from_secs(1));
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::MergeMiningProxy, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of MergeMiningProxy: {:?}", e));
-        progress.set_max(20).await;
-        progress
-            .update("checking-latest-version-wallet".to_string(), None, 0)
-            .await;
-        sleep(Duration::from_secs(1));
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::Wallet, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of Wallet: {:?}", e));
-
-        sleep(Duration::from_secs(1));
-        progress.set_max(25).await;
-        progress
-            .update("checking-latest-version-gpuminer".to_string(), None, 0)
-            .await;
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::GpuMiner, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of GpuMiner: {:?}", e));
-
-        progress.set_max(30).await;
-        progress
-            .update("checking-latest-version-xmrig".to_string(), None, 0)
-            .await;
-        sleep(Duration::from_secs(1));
-        let _unused = XmrigAdapter::ensure_latest(cache_dir, false, progress.clone())
-            .await
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not ensure latest version of Xmrig: {:?}", e),
-            );
-
-        progress.set_max(35).await;
-        progress
-            .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
-            .await;
-        sleep(Duration::from_secs(1));
-        let _unused = BinaryResolver::current()
-            .ensure_latest(Binaries::ShaP2pool, progress.clone())
-            .await.inspect_err(|e| error!(target: LOG_TARGET, "Could not ensure latest version of ShaP2pool: {:?}", e));
-    }
 
     for _i in 0..2 {
         match state
@@ -711,7 +720,6 @@ async fn get_seed_words(
 
 #[tauri::command]
 async fn start_mining<'r>(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
@@ -723,7 +731,6 @@ async fn start_mining<'r>(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = config.monero_address().to_string();
-    let progress_tracker = ProgressTracker::new(window.clone());
     if cpu_mining_enabled {
         let mm_proxy_port = state
             .mm_proxy_manager
@@ -741,10 +748,8 @@ async fn start_mining<'r>(
                 monero_address.to_string(),
                 mm_proxy_port,
                 app.path_resolver().app_local_data_dir().unwrap(),
-                app.path_resolver().app_cache_dir().unwrap(),
                 app.path_resolver().app_config_dir().unwrap(),
                 app.path_resolver().app_log_dir().unwrap(),
-                progress_tracker,
                 mode,
             )
             .await;
@@ -859,28 +864,27 @@ fn open_log_dir(app: tauri::AppHandle) {
 #[tauri::command]
 async fn get_applications_versions(app: tauri::AppHandle) -> Result<ApplicationsVersions, String> {
     let timer = Instant::now();
-    //TODO could be move to status command when XmrigAdapter will be implemented in BinaryResolver
-
-    let default_message = "Failed to read version".to_string();
-
-    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
+    let binary_resolver = BinaryResolver::current().read().await;
 
     let tari_universe_version = app.package_info().version.clone();
-    let xmrig_version: String = XmrigAdapter::get_latest_local_version(cache_dir.clone())
-        .await
-        .unwrap_or(default_message);
+    let xmrig_version = binary_resolver
+        .get_binary_version_string(Binaries::Xmrig)
+        .await;
 
-    let minotari_node_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::MinotariNode)
+    let minotari_node_version = binary_resolver
+        .get_binary_version_string(Binaries::MinotariNode)
         .await;
-    let mm_proxy_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::MergeMiningProxy)
+    let mm_proxy_version = binary_resolver
+        .get_binary_version_string(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::Wallet)
+    let wallet_version = binary_resolver
+        .get_binary_version_string(Binaries::Wallet)
         .await;
-    let sha_p2pool_version: semver::Version = BinaryResolver::current()
-        .get_latest_version(Binaries::ShaP2pool)
+    let sha_p2pool_version = binary_resolver
+        .get_binary_version_string(Binaries::ShaP2pool)
+        .await;
+    let xtrgpuminer_version = binary_resolver
+        .get_binary_version_string(Binaries::GpuMiner)
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -890,13 +894,16 @@ async fn get_applications_versions(app: tauri::AppHandle) -> Result<Applications
         );
     }
 
+    drop(binary_resolver);
+
     Ok(ApplicationsVersions {
         tari_universe: tari_universe_version.to_string(),
+        minotari_node: minotari_node_version,
         xmrig: xmrig_version,
-        minotari_node: minotari_node_version.to_string(),
-        mm_proxy: mm_proxy_version.to_string(),
-        wallet: wallet_version.to_string(),
-        sha_p2pool: sha_p2pool_version.to_string(),
+        mm_proxy: mm_proxy_version,
+        wallet: wallet_version,
+        sha_p2pool: sha_p2pool_version,
+        xtrgpuminer: xtrgpuminer_version,
     })
 }
 
@@ -906,6 +913,8 @@ async fn update_applications(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    let mut binary_resolver = BinaryResolver::current().write().await;
+
     state
         .config
         .write()
@@ -916,35 +925,39 @@ async fn update_applications(
             |e| error!(target: LOG_TARGET, "Could not set last binaries update timestamp: {:?}", e),
         )
         .map_err(|e| e.to_string())?;
+
     let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
-    let cache_dir = app.path_resolver().app_cache_dir().unwrap();
-    XmrigAdapter::ensure_latest(cache_dir, true, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::Xmrig, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MinotariNode, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::MinotariNode, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
-    BinaryResolver::current()
-        .ensure_latest(Binaries::MergeMiningProxy, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::MergeMiningProxy, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
-    BinaryResolver::current()
-        .ensure_latest(Binaries::Wallet, progress_tracker.clone())
+    binary_resolver
+        .update_binary(Binaries::Wallet, progress_tracker.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    binary_resolver
+        .update_binary(Binaries::ShaP2pool, progress_tracker.clone())
         .await
         .map_err(|e| e.to_string())?;
     sleep(Duration::from_secs(1));
-    BinaryResolver::current()
-        .ensure_latest(Binaries::GpuMiner, progress_tracker.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-    sleep(Duration::from_secs(1));
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "update_applications took too long: {:?}", timer.elapsed());
     }
+
+    drop(binary_resolver);
+
     Ok(())
 }
 
@@ -1228,6 +1241,7 @@ pub struct ApplicationsVersions {
     mm_proxy: String,
     wallet: String,
     sha_p2pool: String,
+    xtrgpuminer: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -1336,6 +1350,7 @@ fn main() {
         app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
+        p2pool_manager.clone(),
     );
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
@@ -1390,7 +1405,8 @@ fn main() {
                 &app.path_resolver()
                     .app_config_dir()
                     .unwrap()
-                    .join("log4rs_config.yml"),
+                    .join("universe")
+                    .join("log4rs_config_universe.yml"),
                 &app.path_resolver().app_log_dir().unwrap(),
                 include_str!("../log4rs_sample.yml"),
             )
@@ -1435,7 +1451,7 @@ fn main() {
                 }
             });
 
-            match tauri::async_runtime::block_on(thread).unwrap() {
+            match tauri::async_runtime::block_on(thread).expect("Could not start task") {
                 Ok(_) => {
                     // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
                     // *lock = address;
@@ -1490,11 +1506,6 @@ fn main() {
         app.package_info().version
     );
 
-    println!(
-        "Logs stored at {:?}",
-        app.path_resolver().app_log_dir().unwrap()
-    );
-
     let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
         tauri::RunEvent::Updater(updater_event) => match updater_event {
@@ -1503,8 +1514,10 @@ fn main() {
             }
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
-                let window = _app_handle.get_window("main").unwrap();
-                drop(window.emit("update-progress", UpdateProgressRustEvent {chunk_length, content_length, downloaded}));
+                if let Some(window) = _app_handle.get_window("main") {
+                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
+                    );
+                }
             }
             UpdaterEvent::Downloaded => {
                 shutdown.trigger();
@@ -1527,7 +1540,7 @@ fn main() {
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
-        RunEvent::WindowEvent { label, event, .. }  => {
+        RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
         }
         _ => {

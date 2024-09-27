@@ -1,6 +1,8 @@
 import { ApplicationsVersions } from '@app/types/app-status';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api';
+import { useAppConfigStore } from './useAppConfigStore';
+import { useMiningStore } from './useMiningStore';
 
 interface AppState {
     isAfterAutoUpdate: boolean;
@@ -18,9 +20,10 @@ interface AppState {
     isSettingsOpen: boolean;
     setIsSettingsOpen: (value: boolean) => void;
     isSettingUp: boolean;
-    settingUpFinished: () => void;
+    settingUpFinished: () => Promise<void>;
     applications_versions?: ApplicationsVersions;
     fetchApplicationsVersions: () => Promise<void>;
+    fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
 }
 
@@ -41,20 +44,37 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     isSettingsOpen: false,
     setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
     isSettingUp: true,
-    settingUpFinished: () => set({ isSettingUp: false }),
+    settingUpFinished: async () => {
+        set({ isSettingUp: false });
+
+        // Proceed with auto mining when enabled
+        const { auto_mining, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
+        if (auto_mining && (cpu_mining_enabled || gpu_mining_enabled)) {
+            const { startMining } = useMiningStore.getState();
+            await startMining();
+        }
+    },
     applications_versions: undefined,
     fetchApplicationsVersions: async () => {
-        let applications_versions = getState().applications_versions;
+        try {
+            console.info('Fetching applications versions');
+            const applications_versions = await invoke('get_applications_versions');
+            set({ applications_versions });
+        } catch (error) {
+            console.error('Error getting applications versions', error);
+        }
+    },
+    fetchApplicationsVersionsWithRetry: async () => {
         let retries = 5;
-        while (
-            (!applications_versions ||
-                !Object.values(applications_versions).every((version) => version !== undefined)) &&
-            retries
-        ) {
+        while (retries) {
+            const applications_versions = getState().applications_versions;
+            if (applications_versions && Object.values(applications_versions).every((version) => Boolean(version))) {
+                break;
+            }
+
             try {
                 console.info('Fetching applications versions');
-                applications_versions = await invoke('get_applications_versions');
-                set({ applications_versions });
+                await getState().fetchApplicationsVersions();
                 retries--;
             } catch (error) {
                 console.error('Error getting applications versions', error);
