@@ -1,15 +1,15 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "airdrop-env")]
-const AIRDROP_BASE_URL: &'static str =
+const AIRDROP_BASE_URL: &str =
     std::env!("AIRDROP_BASE_URL", "AIRDROP_BASE_URL env var not defined");
 #[cfg(feature = "airdrop-env")]
-const AIRDROP_API_BASE_URL: &'static str = std::env!(
+const AIRDROP_API_BASE_URL: &str = std::env!(
     "AIRDROP_API_BASE_URL",
     "AIRDROP_API_BASE_URL env var not defined"
 );
 #[cfg(feature = "airdrop-env")]
-const AIRDROP_TWITTER_AUTH_URL: &'static str = std::env!(
+const AIRDROP_TWITTER_AUTH_URL: &str = std::env!(
     "AIRDROP_TWITTER_AUTH_URL",
     "AIRDROP_TWITTER_AUTH_URL env var not defined"
 );
@@ -69,7 +69,7 @@ impl AppInMemoryConfig {
             airdrop_access_token: None,
         };
 
-        #[allow(unreachable_code)]
+        #[cfg(not(any(feature = "airdrop-local", feature = "airdrop-env")))]
         AppInMemoryConfig::default()
     }
 }
