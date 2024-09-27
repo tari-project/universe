@@ -1,4 +1,3 @@
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import {
     AccentText,
     AccentWrapper,
@@ -6,9 +5,10 @@ import {
 } from '@app/containers/Dashboard/MiningView/components/BlockHeightAccent.styles.ts';
 import { useDeferredValue, useEffect, useLayoutEffect, useState } from 'react';
 import { AnimatePresence, LayoutGroup } from 'framer-motion';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 
 export function BlockHeightAccent() {
-    const height = useMiningStore((s) => s.displayBlockHeight);
+    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const heightString = height?.toString();
 
     const [windowHeight, setWindowHeight] = useState(window.innerHeight);

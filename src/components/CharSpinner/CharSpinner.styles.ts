@@ -43,7 +43,6 @@ export const Characters = styled(m.div)<Props>`
     display: flex;
     flex-direction: column;
     align-items: center;
-    letter-spacing: -4px;
     font-weight: ${({ $variant }) => ($variant == 'simple' ? 600 : 700)};
     font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'Druk')}, sans-serif;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
@@ -54,6 +53,13 @@ export const Character = styled(m.div)<Props>`
     display: flex;
     justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
-    letter-spacing: -0.02ch;
+    letter-spacing: -4px;
     text-transform: lowercase;
+    width: min-content;
+    // for the unit & decimal
+    &:last-child {
+        width: ${({ $decimal }) => ($decimal ? 'min-content' : '1ch')};
+        margin-left: 1px;
+        margin-right: -1px;
+    }
 `;

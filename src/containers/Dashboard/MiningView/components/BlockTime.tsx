@@ -1,3 +1,4 @@
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { BlockTimeContainer, SpacedNum, TimerTypography, TimerWrapper, TitleTypography } from './BlockTime.styles';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
@@ -8,7 +9,7 @@ function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
-    const blockTime = useMiningStore(useShallow((s) => s.displayBlockTime));
+    const blockTime = useBlockchainVisualisationStore(useShallow((s) => s.displayBlockTime));
     const isConnectedToTari = useMiningStore((s) => s.base_node?.is_connected);
     const isMining = isCPUMining || isGPUMining;
 
