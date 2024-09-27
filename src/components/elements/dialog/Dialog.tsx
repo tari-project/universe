@@ -24,9 +24,14 @@ import { ContentWrapper, Overlay } from '@app/components/elements/dialog/Dialog.
 interface DialogOptions {
     open: boolean;
     onOpenChange?: (open: boolean) => void;
+    disableClose?: boolean;
 }
 
-export function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen }: DialogOptions) {
+export function useDialog({
+    open: controlledOpen,
+    onOpenChange: setControlledOpen,
+    disableClose = false,
+}: DialogOptions) {
     const [labelId, setLabelId] = useState<string | undefined>();
     const [descriptionId, setDescriptionId] = useState<string | undefined>();
 
@@ -43,7 +48,7 @@ export function useDialog({ open: controlledOpen, onOpenChange: setControlledOpe
     const click = useClick(context, {
         enabled: controlledOpen == null,
     });
-    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown' });
+    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: !disableClose });
     const role = useRole(context);
 
     const interactions = useInteractions([click, dismiss, role]);
