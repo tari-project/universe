@@ -1,7 +1,7 @@
 use log::{error, info};
 use std::sync::LazyLock;
 use tauri::{
-    AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
+    AppHandle, CustomMenuItem, Icon, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem,
 };
 
@@ -132,11 +132,22 @@ impl SystemtrayManager {
 
         match current_os {
             CurrentOperatingSystem::Windows => {
-                return systray.with_tooltip(tooltip.clone().as_str())
+                return systray
+                    .with_icon(Icon::Raw(
+                        include_bytes!("../icons/systray_icon.ico").to_vec(),
+                    ))
+                    .with_tooltip(tooltip.clone().as_str());
             }
-            CurrentOperatingSystem::Linux => systray.with_menu(tray_menu),
+            CurrentOperatingSystem::Linux => systray
+                .with_icon(Icon::Raw(
+                    include_bytes!("../icons/systray_icon.png").to_vec(),
+                ))
+                .with_menu(tray_menu),
             CurrentOperatingSystem::MacOS => {
                 return systray
+                    .with_icon(Icon::Raw(
+                        include_bytes!("../icons/systray_icon.icns").to_vec(),
+                    ))
                     .with_menu(tray_menu)
                     .with_tooltip(tooltip.clone().as_str())
             }

@@ -43,6 +43,8 @@ tauri = { version = "1.8.0", features = [
     "isolation",
     "shell-open",
     "process-command-api",
+    "icon-ico",
+    "icon-png",
 ] }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tokio = { version = "1", features = ["full"] }
