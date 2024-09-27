@@ -6,6 +6,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
 import { useAppStateStore } from '../store/appStateStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { setAnimationState } from '@app/visuals.ts';
 
 export function useSetUp() {
     const setView = useUIStore((s) => s.setView);
@@ -41,6 +42,7 @@ export function useSetUp() {
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
                         setView('mining');
+                        setAnimationState('showVisual');
                         settingUpFinished();
                         fetchApplicationsVersionsWithRetry();
                     }
