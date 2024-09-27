@@ -96,14 +96,18 @@ impl GpuMiner {
                 );
                 status.estimated_earnings = estimated_earnings;
                 status.is_available = self.is_available;
+                dbg!(&status);
                 Ok(status)
             }
-            None => Ok(GpuMinerStatus {
-                hash_rate: 0,
-                estimated_earnings: 0,
-                is_mining: false,
-                is_available: self.is_available,
-            }),
+            None => {
+                dbg!(&self.is_available);
+                Ok(GpuMinerStatus {
+                    hash_rate: 0,
+                    estimated_earnings: 0,
+                    is_mining: false,
+                    is_available: self.is_available,
+                })
+            }
         }
     }
 
