@@ -1,24 +1,20 @@
 import { MinerMetrics } from '@app/types/app-status';
 import { create } from './create';
 
-import { BlockTimeData } from '@app/types/mining.ts';
 import { invoke } from '@tauri-apps/api';
 import { useAppStateStore } from './appStateStore';
 import { useAppConfigStore } from './useAppConfigStore';
 import { modeType } from './types';
 import { setAnimationState } from '@app/visuals';
+import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
 
 interface State extends MinerMetrics {
-    displayBlockTime?: BlockTimeData;
-    earnings?: number;
-    postBlockAnimation?: boolean;
-    timerPaused?: boolean;
-    displayBlockHeight?: number;
     hashrateReady?: boolean;
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
     excludedGpuDevices: number[];
+    counter: number;
 }
 
 interface Actions {
@@ -27,22 +23,14 @@ interface Actions {
     stopMining: () => Promise<void>;
     pauseMining: () => Promise<void>;
     changeMiningMode: (mode: modeType) => Promise<void>;
-    handleBlockMined: () => void;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
-    setPostBlockAnimation: (postBlockAnimation: boolean) => void;
-    setEarnings: (earnings?: number) => void;
-    setTimerPaused: (timerPaused: boolean) => void;
-    setDisplayBlockHeight: (displayBlockHeight: number) => void;
-    setDisplayBlockTime: (displayBlockHeight: BlockTimeData) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
     setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
 }
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
-    displayBlockHeight: undefined,
-    timerPaused: false,
-    postBlockAnimation: false,
+    counter: 0,
     hashrateReady: false,
     miningInitiated: false,
     isChangingMode: false,
@@ -63,7 +51,7 @@ const initialState: State = {
             is_mining: false,
             hash_rate: 0,
             estimated_earnings: 0,
-            is_available: false,
+            is_available: true,
         },
     },
     base_node: {
@@ -88,21 +76,26 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
                 setAnimationState('resume');
             }
 
+            const { displayBlockHeight, setDisplayBlockHeight } = useBlockchainVisualisationStore.getState();
+            if (!displayBlockHeight) {
+                setDisplayBlockHeight(metrics.base_node.block_height);
+            } else if (metrics.base_node.block_height > getState().base_node.block_height) {
+                await useBlockchainVisualisationStore
+                    .getState()
+                    .handleNewBlock(isMining, metrics.base_node.block_height);
+            }
+
             set(metrics);
         } catch (e) {
             console.error(e);
         }
     },
-    handleBlockMined: () => {
-        set({
-            postBlockAnimation: true,
-            timerPaused: false,
-            earnings: undefined,
-        });
-    },
     startMining: async () => {
         console.info('Mining starting....');
         set({ miningInitiated: true });
+        useBlockchainVisualisationStore
+            .getState()
+            .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
         try {
             await invoke('start_mining', {});
         } catch (e) {
@@ -155,14 +148,8 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         }
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
-    setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
-    setEarnings: (earnings) => set({ earnings }),
-    setTimerPaused: (timerPaused) => set({ timerPaused }),
-    setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
-    setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
-        console.info('--->>> Exclude gpu device nr:', excludedGpuDevices);
         set({ excludedGpuDevices });
         try {
             await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
