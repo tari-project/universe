@@ -29,7 +29,7 @@ export default function LanguageDropdown() {
             changeLanguage(value);
             setApplicationLanguage(value as Language);
         },
-        [setApplicationLanguage, changeLanguage]
+        [setApplicationLanguage]
     );
 
     return (

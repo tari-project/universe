@@ -4,8 +4,9 @@ import styled from 'styled-components';
 
 import { IconButton } from '@app/components/elements/Button.tsx';
 import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useGetSeedWords } from './useGetSeedWords';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 
 export interface SeedWordsProps {
     showSeedWords: boolean;
@@ -26,7 +27,7 @@ export const HiddenContainer = styled.div`
     height: 40px;
     border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
     display: flex;
-    padding: 6px 20px 0;
+    padding: 6px 10px 0;
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 18px;
     font-weight: 500;
@@ -49,17 +50,16 @@ export const CopyIconContainer = styled.div`
 `;
 
 export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
-    const [isCopyTooltipHidden, setIsCopyTooltipHidden] = useState(true);
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
+
     const { getSeedWords, seedWordsFetched } = useGetSeedWords();
 
     const copySeedWords = useCallback(async () => {
         if (!seedWordsFetched) {
             await getSeedWords();
         }
-        setIsCopyTooltipHidden(false);
-        await navigator.clipboard.writeText(seedWords.join(' '));
-        setTimeout(() => setIsCopyTooltipHidden(true), 1000);
-    }, [seedWords, seedWordsFetched, getSeedWords]);
+        copyToClipboard(seedWords.join(' '));
+    }, [copyToClipboard, getSeedWords, seedWords, seedWordsFetched]);
 
     return (
         <>
@@ -79,7 +79,7 @@ export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
                     </SeedWordsContainer>
                     <CopyIconContainer>
                         <IconButton onClick={copySeedWords}>
-                            {isCopyTooltipHidden ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+                            {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                         </IconButton>
                     </CopyIconContainer>
                 </Wrapper>
