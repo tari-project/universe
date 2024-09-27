@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-import useWalletDetailsUpdater from '@app/hooks/useWalletUpdater.ts';
 
 function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
@@ -16,8 +15,6 @@ function Wallet() {
     const formatted = formatBalance(balance);
     const sizing = formatted.length <= 6 ? 50 : formatted.length <= 8 ? 44 : 32;
     const [showBalance, setShowBalance] = useState(true);
-
-    useWalletDetailsUpdater();
 
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
 

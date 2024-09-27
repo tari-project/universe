@@ -4,7 +4,7 @@ import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
 import { useUIStore } from './store/useUIStore.ts';
-import { useSetUp } from './hooks/useSetUp.ts';
+
 import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
@@ -20,7 +20,6 @@ import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 
 export default function App() {
     useLangaugeResolver();
-    useSetUp();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
