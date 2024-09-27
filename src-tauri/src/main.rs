@@ -1350,6 +1350,7 @@ fn main() {
         app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
+        p2pool_manager.clone(),
     );
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
@@ -1450,7 +1451,7 @@ fn main() {
                 }
             });
 
-            match tauri::async_runtime::block_on(thread).unwrap() {
+            match tauri::async_runtime::block_on(thread).expect("Could not start task") {
                 Ok(_) => {
                     // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
                     // *lock = address;
@@ -1505,11 +1506,6 @@ fn main() {
         app.package_info().version
     );
 
-    println!(
-        "Logs stored at {:?}",
-        app.path_resolver().app_log_dir().unwrap()
-    );
-
     let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
         tauri::RunEvent::Updater(updater_event) => match updater_event {
@@ -1518,8 +1514,10 @@ fn main() {
             }
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
-                let window = _app_handle.get_window("main").unwrap();
-                drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }));
+                if let Some(window) = _app_handle.get_window("main") {
+                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
+                    );
+                }
             }
             UpdaterEvent::Downloaded => {
                 shutdown.trigger();
