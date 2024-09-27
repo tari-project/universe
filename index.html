@@ -13,78 +13,65 @@
       }
   </style>
 </head>
-<body>
-<main>
-  <canvas id="canvas"></canvas>
-  <div id="root"></div>
-  <script type="module" src="src/main.tsx"></script>
-  <script>
-    let time;
-    function preload() {
-      glApp?.preload(
-          {
-            canvas: document.getElementById("canvas"),
-            orbitTarget: document.getElementById("canvas"),
-            ASSETS_PATH: "/assets/",
-          },
-          () => {
-            init()
-          },
-      );
-    }
+  <body>
+    <main>
+      <canvas id="canvas"></canvas>
+      <div id="root"></div>
+      <script type="module" src="src/main.tsx"></script>
+      <script>
+        let time;
 
-    function init() {
-      glApp.init();
-      time = performance.now() / 1000;
+        function preload() {
+          glApp.preload(
+              {
+                canvas: document.getElementById('canvas'),
+                orbitTarget: document.getElementById('canvas'),
+                ASSETS_PATH: '/assets/',
+              },
+              () => {
+                init();
+              },
+          );
+        }
 
-      glApp.properties.lightPositionX = -5;
-      glApp.properties.lightPositionY = 3;
-      glApp.properties.lightPositionZ = 5;
-      glApp.properties.goboIntensity = 0.5;
+        function init() {
+          glApp.init();
+          time = performance.now() / 1000;
+          window.addEventListener('resize', onResize);
 
-      glApp.properties.defaultColor = '#FFFFFF';
-      glApp.properties.startColor = '#40d1f7';
-      glApp.properties.endColor = '#5ff09a';
+          onResize();
+          animate();
+        }
 
-      glApp.properties.showVisual = true;
-      window.addEventListener("resize", onResize);
-      onResize();
-      animate();
-    }
+        function animate() {
+          requestAnimationFrame(animate);
 
-    const sidebarOffset = 348 + 20; // sidebar + padding
-    function onResize() {
-      glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
-      glApp.setSize(window.innerWidth, window.innerHeight);
-    }
+          let newTime = performance.now() / 1000;
+          let dt = newTime - time;
+          time = newTime;
 
-    function animate() {
-      requestAnimationFrame(animate);
-      let newTime = performance.now() / 1000;
-      let dt = newTime - time;
-      time = newTime;
+          update(dt);
+        }
 
-      update(dt);
-    }
+        function update(dt) {
+          glApp.render(dt);
+        }
 
-    function update(dt) {
-      glApp.render(dt);
-    }
+        function onResize() {
+          const sidebarOffset = 348 + 20; // sidebar + padding
+          glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
+          glApp.setSize(window.innerWidth, window.innerHeight);
+        }
 
-    document.addEventListener(
-        "contextmenu",
-        (e) => {
-          if (window.location.hostname !== "tauri.localhost") {
-            return;
+
+        document.addEventListener("contextmenu", (e) => {
+          if (window.location.hostname !== "localhost") {
+            e.preventDefault();
           }
-          e.preventDefault();
-          return false;
-        },
-        { capture: true },
-    );
+        });
 
-    document.addEventListener("DOMContentLoaded", preload);
-  </script>
-</main>
+        document.addEventListener('DOMContentLoaded', preload);
+      </script>
+    </main>
 </body>
 </html>

@@ -27,15 +27,22 @@ export default function SettingsModal() {
     const generalMarkup = activeSection === 'general' ? <GeneralSettings /> : null;
     const experimentalMarkup = activeSection === 'experimental' ? <ExperimentalSettings /> : null;
 
+    function onOpenChange() {
+        if (isSettingsOpen) {
+            setActiveSection('mining');
+        }
+        setIsSettingsOpen(!isSettingsOpen);
+    }
+
     return (
-        <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <Dialog open={isSettingsOpen} onOpenChange={onOpenChange}>
             <DialogContent $unPadded>
                 <Container>
                     <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
                     <ContentContainer>
                         <HeaderContainer>
                             <Typography variant="h4">{`${t(activeSection)} ${t('settings')}`}</Typography>
-                            <IconButton onClick={() => setIsSettingsOpen(false)}>
+                            <IconButton onClick={() => onOpenChange()}>
                                 <IoClose size={18} />
                             </IconButton>
                         </HeaderContainer>
