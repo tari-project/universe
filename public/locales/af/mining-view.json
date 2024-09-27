@@ -6,7 +6,7 @@
     "mining-button-text": {
         "starting-mining": "Myn begin",
         "start-mining": "Begin myn",
-        "pause-mining": "Onderbreek myn",
+        "stop-mining": "Stop myn",
         "changing-mode": "Verander modus",
         "cancel-mining": "Kanselleer myn",
         "waiting-for-idle": "Wag tot onaktief",
