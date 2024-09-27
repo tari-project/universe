@@ -36,6 +36,14 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) excluded_gpu_devices: Vec<u8>,
 }
 
+#[derive(serde::Deserialize)]
+pub struct GpuStatusFromFile {
+    #[serde(default = "default_num_devices")]
+    num_devices: u32,
+    #[serde(default = "default_device_names")]
+    device_names: Vec<String>,
+}
+
 impl GpuMinerAdapter {
     pub fn new() -> Self {
         Self {
@@ -238,6 +246,26 @@ impl StatusMonitor for GpuMinerStatusMonitor {
 
     async fn status(&self) -> Result<Self::Status, anyhow::Error> {
         let client = reqwest::Client::new();
+        let config_path = PathBuf::from("/home/oski/.config/com.tari.universe/"); //TODO use app config path
+        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+
+        println!("GPU STATUS FILE: {:?}", file);
+        if file.exists() {
+            let config = fs::read_to_string(&file).unwrap();
+            match serde_json::from_str::<GpuStatusFromFile>(&config) {
+                Ok(config) => {
+                    println!(
+                        "GPU STATUS FILE: {:?} - {:?}",
+                        config.num_devices, config.device_names
+                    );
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
+                }
+            }
+        } else {
+            println!("GPU STATUS FILE NOT FOUND {:?}", file);
+        }
         let response = match client
             .get(format!("http://127.0.0.1:{}/stats", self.http_api_port))
             .send()
@@ -264,7 +292,10 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         };
         let text = response.text().await?;
         let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
-            Ok(body) => body,
+            Ok(body) => {
+                dbg!(&body);
+                body
+            }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {}", e);
                 return Ok(GpuMinerStatus {
@@ -295,4 +326,12 @@ pub struct GpuMinerStatus {
     pub hash_rate: u64,
     pub estimated_earnings: u64,
     pub is_available: bool,
+}
+
+fn default_num_devices() -> u32 {
+    0
+}
+
+fn default_device_names() -> Vec<String> {
+    vec![]
 }
