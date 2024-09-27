@@ -1,8 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use log::trace;
 use log::{debug, error, info, warn};
+use notification_manager::NotificationManager;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
@@ -22,7 +24,6 @@ use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
@@ -59,6 +60,7 @@ mod mm_proxy_manager;
 mod network_utils;
 mod node_adapter;
 mod node_manager;
+mod notification_manager;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -716,6 +718,12 @@ async fn get_seed_words(
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
+}
+
+#[tauri::command]
+async fn trigger_notification(summary: &str, body: &str) -> Result<(), String> {
+    NotificationManager::current().trigger_notification(summary, body);
+    Ok(())
 }
 
 #[tauri::command]
@@ -1487,6 +1495,7 @@ fn main() {
             restart_application,
             resolve_application_language,
             set_application_language,
+            trigger_notification,
             get_miner_metrics,
             get_app_config,
             get_p2pool_stats,
