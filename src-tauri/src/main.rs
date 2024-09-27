@@ -1333,6 +1333,10 @@ fn main() {
         Arc::new(RwLock::new(
             app_in_memory_config::AppInMemoryConfig::init_local(),
         ))
+    } else if cfg!(feature = "airdrop-env") {
+        Arc::new(RwLock::new(
+            app_in_memory_config::AppInMemoryConfig::init_env(),
+        ))
     } else {
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()))
     };
