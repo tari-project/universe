@@ -38,9 +38,9 @@ export default [
                 'warn',
                 { allow: ['info', 'warn', 'debug', 'error', 'group', 'groupCollapsed', 'groupEnd'] },
             ],
-            'no-unused-vars': 'off',
+            'no-unused-vars': 'off', // base rule must be disabled
             '@typescript-eslint/no-unused-vars': [
-                'warn', // or "error"
+                'warn',
                 {
                     argsIgnorePattern: '^_',
                     varsIgnorePattern: '^_',

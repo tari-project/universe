@@ -75,7 +75,6 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
                             message: 'Invalid Monero address format',
                         },
                     }}
-                    // render={({ onChange, onBlur, value, name }) => (
                     render={({ field }) => {
                         const { ref: _ref, ...rest } = field;
                         return <StyledInput type="text" hasError={!!errors.address} {...rest} />;
