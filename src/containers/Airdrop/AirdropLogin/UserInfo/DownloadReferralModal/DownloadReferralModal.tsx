@@ -17,12 +17,13 @@ import {
 } from './styles';
 import gemImage from '../images/gems.png';
 import gemLargeImage from './images/gem-large.png';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAirdropStore, GIFT_GEMS, REFERRAL_GEMS } from '@app/store/useAirdropStore';
 import { Button } from '@app/components/elements/Button';
 import { Input } from '@app/components/elements/inputs/Input';
 import { useAridropRequest } from '@app/hooks/airdrop/stateHelpers/useGetAirdropUserDetails';
 import { Trans, useTranslation } from 'react-i18next';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 
 interface DownloadReferralModalProps {
     referralCode?: string;
@@ -38,8 +39,9 @@ interface ClaimResponse {
 export default function DownloadReferralModal({ referralCode, onClose }: DownloadReferralModalProps) {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const [copied, setCopied] = useState(false);
     const [error, setError] = useState('');
+
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
 
     const handleRequest = useAridropRequest();
 
@@ -67,20 +69,8 @@ export default function DownloadReferralModal({ referralCode, onClose }: Downloa
 
     const url = `${airdropUrl}/download/${referralCode}`;
     const handleCopy = () => {
-        setCopied(true);
-        navigator.clipboard.writeText(url);
+        copyToClipboard(url);
     };
-
-    useEffect(() => {
-        if (copied) {
-            const timeout = setTimeout(() => {
-                setCopied(false);
-            }, 2000);
-            return () => {
-                clearTimeout(timeout);
-            };
-        }
-    }, [copied]);
 
     const claimMarkup = (
         <>
@@ -128,7 +118,7 @@ export default function DownloadReferralModal({ referralCode, onClose }: Downloa
             <ShareWrapper>
                 <ShareText>{url.replace('https://', '')}</ShareText>
                 <CopyButton onClick={handleCopy}>
-                    {copied ? (
+                    {isCopied ? (
                         <CopyText
                             initial={{ opacity: 0, y: '100%' }}
                             animate={{ opacity: 1, y: 0 }}

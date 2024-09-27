@@ -43,7 +43,7 @@ export const ResetSettingsButton = () => {
     }, [setOpen]);
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={setOpen} disableClose={loading}>
             <SettingsGroupWrapper>
                 <SettingsGroup>
                     <SettingsGroupContent>
@@ -61,6 +61,7 @@ export const ResetSettingsButton = () => {
                     <Typography variant="h2">{t('reset-settings')}</Typography>
                     <ToggleSwitch
                         checked={resetWallet}
+                        disabled={loading}
                         onChange={() => setResetWallet((p) => !p)}
                         label={t('reset-wallet')}
                     />
