@@ -7,7 +7,7 @@ import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisuali
 const INTERVAL = 1000; // 1 sec
 
 export function useBlockInfo() {
-    const timeSinceLastAnimation = useRef(-1);
+    const timeSinceLastAnimation = useRef(0);
     const setDisplayBlockTime = useBlockchainVisualisationStore((s) => s.setDisplayBlockTime);
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const isCpuMining = useMiningStore((s) => s.cpu.mining.is_mining);
@@ -15,8 +15,8 @@ export function useBlockInfo() {
     const isMining = isGpuMining || isCpuMining;
 
     useEffect(() => {
-        timeSinceLastAnimation.current = -1;
-    }, [displayBlockHeight]);
+        timeSinceLastAnimation.current = 0;
+    }, [displayBlockHeight, isMining]);
 
     useInterval(
         () => {

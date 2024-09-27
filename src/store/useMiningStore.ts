@@ -90,6 +90,9 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     startMining: async () => {
         console.info('Mining starting....');
         set({ miningInitiated: true });
+        useBlockchainVisualisationStore
+            .getState()
+            .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
         try {
             await invoke('start_mining', {});
         } catch (e) {
