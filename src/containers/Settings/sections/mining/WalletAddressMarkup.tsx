@@ -8,6 +8,7 @@ import { styled } from 'styled-components';
 import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { SettingsGroupTitle, SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 
 const Dot = styled.div`
     width: 4px;
@@ -42,7 +43,25 @@ const AddressContainer = styled.div`
 
 const AddressInner = styled.div`
     width: max-content;
+    display: flex;
 `;
+
+const CopyToClipboard = ({ text }: { text: string | undefined }) => {
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
+    const handleCopy = useCallback(
+        (text?: string) => {
+            if (!text) return;
+            copyToClipboard(text + '');
+        },
+        [copyToClipboard]
+    );
+
+    return (
+        <IconButton onClick={() => handleCopy(text)}>
+            {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+        </IconButton>
+    );
+};
 
 const WalletAddressMarkup = () => {
     const [isCondensed, setIsCondensed] = useState(true);
@@ -50,24 +69,6 @@ const WalletAddressMarkup = () => {
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
 
     if (!walletAddress) return null;
-
-    const CopyToClipboard = ({ text }: { text: string | undefined }) => {
-        const [isCopied, setIsCopied] = useState(false);
-
-        const copyToClipboard = useCallback((text: string | undefined) => {
-            if (!text) return;
-            navigator.clipboard.writeText(text + '').then(() => {
-                setIsCopied(true);
-                setTimeout(() => setIsCopied(false), 3000);
-            });
-        }, []);
-
-        return (
-            <IconButton onClick={() => copyToClipboard(text)}>
-                {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
-            </IconButton>
-        );
-    };
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();
@@ -115,6 +116,7 @@ const WalletAddressMarkup = () => {
                         <Typography
                             style={{
                                 color: '#b6b7c3',
+                                display: 'flex',
                             }}
                         >
                             {isCondensed ? condenseEmojiAddress(walletAddressEmoji) : walletAddressEmoji}
