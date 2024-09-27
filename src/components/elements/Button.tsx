@@ -38,6 +38,8 @@ export const Button = ({
     );
 };
 
-export const IconButton = ({ children, ...props }: ButtonProps) => (
-    <BaseIconButton {...props}>{children}</BaseIconButton>
+export const IconButton = ({ children, size, ...props }: ButtonProps) => (
+    <BaseIconButton $size={size} {...props}>
+        {children}
+    </BaseIconButton>
 );

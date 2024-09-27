@@ -4,6 +4,7 @@ import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
 import { useUIStore } from './store/useUIStore.ts';
+
 import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';

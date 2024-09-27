@@ -16,6 +16,7 @@ export const GlobalReset = createGlobalStyle`
             outline: none;
         }
     }
+    textarea,
     input{
         all: unset;
         /* Chrome, Safari, Edge, Opera */
