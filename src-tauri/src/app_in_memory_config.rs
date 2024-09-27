@@ -50,4 +50,16 @@ impl AppInMemoryConfig {
             airdrop_access_token: None,
         }
     }
+
+    pub fn init_env() -> Self {
+        AppInMemoryConfig {
+            airdrop_url: std::env::var("AIRDROP_BASE_URL")
+                .expect("AIRDROP_BASE_URL env var not defined"),
+            airdrop_api_url: std::env::var("AIRDROP_API_BASE_URL")
+                .expect("AIRDROP_API_BASE_URL env var not defined"),
+            airdrop_twitter_auth_url: std::env::var("AIRDROP_TWITTER_AUTH_URL")
+                .expect("AIRDROP_TWITTER_AUTH_URL env var not defined"),
+            airdrop_access_token: None,
+        }
+    }
 }
