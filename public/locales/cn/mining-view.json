@@ -6,7 +6,7 @@
   "mining-button-text": {
     "starting-mining": "开始挖矿",
     "start-mining": "开始挖矿",
-    "pause-mining": "暂停挖矿",
+    "stop-mining": "停止挖矿",
     "changing-mode": "更改模式",
     "cancel-mining": "取消挖矿",
     "waiting-for-idle": "等待空闲",

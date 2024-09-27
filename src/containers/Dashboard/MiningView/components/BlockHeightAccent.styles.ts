@@ -21,6 +21,7 @@ export const AccentText = styled(m.div)`
     color: ${({ theme }) => theme.palette.base};
     user-select: none;
     height: min-content;
+    text-shadow: -4px -4px 40px rgba(206, 206, 206, 0.25);
 `;
 
 export const SpacedNum = styled(m.span)`
