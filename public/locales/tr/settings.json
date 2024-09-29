@@ -17,7 +17,8 @@
   },
   "tabs": {
     "general": "Genel",
-    "experimental": "Deneysel"
+    "experimental": "Deneysel",
+    "mining": "Madencilik"
   },
   "monero-address": {
     "title": "Monero Adresi",

@@ -10,6 +10,7 @@
     "changing-mode": "Изменение режима",
     "cancel-mining": "Отмена майнинга",
     "waiting-for-idle": "Ожидание простоя",
-    "started-auto-mining": "Авто-майнинг запущен"
+    "started-auto-mining": "Авто-майнинг запущен",
+    "stop-mining": "Остановить майнинг"
   }
 }

@@ -10,6 +10,7 @@
     "changing-mode": "モードを変更中",
     "cancel-mining": "マイニングをキャンセル",
     "waiting-for-idle": "アイドル待機中",
-    "started-auto-mining": "自動マイニング開始"
+    "started-auto-mining": "自動マイニング開始",
+    "stop-mining": "マイニングを停止"
   }
 }

@@ -10,6 +10,7 @@
     "changing-mode": "Mengubah mode",
     "cancel-mining": "Batalkan Penambangan",
     "waiting-for-idle": "Menunggu Tidak Aktif",
-    "started-auto-mining": "Penambangan Otomatis Dimulai"
+    "started-auto-mining": "Penambangan Otomatis Dimulai",
+    "stop-mining": "Hentikan Penambangan"
   }
 }

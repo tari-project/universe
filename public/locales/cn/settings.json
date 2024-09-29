@@ -16,7 +16,8 @@
   },
   "tabs": {
     "general": "常规",
-    "experimental": "实验性"
+    "experimental": "实验性",
+    "mining": "挖矿"
   },
   "monero-address": {
     "title": "Monero 地址",
