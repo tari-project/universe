@@ -8,7 +8,7 @@ export enum Language {
     PL = 'pl',
     AF = 'af',
     TR = 'tr',
-    CN = 'cn',   // Chinese, folder is 'cn'
+    CN = 'cn', // Chinese, folder is 'cn'
     HI = 'hi',
     ID = 'id',
     JA = 'ja',
@@ -49,7 +49,7 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
         case 'zh-MO':
         case 'zh-SG':
         case 'zh-TW':
-            return Language.CN;  // Map to 'cn' folder
+            return Language.CN; // Map to 'cn' folder
         case 'hi':
         case 'hi-IN':
             return Language.HI;
@@ -76,12 +76,12 @@ export const LanguageList: Record<Language, string> = {
     [Language.PL]: 'Polski',
     [Language.AF]: 'Afrikaans',
     [Language.TR]: 'Türkçe',
-    [Language.CN]: '简体中文',  // Simplified Chinese
-    [Language.HI]: 'हिन्दी',   // Hindi
+    [Language.CN]: '简体中文', // Simplified Chinese
+    [Language.HI]: 'हिन्दी', // Hindi
     [Language.ID]: 'Bahasa Indonesia',
-    [Language.JA]: '日本語',     // Japanese
-    [Language.KO]: '한국어',     // Korean
-    [Language.RU]: 'Русский',  // Russian
+    [Language.JA]: '日本語', // Japanese
+    [Language.KO]: '한국어', // Korean
+    [Language.RU]: 'Русский', // Russian
 };
 
 // Initialize i18n with new supported languages
@@ -96,10 +96,16 @@ i18n.use(HttpBackend)
             loadPath: '/locales/{{lng}}/{{ns}}.json',
         },
         supportedLngs: [
-            Language.EN, Language.PL, Language.AF, Language.TR, 
-            Language.CN, Language.HI, Language.ID, 
-            Language.JA, Language.KO, Language.RU
+            Language.EN,
+            Language.PL,
+            Language.AF,
+            Language.TR,
+            Language.CN,
+            Language.HI,
+            Language.ID,
+            Language.JA,
+            Language.KO,
+            Language.RU,
         ],
         saveMissingTo: 'all',
     });
-
