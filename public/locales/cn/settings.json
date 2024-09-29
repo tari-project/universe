@@ -47,5 +47,11 @@
   "connected-to-tari": "Connected to the Tari Network",
   "not-connected-to-tari": "Not connected to the Tari Network",
   "connected-peers": "Connected Peers",
-  "should-use-system-language": "Use system language"
+  "should-use-system-language": "Use system language",
+  "send-logs": "发送日志",
+  "your-feedback": "请描述您的问题",
+  "feedback-required": "反馈是必需的",
+  "your-reference": "您的参考",
+  "gpu-unavailable": "⚠️ GPU已禁用，因为您的硬件不支持",
+  "mining-toggle-warning": "更改生效时，挖矿将暂停。"
 }

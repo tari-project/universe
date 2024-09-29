@@ -1,13 +1,29 @@
 {
-    "loginButton": "Mücevherleri talep etmek için giriş yapın",
-    "logout": "Çıkış",
-    "referral": "Arkadaşlarını davet et",
-    "permissionNoGems": {
-        "title": "Tari Universe'ü daha iyi hale getirin",
-        "text": "Tari Universe, deneyiminizi iyileştirmek için analizleri kullanmak ister."
-    },
-    "permission": {
-        "title": "Mücevherler kazanın ve Tari Universe'ü daha iyi hale getirin",
-        "text": "Tari Universe, deneyiminizi iyileştirmek ve sizi madencilik için mücevherlerle ödüllendirmek için analizleri kullanmak istiyor."
-    }
+  "loginButton": "Mücevherleri talep etmek için giriş yapın",
+  "logout": "Çıkış",
+  "referral": "Arkadaşlarını davet et",
+  "permissionNoGems": {
+    "title": "Tari Universe'ü daha iyi hale getirin",
+    "text": "Tari Universe, deneyiminizi iyileştirmek için analizleri kullanmak ister."
+  },
+  "permission": {
+    "title": "Mücevherler kazanın ve Tari Universe'ü daha iyi hale getirin",
+    "text": "Tari Universe, deneyiminizi iyileştirmek ve sizi madencilik için mücevherlerle ödüllendirmek için analizleri kullanmak istiyor."
+  },
+  "airdropGame": "Airdrop Oyunu",
+  "unclaimedGems": "Talep Edilmemiş Taşlar",
+  "inviteFirends": "Arkadaşları Davet Et",
+  "invitedAmount": "<span>{{count}}</span> arkadaş davet ettiniz",
+  "nextTierBonus": "<strong>{{count}} arkadaş</strong> davet et ve {{bonusGems}} bonus taş kazan",
+  "claimGems": "Taşları Talep Et",
+  "doLater": "Bunu daha sonra yapacağım",
+  "linkCopied": "Bağlantı kopyalandı!",
+  "giftReferralCodeHeader": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
+  "claimReferralCode": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
+  "claimReferralGifts": "Referans kodunuzu talep edin ve {{gems}} taş kazanın. Hesabınızı bağladığınızda taşlarınız verilecektir.",
+  "giftReferralCode": "Tari Universe\"e davet ettiğiniz her arkadaş için {{gems}} taş kazanın. Onlar hesaplarını bağladığında taşlarınız verilecektir.",
+  "claimModalTitle": "Testnet\"te Madencilik Yaparak Ödüller Kazanın",
+  "claimModalText": "Testnet sırasında madencilik yaparak ve arkadaşlarınızı davet ederek airdrop ödülünüzü artırın! Bir referans kodunuz var mı? Aşağıya girin ve siz ve arkadaşınız için ek <strong>{{gems}}</strong> taş kazanın!",
+  "claimModalFieldLabel": "İsteğe Bağlı",
+  "claimModalFieldPlaceholder": "Referans kodunu girin"
 }

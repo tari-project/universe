@@ -1,0 +1,10 @@
+{
+  "setting-up": "Настройка машины правды Tari...",
+  "this-might-take-a-few-minutes": "Это может занять несколько минут",
+  "dont-worry": "Не волнуйтесь, в следующий раз это займет меньше времени",
+  "title": "Просмотр команды",
+  "new-tari-version-available": "Доступна новая версия Tari Universe!",
+  "would-you-like-to-install": "Хотите установить Tari Universe {{version}} сейчас?",
+  "yes": "Да",
+  "no": "Нет"
+}
