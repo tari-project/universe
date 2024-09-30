@@ -99,7 +99,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                         <LayoutGroup id="characters">{charMarkup}</LayoutGroup>
                     </CharacterWrapper>
                 </SpinnerWrapper>
-                <m.span layout>tXTM</m.span>
+                {value === '-' ? null : <m.span layout>tXTM</m.span>}
             </LayoutGroup>
         </Wrapper>
     );

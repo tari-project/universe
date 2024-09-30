@@ -70,7 +70,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             if (isMining && !metrics.base_node?.is_connected && getState().base_node?.is_connected) {
                 setAnimationState('pause');
             } else if (isMining && metrics.base_node?.is_connected && !getState().base_node?.is_connected) {
-                setAnimationState('start');
+                setAnimationState('resume');
             }
 
             const { displayBlockHeight, setDisplayBlockHeight } = useBlockchainVisualisationStore.getState();
@@ -95,7 +95,6 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
         try {
             await invoke('start_mining', {});
-            console.info('Mining started');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error(e);
@@ -108,7 +107,6 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         set({ miningInitiated: false });
         try {
             await invoke('stop_mining', {});
-            console.info('Mining stopped');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error(e);
@@ -141,8 +139,6 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             if (state.miningInitiated) {
                 await state.startMining();
             }
-            console.info(`Mode changed to ${mode}`);
-            set({ isChangingMode: false });
         } catch (e) {
             console.error(e);
             set({ isChangingMode: false });
