@@ -23,51 +23,51 @@ appenders:
   # An appender named "web" that writes to a file with a custom pattern encoder
   web:
     kind: rolling_file
-    path: "{{log_dir}}/universe/universe-web.log"
+    path: "{{log_dir}}/universe/log/universe-web.log"
     policy:
       kind: compound
       trigger:
         kind: size
-        limit: 10mb
+        limit: 2mb
       roller:
         kind: fixed_window
         base: 1
         count: 5
-        pattern: "{{log_dir}}/universe/universe-web.{}.log"
+        pattern: "{{log_dir}}/universe/log/universe-web.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m}{n} "
 
   # An appender named "base_layer" that writes to a file with a custom pattern encoder
   default:
     kind: rolling_file
-    path: "{{log_dir}}/universe/universe.log"
+    path: "{{log_dir}}/universe/log/universe.log"
     policy:
       kind: compound
       trigger:
         kind: size
-        limit: 10mb
+        limit: 2mb
       roller:
         kind: fixed_window
         base: 1
         count: 5
-        pattern: "{{log_dir}}/universe/universe.{}.log"
+        pattern: "{{log_dir}}/universe/log/universe.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
 
   # An appender named "other" that writes to a file with a custom pattern encoder
   other:
     kind: rolling_file
-    path: "{{log_dir}}/universe/other.log"
+    path: "{{log_dir}}/universe/log/other.log"
     policy:
       kind: compound
       trigger:
         kind: size
-        limit: 10mb
+        limit: 2mb
       roller:
         kind: fixed_window
         base: 1
         count: 5
-        pattern: "{{log_dir}}/universe/other.{}.log"
+        pattern: "{{log_dir}}/universe/log/other.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m}{n} // {f}:{L} "
 
