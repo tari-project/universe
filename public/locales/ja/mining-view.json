@@ -1,0 +1,16 @@
+{
+  "floor": "フロア",
+  "current-block-time": "現在のブロック時間",
+  "your-reward-is": "あなたの報酬は",
+  "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",
+  "mining-button-text": {
+    "starting-mining": "マイニング開始",
+    "start-mining": "マイニングを開始",
+    "pause-mining": "マイニングを一時停止",
+    "changing-mode": "モードを変更中",
+    "cancel-mining": "マイニングをキャンセル",
+    "waiting-for-idle": "アイドル待機中",
+    "started-auto-mining": "自動マイニング開始",
+    "stop-mining": "マイニングを停止"
+  }
+}

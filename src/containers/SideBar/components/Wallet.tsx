@@ -17,7 +17,7 @@ function Wallet() {
     const [showBalance, setShowBalance] = useState(true);
 
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
-
+    const displayValue = balance && balance > 0 ? (showBalance ? formatted : '*****') : '-';
     return (
         <WalletContainer>
             <Handle />
@@ -35,7 +35,7 @@ function Wallet() {
                     </BalanceVisibilityButton>
                 </Stack>
                 <WalletBalance>
-                    <CharSpinner value={showBalance ? formatted : '*****'} variant="simple" fontSize={sizing} />
+                    <CharSpinner value={displayValue} variant="simple" fontSize={sizing} />
                 </WalletBalance>
             </WalletBalanceContainer>
         </WalletContainer>
