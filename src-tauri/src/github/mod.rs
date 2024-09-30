@@ -21,6 +21,12 @@ struct Asset {
     browser_download_url: String,
 }
 
+#[derive(Debug)]
+enum ReleaseSource {
+    Github,
+    Mirror,
+}
+
 pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
     format!(
         "https://api.github.com/repos/{}/{}/releases",
@@ -28,7 +34,7 @@ pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
     )
 }
 
-pub fn get_cdn_url(repo_owner: &str, repo_name: &str) -> String {
+pub fn get_mirror_url(repo_owner: &str, repo_name: &str) -> String {
     format!(
         "https://leet-local.tarilabs.com/{}/{}/releases/api.json",
         repo_owner, repo_name
@@ -42,7 +48,7 @@ pub fn get_gh_download_url(repo_owner: &str, repo_name: &str) -> String {
     )
 }
 
-pub fn get_cdn_download_url(repo_owner: &str, repo_name: &str) -> String {
+pub fn get_mirror_download_url(repo_owner: &str, repo_name: &str) -> String {
     format!(
         "https://leet-local.tarilabs.com/{}/{}/releases/download",
         repo_owner, repo_name
@@ -53,8 +59,24 @@ pub async fn list_releases(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
+    let releases = list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await;
+    if !releases.as_ref().map_or(false, |r| !r.is_empty()) {
+        list_releases_from(ReleaseSource::Github, repo_owner, repo_name).await
+    } else {
+        releases
+    }
+}
+
+async fn list_releases_from(
+    source: ReleaseSource,
+    repo_owner: &str,
+    repo_name: &str,
+) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let client = Client::new();
-    let url = get_cdn_url(repo_owner, repo_name);
+    let url = match source {
+        ReleaseSource::Github => get_gh_url(repo_owner, repo_name),
+        ReleaseSource::Mirror => get_mirror_url(repo_owner, repo_name),
+    };
 
     let response = client
         .get(&url)
@@ -88,10 +110,13 @@ pub async fn list_releases(
         // res.push(semver::Version::parse(&tag_name)?);
         let mut assets = vec![];
         for asset in release.assets {
-            let url = asset.browser_download_url.replace(
-                &get_gh_download_url(repo_owner, repo_name),
-                &get_cdn_download_url(repo_owner, repo_name),
-            );
+            let url = match source {
+                ReleaseSource::Mirror => asset.browser_download_url.replace(
+                    &get_gh_download_url(repo_owner, repo_name),
+                    &get_mirror_download_url(repo_owner, repo_name),
+                ),
+                ReleaseSource::Github => asset.browser_download_url,
+            };
             assets.push(VersionAsset {
                 url,
                 name: asset.name,
