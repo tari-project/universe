@@ -13,20 +13,20 @@ interface MoneroAddressEditorProps {
     onApply: (newAddress: string) => Promise<void>;
 }
 
-const StyledStack = styled(Stack)(() => ({
-    width: '100%',
-}));
+const StyledStack = styled(Stack)`
+    width: 100%;
+`;
 
-const StyledInput = styled(Input)(() => ({
-    padding: '8px',
-    fontSize: '12px',
-}));
+const StyledInput = styled(Input)`
+    padding: 8px;
+    font-size: 12px;
+`;
 
-const StyledForm = styled('form')(() => ({
-    width: '100%',
+const StyledForm = styled.form`
+    width: 100%;
     // Reserve space for error message
-    minHeight: '53px',
-}));
+    min-height: 53px;
+`;
 
 const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorProps) => {
     const {
@@ -75,7 +75,10 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
                             message: 'Invalid Monero address format',
                         },
                     }}
-                    render={({ field }) => <StyledInput type="text" {...field} hasError={!!errors.address} />}
+                    render={({ field }) => {
+                        const { ref: _ref, ...rest } = field;
+                        return <StyledInput type="text" hasError={!!errors.address} {...rest} />;
+                    }}
                 />
                 {address !== initialAddress ? (
                     <>
