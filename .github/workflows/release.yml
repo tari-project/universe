@@ -67,7 +67,7 @@ jobs:
       - name: Set environment variables for beta builds
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          BETA_STRING: "-beta"
+          BETA_STRING: " -beta-"
         shell: bash
         run: |
           #set -xueo pipefail
@@ -81,9 +81,12 @@ jobs:
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".package.productName += \"${{ env.BETA_STRING }}\"" -i tauri.conf.json
           yq eval ".package.version += \"-${BETA_DATE}\"" -i tauri.conf.json
-          yq eval ".tauri.updater.active = false" -i tauri.conf.json
+          yq eval ".tauri.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
+            -i tauri.conf.json
+          cat tauri.conf.json
           sed -i.bak -E "s/^version\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"/version = \"\1-${BETA_DATE}\"/" \
             Cargo.toml
+          cat Cargo.toml
 
       - name: Node.js setup
         uses: actions/setup-node@v4
