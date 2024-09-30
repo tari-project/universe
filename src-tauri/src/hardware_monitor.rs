@@ -274,6 +274,11 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             .filter(|c| c.label().contains("k10temp Tctl"))
             .collect();
 
+        /*
+         * TODO if the following PR is merged
+         * https://github.com/tari-project/universe/pull/612
+         * use `exlcude gpu device` to not disable not available devices
+         */
         let available_cpu_components = if amd_cpu_component.is_empty() {
             intel_cpu_component
         } else {
@@ -444,6 +449,11 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             / gpu_components.len() as f32;
         //TODO: Implement GPU usage for MacOS
         let usage = system.global_cpu_usage();
+        /*
+         * TODO if the following PR is merged
+         * https://github.com/tari-project/universe/pull/612
+         * use names from json file
+         */
         let label: String = system.cpus().first().unwrap().brand().to_string() + " GPU";
 
         match current_parameters {

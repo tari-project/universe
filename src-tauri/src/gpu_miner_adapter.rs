@@ -35,12 +35,15 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) coinbase_extra: String,
 }
 
-#[derive(serde::Deserialize)]
-pub struct GpuStatusFromFile {
-    #[serde(default = "default_num_devices")]
-    num_devices: u32,
-    #[serde(default = "default_device_names")]
-    device_names: Vec<String>,
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct GpuStatus {
+    pub device_name: String,
+    pub is_available: bool,
+}
+
+#[derive(serde::Deserialize, serde::Serialize, Debug)]
+pub struct GpuStatusFile {
+    pub gpu_devices: Vec<GpuStatus>,
 }
 
 impl GpuMinerAdapter {
@@ -226,18 +229,19 @@ impl StatusMonitor for GpuMinerStatusMonitor {
 
     async fn status(&self) -> Result<Self::Status, anyhow::Error> {
         let client = reqwest::Client::new();
-        let config_path = PathBuf::from("/home/oski/.config/com.tari.universe/"); //TODO use app config path
+        let config_path = PathBuf::from(""); //TODO add app config_path
         let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
 
-        println!("GPU STATUS FILE: {:?}", file);
         if file.exists() {
             let config = fs::read_to_string(&file).unwrap();
-            match serde_json::from_str::<GpuStatusFromFile>(&config) {
+            match serde_json::from_str::<GpuStatusFile>(&config) {
+                /*
+                 * TODO if the following PR is merged
+                 * https://github.com/tari-project/universe/pull/612
+                 * use `exlcude gpu device` to not disable not available devices
+                 */
                 Ok(config) => {
-                    println!(
-                        "GPU STATUS FILE: {:?} - {:?}",
-                        config.num_devices, config.device_names
-                    );
+                    println!("GPU STATUS FILE: {:?}", config.gpu_devices);
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
@@ -306,12 +310,4 @@ pub struct GpuMinerStatus {
     pub hash_rate: u64,
     pub estimated_earnings: u64,
     pub is_available: bool,
-}
-
-fn default_num_devices() -> u32 {
-    0
-}
-
-fn default_device_names() -> Vec<String> {
-    vec![]
 }
