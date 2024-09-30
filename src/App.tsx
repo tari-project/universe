@@ -18,8 +18,25 @@ import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorD
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 
+const disableRefresh = () => {
+    if (process.env.NODE_ENV === 'development') {
+        return;
+    }
+    document.addEventListener('keydown', function (event) {
+        // Prevent F5 or Ctrl+R (Windows/Linux) and Command+R (Mac) from refreshing the page
+        if (event.key === 'F5' || (event.ctrlKey && event.key === 'r') || (event.metaKey && event.key === 'r')) {
+            event.preventDefault();
+        }
+    });
+
+    document.addEventListener('contextmenu', function (event) {
+        event.preventDefault();
+    });
+};
+
 export default function App() {
     useLangaugeResolver();
+    disableRefresh();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
