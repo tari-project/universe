@@ -3,7 +3,7 @@ name = "tari-universe"
 authors = ["The Tari Development Community"]
 description = "Tari Universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.4.5"
+version = "0.4.6"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -89,6 +89,7 @@ sys-locale = "0.3.1"
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
 airdrop-local = []
+airdrop-env = []
 
 [package.metadata.cargo-machete]
 ignored = [

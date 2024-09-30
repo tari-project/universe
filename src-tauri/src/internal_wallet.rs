@@ -88,7 +88,7 @@ impl InternalWallet {
                 }
                 Err(_) => {
                     let passphrase = SafePassword::from(generate_password(32));
-                    entry.delete_credential()?;
+                    let _unused = entry.delete_credential();
                     entry.set_password(&String::from_utf8(passphrase.reveal().clone())?)?;
                     passphrase
                 }

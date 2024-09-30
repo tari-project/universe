@@ -1,0 +1,16 @@
+{
+  "floor": "Batas Bawah",
+  "current-block-time": "Waktu blok saat ini",
+  "your-reward-is": "Hadiah Anda adalah",
+  "connection-to-node-lost": "Koneksi ke penambang terputus. Harap tunggu penambang untuk menyambung kembali atau mulai ulang penambang.",
+  "mining-button-text": {
+    "starting-mining": "Memulai Penambangan",
+    "start-mining": "Mulai Menambang",
+    "pause-mining": "Jeda Penambangan",
+    "changing-mode": "Mengubah mode",
+    "cancel-mining": "Batalkan Penambangan",
+    "waiting-for-idle": "Menunggu Tidak Aktif",
+    "started-auto-mining": "Penambangan Otomatis Dimulai",
+    "stop-mining": "Hentikan Penambangan"
+  }
+}
