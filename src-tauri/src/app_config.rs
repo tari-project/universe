@@ -325,6 +325,7 @@ impl AppConfig {
             has_system_language_been_proposed: self.has_system_language_been_proposed,
             should_always_use_system_language: self.should_always_use_system_language,
             application_language: self.application_language.clone(),
+            airdrop_ui_enabled: self.airdrop_ui_enabled,
             ..default_config
         };
         let config = serde_json::to_string(config)?;

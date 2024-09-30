@@ -19,7 +19,7 @@ export default function LoggedOut() {
             if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
                 setAuthUuid(token);
                 open(
-                    `${backendInMemoryConfig?.airdropTwitterAuthUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
+                    `${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
                 );
             }
         },
