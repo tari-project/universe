@@ -1,20 +1,22 @@
+import { useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { IoClose } from 'react-icons/io5';
+
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
-import SettingsNavigation from '@app/containers/Settings/components/Navigation.tsx';
-import { useState } from 'react';
-import { MiningSettings } from '@app/containers/Settings/MiningSettings.tsx';
-import { AnimatePresence } from 'framer-motion';
-import { GeneralSettings } from '@app/containers/Settings/GeneralSettings.tsx';
-import { ExperimentalSettings } from '@app/containers/Settings/ExperimentalSettings.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
-import { IoClose } from 'react-icons/io5';
 import { IconButton } from '@app/components/elements/Button.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
-export const SETTINGS_TYPES = ['mining', 'general', 'experimental'] as const;
-type SettingsTuple = typeof SETTINGS_TYPES;
-export type SettingsType = SettingsTuple[number];
+import SettingsNavigation from './components/Navigation.tsx';
+
+import { MiningSettings } from './MiningSettings.tsx';
+import { GeneralSettings } from './GeneralSettings.tsx';
+import { ExperimentalSettings } from './ExperimentalSettings.tsx';
+import { WalletSettings } from './WalletSettings.tsx';
+
+import { SettingsType } from './types.ts';
+import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
 
 export default function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -25,6 +27,7 @@ export default function SettingsModal() {
 
     const miningMarkup = activeSection === 'mining' ? <MiningSettings /> : null;
     const generalMarkup = activeSection === 'general' ? <GeneralSettings /> : null;
+    const walletMarkup = activeSection === 'wallet' ? <WalletSettings /> : null;
     const experimentalMarkup = activeSection === 'experimental' ? <ExperimentalSettings /> : null;
 
     function onOpenChange() {
@@ -51,6 +54,7 @@ export default function SettingsModal() {
                             <SectionWrapper variants={variants} key={activeSection}>
                                 {miningMarkup}
                                 {generalMarkup}
+                                {walletMarkup}
                                 {experimentalMarkup}
                             </SectionWrapper>
                         </AnimatePresence>

@@ -8,7 +8,6 @@ import { useUIStore } from './store/useUIStore.ts';
 import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
-import AirdropLogin from './containers/Airdrop/AirdropLogin/AirdropLogin.tsx';
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
 import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
@@ -58,7 +57,6 @@ export default function App() {
                     <CriticalErrorDialog />
                     <SettingsModal />
                     <LayoutGroup id="app-content">
-                        <AirdropLogin />
                         <SplashScreen />
                         {shutDownMarkup}
                         {!visualMode || view != 'mining' ? (

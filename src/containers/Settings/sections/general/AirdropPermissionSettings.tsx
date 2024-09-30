@@ -1,6 +1,5 @@
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useCallback } from 'react';
 import {
@@ -13,7 +12,7 @@ import {
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 export default function AirdropPermissionSettings() {
-    const wipUI = useAirdropStore((state) => state.wipUI);
+    const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
@@ -27,9 +26,11 @@ export default function AirdropPermissionSettings() {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{t(wipUI ? 'permission.title' : 'permissionNoGems.title')}</Typography>
+                        <Typography variant="h6">
+                            {t(airdropUIEnabled ? 'permission.title' : 'permissionNoGems.title')}
+                        </Typography>
                     </SettingsGroupTitle>
-                    <Typography>{t(wipUI ? 'permission.text' : 'permissionNoGems.text')}</Typography>
+                    <Typography>{t(airdropUIEnabled ? 'permission.text' : 'permissionNoGems.text')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch checked={allowTelemetry} onChange={handleChange} />
