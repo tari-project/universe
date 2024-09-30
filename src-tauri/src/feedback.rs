@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Result,Error,anyhow};
 use log::{error, info};
 use regex::Regex;
 use reqwest::multipart;
@@ -38,7 +38,7 @@ impl Feedback {
         &self,
         archive_file: &Path,
         directory: &Path,
-    ) -> zip::result::ZipResult<File> {
+    ) -> Result<zip::result::ZipResult<File>, Error> {
         let file_options = SimpleFileOptions::default();
 
         let file = File::create(archive_file)?;
@@ -47,16 +47,25 @@ impl Feedback {
         paths_queue.push(directory.to_path_buf().clone());
 
         let mut buffer = Vec::new();
-        let log_regex_filter = Regex::new(r"^(.*[0-9]+\.log|.*\.zip)$").unwrap();
+        let log_regex_filter = match Regex::new(r"^(.*[0-9]+\.log|.*\.zip)$") {
+            Ok(regex) => regex,
+            Err(e) => {
+                return Err(anyhow::anyhow!("Failed to create log file filter: {}", e));
+            }
+        };
         while let Some(next) = paths_queue.pop() {
             let directory_entry_iterator = std::fs::read_dir(next)?;
 
             for entry in directory_entry_iterator {
                 let entry_path = entry?.path();
                 let entry_metadata = std::fs::metadata(entry_path.clone())?;
-
+                let entry_file_name_as_str = entry_path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?;
+                
                 if entry_metadata.is_file()
-                    && !log_regex_filter.is_match(entry_path.file_name().unwrap().to_str().unwrap())
+                    && !log_regex_filter.is_match(entry_file_name_as_str)
                 {
                     let mut f = File::open(&entry_path)?;
                     f.read_to_end(&mut buffer)?;
@@ -74,7 +83,7 @@ impl Feedback {
             }
         }
 
-        zip.finish()
+        Ok(zip.finish())
     }
 
     async fn archive_path(&self, logs_dir: &Path) -> Result<(PathBuf, String)> {
