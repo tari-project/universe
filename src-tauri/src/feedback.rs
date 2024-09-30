@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result};
 use log::{error, info};
 use regex::Regex;
 use reqwest::multipart;
@@ -88,7 +88,8 @@ impl Feedback {
         let config = self.config.read().await;
         let zip_filename = format!("logs_{}.zip", config.anon_id());
         let archive_file = logs_dir.join(zip_filename.clone());
-        self.zip_create_from_directory(&archive_file, logs_dir)
+        let _unused = self
+            .zip_create_from_directory(&archive_file, logs_dir)
             .await?;
         Ok((archive_file.to_path_buf(), zip_filename))
     }
@@ -116,7 +117,8 @@ impl Feedback {
         let upload_zip_path = if include_logs {
             let logs_dir = &app_log_dir.ok_or(anyhow::anyhow!("Missing log directory"))?;
             let (archive_file, zip_filename) = self.archive_path(logs_dir).await?;
-            self.zip_create_from_directory(&archive_file, logs_dir)
+            let _unused = self
+                .zip_create_from_directory(&archive_file, logs_dir)
                 .await?;
             let metadata = std::fs::metadata(&archive_file)?;
             let file_size = metadata.len();

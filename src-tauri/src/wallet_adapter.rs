@@ -41,6 +41,7 @@ impl WalletAdapter {
 impl ProcessAdapter for WalletAdapter {
     type StatusMonitor = WalletStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,

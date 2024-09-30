@@ -80,7 +80,7 @@ impl ProcessInstance {
         let handle = self.handle.take();
         match handle {
             Some(handle_inner) => handle_inner.await?,
-            None => return Err(anyhow!("Handle is not present")),
+            None => Err(anyhow!("Handle is not present")),
         }
     }
 }

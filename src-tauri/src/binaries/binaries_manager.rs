@@ -139,7 +139,7 @@ impl BinaryManager {
 
         if in_progress_folder.exists() {
             info!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
-            std::fs::remove_dir_all(&in_progress_folder).map_err(| error | {
+            let _unused = std::fs::remove_dir_all(&in_progress_folder).map_err(| error | {
                 error!(target: LOG_TARGET,"Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
             });
         }
@@ -240,7 +240,7 @@ impl BinaryManager {
         match version {
             None => {
                 warn!(target: LOG_TARGET,"No version selected");
-                return false;
+                false
             }
             Some(version) => {
                 info!(target: LOG_TARGET,"Selected version: {:?}", version);
@@ -302,6 +302,7 @@ impl BinaryManager {
         self.online_versions_list.reverse();
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
@@ -312,7 +313,7 @@ impl BinaryManager {
         match selected_version {
             None => {
                 warn!(target: LOG_TARGET,"No version selected");
-                return Err(anyhow!("No version selected"));
+                Err(anyhow!("No version selected"))
             }
             Some(version) => {
                 let asset = match self.get_asset_for_selected_version(version.clone()) {
@@ -339,11 +340,11 @@ impl BinaryManager {
                 // extract will fail, so we need to remove all files from destination dir
                 if destination_dir.exists() {
                     warn!(target: LOG_TARGET,"Destination dir exists. Removing all files from: {:?}", destination_dir);
-                    std::fs::remove_dir_all(&destination_dir).map_err(|error| {
+                    let _unused = std::fs::remove_dir_all(&destination_dir).map_err(|error| {
                         error!(target: LOG_TARGET,"Error removing all files from destination dir: {:?}. Error: {:?}", destination_dir, error);
                     });
                     info!(target: LOG_TARGET,"Creating destination dir: {:?}", destination_dir);
-                    std::fs::create_dir_all(&destination_dir).map_err(|error| {
+                    let _unused = std::fs::create_dir_all(&destination_dir).map_err(|error| {
                         error!(target: LOG_TARGET,"Error creating destination dir: {:?}. Error: {:?}", destination_dir, error);
                     });
                 }
@@ -375,8 +376,8 @@ impl BinaryManager {
                         extract(&in_progress_file_zip.clone(), &destination_dir)
                             .await.map_err(|error| {
                                 error!(target: LOG_TARGET,"Error extracting version: {:?}. Error: {:?}", version.clone(), error);
-                                return error;
-                            });
+                                error
+                            })?;
 
                         if self.should_validate_checksum {
                             info!(target: LOG_TARGET,"Validating checksum for version: {:?}", version.clone());
@@ -396,7 +397,7 @@ impl BinaryManager {
                                 Ok(checksum_file) => checksum_file,
                                 Err(e) => {
                                     error!(target: LOG_TARGET,"Error downloading checksum file for version: {:?}. Error: {:?}", version.clone(), e);
-                                    std::fs::remove_dir_all(destination_dir.clone()).map_err(
+                                    let _unused = std::fs::remove_dir_all(destination_dir.clone()).map_err(
                                         |error| {
                                             error!(target: LOG_TARGET,"Error removing destination dir: {:?}. Error: {:?}", destination_dir, error);
                                         },
@@ -418,7 +419,7 @@ impl BinaryManager {
                                 }
                                 Err(e) => {
                                     error!(target: LOG_TARGET,"Error validating checksum for version: {:?}. Error: {:?}", version.clone(), e);
-                                    std::fs::remove_dir_all(destination_dir.clone()).map_err(
+                                    let _unused = std::fs::remove_dir_all(destination_dir.clone()).map_err(
                                         |error| {
                                             error!(target: LOG_TARGET,"Error removing destination dir: {:?}. Error: {:?}", destination_dir, error);
                                         },

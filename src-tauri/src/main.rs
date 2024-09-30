@@ -1,7 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use anyhow::anyhow;
 use log::trace;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -745,6 +744,7 @@ async fn get_seed_words(
     Ok(res)
 }
 
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 async fn start_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
@@ -1226,30 +1226,28 @@ async fn reset_settings<'r>(
         folder_block_list.push("nextnet");
     }
 
-    for dir in &dirs_to_remove {
-        if let Some(dir_path) = dir {
-            if dir_path.exists() {
-                for entry in read_dir(dir_path).map_err(|e| e.to_string())? {
-                    let entry = entry.map_err(|e| e.to_string())?;
-                    let path = entry.path();
-                    if path.is_dir() {
-                        if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
-                            if folder_block_list.contains(&file_name) {
-                                continue;
-                            }
+    for dir_path in dirs_to_remove.iter().flatten() {
+        if dir_path.exists() {
+            for entry in read_dir(dir_path).map_err(|e| e.to_string())? {
+                let entry = entry.map_err(|e| e.to_string())?;
+                let path = entry.path();
+                if path.is_dir() {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                        if folder_block_list.contains(&file_name) {
+                            continue;
                         }
-                        debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
-                        remove_dir_all(path.clone()).map_err(|e| {
+                    }
+                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
+                    remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
                         format!("Could not remove directory: {}", e)
                     })?;
-                    } else {
-                        debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
-                        remove_file(path.clone()).map_err(|e| {
+                } else {
+                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
+                    remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
                         format!("Could not remove file: {}", e)
                     })?;
-                    }
                 }
             }
         }

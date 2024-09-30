@@ -216,7 +216,7 @@ impl BinaryResolver {
             highest_version = manager.select_highest_version();
             manager
                 .download_selected_version(highest_version.clone(), progress_tracker.clone())
-                .await;
+                .await?;
         }
 
         // Check if the files exist after download
@@ -225,7 +225,7 @@ impl BinaryResolver {
         if !check_if_files_exist {
             manager
                 .download_selected_version(highest_version.clone(), progress_tracker.clone())
-                .await;
+                .await?;
         }
 
         // Throw error if files still do not exist
@@ -266,7 +266,7 @@ impl BinaryResolver {
         if !check_if_files_exist {
             manager
                 .download_selected_version(highest_version.clone(), progress_tracker.clone())
-                .await;
+                .await?;
         }
 
         let check_if_files_exist =

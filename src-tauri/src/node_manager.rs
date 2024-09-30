@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
 
-use anyhow::anyhow;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::error;
 use minotari_node_grpc_client::grpc::Peer;

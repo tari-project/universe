@@ -43,6 +43,7 @@ impl MinotariNodeAdapter {
 impl ProcessAdapter for MinotariNodeAdapter {
     type StatusMonitor = MinotariNodeStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
