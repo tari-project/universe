@@ -70,7 +70,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             if (isMining && !metrics.base_node?.is_connected && getState().base_node?.is_connected) {
                 setAnimationState('pause');
             } else if (isMining && metrics.base_node?.is_connected && !getState().base_node?.is_connected) {
-                setAnimationState('resume');
+                setAnimationState('start');
             }
 
             const { displayBlockHeight, setDisplayBlockHeight } = useBlockchainVisualisationStore.getState();

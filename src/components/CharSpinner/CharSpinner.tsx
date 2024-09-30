@@ -51,16 +51,17 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                     $variant={variant}
                 >
                     {isDec ? (
-                        <Character $decimal={isDec} $letterWidth={letterWidth} $fontSize={fontSize}>
+                        <Character $decimal $letterWidth={letterWidth} $fontSize={fontSize}>
                             {char}
                         </Character>
                     ) : (
                         <Character
+                            $unit
                             key={`${i}-${char}`}
                             layout-id={`${i}-${char}`}
                             $letterWidth={letterWidth}
                             $fontSize={fontSize - 8}
-                            style={{ marginTop: '2px' }}
+                            style={{ marginTop: '4px' }}
                         >
                             {char}
                         </Character>
