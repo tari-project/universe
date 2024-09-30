@@ -10,7 +10,9 @@ use log::{debug, error, info, warn};
 use opencl3::device::Device;
 use opencl3::platform::get_platforms;
 
+use log4rs::config::RawConfig;
 use regex::Regex;
+use sentry_tauri;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -27,6 +29,7 @@ use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tor_adapter::TorConfig;
+use utils::logging_utils::setup_logging;
 use wallet_adapter::TransactionInfo;
 
 use app_config::AppConfig;
@@ -2054,19 +2057,23 @@ fn main() {
         }))
         .manage(app_state.clone())
         .setup(|app| {
-            // TODO: Combine with sentry log
-            tari_common::initialize_logging(
+            let contents = setup_logging(
                 &app.path_resolver()
                     .app_config_dir()
                     .expect("Could not get config dir")
+                    .join("logs")
                     .join("universe")
+                    .join("configs")
                     .join("log4rs_config_universe.yml"),
                 &app.path_resolver()
                     .app_log_dir()
                     .expect("Could not get log dir"),
-                include_str!("../log4rs_sample.yml"),
+                include_str!("../log4rs/universe_sample.yml"),
             )
             .expect("Could not set up logging");
+            let config: RawConfig = serde_yaml::from_str(&contents)
+                .expect("Could not parse the contents of the log file as yaml");
+            log4rs::init_raw_config(config).expect("Could not initialize logging");
 
             let config_path = app
                 .path_resolver()
