@@ -5,7 +5,7 @@ import { invoke } from '@tauri-apps/api';
 interface State extends WalletBalance {
     tari_address_base58: string;
     tari_address_emoji: string;
-    balance: number;
+    balance: number | null;
 }
 
 interface Actions {
@@ -17,7 +17,7 @@ type WalletStoreState = State & Actions;
 const initialState: State = {
     tari_address_base58: '',
     tari_address_emoji: '',
-    balance: 0,
+    balance: null,
     available_balance: 0,
     timelocked_balance: 0,
     pending_incoming_balance: 0,
@@ -33,7 +33,7 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
                 timelocked_balance = 0,
                 pending_incoming_balance = 0,
             } = tari_wallet_details.wallet_balance || {};
-            // Q: Should we substract pending_outgoing_balance here?
+            // Q: Should we subtract pending_outgoing_balance here?
             const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
             set({
                 ...tari_wallet_details.wallet_balance,
