@@ -45,10 +45,10 @@ export function useSetUp() {
                 case 'setup_status':
                     setSetupDetails(p.title, p.title_params, p.progress);
                     if (p.progress >= 1) {
-                        setView('mining');
-                        setAnimationState('showVisual');
                         settingUpFinished();
                         fetchApplicationsVersionsWithRetry();
+                        setView('mining');
+                        setAnimationState('showVisual');
                     }
                     break;
                 default:
