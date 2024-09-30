@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use anyhow::anyhow;
 use log::trace;
 use log::{debug, error, info, warn};
 use serde::Serialize;
@@ -370,9 +371,9 @@ async fn setup_inner(
         )
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
-    let data_dir = app.path_resolver().app_local_data_dir().unwrap();
-    let config_dir = app.path_resolver().app_config_dir().unwrap();
-    let log_dir = app.path_resolver().app_log_dir().unwrap();
+    let data_dir = app.path_resolver().app_local_data_dir().expect("Could not get data dir");
+    let config_dir = app.path_resolver().app_config_dir().expect("Could not get config dir");
+    let log_dir = app.path_resolver().app_log_dir().expect("Could not get log dir");
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
@@ -552,9 +553,9 @@ async fn setup_inner(
             .ensure_started(
                 state.shutdown.to_signal(),
                 p2pool_config,
-                data_dir,
-                config_dir,
-                log_dir,
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
             )
             .await?;
     }
@@ -581,9 +582,9 @@ async fn setup_inner(
     mm_proxy_manager
         .start(StartConfig::new(
             state.shutdown.to_signal().clone(),
-            app.path_resolver().app_local_data_dir().unwrap().clone(),
-            app.path_resolver().app_config_dir().unwrap().clone(),
-            app.path_resolver().app_log_dir().unwrap().clone(),
+            data_dir.clone(),
+            config_dir.clone(),
+            log_dir.clone(),
             cpu_miner_config.tari_address.clone(),
             base_node_grpc_port,
             telemetry_id,
@@ -627,28 +628,32 @@ async fn set_p2pool_enabled(
 
     let origin_config = state.mm_proxy_manager.config().await;
     let p2pool_grpc_port = state.p2pool_manager.grpc_port().await;
-    if origin_config.is_none() {
-        warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
-        return Ok(());
-    }
-    let mut origin_config = origin_config.clone().unwrap();
-    if origin_config.p2pool_enabled != p2pool_enabled {
-        if p2pool_enabled {
-            origin_config.set_to_use_p2pool(p2pool_grpc_port);
-        } else {
-            let base_node_grpc_port = state
-                .node_manager
-                .get_grpc_port()
-                .await
-                .map_err(|error| error.to_string())?;
-            origin_config.set_to_use_base_node(base_node_grpc_port);
-        };
-        state
-            .mm_proxy_manager
-            .change_config(origin_config)
-            .await
-            .map_err(|error| error.to_string())?;
-    }
+
+    match origin_config {
+        None => {
+            warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
+            return Ok(());
+        },
+        Some(mut origin_config) => {
+            if origin_config.p2pool_enabled != p2pool_enabled {
+                if p2pool_enabled {
+                    origin_config.set_to_use_p2pool(p2pool_grpc_port);
+                } else {
+                    let base_node_grpc_port = state
+                        .node_manager
+                        .get_grpc_port()
+                        .await
+                        .map_err(|error| error.to_string())?;
+                    origin_config.set_to_use_base_node(base_node_grpc_port);
+                };
+                state
+                    .mm_proxy_manager
+                    .change_config(origin_config)
+                    .await
+                    .map_err(|error| error.to_string())?;
+            }
+        }
+    };
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
@@ -706,7 +711,7 @@ async fn get_seed_words(
     app: tauri::AppHandle,
 ) -> Result<Vec<String>, String> {
     let timer = Instant::now();
-    let config_path = app.path_resolver().app_config_dir().unwrap();
+    let config_path = app.path_resolver().app_config_dir().expect("Could not get config dir");
     let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
         .map_err(|e| e.to_string())?;
@@ -715,7 +720,12 @@ async fn get_seed_words(
         .map_err(|e| e.to_string())?;
     let mut res = vec![];
     for i in 0..seed_words.len() {
-        res.push(seed_words.get_word(i).unwrap().clone());
+        match seed_words.get_word(i) {
+            Ok(word) => res.push(word.clone()),
+            Err(error) => {
+                error!(target: LOG_TARGET, "Could not get seed word: {:?}", error);
+            },
+        }
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
@@ -752,9 +762,9 @@ async fn start_mining<'r>(
                 &cpu_miner_config,
                 monero_address.to_string(),
                 mm_proxy_port,
-                app.path_resolver().app_local_data_dir().unwrap(),
-                app.path_resolver().app_config_dir().unwrap(),
-                app.path_resolver().app_log_dir().unwrap(),
+                app.path_resolver().app_local_data_dir().expect("Could not get data dir"),
+                app.path_resolver().app_config_dir().expect("Could not get config dir"),
+                app.path_resolver().app_log_dir().expect("Could not get log dir"),
                 mode,
             )
             .await;
@@ -810,9 +820,9 @@ async fn start_mining<'r>(
                 state.shutdown.to_signal(),
                 tari_address,
                 source,
-                app.path_resolver().app_local_data_dir().unwrap(),
-                app.path_resolver().app_config_dir().unwrap(),
-                app.path_resolver().app_log_dir().unwrap(),
+                app.path_resolver().app_local_data_dir().expect("Could not get data dir"),
+                app.path_resolver().app_config_dir().expect("Could not get config dir"),
+                app.path_resolver().app_log_dir().expect("Could not get log dir"),
                 mode,
                 telemetry_id,
             )
@@ -860,7 +870,7 @@ async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<()
 
 #[tauri::command]
 fn open_log_dir(app: tauri::AppHandle) {
-    let log_dir = app.path_resolver().app_log_dir().unwrap();
+    let log_dir = app.path_resolver().app_log_dir().expect("Could not get log dir");
     if let Err(e) = open::that(log_dir) {
         error!(target: LOG_TARGET, "Could not open log dir: {:?}", e);
     }
@@ -931,7 +941,7 @@ async fn update_applications(
         )
         .map_err(|e| e.to_string())?;
 
-    let progress_tracker = ProgressTracker::new(app.get_window("main").unwrap().clone());
+    let progress_tracker = ProgressTracker::new(app.get_window("main").expect("Could not get main window").clone());
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
         .await
@@ -1162,11 +1172,16 @@ async fn reset_settings<'r>(
         app_data_dir,
         app_local_data_dir,
     ];
-    let missing_dirs: Vec<String> = dirs_to_remove
-        .iter()
-        .filter(|dir| dir.is_none())
-        .map(|dir| dir.clone().unwrap().to_str().unwrap().to_string())
-        .collect();
+let missing_dirs: Vec<String> = dirs_to_remove
+    .iter()
+    .filter_map(|dir| {
+        if let Some(path) = dir {
+            path.to_str().map(|s| s.to_string())
+        } else {
+            None
+        }
+    })
+    .collect();
 
     if !missing_dirs.is_empty() {
         error!(target: LOG_TARGET, "Could not get app directories for {:?}", missing_dirs);
@@ -1180,15 +1195,17 @@ async fn reset_settings<'r>(
         folder_block_list.push("nextnet");
     }
 
-    for dir in &dirs_to_remove {
-        // check if dir exists
-        if dir.clone().unwrap().exists() {
-            for entry in read_dir(dir.clone().unwrap()).map_err(|e| e.to_string())? {
+for dir in &dirs_to_remove {
+    if let Some(dir_path) = dir {
+        if dir_path.exists() {
+            for entry in read_dir(dir_path).map_err(|e| e.to_string())? {
                 let entry = entry.map_err(|e| e.to_string())?;
                 let path = entry.path();
                 if path.is_dir() {
-                    if folder_block_list.contains(&path.file_name().unwrap().to_str().unwrap()) {
-                        continue;
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                        if folder_block_list.contains(&file_name) {
+                            continue;
+                        }
                     }
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
                     remove_dir_all(path.clone()).map_err(|e| {
@@ -1205,7 +1222,7 @@ async fn reset_settings<'r>(
             }
         }
     }
-
+}
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 
@@ -1397,34 +1414,36 @@ fn main() {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
             app.emit_all("single-instance", Payload { args: argv, cwd })
-                .unwrap();
+                .unwrap_or_else(
+                    |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e)
+                );
         }))
         .manage(app_state.clone())
         .setup(|app| {
             tari_common::initialize_logging(
                 &app.path_resolver()
                     .app_config_dir()
-                    .unwrap()
+                    .expect("Could not get config dir")
                     .join("universe")
                     .join("log4rs_config_universe.yml"),
-                &app.path_resolver().app_log_dir().unwrap(),
+                &app.path_resolver().app_log_dir().expect("Could not get log dir"),
                 include_str!("../log4rs_sample.yml"),
             )
             .expect("Could not set up logging");
 
-            let config_path = app.path_resolver().app_config_dir().unwrap();
+            let config_path = app.path_resolver().app_config_dir().expect("Could not get config dir");
             let thread_config = tauri::async_runtime::spawn(async move {
                 app_config.write().await.load_or_create(config_path).await
             });
 
-            match tauri::async_runtime::block_on(thread_config).unwrap() {
+            match tauri::async_runtime::block_on(thread_config) {
                 Ok(_) => {}
                 Err(e) => {
                     error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
                 }
             };
 
-            let config_path = app.path_resolver().app_config_dir().unwrap();
+            let config_path = app.path_resolver().app_config_dir().expect("Could not get config dir");
             let address = app.state::<UniverseAppState>().tari_address.clone();
             let thread = tauri::async_runtime::spawn(async move {
                 match InternalWallet::load_or_create(config_path).await {

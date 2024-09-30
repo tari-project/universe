@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{info, warn};
 use tari_shutdown::Shutdown;
@@ -78,7 +78,10 @@ impl ProcessInstance {
     pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
-        handle.unwrap().await?
+        match handle {
+            Some(handle_inner) => handle_inner.await?,
+            None => return Err(anyhow!("Handle is not present")),
+        }
     }
 }
 
@@ -87,9 +90,9 @@ impl Drop for ProcessInstance {
         self.shutdown.trigger();
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
-                let _ = handle.await.unwrap().map_err(|e| {
+                if let Err(e) = handle.await {
                     warn!(target: LOG_TARGET, "Error in Process Adapter: {}", e);
-                });
+                }
             });
         }
     }

@@ -75,9 +75,12 @@ impl ProcessAdapter for GpuMinerAdapter {
             return Err(anyhow!("GpuMinerAdapter node_source is not set"));
         }
 
-        let tari_node_port = match self.node_source.as_ref().unwrap() {
-            GpuNodeSource::BaseNode { port } => port,
-            GpuNodeSource::P2Pool { port } => port,
+        let tari_node_port = match self.node_source.as_ref() {
+            Some(GpuNodeSource::BaseNode { port }) => port,
+            Some(GpuNodeSource::P2Pool { port }) => port,
+            None => {
+                return Err(anyhow!("GpuMinerAdapter node_source is not set"));
+            }
         };
 
         let mut args: Vec<String> = vec![
