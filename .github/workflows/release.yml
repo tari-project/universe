@@ -87,9 +87,16 @@ jobs:
 
       - name: Set environment variables for RELEASE builds
         if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        env:
+          AIRDROP_BASE_URL: ${{ secrets.AIRDROP_BASE_URL }}
+          AIRDROP_API_BASE_URL: ${{ secrets.AIRDROP_API_BASE_URL }}
+          AIRDROP_TWITTER_AUTH_URL: ${{ secrets.AIRDROP_TWITTER_AUTH_URL }}
         shell: bash
         run: |
           #set -xueo pipefail
+          echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_TWITTER_AUTH_URL=${{ env.AIRDROP_TWITTER_AUTH_URL }}" >> $GITHUB_ENV
           # Setup tauri action envs
           echo "tagName=v__VERSION__" >> $GITHUB_ENV
           echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
