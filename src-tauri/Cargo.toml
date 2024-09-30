@@ -90,6 +90,7 @@ sys-locale = "0.3.1"
 custom-protocol = ["tauri/custom-protocol"]
 airdrop-local = []
 airdrop-env = []
+release-ci = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
 ignored = [

@@ -83,6 +83,11 @@ const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::main";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
+#[cfg(feature = "release-ci")]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
+#[cfg(not(feature = "release-ci"))]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UpdateProgressRustEvent {
