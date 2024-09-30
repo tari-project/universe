@@ -4,7 +4,6 @@ import { setAnimationState } from '@app/visuals';
 import { useEffect } from 'react';
 
 export const useUiMiningStateMachine = () => {
-    const setIsChangingMode = useMiningStore((s) => s.setIsChangingMode);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningStore((s) => s.cpu.mining.is_mining);
@@ -17,9 +16,8 @@ export const useUiMiningStateMachine = () => {
     useEffect(() => {
         if (isMining) {
             setAnimationState('start');
-            setIsChangingMode(false);
         }
-    }, [isMining, statusIndex, setIsChangingMode]);
+    }, [isMining, statusIndex]);
 
     useEffect(() => {
         if (isSetupFinished && !isMiningInitiated && !isMining && !isChangingMode) {
@@ -29,7 +27,7 @@ export const useUiMiningStateMachine = () => {
 
     useEffect(() => {
         if (isMining && isChangingMode) {
-            setAnimationState('pause');
+            setAnimationState('stop');
         }
     }, [isMining, statusIndex, isChangingMode]);
 };
