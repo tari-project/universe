@@ -104,15 +104,12 @@ impl GpuMiner {
                 dbg!(&status);
                 Ok(status)
             }
-            None => {
-                dbg!(&self.is_available);
-                Ok(GpuMinerStatus {
-                    hash_rate: 0,
-                    estimated_earnings: 0,
-                    is_mining: false,
-                    is_available: self.is_available,
-                })
-            }
+            None => Ok(GpuMinerStatus {
+                hash_rate: 0,
+                estimated_earnings: 0,
+                is_mining: false,
+                is_available: self.is_available,
+            }),
         }
     }
 
@@ -126,6 +123,12 @@ impl GpuMiner {
             config_dir
                 .join("gpuminer")
                 .join("config.json")
+                .to_string_lossy()
+                .to_string(),
+            "--gpu-status-file".to_string(),
+            config_dir
+                .join("gpuminer")
+                .join("gpu_status.json")
                 .to_string_lossy()
                 .to_string(),
         ];
