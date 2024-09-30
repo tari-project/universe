@@ -44,12 +44,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: beta builds - Install dependencies (windows) [yq]
-        if: ${{ ( startsWith(runner.os,'Windows') ) && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        if: ${{  startsWith(runner.os,'Windows')  }}
         run: |
           choco upgrade yq -y
 
       - name: beta builds - Install dependencies (linux) [yq]
-        if: ${{ ( startsWith(runner.os,'Linux') ) && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        if: ${{  startsWith(runner.os,'Linux')  }}
         shell: bash
         run: |
           sudo bash ./scripts/check-get-yq.sh
