@@ -85,13 +85,15 @@ impl ProcessAdapter for XmrigAdapter {
         let xmrig_log_file_parent = match xmrig_log_file.parent() {
             Some(parent) => parent,
             None => {
-                return Err(anyhow::anyhow!("Could not get parent directory of xmrig log file"));
+                return Err(anyhow::anyhow!(
+                    "Could not get parent directory of xmrig log file"
+                ));
             }
         };
         match xmrig_log_file.to_str() {
             Some(log_file) => {
                 args.push(format!("--log-file={}", &log_file));
-            },
+            }
             None => {
                 warn!(target: LOG_TARGET, "Could not convert xmrig log file path to string");
                 warn!(target: LOG_TARGET, "Logs argument will not be added to xmrig");
@@ -101,7 +103,6 @@ impl ProcessAdapter for XmrigAdapter {
         std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(| error | {
             warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {}", error);
         });
-
 
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));

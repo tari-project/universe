@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::{Result,Error,anyhow};
+use anyhow::{anyhow, Error, Result};
 use log::{error, info};
 use regex::Regex;
 use reqwest::multipart;
@@ -63,10 +63,8 @@ impl Feedback {
                     .file_name()
                     .and_then(|name| name.to_str())
                     .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?;
-                
-                if entry_metadata.is_file()
-                    && !log_regex_filter.is_match(entry_file_name_as_str)
-                {
+
+                if entry_metadata.is_file() && !log_regex_filter.is_match(entry_file_name_as_str) {
                     let mut f = File::open(&entry_path)?;
                     f.read_to_end(&mut buffer)?;
                     let relative_path = make_relative_path(directory, &entry_path);

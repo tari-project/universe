@@ -56,7 +56,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
         let working_dir: PathBuf = data_dir.join("node");
         std::fs::create_dir_all(&working_dir)?;
 
-
         let working_dir_string = match working_dir.to_str() {
             Some(str) => str.to_string(),
             None => {
@@ -69,7 +68,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             None => {
                 return Err(anyhow!("Could not convert log_dir to string"));
             }
-        };        
+        };
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
@@ -236,9 +235,9 @@ impl MinotariNodeStatusMonitor {
         let reward = match res.miner_data {
             Some(miner_data) => miner_data.reward,
             None => {
-                return Err(MinotariNodeStatusMonitorError::UnknownError(
-                    anyhow!("No miner data found"),
-                ));
+                return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
+                    "No miner data found"
+                )));
             }
         };
 
@@ -250,9 +249,9 @@ impl MinotariNodeStatusMonitor {
         let metadata = match res.metadata {
             Some(metadata) => metadata,
             None => {
-                return Err(MinotariNodeStatusMonitorError::UnknownError(
-                    anyhow!("No metadata found"),
-                ));
+                return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
+                    "No metadata found"
+                )));
             }
         };
         let (sync_achieved, block_height, _hash, block_time) = (

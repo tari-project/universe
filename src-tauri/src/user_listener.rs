@@ -1,5 +1,5 @@
 use device_query::{DeviceQuery, DeviceState};
-use log::{info,error};
+use log::{error, info};
 use tokio::time::{sleep, Duration};
 use tokio_util::sync::CancellationToken;
 
@@ -108,7 +108,7 @@ impl UserListener {
                 self.is_listening = false;
             }
             None => {
-                info!(target: LOG_TARGET, 
+                info!(target: LOG_TARGET,
                     "UserListener::triggered cancelation of listening for user inactivity but no cancelation token was found"
                 );
             }
@@ -124,11 +124,9 @@ impl UserListener {
                     event_type: "user_idle".to_string(),
                 },
             )
-            .unwrap_or_else(
-                |e| {
-                    error!(target: LOG_TARGET,"Error emitting user_idle event: {}", e);
-                },
-            );
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET,"Error emitting user_idle event: {}", e);
+            });
     }
 
     pub fn on_user_active(window: &tauri::Window) {
@@ -140,11 +138,9 @@ impl UserListener {
                     event_type: "user_active".to_string(),
                 },
             )
-            .unwrap_or_else(
-                |e| {
-                    error!(target: LOG_TARGET,"Error emitting user_active event: {}", e);
-                },
-            );
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET,"Error emitting user_active event: {}", e);
+            });
     }
 
     pub fn emit_current_timeout_duration(window: &tauri::Window, timeout: Duration) {
@@ -156,7 +152,7 @@ impl UserListener {
                     duration: timeout.as_secs(),
                 },
             )
-            .unwrap_or_else(|e | {
+            .unwrap_or_else(|e| {
                 error!(target: LOG_TARGET,"Error emitting current_timeout_duration event: {}", e);
             });
     }

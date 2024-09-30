@@ -212,7 +212,9 @@ impl TelemetryManager {
         let mut hasher = Blake2bVar::new(20).expect("Failed to create hasher");
         hasher.update(anon_id.as_bytes());
         let mut buf = [0u8; 20];
-        hasher.finalize_variable(&mut buf).expect("Failed to finalize hasher variable");
+        hasher
+            .finalize_variable(&mut buf)
+            .expect("Failed to finalize hasher variable");
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
         let unique_string = format!("v2,{},{}", buf.to_base58(), version,);

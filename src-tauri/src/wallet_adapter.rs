@@ -59,14 +59,14 @@ impl ProcessAdapter for WalletAdapter {
             Some(str) => str.to_string(),
             None => {
                 return Err(anyhow!("Could not convert working directory to string"));
-            },
+            }
         };
 
         let formatted_log_dir = match log_dir.to_str() {
             Some(str) => str.to_string(),
             None => {
                 return Err(anyhow!("Could not convert log directory to string"));
-            },
+            }
         };
 
         let mut args: Vec<String> = vec![

@@ -371,9 +371,18 @@ async fn setup_inner(
         )
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
-    let data_dir = app.path_resolver().app_local_data_dir().expect("Could not get data dir");
-    let config_dir = app.path_resolver().app_config_dir().expect("Could not get config dir");
-    let log_dir = app.path_resolver().app_log_dir().expect("Could not get log dir");
+    let data_dir = app
+        .path_resolver()
+        .app_local_data_dir()
+        .expect("Could not get data dir");
+    let config_dir = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let log_dir = app
+        .path_resolver()
+        .app_log_dir()
+        .expect("Could not get log dir");
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
@@ -633,7 +642,7 @@ async fn set_p2pool_enabled(
         None => {
             warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
             return Ok(());
-        },
+        }
         Some(mut origin_config) => {
             if origin_config.p2pool_enabled != p2pool_enabled {
                 if p2pool_enabled {
@@ -711,7 +720,10 @@ async fn get_seed_words(
     app: tauri::AppHandle,
 ) -> Result<Vec<String>, String> {
     let timer = Instant::now();
-    let config_path = app.path_resolver().app_config_dir().expect("Could not get config dir");
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
     let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
         .map_err(|e| e.to_string())?;
@@ -724,7 +736,7 @@ async fn get_seed_words(
             Ok(word) => res.push(word.clone()),
             Err(error) => {
                 error!(target: LOG_TARGET, "Could not get seed word: {:?}", error);
-            },
+            }
         }
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -762,9 +774,15 @@ async fn start_mining<'r>(
                 &cpu_miner_config,
                 monero_address.to_string(),
                 mm_proxy_port,
-                app.path_resolver().app_local_data_dir().expect("Could not get data dir"),
-                app.path_resolver().app_config_dir().expect("Could not get config dir"),
-                app.path_resolver().app_log_dir().expect("Could not get log dir"),
+                app.path_resolver()
+                    .app_local_data_dir()
+                    .expect("Could not get data dir"),
+                app.path_resolver()
+                    .app_config_dir()
+                    .expect("Could not get config dir"),
+                app.path_resolver()
+                    .app_log_dir()
+                    .expect("Could not get log dir"),
                 mode,
             )
             .await;
@@ -820,9 +838,15 @@ async fn start_mining<'r>(
                 state.shutdown.to_signal(),
                 tari_address,
                 source,
-                app.path_resolver().app_local_data_dir().expect("Could not get data dir"),
-                app.path_resolver().app_config_dir().expect("Could not get config dir"),
-                app.path_resolver().app_log_dir().expect("Could not get log dir"),
+                app.path_resolver()
+                    .app_local_data_dir()
+                    .expect("Could not get data dir"),
+                app.path_resolver()
+                    .app_config_dir()
+                    .expect("Could not get config dir"),
+                app.path_resolver()
+                    .app_log_dir()
+                    .expect("Could not get log dir"),
                 mode,
                 telemetry_id,
             )
@@ -870,7 +894,10 @@ async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<()
 
 #[tauri::command]
 fn open_log_dir(app: tauri::AppHandle) {
-    let log_dir = app.path_resolver().app_log_dir().expect("Could not get log dir");
+    let log_dir = app
+        .path_resolver()
+        .app_log_dir()
+        .expect("Could not get log dir");
     if let Err(e) = open::that(log_dir) {
         error!(target: LOG_TARGET, "Could not open log dir: {:?}", e);
     }
@@ -941,7 +968,11 @@ async fn update_applications(
         )
         .map_err(|e| e.to_string())?;
 
-    let progress_tracker = ProgressTracker::new(app.get_window("main").expect("Could not get main window").clone());
+    let progress_tracker = ProgressTracker::new(
+        app.get_window("main")
+            .expect("Could not get main window")
+            .clone(),
+    );
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
         .await
@@ -1172,16 +1203,16 @@ async fn reset_settings<'r>(
         app_data_dir,
         app_local_data_dir,
     ];
-let missing_dirs: Vec<String> = dirs_to_remove
-    .iter()
-    .filter_map(|dir| {
-        if let Some(path) = dir {
-            path.to_str().map(|s| s.to_string())
-        } else {
-            None
-        }
-    })
-    .collect();
+    let missing_dirs: Vec<String> = dirs_to_remove
+        .iter()
+        .filter_map(|dir| {
+            if let Some(path) = dir {
+                path.to_str().map(|s| s.to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
 
     if !missing_dirs.is_empty() {
         error!(target: LOG_TARGET, "Could not get app directories for {:?}", missing_dirs);
@@ -1195,34 +1226,34 @@ let missing_dirs: Vec<String> = dirs_to_remove
         folder_block_list.push("nextnet");
     }
 
-for dir in &dirs_to_remove {
-    if let Some(dir_path) = dir {
-        if dir_path.exists() {
-            for entry in read_dir(dir_path).map_err(|e| e.to_string())? {
-                let entry = entry.map_err(|e| e.to_string())?;
-                let path = entry.path();
-                if path.is_dir() {
-                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
-                        if folder_block_list.contains(&file_name) {
-                            continue;
+    for dir in &dirs_to_remove {
+        if let Some(dir_path) = dir {
+            if dir_path.exists() {
+                for entry in read_dir(dir_path).map_err(|e| e.to_string())? {
+                    let entry = entry.map_err(|e| e.to_string())?;
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                            if folder_block_list.contains(&file_name) {
+                                continue;
+                            }
                         }
-                    }
-                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
-                    remove_dir_all(path.clone()).map_err(|e| {
+                        debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
+                        remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
                         format!("Could not remove directory: {}", e)
                     })?;
-                } else {
-                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
-                    remove_file(path.clone()).map_err(|e| {
+                    } else {
+                        debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
+                        remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
                         format!("Could not remove file: {}", e)
                     })?;
+                    }
                 }
             }
         }
     }
-}
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 
@@ -1415,7 +1446,7 @@ fn main() {
 
             app.emit_all("single-instance", Payload { args: argv, cwd })
                 .unwrap_or_else(
-                    |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e)
+                    |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e),
                 );
         }))
         .manage(app_state.clone())
@@ -1426,12 +1457,17 @@ fn main() {
                     .expect("Could not get config dir")
                     .join("universe")
                     .join("log4rs_config_universe.yml"),
-                &app.path_resolver().app_log_dir().expect("Could not get log dir"),
+                &app.path_resolver()
+                    .app_log_dir()
+                    .expect("Could not get log dir"),
                 include_str!("../log4rs_sample.yml"),
             )
             .expect("Could not set up logging");
 
-            let config_path = app.path_resolver().app_config_dir().expect("Could not get config dir");
+            let config_path = app
+                .path_resolver()
+                .app_config_dir()
+                .expect("Could not get config dir");
             let thread_config = tauri::async_runtime::spawn(async move {
                 app_config.write().await.load_or_create(config_path).await
             });
@@ -1443,7 +1479,10 @@ fn main() {
                 }
             };
 
-            let config_path = app.path_resolver().app_config_dir().expect("Could not get config dir");
+            let config_path = app
+                .path_resolver()
+                .app_config_dir()
+                .expect("Could not get config dir");
             let address = app.state::<UniverseAppState>().tari_address.clone();
             let thread = tauri::async_runtime::spawn(async move {
                 match InternalWallet::load_or_create(config_path).await {

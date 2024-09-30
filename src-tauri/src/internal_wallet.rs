@@ -44,8 +44,10 @@ impl InternalWallet {
         let file_parent = match file.parent() {
             Some(parent) => parent,
             None => {
-                return Err(anyhow!("Failed to get parent directory of wallet config file"));
-            },
+                return Err(anyhow!(
+                    "Failed to get parent directory of wallet config file"
+                ));
+            }
         };
 
         create_dir_all(file_parent).unwrap_or_else(|error| {
