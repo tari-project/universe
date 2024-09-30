@@ -1329,17 +1329,8 @@ fn main() {
         tari_address: TariAddress::default(),
     }));
 
-    let app_in_memory_config = if cfg!(feature = "airdrop-local") {
-        Arc::new(RwLock::new(
-            app_in_memory_config::AppInMemoryConfig::init_local(),
-        ))
-    } else if cfg!(feature = "airdrop-env") {
-        Arc::new(RwLock::new(
-            app_in_memory_config::AppInMemoryConfig::init_env(),
-        ))
-    } else {
-        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()))
-    };
+    let app_in_memory_config =
+        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
