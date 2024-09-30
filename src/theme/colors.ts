@@ -35,7 +35,7 @@ const info = {
 const warning = {
     100: '#FFEED3',
     200: '#D18A18',
-    300: '#442F0C',
+    300: '#9d6303',
 };
 
 const error = {

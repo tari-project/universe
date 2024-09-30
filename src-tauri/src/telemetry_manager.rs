@@ -1,3 +1,12 @@
+use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::p2pool_manager::{self, P2poolManager};
+use crate::{
+    app_config::{AppConfig, MiningMode},
+    cpu_miner::CpuMiner,
+    gpu_miner::GpuMiner,
+    hardware_monitor::HardwareMonitor,
+    node_manager::NodeManager,
+};
 use anyhow::Result;
 use blake2::digest::Update;
 use blake2::digest::VariableOutput;
@@ -15,15 +24,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_utilities::encoding::Base58;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
-
-use crate::app_in_memory_config::AppInMemoryConfig;
-use crate::{
-    app_config::{AppConfig, MiningMode},
-    cpu_miner::CpuMiner,
-    gpu_miner::GpuMiner,
-    hardware_monitor::HardwareMonitor,
-    node_manager::NodeManager,
-};
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
@@ -58,6 +58,7 @@ pub enum TelemetryResource {
     Gpu,
     #[serde(rename(serialize = "cpu-gpu"))]
     CpuGpu,
+    None,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -159,6 +160,11 @@ pub struct TelemetryData {
     pub gpu_make: Option<String>,
     pub mode: TelemetryMiningMode,
     pub version: String,
+    pub p2pool_enabled: bool,
+    pub cpu_tribe_name: Option<String>,
+    pub cpu_tribe_id: Option<String>,
+    pub gpu_tribe_name: Option<String>,
+    pub gpu_tribe_id: Option<String>,
 }
 
 pub struct TelemetryManager {
@@ -169,6 +175,7 @@ pub struct TelemetryManager {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     pub cancellation_token: CancellationToken,
     node_network: Option<Network>,
+    p2pool_manager: P2poolManager,
 }
 
 impl TelemetryManager {
@@ -179,6 +186,7 @@ impl TelemetryManager {
         config: Arc<RwLock<AppConfig>>,
         in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         network: Option<Network>,
+        p2pool_manager: P2poolManager,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
         Self {
@@ -189,6 +197,7 @@ impl TelemetryManager {
             cancellation_token,
             node_network: network,
             in_memory_config,
+            p2pool_manager,
         }
     }
 
@@ -243,6 +252,7 @@ impl TelemetryManager {
         let network = self.node_network;
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
+        let p2pool_manager_cloned = self.p2pool_manager.clone();
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
@@ -251,7 +261,7 @@ impl TelemetryManager {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
-                            let telemetry_data = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
+                            let telemetry_data = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), p2pool_manager_cloned.clone(), config.clone(), network).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, window.clone()).await;
                         }
@@ -305,6 +315,7 @@ async fn get_telemetry_data(
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     node_manager: NodeManager,
+    p2pool_manager: p2pool_manager::P2poolManager,
     config: Arc<RwLock<AppConfig>>,
     network: Option<Network>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
@@ -336,6 +347,8 @@ async fn get_telemetry_data(
         .await
         .read_hardware_parameters();
 
+    let p2pool_stats = p2pool_manager.stats().await;
+
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
     let cpu_hash_rate = Some(cpu.hash_rate);
@@ -345,6 +358,29 @@ async fn get_telemetry_data(
     let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
     let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
     let version = env!("CARGO_PKG_VERSION").to_string();
+    let gpu_mining_used =
+        config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
+    let cpu_resource_used =
+        config_guard.cpu_mining_enabled() && cpu_make.is_some() && cpu_hash_rate.is_some();
+    let resource_used = match (gpu_mining_used, cpu_resource_used) {
+        (true, true) => TelemetryResource::CpuGpu,
+        (true, false) => TelemetryResource::Gpu,
+        (false, true) => TelemetryResource::Cpu,
+        (false, false) => TelemetryResource::None,
+    };
+
+    let p2pool_gpu_stats_sha3 = p2pool_stats.get("sha3").map(|stats| stats.squad.clone());
+    let p2pool_cpu_stats_randomx = p2pool_stats.get("randomx").map(|stats| stats.squad.clone());
+    let p2pool_enabled =
+        config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
+    let cpu_tribe_name = p2pool_cpu_stats_randomx
+        .clone()
+        .map(|tribe| tribe.name.clone());
+    let cpu_tribe_id = p2pool_cpu_stats_randomx.map(|tribe| tribe.id.clone());
+    let gpu_tribe_name = p2pool_gpu_stats_sha3
+        .clone()
+        .map(|tribe| tribe.name.clone());
+    let gpu_tribe_id = p2pool_gpu_stats_sha3.map(|tribe| tribe.id.clone());
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
@@ -358,8 +394,13 @@ async fn get_telemetry_data(
         gpu_make,
         gpu_hash_rate,
         gpu_utilization,
-        resource_used: TelemetryResource::Cpu,
+        resource_used,
         version,
+        p2pool_enabled,
+        cpu_tribe_name,
+        cpu_tribe_id,
+        gpu_tribe_name,
+        gpu_tribe_id,
     })
 }
 

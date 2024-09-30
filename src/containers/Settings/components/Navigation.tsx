@@ -1,6 +1,6 @@
 import { Container, SectionButton } from './Navigation.styles.ts';
 
-import { SETTINGS_TYPES, SettingsType } from '@app/containers/Settings/SettingsModal.tsx';
+import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 
 interface SettingsNavigationProps {
     activeSection: SettingsType;

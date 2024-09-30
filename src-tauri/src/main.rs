@@ -83,6 +83,11 @@ const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::main";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
+#[cfg(feature = "release-ci")]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
+#[cfg(not(feature = "release-ci"))]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UpdateProgressRustEvent {
@@ -473,7 +478,7 @@ async fn setup_inner(
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
-    let _ = state
+    let _unused = state
         .gpu_miner
         .write()
         .await
@@ -1329,13 +1334,8 @@ fn main() {
         tari_address: TariAddress::default(),
     }));
 
-    let app_in_memory_config = if cfg!(feature = "airdrop-local") {
-        Arc::new(RwLock::new(
-            app_in_memory_config::AppInMemoryConfig::init_local(),
-        ))
-    } else {
-        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()))
-    };
+    let app_in_memory_config =
+        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
@@ -1350,6 +1350,7 @@ fn main() {
         app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
+        p2pool_manager.clone(),
     );
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
@@ -1450,7 +1451,7 @@ fn main() {
                 }
             });
 
-            match tauri::async_runtime::block_on(thread).unwrap() {
+            match tauri::async_runtime::block_on(thread).expect("Could not start task") {
                 Ok(_) => {
                     // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
                     // *lock = address;
@@ -1505,11 +1506,6 @@ fn main() {
         app.package_info().version
     );
 
-    println!(
-        "Logs stored at {:?}",
-        app.path_resolver().app_log_dir().unwrap()
-    );
-
     let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
         tauri::RunEvent::Updater(updater_event) => match updater_event {
@@ -1518,8 +1514,10 @@ fn main() {
             }
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
-                let window = _app_handle.get_window("main").unwrap();
-                drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }));
+                if let Some(window) = _app_handle.get_window("main") {
+                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
+                    );
+                }
             }
             UpdaterEvent::Downloaded => {
                 shutdown.trigger();

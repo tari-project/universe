@@ -1,12 +1,12 @@
 import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useTheme } from 'styled-components';
 import { useRef } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
 export function Ruler() {
     const theme = useTheme();
-    const height = useMiningStore((s) => s.displayBlockHeight);
+    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
 
     const columnRef = useRef<HTMLDivElement>(null);
 
