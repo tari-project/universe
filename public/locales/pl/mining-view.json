@@ -6,10 +6,11 @@
   "mining-button-text": {
     "starting-mining": "Uruchamianie kopania",
     "start-mining": "Uruchom kopanie",
-    "stop-mining": "Wstrzymaj kopanie",
+    "pause-mining": "Wstrzymaj kopanie",
     "changing-mode": "Zmiana trybu",
     "cancel-mining": "Anuluj kopanie",
     "waiting-for-idle": "Oczekiwanie na bezczynność",
-    "started-auto-mining": "Automatyczne kopanie uruchomione"
+    "started-auto-mining": "Automatyczne kopanie uruchomione",
+    "stop-mining": "Zatrzymaj kopanie"
   }
 }

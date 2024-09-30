@@ -1,0 +1,28 @@
+{
+  "setting-up": "Menyiapkan mesin kebenaran Tari...",
+  "this-might-take-a-few-minutes": "Ini mungkin memakan waktu beberapa menit",
+  "dont-worry": "Jangan khawatir, lain kali tidak akan memakan waktu lama",
+  "title": {
+    "starting-mmproxy": "Memulai proxy penambangan gabungan",
+    "starting-p2pool": "Memulai P2Pool",
+    "application-started": "Aplikasi dimulai",
+    "preparing-for-initial-sync": "Menghubungkan ke rekan jaringan {{initial_connected_peers}}/{{required_peers}}",
+    "starting-up": "Memulai",
+    "checking-latest-version-node": "Memeriksa versi terbaru dari node",
+    "waiting-for-node": "Menunggu node untuk sinkronisasi",
+    "waiting-for-block-sync": "Menunggu sinkronisasi blok. {{local_height}}/{{tip_height}} blok tersinkronisasi",
+    "checking-latest-version-xmrig": "Memeriksa versi terbaru dari xmrig",
+    "checking-latest-version-mmproxy": "Memeriksa versi terbaru dari mmproxy",
+    "download-completed": "Unduhan selesai",
+    "checking-latest-version-sha-p2pool": "Memeriksa versi terbaru dari sha-p2pool",
+    "checking-latest-version-wallet": "Memeriksa versi terbaru dari dompet",
+    "waiting-for-wallet": "Menunggu dompet",
+    "downloading": "Mengunduh",
+    "waiting-for-header-sync": "Menunggu sinkronisasi header. {{local_height}}/{{tip_height}} header tersinkronisasi",
+    "checking-latest-version-gpuminer": "Memeriksa versi terbaru dari xtrgpuminer"
+  },
+  "new-tari-version-available": "Versi baru dari Tari Universe tersedia!",
+  "would-you-like-to-install": "Apakah Anda ingin menginstal Tari Universe {{version}} sekarang?",
+  "yes": "Ya",
+  "no": "Tidak"
+}
