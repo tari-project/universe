@@ -9,6 +9,7 @@ use tauri::api::path::cache_dir;
 
 use crate::{
     download_utils::download_file_with_retries, github, progress_tracker::ProgressTracker,
+    APPLICATION_FOLDER_ID,
 };
 
 use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
@@ -52,7 +53,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
     fn get_binary_folder(&self) -> PathBuf {
         let binary_folder_path = cache_dir()
             .unwrap()
-            .join("com.tari.universe")
+            .join(APPLICATION_FOLDER_ID)
             .join("binaries")
             .join(&self.repo)
             .join(

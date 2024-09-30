@@ -32,11 +32,11 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-20.04'
-            args: ''
+            args: ' --features="release-ci'
           - platform: 'windows-2019'
-            args: '--bundles msi,updater'
+            args: '--bundles msi,updater --features "release-ci"'
           - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+            args: '--target universal-apple-darwin --features "release-ci"'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -67,7 +67,7 @@ jobs:
       - name: Set environment variables for beta builds
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          BETA_STRING: " -beta-"
+          BETA_STRING: " -beta"
         shell: bash
         run: |
           #set -xueo pipefail
@@ -81,12 +81,22 @@ jobs:
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".package.productName += \"${{ env.BETA_STRING }}\"" -i tauri.conf.json
           yq eval ".package.version += \"-${BETA_DATE}\"" -i tauri.conf.json
+          yq eval ".tauri.bundle.identifier += \".beta\"" -i tauri.conf.json
           yq eval ".tauri.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
             -i tauri.conf.json
           cat tauri.conf.json
           sed -i.bak -E "s/^version\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"/version = \"\1-${BETA_DATE}\"/" \
             Cargo.toml
           cat Cargo.toml
+
+      - name: Set environment variables for RELEASE builds
+        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        shell: bash
+        run: |
+          #set -xueo pipefail
+          cd "${GITHUB_WORKSPACE}/src-tauri"
+          # Don't mess with the double quotes and inner escaped quotes
+          yq eval ".tauri.bundle.identifier = \"com.tari.universe\"" -i tauri.conf.json
 
       - name: Node.js setup
         uses: actions/setup-node@v4

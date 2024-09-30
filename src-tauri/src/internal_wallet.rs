@@ -24,6 +24,8 @@ use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
+use crate::APPLICATION_FOLDER_ID;
+
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
 
@@ -76,7 +78,7 @@ impl InternalWallet {
             passphrase: None,
         };
 
-        let passphrase = match Entry::new("com.tari.universe", "internal_wallet") {
+        let passphrase = match Entry::new(APPLICATION_FOLDER_ID, "internal_wallet") {
             Ok(entry) => match entry.get_password() {
                 Ok(pass) => SafePassword::from(pass),
                 Err(_err @ KeyringError::PlatformFailure(_))
@@ -147,7 +149,7 @@ impl InternalWallet {
         let passphrase = match &self.config.passphrase {
             Some(passphrase) => passphrase.clone(),
             None => {
-                let entry = Entry::new("com.tari.universe", "internal_wallet")?;
+                let entry = Entry::new(APPLICATION_FOLDER_ID, "internal_wallet")?;
                 SafePassword::from(entry.get_password()?)
             }
         };
