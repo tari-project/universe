@@ -32,7 +32,7 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-20.04'
-            args: ' --features="release-ci'
+            args: ' --features "release-ci"'
           - platform: 'windows-2019'
             args: '--bundles msi,updater --features "release-ci"'
           - platform: 'macos-latest'
@@ -42,16 +42,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set environment variables for release
-        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
-        shell: bash
-        run: |
-          echo "tagName=v__VERSION__" >> $GITHUB_ENV
-          echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
-          #echo "releaseId=" >> $GITHUB_ENV
-          echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
-          echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
 
       - name: beta builds - Install dependencies (windows) [yq]
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
@@ -68,6 +58,9 @@ jobs:
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
           BETA_STRING: " -beta"
+          AIRDROP_BASE_URL: ${{ secrets.BETA.AIRDROP_BASE_URL }}
+          AIRDROP_API_BASE_URL: ${{ secrets.BETA.AIRDROP_API_BASE_URL }}
+          AIRDROP_TWITTER_AUTH_URL: ${{ secrets.BETA.AIRDROP_TWITTER_AUTH_URL }}
         shell: bash
         run: |
           #set -xueo pipefail
@@ -94,6 +87,12 @@ jobs:
         shell: bash
         run: |
           #set -xueo pipefail
+          # Setup tauri action envs
+          echo "tagName=v__VERSION__" >> $GITHUB_ENV
+          echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
+          #echo "releaseId=" >> $GITHUB_ENV
+          echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".tauri.bundle.identifier = \"com.tari.universe\"" -i tauri.conf.json
