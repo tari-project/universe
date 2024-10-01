@@ -2,7 +2,9 @@ import {
     ActionWrapper,
     BoxWrapper,
     ClaimButton,
+    CloseButton,
     Cover,
+    FinePrint,
     Gem1,
     Gem2,
     Gem3,
@@ -22,9 +24,11 @@ import gemImage from './images/gems.png';
 import gemLargeImage from './images/gem-large.png';
 import { useCallback, useState } from 'react';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { GemImage } from '../Gems/styles';
 import XLogoIcon from './icons/XLogoIcon';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import CloseIcon from './icons/CloseIcon';
 
 interface ClaimModalProps {
     onSubmit: (code?: string) => void;
@@ -34,16 +38,23 @@ interface ClaimModalProps {
 export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
     const referralQuestPoints = useAirdropStore((state) => state.referralQuestPoints);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
+    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
+    const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
 
     const [claimCode, setClaimCode] = useState('');
 
     const handleSubmit = useCallback(async () => {
+        await setAllowTelemetry(true);
         return onSubmit(claimCode);
-    }, [claimCode, onSubmit]);
+    }, [claimCode, onSubmit, setAllowTelemetry]);
 
     return (
         <Wrapper>
             <BoxWrapper initial={{ opacity: 0, y: '100px' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                <CloseButton onClick={onClose}>
+                    <CloseIcon />
+                </CloseButton>
+
                 <GemsWrapper>
                     <Gem1 src={gemLargeImage} alt="" />
                     <Gem2 src={gemLargeImage} alt="" />
@@ -82,9 +93,12 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
                             <XLogoIcon />
                         </XLogo>
                     </ClaimButton>
-                </ActionWrapper>
-                <ActionWrapper>
-                    <TextButton onClick={onClose}>{t('doLater')}</TextButton>
+
+                    {!allowTelemetry && (
+                        <FinePrint>
+                            <Trans t={t} i18nKey="claimModalFinePrint" ns="airdrop" components={{ bold: <strong /> }} />
+                        </FinePrint>
+                    )}
                 </ActionWrapper>
             </BoxWrapper>
 

@@ -5,6 +5,7 @@ import LoggedIn from './sections/LoggedIn/LoggedIn';
 import { useAirdropSyncState } from '@app/hooks/airdrop/useAirdropSyncState';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useTranslation } from 'react-i18next';
+import InfoTooltip from './components/InfoTooltip/InfoTooltip';
 
 export default function AirdropGiftTracker() {
     useAirdropSyncState();
@@ -20,6 +21,7 @@ export default function AirdropGiftTracker() {
         <Wrapper>
             <TitleWrapper>
                 <Title>{t('airdropGame')}</Title>
+                <InfoTooltip title={t('topTooltipTitle')} text={t('topTooltipText')} />
             </TitleWrapper>
 
             {isLoggedIn ? <LoggedIn /> : <LoggedOut />}
