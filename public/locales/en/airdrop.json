@@ -27,5 +27,7 @@
     "claimModalText": "Earn gems by mining and referring friends! The more gems you earn, the larger your Tari airdrop! Have a referral code? Enter it below and earn <strong>{{gems}} bonus gems!</strong>",
     "claimModalFieldLabel": "Optional",
     "claimModalFieldPlaceholder": "Enter invite code",
-    "claimModalFinePrint": "<strong>Please note:</strong> claiming gems turns on analytics so we can improve Universe"
+    "claimModalFinePrint": "<strong>Please note:</strong> claiming gems turns on analytics so we can improve Universe",
+    "topTooltipTitle": "Testnet Rewards",
+    "topTooltipText": "Get a Tari Airdrop by collecting gems. The more gems you earn, the larger your airdrop."
 }
