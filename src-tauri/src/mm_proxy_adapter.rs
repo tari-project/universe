@@ -65,7 +65,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             return Err(Error::msg("MergeMiningProxyAdapter config is None"));
         }
 
-        let config = self.config.as_ref().ok_or_else(|| anyhow!("MergeMiningProxyAdapter config is None"))?;
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow!("MergeMiningProxyAdapter config is None"))?;
         let working_dir_string = convert_to_string(working_dir)?;
         let log_dir_string = convert_to_string(log_dir)?;
 

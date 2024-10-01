@@ -167,7 +167,11 @@ impl BinaryResolver {
             .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
 
         let base_dir = manager.get_base_dir().map_err(|error| {
-            anyhow!("No base directory for binary {}, Error: {}", binary.name(), error)
+            anyhow!(
+                "No base directory for binary {}, Error: {}",
+                binary.name(),
+                error
+            )
         })?;
 
         Ok(base_dir.join(binary.binary_file_name(version)))
@@ -179,9 +183,10 @@ impl BinaryResolver {
         progress_tracker: ProgressTracker,
         should_check_for_update: bool,
     ) -> Result<(), Error> {
-        let manager = self.managers.get_mut(&binary).ok_or_else(|| {
-            anyhow!("Couldn't find manager for binary: {}", binary.name())
-        })?;
+        let manager = self
+            .managers
+            .get_mut(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
 
         manager.read_local_versions().await;
 
@@ -231,9 +236,10 @@ impl BinaryResolver {
         binary: Binaries,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        let manager = self.managers.get_mut(&binary).ok_or_else(|| {
-            anyhow!("Couldn't find manager for binary: {}", binary.name())
-        })?;
+        let manager = self
+            .managers
+            .get_mut(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
 
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
@@ -261,7 +267,9 @@ impl BinaryResolver {
     }
 
     pub fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
-        self.managers.get(&binary).and_then(|manager| manager.get_used_version())
+        self.managers
+            .get(&binary)
+            .and_then(|manager| manager.get_used_version())
     }
 
     pub async fn get_binary_version_string(&self, binary: Binaries) -> String {

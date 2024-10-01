@@ -2,10 +2,10 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
+use log::error;
 use regex::Regex;
 use tari_common::configuration::Network;
 use tauri::api::path::cache_dir;
-use log::error;
 
 use crate::{github, progress_tracker::ProgressTracker, APPLICATION_FOLDER_ID};
 
@@ -41,7 +41,8 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     }
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error> {
-        let cache_path  = cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
+        let cache_path =
+            cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
 
         let binary_folder_path = cache_path
             .join(APPLICATION_FOLDER_ID)
@@ -58,7 +59,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
                 error!(target: LOG_TARGET, "Failed to create directory: {}", e);
             });
         };
-        
+
         Ok(binary_folder_path)
     }
 
@@ -87,7 +88,8 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             panic!("Unsupported OS");
         }
 
-        let name_sufix_regex = Regex::new(name_suffix).map_err(|error| anyhow::anyhow!("Failed to create regex: {}", error))?;
+        let name_sufix_regex = Regex::new(name_suffix)
+            .map_err(|error| anyhow::anyhow!("Failed to create regex: {}", error))?;
 
         let platform = _version
             .assets

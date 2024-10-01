@@ -116,21 +116,34 @@ pub async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::E
     let mut reader = ZipFileReader::new(archive).await?;
     for index in 0..reader.file().entries().len() {
         let entry = reader.file().entries().get(index).ok_or_else(|| {
-            anyhow!("The entry at index {} does not exist. The archive may be corrupted.", index)
+            anyhow!(
+                "The entry at index {} does not exist. The archive may be corrupted.",
+                index
+            )
         })?;
 
-        let path = entry.filename().as_str().map(|entry| {
-            out_dir.join(sanitize_file_path(entry))
-        }).map_err(|error| {
-            anyhow!("The entry at index {} has an invalid filename: {}", index, error)
-        })?;
+        let path = entry
+            .filename()
+            .as_str()
+            .map(|entry| out_dir.join(sanitize_file_path(entry)))
+            .map_err(|error| {
+                anyhow!(
+                    "The entry at index {} has an invalid filename: {}",
+                    index,
+                    error
+                )
+            })?;
 
         // If the filename of the entry ends with '/', it is treated as a directory.
         // This is implemented by previous versions of this crate and the Python Standard Library.
         // https://docs.rs/async_zip/0.0.8/src/async_zip/read/mod.rs.html#63-65
         // https://github.com/python/cpython/blob/820ef62833bd2d84a141adedd9a05998595d6b6d/Lib/zipfile.py#L528
         let entry_is_dir = entry.dir().map_err(|error| {
-            anyhow!("The entry at index {} has an invalid directory flag: {}", index, error)
+            anyhow!(
+                "The entry at index {} has an invalid directory flag: {}",
+                index,
+                error
+            )
         })?;
 
         let mut entry_reader = reader.reader_without_entry(index).await?;
@@ -188,11 +201,12 @@ pub async fn validate_checksum(
     // Extract the expected hash for the corresponding asset name
     let mut expected_hash = "";
     let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name))
-    .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
+        .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
 
     for line in contents.lines() {
         if let Some(caps) = regex.captures(line) {
-            expected_hash = caps.get(1)
+            expected_hash = caps
+                .get(1)
                 .map(|hash| hash.as_str())
                 .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
         }

@@ -59,7 +59,10 @@ impl ProcessAdapter for P2poolAdapter {
         if self.config.is_none() {
             return Err(anyhow!("P2poolAdapter config is not set"));
         }
-        let config = self.config.as_ref().ok_or_else(|| anyhow!("P2poolAdapter config is not set"))?;
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow!("P2poolAdapter config is not set"))?;
         let log_path_string = convert_to_string(log_path.join("sha-p2pool"))?;
 
         let mut args: Vec<String> = vec![

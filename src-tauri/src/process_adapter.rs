@@ -78,7 +78,9 @@ impl ProcessInstance {
     pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
-        handle.ok_or_else(|| anyhow!("Handle is not present"))?.await?
+        handle
+            .ok_or_else(|| anyhow!("Handle is not present"))?
+            .await?
     }
 }
 

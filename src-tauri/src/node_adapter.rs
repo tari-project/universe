@@ -223,9 +223,12 @@ impl MinotariNodeStatusMonitor {
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
-        
-        let reward = res.miner_data
-            .ok_or_else(|| MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found")))?
+
+        let reward = res
+            .miner_data
+            .ok_or_else(|| {
+                MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
+            })?
             .reward;
 
         let res = client
