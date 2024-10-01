@@ -441,7 +441,7 @@ async fn setup_inner(
     progress.set_max(25).await;
     progress
         .update(
-            "Checking for latest version of gpu miner".to_string(),
+            "checking-latest-version-gpuminer".to_string(),
             None,
             0,
         )
