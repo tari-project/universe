@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
+use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{debug, warn};
@@ -63,26 +64,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         if self.config.is_none() {
             return Err(Error::msg("MergeMiningProxyAdapter config is None"));
         }
-        let config = match self.config.as_ref() {
-            Some(config) => config,
-            None => {
-                return Err(anyhow!("MergeMiningProxyAdapter config is None"));
-            }
-        };
 
-        let working_dir_string = match working_dir.to_str() {
-            Some(str) => str.to_string(),
-            None => {
-                return Err(anyhow!("Could not convert working directory to string"));
-            }
-        };
-
-        let log_dir_string = match log_dir.to_str() {
-            Some(str) => str.to_string(),
-            None => {
-                return Err(anyhow!("Could not convert log directory to string"));
-            }
-        };
+        let config = self.config.as_ref().ok_or_else(|| anyhow!("MergeMiningProxyAdapter config is None"))?;
+        let working_dir_string = convert_to_string(working_dir)?;
+        let log_dir_string = convert_to_string(log_dir)?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),

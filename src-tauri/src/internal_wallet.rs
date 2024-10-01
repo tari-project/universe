@@ -41,14 +41,10 @@ impl InternalWallet {
             .to_lowercase();
 
         let file = config_path.join(network).join("wallet_config.json");
-        let file_parent = match file.parent() {
-            Some(parent) => parent,
-            None => {
-                return Err(anyhow!(
-                    "Failed to get parent directory of wallet config file"
-                ));
-            }
-        };
+
+        let file_parent = file.parent().ok_or_else(|| {
+            anyhow!("Failed to get parent directory of wallet config file")
+        })?;
 
         create_dir_all(file_parent).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);

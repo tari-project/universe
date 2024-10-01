@@ -2,6 +2,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::utils::file_utils::convert_to_string;
 use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -57,19 +58,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
         let working_dir: PathBuf = data_dir.join("node");
         std::fs::create_dir_all(&working_dir)?;
 
-        let working_dir_string = match working_dir.to_str() {
-            Some(str) => str.to_string(),
-            None => {
-                return Err(anyhow!("Could not convert working_dir to string"));
-            }
-        };
-
-        let log_dir_string = match log_dir.to_str() {
-            Some(str) => str.to_string(),
-            None => {
-                return Err(anyhow!("Could not convert log_dir to string"));
-            }
-        };
+        let working_dir_string = convert_to_string(working_dir)?;
+        let log_dir_string = convert_to_string(log_dir)?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
@@ -233,14 +223,10 @@ impl MinotariNodeStatusMonitor {
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
-        let reward = match res.miner_data {
-            Some(miner_data) => miner_data.reward,
-            None => {
-                return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
-                    "No miner data found"
-                )));
-            }
-        };
+        
+        let reward = res.miner_data
+            .ok_or_else(|| MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found")))?
+            .reward;
 
         let res = client
             .get_tip_info(Empty {})

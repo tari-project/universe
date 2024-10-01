@@ -16,6 +16,7 @@ use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
+use crate::utils::file_utils::convert_to_string;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -58,19 +59,8 @@ impl ProcessAdapter for P2poolAdapter {
         if self.config.is_none() {
             return Err(anyhow!("P2poolAdapter config is not set"));
         }
-        let config = match self.config.as_ref() {
-            Some(config) => config,
-            None => {
-                return Err(anyhow!("P2poolAdapter config is not set"));
-            }
-        };
-
-        let log_path_string = match log_path.join("sha-p2pool").to_str() {
-            Some(str) => str.to_string(),
-            None => {
-                return Err(anyhow!("Could not convert log directory to string"));
-            }
-        };
+        let config = self.config.as_ref().ok_or_else(|| anyhow!("P2poolAdapter config is not set"))?;
+        let log_path_string = convert_to_string(log_path.join("sha-p2pool"))?;
 
         let mut args: Vec<String> = vec![
             "start".to_string(),

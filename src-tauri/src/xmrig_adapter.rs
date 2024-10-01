@@ -82,14 +82,11 @@ impl ProcessAdapter for XmrigAdapter {
         let mut shutdown_signal = xmrig_shutdown.to_signal();
         let mut args = self.node_connection.generate_args();
         let xmrig_log_file = log_dir.join("xmrig.log");
-        let xmrig_log_file_parent = match xmrig_log_file.parent() {
-            Some(parent) => parent,
-            None => {
-                return Err(anyhow::anyhow!(
-                    "Could not get parent directory of xmrig log file"
-                ));
-            }
-        };
+
+        let xmrig_log_file_parent = xmrig_log_file.parent().ok_or_else(|| {
+            anyhow::anyhow!("Could not get parent directory of xmrig log file")
+        })?;
+
         match xmrig_log_file.to_str() {
             Some(log_file) => {
                 args.push(format!("--log-file={}", &log_file));
