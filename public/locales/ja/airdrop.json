@@ -25,5 +25,9 @@
   "claimModalTitle": "テストネットでのマイニングで報酬を獲得",
   "claimModalText": "テストネット中にマイニングと友達紹介でジェムを獲得し、エアドロップ報酬を増やしましょう！紹介コードがありますか？以下に入力して、あなたと友達に追加の<strong>{{gems}}</strong>ジェムを獲得しましょう！",
   "claimModalFieldLabel": "任意",
-  "claimModalFieldPlaceholder": "紹介コードを入力"
+  "claimModalFieldPlaceholder": "紹介コードを入力",
+  "topTooltipText": "ジェムを集めてTariのエアドロップを獲得しましょう。ジェムを多く集めるほど、エアドロップが大きくなります。",
+  "topTooltipTitle": "テストネット報酬",
+  "claimModalFinePrint": "<strong>ご注意ください:</strong> ジェムを請求すると、Universeを改善するために分析が有効になります",
+  "inviteFriendsText": "リンクをコピーして共有する"
 }

@@ -25,5 +25,9 @@
   "claimModalTitle": "在测试网挖矿赚取奖励",
   "claimModalText": "通过挖矿和推荐朋友在测试网期间增加您的空投奖励！有推荐码吗？在下方输入并为您和您的朋友额外赚取<strong>{{gems}}</strong>个宝石！",
   "claimModalFieldLabel": "可选",
-  "claimModalFieldPlaceholder": "输入推荐码"
+  "claimModalFieldPlaceholder": "输入推荐码",
+  "topTooltipText": "通过收集宝石获得 Tari 空投。你赚取的宝石越多，空投就越大。",
+  "topTooltipTitle": "测试网奖励",
+  "claimModalFinePrint": "<strong>请注意：</strong> 领取宝石会开启分析功能，以便我们改进 Universe",
+  "inviteFriendsText": "复制链接并分享"
 }
