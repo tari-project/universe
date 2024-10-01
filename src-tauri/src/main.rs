@@ -1583,11 +1583,6 @@ fn main() {
             let _unused = block_on(stop_all_miners(app_state.clone(), 2));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
-        tauri::RunEvent::Exit => {
-            info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
-            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
-        }
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
