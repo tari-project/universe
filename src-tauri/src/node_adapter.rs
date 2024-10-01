@@ -2,6 +2,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::utils::file_utils::convert_to_string;
 use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -43,6 +44,7 @@ impl MinotariNodeAdapter {
 impl ProcessAdapter for MinotariNodeAdapter {
     type StatusMonitor = MinotariNodeStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -53,15 +55,18 @@ impl ProcessAdapter for MinotariNodeAdapter {
         let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting minotari node");
-        let working_dir = data_dir.join("node");
+        let working_dir: PathBuf = data_dir.join("node");
         std::fs::create_dir_all(&working_dir)?;
+
+        let working_dir_string = convert_to_string(working_dir)?;
+        let log_dir_string = convert_to_string(log_dir)?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
-            working_dir.to_str().unwrap().to_string(),
+            working_dir_string,
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
-            format!("--log-path={}", log_dir.to_str().unwrap()).to_string(),
+            format!("--log-path={}", log_dir_string),
             "-p".to_string(),
             "base_node.grpc_enabled=true".to_string(),
             "-p".to_string(),
@@ -122,8 +127,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .read()
                         .await
                         .resolve_path_to_binary_files(Binaries::MinotariNode)
-                        .await
-                        .unwrap();
+                        .await?;
 
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
@@ -219,18 +223,32 @@ impl MinotariNodeStatusMonitor {
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
-        let reward = res.miner_data.unwrap().reward;
+
+        let reward = res
+            .miner_data
+            .ok_or_else(|| {
+                MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
+            })?
+            .reward;
 
         let res = client
             .get_tip_info(Empty {})
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
+        let metadata = match res.metadata {
+            Some(metadata) => metadata,
+            None => {
+                return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
+                    "No metadata found"
+                )));
+            }
+        };
         let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
-            res.metadata.as_ref().unwrap().best_block_height,
-            res.metadata.as_ref().unwrap().best_block_hash.clone(),
-            res.metadata.unwrap().timestamp,
+            metadata.best_block_height,
+            metadata.best_block_hash.clone(),
+            metadata.timestamp,
         );
         // First try with 10 blocks
         let blocks = [10, 100];
