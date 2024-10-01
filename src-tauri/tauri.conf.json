@@ -7,7 +7,7 @@
     },
     "package": {
         "productName": "Tari Universe",
-        "version": "0.5.0"
+        "version": "0.5.5"
     },
     "tauri": {
         "systemTray": {
@@ -67,7 +67,7 @@
         "bundle": {
             "active": true,
             "targets": "all",
-            "identifier": "com.tari.universe",
+            "identifier": "com.tari.universe.beta",
             "icon": [
                 "icons/icon.icns",
                 "icons/icon.ico",

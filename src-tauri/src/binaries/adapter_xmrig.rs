@@ -6,7 +6,7 @@ use regex::Regex;
 use tari_common::configuration::Network;
 use tauri::api::path::cache_dir;
 
-use crate::{github, progress_tracker::ProgressTracker};
+use crate::{github, progress_tracker::ProgressTracker, APPLICATION_FOLDER_ID};
 
 use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
 
@@ -40,7 +40,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     fn get_binary_folder(&self) -> PathBuf {
         let binary_folder_path = cache_dir()
             .unwrap()
-            .join("com.tari.universe")
+            .join(APPLICATION_FOLDER_ID)
             .join("binaries")
             .join("xmrig")
             .join(
