@@ -24,7 +24,7 @@ import gemImage from './images/gems.png';
 import gemLargeImage from './images/gem-large.png';
 import { useCallback, useState } from 'react';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { GemImage } from '../Gems/styles';
 import XLogoIcon from './icons/XLogoIcon';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
@@ -95,11 +95,9 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
                     </ClaimButton>
 
                     {!allowTelemetry && (
-                        <FinePrint
-                            dangerouslySetInnerHTML={{
-                                __html: t('claimModalFinePrint'),
-                            }}
-                        />
+                        <FinePrint>
+                            <Trans t={t} i18nKey="claimModalFinePrint" ns="airdrop" components={{ bold: <strong /> }} />
+                        </FinePrint>
                     )}
                 </ActionWrapper>
             </BoxWrapper>

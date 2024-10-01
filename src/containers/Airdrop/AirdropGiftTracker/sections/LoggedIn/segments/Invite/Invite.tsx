@@ -17,12 +17,6 @@ export default function Invite() {
 
     const url = `${airdropUrl}/download/${referralCode}`;
 
-    // const nextBonusTier = useMemo(
-    //     () => bonusTiers?.sort((a, b) => a.target - b.target).find((t) => t.target > (referralCount?.count || 0)),
-    //     [bonusTiers, referralCount?.count]
-    // );
-    //const friendsRemaining = nextBonusTier?.target && (nextBonusTier.target - (referralCount?.count || 0) || 0);
-
     const handleCopy = () => {
         setCopied(true);
         navigator.clipboard.writeText(url);
@@ -64,23 +58,6 @@ export default function Invite() {
                     <Image src={gemImage} alt="" />
                 </GemPill>
             </InviteButton>
-
-            {/*nextBonusTier && (
-                <BonusWrapper>
-                    <BonusText>
-                        <Trans
-                            ns="airdrop"
-                            i18nKey="nextTierBonus"
-                            components={{ strong: <strong /> }}
-                            values={{
-                                count: `${friendsRemaining}`,
-                                bonusGems: nextBonusTier?.bonusGems.toLocaleString(),
-                            }}
-                        />
-                    </BonusText>
-                    <Image src={boxImage} alt="" className="giftImage" />
-                </BonusWrapper>
-            )*/}
         </Wrapper>
     );
 }
