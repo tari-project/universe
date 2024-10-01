@@ -96,7 +96,6 @@ impl GpuMiner {
                 );
                 status.estimated_earnings = estimated_earnings;
                 status.is_available = self.is_available;
-                dbg!(&status);
                 Ok(status)
             }
             None => Ok(GpuMinerStatus {
