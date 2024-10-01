@@ -1039,18 +1039,13 @@ async fn get_tari_wallet_details(
         .is_getting_wallet_balance
         .store(true, Ordering::SeqCst);
     let wallet_balance = match state.wallet_manager.get_balance().await {
-        Ok(w) => w,
+        Ok(w) => Some(w),
         Err(e) => {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
                 warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
             }
 
-            WalletBalance {
-                available_balance: MicroMinotari(0),
-                pending_incoming_balance: MicroMinotari(0),
-                pending_outgoing_balance: MicroMinotari(0),
-                timelocked_balance: MicroMinotari(0),
-            }
+            None
         }
     };
     let tari_address = state.tari_address.read().await;
@@ -1279,7 +1274,7 @@ pub struct MinerMetrics {
 
 #[derive(Debug, Serialize)]
 pub struct TariWalletDetails {
-    wallet_balance: WalletBalance,
+    wallet_balance: Option<WalletBalance>,
     tari_address_base58: String,
     tari_address_emoji: String,
 }
