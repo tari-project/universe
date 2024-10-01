@@ -85,8 +85,10 @@ const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[cfg(feature = "release-ci")]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
-#[cfg(not(feature = "release-ci"))]
+#[cfg(feature = "release-ci-beta")]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
+#[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
