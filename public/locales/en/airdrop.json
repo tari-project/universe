@@ -1,10 +1,11 @@
 {
-    "airdropGame": "Airdrop Game",
+    "airdropGame": "Testnet Rewards",
     "loginButton": "Log in to claim gems",
     "logout": "Logout",
     "referral": "Invite a friend",
     "unclaimedGems": "Unclaimed Gems",
     "inviteFirends": "Invite Friends",
+    "inviteFriendsText": "Copy link and share it",
     "invitedAmount": "You’ve invited <span>{{count}}</span> friends",
     "nextTierBonus": "Invite <strong>{{count}} friends</strong> & earn {{bonusGems}} bonus gems",
     "claimGems": "Claim Gems",
