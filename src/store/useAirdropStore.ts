@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export const INSTALL_BONUS_GEMS = 1000;
-export const GIFT_GEMS = 2000;
-export const REFERRAL_GEMS = 2000;
+export const INSTALL_BONUS_GEMS = 5000;
+export const GIFT_GEMS = 5000;
+export const REFERRAL_GEMS = 5000;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
