@@ -220,31 +220,31 @@ impl BinaryManager {
                 )
             })?;
 
-        let is_valid = validate_checksum(
-            in_progress_file_zip.to_path_buf(),
+        info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
+        info!(target: LOG_TARGET, "Checksum file: {:?}", checksum_file);
+        info!(target: LOG_TARGET, "In progress file: {:?}", in_progress_file_zip);
+        match validate_checksum(
+            in_progress_file_zip.clone(),
             checksum_file,
             asset.name.clone(),
         )
         .await
-        .map_err(|e| {
-            std::fs::remove_dir_all(destination_dir.clone()).ok();
-            anyhow!(
-                "Error validating checksum for version: {:?}. Error: {:?}",
-                version,
-                e
-            )
-        })?;
+        {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
+                Ok(())
+            },
+            Err(e) => {
+                std::fs::remove_dir_all(destination_dir.clone()).ok();
+                Err(anyhow!(
+                    "Checksum validation failed for version: {:?}. Error: {:?}",
+                    version,
+                    e
+                ))
+            },
 
-        if is_valid {
-            info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
-            Ok(())
-        } else {
-            std::fs::remove_dir_all(destination_dir.clone()).ok();
-            Err(anyhow!(
-                "Checksum validation failed for version: {:?}",
-                version
-            ))
         }
+
     }
 
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
