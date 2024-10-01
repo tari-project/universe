@@ -308,7 +308,11 @@ impl AppConfig {
     // missing
     #[allow(clippy::needless_update)]
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
-        let file = self.config_file.clone().unwrap();
+        let file = self
+            .config_file
+            .clone()
+            .ok_or_else(|| anyhow!("Config file not set"))?;
+
         let default_config = AppConfigFromFile::default();
 
         let config = &AppConfigFromFile {

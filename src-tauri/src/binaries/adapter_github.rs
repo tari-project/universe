@@ -50,9 +50,11 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         }
     }
 
-    fn get_binary_folder(&self) -> PathBuf {
-        let binary_folder_path = cache_dir()
-            .unwrap()
+    fn get_binary_folder(&self) -> Result<PathBuf, Error> {
+        let cache_path =
+            cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
+
+        let binary_folder_path = cache_path
             .join(APPLICATION_FOLDER_ID)
             .join("binaries")
             .join(&self.repo)
@@ -63,10 +65,12 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             );
 
         if !binary_folder_path.exists() {
-            drop(std::fs::create_dir_all(&binary_folder_path));
-        }
+            std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Failed to create directory: {}", e);
+            });
+        };
 
-        binary_folder_path
+        Ok(binary_folder_path)
     }
 
     fn find_version_for_platform(
@@ -95,16 +99,17 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 
         info!(target: LOG_TARGET, "Looking for platform with suffix: {}", name_suffix);
 
-        let reg = Regex::new(name_suffix).unwrap();
+        let name_sufix_regex = Regex::new(name_suffix)
+            .map_err(|error| anyhow::anyhow!("Failed to create regex: {}", error))?;
 
         let platform = version
             .assets
             .iter()
             .find(|a| {
                 if let Some(ref specific) = self.specific_name {
-                    specific.is_match(&a.name) && reg.is_match(&a.name)
+                    specific.is_match(&a.name) && name_sufix_regex.is_match(&a.name)
                 } else {
-                    reg.is_match(&a.name)
+                    name_sufix_regex.is_match(&a.name)
                 }
             })
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;

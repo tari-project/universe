@@ -196,11 +196,16 @@ impl NodeManager {
         let connected_peers = peers_list
             .iter()
             .filter(|peer| {
-                let since = NaiveDateTime::parse_from_str(
+                let since = match NaiveDateTime::parse_from_str(
                     peer.addresses[0].last_seen.as_str(),
                     "%Y-%m-%d %H:%M:%S%.f",
-                )
-                .unwrap();
+                ) {
+                    Ok(datetime) => datetime,
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Error parsing datetime: {}", e);
+                        return false;
+                    }
+                };
                 let since = Utc.from_utc_datetime(&since);
                 let duration = SystemTime::now()
                     .duration_since(since.into())

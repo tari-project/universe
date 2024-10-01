@@ -42,7 +42,13 @@ impl InternalWallet {
 
         let file = config_path.join(network).join("wallet_config.json");
 
-        create_dir_all(file.parent().unwrap())?;
+        let file_parent = file
+            .parent()
+            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
+
+        create_dir_all(file_parent).unwrap_or_else(|error| {
+            warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
+        });
         if file.exists() {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;

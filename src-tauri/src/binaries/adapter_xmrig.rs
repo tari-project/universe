@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
+use log::error;
 use regex::Regex;
 use tari_common::configuration::Network;
 use tauri::api::path::cache_dir;
@@ -9,6 +10,8 @@ use tauri::api::path::cache_dir;
 use crate::{github, progress_tracker::ProgressTracker, APPLICATION_FOLDER_ID};
 
 use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
+
+const LOG_TARGET: &str = "tari::universe::adapter_xmrig";
 
 pub struct XmrigVersionApiAdapter {}
 
@@ -37,9 +40,11 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         Ok(checksum_path)
     }
 
-    fn get_binary_folder(&self) -> PathBuf {
-        let binary_folder_path = cache_dir()
-            .unwrap()
+    fn get_binary_folder(&self) -> Result<PathBuf, Error> {
+        let cache_path =
+            cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
+
+        let binary_folder_path = cache_path
             .join(APPLICATION_FOLDER_ID)
             .join("binaries")
             .join("xmrig")
@@ -50,10 +55,12 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             );
 
         if !binary_folder_path.exists() {
-            drop(std::fs::create_dir_all(&binary_folder_path));
-        }
+            std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Failed to create directory: {}", e);
+            });
+        };
 
-        binary_folder_path
+        Ok(binary_folder_path)
     }
 
     fn find_version_for_platform(
@@ -81,11 +88,13 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             panic!("Unsupported OS");
         }
 
-        let reg = Regex::new(name_suffix).unwrap();
+        let name_sufix_regex = Regex::new(name_suffix)
+            .map_err(|error| anyhow::anyhow!("Failed to create regex: {}", error))?;
+
         let platform = _version
             .assets
             .iter()
-            .find(|a| reg.is_match(&a.name))
+            .find(|a| name_sufix_regex.is_match(&a.name))
             .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
         Ok(platform.clone())
     }
