@@ -13,30 +13,40 @@ import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 
-const disableRefresh = () => {
-    if (process.env.NODE_ENV === 'development') {
-        return;
-    }
-    document.addEventListener('keydown', function (event) {
-        // Prevent F5 or Ctrl+R (Windows/Linux) and Command+R (Mac) from refreshing the page
-        if (event.key === 'F5' || (event.ctrlKey && event.key === 'r') || (event.metaKey && event.key === 'r')) {
-            event.preventDefault();
+const useDisableRefresh = () => {
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            return;
         }
-    });
+        const keydownListener = function (event: KeyboardEvent) {
+            // Prevent F5 or Ctrl+R (Windows/Linux) and Command+R (Mac) from refreshing the page
+            if (event.key === 'F5' || (event.ctrlKey && event.key === 'r') || (event.metaKey && event.key === 'r')) {
+                event.preventDefault();
+            }
+        };
 
-    document.addEventListener('contextmenu', function (event) {
-        event.preventDefault();
-    });
+        const contextmenuListener = function (event: MouseEvent) {
+            event.preventDefault();
+        };
+
+        document.addEventListener('keydown', keydownListener);
+        document.addEventListener('contextmenu', contextmenuListener);
+
+        return () => {
+            document.removeEventListener('keydown', keydownListener);
+            document.removeEventListener('contextmenu', contextmenuListener);
+        };
+    }, []);
 };
 
 export default function App() {
     useLangaugeResolver();
-    disableRefresh();
+    useDisableRefresh();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
