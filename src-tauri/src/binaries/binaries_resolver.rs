@@ -56,15 +56,9 @@ impl BinaryResolver {
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
 
-        let gpu_miner_nextnet_regex = match Regex::new(r"opencl.*nextnet") {
-            Ok(regex) => Some(regex),
-            Err(_) => None,
-        };
+        let gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
 
-        let gpu_miner_testnet_regex = match Regex::new(r"opencl.*testnet") {
-            Ok(regex) => Some(regex),
-            Err(_) => None,
-        };
+        let gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
 
         let (tari_prerelease_prefix, gpuminer_specific_nanme) =
             match Network::get_current_or_user_setting_or_default() {
@@ -171,16 +165,11 @@ impl BinaryResolver {
         let version = manager
             .get_used_version()
             .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
-        let base_dir = match manager.get_base_dir() {
-            Ok(dir) => dir,
-            Err(error) => {
-                return Err(anyhow!(
-                    "No base directory for binary {}, Error: {}",
-                    binary.name(),
-                    error
-                ))
-            }
-        };
+
+        let base_dir = manager.get_base_dir().map_err(|error| {
+            anyhow!("No base directory for binary {}, Error: {}", binary.name(), error)
+        })?;
+
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
@@ -190,15 +179,9 @@ impl BinaryResolver {
         progress_tracker: ProgressTracker,
         should_check_for_update: bool,
     ) -> Result<(), Error> {
-        let manager = match self.managers.get_mut(&binary) {
-            Some(manager) => manager,
-            None => {
-                return Err(anyhow!(
-                    "Couldn't find manager for binary: {}",
-                    binary.name()
-                ))
-            }
-        };
+        let manager = self.managers.get_mut(&binary).ok_or_else(|| {
+            anyhow!("Couldn't find manager for binary: {}", binary.name())
+        })?;
 
         manager.read_local_versions().await;
 
@@ -248,15 +231,9 @@ impl BinaryResolver {
         binary: Binaries,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        let manager = match self.managers.get_mut(&binary) {
-            Some(manager) => manager,
-            None => {
-                return Err(anyhow!(
-                    "Couldn't find manager for binary: {}",
-                    binary.name()
-                ))
-            }
-        };
+        let manager = self.managers.get_mut(&binary).ok_or_else(|| {
+            anyhow!("Couldn't find manager for binary: {}", binary.name())
+        })?;
 
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
@@ -284,10 +261,7 @@ impl BinaryResolver {
     }
 
     pub fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
-        match self.managers.get(&binary) {
-            Some(manager) => manager.get_used_version(),
-            None => None,
-        }
+        self.managers.get(&binary).and_then(|manager| manager.get_used_version())
     }
 
     pub async fn get_binary_version_string(&self, binary: Binaries) -> String {

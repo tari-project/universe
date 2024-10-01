@@ -67,29 +67,18 @@ impl BinaryManager {
     }
 
     fn read_version_requirements(binary_name: String, data_str: &str) -> VersionReq {
-        let json_content: BinaryVersionsJsonContent =
-            serde_json::from_str(data_str).unwrap_or_default();
-        let version_req = json_content.binaries.get(&binary_name);
-
-        match version_req {
-            Some(version_req) => {
-                info!(target: LOG_TARGET,
-                    "Version requirements for {:?}: {:?}",
-                    binary_name, version_req
-                );
-                match VersionReq::from_str(version_req) {
-                    Ok(requirements) => requirements,
-                    Err(e) => {
-                        error!(target: LOG_TARGET,"Error parsing version requirements for binary: {:?}. Error: {:?}", binary_name, e);
-                        VersionReq::default()
-                    }
-                }
-            }
-            None => {
-                warn!("No version requirements found for binary: {:?}. Will try to run with highest version found",binary_name);
+        let json_content: BinaryVersionsJsonContent = serde_json::from_str(data_str).unwrap_or_default();
+        let version_requirement = json_content.binaries.get(&binary_name)
+            .and_then(|version_req| VersionReq::from_str(version_req).ok())
+            .unwrap_or_else(|| {
+                error!(target: LOG_TARGET, "Error parsing version requirements for binary: {:?}", binary_name);
+                info!(target: LOG_TARGET, "App will try to run with highest version found");
                 VersionReq::default()
-            }
-        }
+            });
+        
+        info!(target: LOG_TARGET, "Version requirements for {:?}: {:?}", binary_name, version_requirement);
+
+        version_requirement
     }
 
     fn select_highest_local_version(&mut self) -> Option<Version> {
@@ -126,22 +115,18 @@ impl BinaryManager {
     ) -> Result<PathBuf, Error> {
         info!(target: LOG_TARGET,"Creating in progress folder for version: {:?}", selected_version);
 
-        let binary_folder = match self.adapter.get_binary_folder() {
-            Ok(path) => path,
-            Err(e) => {
-                error!(target: LOG_TARGET,"Error getting binary folder. Error: {:?}", e);
-                return Err(e);
-            }
-        };
+        let binary_folder = self.adapter.get_binary_folder().map_err(|error| {
+            error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", error);
+            anyhow!("Error getting binary folder: {:?}", error)
+        })?;
 
-        let version_folder = binary_folder.join(selected_version.to_string());
-        let in_progress_folder = version_folder.join("in_progress");
+        let in_progress_folder = binary_folder.join(selected_version.to_string()).join("in_progress");
 
         if in_progress_folder.exists() {
             info!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
-            let _unused = std::fs::remove_dir_all(&in_progress_folder).map_err(| error | {
-                error!(target: LOG_TARGET,"Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
-            });
+            if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
+                error!(target: LOG_TARGET, "Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
+            }
         }
 
         info!(target: LOG_TARGET,"Creating in progress folder: {:?}", in_progress_folder);
@@ -159,43 +144,69 @@ impl BinaryManager {
         let version_info = self
             .online_versions_list
             .iter()
-            .find(|v| v.version.eq(&selected_version));
+            .find(|v| v.version.eq(&selected_version))
+            .ok_or_else(|| anyhow!("No version info found for version: {:?}", selected_version))?;
 
-        match version_info {
-            Some(version_info) => {
-                info!(target: LOG_TARGET,"Found version info for version: {:?}", selected_version);
-                match self.adapter.find_version_for_platform(version_info) {
-                    Ok(asset) => {
-                        info!(target: LOG_TARGET,"Found asset for version: {:?}", selected_version);
-                        Ok(asset)
-                    }
-                    Err(error) => {
-                        error!(target: LOG_TARGET,"Error finding asset for version: {:?}. Error: {:?}", selected_version, error);
-                        Err(error)
-                    }
-                }
-            }
-            None => {
-                error!(target: LOG_TARGET,"No version info found for version: {:?}", selected_version);
-                Err(anyhow!(
-                    "No version info found for version: {:?}",
-                    selected_version
-                ))
-            }
+        info!(target: LOG_TARGET, "Found version info for version: {:?}", selected_version);
+
+        self.adapter.find_version_for_platform(version_info).and_then(|asset| {
+            info!(target: LOG_TARGET, "Found asset for version: {:?}", selected_version);
+            Ok(asset)
+        }).map_err(|error| {
+            anyhow!("Error finding asset for version: {:?}. Error: {:?}", selected_version, error)
+        })
+    }
+
+    fn ensure_empty_directory(&self, dir: PathBuf) -> Result<(), Error> {
+        if dir.exists() {
+            warn!(target: LOG_TARGET, "Destination dir exists. Removing all files from: {:?}", dir.clone());
+            std::fs::remove_dir_all(dir.clone())
+                .and_then(|_| std::fs::create_dir_all(dir.clone()))
+                .map_err(|e| anyhow!("Error handling destination dir: {:?}. Error: {:?}", dir.clone(), e))
+        } else {
+            std::fs::create_dir_all(dir.clone())
+                .map_err(|e| anyhow!("Error creating destination dir: {:?}. Error: {:?}", dir.clone(), e))
+        }
+    }
+    
+    async fn validate_checksum(
+        &self,
+        version: &Version,
+        asset: VersionAsset,
+        destination_dir: PathBuf,
+        in_progress_file_zip: PathBuf,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
+        let version_download_info = VersionDownloadInfo {
+            version: version.clone(),
+            assets: vec![asset.clone()],
+        };
+        let checksum_file = self.adapter.download_and_get_checksum_path(destination_dir.clone().to_path_buf(), version_download_info, progress_tracker.clone()).await
+            .map_err(|e| {
+                std::fs::remove_dir_all(destination_dir.clone()).ok();
+                anyhow!("Error downloading checksum file for version: {:?}. Error: {:?}", version, e)
+            })?;
+
+        let is_valid = validate_checksum(in_progress_file_zip.to_path_buf(), checksum_file, asset.name.clone()).await
+            .map_err(|e| {
+                std::fs::remove_dir_all(destination_dir.clone()).ok();
+                anyhow!("Error validating checksum for version: {:?}. Error: {:?}", version, e)
+            })?;
+
+        if is_valid {
+            info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
+            Ok(())
+        } else {
+            std::fs::remove_dir_all(destination_dir.clone()).ok();
+            Err(anyhow!("Checksum validation failed for version: {:?}", version))
         }
     }
 
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
         info!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
         let is_meet_semver = self.version_requirements.matches(version);
-
-        let did_meet_network_prerelease = match &self.network_prerelease_prefix {
-            Some(prefix) => {
-                let matches = version.pre.matches(prefix);
-                !matches.collect::<Vec<&str>>().is_empty()
-            }
-            None => true,
-        };
+        let did_meet_network_prerelease = self.network_prerelease_prefix.as_ref().map_or(true, |prefix| version.pre.matches(prefix).any(|_| true));
 
         info!(target: LOG_TARGET,"Version meets semver requirements: {:?}", is_meet_semver);
         info!(target: LOG_TARGET,"Version meets network prerelease requirements: {:?}", did_meet_network_prerelease);
@@ -237,38 +248,34 @@ impl BinaryManager {
     pub fn check_if_files_for_version_exist(&self, version: Option<Version>) -> bool {
         info!(target: LOG_TARGET,"Checking if files for selected version exist: {:?}", version);
 
-        match version {
-            None => {
-                warn!(target: LOG_TARGET,"No version selected");
-                false
-            }
-            Some(version) => {
-                info!(target: LOG_TARGET,"Selected version: {:?}", version);
-                let binary_folder = match self.adapter.get_binary_folder() {
-                    Ok(path) => path,
-                    Err(e) => {
-                        error!(target: LOG_TARGET,"Error getting binary folder. Error: {:?}", e);
-                        return false;
-                    }
-                };
+        if let Some(version) = version {
+            info!(target: LOG_TARGET, "Selected version: {:?}", version);
 
-                let version_folder = binary_folder.join(version.to_string());
-                let binary_file = version_folder
-                    .join(Binaries::from_name(&self.binary_name).binary_file_name(version));
-                let binary_file_with_exe = binary_file.with_extension("exe");
+            let binary_folder = match self.adapter.get_binary_folder() {
+                Ok(path) => path,
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", e);
+                    return false;
+                }
+            };
 
-                info!(target: LOG_TARGET,"Binary folder path: {:?}", binary_folder);
-                info!(target: LOG_TARGET,"Version folder path: {:?}", version_folder);
-                info!(target: LOG_TARGET,"Binary file path: {:?}", binary_file);
+            let version_folder = binary_folder.join(version.to_string());
+            let binary_file = version_folder.join(Binaries::from_name(&self.binary_name).binary_file_name(version));
+            let binary_file_with_exe = binary_file.with_extension("exe");
 
-                let binary_file_exists = binary_file.exists() || binary_file_with_exe.exists();
+            info!(target: LOG_TARGET, "Binary folder path: {:?}", binary_folder);
+            info!(target: LOG_TARGET, "Version folder path: {:?}", version_folder);
+            info!(target: LOG_TARGET, "Binary file path: {:?}", binary_file);
 
-                info!(target: LOG_TARGET,"Binary file exists: {:?}", binary_file_exists);
+            let binary_file_exists = binary_file.exists() || binary_file_with_exe.exists();
 
-                binary_file_exists
-            }
+            info!(target: LOG_TARGET, "Binary file exists: {:?}", binary_file_exists);
+
+            return binary_file_exists;
         }
-    }
+            warn!(target: LOG_TARGET, "No version selected");
+            false
+        }
 
     pub async fn check_for_updates(&mut self) {
         info!(target: LOG_TARGET,"Checking for updates for binary: {:?}", self.binary_name);
@@ -277,7 +284,7 @@ impl BinaryManager {
             .adapter
             .fetch_releases_list()
             .await
-            .unwrap_or(Vec::new());
+            .unwrap_or_default();
 
         info!(target: LOG_TARGET,
             "Found {:?} versions for binary: {:?}",
@@ -302,7 +309,6 @@ impl BinaryManager {
         self.online_versions_list.reverse();
     }
 
-    #[allow(clippy::too_many_lines)]
     pub async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
@@ -310,134 +316,51 @@ impl BinaryManager {
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET,"Downloading version: {:?}", selected_version);
 
-        match selected_version {
+        let version = match selected_version {
+            Some(version) => version,
             None => {
-                warn!(target: LOG_TARGET,"No version selected");
-                Err(anyhow!("No version selected"))
+                warn!(target: LOG_TARGET, "No version selected");
+                return Err(anyhow!("No version selected"));
             }
-            Some(version) => {
-                let asset = match self.get_asset_for_selected_version(version.clone()) {
-                    Ok(asset) => asset,
-                    Err(e) => {
-                        error!(target: LOG_TARGET,"Error getting asset for version: {:?}. Error: {:?}", version.clone(), e);
-                        return Err(anyhow!("Error getting asset for version"));
-                    }
-                };
+        };
 
-                let binary_folder = match self.adapter.get_binary_folder() {
-                    Ok(path) => path,
-                    Err(e) => {
-                        error!(target: LOG_TARGET,"Error getting binary folder. Error: {:?}", e);
-                        return Err(anyhow!("Error getting binary folder"));
-                    }
-                };
-                let destination_dir = binary_folder.join(version.clone().to_string());
+        let asset = self.get_asset_for_selected_version(version.clone()).map_err(|e| {
+            anyhow!("Error getting asset for version: {:?}. Error: {:?}", version, e)
+        })?;
 
-                // This is a safety check to ensure that the destination directory is empty
-                // Its special case for tari repo, where zip will inclue mutliple binaries
-                // So when one of them is deleted, and we need to download it again
-                // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
-                // extract will fail, so we need to remove all files from destination dir
-                if destination_dir.exists() {
-                    warn!(target: LOG_TARGET,"Destination dir exists. Removing all files from: {:?}", destination_dir);
-                    let _unused = std::fs::remove_dir_all(&destination_dir).map_err(|error| {
-                        error!(target: LOG_TARGET,"Error removing all files from destination dir: {:?}. Error: {:?}", destination_dir, error);
-                    });
-                    info!(target: LOG_TARGET,"Creating destination dir: {:?}", destination_dir);
-                    let _unused = std::fs::create_dir_all(&destination_dir).map_err(|error| {
-                        error!(target: LOG_TARGET,"Error creating destination dir: {:?}. Error: {:?}", destination_dir, error);
-                    });
-                }
+        let binary_folder = self.adapter.get_binary_folder().map_err(|e| {
+            anyhow!("Error getting binary folder: {:?}", e)
+        })?;
 
-                let in_progress_dir = match self
-                    .create_in_progress_folder_for_selected_version(version.clone())
-                {
-                    Ok(path) => path,
-                    Err(e) => {
-                        error!(target: LOG_TARGET,"Error creating in progress folder. Error: {:?}", e);
-                        return Err(anyhow!("Error creating in progress folder"));
-                    }
-                };
-                let in_progress_file_zip = in_progress_dir.join(asset.clone().name);
+        let destination_dir = binary_folder.join(version.to_string());
 
-                match download_file_with_retries(
-                    asset.clone().url.as_str(),
-                    &in_progress_file_zip,
-                    progress_tracker.clone(),
-                )
-                .await
-                {
-                    Ok(_) => {
-                        info!(target: LOG_TARGET,"Downloaded version: {:?}", version.clone());
-                        info!(target: LOG_TARGET,"Extracting version: {:?}", version.clone());
-                        info!(target: LOG_TARGET,"Destination dir: {:?}", destination_dir);
-                        info!(target: LOG_TARGET,"In progress file: {:?}", in_progress_file_zip);
+        // This is a safety check to ensure that the destination directory is empty
+        // Its special case for tari repo, where zip will inclue mutliple binaries
+        // So when one of them is deleted, and we need to download it again
+        // We in fact will download zip with multiple binaries, and when other binaries are present in destination dir
+        // extract will fail, so we need to remove all files from destination dir
+        self.ensure_empty_directory(destination_dir.clone())?;
 
-                        extract(&in_progress_file_zip.clone(), &destination_dir)
-                            .await.map_err(|error| {
-                                error!(target: LOG_TARGET,"Error extracting version: {:?}. Error: {:?}", version.clone(), error);
-                                error
-                            })?;
+        let in_progress_dir = self.create_in_progress_folder_for_selected_version(version.clone()).map_err(|e| {
+            anyhow!("Error creating in progress folder. Error: {:?}", e)
+        })?;
+        let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
-                        if self.should_validate_checksum {
-                            info!(target: LOG_TARGET,"Validating checksum for version: {:?}", version.clone());
-                            let version_download_info = VersionDownloadInfo {
-                                version: version.clone(),
-                                assets: vec![asset.clone()],
-                            };
-                            let checksum_file = match self
-                                .adapter
-                                .download_and_get_checksum_path(
-                                    destination_dir.clone(),
-                                    version_download_info,
-                                    progress_tracker.clone(),
-                                )
-                                .await
-                            {
-                                Ok(checksum_file) => checksum_file,
-                                Err(e) => {
-                                    error!(target: LOG_TARGET,"Error downloading checksum file for version: {:?}. Error: {:?}", version.clone(), e);
-                                    let _unused = std::fs::remove_dir_all(destination_dir.clone()).map_err(
-                                        |error| {
-                                            error!(target: LOG_TARGET,"Error removing destination dir: {:?}. Error: {:?}", destination_dir, error);
-                                        },
-                                    );
-                                    return Err(e);
-                                }
-                            };
+        download_file_with_retries(asset.url.as_str(), &in_progress_file_zip, progress_tracker.clone()).await.map_err(|e| {
+            anyhow!("Error downloading version: {:?}. Error: {:?}", version, e)
+        })?;
 
-                            match validate_checksum(
-                                in_progress_file_zip.clone(),
-                                checksum_file,
-                                asset.clone().name,
-                            )
-                            .await
-                            {
-                                Ok(_) => {
-                                    info!(target: LOG_TARGET,"Checksum validated for version: {:?}", version.clone());
-                                    Ok(())
-                                }
-                                Err(e) => {
-                                    error!(target: LOG_TARGET,"Error validating checksum for version: {:?}. Error: {:?}", version.clone(), e);
-                                    let _unused = std::fs::remove_dir_all(destination_dir.clone()).map_err(
-                                        |error| {
-                                            error!(target: LOG_TARGET,"Error removing destination dir: {:?}. Error: {:?}", destination_dir, error);
-                                        },
-                                    );
-                                    Err(e)
-                                }
-                            }
-                        } else {
-                            Ok(())
-                        }
-                    }
-                    Err(e) => {
-                        error!(target: LOG_TARGET,"Error downloading version: {:?}. Error: {:?}", version.clone(), e);
-                        Err(e)
-                    }
-                }
-            }
+        info!(target: LOG_TARGET, "Downloaded version: {:?}", version);
+
+        extract(&in_progress_file_zip, &destination_dir).await.map_err(|e| {
+            anyhow!("Error extracting version: {:?}. Error: {:?}", version, e)
+        })?;
+
+        if self.should_validate_checksum {
+            self.validate_checksum(&version, asset, destination_dir, in_progress_file_zip, progress_tracker).await?;
         }
+    
+        Ok(())
     }
 
     pub async fn read_local_versions(&mut self) {
@@ -451,56 +374,40 @@ impl BinaryManager {
             }
         };
 
-        match std::fs::read_dir(binary_folder) {
-            Ok(version_folders_list) => {
-                for version_folder in version_folders_list {
-                    let version_folder = match version_folder {
-                        Ok(version_folder) => version_folder,
-                        Err(e) => {
-                            error!(target: LOG_TARGET,"Error reading version folder. Error: {:?}", e);
-                            continue;
-                        }
-                    };
-                    let is_folder = match version_folder.file_type() {
-                        Ok(file_type) => file_type.is_dir(),
-                        Err(e) => {
-                            error!(target: LOG_TARGET,"Error getting file type. Error: {:?}", e);
-                            continue;
-                        }
-                    };
-
-                    if !is_folder {
-                        continue;
-                    }
-
-                    let version_folder = version_folder.file_name();
-                    let version_folder_name = match version_folder.to_str() {
-                        Some(name) => name,
-                        None => {
-                            error!(target: LOG_TARGET,"Error getting version folder name");
-                            continue;
-                        }
-                    };
-                    match Version::from_str(version_folder_name) {
-                        Ok(version) => {
-                            info!(target: LOG_TARGET,"Found local version: {:?}", version);
-                            if self.check_if_version_meet_requirements(&version)
-                                && self.check_if_files_for_version_exist(Some(version.clone()))
-                            {
-                                info!(target: LOG_TARGET,"Adding local version to list: {:?}", version);
-                                self.local_aviailable_versions_list.push(version);
-                            }
-                        }
-                        Err(e) => {
-                            error!("Error parsing version folder name: {:?}", e);
-                        }
-                    }
-                }
-            }
+        let version_folders_list = match std::fs::read_dir(binary_folder) {
+            Ok(list) => list,
             Err(e) => {
-                error!(target: LOG_TARGET,"Error reading binary folder. Error: {:?}", e);
+                error!(target: LOG_TARGET, "Error reading binary folder. Error: {:?}", e);
+                return;
             }
         };
+
+        version_folders_list.filter_map(Result::ok).for_each(|version_folder| {
+            if let Ok(file_type) = version_folder.file_type() {
+                if file_type.is_dir() {
+                    if let Some(version_folder_name) = version_folder.file_name().to_str() {
+                        match Version::from_str(version_folder_name) {
+                            Ok(version) => {
+                                info!(target: LOG_TARGET, "Found local version: {:?}", version);
+                                if self.check_if_version_meet_requirements(&version)
+                                    && self.check_if_files_for_version_exist(Some(version.clone()))
+                                {
+                                    info!(target: LOG_TARGET, "Adding local version to list: {:?}", version);
+                                    self.local_aviailable_versions_list.push(version);
+                                }
+                            }
+                            Err(e) => {
+                                error!("Error parsing version folder name: {:?}", e);
+                            }
+                        }
+                    } else {
+                        error!(target: LOG_TARGET, "Error getting version folder name");
+                    }
+                }
+            } else {
+                error!(target: LOG_TARGET, "Error getting file type. Error");
+            }
+        });
     }
 
     pub fn set_used_version(&mut self, version: Version) {
@@ -513,15 +420,13 @@ impl BinaryManager {
     }
 
     pub fn get_base_dir(&self) -> Result<PathBuf, Error> {
-        match self.adapter.get_binary_folder() {
-            Ok(path) => match self.used_version.clone() {
-                Some(version) => Ok(path.join(version.to_string())),
-                None => Err(anyhow!("No version selected")),
-            },
-            Err(e) => {
-                error!(target: LOG_TARGET,"Error getting binary folder. Error: {:?}", e);
-                Err(e)
-            }
-        }
+        self.adapter.get_binary_folder().and_then(|path| {
+            self.used_version
+                .clone()
+                .map(|version| path.join(version.to_string()))
+                .ok_or_else(|| anyhow!("No version selected"))
+        }).map_err(|e| {
+            anyhow!("Error getting binary folder. Error: {:?}", e)
+        })
     }
 }
