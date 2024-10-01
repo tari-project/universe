@@ -154,9 +154,9 @@ impl BinaryManager {
 
         self.adapter
             .find_version_for_platform(version_info)
-            .and_then(|asset| {
+            .map(|asset| {
                 info!(target: LOG_TARGET, "Found asset for version: {:?}", selected_version);
-                Ok(asset)
+                asset
             })
             .map_err(|error| {
                 anyhow!(

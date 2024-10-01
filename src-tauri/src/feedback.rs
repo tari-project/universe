@@ -3,7 +3,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::{Error, Result};
+use anyhow::{anyhow, Error, Result};
 use log::{error, info};
 use regex::Regex;
 use reqwest::multipart;
@@ -49,7 +49,7 @@ impl Feedback {
         let mut buffer = Vec::new();
 
         let log_regex_filter = Regex::new(r"^(.*[0-9]+\.log|.*\.zip)$")
-            .or_else(|e| Err(anyhow::anyhow!("Failed to create log file filter: {}", e)))?;
+            .map_err(|e| anyhow!("Failed to create log file filter: {}", e))?;
 
         while let Some(next) = paths_queue.pop() {
             let directory_entry_iterator = std::fs::read_dir(next)?;
