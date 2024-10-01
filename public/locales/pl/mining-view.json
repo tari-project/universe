@@ -10,6 +10,7 @@
     "changing-mode": "Zmiana trybu",
     "cancel-mining": "Anuluj kopanie",
     "waiting-for-idle": "Oczekiwanie na bezczynność",
-    "started-auto-mining": "Automatyczne kopanie uruchomione"
+    "started-auto-mining": "Automatyczne kopanie uruchomione",
+    "stop-mining": "Zatrzymaj kopanie"
   }
 }

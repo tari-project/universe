@@ -1,5 +1,19 @@
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "airdrop-env")]
+const AIRDROP_BASE_URL: &str =
+    std::env!("AIRDROP_BASE_URL", "AIRDROP_BASE_URL env var not defined");
+#[cfg(feature = "airdrop-env")]
+const AIRDROP_API_BASE_URL: &str = std::env!(
+    "AIRDROP_API_BASE_URL",
+    "AIRDROP_API_BASE_URL env var not defined"
+);
+#[cfg(feature = "airdrop-env")]
+const AIRDROP_TWITTER_AUTH_URL: &str = std::env!(
+    "AIRDROP_TWITTER_AUTH_URL",
+    "AIRDROP_TWITTER_AUTH_URL env var not defined"
+);
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
     pub airdrop_url: String,
@@ -31,7 +45,7 @@ impl Default for AppInMemoryConfig {
         AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
-            airdrop_twitter_auth_url: "https://airdrop.tari.com".into(),
+            airdrop_twitter_auth_url: "https://airdrop.tari.com/auth".into(),
             airdrop_access_token: None,
         }
     }
@@ -39,15 +53,23 @@ impl Default for AppInMemoryConfig {
 
 impl AppInMemoryConfig {
     pub fn init() -> Self {
-        AppInMemoryConfig::default()
-    }
+        #[cfg(feature = "airdrop-env")]
+        return AppInMemoryConfig {
+            airdrop_url: AIRDROP_BASE_URL.into(),
+            airdrop_api_url: AIRDROP_API_BASE_URL.into(),
+            airdrop_twitter_auth_url: AIRDROP_TWITTER_AUTH_URL.into(),
+            airdrop_access_token: None,
+        };
 
-    pub fn init_local() -> Self {
-        AppInMemoryConfig {
+        #[cfg(feature = "airdrop-local")]
+        return AppInMemoryConfig {
             airdrop_url: "http://localhost:4000".into(),
             airdrop_api_url: "http://localhost:3004".into(),
             airdrop_twitter_auth_url: "http://localhost:3004/auth/twitter".into(),
             airdrop_access_token: None,
-        }
+        };
+
+        #[cfg(not(any(feature = "airdrop-local", feature = "airdrop-env")))]
+        AppInMemoryConfig::default()
     }
 }

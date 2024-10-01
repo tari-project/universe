@@ -13,7 +13,7 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 enum MiningButtonStateText {
-    STARTED = 'pause-mining',
+    STARTED = 'stop-mining',
     START = 'start-mining',
 }
 

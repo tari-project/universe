@@ -34,6 +34,7 @@ const initialState: State = {
     monero_address: '',
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
+    airdrop_ui_enabled: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
