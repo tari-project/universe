@@ -83,6 +83,11 @@ const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::main";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
+#[cfg(feature = "release-ci")]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
+#[cfg(not(feature = "release-ci"))]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
+
 #[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UpdateProgressRustEvent {
@@ -1344,13 +1349,8 @@ fn main() {
         tari_address: TariAddress::default(),
     }));
 
-    let app_in_memory_config = if cfg!(feature = "airdrop-local") {
-        Arc::new(RwLock::new(
-            app_in_memory_config::AppInMemoryConfig::init_local(),
-        ))
-    } else {
-        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()))
-    };
+    let app_in_memory_config =
+        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
     let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());

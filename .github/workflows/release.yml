@@ -32,34 +32,24 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-20.04'
-            args: ''
+            args: ' --features "release-ci"'
           - platform: 'windows-2019'
-            args: '--bundles msi,updater'
+            args: '--bundles msi,updater --features "release-ci"'
           - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+            args: '--target universal-apple-darwin --features "release-ci"'
 
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set environment variables for release
-        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
-        shell: bash
-        run: |
-          echo "tagName=v__VERSION__" >> $GITHUB_ENV
-          echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
-          #echo "releaseId=" >> $GITHUB_ENV
-          echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
-          echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
-
       - name: beta builds - Install dependencies (windows) [yq]
-        if: ${{ ( startsWith(runner.os,'Windows') ) && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        if: ${{  startsWith(runner.os,'Windows')  }}
         run: |
           choco upgrade yq -y
 
       - name: beta builds - Install dependencies (linux) [yq]
-        if: ${{ ( startsWith(runner.os,'Linux') ) && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        if: ${{  startsWith(runner.os,'Linux')  }}
         shell: bash
         run: |
           sudo bash ./scripts/check-get-yq.sh
@@ -67,12 +57,18 @@ jobs:
       - name: Set environment variables for beta builds
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          BETA_STRING: "-beta"
+          BETA_STRING: " -beta"
+          AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
+          AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
+          AIRDROP_TWITTER_AUTH_URL: ${{ secrets.BETA_AIRDROP_TWITTER_AUTH_URL }}
         shell: bash
         run: |
           #set -xueo pipefail
           echo "TARI_NETWORK=esme" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
+          echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_TWITTER_AUTH_URL=${{ env.AIRDROP_TWITTER_AUTH_URL }}" >> $GITHUB_ENV
           #export BETA_DATE=$(date +%Y-%m-%d)
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=4$(date +%m%d)
@@ -81,8 +77,35 @@ jobs:
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".package.productName += \"${{ env.BETA_STRING }}\"" -i tauri.conf.json
           yq eval ".package.version += \"-${BETA_DATE}\"" -i tauri.conf.json
+          #yq eval ".tauri.bundle.identifier += \".beta\"" -i tauri.conf.json
+          yq eval ".tauri.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
+            -i tauri.conf.json
+          cat tauri.conf.json
           sed -i.bak -E "s/^version\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"/version = \"\1-${BETA_DATE}\"/" \
             Cargo.toml
+          cat Cargo.toml
+
+      - name: Set environment variables for RELEASE builds
+        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        env:
+          AIRDROP_BASE_URL: ${{ secrets.AIRDROP_BASE_URL }}
+          AIRDROP_API_BASE_URL: ${{ secrets.AIRDROP_API_BASE_URL }}
+          AIRDROP_TWITTER_AUTH_URL: ${{ secrets.AIRDROP_TWITTER_AUTH_URL }}
+        shell: bash
+        run: |
+          #set -xueo pipefail
+          echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_TWITTER_AUTH_URL=${{ env.AIRDROP_TWITTER_AUTH_URL }}" >> $GITHUB_ENV
+          # Setup tauri action envs
+          echo "tagName=v__VERSION__" >> $GITHUB_ENV
+          echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
+          #echo "releaseId=" >> $GITHUB_ENV
+          echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
+          cd "${GITHUB_WORKSPACE}/src-tauri"
+          # Don't mess with the double quotes and inner escaped quotes
+          yq eval ".tauri.bundle.identifier = \"com.tari.universe\"" -i tauri.conf.json
 
       - name: Node.js setup
         uses: actions/setup-node@v4

@@ -28,7 +28,6 @@ export const ExperimentalSettings = () => {
                             <SettingsGroupWrapper>
                                 <SettingsGroup>
                                     <VisualMode />
-                                    <ToggleAirdropUi />
                                 </SettingsGroup>
                             </SettingsGroupWrapper>
                         </>

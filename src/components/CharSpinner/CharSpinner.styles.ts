@@ -1,9 +1,10 @@
 import { m } from 'framer-motion';
 import { CharSpinnerVariant } from '@app/components/CharSpinner/CharSpinner.tsx';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 interface Props {
     $decimal?: boolean;
+    $unit?: boolean;
     $letterHeight?: number;
     $letterWidth?: number;
     $fontSize?: number;
@@ -53,13 +54,16 @@ export const Character = styled(m.div)<Props>`
     display: flex;
     justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
-    letter-spacing: -4px;
     text-transform: lowercase;
     width: min-content;
+    letter-spacing: -3px;
     // for the unit & decimal
-    &:last-child {
-        width: ${({ $decimal }) => ($decimal ? 'min-content' : '1ch')};
-        margin-left: 1px;
-        margin-right: -1px;
-    }
+
+    ${({ $decimal, $unit }) =>
+        ($decimal || $unit) &&
+        css`
+            letter-spacing: normal;
+            margin-left: 1px;
+            margin-right: -1px;
+        `}
 `;

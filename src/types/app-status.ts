@@ -16,6 +16,7 @@ export interface AppConfig {
     monero_address: string;
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
+    airdrop_ui_enabled: boolean;
 }
 
 export interface CpuMinerMetrics {
