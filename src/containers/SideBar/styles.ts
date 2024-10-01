@@ -12,39 +12,14 @@ export const SideBarContainer = styled(m.div)`
     pointer-events: auto;
     display: flex;
     flex-direction: column;
-    justify-content: stretch;
+    justify-content: space-between;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     background: ${({ theme }) => theme.palette.background.paper};
-    padding: 16px 0;
-    gap: 8px;
     position: relative;
-`;
-
-export const TopContainer = styled(m.div)`
-    padding: 0 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-`;
-
-export const SideBarInner = styled(m.div)`
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    padding: 0 16px;
     height: 100%;
-`;
-
-export const BottomContainer = styled(m.div)`
-    display: flex;
-    justify-content: flex-start;
-    justify-self: flex-end;
-    width: 100%;
-    padding: 0 16px;
-
-    flex-direction: column;
-    gap: 13px;
+    overflow: hidden;
+    padding: 16px 0 0;
 `;
 
 // Wallet
@@ -101,8 +76,26 @@ export const GemBox = styled(m.div)`
     background-size: 8px;
     width: 14px;
     height: 14px;
-    position: absolute;
+    position: relative;
     right: 1px;
     border-radius: 50%;
     border: 1px solid #d3d3d3;
+`;
+
+export const Scroll = styled(m.div)`
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-y: auto;
+    gap: 8px;
+    height: 100%;
+`;
+export const Top = styled(m.div)`
+    display: flex;
+    flex-direction: column;
+`;
+export const Bottom = styled(m.div)`
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 `;
