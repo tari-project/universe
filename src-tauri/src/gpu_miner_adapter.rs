@@ -255,12 +255,12 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         if file.exists() {
             let config = fs::read_to_string(&file).unwrap();
             match serde_json::from_str::<GpuStatusFile>(&config) {
-                /*
-                 * TODO if the following PR is merged
-                 * https://github.com/tari-project/universe/pull/612
-                 * use `exlcude gpu device` to not disable not available devices
-                 */
                 Ok(config) => {
+                    /*
+                     * TODO if the following PR is merged
+                     * https://github.com/tari-project/universe/pull/612
+                     * use `exlcude gpu device` to not disable not available devices
+                     */
                     println!("GPU STATUS FILE: {:?}", config.gpu_devices);
                 }
                 Err(e) => {
@@ -268,7 +268,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                 }
             }
         } else {
-            println!("GPU STATUS FILE NOT FOUND {:?}", file);
+            warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
         }
         let response = match client
             .get(format!("http://127.0.0.1:{}/stats", self.http_api_port))
@@ -296,10 +296,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         };
         let text = response.text().await?;
         let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
-            Ok(body) => {
-                dbg!(&body);
-                body
-            }
+            Ok(body) => body,
             Err(e) => {
                 warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {}", e);
                 return Ok(GpuMinerStatus {
