@@ -1,16 +1,15 @@
 import { Wrapper, InviteButton, Image, TextWrapper, Title, Text, GemPill, Copied } from './styles';
-import giftImage from '../../../../images/gift.png';
 import gemImage from '../../../../images/gem.png';
 import { REFERRAL_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import LinkIcon from './LinkIcon';
 
 export default function Invite() {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const { userDetails, referralCount, referralQuestPoints } = useAirdropStore();
+    const { userDetails, referralQuestPoints } = useAirdropStore();
 
     const referralCode = userDetails?.user?.referral_code || '';
 

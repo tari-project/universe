@@ -21,7 +21,6 @@ export default function AirdropGiftTracker() {
         <Wrapper>
             <TitleWrapper>
                 <Title>{t('airdropGame')}</Title>
-
                 <InfoTooltip title={t('topTooltipTitle')} text={t('topTooltipText')} />
             </TitleWrapper>
 
