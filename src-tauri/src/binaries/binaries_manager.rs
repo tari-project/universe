@@ -233,7 +233,7 @@ impl BinaryManager {
             Ok(_) => {
                 info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
                 Ok(())
-            },
+            }
             Err(e) => {
                 std::fs::remove_dir_all(destination_dir.clone()).ok();
                 Err(anyhow!(
@@ -241,10 +241,8 @@ impl BinaryManager {
                     version,
                     e
                 ))
-            },
-
+            }
         }
-
     }
 
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
