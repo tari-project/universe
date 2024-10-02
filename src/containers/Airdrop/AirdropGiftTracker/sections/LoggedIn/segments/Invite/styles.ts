@@ -12,7 +12,7 @@ export const InviteButton = styled('button')`
     position: relative;
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 10px;
 
     height: 50px;
     padding: 12px 14px 12px 13px;
@@ -22,6 +22,10 @@ export const InviteButton = styled('button')`
 
     transition: transform 0.2s ease;
     overflow: hidden;
+
+    svg {
+        flex-shrink: 0;
+    }
 
     &:hover {
         transform: scale(1.05);

@@ -45,7 +45,7 @@ impl Default for AppInMemoryConfig {
         AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
-            airdrop_twitter_auth_url: "https://airdrop.tari.com".into(),
+            airdrop_twitter_auth_url: "https://airdrop.tari.com/auth".into(),
             airdrop_access_token: None,
         }
     }

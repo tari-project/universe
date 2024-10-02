@@ -25,5 +25,9 @@
   "claimModalTitle": "테스트넷에서 채굴하여 보상을 받으세요",
   "claimModalText": "테스트넷 동안 채굴하고 친구를 추천하여 에어드롭 보상을 늘리세요! 추천 코드가 있나요? 아래에 입력하고 추가로 <strong>{{gems}}</strong>개의 보석을 당신과 친구에게 받으세요!",
   "claimModalFieldLabel": "선택 사항",
-  "claimModalFieldPlaceholder": "추천 코드 입력"
+  "claimModalFieldPlaceholder": "추천 코드 입력",
+  "topTooltipText": "보석을 모아 Tari 에어드롭을 받으세요. 더 많은 보석을 모을수록 더 큰 에어드롭을 받습니다.",
+  "topTooltipTitle": "테스트넷 보상",
+  "claimModalFinePrint": "<strong>참고:</strong> 보석을 수령하면 분석 기능이 활성화되어 Universe를 개선할 수 있습니다",
+  "inviteFriendsText": "링크를 복사하여 공유하세요"
 }

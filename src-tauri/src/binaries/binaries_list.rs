@@ -24,15 +24,15 @@ impl Binaries {
         }
     }
 
-    pub fn from_name(name: &str) -> Option<Self> {
+    pub fn from_name(name: &str) -> Self {
         match name {
-            "xmrig" => Some(Binaries::Xmrig),
-            "mmproxy" => Some(Binaries::MergeMiningProxy),
-            "minotari_node" => Some(Binaries::MinotariNode),
-            "wallet" => Some(Binaries::Wallet),
-            "sha-p2pool" => Some(Binaries::ShaP2pool),
-            "xtrgpuminer" => Some(Binaries::GpuMiner),
-            _ => None,
+            "xmrig" => Binaries::Xmrig,
+            "mmproxy" => Binaries::MergeMiningProxy,
+            "minotari_node" => Binaries::MinotariNode,
+            "wallet" => Binaries::Wallet,
+            "sha-p2pool" => Binaries::ShaP2pool,
+            "xtrgpuminer" => Binaries::GpuMiner,
+            _ => panic!("Unknown binary name: {}", name),
         }
     }
 

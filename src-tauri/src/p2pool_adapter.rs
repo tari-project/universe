@@ -16,6 +16,7 @@ use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
+use crate::utils::file_utils::convert_to_string;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -48,15 +49,22 @@ impl ProcessAdapter for P2poolAdapter {
         info!(target: LOG_TARGET, "Starting p2pool node");
 
         let working_dir = data_local_dir()
-            .unwrap()
+            .expect("Could not get local data directory")
             .join("tari-universe")
             .join("sha-p2pool");
-        std::fs::create_dir_all(&working_dir)?;
+        std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
+            warn!(target: LOG_TARGET, "Could not create p2pool working directory - {}", error);
+        });
 
         if self.config.is_none() {
             return Err(anyhow!("P2poolAdapter config is not set"));
         }
-        let config = self.config.as_ref().unwrap();
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow!("P2poolAdapter config is not set"))?;
+        let log_path_string = convert_to_string(log_path.join("sha-p2pool"))?;
+
         let mut args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
@@ -67,7 +75,7 @@ impl ProcessAdapter for P2poolAdapter {
             config.base_node_address.clone(),
             "--mdns-disabled".to_string(),
             "-b".to_string(),
-            log_path.join("sha-p2pool").to_str().unwrap().to_string(),
+            log_path_string,
         ];
         let pid_file_name = self.pid_file_name().to_string();
         Ok((
