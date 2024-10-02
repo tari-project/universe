@@ -59,7 +59,15 @@ pub async fn list_releases(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
-    let releases = list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await;
+    let mut attempts = 0;
+    let releases = loop {
+        let result = list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await;
+        if result.as_ref().map_or(false, |r| !r.is_empty()) || attempts >= 3 {
+            break result;
+        }
+        attempts += 1;
+    };
+
     if releases.as_ref().map_or(false, |r| !r.is_empty()) {
         releases
     } else {
