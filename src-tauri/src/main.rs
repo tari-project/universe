@@ -1565,7 +1565,6 @@ fn main() {
             }
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
-                
                 let content_length = content_length.unwrap_or_else(|| {
                     warn!(target: LOG_TARGET, "Unable to determine content length");
                     downloaded
