@@ -3,6 +3,8 @@
 
 use log::trace;
 use log::{debug, error, info, warn};
+use sentry::protocol::Event;
+use sentry_tauri::sentry;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
@@ -1173,7 +1175,17 @@ async fn get_miner_metrics(
 #[tauri::command]
 fn log_web_message(level: String, message: Vec<String>) {
     match level.as_str() {
-        "error" => error!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
+        "error" => {
+            let joined_message = message.join(" ");
+            sentry::capture_event(Event {
+                message: Some(joined_message.clone()),
+                level: sentry::Level::Error,
+                culprit: Some("universe-web".to_string()),
+                ..Default::default()
+            });
+            error!(target: LOG_TARGET_WEB, "{}", joined_message)
+        }
+
         _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
     }
 }
@@ -1351,6 +1363,8 @@ struct Payload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
+    // sets the logger and does not expose a way to add sentry into it.
     let client = sentry_tauri::sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
         sentry_tauri::sentry::ClientOptions {
@@ -1444,6 +1458,7 @@ fn main() {
         }))
         .manage(app_state.clone())
         .setup(|app| {
+            // TODO: Combine with sentry log
             tari_common::initialize_logging(
                 &app.path_resolver()
                     .app_config_dir()
