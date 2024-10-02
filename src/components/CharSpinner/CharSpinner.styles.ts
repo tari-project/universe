@@ -18,6 +18,7 @@ export const Wrapper = styled.div<{ $letterHeight?: number }>`
     flex-direction: row;
     align-items: baseline;
     gap: 4px;
+
     span {
         display: flex;
         font-weight: 600;
@@ -57,6 +58,7 @@ export const Character = styled(m.div)<Props>`
     text-transform: lowercase;
     width: min-content;
     letter-spacing: -3px;
+    z-index: 1;
     // for the unit & decimal
 
     ${({ $decimal, $unit }) =>
