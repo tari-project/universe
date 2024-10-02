@@ -25,5 +25,9 @@
   "claimModalTitle": "Zarabiaj nagrody za wydobycie na Testnecie",
   "claimModalText": "Zarabiaj klejnoty poprzez wydobycie i polecanie znajomych, aby zwiększyć swoją nagrodę airdrop podczas testnetu! Masz kod polecający? Wpisz go poniżej i zdobądź dodatkowe <strong>{{gems}}</strong> klejnotów dla siebie i swojego znajomego!",
   "claimModalFieldLabel": "Opcjonalne",
-  "claimModalFieldPlaceholder": "Wpisz kod polecający"
+  "claimModalFieldPlaceholder": "Wpisz kod polecający",
+  "topTooltipText": "Zdobądź Airdrop Tari, zbierając klejnoty. Im więcej klejnotów zdobędziesz, tym większy będzie twój airdrop.",
+  "topTooltipTitle": "Nagrody Testnet",
+  "claimModalFinePrint": "<strong>Uwaga:</strong> odbieranie klejnotów włącza analitykę, abyśmy mogli ulepszyć Universe",
+  "inviteFriendsText": "Skopiuj link i udostępnij go"
 }
