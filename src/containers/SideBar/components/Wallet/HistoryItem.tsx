@@ -45,7 +45,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     <TariSvg />
                 </SquadIconWrapper>
                 <InfoWrapper>
-                    <Typography>{`Solved block #${item.solvedBlock}`}</Typography>
+                    <Typography>{`Block #${item.solvedBlock}`}</Typography>
                     <Typography variant="p">
                         {item.time
                             ?.toLocaleString(undefined, {
