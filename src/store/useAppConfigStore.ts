@@ -136,7 +136,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     },
     setP2poolEnabled: async (p2poolEnabled) => {
         set({ p2pool_enabled: p2poolEnabled });
-        invoke('set_p2pool_enabled', { p2pool_enabled: p2poolEnabled }).catch((e) => {
+        invoke('set_p2pool_enabled', { p2poolEnabled }).catch((e) => {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set P2pool enabled', e);
             appStateStore.setError('Could not change P2pool enabled');
