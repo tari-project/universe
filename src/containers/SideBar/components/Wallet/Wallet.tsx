@@ -50,9 +50,11 @@ export default function Wallet() {
 
     return (
         <WalletContainer layout style={{ height: showHistory ? 'auto' : 178 }} transition={{ duration: 0.2 }}>
-            <ShowHistoryButton onClick={() => setShowHistory((c) => !c)} style={{ minWidth: 80 }}>
-                {!showHistory ? 'Show' : 'Hide'} history
-            </ShowHistoryButton>
+            {balance ? (
+                <ShowHistoryButton onClick={() => setShowHistory((c) => !c)} style={{ minWidth: 80 }}>
+                    {!showHistory ? 'Show' : 'Hide'} history
+                </ShowHistoryButton>
+            ) : null}
             {balanceMarkup}
             <AnimatePresence mode="wait">{showHistory ? <History /> : null}</AnimatePresence>
             <ScrollMask />

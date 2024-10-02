@@ -26,13 +26,14 @@ export const LeftContent = styled.div`
     flex-shrink: 0;
 `;
 
-export const SquadIconWrapper = styled.div`
+export const SquadIconWrapper = styled.div<{ $colour: string; $colour1: string; $colour2: string }>`
     border-radius: 100%;
     flex-shrink: 0;
     display: flex;
     width: 32px;
     height: 32px;
-    background: linear-gradient(70deg, deeppink, darkorange 72%, orangered);
+    background: ${({ $colour, $colour1, $colour2 }) =>
+        ` linear-gradient(77deg, ${$colour}, ${$colour1} 72%, ${$colour2})`};
     align-items: center;
     justify-content: center;
 
