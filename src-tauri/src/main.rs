@@ -96,7 +96,7 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[serde(rename_all = "camelCase")]
 struct UpdateProgressRustEvent {
     chunk_length: usize,
-    content_length: Option<u64>,
+    content_length: u64,
     downloaded: u64,
 }
 
@@ -1565,8 +1565,16 @@ fn main() {
             }
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
+                
+                let content_length = content_length.unwrap_or_else(|| {
+                    warn!(target: LOG_TARGET, "Unable to determine content length");
+                    downloaded
+                });
+
+                info!(target: LOG_TARGET, "Chunk Length: {} | Download progress: {} / {}", chunk_length, downloaded, content_length);
+
                 if let Some(window) = _app_handle.get_window("main") {
-                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
+                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded: downloaded.min(content_length) }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
                     );
                 }
             }
