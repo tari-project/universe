@@ -25,16 +25,28 @@ const mockItems: WonBlockItem[] = [
         solvedBlock: 9040,
     },
     {
-        earnings: 3475,
-        solvedBlock: 8011,
+        earnings: 345,
+        solvedBlock: 8091,
     },
     {
         earnings: 13475,
-        solvedBlock: 6245,
+        solvedBlock: 7695,
+    },
+    {
+        earnings: 1475,
+        solvedBlock: 7040,
+    },
+    {
+        earnings: 3475,
+        solvedBlock: 6011,
+    },
+    {
+        earnings: 13475,
+        solvedBlock: 5245,
     },
     {
         earnings: 475,
-        solvedBlock: 5573,
+        solvedBlock: 4573,
     },
     {
         earnings: 2475,

@@ -33,7 +33,7 @@ export const SquadIconWrapper = styled.div<{ $colour: string; $colour1: string; 
     width: 32px;
     height: 32px;
     background: ${({ $colour, $colour1, $colour2 }) =>
-        ` linear-gradient(57deg, ${$colour}, ${$colour1} 102%, ${$colour2}) 98%`};
+        ` linear-gradient(67deg, ${$colour}, ${$colour1} 12%, ${$colour2}) 6%`};
     align-items: center;
     justify-content: center;
 
