@@ -39,7 +39,7 @@ pub struct AppConfigFromFile {
     should_always_use_system_language: bool,
     #[serde(default = "default_application_language")]
     application_language: String,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     airdrop_ui_enabled: bool,
 }
 
@@ -59,7 +59,7 @@ impl Default for AppConfigFromFile {
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: default_application_language(),
-            airdrop_ui_enabled: false,
+            airdrop_ui_enabled: true,
         }
     }
 }
@@ -124,7 +124,7 @@ impl AppConfig {
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: default_application_language(),
-            airdrop_ui_enabled: false,
+            airdrop_ui_enabled: true,
         }
     }
 
@@ -172,6 +172,10 @@ impl AppConfig {
             // Change the default value of p2pool_enabled to false in version 7
             self.config_version = 7;
             self.p2pool_enabled = true;
+        }
+        if self.config_version <= 7 {
+            self.config_version = 8;
+            self.airdrop_ui_enabled = true;
         }
     }
 
@@ -313,8 +317,6 @@ impl AppConfig {
             .clone()
             .ok_or_else(|| anyhow!("Config file not set"))?;
 
-        let default_config = AppConfigFromFile::default();
-
         let config = &AppConfigFromFile {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
@@ -330,7 +332,6 @@ impl AppConfig {
             should_always_use_system_language: self.should_always_use_system_language,
             application_language: self.application_language.clone(),
             airdrop_ui_enabled: self.airdrop_ui_enabled,
-            ..default_config
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
