@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use log::{debug, info};
+use log::{debug, info, warn};
 use reqwest::Client;
 use serde::Deserialize;
 
@@ -66,6 +66,11 @@ pub async fn list_releases(
             break result;
         }
         attempts += 1;
+        warn!(
+            target: LOG_TARGET,
+            "Failed to fetch releases from mirror, attempt {}",
+            attempts
+        );
     };
 
     if releases.as_ref().map_or(false, |r| !r.is_empty()) {
