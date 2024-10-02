@@ -6,11 +6,10 @@
   "mining-button-text": {
     "starting-mining": "Madenci Başlatılıyor",
     "start-mining": "Madenciyi Başlat",
-    "pause-mining": "Madenciyi Durdur",
+    "stop-mining": "Madenciliği Durdur",
     "changing-mode": "Mod değiştirme",
     "cancel-mining": "Madenciyi İptal Et",
     "waiting-for-idle": "Boşta Bekliyor",
     "started-auto-mining": "Otomatik Madencilik Başladı",
-    "stop-mining": "Madenciliği Durdur"
   }
 }
