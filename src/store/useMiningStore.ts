@@ -13,6 +13,7 @@ interface State extends MinerMetrics {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
+    excludedGpuDevices: number[];
     counter: number;
 }
 
@@ -24,6 +25,7 @@ interface Actions {
     changeMiningMode: (mode: modeType) => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
+    setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
 }
 type MiningStoreState = State & Actions;
 
@@ -33,6 +35,7 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
+    excludedGpuDevices: [],
     cpu: {
         hardware: undefined,
         mining: {
@@ -43,7 +46,7 @@ const initialState: State = {
         },
     },
     gpu: {
-        hardware: undefined,
+        hardware: [],
         mining: {
             is_mining: false,
             hash_rate: 0,
@@ -152,4 +155,15 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setExcludedGpuDevice: async (excludedGpuDevices) => {
+        set({ excludedGpuDevices });
+        try {
+            await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
+        } catch (e) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set excluded gpu device: ', e);
+            appStateStore.setError(e as string);
+            set({ excludedGpuDevices: undefined });
+        }
+    },
 }));
