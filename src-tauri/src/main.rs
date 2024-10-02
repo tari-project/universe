@@ -123,13 +123,13 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
         .await
         .map_err(|e| e.to_string())?;
     let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
+    error!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
     let exit_code = state
         .p2pool_manager
         .stop()
         .await
         .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
+    error!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
 
     state.shutdown.clone().trigger();
 
