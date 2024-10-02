@@ -62,6 +62,10 @@ jobs:
 
       - name: clippy check (with lints)
         working-directory: ./src-tauri
+        env:
+          AIRDROP_BASE_URL: http://localhost:4000
+          AIRDROP_API_BASE_URL: http://localhost:3004
+          AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
         run: |
           cargo install cargo-lints
           cargo lints clippy --all-targets --all-features

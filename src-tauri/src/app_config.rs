@@ -39,6 +39,8 @@ pub struct AppConfigFromFile {
     should_always_use_system_language: bool,
     #[serde(default = "default_application_language")]
     application_language: String,
+    #[serde(default = "default_false")]
+    airdrop_ui_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -57,6 +59,7 @@ impl Default for AppConfigFromFile {
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: default_application_language(),
+            airdrop_ui_enabled: false,
         }
     }
 }
@@ -101,6 +104,7 @@ pub(crate) struct AppConfig {
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
     application_language: String,
+    airdrop_ui_enabled: bool,
 }
 
 impl AppConfig {
@@ -120,6 +124,7 @@ impl AppConfig {
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: default_application_language(),
+            airdrop_ui_enabled: false,
         }
     }
 
@@ -155,6 +160,7 @@ impl AppConfig {
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
                 self.should_always_use_system_language = config.should_always_use_system_language;
                 self.application_language = config.application_language;
+                self.airdrop_ui_enabled = config.airdrop_ui_enabled;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -221,6 +227,12 @@ impl AppConfig {
     pub fn auto_mining(&self) -> bool {
         self.auto_mining
     }
+
+    // pub async fn set_airdrop_ui_enabled(&mut self, airdrop_ui_enabled: bool) -> Result<(), anyhow::Error> {
+    //     self.airdrop_ui_enabled = airdrop_ui_enabled;
+    //     self.update_config_file().await?;
+    //     Ok(())
+    // }
 
     pub async fn set_allow_telemetry(
         &mut self,
@@ -296,7 +308,11 @@ impl AppConfig {
     // missing
     #[allow(clippy::needless_update)]
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
-        let file = self.config_file.clone().unwrap();
+        let file = self
+            .config_file
+            .clone()
+            .ok_or_else(|| anyhow!("Config file not set"))?;
+
         let default_config = AppConfigFromFile::default();
 
         let config = &AppConfigFromFile {
@@ -313,6 +329,7 @@ impl AppConfig {
             has_system_language_been_proposed: self.has_system_language_been_proposed,
             should_always_use_system_language: self.should_always_use_system_language,
             application_language: self.application_language.clone(),
+            airdrop_ui_enabled: self.airdrop_ui_enabled,
             ..default_config
         };
         let config = serde_json::to_string(config)?;

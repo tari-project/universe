@@ -8,19 +8,16 @@ import { useTranslation } from 'react-i18next';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-import useWalletDetailsUpdater from '@app/hooks/useWalletUpdater.ts';
 
 function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const balance = useWalletStore((state) => state.balance);
-    const formatted = formatBalance(balance);
+    const formatted = formatBalance(balance || 0);
     const sizing = formatted.length <= 6 ? 50 : formatted.length <= 8 ? 44 : 32;
     const [showBalance, setShowBalance] = useState(true);
 
-    useWalletDetailsUpdater();
-
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
-
+    const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
     return (
         <WalletContainer>
             <Handle />
@@ -38,7 +35,7 @@ function Wallet() {
                     </BalanceVisibilityButton>
                 </Stack>
                 <WalletBalance>
-                    <CharSpinner value={showBalance ? formatted : '*****'} variant="simple" fontSize={sizing} />
+                    <CharSpinner value={displayValue} variant="simple" fontSize={sizing} />
                 </WalletBalance>
             </WalletBalanceContainer>
         </WalletContainer>

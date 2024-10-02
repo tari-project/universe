@@ -1,6 +1,7 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
+use crate::utils::file_utils::convert_to_string;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, info, warn};
@@ -41,6 +42,7 @@ impl WalletAdapter {
 impl ProcessAdapter for WalletAdapter {
     type StatusMonitor = WalletStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -55,9 +57,12 @@ impl ProcessAdapter for WalletAdapter {
         let working_dir = data_dir.join("wallet");
         std::fs::create_dir_all(&working_dir)?;
 
+        let formatted_working_dir = convert_to_string(working_dir)?;
+        let formatted_log_dir = convert_to_string(log_dir)?;
+
         let mut args: Vec<String> = vec![
             "-b".to_string(),
-            working_dir.to_str().unwrap().to_string(),
+            formatted_working_dir,
             "--password".to_string(),
             "asjhfahjajhdfvarehnavrahuyg28397823yauifh24@@$@84y8".to_string(), // TODO: Maybe use a random password per machine
             "--view-private-key".to_string(),
@@ -65,7 +70,7 @@ impl ProcessAdapter for WalletAdapter {
             "--spend-key".to_string(),
             self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
-            format!("--log-path={}", log_dir.to_str().unwrap()),
+            format!("--log-path={}", formatted_log_dir),
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             "/ip4/127.0.0.1/tcp/18141".to_string(),

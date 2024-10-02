@@ -2,6 +2,7 @@ import AirdropPermissionSettings from './sections/general/AirdropPermissionSetti
 import LogsSettings from './sections/general/LogsSettings.tsx';
 import LanguageSettings from './sections/general/LanguageSettings.tsx';
 import { ResetSettingsButton } from './sections/general/ResetSettingsButton.tsx';
+import AirdropLogout from '../Airdrop/Settings/Logout.tsx';
 
 export const GeneralSettings = () => {
     return (
@@ -10,6 +11,7 @@ export const GeneralSettings = () => {
             <LogsSettings />
             <AirdropPermissionSettings />
             <ResetSettingsButton />
+            <AirdropLogout />
         </>
     );
 };

@@ -59,7 +59,13 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean }>`
     }
 
     &:disabled {
-        opacity: 0.9;
-        pointer-events: none;
+        opacity: 0.45;
+        cursor: wait;
+        &:hover {
+            background: ${({ $hasStarted }) =>
+                $hasStarted
+                    ? 'linear-gradient(90deg, #929292 0%, rgba(0,0,0,0.7) 99.49%)'
+                    : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
+        }
     }
 `;
