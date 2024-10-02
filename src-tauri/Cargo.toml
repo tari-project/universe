@@ -94,10 +94,4 @@ release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = [
-    "log4rs",
-    "xz2",
-    "libsqlite3-sys",
-    "minotari_wallet_grpc_client",
-    "dirs-next",
-]
+ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]
