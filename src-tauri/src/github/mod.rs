@@ -36,7 +36,7 @@ pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
 
 pub fn get_mirror_url(repo_owner: &str, repo_name: &str) -> String {
     format!(
-        "https://leet-local.tarilabs.com/{}/{}/releases/api.json",
+        "https://cdn-universe.tarilabs.com/{}/{}/releases/api.json",
         repo_owner, repo_name
     )
 }
