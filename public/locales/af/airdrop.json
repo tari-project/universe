@@ -25,5 +25,9 @@
   "claimModalTitle": "Verdien belonings vir Mynbou op Toetsnetwerk",
   "claimModalText": "Verdien edelstene deur te myn en vriende te verwys om u airdrop-belonings tydens die toetsnetwerk te verhoog! Het u \"n verwysingskode? Voer dit hieronder in en verdien \"n bykomende <strong>{{gems}}</strong> edelstene vir u en u vriend!",
   "claimModalFieldLabel": "Opsioneel",
-  "claimModalFieldPlaceholder": "Voer verwysingskode in"
+  "claimModalFieldPlaceholder": "Voer verwysingskode in",
+  "topTooltipText": "Kry \"n Tari Airdrop deur edelstene in te samel. Hoe meer edelstene jy verdien, hoe groter is jou airdrop.",
+  "topTooltipTitle": "Testnet Belonings",
+  "claimModalFinePrint": "<strong>Neem asseblief kennis:</strong> die eis van edelstene skakel analise aan sodat ons Universe kan verbeter",
+  "inviteFriendsText": "Kopieer skakel en deel dit"
 }

@@ -25,5 +25,9 @@
   "claimModalTitle": "Testnet\"te Madencilik Yaparak Ödüller Kazanın",
   "claimModalText": "Testnet sırasında madencilik yaparak ve arkadaşlarınızı davet ederek airdrop ödülünüzü artırın! Bir referans kodunuz var mı? Aşağıya girin ve siz ve arkadaşınız için ek <strong>{{gems}}</strong> taş kazanın!",
   "claimModalFieldLabel": "İsteğe Bağlı",
-  "claimModalFieldPlaceholder": "Referans kodunu girin"
+  "claimModalFieldPlaceholder": "Referans kodunu girin",
+  "topTooltipText": "Mücevher toplayarak bir Tari Airdrop kazanın. Ne kadar çok mücevher kazanırsanız, airdrop\"unuz o kadar büyük olur.",
+  "topTooltipTitle": "Testnet Ödülleri",
+  "claimModalFinePrint": "<strong>Lütfen dikkat:</strong> mücevher talep etmek, Universe\"i geliştirebilmemiz için analitiği etkinleştirir",
+  "inviteFriendsText": "Bağlantıyı kopyalayın ve paylaşın"
 }
