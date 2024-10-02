@@ -38,7 +38,7 @@ impl Default for HardwareParameters {
 #[derive(Debug, Serialize, Clone)]
 pub struct HardwareStatus {
     pub cpu: Option<HardwareParameters>,
-    pub gpu: Option<HardwareParameters>,
+    pub gpu: Vec<HardwareParameters>,
 }
 
 trait HardwareMonitorImpl: Send + Sync + 'static {
@@ -49,8 +49,8 @@ trait HardwareMonitorImpl: Send + Sync + 'static {
     ) -> HardwareParameters;
     fn read_gpu_parameters(
         &self,
-        current_parameters: Option<HardwareParameters>,
-    ) -> HardwareParameters;
+        current_parameters: Vec<HardwareParameters>,
+    ) -> Vec<HardwareParameters>;
     fn _log_all_components(&self);
 }
 
@@ -59,7 +59,7 @@ pub struct HardwareMonitor {
     current_os: CurrentOperatingSystem,
     current_implementation: Box<dyn HardwareMonitorImpl>,
     cpu: Option<HardwareParameters>,
-    gpu: Option<HardwareParameters>,
+    gpu: Vec<HardwareParameters>,
 }
 
 impl HardwareMonitor {
@@ -76,7 +76,7 @@ impl HardwareMonitor {
                 CurrentOperatingSystem::MacOS => Box::new(MacOSHardwareMonitor {}),
             },
             cpu: None,
-            gpu: None,
+            gpu: vec![],
         }
     }
 
@@ -118,10 +118,9 @@ impl HardwareMonitor {
             self.current_implementation
                 .read_cpu_parameters(self.cpu.clone()),
         );
-        let gpu = Some(
-            self.current_implementation
-                .read_gpu_parameters(self.gpu.clone()),
-        );
+        let gpu = self
+            .current_implementation
+            .read_gpu_parameters(self.gpu.clone());
 
         self.cpu = cpu.clone();
         self.gpu = gpu.clone();
@@ -189,51 +188,49 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
     }
     fn read_gpu_parameters(
         &self,
-        current_parameters: Option<HardwareParameters>,
-    ) -> HardwareParameters {
+        current_parameters: Vec<HardwareParameters>,
+    ) -> Vec<HardwareParameters> {
         let nvml = match &self.nvml {
             Some(nvml) => nvml,
             None => {
-                return HardwareParameters {
-                    label: "N/A".to_string(),
-                    usage_percentage: 0.0,
-                    current_temperature: 0.0,
-                    max_temperature: 0.0,
+                return vec![];
+            }
+        };
+
+        let num_of_devices = nvml.device_count().unwrap_or_else(|e| {
+            println!("Failed to get number of GPU devices: {}", e);
+            0
+        });
+        let mut gpu_devices = vec![];
+        for i in 0..num_of_devices {
+            let current_gpu = match nvml.device_by_index(i) {
+                Ok(device) => device,
+                Err(e) => {
+                    println!("Failed to get main GPU: {}", e);
+                    continue; // skip to the next iteration
                 }
-            }
-        };
+            };
 
-        let main_gpu = match nvml.device_by_index(0) {
-            Ok(device) => device,
-            Err(e) => {
-                println!("Failed to get main GPU: {}", e);
-                return HardwareParameters {
-                    label: "N/A".to_string(),
-                    usage_percentage: 0.0,
-                    current_temperature: 0.0,
-                    max_temperature: 0.0,
-                };
-            }
-        };
+            let current_temperature =
+                current_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
+            let usage_percentage = current_gpu.utilization_rates().unwrap().gpu as f32;
+            let label = current_gpu.name().unwrap();
 
-        let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
-        let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
-        let label = main_gpu.name().unwrap();
+            let max_temperature = match current_parameters.get(i as usize) {
+                Some(current_parameters) => {
+                    current_parameters.max_temperature.max(current_temperature)
+                }
+                None => current_temperature,
+            };
 
-        match current_parameters {
-            Some(current_parameters) => HardwareParameters {
+            gpu_devices.push(HardwareParameters {
                 label,
                 usage_percentage,
                 current_temperature,
-                max_temperature: current_parameters.max_temperature.max(current_temperature),
-            },
-            None => HardwareParameters {
-                label,
-                usage_percentage,
-                current_temperature,
-                max_temperature: current_temperature,
-            },
+                max_temperature,
+            });
         }
+        gpu_devices
     }
 }
 
@@ -311,52 +308,49 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
     }
     fn read_gpu_parameters(
         &self,
-        current_parameters: Option<HardwareParameters>,
-    ) -> HardwareParameters {
-        let nvml: &Nvml = match &self.nvml {
+        current_parameters: Vec<HardwareParameters>,
+    ) -> Vec<HardwareParameters> {
+        let nvml = match &self.nvml {
             Some(nvml) => nvml,
             None => {
-                println!("Failed to get NVML");
-                return HardwareParameters {
-                    label: "N/A".to_string(),
-                    usage_percentage: 0.0,
-                    current_temperature: 0.0,
-                    max_temperature: 0.0,
-                };
+                return vec![];
             }
         };
 
-        let main_gpu = match nvml.device_by_index(0) {
-            Ok(device) => device,
-            Err(e) => {
-                println!("Failed to get main GPU: {}", e);
-                return HardwareParameters {
-                    label: "N/A".to_string(),
-                    usage_percentage: 0.0,
-                    current_temperature: 0.0,
-                    max_temperature: 0.0,
-                };
-            }
-        };
+        let num_of_devices = nvml.device_count().unwrap_or_else(|e| {
+            println!("Failed to get number of GPU devices: {}", e);
+            0
+        });
+        let mut gpu_devices = vec![];
+        for i in 0..num_of_devices {
+            let current_gpu = match nvml.device_by_index(i) {
+                Ok(device) => device,
+                Err(e) => {
+                    println!("Failed to get main GPU: {}", e);
+                    continue; // skip to the next iteration
+                }
+            };
 
-        let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
-        let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
-        let label = main_gpu.name().unwrap();
+            let current_temperature =
+                current_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
+            let usage_percentage = current_gpu.utilization_rates().unwrap().gpu as f32;
+            let label = current_gpu.name().unwrap();
 
-        match current_parameters {
-            Some(current_parameters) => HardwareParameters {
+            let max_temperature = match current_parameters.get(i as usize) {
+                Some(current_parameters) => {
+                    current_parameters.max_temperature.max(current_temperature)
+                }
+                None => current_temperature,
+            };
+
+            gpu_devices.push(HardwareParameters {
                 label,
                 usage_percentage,
                 current_temperature,
-                max_temperature: current_parameters.max_temperature.max(current_temperature),
-            },
-            None => HardwareParameters {
-                label,
-                usage_percentage,
-                current_temperature,
-                max_temperature: current_temperature,
-            },
+                max_temperature,
+            });
         }
+        gpu_devices
     }
 }
 
@@ -430,8 +424,8 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
     }
     fn read_gpu_parameters(
         &self,
-        current_parameters: Option<HardwareParameters>,
-    ) -> HardwareParameters {
+        current_parameters: Vec<HardwareParameters>,
+    ) -> Vec<HardwareParameters> {
         let system = System::new_all();
         let components = Components::new_with_refreshed_list();
         let gpu_components: Vec<&Component> = components
@@ -440,25 +434,37 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             .filter(|c| c.label().contains("GPU"))
             .collect();
 
-        let avarage_temperature = gpu_components.iter().map(|c| c.temperature()).sum::<f32>()
-            / gpu_components.len() as f32;
-        //TODO: Implement GPU usage for MacOS
-        let usage = system.global_cpu_usage();
-        let label: String = system.cpus().first().unwrap().brand().to_string() + " GPU";
+        let num_of_devices = gpu_components.len();
+        let avarage_temperature =
+            gpu_components.iter().map(|c| c.temperature()).sum::<f32>() / num_of_devices as f32;
 
-        match current_parameters {
-            Some(current_parameters) => HardwareParameters {
+        let mut gpu_devices = vec![];
+        for i in 0..num_of_devices {
+            let current_gpu = if let Some(device) = system.cpus().get(i) {
+                device
+            } else {
+                println!("Failed to get GPU device nr {:?}", i);
+                continue; // skip to the next iteration
+            };
+
+            //TODO: Implement GPU usage for MacOS
+            let usage_percentage = system.global_cpu_usage();
+            let label: String = current_gpu.brand().to_string() + " GPU";
+            let mut current_temperature = avarage_temperature;
+            let mut max_temperature = avarage_temperature;
+
+            if let Some(current_parameters) = current_parameters.get(i) {
+                current_temperature = current_parameters.current_temperature;
+                max_temperature = current_parameters.max_temperature.max(avarage_temperature)
+            };
+
+            gpu_devices.push(HardwareParameters {
                 label,
-                usage_percentage: usage,
-                current_temperature: avarage_temperature,
-                max_temperature: current_parameters.max_temperature.max(avarage_temperature),
-            },
-            None => HardwareParameters {
-                label,
-                usage_percentage: usage,
-                current_temperature: avarage_temperature,
-                max_temperature: avarage_temperature,
-            },
+                usage_percentage,
+                current_temperature,
+                max_temperature,
+            });
         }
+        gpu_devices
     }
 }
