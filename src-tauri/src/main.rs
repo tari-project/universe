@@ -83,9 +83,9 @@ const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::main";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
-#[cfg(feature = "release-ci")]
+#[cfg(all(feature = "release-ci", not(feature="release-ci-beta")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
-#[cfg(feature = "release-ci-beta")]
+#[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
