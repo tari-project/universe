@@ -18,12 +18,9 @@ export function useBlockInfo() {
         timeSinceLastAnimation.current = 0;
     }, [displayBlockHeight, isMining]);
 
-    useInterval(
-        () => {
-            timeSinceLastAnimation.current += 1;
-            const blockTime = calculateTimeSince(0, timeSinceLastAnimation.current * INTERVAL);
-            setDisplayBlockTime(blockTime);
-        },
-        isMining ? INTERVAL : null
-    );
+    useInterval(() => {
+        timeSinceLastAnimation.current += 1;
+        const blockTime = calculateTimeSince(0, timeSinceLastAnimation.current * INTERVAL);
+        setDisplayBlockTime(blockTime);
+    }, INTERVAL);
 }
