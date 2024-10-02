@@ -1103,16 +1103,15 @@ async fn get_miner_metrics(
         }
     };
 
+    let config_path = app.path_resolver().app_config_dir().unwrap();
+    // let _gpus = HardwareMonitor::current()
+    //     .write()
+    //     .await
+    //     .read_gpu_devices(config_path);
     let hardware_status = HardwareMonitor::current()
         .write()
         .await
         .read_hardware_parameters();
-
-    let config_path = app.path_resolver().app_config_dir().unwrap();
-    let _gpus = HardwareMonitor::current()
-        .write()
-        .await
-        .read_gpu_devices(config_path);
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu_mining_status.hash_rate,

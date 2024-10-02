@@ -249,27 +249,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
 
     async fn status(&self) -> Result<Self::Status, anyhow::Error> {
         let client = reqwest::Client::new();
-        let config_path = PathBuf::from(""); //TODO add app config_path
-        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
 
-        if file.exists() {
-            let config = fs::read_to_string(&file).unwrap();
-            match serde_json::from_str::<GpuStatusFile>(&config) {
-                Ok(config) => {
-                    /*
-                     * TODO if the following PR is merged
-                     * https://github.com/tari-project/universe/pull/612
-                     * use `exlcude gpu device` to not disable not available devices
-                     */
-                    println!("GPU STATUS FILE: {:?}", config.gpu_devices);
-                }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
-                }
-            }
-        } else {
-            warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
-        }
         let response = match client
             .get(format!("http://127.0.0.1:{}/stats", self.http_api_port))
             .send()
