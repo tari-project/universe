@@ -25,7 +25,7 @@ export interface CpuMinerMetrics {
 }
 
 export interface GpuMinerMetrics {
-    hardware?: HardwareParameters;
+    hardware: HardwareParameters[];
     mining: GpuMinerStatus;
 }
 
@@ -97,7 +97,7 @@ export interface HardwareParameters {
 
 export interface HardwareStatus {
     cpu: HardwareParameters;
-    gpu: HardwareParameters;
+    gpu: HardwareParameters[];
 }
 
 export interface CpuMinerStatus {
@@ -120,6 +120,7 @@ export interface GpuMinerStatus {
     hash_rate: number;
     estimated_earnings: number;
     is_available: boolean;
+    // excluded_devices: number[];
 }
 
 export interface BaseNodeStatus {
