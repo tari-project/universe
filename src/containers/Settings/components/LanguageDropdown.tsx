@@ -24,19 +24,11 @@ export default function LanguageDropdown() {
         setApplicationLanguage: s.setApplicationLanguage,
     }));
 
-    const handleLanguageChange = useCallback(
-        (value: LanguageOption['value']) => {
-            changeLanguage(value);
-            setApplicationLanguage(value as Language);
-        },
-        [setApplicationLanguage]
-    );
-
     return (
         <Wrapper>
             <Select
                 options={languageOptions}
-                onChange={handleLanguageChange}
+                onChange={(value) => setApplicationLanguage(value as Language)}
                 selectedValue={resolveI18nLanguage(i18n.language)}
                 variant="bordered"
             />

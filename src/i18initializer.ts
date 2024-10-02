@@ -43,6 +43,7 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
         case 'tr':
         case 'tr-TR':
             return Language.TR;
+        case 'cn':
         case 'zh':
         case 'zh-CN':
         case 'zh-HK':

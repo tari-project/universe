@@ -5,6 +5,7 @@ import { useAppStateStore } from './appStateStore.ts';
 import { modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { changeLanguage } from 'i18next';
 
 type State = Partial<AppConfig>;
 
@@ -57,12 +58,18 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         });
     },
     setApplicationLanguage: async (applicationLanguage: Language) => {
+        const prevApplicationLanguage = useAppConfigStore.getState().application_language;
         set({ application_language: applicationLanguage });
-        invoke('set_application_language', { applicationLanguage }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set application language', e);
-            appStateStore.setError('Could not change application language');
-        });
+        invoke('set_application_language', { applicationLanguage })
+            .then(() => {
+                changeLanguage(applicationLanguage);
+            })
+            .catch((e) => {
+                const appStateStore = useAppStateStore.getState();
+                console.error('Could not set application language', e);
+                appStateStore.setError('Could not change application language');
+                set({ application_language: prevApplicationLanguage });
+            });
     },
     setAllowTelemetry: async (allowTelemetry) => {
         set({ allow_telemetry: allowTelemetry });
