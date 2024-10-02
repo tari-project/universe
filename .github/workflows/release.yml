@@ -22,6 +22,9 @@ concurrency:
 
 permissions: {}
 
+env:
+  TS_FEATURES: release-ci
+
 jobs:
   builds:
     name: Building ${{ matrix.platform }}
@@ -32,11 +35,11 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-20.04'
-            args: ' --features "release-ci"'
+            args: ''
           - platform: 'windows-2019'
-            args: '--bundles msi,updater --features "release-ci"'
+            args: '--bundles msi,updater'
           - platform: 'macos-latest'
-            args: '--target universal-apple-darwin --features "release-ci"'
+            args: '--target universal-apple-darwin'
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -44,12 +47,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: beta builds - Install dependencies (windows) [yq]
-        if: ${{  startsWith(runner.os,'Windows')  }}
+        if: ${{ startsWith(runner.os,'Windows') }}
         run: |
           choco upgrade yq -y
 
       - name: beta builds - Install dependencies (linux) [yq]
-        if: ${{  startsWith(runner.os,'Linux')  }}
+        if: ${{ startsWith(runner.os,'Linux') }}
         shell: bash
         run: |
           sudo bash ./scripts/check-get-yq.sh
@@ -57,7 +60,7 @@ jobs:
       - name: Set environment variables for beta builds
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          BETA_STRING: "-beta"
+          BETA_STRING: "(Beta)"
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
           AIRDROP_TWITTER_AUTH_URL: ${{ secrets.BETA_AIRDROP_TWITTER_AUTH_URL }}
@@ -69,15 +72,17 @@ jobs:
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_TWITTER_AUTH_URL=${{ env.AIRDROP_TWITTER_AUTH_URL }}" >> $GITHUB_ENV
+          echo "TS_FEATURES=release-ci-beta, airdrop-env" >> $GITHUB_ENV
           #export BETA_DATE=$(date +%Y-%m-%d)
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=4$(date +%m%d)
           cd "${GITHUB_WORKSPACE}/src-tauri"
-          echo "releaseName=Tari Universe${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
+          echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".package.productName += \"${{ env.BETA_STRING }}\"" -i tauri.conf.json
+          yq eval ".package.productName = \"Tari Universe ${{ env.BETA_STRING }}\"" -i tauri.conf.json
           yq eval ".package.version += \"-${BETA_DATE}\"" -i tauri.conf.json
-          #yq eval ".tauri.bundle.identifier += \".beta\"" -i tauri.conf.json
+          yq eval ".tauri.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} | Testnet\"" -i tauri.conf.json
+          yq eval ".tauri.bundle.identifier = \"com.tari.universe.beta\"" -i tauri.conf.json
           yq eval ".tauri.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
             -i tauri.conf.json
           cat tauri.conf.json
@@ -98,7 +103,11 @@ jobs:
           echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           # Don't mess with the double quotes and inner escaped quotes
+          yq eval ".package.productName = \"Tari Universe\"" -i tauri.conf.json
+          yq eval ".tauri.windows[0].title = \"Tari Universe | Testnet\"" -i tauri.conf.json
           yq eval ".tauri.bundle.identifier = \"com.tari.universe\"" -i tauri.conf.json
+          yq eval ".tauri.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\"]" \
+            -i tauri.conf.json
 
       - name: Node.js setup
         uses: actions/setup-node@v4
@@ -208,11 +217,19 @@ jobs:
           prerelease: true
           includeDebug: false
           includeRelease: true
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
+
+      - name: Debug step {artifactPaths}
+        if: ${{ false }}
+        continue-on-error: true
+        env:
+          artifactPaths: ${{ steps.build.outputs.artifactPaths }}
+        shell: bash
+        run: echo "Artifact ID from previous job is $artifactPaths"
 
       - name: Upload none releases
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         uses: actions/upload-artifact@v4
         with:
-          name: tari-universe_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
