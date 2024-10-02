@@ -50,7 +50,7 @@ pub fn get_gh_download_url(repo_owner: &str, repo_name: &str) -> String {
 
 pub fn get_mirror_download_url(repo_owner: &str, repo_name: &str) -> String {
     format!(
-        "https://cdn-leet-test.tarilabs.com/{}/{}/releases/download",
+        " https://cdn-universe.tari.com/{}/{}/releases/download",
         repo_owner, repo_name
     )
 }
