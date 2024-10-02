@@ -1,8 +1,8 @@
-use std::{ops::Deref, sync::LazyLock};
+use std::{fs, ops::Deref, path::PathBuf, sync::LazyLock};
 
 use log::{debug, warn};
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
 use tokio::sync::RwLock;
 
@@ -22,6 +22,17 @@ pub struct HardwareParameters {
     pub usage_percentage: f32,
     pub current_temperature: f32,
     pub max_temperature: f32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GpuStatus {
+    pub device_name: String,
+    pub is_available: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GpuStatusFile {
+    pub gpu_devices: Vec<GpuStatus>,
 }
 
 impl Default for HardwareParameters {
@@ -52,6 +63,7 @@ trait HardwareMonitorImpl: Send + Sync + 'static {
         current_parameters: Vec<HardwareParameters>,
     ) -> Vec<HardwareParameters>;
     fn _log_all_components(&self);
+    fn read_gpu_devices(&self, config_path: PathBuf) -> Vec<GpuStatus>;
 }
 
 pub struct HardwareMonitor {
@@ -60,6 +72,7 @@ pub struct HardwareMonitor {
     current_implementation: Box<dyn HardwareMonitorImpl>,
     cpu: Option<HardwareParameters>,
     gpu: Vec<HardwareParameters>,
+    gpu_devices: Vec<GpuStatus>,
 }
 
 impl HardwareMonitor {
@@ -77,6 +90,7 @@ impl HardwareMonitor {
             },
             cpu: None,
             gpu: vec![],
+            gpu_devices: vec![],
         }
     }
 
@@ -126,6 +140,12 @@ impl HardwareMonitor {
         self.gpu = gpu.clone();
 
         HardwareStatus { cpu, gpu }
+    }
+
+    pub fn read_gpu_devices(&mut self, config_path: PathBuf) -> Vec<GpuStatus> {
+        let gpu_dev = self.current_implementation.read_gpu_devices(config_path);
+        self.gpu_devices = gpu_dev.clone();
+        gpu_dev
     }
 }
 
@@ -229,6 +249,31 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
                 current_temperature,
                 max_temperature,
             });
+        }
+        gpu_devices
+    }
+    fn read_gpu_devices(&self, config_path: PathBuf) -> Vec<GpuStatus> {
+        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+        let mut gpu_devices = vec![];
+
+        if file.exists() {
+            let gpu_status_file = fs::read_to_string(&file).unwrap();
+            match serde_json::from_str::<Vec<GpuStatus>>(&gpu_status_file) {
+                Ok(gpu) => {
+                    /*
+                     * TODO if the following PR is merged
+                     * https://github.com/tari-project/universe/pull/612
+                     * use `exlcude gpu device` to not disable not available devices
+                     */
+                    println!("GPU STATUS FILE: {:?}", gpu_devices);
+                    gpu_devices = gpu
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
+                }
+            }
+        } else {
+            warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
         }
         gpu_devices
     }
@@ -357,6 +402,31 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         }
         gpu_devices
     }
+    fn read_gpu_devices(&self, config_path: PathBuf) -> Vec<GpuStatus> {
+        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+        let mut gpu_devices = vec![];
+
+        if file.exists() {
+            let gpu_status_file = fs::read_to_string(&file).unwrap();
+            match serde_json::from_str::<Vec<GpuStatus>>(&gpu_status_file) {
+                Ok(gpu) => {
+                    /*
+                     * TODO if the following PR is merged
+                     * https://github.com/tari-project/universe/pull/612
+                     * use `exlcude gpu device` to not disable not available devices
+                     */
+                    println!("GPU STATUS FILE: {:?}", gpu_devices);
+                    gpu_devices = gpu
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
+                }
+            }
+        } else {
+            warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
+        }
+        gpu_devices
+    }
 }
 
 struct MacOSHardwareMonitor {}
@@ -464,14 +534,36 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             };
 
             gpu_devices.push(HardwareParameters {
-
-
-
                 label,
                 usage_percentage,
                 current_temperature,
                 max_temperature,
             });
+        }
+        gpu_devices
+    }
+    fn read_gpu_devices(&self, config_path: PathBuf) -> Vec<GpuStatus> {
+        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+        let mut gpu_devices = vec![];
+
+        if file.exists() {
+            let gpu_status_file = fs::read_to_string(&file).unwrap();
+            match serde_json::from_str::<Vec<GpuStatus>>(&gpu_status_file) {
+                Ok(gpu) => {
+                    /*
+                     * TODO if the following PR is merged
+                     * https://github.com/tari-project/universe/pull/612
+                     * use `exlcude gpu device` to not disable not available devices
+                     */
+                    println!("GPU STATUS FILE: {:?}", gpu_devices);
+                    gpu_devices = gpu
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
+                }
+            }
+        } else {
+            warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
         }
         gpu_devices
     }
