@@ -39,7 +39,7 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
                 ...tari_wallet_details.wallet_balance,
                 tari_address_base58: tari_wallet_details.tari_address_base58,
                 tari_address_emoji: tari_wallet_details.tari_address_emoji,
-                balance: newBalance,
+                balance: tari_wallet_details.wallet_balance ? newBalance : null,
             });
         } catch (error) {
             console.error('Could not get tari wallet details: ', error);
