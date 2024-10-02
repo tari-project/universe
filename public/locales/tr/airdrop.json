@@ -1,7 +1,20 @@
 {
+  "airdropGame": "Airdrop Oyunu",
   "loginButton": "Mücevherleri talep etmek için giriş yapın",
   "logout": "Çıkış",
   "referral": "Arkadaşlarını davet et",
+  "unclaimedGems": "Talep Edilmemiş Mücevherler",
+  "inviteFirends": "Arkadaşları Davet Et",
+  "inviteFriendsText": "Bağlantıyı kopyalayın ve paylaşın",
+  "invitedAmount": "<span>{{count}}</span> arkadaş davet ettiniz",
+  "nextTierBonus": "<strong>{{count}} arkadaş</strong> davet et ve {{bonusGems}} bonus mücevher kazan",
+  "claimGems": "Mücevherleri Talep Et",
+  "doLater": "Bunu daha sonra yapacağım",
+  "linkCopied": "Bağlantı kopyalandı!",
+  "giftReferralCodeHeader": "Referans kodunuzu talep edin <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> mücevherler.",
+  "claimReferralCode": "Referans kodunuzu talep edin <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> mücevherler.",
+  "claimReferralGifts": "Referans kodunuzu talep edin ve {{gems}} mücevher kazanın. Hesabınızı bağladığınızda mücevherleriniz verilecektir.",
+  "giftReferralCode": "Tari Universe'e davet ettiğiniz her arkadaş için {{gems}} mücevher kazanın. Onlar hesaplarını bağladığında mücevherleriniz verilecektir.",
   "permissionNoGems": {
     "title": "Tari Universe'ü daha iyi hale getirin",
     "text": "Tari Universe, deneyiminizi iyileştirmek için analizleri kullanmak ister."
@@ -9,21 +22,12 @@
   "permission": {
     "title": "Mücevherler kazanın ve Tari Universe'ü daha iyi hale getirin",
     "text": "Tari Universe, deneyiminizi iyileştirmek ve sizi madencilik için mücevherlerle ödüllendirmek için analizleri kullanmak istiyor."
-  },
-  "airdropGame": "Airdrop Oyunu",
-  "unclaimedGems": "Talep Edilmemiş Mücevherler",
-  "inviteFirends": "Arkadaşları Davet Et",
-  "invitedAmount": "<span>{{count}}</span> arkadaş davet ettiniz",
-  "nextTierBonus": "<strong>{{count}} arkadaş</strong> davet et ve {{bonusGems}} bonus mücevher kazan",
-  "claimGems": "Micevherleri Talep Et",
-  "doLater": "Bunu daha sonra yapacağım",
-  "linkCopied": "Bağlantı kopyalandı!",
-  "giftReferralCodeHeader": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
-  "claimReferralCode": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
-  "claimReferralGifts": "Referans kodunuzu talep edin ve {{gems}} taş kazanın. Hesabınızı bağladığınızda taşlarınız verilecektir.",
-  "giftReferralCode": "Tari Universe\"e davet ettiğiniz her arkadaş için {{gems}} miüevher kazanın. Onlar hesaplarını bağladığında mücevherleriniz verilecektir.",
-  "claimModalTitle": "Testnet'te Madencilik Yaparak Ödüller Kazanın",
-  "claimModalText": "Testnet sırasında madencilik yaparak ve arkadaşlarınızı davet ederek airdrop ödülünüzü artırın! Bir referans kodunuz var mı? Aşağıya girin ve siz ve arkadaşınız için ek <strong>{{gems}}</strong> mücevher kazanın!",
-  "claimModalFieldLabel": "İsteğe Bağlı",
-  "claimModalFieldPlaceholder": "Referans kodunu girin"
+      },
+    "claimModalTitle": "TESTNET'TE MADENCİLİK YAPARAK ÖDÜLLER KAZANIN",
+    "claimModalText": "Testnet sırasında madencilik yaparak ve arkadaşlarınızı davet ederek airdrop ödülünüzü artırın! Bir referans kodunuz var mı? Aşağıya girin, siz ve arkadaşınız için ek <strong>{{gems}}</strong> mücevher kazanın!",
+    "claimModalFieldLabel": "İsteğe Bağlı",
+    "claimModalFieldPlaceholder": "Referans kodunu girin",
+    "claimModalFinePrint": "<strong>Lütfen dikkat:</strong> mücevher talep etmek analitikleri açar, böylece evreni geliştirebiliriz",
+    "topTooltipTitle": "Testnet Ödülleri",
+    "topTooltipText": "Mücevher toplayarak bir Tari Airdrop elde edin. Ne kadar çok mücevher kazanırsanız, airdrop'unuz o kadar büyük olur."
 }
