@@ -20,9 +20,11 @@ const CriticalErrorDialog = () => {
     const [logsReference, setLogsReference] = useState('');
     const criticalError = useAppStateStore((s) => s.criticalError);
     const [isExiting, setIsExiting] = useState(false);
-
+    // Write the critical error to the web log file
+    console.error(criticalError);
     const handleExit = useCallback(async () => {
         try {
+
             setIsExiting(true);
             await invoke('exit_application');
         } catch (e) {

@@ -67,7 +67,7 @@
         "bundle": {
             "active": true,
             "targets": "all",
-            "identifier": "com.tari.universe.alpha",
+            "identifier": "com.tari.universe",
             "icon": [
                 "icons/icon.icns",
                 "icons/icon.ico",
