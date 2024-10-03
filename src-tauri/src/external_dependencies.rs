@@ -1,17 +1,27 @@
 use anyhow::{anyhow, Error};
 use std::sync::LazyLock;
+use log::{info, warn};
 use winreg::enums::HKEY_LOCAL_MACHINE;
 use winreg::RegKey;
 
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
 
-struct RequiredInstalledApplications {
-    additional_runtime: Vec<String>,
-    minimum_runtime: Vec<String>,
-}
 #[derive(Debug)]
 struct InstalledApplication {
+    display_name: String,
+    download_url: String,
+}
+
+#[derive(Debug)]
+struct RequiredInstalledApplications {
+    additional_runtime: InstalledApplication,
+    minimum_runtime: InstalledApplication,
+}
+
+
+#[derive(Debug)]
+struct RegistryEntry {
     display_name: String,
     display_version: String,
 }
@@ -28,19 +38,32 @@ impl ExternalDependencies {
     }
 
     fn initialize_required_installed_applications() -> RequiredInstalledApplications {
-        RequiredInstalledApplications {
-            additional_runtime: vec![
-                "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
-                "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
-            ],
-            minimum_runtime: vec![
-                "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
-                "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
-            ],
+        if cfg!(target_arch = "x86") {
+            RequiredInstalledApplications {
+                additional_runtime: InstalledApplication {
+                    display_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
+                    download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
+                },
+                minimum_runtime: InstalledApplication {
+                    display_name: "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
+                    download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
+                },
+            }
+        } else {
+            RequiredInstalledApplications {
+                additional_runtime: InstalledApplication {
+                    display_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+                    download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+                },
+                minimum_runtime: InstalledApplication {
+                    display_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+                    download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+                },
+            }
         }
     }
 
-    fn read_installed_applications(&self) -> Result<Vec<InstalledApplication>, Error> {
+    fn read_installed_applications(&self) -> Result<Vec<RegistryEntry>, Error> {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         let uninstall_key =
             hklm.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall").map_err(|e| {
@@ -61,7 +84,7 @@ impl ExternalDependencies {
                     let display_version = app_key.get_value("DisplayVersion").ok();
 
                     if let (Some(display_name), Some(display_version)) = (display_name, display_version) {
-                        installed_applications.push(InstalledApplication {
+                        installed_applications.push(RegistryEntry {
                             display_name,
                             display_version,
                         });
@@ -95,8 +118,8 @@ impl ExternalDependencies {
         }
         if !missing_applications.is_empty() {
             return Err(anyhow!(
-                "The following required applications are not installed: {:?}",
-                missing_applications
+                "The following required applications are not installed:\n{:?}",
+                missing_applications.iter().map(|app| format!("{} | Download url: ({})", app.display_name, app.download_url)).collect::<Vec<String>>().join("\n")
             ));
         }
         Ok(())
