@@ -145,19 +145,12 @@ impl HardwareMonitor {
         self.cpu = cpu.clone();
         self.gpu = gpu.clone();
 
-        // println!("read hw params {:?}", self.gpu_devices.clone());
-        // for (gpu_device, gpu) in self.gpu_devices.iter_mut().zip(&mut self.gpu) {
-        //     gpu.label = gpu_device.device_name.clone();
-        //     println!("read hw params inside {:?}", gpu.label);
-        // }
-
         HardwareStatus { cpu, gpu }
     }
 
     pub fn read_gpu_devices(&mut self) -> Vec<GpuStatus> {
         let gpu_dev = self.current_implementation.read_gpu_devices();
         self.gpu_devices = gpu_dev.clone();
-        println!("read gpu devs {:?}", gpu_dev.clone());
         gpu_dev
     }
     pub fn load_status_file(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
@@ -167,10 +160,8 @@ impl HardwareMonitor {
                 Ok(())
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to load gpu status file {}", e);
-                return Err(anyhow!(
-                    "Missing start config! MM proxy manager must be started at least once!"
-                ));
+                warn!(target: LOG_TARGET, "Fail to load gpu status file {}", e);
+                return Err(anyhow!("Fail to load gpu status file"));
             }
         }
     }
@@ -287,15 +278,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         if let Some(file_path) = file {
             let gpu_status_file = fs::read_to_string(file_path).unwrap();
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
-                Ok(gpu) => {
-                    /*
-                     * TODO if the following PR is merged
-                     * https://github.com/tari-project/universe/pull/612
-                     * use `exlcude gpu device` to not disable not available devices
-                     */
-                    println!("GPU STATUS FILE: {:?}", gpu_devices);
-                    gpu_devices = gpu.gpu_devices
-                }
+                Ok(gpu) => gpu_devices = gpu.gpu_devices,
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
                 }
@@ -355,11 +338,6 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             .filter(|c| c.label().contains("k10temp Tctl"))
             .collect();
 
-        /*
-         * TODO if the following PR is merged
-         * https://github.com/tari-project/universe/pull/612
-         * use `exlcude gpu device` to not disable not available devices
-         */
         let available_cpu_components = if amd_cpu_component.is_empty() {
             intel_cpu_component
         } else {
@@ -403,13 +381,15 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let nvml = match &self.nvml {
             Some(nvml) => nvml,
             None => {
-                let gpu = self.read_gpu_devices();
-                for (i, gpu_device) in gpu.iter().enumerate() {
-                    gpu_devices[i].label = gpu_device.device_name.clone();
-                    println!(
-                        "--->>> check gpu devices iterator {:?} {:?}",
-                        i, gpu_devices[i].label
-                    );
+                let gpus = self.read_gpu_devices();
+                for gpu in gpus {
+                    println!("gpu map: {:?}", gpu.clone());
+                    gpu_devices.push(HardwareParameters {
+                        label: gpu.device_name.clone(),
+                        usage_percentage: 0.0,
+                        current_temperature: 0.0,
+                        max_temperature: 0.0,
+                    });
                 }
                 return gpu_devices;
             }
@@ -423,7 +403,6 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             let current_gpu = match nvml.device_by_index(i) {
                 Ok(device) => device,
                 Err(e) => {
-                    println!("Failed to get main GPU: {}", e);
                     continue; // skip to the next iteration
                 }
             };
@@ -457,13 +436,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             let gpu_status_file = fs::read_to_string(file_path).unwrap();
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => {
-                    /*
-                     * TODO if the following PR is merged
-                     * https://github.com/tari-project/universe/pull/612
-                     * use `exlcude gpu device` to not disable not available devices
-                     */
                     gpu_devices = gpu.gpu_devices;
-                    println!("GPU STATUS FILE: {:?}", gpu_devices);
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
@@ -476,14 +449,11 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
     }
     fn load_status_file(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
         let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
-        println!("============= read gpu! ==============");
         if file.exists() {
             self.gpu_status_file = Some(file.clone());
             debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
-            println!("Loading gpu status from file: {:?}", file);
         } else {
-            debug!(target: LOG_TARGET, "Gpy status file does not exist or is corrupt. Creating new one");
-            println!("Gpy status file does not exist or is corrupt {:?}", file);
+            debug!(target: LOG_TARGET, "Gpu status file does not exist or is corrupt. Creating new one");
         }
         Ok(())
     }
@@ -564,7 +534,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         current_parameters: Vec<HardwareParameters>,
     ) -> Vec<HardwareParameters> {
         let mut gpu_params = vec![];
-        // TAKEN FROM JSON FILE
+        // GPU devices list taken from gpu_status.json file
         let gpu_devices = self.read_gpu_devices();
         let num_of_devices = gpu_devices.len();
 
@@ -579,7 +549,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             gpu_components.iter().map(|c| c.temperature()).sum::<f32>() / num_of_devices as f32;
 
         for i in 0..num_of_devices {
-            let current_gpu = if let Some(device) = system.cpus().get(i) {
+            let current_gpu = if let Some(device) = gpu_devices.get(i) {
                 device
             } else {
                 println!("Failed to get GPU device nr {:?}", i);
@@ -588,7 +558,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
 
             //TODO: Implement GPU usage for MacOS
             let usage_percentage = system.global_cpu_usage();
-            let label: String = current_gpu.brand().to_string() + " GPU";
+            let label: String = current_gpu.device_name.clone();
             let mut current_temperature = avarage_temperature;
             let mut max_temperature = avarage_temperature;
 

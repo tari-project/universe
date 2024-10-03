@@ -1104,11 +1104,11 @@ async fn get_miner_metrics(
     };
 
     let config_path = app.path_resolver().app_config_dir().unwrap();
-    let gpus = HardwareMonitor::current()
+    let _ = HardwareMonitor::current()
         .write()
         .await
         .load_status_file(config_path);
-    println!("=========>>> main gpu {:?}", gpus);
+
     let hardware_status = HardwareMonitor::current()
         .write()
         .await
