@@ -1,18 +1,34 @@
 import { Button } from '@app/components/elements/Button';
+import { Typography } from '@app/components/elements/Typography';
+import {
+    SettingsGroupContent,
+    SettingsGroupTitle,
+    SettingsGroupWrapper,
+} from '@app/containers/Settings/components/SettingsGroup.styles';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { useTranslation } from 'react-i18next';
 
 export default function AirdropLogout() {
+    const { t } = useTranslation(['settings'], { useSuspense: false });
+
     const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
     const logout = useAirdropStore((state) => state.logout);
     const { userDetails } = useAirdropStore();
 
     if (!airdropUIEnabled || !userDetails) return null;
     return (
-        <div style={{ maxWidth: 'fit-content', marginLeft: 'auto', padding: '20px' }}>
-            <Button color="error" variant="text" size="medium" onClick={logout}>
-                Disconnect from Airdrop
-            </Button>
-        </div>
+        <SettingsGroupWrapper>
+            <SettingsGroupTitle>
+                <Typography variant="h6">{t('connection')}</Typography>
+            </SettingsGroupTitle>
+            <SettingsGroupContent>
+                <div style={{ maxWidth: 'fit-content', marginLeft: 'auto', padding: '20px' }}>
+                    <Button color="error" variant="text" size="medium" onClick={logout}>
+                        {t('disconnect')}
+                    </Button>
+                </div>
+            </SettingsGroupContent>
+        </SettingsGroupWrapper>
     );
 }
