@@ -6,34 +6,59 @@ use winreg::RegKey;
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
 
+struct RequiredInstalledApplications {
+    additional_runtime: Vec<String>,
+    minimum_runtime: Vec<String>,
+}
 #[derive(Debug)]
 struct InstalledApplication {
     display_name: String,
     display_version: String,
 }
 
-pub struct ExternalDependencies {}
+pub struct ExternalDependencies {
+    required_installed_applications: RequiredInstalledApplications,
+}
 
 impl ExternalDependencies {
     fn new() -> Self {
-        Self {}
+        Self {
+            required_installed_applications: Self::initialize_required_installed_applications(),
+        }
+    }
+
+    fn initialize_required_installed_applications() -> RequiredInstalledApplications {
+        RequiredInstalledApplications {
+            additional_runtime: vec![
+                "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+                "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
+            ],
+            minimum_runtime: vec![
+                "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+                "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
+            ],
+        }
     }
 
     fn read_installed_applications(&self) -> Result<Vec<InstalledApplication>, Error> {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         let uninstall_key =
             hklm.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall").map_err(|e| {
-                anyhow!("Error opening uninstall key: {}", e);
+                anyhow!("Error opening uninstall key: {}", e)
             })?;
         let mut installed_applications = Vec::new();
         for key in uninstall_key.enum_keys() {
             match key {
                 Ok(key) => {
-                    let app_key = uninstall_key.open_subkey(&key).map_err(|e| {
-                        warn!("Could not open application key: {}", e);
-                    })?;
-                    let display_name: String = app_key.get_value("DisplayName").ok();
-                    let display_version: String = app_key.get_value("DisplayVersion").ok();
+                    let app_key = match uninstall_key.open_subkey(&key) {
+                        Ok(app_key) => app_key,
+                        Err(e) => {
+                            warn!("Error opening uninstall key: {}", e);
+                            continue;
+                        }
+                    };
+                    let display_name = app_key.get_value("DisplayName").ok();
+                    let display_version = app_key.get_value("DisplayVersion").ok();
 
                     if let (Some(display_name), Some(display_version)) = (display_name, display_version) {
                         installed_applications.push(InstalledApplication {
@@ -47,12 +72,33 @@ impl ExternalDependencies {
                 }
             }
         }
-        info!(target: LOG_TARGET, "Installed applications: {:?}", installed_applications);
+        
+        installed_applications.iter().for_each(|app| {
+            info!("Installed application: {} {}", app.display_name, app.display_version);
+        });
+        
         Ok(installed_applications)
     }
 
-    pub fn detect_installed_applications(&self) -> Result<(), Error> {
-        self.read_installed_applications()?;
+    pub fn check_if_required_installed_applications_are_installed(&self) -> Result<(), Error> {
+        let installed_applications = self.read_installed_applications()?;
+        let mut missing_applications = Vec::new();
+        for app in &self.required_installed_applications.additional_runtime {
+            if !installed_applications.iter().any(|installed_app| installed_app.display_name == *app) {
+                missing_applications.push(app);
+            }
+        }
+        for app in &self.required_installed_applications.minimum_runtime {
+            if !installed_applications.iter().any(|installed_app| installed_app.display_name == *app) {
+                missing_applications.push(app);
+            }
+        }
+        if !missing_applications.is_empty() {
+            return Err(anyhow!(
+                "The following required applications are not installed: {:?}",
+                missing_applications
+            ));
+        }
         Ok(())
     }
 

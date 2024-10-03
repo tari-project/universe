@@ -393,7 +393,7 @@ async fn setup_inner(
         .app_log_dir()
         .expect("Could not get log dir");
 
-    ExternalDependencies::current().detect_installed_applications()?;
+    ExternalDependencies::current().check_if_required_installed_applications_are_installed()?;
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();
