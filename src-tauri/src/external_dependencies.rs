@@ -117,8 +117,8 @@ impl ExternalDependencies {
 
         if !missing_applications.is_empty() {
             return Err(anyhow!(
-                "The following required applications are not installed:\n{:?}",
-                missing_applications.iter().map(|app| format!("{} | Download url: ({})", app.display_name, app.download_url)).collect::<Vec<String>>().join("\n")
+                "The following required applications are not installed:\r\n\r\n{}",
+                missing_applications.iter().map(|app| format!("{} | Download url: {}", app.display_name, app.download_url)).collect::<Vec<String>>().join("\r\n")
             ));
         }
         Ok(())
