@@ -107,11 +107,11 @@ impl ExternalDependencies {
         let installed_applications = self.read_installed_applications()?;
         let mut missing_applications = Vec::new();
 
-        if !installed_application.iter().any(|app| app.display_name.contains(self.required_installed_applications.additional_runtime.display_name)) {
+        if !installed_applications.iter().any(|app| app.display_name.contains(self.required_installed_applications.additional_runtime.display_name)) {
             missing_applications.push(&self.required_installed_applications.additional_runtime);
         }
 
-        if !installed_application.iter().any(|app| app.display_name.contains(self.required_installed_applications.minimum_runtime.display_name)) {
+        if !installed_applications.iter().any(|app| app.display_name.contains(self.required_installed_applications.minimum_runtime.display_name)) {
             missing_applications.push(&self.required_installed_applications.minimum_runtime);
         }
 
