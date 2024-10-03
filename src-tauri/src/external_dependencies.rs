@@ -76,7 +76,7 @@ impl ExternalDependencies {
                     let app_key = match uninstall_key.open_subkey(&key) {
                         Ok(app_key) => app_key,
                         Err(e) => {
-                            warn!("Error opening uninstall key: {}", e);
+                            warn!(target: LOG_TARGET, "Error opening uninstall key: {}", e);
                             continue;
                         }
                     };
@@ -91,13 +91,13 @@ impl ExternalDependencies {
                     } 
                 }
                 Err(e) => {
-                    warn!("Error enumerating uninstall keys: {}", e);
+                    warn!(target: LOG_TARGET, "Error enumerating uninstall keys: {}", e);
                 }
             }
         }
         
         installed_applications.iter().for_each(|app| {
-            info!("Installed application: {} {}", app.display_name, app.display_version);
+            info!(target: LOG_TARGET, "Installed application: {} {}", app.display_name, app.display_version);
         });
         
         Ok(installed_applications)
