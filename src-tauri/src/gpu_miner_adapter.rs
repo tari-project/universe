@@ -10,6 +10,9 @@ use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::select;
 
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::add_firewall_rule;
+
 use crate::{
     app_config::MiningMode,
     binaries::{Binaries, BinaryResolver},
@@ -129,6 +132,9 @@ impl ProcessAdapter for GpuMinerAdapter {
                         .resolve_path_to_binary_files(Binaries::GpuMiner)
                         .await
                         .unwrap_or_else(|_| panic!("Could not resolve gpu_miner path"));
+
+                    #[cfg(target_os = "windows")]
+                    add_firewall_rule("xtrgpuminer.exe".to_string(), file_path.clone())?;
                     crate::download_utils::set_permissions(&file_path.clone()).await?;
                     let mut child;
 

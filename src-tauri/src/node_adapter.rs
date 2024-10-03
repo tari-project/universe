@@ -20,6 +20,9 @@ use tari_shutdown::Shutdown;
 use tari_utilities::ByteArray;
 use tokio::select;
 
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::add_firewall_rule;
+
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub(crate) struct MinotariNodeAdapter {
@@ -139,6 +142,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .resolve_path_to_binary_files(Binaries::MinotariNode)
                         .await?;
 
+                    #[cfg(target_os = "windows")]
+                    add_firewall_rule("minotari_node.exe".to_string(), file_path.clone())?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 

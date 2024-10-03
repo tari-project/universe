@@ -18,6 +18,9 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
 use crate::utils::file_utils::convert_to_string;
 
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::add_firewall_rule;
+
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
 pub struct P2poolAdapter {
@@ -88,6 +91,9 @@ impl ProcessAdapter for P2poolAdapter {
                         .await
                         .resolve_path_to_binary_files(Binaries::ShaP2pool)
                         .await?;
+
+                    #[cfg(target_os = "windows")]
+                    add_firewall_rule("sha_p2pool.exe".to_string(), file_path.clone())?;
                     crate::download_utils::set_permissions(&file_path).await?;
 
                     // let output = process_utils::launch_and_get_outputs(
