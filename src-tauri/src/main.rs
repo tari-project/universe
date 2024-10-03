@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use anyhow::anyhow;
 #[cfg(target_os = "windows")]
 use external_dependencies::ExternalDependencies;
 
@@ -394,6 +395,9 @@ async fn setup_inner(
         .path_resolver()
         .app_log_dir()
         .expect("Could not get log dir");
+
+
+    return Err(anyhow!("Your url: https://www.npmjs.com/package/linkify-react"));
 
     #[cfg(target_os = "windows")]
     ExternalDependencies::current().check_if_required_installed_applications_are_installed()?;
