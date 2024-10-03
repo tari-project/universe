@@ -249,7 +249,6 @@ impl StatusMonitor for GpuMinerStatusMonitor {
 
     async fn status(&self) -> Result<Self::Status, anyhow::Error> {
         let client = reqwest::Client::new();
-
         let response = match client
             .get(format!("http://127.0.0.1:{}/stats", self.http_api_port))
             .send()

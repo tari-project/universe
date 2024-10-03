@@ -160,8 +160,7 @@ impl HardwareMonitor {
                 Ok(())
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Fail to load gpu status file {}", e);
-                return Err(anyhow!("Fail to load gpu status file"));
+                return Err(anyhow!("Fail to load gpu status file: {:?}", e));
             }
         }
     }
@@ -280,7 +279,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => gpu_devices = gpu.gpu_devices,
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
+                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {:?}", e);
                 }
             }
         } else {
@@ -294,7 +293,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
             self.gpu_status_file = Some(file.clone());
             debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
         } else {
-            debug!(target: LOG_TARGET, "Gpy status file does not exist or is corrupt. Creating new one");
+            debug!(target: LOG_TARGET, "Gpu status file does not exist or is corrupt");
         }
         Ok(())
     }
@@ -383,7 +382,6 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             None => {
                 let gpus = self.read_gpu_devices();
                 for gpu in gpus {
-                    println!("gpu map: {:?}", gpu.clone());
                     gpu_devices.push(HardwareParameters {
                         label: gpu.device_name.clone(),
                         usage_percentage: 0.0,
@@ -403,6 +401,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             let current_gpu = match nvml.device_by_index(i) {
                 Ok(device) => device,
                 Err(e) => {
+                    println!("Failed to get gpu devices: {}", e);
                     continue; // skip to the next iteration
                 }
             };
@@ -453,7 +452,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             self.gpu_status_file = Some(file.clone());
             debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
         } else {
-            debug!(target: LOG_TARGET, "Gpu status file does not exist or is corrupt. Creating new one");
+            debug!(target: LOG_TARGET, "Gpu status file does not exist or is corrupt");
         }
         Ok(())
     }
@@ -584,16 +583,10 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             let gpu_status_file = fs::read_to_string(file_path).unwrap();
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => {
-                    /*
-                     * TODO if the following PR is merged
-                     * https://github.com/tari-project/universe/pull/612
-                     * use `exlcude gpu device` to not disable not available devices
-                     */
                     gpu_devices = gpu.gpu_devices;
-                    println!("GPU STATUS FILE: {:?}", gpu_devices);
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
+                    warn!(target: LOG_TARGET, "Failed to parse gpu status: {:?}", e);
                 }
             }
         } else {
@@ -607,7 +600,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             self.gpu_status_file = Some(file.clone());
             debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
         } else {
-            debug!(target: LOG_TARGET, "Gpy status file does not exist or is corrupt. Creating new one");
+            debug!(target: LOG_TARGET, "Gpu status file does not exist or is corrupt");
         }
         Ok(())
     }
