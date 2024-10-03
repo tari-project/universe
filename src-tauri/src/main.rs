@@ -1058,7 +1058,7 @@ async fn get_miner_metrics(
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
     if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
-        // warn!(target: LOG_TARGET, "Already getting miner metrics"); //TODO remove too many logs
+        warn!(target: LOG_TARGET, "Already getting miner metrics");
         return Err("Already getting miner metrics".to_string());
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);

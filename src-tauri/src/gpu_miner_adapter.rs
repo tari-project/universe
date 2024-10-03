@@ -36,17 +36,6 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) excluded_gpu_devices: Vec<u8>,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct GpuStatus {
-    pub device_name: String,
-    pub is_available: bool,
-}
-
-#[derive(serde::Deserialize, serde::Serialize, Debug)]
-pub struct GpuStatusFile {
-    pub gpu_devices: Vec<GpuStatus>,
-}
-
 impl GpuMinerAdapter {
     pub fn new() -> Self {
         Self {
