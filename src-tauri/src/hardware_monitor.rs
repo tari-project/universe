@@ -1,5 +1,6 @@
 use std::{fs, ops::Deref, path::PathBuf, sync::LazyLock};
 
+use anyhow::anyhow;
 use log::{debug, warn};
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use serde::{Deserialize, Serialize};
@@ -61,10 +62,10 @@ trait HardwareMonitorImpl: Send + Sync + 'static {
     fn read_gpu_parameters(
         &self,
         current_parameters: Vec<HardwareParameters>,
-        config_path: PathBuf,
     ) -> Vec<HardwareParameters>;
+    fn read_gpu_devices(&self) -> Vec<GpuStatus>;
+    fn load_status_file(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error>;
     fn _log_all_components(&self);
-    fn read_gpu_devices(&self, config_path: PathBuf) -> Vec<GpuStatus>;
 }
 
 pub struct HardwareMonitor {
@@ -83,11 +84,15 @@ impl HardwareMonitor {
             current_implementation: match HardwareMonitor::detect_current_os() {
                 CurrentOperatingSystem::Windows => Box::new(WindowsHardwareMonitor {
                     nvml: HardwareMonitor::initialize_nvml(),
+                    gpu_status_file: None,
                 }),
                 CurrentOperatingSystem::Linux => Box::new(LinuxHardwareMonitor {
                     nvml: HardwareMonitor::initialize_nvml(),
+                    gpu_status_file: None,
                 }),
-                CurrentOperatingSystem::MacOS => Box::new(MacOSHardwareMonitor {}),
+                CurrentOperatingSystem::MacOS => Box::new(MacOSHardwareMonitor {
+                    gpu_status_file: None,
+                }),
             },
             cpu: None,
             gpu: vec![],
@@ -125,7 +130,7 @@ impl HardwareMonitor {
         }
     }
 
-    pub fn read_hardware_parameters(&mut self, config_path: PathBuf) -> HardwareStatus {
+    pub fn read_hardware_parameters(&mut self) -> HardwareStatus {
         // USED FOR DEBUGGING
         // println!("Reading hardware parameters for {}", self.current_implementation.get_implementation_name());
         // self.current_implementation.log_all_components();
@@ -135,7 +140,7 @@ impl HardwareMonitor {
         );
         let gpu = self
             .current_implementation
-            .read_gpu_parameters(self.gpu.clone(), config_path.clone());
+            .read_gpu_parameters(self.gpu.clone());
 
         self.cpu = cpu.clone();
         self.gpu = gpu.clone();
@@ -149,16 +154,31 @@ impl HardwareMonitor {
         HardwareStatus { cpu, gpu }
     }
 
-    pub fn read_gpu_devices(&mut self, config_path: PathBuf) -> Vec<GpuStatus> {
-        let gpu_dev = self.current_implementation.read_gpu_devices(config_path);
+    pub fn read_gpu_devices(&mut self) -> Vec<GpuStatus> {
+        let gpu_dev = self.current_implementation.read_gpu_devices();
         self.gpu_devices = gpu_dev.clone();
         println!("read gpu devs {:?}", gpu_dev.clone());
         gpu_dev
+    }
+    pub fn load_status_file(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
+        match self.current_implementation.load_status_file(config_path) {
+            Ok(_) => {
+                debug!(target: LOG_TARGET, "Gpu status file loaded successfully");
+                Ok(())
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to load gpu status file {}", e);
+                return Err(anyhow!(
+                    "Missing start config! MM proxy manager must be started at least once!"
+                ));
+            }
+        }
     }
 }
 
 struct WindowsHardwareMonitor {
     nvml: Option<Nvml>,
+    gpu_status_file: Option<PathBuf>,
 }
 impl HardwareMonitorImpl for WindowsHardwareMonitor {
     fn _get_implementation_name(&self) -> String {
@@ -217,7 +237,6 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
     fn read_gpu_parameters(
         &self,
         current_parameters: Vec<HardwareParameters>,
-        _config_path: PathBuf,
     ) -> Vec<HardwareParameters> {
         let mut gpu_devices = vec![];
         let nvml = match &self.nvml {
@@ -261,12 +280,12 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         }
         gpu_devices
     }
-    fn read_gpu_devices(&self, config_path: PathBuf) -> Vec<GpuStatus> {
-        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+    fn read_gpu_devices(&self) -> Vec<GpuStatus> {
+        let file = self.gpu_status_file.clone();
         let mut gpu_devices = vec![];
 
-        if file.exists() {
-            let gpu_status_file = fs::read_to_string(&file).unwrap();
+        if let Some(file_path) = file {
+            let gpu_status_file = fs::read_to_string(file_path).unwrap();
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => {
                     /*
@@ -286,10 +305,21 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         }
         gpu_devices
     }
+    fn load_status_file(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
+        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+        if file.exists() {
+            self.gpu_status_file = Some(file.clone());
+            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+        } else {
+            debug!(target: LOG_TARGET, "Gpy status file does not exist or is corrupt. Creating new one");
+        }
+        Ok(())
+    }
 }
 
 struct LinuxHardwareMonitor {
     nvml: Option<Nvml>,
+    gpu_status_file: Option<PathBuf>,
 }
 impl HardwareMonitorImpl for LinuxHardwareMonitor {
     fn _get_implementation_name(&self) -> String {
@@ -368,16 +398,18 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
     fn read_gpu_parameters(
         &self,
         current_parameters: Vec<HardwareParameters>,
-        config_path: PathBuf,
     ) -> Vec<HardwareParameters> {
         let mut gpu_devices: Vec<HardwareParameters> = vec![];
         let nvml = match &self.nvml {
             Some(nvml) => nvml,
             None => {
-                let gpu = self.read_gpu_devices(config_path);
+                let gpu = self.read_gpu_devices();
                 for (i, gpu_device) in gpu.iter().enumerate() {
                     gpu_devices[i].label = gpu_device.device_name.clone();
-                    println!("dupa iterator {}", i);
+                    println!(
+                        "--->>> check gpu devices iterator {:?} {:?}",
+                        i, gpu_devices[i].label
+                    );
                 }
                 return gpu_devices;
             }
@@ -417,12 +449,12 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         }
         gpu_devices
     }
-    fn read_gpu_devices(&self, config_path: PathBuf) -> Vec<GpuStatus> {
-        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+    fn read_gpu_devices(&self) -> Vec<GpuStatus> {
+        let file = self.gpu_status_file.clone();
         let mut gpu_devices = vec![];
 
-        if file.exists() {
-            let gpu_status_file = fs::read_to_string(&file).unwrap();
+        if let Some(file_path) = file {
+            let gpu_status_file = fs::read_to_string(file_path).unwrap();
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => {
                     /*
@@ -430,8 +462,8 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
                      * https://github.com/tari-project/universe/pull/612
                      * use `exlcude gpu device` to not disable not available devices
                      */
-                    gpu_devices = gpu.clone().gpu_devices;
-                    println!("GPU STATUS FILE found -> : {:?}", gpu.clone());
+                    gpu_devices = gpu.gpu_devices;
+                    println!("GPU STATUS FILE: {:?}", gpu_devices);
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
@@ -442,9 +474,24 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         }
         gpu_devices
     }
+    fn load_status_file(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
+        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+        println!("============= read gpu! ==============");
+        if file.exists() {
+            self.gpu_status_file = Some(file.clone());
+            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+            println!("Loading gpu status from file: {:?}", file);
+        } else {
+            debug!(target: LOG_TARGET, "Gpy status file does not exist or is corrupt. Creating new one");
+            println!("Gpy status file does not exist or is corrupt {:?}", file);
+        }
+        Ok(())
+    }
 }
 
-struct MacOSHardwareMonitor {}
+struct MacOSHardwareMonitor {
+    gpu_status_file: Option<PathBuf>,
+}
 impl HardwareMonitorImpl for MacOSHardwareMonitor {
     fn _get_implementation_name(&self) -> String {
         "MacOS".to_string()
@@ -515,8 +562,12 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
     fn read_gpu_parameters(
         &self,
         current_parameters: Vec<HardwareParameters>,
-        _config_path: PathBuf,
     ) -> Vec<HardwareParameters> {
+        let mut gpu_params = vec![];
+        // TAKEN FROM JSON FILE
+        let gpu_devices = self.read_gpu_devices();
+        let num_of_devices = gpu_devices.len();
+
         let system = System::new_all();
         let components = Components::new_with_refreshed_list();
         let gpu_components: Vec<&Component> = components
@@ -524,12 +575,9 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             .iter()
             .filter(|c| c.label().contains("GPU"))
             .collect();
-
-        let num_of_devices = gpu_components.len();
         let avarage_temperature =
             gpu_components.iter().map(|c| c.temperature()).sum::<f32>() / num_of_devices as f32;
 
-        let mut gpu_devices = vec![];
         for i in 0..num_of_devices {
             let current_gpu = if let Some(device) = system.cpus().get(i) {
                 device
@@ -549,21 +597,21 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
                 max_temperature = current_parameters.max_temperature.max(avarage_temperature)
             };
 
-            gpu_devices.push(HardwareParameters {
+            gpu_params.push(HardwareParameters {
                 label,
                 usage_percentage,
                 current_temperature,
                 max_temperature,
             });
         }
-        gpu_devices
+        gpu_params
     }
-    fn read_gpu_devices(&self, config_path: PathBuf) -> Vec<GpuStatus> {
-        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+    fn read_gpu_devices(&self) -> Vec<GpuStatus> {
+        let file = self.gpu_status_file.clone();
         let mut gpu_devices = vec![];
 
-        if file.exists() {
-            let gpu_status_file = fs::read_to_string(&file).unwrap();
+        if let Some(file_path) = file {
+            let gpu_status_file = fs::read_to_string(file_path).unwrap();
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => {
                     /*
@@ -571,8 +619,8 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
                      * https://github.com/tari-project/universe/pull/612
                      * use `exlcude gpu device` to not disable not available devices
                      */
+                    gpu_devices = gpu.gpu_devices;
                     println!("GPU STATUS FILE: {:?}", gpu_devices);
-                    gpu_devices = gpu.gpu_devices
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
@@ -582,5 +630,15 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
         }
         gpu_devices
+    }
+    fn load_status_file(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
+        let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
+        if file.exists() {
+            self.gpu_status_file = Some(file.clone());
+            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+        } else {
+            debug!(target: LOG_TARGET, "Gpy status file does not exist or is corrupt. Creating new one");
+        }
+        Ok(())
     }
 }
