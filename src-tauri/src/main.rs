@@ -1198,6 +1198,7 @@ async fn reset_settings<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     stop_all_miners(state.inner().clone(), 5).await?;
+    // let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path_resolver().app_config_dir();
     let app_cache_dir = app.path_resolver().app_cache_dir();
@@ -1210,7 +1211,7 @@ async fn reset_settings<'r>(
         app_data_dir,
         app_local_data_dir,
     ];
-    let missing_dirs: Vec<String> = dirs_to_remove
+    let valid_dir_paths: Vec<String> = dirs_to_remove
         .iter()
         .filter_map(|dir| {
             if let Some(path) = dir {
@@ -1221,17 +1222,13 @@ async fn reset_settings<'r>(
         })
         .collect();
 
-    if !missing_dirs.is_empty() {
-        error!(target: LOG_TARGET, "Could not get app directories for {:?}", missing_dirs);
+    if valid_dir_paths.is_empty() {
+        error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
         return Err("Could not get app directories".to_string());
     }
 
     // Exclude EBWebView because it is still being used.
     let mut folder_block_list = vec!["EBWebView"];
-    if !reset_wallet {
-        folder_block_list.push("esmeralda");
-        folder_block_list.push("nextnet");
-    }
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -1241,9 +1238,25 @@ async fn reset_settings<'r>(
                 if path.is_dir() {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
                         if folder_block_list.contains(&file_name) {
+                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory", path);
                             continue;
                         }
                     }
+
+                    let contains_wallet_config =
+                        read_dir(&path)
+                            .map_err(|e| e.to_string())?
+                            .any(|inner_entry| {
+                                inner_entry
+                                    .map(|e| e.file_name() == "wallet_config.json")
+                                    .unwrap_or(false)
+                            });
+
+                    if contains_wallet_config && !reset_wallet {
+                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json", path);
+                        continue;
+                    }
+
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
                     remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
