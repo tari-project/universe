@@ -40,6 +40,7 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::tor_manager::TorManager;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 
@@ -73,6 +74,8 @@ mod setup_status_event;
 mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
+mod tor_adapter;
+mod tor_manager;
 mod user_listener;
 mod utils;
 mod wallet_adapter;
@@ -390,6 +393,9 @@ async fn setup_inner(
         .expect("Could not get log dir");
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
+    let app_config = state.config.read().await;
+    let use_tor = app_config.use_tor();
+    drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let progress = ProgressTracker::new(window.clone());
@@ -410,6 +416,16 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
+    if use_tor && cfg!(target_os = "windows") {
+        progress.set_max(5).await;
+        progress
+            .update("checking-latest-version-tor".to_string(), None, 0)
+            .await;
+        binary_resolver
+            .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+            .await?;
+        sleep(Duration::from_secs(1));
+    }
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -497,6 +513,17 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
+    if use_tor && cfg!(target_os = "windows") {
+        state
+            .tor_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+    }
     for _i in 0..2 {
         match state
             .node_manager
@@ -505,6 +532,7 @@ async fn setup_inner(
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
+                use_tor,
             )
             .await
         {
@@ -1353,6 +1381,7 @@ struct UniverseAppState {
     feedback: Arc<RwLock<Feedback>>,
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
+    tor_manager: TorManager,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -1439,6 +1468,7 @@ fn main() {
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
+        tor_manager: TorManager::new(),
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();

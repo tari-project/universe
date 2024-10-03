@@ -1,4 +1,5 @@
 mod adapter_github;
+mod adapter_tor;
 mod adapter_xmrig;
 mod binaries_manager;
 

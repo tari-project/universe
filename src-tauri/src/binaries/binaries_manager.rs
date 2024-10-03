@@ -22,24 +22,22 @@ pub const LOG_TARGET: &str = "tari::universe::binary_manager";
 struct BinaryVersionsJsonContent {
     binaries: HashMap<String, String>,
 }
-pub struct BinaryManager {
+pub(crate) struct BinaryManager {
     binary_name: String,
-
+    binary_subfolder: Option<String>,
     version_requirements: VersionReq,
     network_prerelease_prefix: Option<String>,
     should_validate_checksum: bool,
-
     online_versions_list: Vec<VersionDownloadInfo>,
     local_aviailable_versions_list: Vec<Version>,
-
     used_version: Option<Version>,
-
     adapter: Box<dyn LatestVersionApiAdapter>,
 }
 
 impl BinaryManager {
     pub fn new(
         binary_name: String,
+        binary_subfolder: Option<String>,
         adapter: Box<dyn LatestVersionApiAdapter>,
         network_prerelease_prefix: Option<String>,
         should_validate_checksum: bool,
@@ -56,6 +54,7 @@ impl BinaryManager {
 
         Self {
             binary_name: binary_name.clone(),
+            binary_subfolder,
             should_validate_checksum,
             network_prerelease_prefix,
             version_requirements,
@@ -64,6 +63,10 @@ impl BinaryManager {
             used_version: None,
             adapter,
         }
+    }
+
+    pub fn binary_subfolder(&self) -> Option<&String> {
+        self.binary_subfolder.as_ref()
     }
 
     fn read_version_requirements(binary_name: String, data_str: &str) -> VersionReq {
