@@ -49,6 +49,9 @@ mod binaries;
 mod consts;
 mod cpu_miner;
 mod download_utils;
+#[cfg(target_os = "windows")]
+mod external_dependencies;
+
 mod feedback;
 mod format_utils;
 mod github;
