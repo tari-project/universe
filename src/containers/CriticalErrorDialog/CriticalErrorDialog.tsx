@@ -1,4 +1,4 @@
-import linkifyString from 'linkify-string';
+import linkifyHtml from 'linkify-html';
 import { Button, IconButton } from '@app/components/elements/Button';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
@@ -39,7 +39,7 @@ const CriticalErrorDialog = () => {
                     <Stack direction="row" alignItems="center" justifyContent="flex-start">
                         <IoAlertCircleOutline size={20} color="red" />
                         <Typography variant="p" style={{ fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
-                            {linkifyString(criticalError || '', { attributes: { target: '_blank' } })}
+                            {linkifyHtml(criticalError || '', { attributes: { target: '_blank' } })}
                         </Typography>
                     </Stack>
                     <Typography variant="p">{t('please-try-again-later')}</Typography>
