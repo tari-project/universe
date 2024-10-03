@@ -41,6 +41,9 @@ export const Title = styled('div')`
     text-align: center;
     font-size: 12px;
     font-weight: 600;
+
+    position: relative;
+    z-index: 2;
 `;
 
 export const GemPill = styled('div')`
@@ -59,4 +62,28 @@ export const GemPill = styled('div')`
     text-align: center;
     font-size: 12px;
     font-weight: 600;
+
+    position: relative;
+    z-index: 2;
+`;
+
+export const ButtonCover = styled('div')`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+`;
+
+export const VideoBG = styled('video')`
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    pointer-events: none;
 `;

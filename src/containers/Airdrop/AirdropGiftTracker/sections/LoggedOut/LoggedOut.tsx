@@ -1,5 +1,5 @@
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
+import { ClaimButton, GemPill, Image, Title, VideoBG, Wrapper } from './styles';
 import { useCallback, useEffect, useState } from 'react';
 import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
@@ -70,6 +70,10 @@ export default function LoggedOut() {
                         {(referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString()}
                         <Image src={gemImage} alt="" />
                     </GemPill>
+
+                    <VideoBG autoPlay loop muted playsInline>
+                        <source src="/assets/video/gems-bg.mp4" type="video/mp4" />
+                    </VideoBG>
                 </ClaimButton>
             </Wrapper>
             {modalIsOpen && <ClaimModal onSubmit={handleAuth} onClose={() => setModalIsOpen(false)} />}
