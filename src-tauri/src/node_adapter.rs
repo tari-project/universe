@@ -97,11 +97,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
         // args.push("localnet".to_string());
         // }
         if self.use_tor {
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
-                    .to_string(),
-            );
+            // args.push("-p".to_string());
+            // args.push(
+            //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
+            //         .to_string(),
+            // );
             args.push("-p".to_string());
             args.push(format!(
                 "base_node.p2p.auxiliary_tcp_listener_address=/ip4/127.0.0.1/tcp/{0}",

@@ -394,6 +394,8 @@ async fn setup_inner(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
+    let use_tor = app_config.use_tor();
+    drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let progress = ProgressTracker::new(window.clone());
@@ -414,7 +416,7 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
-    if app_config.use_tor() && cfg!(target_os = "windows") {
+    if use_tor && cfg!(target_os = "windows") {
         progress.set_max(5).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
@@ -511,7 +513,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
-    if app_config.use_tor() && cfg!(target_os = "windows") {
+    if use_tor && cfg!(target_os = "windows") {
         state
             .tor_manager
             .ensure_started(
@@ -530,7 +532,7 @@ async fn setup_inner(
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
-                app_config.use_tor(),
+                use_tor,
             )
             .await
         {
