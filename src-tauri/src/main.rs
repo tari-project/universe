@@ -396,9 +396,6 @@ async fn setup_inner(
         .app_log_dir()
         .expect("Could not get log dir");
 
-
-    return Err(anyhow!("Your url: https://www.npmjs.com/package/linkify-react"));
-
     #[cfg(target_os = "windows")]
     ExternalDependencies::current().check_if_required_installed_applications_are_installed()?;
 
