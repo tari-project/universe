@@ -147,8 +147,8 @@ impl P2poolManager {
             .await?;
         process_watcher.wait_ready().await?;
         if let Some(status_monitor) = &process_watcher.status_monitor {
-            for attempt in 1..=5 {
-                sleep(Duration::from_secs(5)).await;
+            for attempt in 1..=10 {
+                sleep(Duration::from_secs(1)).await;
                 if let Ok(_stats) = status_monitor.status().await {
                     break;
                 }

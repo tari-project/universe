@@ -68,9 +68,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             loop {
                 select! {
                       _ = watch_timer.tick() => {
-                            info!(target: LOG_TARGET, "Checking if {} is running", name);
+                            debug!(target: LOG_TARGET, "Checking if {} is running", name);
                             if child.ping() {
-                                info!(target: LOG_TARGET, "{} is running", name);
+                                debug!(target: LOG_TARGET, "{} is running", name);
                             } else {
                                debug!(target: LOG_TARGET, "{} is not running", name);
                                match child.stop().await {
