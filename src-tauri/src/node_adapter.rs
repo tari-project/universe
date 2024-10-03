@@ -23,20 +23,23 @@ use tokio::select;
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub(crate) struct MinotariNodeAdapter {
-    use_tor: bool,
+    pub(crate) use_tor: bool,
     pub(crate) grpc_port: u16,
+    pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
     required_initial_peers: u32,
 }
 
 impl MinotariNodeAdapter {
-    pub fn new(use_tor: bool) -> Self {
+    pub fn new() -> Self {
         let port = get_free_port().unwrap_or(18142);
+        let tcp_listener_port = get_free_port().unwrap_or(18189);
         Self {
-            use_tor,
             grpc_port: port,
+            tcp_listener_port,
             use_pruned_mode: false,
             required_initial_peers: 3,
+            use_tor: false,
         }
     }
 }
@@ -77,8 +80,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "-p".to_string(),
             "base_node.report_grpc_error=true".to_string(),
             "-p".to_string(),
-            "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
-            "-p".to_string(),
             format!(
                 "base_node.state_machine.initial_sync_peer_count={}",
                 self.required_initial_peers
@@ -96,28 +97,33 @@ impl ProcessAdapter for MinotariNodeAdapter {
         // args.push("localnet".to_string());
         // }
         if self.use_tor {
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
-                    .to_string(),
-            );
-        } else {
-            // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
-            // In future we should change the base node to not error if it is tcp and doesn't have a public address
-            args.push("-p".to_string());
-            args.push("base_node.p2p.transport.type=tcp".to_string());
-            // args.push("-p".to_string());
-            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
-            args.push("-p".to_string());
-            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
-            args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
-            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
-            // args.push("-p".to_string());
-            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
             // args.push("-p".to_string());
             // args.push(
-            //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
+            //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
+            //         .to_string(),
             // );
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.auxiliary_tcp_listener_address=/ip4/127.0.0.1/tcp/{0}",
+                self.tcp_listener_port
+            ));
+        } else {
+            args.push("-p".to_string());
+            args.push("base_node.p2p.transport.type=tcp".to_string());
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/{}",
+                self.tcp_listener_port
+            ));
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.transport.tcp.listener_address=/ip4/127.0.0.1/tcp/{}",
+                self.tcp_listener_port
+            ));
+            args.push("-p".to_string());
+            args.push(
+                "base_node.p2p.dht.excluded_dial_addresses=/ip4/127.*.*.*/tcp/0:18188".to_string(),
+            );
         }
         Ok((
             ProcessInstance {
