@@ -133,7 +133,10 @@ impl ProcessAdapter for WalletAdapter {
                     }
 
                     #[cfg(target_os = "windows")]
-                    add_firewall_rule("minotari_console_wallet.exe".to_string(), file_path.clone())?;
+                    add_firewall_rule(
+                        "minotari_console_wallet.exe".to_string(),
+                        file_path.clone(),
+                    )?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
