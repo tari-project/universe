@@ -26,7 +26,7 @@ export default function SettingsModal() {
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
     const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
 
-    const [activeSection, setActiveSection] = useState<SettingsType>('mining');
+    const [activeSection, setActiveSection] = useState<SettingsType>('airdrop');
 
     const miningMarkup = activeSection === 'mining' ? <MiningSettings /> : null;
     const generalMarkup = activeSection === 'general' ? <GeneralSettings /> : null;

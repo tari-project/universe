@@ -14,15 +14,15 @@ export default function AirdropLogout() {
 
     const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
     const logout = useAirdropStore((state) => state.logout);
-    const { userDetails } = useAirdropStore();
-
-    if (!airdropUIEnabled || !userDetails) return null;
+    const { authUuid, userDetails } = useAirdropStore();
+    if (!airdropUIEnabled || (!userDetails && !authUuid)) return null;
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('connection')}</Typography>
             </SettingsGroupTitle>
             <SettingsGroupContent>
+                <Typography> Logged in as {userDetails?.user.name}</Typography>
                 <div style={{ maxWidth: 'fit-content', marginLeft: 'auto', padding: '20px' }}>
                     <Button color="error" variant="text" size="medium" onClick={logout}>
                         {t('disconnect')}
