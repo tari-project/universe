@@ -24,7 +24,6 @@ const CriticalErrorDialog = () => {
     console.error(criticalError);
     const handleExit = useCallback(async () => {
         try {
-
             setIsExiting(true);
             await invoke('exit_application');
         } catch (e) {
