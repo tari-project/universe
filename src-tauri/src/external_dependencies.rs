@@ -22,26 +22,38 @@ impl ExternalDependencies {
     fn read_installed_applications(&self) -> Result<Vec<InstalledApplication>, Error> {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         let uninstall_key =
-            hklm.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall")?;
+            hklm.open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall").map_err(|e| {
+                anyhow!("Error opening uninstall key: {}", e);
+            })?;
         let mut installed_applications = Vec::new();
         for key in uninstall_key.enum_keys() {
             match key {
                 Ok(key) => {
-                    let app_key = uninstall_key.open_subkey(&key)?;
-                    let display_name: String = app_key.get_value("DisplayName")?;
-                    let display_version: String = app_key.get_value("DisplayVersion")?;
-                    installed_applications.push(InstalledApplication {
-                        display_name,
-                        display_version,
-                    });
+                    let app_key = uninstall_key.open_subkey(&key).map_err(|e| {
+                        warn!("Could not open application key: {}", e);
+                    })?;
+                    let display_name: String = app_key.get_value("DisplayName").ok();
+                    let display_version: String = app_key.get_value("DisplayVersion").ok();
+
+                    if let (Some(display_name), Some(display_version)) = (display_name, display_version) {
+                        installed_applications.push(InstalledApplication {
+                            display_name,
+                            display_version,
+                        });
+                    } 
                 }
                 Err(e) => {
-                    anyhow!("Error reading installed applications: {}", e);
+                    warn!("Error enumerating uninstall keys: {}", e);
                 }
             }
         }
         info!(target: LOG_TARGET, "Installed applications: {:?}", installed_applications);
         Ok(installed_applications)
+    }
+
+    pub fn detect_installed_applications(&self) -> Result<(), Error> {
+        self.read_installed_applications()?;
+        Ok(())
     }
 
     pub fn current() -> &'static ExternalDependencies {
