@@ -1,11 +1,13 @@
 import { EarningsWrapper, InfoWrapper, LeftContent, SquadIconWrapper, Wrapper } from './HistoryItem.styles.ts';
-import { WonBlockItem } from '@app/types/balance.ts';
-import { formatNumber } from '@app/utils/formatNumber.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
+import { TransactionInfo } from '@app/types/app-status.ts';
+import formatBalance from '@app/utils/formatBalance.ts';
+import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
 interface HistoryItemProps {
-    item: WonBlockItem;
+    item: TransactionInfo;
 }
 
 const listItem = {
@@ -33,9 +35,10 @@ function getRandomInt(max: number) {
 }
 
 export default function HistoryItem({ item }: HistoryItemProps) {
-    const earningsFormatted = formatNumber(item.earnings, 1).toLowerCase();
     const theme = useTheme();
+    const { t } = useTranslation('sidebar', { useSuspense: false });
 
+    const earningsFormatted = useMemo(() => formatBalance(item.amount), [item.amount]);
     const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
 
     return (
@@ -45,9 +48,11 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     <TariSvg />
                 </SquadIconWrapper>
                 <InfoWrapper>
-                    <Typography>{`Block #${item.solvedBlock}`}</Typography>
+                    <Typography>
+                        {t('block')} #{item.message.split(': ')[1]}
+                    </Typography>
                     <Typography variant="p">
-                        {item.time
+                        {new Date(item.timestamp * 1000)
                             ?.toLocaleString(undefined, {
                                 month: 'short',
                                 day: '2-digit',

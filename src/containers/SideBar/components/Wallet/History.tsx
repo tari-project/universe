@@ -1,66 +1,10 @@
-import { WonBlockItem } from '@app/types/balance.ts';
 import { HistoryContainer } from '@app/containers/SideBar/components/Wallet/Wallet.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import HistoryItem from '@app/containers/SideBar/components/Wallet/HistoryItem.tsx';
-
-const mockItems: WonBlockItem[] = [
-    {
-        earnings: 13475,
-        solvedBlock: 12085,
-    },
-    {
-        earnings: 13475,
-        solvedBlock: 11925,
-    },
-    {
-        earnings: 345,
-        solvedBlock: 10991,
-    },
-    {
-        earnings: 13475,
-        solvedBlock: 10695,
-    },
-    {
-        earnings: 14475,
-        solvedBlock: 9040,
-    },
-    {
-        earnings: 345,
-        solvedBlock: 8091,
-    },
-    {
-        earnings: 13475,
-        solvedBlock: 7695,
-    },
-    {
-        earnings: 1475,
-        solvedBlock: 7040,
-    },
-    {
-        earnings: 3475,
-        solvedBlock: 6011,
-    },
-    {
-        earnings: 13475,
-        solvedBlock: 5245,
-    },
-    {
-        earnings: 475,
-        solvedBlock: 4573,
-    },
-    {
-        earnings: 2475,
-        solvedBlock: 3251,
-    },
-    {
-        earnings: 175,
-        solvedBlock: 2243,
-    },
-    {
-        earnings: 13475,
-        solvedBlock: 2045,
-    },
-];
+import { useWalletStore } from '@app/store/useWalletStore';
+import { useEffect } from 'react';
+import { CircularProgress } from '@app/components/elements/CircularProgress';
+import { useTranslation } from 'react-i18next';
 
 const container = {
     hidden: { opacity: 1, height: 0 },
@@ -77,14 +21,23 @@ const container = {
 };
 
 export default function History() {
+    const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
+    const transactions = useWalletStore((s) => s.transactions);
+    const fetchTransactionHistory = useWalletStore((s) => s.fetchTransactionHistory);
+    const { t } = useTranslation('sidebar', { useSuspense: false });
+
+    useEffect(() => {
+        fetchTransactionHistory();
+    }, [fetchTransactionHistory]);
+
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
-            <Typography variant="h6">Recent wins</Typography>
-            {mockItems.map((item, i) => {
-                const base = new Date();
-                const time = new Date(base.getTime() - 324783 - (((i / 0.3) * 60) / 0.15) * 1000 * 24 * 60); // super random temp dates
-                return <HistoryItem key={i} item={{ ...item, time }} />;
-            })}
+            <Typography variant="h6">{t('recent-wins')}</Typography>
+            {isTransactionLoading ? (
+                <CircularProgress />
+            ) : (
+                transactions.map((tx) => <HistoryItem key={tx.tx_id} item={tx} />)
+            )}
         </HistoryContainer>
     );
 }

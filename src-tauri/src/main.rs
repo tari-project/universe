@@ -19,6 +19,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use wallet_adapter::TransactionInfo;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
@@ -1029,6 +1030,38 @@ async fn get_p2pool_stats(
 }
 
 #[tauri::command]
+async fn get_transaction_history(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<TransactionInfo>, String> {
+    let timer = Instant::now();
+    if state.is_getting_transaction_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting transaction history");
+        return Err("Already getting transaction history".to_string());
+    }
+    state
+        .is_getting_transaction_history
+        .store(true, Ordering::SeqCst);
+    let transactions = match state.wallet_manager.get_transaction_history().await {
+        Ok(t) => t,
+        Err(e) => {
+            if !matches!(e, WalletManagerError::WalletNotStarted) {
+                warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
+            }
+            vec![]
+        }
+    };
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_transaction_history took too long: {:?}", timer.elapsed());
+    }
+
+    state
+        .is_getting_transaction_history
+        .store(false, Ordering::SeqCst);
+    Ok(transactions)
+}
+
+#[tauri::command]
 async fn get_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
@@ -1338,6 +1371,7 @@ struct UniverseAppState {
     is_getting_wallet_balance: Arc<AtomicBool>,
     is_getting_p2pool_stats: Arc<AtomicBool>,
     is_getting_miner_metrics: Arc<AtomicBool>,
+    is_getting_transaction_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -1425,6 +1459,7 @@ fn main() {
         is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
         is_getting_wallet_balance: Arc::new(AtomicBool::new(false)),
         is_setup_finished: Arc::new(RwLock::new(false)),
+        is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
         shutdown: shutdown.clone(),
@@ -1558,7 +1593,8 @@ fn main() {
             get_p2pool_stats,
             get_tari_wallet_details,
             exit_application,
-            set_should_always_use_system_language
+            set_should_always_use_system_language,
+            get_transaction_history
         ])
         .build(tauri::generate_context!())
         .inspect_err(
