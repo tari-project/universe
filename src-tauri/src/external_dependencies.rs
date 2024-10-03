@@ -106,16 +106,15 @@ impl ExternalDependencies {
     pub fn check_if_required_installed_applications_are_installed(&self) -> Result<(), Error> {
         let installed_applications = self.read_installed_applications()?;
         let mut missing_applications = Vec::new();
-        for app in &self.required_installed_applications.additional_runtime {
-            if !installed_applications.iter().any(|installed_app| installed_app.display_name == *app) {
-                missing_applications.push(app);
-            }
+
+        if !installed_applications.iter().any(|app| app.display_name == self.required_installed_applications.additional_runtime.display_name) {
+            missing_applications.push(&self.required_installed_applications.additional_runtime);
         }
-        for app in &self.required_installed_applications.minimum_runtime {
-            if !installed_applications.iter().any(|installed_app| installed_app.display_name == *app) {
-                missing_applications.push(app);
-            }
+
+        if !installed_applications.iter().any(|app| app.display_name == self.required_installed_applications.minimum_runtime.display_name) {
+            missing_applications.push(&self.required_installed_applications.minimum_runtime);
         }
+
         if !missing_applications.is_empty() {
             return Err(anyhow!(
                 "The following required applications are not installed:\n{:?}",
