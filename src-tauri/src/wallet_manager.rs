@@ -61,10 +61,12 @@ impl WalletManager {
     ) -> Result<(), WalletManagerError> {
         self.node_manager.wait_ready().await?;
         let node_identity = self.node_manager.get_identity().await?;
+        let base_node_tcp_port = self.node_manager.get_tcp_listener_port().await;
 
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
-        process_watcher.adapter.base_node_address = Some("/ip4/127.0.0.1/tcp/9998".to_string());
+        process_watcher.adapter.base_node_address =
+            Some(format!("/ip4/127.0.0.1/tcp/{}", base_node_tcp_port));
         process_watcher
             .start(app_shutdown, base_path, config_path, log_path)
             .await?;
