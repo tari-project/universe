@@ -9,7 +9,8 @@ static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependen
 
 #[derive(Debug)]
 struct InstalledApplication {
-    display_name: Vec<String>,
+    display_names: Vec<String>,
+    download_name: String,
     download_url: String,
 }
 
@@ -40,34 +41,38 @@ impl ExternalDependencies {
         if cfg!(target_arch = "x86") {
             RequiredInstalledApplications {
                 additional_runtime: InstalledApplication {
-                    display_name: vec![
+                    display_names: vec![
                         "Microsoft Visual C++ 2019 x86 Additional Runtime".to_string(),
                         "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
                     ],
+                    download_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
                 },
                 minimum_runtime: InstalledApplication {
-                    display_name: vec![
+                    display_names: vec![
                         "Microsoft Visual C++ 2019 x86 Minimum Runtime".to_string(),
                         "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
                     ],
+                    download_name: "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
                 },
             }
         } else {
             RequiredInstalledApplications {
                 additional_runtime: InstalledApplication {
-                    display_name: vec![
+                    display_names: vec![
                         "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string(),
                         "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
                     ],
+                    download_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
                 },
                 minimum_runtime: InstalledApplication {
-                    display_name: vec![
+                    display_names: vec![
                         "Microsoft Visual C++ 2019 x64 Minimum Runtime".to_string(),
                         "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
                     ],
+                    download_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
                 },
             }
@@ -122,7 +127,7 @@ impl ExternalDependencies {
         if !installed_applications.iter().any(|app| {
             self.required_installed_applications
                 .additional_runtime
-                .display_name
+                .display_names
                 .iter()
                 .any(|required_app_name| {
                     app.display_name
@@ -137,7 +142,7 @@ impl ExternalDependencies {
         if !installed_applications.iter().any(|app| {
             self.required_installed_applications
                 .minimum_runtime
-                .display_name
+                .display_names
                 .iter()
                 .any(|required_app_name| {
                     app.display_name
@@ -154,7 +159,10 @@ impl ExternalDependencies {
                 "The following required applications are not installed:\r\n\r\n{}",
                 missing_applications
                     .iter()
-                    .map(|app| format!("{} | Download url: {}", app.display_name, app.download_url))
+                    .map(|app| format!(
+                        "{} | Download url: {}",
+                        app.download_name, app.download_url
+                    ))
                     .collect::<Vec<String>>()
                     .join("\r\n")
             ));
