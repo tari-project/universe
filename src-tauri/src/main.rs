@@ -3,6 +3,8 @@
 
 use log::trace;
 use log::{debug, error, info, warn};
+use sentry::protocol::Event;
+use sentry_tauri::sentry;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
@@ -38,6 +40,7 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::tor_manager::TorManager;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 
@@ -71,6 +74,8 @@ mod setup_status_event;
 mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
+mod tor_adapter;
+mod tor_manager;
 mod user_listener;
 mod utils;
 mod wallet_adapter;
@@ -388,6 +393,9 @@ async fn setup_inner(
         .expect("Could not get log dir");
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
+    let app_config = state.config.read().await;
+    let use_tor = app_config.use_tor();
+    drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let progress = ProgressTracker::new(window.clone());
@@ -408,6 +416,16 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
+    if use_tor && cfg!(target_os = "windows") {
+        progress.set_max(5).await;
+        progress
+            .update("checking-latest-version-tor".to_string(), None, 0)
+            .await;
+        binary_resolver
+            .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+            .await?;
+        sleep(Duration::from_secs(1));
+    }
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -495,6 +513,17 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
+    if use_tor && cfg!(target_os = "windows") {
+        state
+            .tor_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+    }
     for _i in 0..2 {
         match state
             .node_manager
@@ -503,6 +532,7 @@ async fn setup_inner(
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
+                use_tor,
             )
             .await
         {
@@ -1173,7 +1203,17 @@ async fn get_miner_metrics(
 #[tauri::command]
 fn log_web_message(level: String, message: Vec<String>) {
     match level.as_str() {
-        "error" => error!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
+        "error" => {
+            let joined_message = message.join(" ");
+            sentry::capture_event(Event {
+                message: Some(joined_message.clone()),
+                level: sentry::Level::Error,
+                culprit: Some("universe-web".to_string()),
+                ..Default::default()
+            });
+            error!(target: LOG_TARGET_WEB, "{}", joined_message)
+        }
+
         _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
     }
 }
@@ -1341,6 +1381,7 @@ struct UniverseAppState {
     feedback: Arc<RwLock<Feedback>>,
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
+    tor_manager: TorManager,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -1351,6 +1392,8 @@ struct Payload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
+    // sets the logger and does not expose a way to add sentry into it.
     let client = sentry_tauri::sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
         sentry_tauri::sentry::ClientOptions {
@@ -1425,6 +1468,7 @@ fn main() {
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
+        tor_manager: TorManager::new(),
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
@@ -1444,6 +1488,7 @@ fn main() {
         }))
         .manage(app_state.clone())
         .setup(|app| {
+            // TODO: Combine with sentry log
             tari_common::initialize_logging(
                 &app.path_resolver()
                     .app_config_dir()
