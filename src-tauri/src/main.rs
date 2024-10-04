@@ -166,6 +166,24 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
+async fn set_use_tor(use_tor: bool, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_use_tor(use_tor)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_use_tor {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_use_tor took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn send_feedback(
     feedback: String,
     include_logs: bool,
@@ -1588,7 +1606,8 @@ fn main() {
             get_p2pool_stats,
             get_tari_wallet_details,
             exit_application,
-            set_should_always_use_system_language
+            set_should_always_use_system_language,
+            set_use_tor
         ])
         .build(tauri::generate_context!())
         .inspect_err(

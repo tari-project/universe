@@ -318,6 +318,12 @@ impl AppConfig {
         self.use_tor
     }
 
+    pub async fn set_use_tor(&mut self, use_tor: bool) -> Result<(), anyhow::Error> {
+        self.use_tor = use_tor;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]

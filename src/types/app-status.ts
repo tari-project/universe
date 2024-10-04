@@ -17,6 +17,7 @@ export interface AppConfig {
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
     airdrop_ui_enabled: boolean;
+    use_tor: boolean;
 }
 
 export interface CpuMinerMetrics {
