@@ -38,7 +38,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
     const { t } = useTranslation('sidebar', { useSuspense: false });
 
-    const earningsFormatted = useMemo(() => formatBalance(item.amount), [item.amount]);
+    const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
     const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
 
     return (
