@@ -1198,7 +1198,7 @@ async fn reset_settings<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     stop_all_miners(state.inner().clone(), 5).await?;
-    // let network = Network::get_current_or_user_setting_or_default().as_key_str();
+    let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path_resolver().app_config_dir();
     let app_cache_dir = app.path_resolver().app_cache_dir();
@@ -1226,9 +1226,8 @@ async fn reset_settings<'r>(
         error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
         return Err("Could not get app directories".to_string());
     }
-
     // Exclude EBWebView because it is still being used.
-    let mut folder_block_list = vec!["EBWebView"];
+    let folder_block_list = vec!["EBWebView"];
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -1252,8 +1251,18 @@ async fn reset_settings<'r>(
                                     .unwrap_or(false)
                             });
 
-                    if contains_wallet_config && !reset_wallet {
-                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json", path);
+                    let is_network_dir = path
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .map(|name| name == network)
+                        .unwrap_or(false);
+
+                    if !reset_wallet && contains_wallet_config {
+                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json and reset_wallet is false", path);
+                        continue;
+                    }
+                    if reset_wallet && contains_wallet_config && !is_network_dir {
+                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json and does not matches network name", path);
                         continue;
                     }
 
