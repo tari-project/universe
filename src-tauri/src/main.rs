@@ -166,7 +166,10 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
-async fn set_use_tor(use_tor: bool, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+async fn set_use_tor(
+    use_tor: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     let timer = Instant::now();
     state
         .config
