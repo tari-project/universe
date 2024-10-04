@@ -9,7 +9,7 @@ static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependen
 
 #[derive(Debug)]
 struct InstalledApplication {
-    display_name: String,
+    display_name: Vec<String>,
     download_url: String,
 }
 
@@ -40,22 +40,34 @@ impl ExternalDependencies {
         if cfg!(target_arch = "x86") {
             RequiredInstalledApplications {
                 additional_runtime: InstalledApplication {
-                    display_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
+                    display_name: vec![
+                        "Microsoft Visual C++ 2019 x86 Additional Runtime".to_string(),
+                        "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
+                    ],
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
                 },
                 minimum_runtime: InstalledApplication {
-                    display_name: "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
+                    display_name: vec![
+                        "Microsoft Visual C++ 2019 x86 Minimum Runtime".to_string(),
+                        "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
+                    ],
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
                 },
             }
         } else {
             RequiredInstalledApplications {
                 additional_runtime: InstalledApplication {
-                    display_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+                    display_name: vec![
+                        "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string(),
+                        "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+                    ],
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
                 },
                 minimum_runtime: InstalledApplication {
-                    display_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+                    display_name: vec![
+                        "Microsoft Visual C++ 2019 x64 Minimum Runtime".to_string(),
+                        "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+                    ],
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
                 },
             }
@@ -108,25 +120,31 @@ impl ExternalDependencies {
         let mut missing_applications = Vec::new();
 
         if !installed_applications.iter().any(|app| {
-            app.display_name.to_lowercase().as_str().contains(
-                self.required_installed_applications
-                    .additional_runtime
-                    .display_name
-                    .to_lowercase()
-                    .as_str(),
-            )
+            self.required_installed_applications
+                .additional_runtime
+                .display_name
+                .iter()
+                .any(|required_app_name| {
+                    app.display_name
+                        .to_lowercase()
+                        .as_str()
+                        .contains(required_app_name.to_lowercase().as_str())
+                })
         }) {
             missing_applications.push(&self.required_installed_applications.additional_runtime);
         }
 
         if !installed_applications.iter().any(|app| {
-            app.display_name.to_lowercase().as_str().contains(
-                self.required_installed_applications
-                    .minimum_runtime
-                    .display_name
-                    .to_lowercase()
-                    .as_str(),
-            )
+            self.required_installed_applications
+                .minimum_runtime
+                .display_name
+                .iter()
+                .any(|required_app_name| {
+                    app.display_name
+                        .to_lowercase()
+                        .as_str()
+                        .contains(required_app_name.to_lowercase().as_str())
+                })
         }) {
             missing_applications.push(&self.required_installed_applications.minimum_runtime);
         }
