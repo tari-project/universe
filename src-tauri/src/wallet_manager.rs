@@ -35,13 +35,7 @@ impl Clone for WalletManager {
 impl WalletManager {
     pub fn new(node_manager: NodeManager) -> Self {
         // TODO: wire up to front end
-        let mut use_tor = true;
-
-        // Unix systems have built in tor.
-        // TODO: Add tor service for windows.
-        if cfg!(target_os = "windows") {
-            use_tor = false;
-        }
+        let use_tor = false;
 
         let adapter = WalletAdapter::new(use_tor);
         let process_watcher = ProcessWatcher::new(adapter);
