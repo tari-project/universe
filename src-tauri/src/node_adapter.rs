@@ -86,6 +86,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
             ),
             "-p".to_string(),
             "base_node.grpc_server_allow_methods=\"list_connected_peers\"".to_string(),
+            "-p".to_string(),
+            "base_node.p2p.allow_test_addresses=true".to_string(),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
@@ -104,9 +106,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
             // );
             args.push("-p".to_string());
             args.push(format!(
-                "base_node.p2p.auxiliary_tcp_listener_address=/ip4/127.0.0.1/tcp/{0}",
+                "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/{0}",
                 self.tcp_listener_port
             ));
+            args.push("-p".to_string());
+            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         } else {
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
@@ -120,10 +124,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 "base_node.p2p.transport.tcp.listener_address=/ip4/127.0.0.1/tcp/{}",
                 self.tcp_listener_port
             ));
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.dht.excluded_dial_addresses=/ip4/127.*.*.*/tcp/0:18188".to_string(),
-            );
+            // args.push("-p".to_string());
+            // args.push(
+            // "base_node.p2p.dht.excluded_dial_addresses=/ip4/127.*.*.*/tcp/0:18188".to_string(),
+            // );
         }
         Ok((
             ProcessInstance {
