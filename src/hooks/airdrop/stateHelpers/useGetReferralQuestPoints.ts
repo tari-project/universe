@@ -37,7 +37,8 @@ export const useGetReferralQuestPoints = () => {
             if (!response?.quests.length) return;
             const reducedQuest = response.quests.reduce(
                 (acc, quest) => {
-                    if (quest.id === QuestNames.MinerTokenReward) {
+                    if (quest.name === QuestNames.MinerTokenReward) {
+                        console.debug(quest);
                         acc.pointsForMining = quest.points;
                     }
                     if (quest.name === QuestNames.MinerReceivedGift) {
