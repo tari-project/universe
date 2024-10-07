@@ -73,7 +73,7 @@ impl ProcessAdapter for P2poolAdapter {
             config.stats_server_port.to_string(),
             "--base-node-address".to_string(),
             config.base_node_address.clone(),
-            "--mdns-disabled".to_string(),
+            // "--mdns-disabled".to_string(),
             "-b".to_string(),
             log_path_string,
         ];
