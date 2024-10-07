@@ -14,7 +14,7 @@ export enum Language {
     JA = 'ja',
     KO = 'ko',
     RU = 'ru',
-    FR = 'fr'
+    FR = 'fr',
 }
 
 // System can have various regional variations for language codes, so we resolve them
