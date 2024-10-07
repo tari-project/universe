@@ -6,7 +6,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::GetBalanceRequest;
+use minotari_node_grpc_client::grpc::{GetBalanceRequest, GetCompletedTransactionsRequest};
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
@@ -207,6 +207,23 @@ pub struct WalletBalance {
     pub pending_incoming_balance: MicroMinotari,
     pub pending_outgoing_balance: MicroMinotari,
 }
+
+#[derive(Debug, Serialize)]
+pub struct TransactionInfo {
+    pub tx_id: u64,
+    pub source_address: String,
+    pub dest_address: String,
+    pub status: i32,
+    pub direction: i32,
+    pub amount: MicroMinotari,
+    pub fee: u64,
+    pub is_cancelled: bool,
+    pub excess_sig: String,
+    pub timestamp: u64,
+    pub message: String,
+    pub payment_id: String,
+}
+
 impl WalletStatusMonitor {
     fn wallet_grpc_address(&self) -> String {
         String::from("http://127.0.0.1:18141")
@@ -228,6 +245,45 @@ impl WalletStatusMonitor {
             pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
             pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
         })
+    }
+
+    pub async fn get_transaction_history(
+        &self,
+    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_completed_transactions(GetCompletedTransactionsRequest {})
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+        let mut stream = res.into_inner();
+
+        let mut transactions: Vec<TransactionInfo> = Vec::new();
+
+        while let Some(message) = stream
+            .message()
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
+        {
+            let tx = message.transaction.expect("Transaction not found");
+
+            transactions.push(TransactionInfo {
+                tx_id: tx.tx_id,
+                source_address: tx.source_address.to_hex(),
+                dest_address: tx.dest_address.to_hex(),
+                status: tx.status,
+                direction: tx.direction,
+                amount: MicroMinotari(tx.amount),
+                fee: tx.fee,
+                is_cancelled: tx.is_cancelled,
+                excess_sig: tx.excess_sig.to_hex(),
+                timestamp: tx.timestamp,
+                message: tx.message,
+                payment_id: tx.payment_id.to_hex(),
+            });
+        }
+        Ok(transactions)
     }
 
     #[deprecated(

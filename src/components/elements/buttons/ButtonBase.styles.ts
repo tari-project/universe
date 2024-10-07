@@ -30,10 +30,14 @@ export const StyledButtonBase = styled.button<Props>`
         cursor: inherit;
     }
 
-    ${({ $variant }) => {
+    ${({ $variant, $color }) => {
         switch ($variant) {
             case 'outlined':
-                return css``;
+                return css`
+                    border: 1px solid ${({ theme }) => theme.palette[$color || 'primary'].light};
+                    color: ${({ theme }) => theme.palette.base};
+                    background: ${({ theme }) => theme.palette[$color || 'primary'].dark};
+                `;
             case 'gradient':
                 return css`
                     background: linear-gradient(86deg, #780eff -4.33%, #bf28ff 102.27%);
@@ -59,7 +63,10 @@ export const StyledButtonBase = styled.button<Props>`
     ${({ $size }) => {
         switch ($size) {
             case 'small':
-                return css``;
+                return css`
+                    padding: 0 8px;
+                    font-size: 10px;
+                `;
             case 'large':
                 return css`
                     height: 50px;
