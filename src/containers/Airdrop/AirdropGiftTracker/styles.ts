@@ -29,15 +29,3 @@ export const Title = styled('div')`
     font-size: 12px;
     font-weight: 500;
 `;
-
-export const EarningsAnimationWrapper = styled.div`
-    height: 208px;
-    width: 100%;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    overflow: hidden;
-    border-radius: 10px;
-    pointer-events: none;
-    z-index: 1;
-`;

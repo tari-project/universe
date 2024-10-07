@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAirdropRequest } from '../utils/useHandleRequest';
 import { useAirdropStore } from '@app/store/useAirdropStore';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export enum QuestNames {
     MinerReceivedGift = 'miner-received-gift',
@@ -59,4 +60,20 @@ export const useGetReferralQuestPoints = () => {
         handleFetch();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+};
+
+export const useGetMiningPoints = () => {
+    const anon_id = useAppConfigStore((s) => s.anon_id);
+    const handleRequest = useAirdropRequest();
+    const setMiningRewardPoints = useAirdropStore((s) => s.setMiningRewardPoints);
+    useEffect(() => {
+        (async () => {
+            const response = await handleRequest<unknown>({
+                path: `/miner/blocks/last-mined?appId=${anon_id}`,
+                method: 'GET',
+            });
+
+            console.debug(response);
+        })();
+    }, [anon_id, handleRequest]);
 };

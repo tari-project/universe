@@ -25,7 +25,7 @@ export default function LoggedIn() {
 
         // setFlareAnimationType('GoalComplete');
         // setFlareAnimationType('FriendAccepted');
-        setFlareAnimationType('BonusGems');
+        // setFlareAnimationType('BonusGems');
     };
 
     const bonusTier = useMemo(
@@ -55,7 +55,6 @@ export default function LoggedIn() {
                 <UserInfo />
                 <Gems number={gems} label={`Gems`} />
             </UserRow>
-            <button onClick={handleShowFlare}>show flare</button>
 
             <Invite />
 
