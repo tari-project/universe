@@ -68,12 +68,16 @@ export const useGetMiningPoints = () => {
     const setMiningRewardPoints = useAirdropStore((s) => s.setMiningRewardPoints);
     useEffect(() => {
         (async () => {
-            const response = await handleRequest<unknown>({
+            const response = await handleRequest<{ lastMinedBlock?: unknown }>({
                 path: `/miner/blocks/last-mined?appId=${anon_id}`,
                 method: 'GET',
             });
 
-            console.debug(response);
+            console.debug('?', response);
+
+            if (response?.lastMinedBlock) {
+                setMiningRewardPoints(200);
+            }
         })();
-    }, [anon_id, handleRequest]);
+    }, [anon_id, handleRequest, setMiningRewardPoints]);
 };
