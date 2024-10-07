@@ -6,5 +6,7 @@
     "setup-scheduler": "Stel skeduleerder op",
     "mining-schedules": "Mynskedules",
     "mining-schedules-description": "Skeduleer jou myn-aktiwiteit",
-    "lost-connection": "Lost connection to the Tari Network. Reconnecting.."
+    "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
+    "block": "Block",
+    "recent-wins": "Recent wins"
 }

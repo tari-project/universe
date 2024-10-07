@@ -1,5 +1,5 @@
 import Miner from './Miner/Miner';
-import Wallet from './components/Wallet';
+import Wallet from './components/Wallet/Wallet.tsx';
 import Heading from './components/Heading';
 import { Bottom, Scroll, SideBarContainer, Top } from './styles';
 

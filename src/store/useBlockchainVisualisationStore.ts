@@ -55,6 +55,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 
                     if (hasEarnings) {
                         logBalanceChanges({ currBalance, prevBalance, balanceDiff });
+                        await useWalletStore.getState().fetchTransactionHistory();
                         await getState().handleWin(blockHeight, balanceDiff);
                         clearInterval(checkEarningsInterval);
                     } else {
