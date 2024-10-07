@@ -49,6 +49,9 @@ export default function LoggedIn() {
         }
     }, [flareAnimationType, bonusTier?.bonusGems, referralQuestPoints?.pointsForClaimingReferral]);
 
+    // use this to manually test the gems animation
+    // onClick={() => setGems(Math.floor(Math.random() * (9000 - 100 + 1)) + 100)}
+
     return (
         <Wrapper>
             <UserRow>

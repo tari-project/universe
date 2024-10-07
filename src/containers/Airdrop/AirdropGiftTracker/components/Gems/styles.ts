@@ -1,3 +1,4 @@
+import { m } from 'framer-motion';
 import styled from 'styled-components';
 
 export const Wrapper = styled('div')`
@@ -5,6 +6,8 @@ export const Wrapper = styled('div')`
     flex-direction: column;
     align-items: flex-end;
     gap: 0px;
+    position: relative;
+    z-index: 1;
 `;
 
 export const Number = styled('div')`
@@ -23,4 +26,20 @@ export const Label = styled('div')`
     font-weight: 500;
 `;
 
-export const GemImage = styled('img')``;
+export const GemImage = styled('img')`
+    position: relative;
+    z-index: 1;
+`;
+
+export const GemsAnimation = styled(m.div)`
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    z-index: 0;
+`;
+
+export const GemAnimatedImage = styled(m.img)`
+    position: absolute;
+    top: 0;
+    left: 0;
+`;
