@@ -396,7 +396,19 @@ async fn setup_inner(
         .expect("Could not get log dir");
 
     #[cfg(target_os = "windows")]
-    ExternalDependencies::current().check_if_required_installed_applications_are_installed()?;
+    let missing_applications = ExternalDependencies::current().check_if_required_installed_applications_are_installed().await?;
+
+    if !missing_applications.is_empty() {
+        window
+            .emit(
+                "missing-applications",
+                missing_applications
+                    .iter()
+                    .map(|app| app.display_name.clone())
+                    .collect::<Vec<String>>(),
+            ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
+        return;
+    }
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let mm_proxy_manager = state.mm_proxy_manager.clone();

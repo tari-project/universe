@@ -9,6 +9,7 @@ interface State {
     sidebarOpen: boolean;
     showExperimental: boolean;
     showLogsDialog: boolean;
+    showExternalDependenciesDialog: boolean;
 }
 interface Actions {
     setShowSplash: (showSplash: boolean) => void;
@@ -18,6 +19,7 @@ interface Actions {
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setShowExperimental: (showExperimental: boolean) => void;
     setShowLogsDialog: (showLogsDialog: boolean) => void;
+    setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -30,6 +32,7 @@ const initialState: State = {
     sidebarOpen: false,
     showLogsDialog: false,
     showExperimental: false,
+    showExternalDependenciesDialog: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -41,4 +44,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setShowExperimental: (showExperimental) => set({ showExperimental }),
     setShowLogsDialog: (showLogsDialog) => set({ showLogsDialog }),
+    setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
 }));

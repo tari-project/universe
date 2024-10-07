@@ -11,3 +11,8 @@ export interface TauriEvent {
     event: string;
     payload: TauriEventPayload;
 }
+
+export interface MissingApplicationsEvent {
+    event: 'missing-applications';
+    payload: string[];
+}

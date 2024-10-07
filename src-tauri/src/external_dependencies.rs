@@ -1,8 +1,10 @@
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Error, Ok};
 use log::{info, warn};
+use tokio::sync::RwLock;
 use std::sync::LazyLock;
 use winreg::enums::HKEY_LOCAL_MACHINE;
 use winreg::RegKey;
+use reqwest::Client;
 
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
@@ -28,12 +30,14 @@ struct RegistryEntry {
 
 pub struct ExternalDependencies {
     required_installed_applications: RequiredInstalledApplications,
+    missing_applications: RwLock<Vec<InstalledApplication>>,
 }
 
 impl ExternalDependencies {
     fn new() -> Self {
         Self {
             required_installed_applications: Self::initialize_required_installed_applications(),
+            missing_applications: RwLock::new(Vec::new()),
         }
     }
 
@@ -120,7 +124,7 @@ impl ExternalDependencies {
         Ok(installed_applications)
     }
 
-    pub fn check_if_required_installed_applications_are_installed(&self) -> Result<(), Error> {
+    pub async fn check_if_required_installed_applications_are_installed(&self) -> Result<Vec<InstalledApplication>, Error> {
         let installed_applications = self.read_installed_applications()?;
         let mut missing_applications = Vec::new();
 
@@ -154,18 +158,37 @@ impl ExternalDependencies {
             missing_applications.push(&self.required_installed_applications.minimum_runtime);
         }
 
-        if !missing_applications.is_empty() {
+        self.missing_applications.write().await.extend(missing_applications);
+        Ok(missing_applications)
+    }
+
+    pub async fn get_missing_applications(&self) -> Vec<InstalledApplication> {
+        self.missing_applications.read().await.clone()
+    }
+
+    async fn download_installer(&self, client: &Client, app: &InstalledApplication) -> Result<String, Error> {
+        let response = client.get(&app.download_url).send().await?;
+        if response.status() != 200 {
             return Err(anyhow!(
-                "The following required applications are not installed:\r\n\r\n{}",
-                missing_applications
-                    .iter()
-                    .map(|app| format!(
-                        "{} | Download url: {}",
-                        app.download_name, app.download_url
-                    ))
-                    .collect::<Vec<String>>()
-                    .join("\r\n")
+                "Failed to download installer for {}: {}",
+                app.download_name,
+                response.status()
             ));
+        }
+        let data = response.bytes().await?;
+        let installer_path = format!("C:\\temp\\{}", app.download_name);
+        tokio::fs::write(installer_path, data).await?;
+        Ok(installer_path)
+    }
+
+    pub async fn install_missing_applications(&self) -> Result<(), Error> {
+        let missing_applications = self.get_missing_applications().await;
+        let client = Client::new();
+        for app in missing_applications {
+            let installer_path = self.download_installer(&client, &app).await?;
+            tokio::process::Command::new(installer_path)
+                .spawn()
+                .map_err(|e| anyhow!("Failed to start installer for {}: {}", app.download_name, e))?;
         }
         Ok(())
     }
