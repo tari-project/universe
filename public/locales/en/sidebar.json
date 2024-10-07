@@ -6,5 +6,7 @@
     "setup-scheduler": "Setup Scheduler",
     "mining-schedules": "Mining Schedules",
     "mining-schedules-description": "Schedule your mining activity",
-    "lost-connection": "Lost connection to the Tari Network. Reconnecting.."
+    "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
+    "block": "Block",
+    "recent-wins": "Recent wins"
 }
