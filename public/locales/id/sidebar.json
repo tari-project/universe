@@ -6,5 +6,7 @@
   "setup-scheduler": "Atur Penjadwal",
   "mining-schedules": "Jadwal Penambangan",
   "mining-schedules-description": "Jadwalkan aktivitas penambangan Anda",
-  "lost-connection": "Koneksi ke Jaringan Tari terputus. Menyambung kembali.."
+  "lost-connection": "Koneksi ke Jaringan Tari terputus. Menyambung kembali..",
+  "block": "Block",
+  "recent-wins": "Recent wins"
 }

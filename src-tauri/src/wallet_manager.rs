@@ -1,6 +1,7 @@
 use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
 use crate::process_watcher::ProcessWatcher;
+use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};
 use std::path::PathBuf;
@@ -85,6 +86,22 @@ impl WalletManager {
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
             .get_balance()
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
+    pub async fn get_transaction_history(
+        &self,
+    ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| WalletManagerError::WalletNotStarted)?
+            .get_transaction_history()
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
