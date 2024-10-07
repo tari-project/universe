@@ -54,5 +54,6 @@
     "connected-to-tari": "Connected to the Tari Network",
     "not-connected-to-tari": "Not connected to the Tari Network",
     "connected-peers": "Connected Peers",
-    "should-use-system-language": "Use system language"
+    "should-use-system-language": "Use system language",
+    "use-tor": "Use Tor"
 }

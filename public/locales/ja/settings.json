@@ -54,5 +54,6 @@
   "connected-to-tari": "Tariネットワークに接続されています",
   "not-connected-to-tari": "Tariネットワークに接続されていません",
   "connected-peers": "接続されたピア",
-  "should-use-system-language": "システム言語を使用"
+  "should-use-system-language": "システム言語を使用",
+  "use-tor": "Use Tor"
 }
