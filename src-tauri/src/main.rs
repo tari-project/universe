@@ -19,6 +19,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use wallet_adapter::TransactionInfo;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
@@ -1064,6 +1065,11 @@ async fn get_p2pool_stats(
 ) -> Result<HashMap<String, Stats>, String> {
     let timer = Instant::now();
     if state.is_getting_p2pool_stats.load(Ordering::SeqCst) {
+        let read = state.cached_p2pool_stats.read().await;
+        if let Some(stats) = &*read {
+            warn!(target: LOG_TARGET, "Already getting p2pool stats, returning cached value");
+            return Ok(stats.clone());
+        }
         warn!(target: LOG_TARGET, "Already getting p2pool stats");
         return Err("Already getting p2pool stats".to_string());
     }
@@ -1073,8 +1079,42 @@ async fn get_p2pool_stats(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
     }
+    let mut lock = state.cached_p2pool_stats.write().await;
+    *lock = Some(p2pool_stats.clone());
     state.is_getting_p2pool_stats.store(false, Ordering::SeqCst);
     Ok(p2pool_stats)
+}
+
+#[tauri::command]
+async fn get_transaction_history(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<TransactionInfo>, String> {
+    let timer = Instant::now();
+    if state.is_getting_transaction_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting transaction history");
+        return Err("Already getting transaction history".to_string());
+    }
+    state
+        .is_getting_transaction_history
+        .store(true, Ordering::SeqCst);
+    let transactions = match state.wallet_manager.get_transaction_history().await {
+        Ok(t) => t,
+        Err(e) => {
+            if !matches!(e, WalletManagerError::WalletNotStarted) {
+                warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
+            }
+            vec![]
+        }
+    };
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_transaction_history took too long: {:?}", timer.elapsed());
+    }
+
+    state
+        .is_getting_transaction_history
+        .store(false, Ordering::SeqCst);
+    Ok(transactions)
 }
 
 #[tauri::command]
@@ -1083,6 +1123,11 @@ async fn get_tari_wallet_details(
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
     if state.is_getting_wallet_balance.load(Ordering::SeqCst) {
+        let read = state.cached_wallet_details.read().await;
+        if let Some(details) = &*read {
+            warn!(target: LOG_TARGET, "Already getting wallet balance, returning cached value");
+            return Ok(details.clone());
+        }
         warn!(target: LOG_TARGET, "Already getting wallet balance");
         return Err("Already getting wallet balance".to_string());
     }
@@ -1104,14 +1149,18 @@ async fn get_tari_wallet_details(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
     }
-    state
-        .is_getting_wallet_balance
-        .store(false, Ordering::SeqCst);
-    Ok(TariWalletDetails {
+    let result = TariWalletDetails {
         wallet_balance,
         tari_address_base58: tari_address.to_base58(),
         tari_address_emoji: tari_address.to_emoji_string(),
-    })
+    };
+    let mut lock = state.cached_wallet_details.write().await;
+    *lock = Some(result.clone());
+    state
+        .is_getting_wallet_balance
+        .store(false, Ordering::SeqCst);
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -1130,6 +1179,11 @@ async fn get_miner_metrics(
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
     if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
+        let read = state.cached_miner_metrics.read().await;
+        if let Some(metrics) = &*read {
+            warn!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
+            return Ok(metrics.clone());
+        }
         warn!(target: LOG_TARGET, "Already getting miner metrics");
         return Err("Already getting miner metrics".to_string());
     }
@@ -1198,11 +1252,8 @@ async fn get_miner_metrics(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
-    state
-        .is_getting_miner_metrics
-        .store(false, Ordering::SeqCst);
 
-    Ok(MinerMetrics {
+    let ret = MinerMetrics {
         cpu: CpuMinerMetrics {
             hardware: hardware_status.cpu,
             mining: cpu_mining_status,
@@ -1218,7 +1269,15 @@ async fn get_miner_metrics(
             is_connected: !connected_peers.is_empty(),
             connected_peers,
         },
-    })
+    };
+    let mut lock = state.cached_miner_metrics.write().await;
+    *lock = Some(ret.clone());
+
+    state
+        .is_getting_miner_metrics
+        .store(false, Ordering::SeqCst);
+
+    Ok(ret)
 }
 
 #[tauri::command]
@@ -1314,26 +1373,26 @@ async fn reset_settings<'r>(
     Ok(())
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
     hardware: Option<HardwareParameters>,
     mining: CpuMinerStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
     hardware: Option<HardwareParameters>,
     mining: GpuMinerStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct MinerMetrics {
     cpu: CpuMinerMetrics,
     gpu: GpuMinerMetrics,
     base_node: BaseNodeStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct TariWalletDetails {
     wallet_balance: Option<WalletBalance>,
     tari_address_base58: String,
@@ -1351,7 +1410,7 @@ pub struct ApplicationsVersions {
     xtrgpuminer: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct BaseNodeStatus {
     block_height: u64,
     block_time: u64,
@@ -1359,7 +1418,7 @@ pub struct BaseNodeStatus {
     is_connected: bool,
     connected_peers: Vec<String>,
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: f64,
@@ -1367,7 +1426,7 @@ pub struct CpuMinerStatus {
     pub connection: CpuMinerConnectionStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
     // pub error: Option<String>,
@@ -1387,6 +1446,7 @@ struct UniverseAppState {
     is_getting_wallet_balance: Arc<AtomicBool>,
     is_getting_p2pool_stats: Arc<AtomicBool>,
     is_getting_miner_metrics: Arc<AtomicBool>,
+    is_getting_transaction_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -1403,6 +1463,9 @@ struct UniverseAppState {
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
+    cached_p2pool_stats: Arc<RwLock<Option<HashMap<String, Stats>>>>,
+    cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
+    cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -1475,6 +1538,7 @@ fn main() {
         is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
         is_getting_wallet_balance: Arc::new(AtomicBool::new(false)),
         is_setup_finished: Arc::new(RwLock::new(false)),
+        is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
         shutdown: shutdown.clone(),
@@ -1490,6 +1554,9 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
         tor_manager: TorManager::new(),
+        cached_p2pool_stats: Arc::new(RwLock::new(None)),
+        cached_wallet_details: Arc::new(RwLock::new(None)),
+        cached_miner_metrics: Arc::new(RwLock::new(None)),
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
@@ -1610,7 +1677,8 @@ fn main() {
             get_tari_wallet_details,
             exit_application,
             set_should_always_use_system_language,
-            set_use_tor
+            set_use_tor,
+            get_transaction_history
         ])
         .build(tauri::generate_context!())
         .inspect_err(
