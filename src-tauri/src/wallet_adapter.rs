@@ -10,6 +10,7 @@ use minotari_node_grpc_client::grpc::{GetBalanceRequest, GetCompletedTransaction
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
+use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -57,7 +58,7 @@ impl ProcessAdapter for WalletAdapter {
         let working_dir = data_dir.join("wallet");
         std::fs::create_dir_all(&working_dir)?;
 
-        let formatted_working_dir = convert_to_string(working_dir)?;
+        let formatted_working_dir = convert_to_string(working_dir.clone())?;
         let formatted_log_dir = convert_to_string(log_dir)?;
 
         let mut args: Vec<String> = vec![
@@ -87,25 +88,20 @@ impl ProcessAdapter for WalletAdapter {
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
             ),
-            "-p".to_string(),
-            "wallet.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9999".to_string(),
         ];
+
+        let peer_data_folder = working_dir
+            .join(Network::get_current_or_user_setting_or_default().to_string())
+            .join("peer_db");
+
         if self.use_tor {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         } else {
-            // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
-            // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
-            // args.push("-p".to_string());
-            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
-            args.push("wallet.p2p.public_addresses=/ip4/172.2.3.4/tcp/18188".to_string());
-            // args.push("-p".to_string());
-            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
-            // args.push("-p".to_string());
-            // args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
+            args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
             args.push("-p".to_string());
             args.push(
                 "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
@@ -122,6 +118,17 @@ impl ProcessAdapter for WalletAdapter {
                         .await
                         .resolve_path_to_binary_files(Binaries::Wallet)
                         .await?;
+
+                    // TODO: We have to clear out the p2pool folder every time until setting the base node
+                    // doesn't add addresses. E.g
+                    // 2024-10-05 20:41:57.275841400 [wallet] [Thread:51648] INFO  Address for base node differs from storage.
+                    //  Was /onion3/6oo4ujdz2bpzxhvu7ujgrolmrhkwfixswvuwwkyzdfnhi6e5vts4cdid:18141, /ip4/127.0.0.1/tcp/57805,
+                    //  /ip4/127.0.0.1/tcp/56751, /ip4/127.0.0.1/tcp/58004, /ip4/127.0.0.1/tcp/60299, /ip4/127.0.0.1/tcp/59878,
+                    //  /ip4/127.0.0.1/tcp/62457, /ip4/127.0.0.1/tcp/62572, /ip4/127.0.0.1/tcp/63599, /ip4/127.0.0.1/tcp/65002, setting to /ip4/127.0.0.1/tcp/53601
+                    if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
+                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                    }
+
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
@@ -193,7 +200,7 @@ impl StatusMonitor for WalletStatusMonitor {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct WalletBalance {
     pub available_balance: MicroMinotari,
     pub timelocked_balance: MicroMinotari,

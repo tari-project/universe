@@ -1,8 +1,7 @@
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
 import { Language, LanguageList, resolveI18nLanguage } from '@app/i18initializer.ts';
 import styled from 'styled-components';
-import { useCallback } from 'react';
-import i18n, { changeLanguage } from 'i18next';
+import i18n from 'i18next';
 import { m } from 'framer-motion';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 

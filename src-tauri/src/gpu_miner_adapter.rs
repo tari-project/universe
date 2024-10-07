@@ -272,7 +272,7 @@ struct XtrGpuminerHttpApiStatus {
     hashes_per_second: u64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: u64,
