@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAridropRequest } from '../utils/useHandleRequest';
+import { useAirdropRequest } from '../utils/useHandleRequest';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
 export enum QuestNames {
@@ -11,7 +11,6 @@ export enum QuestNames {
 interface QuestData {
     displayName: string;
     isNew: boolean;
-    id: s;
     name: QuestNames;
     pointTypeName: string;
     points: number;
@@ -24,7 +23,7 @@ interface QuestDataResponse {
 }
 
 export const useGetReferralQuestPoints = () => {
-    const handleRequest = useAridropRequest();
+    const handleRequest = useAirdropRequest();
     const { setReferralQuestPoints } = useAirdropStore();
 
     useEffect(() => {
@@ -38,7 +37,6 @@ export const useGetReferralQuestPoints = () => {
             const reducedQuest = response.quests.reduce(
                 (acc, quest) => {
                     if (quest.name === QuestNames.MinerTokenReward) {
-                        console.debug(quest);
                         acc.pointsForMining = quest.points;
                     }
                     if (quest.name === QuestNames.MinerReceivedGift) {
