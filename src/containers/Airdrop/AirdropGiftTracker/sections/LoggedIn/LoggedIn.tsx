@@ -17,16 +17,16 @@ export default function LoggedIn() {
         setGems(userPoints?.base.gems || userDetails?.user?.rank?.gems || 0);
     }, [userPoints?.base.gems, userDetails?.user?.rank?.gems]);
 
-    // const handleShowFlare = () => {
-    //     if (flareAnimationType) {
-    //         setFlareAnimationType();
-    //         return;
-    //     }
-    //
-    //     //setFlareAnimationType('GoalComplete');
-    //     setFlareAnimationType('FriendAccepted');
-    //     //setFlareAnimationType('BonusGems');
-    // };
+    const handleShowFlare = () => {
+        if (flareAnimationType) {
+            setFlareAnimationType();
+            return;
+        }
+
+        // setFlareAnimationType('GoalComplete');
+        // setFlareAnimationType('FriendAccepted');
+        setFlareAnimationType('BonusGems');
+    };
 
     const bonusTier = useMemo(
         () =>
@@ -55,6 +55,7 @@ export default function LoggedIn() {
                 <UserInfo />
                 <Gems number={gems} label={`Gems`} />
             </UserRow>
+            <button onClick={handleShowFlare}>show flare</button>
 
             <Invite />
 

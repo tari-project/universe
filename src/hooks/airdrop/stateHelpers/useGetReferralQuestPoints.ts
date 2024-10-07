@@ -4,12 +4,14 @@ import { useAirdropStore } from '@app/store/useAirdropStore';
 
 export enum QuestNames {
     MinerReceivedGift = 'miner-received-gift',
+    MinerTokenReward = 'miner-test-token-reward',
     MinerQuestReferral = 'quest-download-referral',
 }
 
 interface QuestData {
     displayName: string;
     isNew: boolean;
+    id: s;
     name: QuestNames;
     pointTypeName: string;
     points: number;
@@ -35,6 +37,9 @@ export const useGetReferralQuestPoints = () => {
             if (!response?.quests.length) return;
             const reducedQuest = response.quests.reduce(
                 (acc, quest) => {
+                    if (quest.id === QuestNames.MinerTokenReward) {
+                        acc.pointsForMining = quest.points;
+                    }
                     if (quest.name === QuestNames.MinerReceivedGift) {
                         acc.pointsForClaimingReferral = quest.points;
                     }
@@ -44,6 +49,7 @@ export const useGetReferralQuestPoints = () => {
                     return acc;
                 },
                 {
+                    pointsForMining: 0,
                     pointsPerReferral: 0,
                     pointsForClaimingReferral: 0,
                 }
