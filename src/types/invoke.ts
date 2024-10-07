@@ -38,6 +38,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
+    function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
     function invoke(
         param: 'log_web_message',

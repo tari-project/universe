@@ -54,5 +54,6 @@
   "feedback-required": "反馈是必需的",
   "your-reference": "您的参考",
   "gpu-unavailable": "⚠️ GPU已禁用，因为您的硬件不支持",
-  "mining-toggle-warning": "更改生效时，挖矿将暂停。"
+  "mining-toggle-warning": "更改生效时，挖矿将暂停。",
+  "use-tor": "Use Tor"
 }

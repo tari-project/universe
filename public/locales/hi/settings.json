@@ -54,5 +54,6 @@
   "connected-to-tari": "Tari नेटवर्क से जुड़ा",
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",
   "connected-peers": "जुड़े हुए सहकर्मी",
-  "should-use-system-language": "सिस्टम भाषा का उपयोग करें"
+  "should-use-system-language": "सिस्टम भाषा का उपयोग करें",
+  "use-tor": "Use Tor"
 }
