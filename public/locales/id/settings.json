@@ -54,5 +54,6 @@
   "connected-to-tari": "Terhubung ke Jaringan Tari",
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
   "connected-peers": "Rekan Terhubung",
-  "should-use-system-language": "Gunakan bahasa sistem"
+  "should-use-system-language": "Gunakan bahasa sistem",
+  "use-tor": "Use Tor"
 }

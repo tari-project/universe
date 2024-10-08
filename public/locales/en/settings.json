@@ -1,4 +1,5 @@
 {
+    "applyInviteCode": "Apply Invite Code",
     "settings": "Settings",
     "seed-words": "Seed words",
     "send-logs": "Submit an Issue & Logs",
@@ -9,6 +10,7 @@
     "logs": "Logs",
     "open-logs-directory": "Open logs directory",
     "debug-info": "Debug",
+    "disconnect": "Disconnect from Airdrop",
     "hardware-status": "Hardware status",
     "update-versions": "Update versions",
     "refresh-versions": "Refresh versions",
@@ -49,10 +51,12 @@
     "reset-settings": "Reset Settings",
     "reset-permanently": "Are you sure you want to reset all settings permanently?",
     "reset-wallet": "Reset wallet",
+    "inviteCode": "Invite Code",
     "experimental-title": "Experimental Features",
     "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
     "connected-to-tari": "Connected to the Tari Network",
     "not-connected-to-tari": "Not connected to the Tari Network",
     "connected-peers": "Connected Peers",
-    "should-use-system-language": "Use system language"
+    "should-use-system-language": "Use system language",
+    "use-tor": "Use Tor"
 }

@@ -1,6 +1,7 @@
 use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
 use crate::process_watcher::ProcessWatcher;
+use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};
 use std::path::PathBuf;
@@ -35,13 +36,7 @@ impl Clone for WalletManager {
 impl WalletManager {
     pub fn new(node_manager: NodeManager) -> Self {
         // TODO: wire up to front end
-        let mut use_tor = true;
-
-        // Unix systems have built in tor.
-        // TODO: Add tor service for windows.
-        if cfg!(target_os = "windows") {
-            use_tor = false;
-        }
+        let use_tor = false;
 
         let adapter = WalletAdapter::new(use_tor);
         let process_watcher = ProcessWatcher::new(adapter);
@@ -91,6 +86,22 @@ impl WalletManager {
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
             .get_balance()
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
+    pub async fn get_transaction_history(
+        &self,
+    ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| WalletManagerError::WalletNotStarted)?
+            .get_transaction_history()
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
