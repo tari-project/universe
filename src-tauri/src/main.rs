@@ -102,7 +102,7 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[serde(rename_all = "camelCase")]
 struct UpdateProgressRustEvent {
     chunk_length: usize,
-    content_length: Option<u64>,
+    content_length: u64,
     downloaded: u64,
 }
 
@@ -161,6 +161,27 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_use_tor(
+    use_tor: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_use_tor(use_tor)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_use_tor {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_use_tor took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1678,6 +1699,7 @@ fn main() {
             get_tari_wallet_details,
             exit_application,
             set_should_always_use_system_language,
+            set_use_tor,
             get_transaction_history
         ])
         .build(tauri::generate_context!())
@@ -1700,8 +1722,15 @@ fn main() {
             }
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
+                let content_length = content_length.unwrap_or_else(|| {
+                    warn!(target: LOG_TARGET, "Unable to determine content length");
+                    downloaded
+                });
+
+                info!(target: LOG_TARGET, "Chunk Length: {} | Download progress: {} / {}", chunk_length, downloaded, content_length);
+
                 if let Some(window) = _app_handle.get_window("main") {
-                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
+                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded: downloaded.min(content_length) }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
                     );
                 }
             }

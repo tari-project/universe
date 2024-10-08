@@ -54,5 +54,6 @@
   "feedback-required": "Geri bildirim gereklidir",
   "your-reference": "Referansınız",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
-  "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak."
+  "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak.",
+  "use-tor": "Use Tor"
 }

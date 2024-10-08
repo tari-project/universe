@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
+export const MAX_GEMS = 10000;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
