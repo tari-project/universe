@@ -34,8 +34,6 @@ export const useGetMiningPoints = () => {
                 method: 'GET',
             });
 
-            console.debug(res);
-
             const lastMinedBlock = res?.lastMinedBlock;
             if (lastMinedBlock) {
                 const {
@@ -57,8 +55,6 @@ export const useGetMiningPoints = () => {
     }, [anon_id, handleRequest, miningRewardPoints?.blockHeight, setMiningRewardPoints]);
 
     useEffect(() => {
-        if (earnings) {
-            void getLastMined();
-        }
+        void getLastMined();
     }, [earnings, getLastMined]);
 };
