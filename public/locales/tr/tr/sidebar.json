@@ -1,0 +1,12 @@
+{
+  "auto-miner": "Otomatik Madenci",
+  "auto-miner-description": "Otomatik madenci, makineniz boştayken madencinizi açacaktır",
+  "next-milestone": "Sonraki Kilometre Taşı",
+  "wallet-balance": "Cüzdan Bakiyesi",
+  "setup-scheduler": "Kurulum Zamanlayıcısı",
+  "mining-schedules": "Madencilik Programları",
+  "mining-schedules-description": "Madencilik aktivitenizi planlayın",
+  "lost-connection": "Tari Ağına bağlantı kesildi. Yeniden bağlanılıyor..",
+  "block": "Blok",
+  "recent-wins": "Son kazanımlar"
+}
