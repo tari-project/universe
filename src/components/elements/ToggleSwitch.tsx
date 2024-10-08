@@ -16,10 +16,8 @@ const Label = styled.label`
     cursor: pointer;
 
     border-radius: 40px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 20px 20px 65px 0 rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(7px);
+    background: ${({ theme }) => theme.palette.background.paper};
+    box-shadow: 10px 10px 25px 3px rgba(0, 0, 0, 0.05);
 
     display: flex;
     justify-content: space-between;
@@ -64,7 +62,7 @@ const Input = styled.input<{ $isSolid?: boolean }>`
     display: none;
     &:disabled + ${Switch} {
         pointer-events: none;
-        background: ${({ theme }) => theme.palette.colors.grey[200]};
+        background: ${({ theme }) => theme.palette.colors.success[100]};
     }
     &:checked + ${Switch} {
         &:before {

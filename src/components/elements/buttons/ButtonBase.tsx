@@ -3,7 +3,7 @@ import { StyledButtonBase } from './ButtonBase.styles.ts';
 
 type ButtonBaseVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
 type ButtonBaseColor = 'primary' | 'secondary' | 'gradient';
-type ButtonBaseSize = 'small' | 'medium' | 'large';
+type ButtonBaseSize = 'xs' | 'small' | 'medium' | 'large';
 
 export interface ButtonBaseProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: ButtonBaseVariant;
