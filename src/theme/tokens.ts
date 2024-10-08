@@ -42,14 +42,14 @@ export const light = {
         contrast: '#000000',
         primary: {
             main: tariPurple[600],
-            dark: tariPurple[800],
+            dark: tariPurple[700],
             light: tariPurple[500],
             shadow: tariPurpleAlpha[10],
             wisp: tariPurpleAlpha[5],
         },
         secondary: {
-            main: grey[600],
-            dark: grey[700],
+            main: grey[700],
+            dark: grey[800],
             light: grey[500],
             wisp: tariPurpleAlpha[5],
         },
