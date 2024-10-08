@@ -2,7 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 #[cfg(target_os = "windows")]
-use external_dependencies::{ ExternalDependencies, RequiredExternalDependency};
+use external_dependencies::{ ExternalDependencies,ExternalDependency, RequiredExternalDependency};
 
 use log::trace;
 use log::{debug, error, info, warn};
