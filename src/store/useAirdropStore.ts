@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export const INSTALL_BONUS_GEMS = 5000;
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
 export const MAX_GEMS = 10000;
@@ -118,6 +117,11 @@ export interface ReferralQuestPoints {
 
 //////////////////////////////////////////
 
+interface MiningPoint {
+    blockHeight: string;
+    reward: number;
+}
+
 interface AirdropState {
     authUuid: string;
     airdropTokens?: AirdropTokens;
@@ -128,11 +132,12 @@ interface AirdropState {
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
+    miningRewardPoints?: MiningPoint;
 }
 
 interface AirdropStore extends AirdropState {
     setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
-
+    setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
@@ -149,6 +154,7 @@ const clearState: AirdropState = {
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
+    miningRewardPoints: undefined,
 };
 
 const NOT_PERSISTED_KEYS = ['userPoints', 'backendInMemoryConfig', 'userDetails', 'authUuid', 'referralCount'];
@@ -172,6 +178,7 @@ export const useAirdropStore = create<AirdropStore>()(
             setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
+            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
         }),
         {
             name: 'airdrop-store',

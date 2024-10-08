@@ -7,15 +7,15 @@ import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { useTranslation } from 'react-i18next';
 
 const container = {
-    hidden: { opacity: 1, height: 0 },
+    hidden: { opacity: 1 },
     visible: {
-        height: 'auto',
         opacity: 1,
         transition: {
+            delay: 0.2,
             delayChildren: 0.1,
             staggerChildren: 0.05,
-            ease: 'easeIn',
-            duration: 0.2,
+            ease: 'linear',
+            duration: 0.4,
         },
     },
 };
