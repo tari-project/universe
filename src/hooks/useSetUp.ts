@@ -60,6 +60,7 @@ export function useSetUp() {
             }
         });
         if (isAfterAutoUpdate) {
+            setSeenPermissions(false);
             clearStorage();
             invoke('setup_application').catch((e) => {
                 setCriticalError(`Failed to setup application: ${e}`);
