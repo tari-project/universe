@@ -57,5 +57,6 @@
   "mining-toggle-warning": "更改生效时，挖矿将暂停。",
   "applyInviteCode": "应用邀请代码",
   "disconnect": "断开与空投的连接",
-  "inviteCode": "邀请代码"
+  "inviteCode": "邀请代码",
+  "use-tor": "使用Tor"
 }

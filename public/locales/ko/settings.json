@@ -57,5 +57,6 @@
   "should-use-system-language": "시스템 언어 사용",
   "applyInviteCode": "초대 코드 적용",
   "disconnect": "에어드롭 연결 해제",
-  "inviteCode": "초대 코드"
+  "inviteCode": "초대 코드",
+  "use-tor": "Tor 사용하기"
 }

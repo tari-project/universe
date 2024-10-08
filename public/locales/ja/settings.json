@@ -57,5 +57,6 @@
   "should-use-system-language": "システム言語を使用",
   "applyInviteCode": "招待コードを適用",
   "disconnect": "エアドロップから切断",
-  "inviteCode": "招待コード"
+  "inviteCode": "招待コード",
+  "use-tor": "Torを使用する"
 }

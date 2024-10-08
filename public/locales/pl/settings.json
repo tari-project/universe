@@ -59,5 +59,6 @@
   "not-connected-to-tari": "Nie połączono z siecią Tari",
   "applyInviteCode": "Zastosuj Kod Zaproszenia",
   "disconnect": "Odłącz od Airdrop",
-  "inviteCode": "Kod Zaproszenia"
+  "inviteCode": "Kod Zaproszenia",
+  "use-tor": "Użyj Tor"
 }

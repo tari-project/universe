@@ -55,5 +55,6 @@
   "experimental-warning": "⚠️ Waarskuwing: Hierdie kenmerke is onder aktiewe ontwikkeling en kan onvoorspelbaar optree. Gaan asseblief versigtig voort.",
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "disconnect": "Ontkoppel van Airdrop",
-  "inviteCode": "Uitnodigingskode"
+  "inviteCode": "Uitnodigingskode",
+  "use-tor": "Gebruik Tor"
 }

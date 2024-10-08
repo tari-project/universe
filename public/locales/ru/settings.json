@@ -57,5 +57,6 @@
   "should-use-system-language": "Использовать системный язык",
   "applyInviteCode": "Применить код приглашения",
   "disconnect": "Отключиться от Airdrop",
-  "inviteCode": "Код приглашения"
+  "inviteCode": "Код приглашения",
+  "use-tor": "Использовать Tor"
 }

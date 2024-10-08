@@ -57,5 +57,6 @@
   "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak.",
   "applyInviteCode": "Davet Kodunu Uygula",
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
-  "inviteCode": "Davet Kodu"
+  "inviteCode": "Davet Kodu",
+  "use-tor": "Tor Kullan"
 }
