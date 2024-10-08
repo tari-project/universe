@@ -22,19 +22,6 @@ pub enum ExternalDependencyStatus {
     Unknown,
 }
 
-#[derive(Debug, Clone)]
-pub enum ManufacturerName {
-    Microsoft,
-}
-
-impl ManufacturerName {
-    pub fn to_string(&self) -> String {
-        match self {
-            ManufacturerName::Microsoft => "Microsoft".to_string(),
-        }
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Manufacturer {
     pub name: String,
@@ -43,12 +30,8 @@ pub struct Manufacturer {
 }
 
 impl Manufacturer {
-    pub fn new(name: ManufacturerName, url: String, logo: String) -> Self {
-        Self {
-            name: name.to_string(),
-            url,
-            logo,
-        }
+    pub fn new(name: String, url: String, logo: String) -> Self {
+        Self { name, url, logo }
     }
 }
 
@@ -101,7 +84,7 @@ impl ExternalDependencies {
                             .to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
                     manufacturer: Manufacturer::new(
-                        ManufacturerName::Microsoft,
+                        "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
                         "https://www.microsoft.com/favicon.ico".to_string(),
                     ),
@@ -118,7 +101,7 @@ impl ExternalDependencies {
                         "This is the minimum runtime required to run Tari applications.".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
                     manufacturer: Manufacturer::new(
-                        ManufacturerName::Microsoft,
+                        "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
                         "https://www.microsoft.com/favicon.ico".to_string(),
                     ),
@@ -139,7 +122,7 @@ impl ExternalDependencies {
                             .to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
                     manufacturer: Manufacturer::new(
-                        ManufacturerName::Microsoft,
+                        "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
                         "https://www.microsoft.com/favicon.ico".to_string(),
                     ),
@@ -156,7 +139,7 @@ impl ExternalDependencies {
                         "This is the minimum runtime required to run Tari applications.".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
                     manufacturer: Manufacturer::new(
-                        ManufacturerName::Microsoft,
+                        "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
                         "https://www.microsoft.com/favicon.ico".to_string(),
                     ),
