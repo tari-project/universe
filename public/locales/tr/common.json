@@ -11,13 +11,13 @@
     "version": "Versiyon",
     "resources": "Kaynaklar",
     "hashrate": "Hashrate",
-    "utilization": "Fayda",
+    "utilization": "Kullanım",
     "mode": "Mode",
     "day": "Gün",
     "shutting-down": "Kapatılıyor..",
     "tari-universe": "Tari Universe",
     "testnet": "Testnet",
-    "critical-error": "Critical error",
-    "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
-    "close-tari-universe": "Close Tari Universe"
+    "critical-error": "Kritik hata",
+    "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse bizimle iletişime geçin.",
+    "close-tari-universe": "Tari Universe'i kapat"
 }
