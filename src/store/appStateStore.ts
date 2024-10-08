@@ -23,7 +23,6 @@ interface AppState {
     settingUpFinished: () => Promise<void>;
     externalDependencies: ExternalDependency[];
     fetchExternalDependencies: () => Promise<void>;
-    missingExternalDependencies: ExternalDependency[];
     loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
     applications_versions?: ApplicationsVersions;
     fetchApplicationsVersions: () => Promise<void>;
@@ -96,13 +95,12 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     externalDependencies: [],
     fetchExternalDependencies: async () => {
         try {
-            const missingExternalDependencies = await invoke('get_external_dependencies');
-            set({ missingExternalDependencies });
+            const externalDependencies = await invoke('get_external_dependencies');
+            set({ externalDependencies });
         } catch (error) {
             console.error('Error loading missing external dependencies', error);
         }
     },
     missingExternalDependencies: [],
-    loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) =>
-        set({ externalDependencies: missingExternalDependencies }),
+    loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
 }));

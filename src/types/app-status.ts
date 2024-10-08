@@ -20,9 +20,9 @@ export interface AppConfig {
 }
 
 export enum ExternalDependencyStatus {
-    Installed,
-    NotInstalled,
-    Unknown,
+    Installed = 'Installed',
+    NotInstalled = 'NotInstalled',
+    Unknown = 'Unknown',
 }
 
 export interface Manufacturer {
