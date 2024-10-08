@@ -117,6 +117,11 @@ export interface ReferralQuestPoints {
 
 //////////////////////////////////////////
 
+interface MiningPoint {
+    blockHeight: string;
+    reward: number;
+}
+
 interface AirdropState {
     authUuid: string;
     airdropTokens?: AirdropTokens;
@@ -127,12 +132,12 @@ interface AirdropState {
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
-    miningRewardPoints?: number;
+    miningRewardPoints?: MiningPoint;
 }
 
 interface AirdropStore extends AirdropState {
     setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
-    setMiningRewardPoints: (miningRewardPoints: number) => void;
+    setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
@@ -173,7 +178,7 @@ export const useAirdropStore = create<AirdropStore>()(
             setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
-            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints }),
+            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
         }),
         {
             name: 'airdrop-store',
