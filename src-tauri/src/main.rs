@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use external_dependencies::{ ExternalDependencies,ExternalDependency, RequiredExternalDependency};
+use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
@@ -381,21 +381,21 @@ async fn get_external_dependencies() -> Result<RequiredExternalDependency, Strin
     Ok(external_dependencies)
 }
 
-
 #[tauri::command]
 async fn download_and_start_installer(
-    missing_dependency: ExternalDependency,
+    _missing_dependency: ExternalDependency,
 ) -> Result<(), String> {
     let timer = Instant::now();
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") {
-        ExternalDependencies::current().install_missing_dependencies(missing_dependency).await.map_err(
-            |e| {
+        ExternalDependencies::current()
+            .install_missing_dependencies(_missing_dependency)
+            .await
+            .map_err(|e| {
                 error!(target: LOG_TARGET, "Could not install missing dependency: {:?}", e);
                 e.to_string()
-            },
-        )?;
+            })?;
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -459,10 +459,16 @@ async fn setup_inner(
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") {
-        ExternalDependencies::current().read_registry_installed_applications().await?;
-        let is_missing = ExternalDependencies::current().check_if_some_dependency_is_not_installed().await;
-        let external_dependencies = ExternalDependencies::current().get_external_dependencies().await;
-        
+        ExternalDependencies::current()
+            .read_registry_installed_applications()
+            .await?;
+        let is_missing = ExternalDependencies::current()
+            .check_if_some_dependency_is_not_installed()
+            .await;
+        let external_dependencies = ExternalDependencies::current()
+            .get_external_dependencies()
+            .await;
+
         if is_missing {
             window
                 .emit(

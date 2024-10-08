@@ -1,17 +1,16 @@
 use anyhow::{anyhow, Error};
-use log::{info, warn};
+use futures_util::StreamExt;
+use log::info;
 use serde::{Deserialize, Serialize};
+use std::env;
+use std::sync::LazyLock;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
-use std::sync::LazyLock;
 #[cfg(target_os = "windows")]
 use winreg::enums::HKEY_LOCAL_MACHINE;
 #[cfg(target_os = "windows")]
 use winreg::RegKey;
-use reqwest::Client;
-use std::env;
-use futures_util::StreamExt;
 
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
@@ -25,7 +24,7 @@ pub enum ExternalDependencyStatus {
 
 #[derive(Debug, Clone)]
 pub enum ManufacturerName {
-    Microsoft
+    Microsoft,
 }
 
 impl ManufacturerName {
@@ -45,11 +44,13 @@ pub struct Manufacturer {
 
 impl Manufacturer {
     pub fn new(name: ManufacturerName, url: String, logo: String) -> Self {
-        Self { name: name.to_string(), url, logo }
+        Self {
+            name: name.to_string(),
+            url,
+            logo,
+        }
     }
 }
-
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExternalDependency {
@@ -81,7 +82,7 @@ pub struct ExternalDependencies {
 impl ExternalDependencies {
     fn new() -> Self {
         Self {
-            external_dependencies: RwLock::new(Self::initialize_required_installed_applications())
+            external_dependencies: RwLock::new(Self::initialize_required_installed_applications()),
         }
     }
 
@@ -94,9 +95,15 @@ impl ExternalDependencies {
                         "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
                     ],
                     display_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
-                    display_description: "This is the additional runtime required to run Tari applications.".to_string(),
+                    display_description:
+                        "This is the additional runtime required to run Tari applications."
+                            .to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
-                    manufacturer: Manufacturer::new(ManufacturerName::Microsoft, "https://www.microsoft.com".to_string(), "https://www.microsoft.com/favicon.ico".to_string()),
+                    manufacturer: Manufacturer::new(
+                        ManufacturerName::Microsoft,
+                        "https://www.microsoft.com".to_string(),
+                        "https://www.microsoft.com/favicon.ico".to_string(),
+                    ),
                     status: ExternalDependencyStatus::Unknown,
                     version: None,
                 },
@@ -106,9 +113,14 @@ impl ExternalDependencies {
                         "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
                     ],
                     display_name: "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
-                    display_description: "This is the minimum runtime required to run Tari applications.".to_string(),
+                    display_description:
+                        "This is the minimum runtime required to run Tari applications.".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
-                    manufacturer: Manufacturer::new(ManufacturerName::Microsoft, "https://www.microsoft.com".to_string(), "https://www.microsoft.com/favicon.ico".to_string()),
+                    manufacturer: Manufacturer::new(
+                        ManufacturerName::Microsoft,
+                        "https://www.microsoft.com".to_string(),
+                        "https://www.microsoft.com/favicon.ico".to_string(),
+                    ),
                     status: ExternalDependencyStatus::Unknown,
                     version: None,
                 },
@@ -121,9 +133,15 @@ impl ExternalDependencies {
                         "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
                     ],
                     display_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
-                    display_description: "This is the additional runtime required to run Tari applications.".to_string(),
+                    display_description:
+                        "This is the additional runtime required to run Tari applications."
+                            .to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
-                    manufacturer: Manufacturer::new(ManufacturerName::Microsoft, "https://www.microsoft.com".to_string(), "https://www.microsoft.com/favicon.ico".to_string()),
+                    manufacturer: Manufacturer::new(
+                        ManufacturerName::Microsoft,
+                        "https://www.microsoft.com".to_string(),
+                        "https://www.microsoft.com/favicon.ico".to_string(),
+                    ),
                     status: ExternalDependencyStatus::Unknown,
                     version: None,
                 },
@@ -133,9 +151,14 @@ impl ExternalDependencies {
                         "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
                     ],
                     display_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
-                    display_description: "This is the minimum runtime required to run Tari applications.".to_string(),
+                    display_description:
+                        "This is the minimum runtime required to run Tari applications.".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
-                    manufacturer: Manufacturer::new(ManufacturerName::Microsoft, "https://www.microsoft.com".to_string(), "https://www.microsoft.com/favicon.ico".to_string()),
+                    manufacturer: Manufacturer::new(
+                        ManufacturerName::Microsoft,
+                        "https://www.microsoft.com".to_string(),
+                        "https://www.microsoft.com/favicon.ico".to_string(),
+                    ),
                     status: ExternalDependencyStatus::Unknown,
                     version: None,
                 },
@@ -146,23 +169,35 @@ impl ExternalDependencies {
     async fn check_status_of_external_dependency(&self, registry_entries: Vec<RegistryEntry>) {
         let mut external_dependencies = self.external_dependencies.write().await;
         for app in registry_entries.iter() {
-            if external_dependencies.additional_runtime.required_version_names.iter().any(|required_app_name| {
-                app.display_name
-                    .to_lowercase()
-                    .as_str()
-                    .contains(required_app_name.to_lowercase().as_str())
-            }) {
+            if external_dependencies
+                .additional_runtime
+                .required_version_names
+                .iter()
+                .any(|required_app_name| {
+                    app.display_name
+                        .to_lowercase()
+                        .as_str()
+                        .contains(required_app_name.to_lowercase().as_str())
+                })
+            {
                 info!(target: LOG_TARGET, "Found installed additional runtime: {}", app.display_name);
-                external_dependencies.additional_runtime.status = ExternalDependencyStatus::Installed;
-                external_dependencies.additional_runtime.version = Some(app.display_version.clone());
+                external_dependencies.additional_runtime.status =
+                    ExternalDependencyStatus::Installed;
+                external_dependencies.additional_runtime.version =
+                    Some(app.display_version.clone());
             }
 
-            if external_dependencies.minimum_runtime.required_version_names.iter().any(|required_app_name| {
-                app.display_name
-                    .to_lowercase()
-                    .as_str()
-                    .contains(required_app_name.to_lowercase().as_str())
-            }) {
+            if external_dependencies
+                .minimum_runtime
+                .required_version_names
+                .iter()
+                .any(|required_app_name| {
+                    app.display_name
+                        .to_lowercase()
+                        .as_str()
+                        .contains(required_app_name.to_lowercase().as_str())
+                })
+            {
                 info!(target: LOG_TARGET, "Found installed minimum runtime: {}", app.display_name);
                 external_dependencies.minimum_runtime.status = ExternalDependencyStatus::Installed;
                 external_dependencies.minimum_runtime.version = Some(app.display_version.clone());
@@ -171,7 +206,8 @@ impl ExternalDependencies {
 
         if external_dependencies.additional_runtime.status == ExternalDependencyStatus::Unknown {
             info!(target: LOG_TARGET, "Additional runtime not found");
-            external_dependencies.additional_runtime.status = ExternalDependencyStatus::NotInstalled;
+            external_dependencies.additional_runtime.status =
+                ExternalDependencyStatus::NotInstalled;
         }
 
         if external_dependencies.minimum_runtime.status == ExternalDependencyStatus::Unknown {
@@ -215,7 +251,8 @@ impl ExternalDependencies {
             }
         }
 
-        self.check_status_of_external_dependency(registry_application_entry.clone()).await;
+        self.check_status_of_external_dependency(registry_application_entry.clone())
+            .await;
 
         Ok(registry_application_entry)
     }
@@ -224,14 +261,14 @@ impl ExternalDependencies {
         self.external_dependencies.read().await.clone()
     }
 
-
     pub async fn check_if_some_dependency_is_not_installed(&self) -> bool {
         let registry_application_entry = self.get_external_dependencies().await;
 
-        registry_application_entry.additional_runtime.status == ExternalDependencyStatus::NotInstalled ||
-            registry_application_entry.minimum_runtime.status == ExternalDependencyStatus::NotInstalled
+        registry_application_entry.additional_runtime.status
+            == ExternalDependencyStatus::NotInstalled
+            || registry_application_entry.minimum_runtime.status
+                == ExternalDependencyStatus::NotInstalled
     }
-
 
     async fn download_installer(&self, app: &ExternalDependency) -> Result<String, Error> {
         info!(target: LOG_TARGET, "Downloading installer for {}", app.display_name);
@@ -254,12 +291,21 @@ impl ExternalDependencies {
         Ok(installer_path.clone())
     }
 
-    pub async fn install_missing_dependencies(&self, missing_dependency: ExternalDependency) -> Result<(), Error> {
+    pub async fn install_missing_dependencies(
+        &self,
+        missing_dependency: ExternalDependency,
+    ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Installing missing dependency: {}", missing_dependency.display_name);
-        let installer_path = self.download_installer( &missing_dependency).await?;
+        let installer_path = self.download_installer(&missing_dependency).await?;
         let mut thread = tokio::process::Command::new(installer_path)
             .spawn()
-            .map_err(|e| anyhow!("Failed to start installer for {}: {}", missing_dependency.display_name, e))?;
+            .map_err(|e| {
+                anyhow!(
+                    "Failed to start installer for {}: {}",
+                    missing_dependency.display_name,
+                    e
+                )
+            })?;
 
         thread.wait().await?;
 
