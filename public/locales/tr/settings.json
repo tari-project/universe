@@ -55,5 +55,7 @@
   "your-reference": "Referansınız",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
   "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak.",
-  "use-tor": "Use Tor"
+  "applyInviteCode": "Davet Kodunu Uygula",
+  "disconnect": "Airdrop\"tan Bağlantıyı Kes",
+  "inviteCode": "Davet Kodu"
 }

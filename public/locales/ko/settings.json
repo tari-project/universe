@@ -55,5 +55,7 @@
   "not-connected-to-tari": "Tari 네트워크에 연결되지 않음",
   "connected-peers": "연결된 피어",
   "should-use-system-language": "시스템 언어 사용",
-  "use-tor": "Use Tor"
+  "applyInviteCode": "초대 코드 적용",
+  "disconnect": "에어드롭 연결 해제",
+  "inviteCode": "초대 코드"
 }

@@ -55,5 +55,7 @@
   "not-connected-to-tari": "Не подключено к сети Tari",
   "connected-peers": "Подключенные узлы",
   "should-use-system-language": "Использовать системный язык",
-  "use-tor": "Use Tor"
+  "applyInviteCode": "Применить код приглашения",
+  "disconnect": "Отключиться от Airdrop",
+  "inviteCode": "Код приглашения"
 }

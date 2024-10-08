@@ -55,5 +55,7 @@
   "your-reference": "您的参考",
   "gpu-unavailable": "⚠️ GPU已禁用，因为您的硬件不支持",
   "mining-toggle-warning": "更改生效时，挖矿将暂停。",
-  "use-tor": "Use Tor"
+  "applyInviteCode": "应用邀请代码",
+  "disconnect": "断开与空投的连接",
+  "inviteCode": "邀请代码"
 }

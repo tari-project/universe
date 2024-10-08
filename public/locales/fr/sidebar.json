@@ -1,10 +1,4 @@
 {
-  "auto-miner": "Mineur automatique",
-  "auto-miner-description": "Le mineur automatique démarrera ton mineur lorsque ta machine est inactive",
-  "next-milestone": "Prochain jalon",
-  "wallet-balance": "Solde du porte-monnaie",
-  "setup-scheduler": "Configurer le planificateur",
-  "mining-schedules": "Plannings de minage",
-  "mining-schedules-description": "Planifiez votre activité de minage",
-  "lost-connection": "Connexion au réseau Tari perdue. Reconnexion en cours."
+  "block": "Bloc",
+  "recent-wins": "Gains récents"
 }

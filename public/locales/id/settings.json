@@ -55,5 +55,7 @@
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
   "connected-peers": "Rekan Terhubung",
   "should-use-system-language": "Gunakan bahasa sistem",
-  "use-tor": "Use Tor"
+  "applyInviteCode": "Terapkan Kode Undangan",
+  "disconnect": "Putuskan dari Airdrop",
+  "inviteCode": "Kode Undangan"
 }
