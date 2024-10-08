@@ -19,5 +19,7 @@
   "testnet": "Testnet",
   "critical-error": "Erreur critique",
   "please-try-again-later": "Réessaye plus tard s'il te plaît. Si le problème persiste, contacte-nous s'il te plaît.",
-  "close-tari-universe": "Fermer le Tari Universe"
+  "close-tari-universe": "Fermer le Tari Universe",
+  "continue": "Continue",
+  "restart": "Restart"
 }
