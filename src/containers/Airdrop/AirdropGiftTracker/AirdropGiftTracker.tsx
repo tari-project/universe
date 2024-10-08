@@ -11,10 +11,10 @@ export default function AirdropGiftTracker() {
     useAirdropSyncState();
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const airdrop_ui_enabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
+
     const { airdropTokens } = useAirdropStore();
 
     if (!airdrop_ui_enabled) return null;
-
     const isLoggedIn = !!airdropTokens;
 
     return (
