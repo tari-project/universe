@@ -1823,7 +1823,7 @@ fn main() {
                     .expect("Could not get log dir"),
                 include_str!("../log4rs_sample.yml"),
             )
-                .expect("Could not set up logging");
+            .expect("Could not set up logging");
 
             let config_path = app
                 .path_resolver()

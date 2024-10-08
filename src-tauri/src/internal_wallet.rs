@@ -74,11 +74,14 @@ impl InternalWallet {
                     info!(target: LOG_TARGET, "Validating wallet config matches existing wallet");
 
                     let conn = Connection::open(&wallet_db)?;
-                    let mut stmt = conn.prepare("SELECT value FROM wallet_settings WHERE key == 'WalletType'")?;
+                    let mut stmt = conn
+                        .prepare("SELECT value FROM wallet_settings WHERE key == 'WalletType'")?;
                     let value: String = stmt.query_row([], |row| row.get(0))?;
                     let wallet_settings: WalletSettings = serde_json::from_str(&value)?;
 
-                    if wallet_settings.provided_keys.public_spend_key == config.spend_public_key_hex && wallet_settings.provided_keys.view_key == config.view_key_private_hex {
+                    if wallet_settings.provided_keys.public_spend_key == config.spend_public_key_hex
+                        && wallet_settings.provided_keys.view_key == config.view_key_private_hex
+                    {
                         info!(target: LOG_TARGET, "Wallet keys matched all good");
                         return Ok(Self {
                             tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
