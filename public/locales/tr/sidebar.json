@@ -6,7 +6,7 @@
     "setup-scheduler":"Kurulum Planlayıcısı",
     "mining-schedules":"Madencilik Planları",
     "mining-schedules-description":"Madencilik faaliyetinizi planlayın",
-    "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
+    "lost-connection": "Tari Ağına bağlantı kesildi. Yeniden bağlanıyor..",
     "block": "Blok",
     "recent-wins": "Son kazanımlar"
 }
