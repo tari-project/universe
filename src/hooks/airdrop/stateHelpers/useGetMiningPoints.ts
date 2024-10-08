@@ -3,6 +3,8 @@ import { useAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts'
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useCallback, useEffect } from 'react';
 
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
+
 export interface LastMinedBlock {
     createdAt: string;
     updatedAt: string;
@@ -22,6 +24,7 @@ export const useGetMiningPoints = () => {
     const handleRequest = useAirdropRequest();
     const setMiningRewardPoints = useAirdropStore((s) => s.setMiningRewardPoints);
     const miningRewardPoints = useAirdropStore((s) => s.miningRewardPoints);
+    const earnings = useBlockchainVisualisationStore((s) => s.earnings);
 
     const getLastMined = useCallback(async () => {
         if (!anon_id) return;
@@ -39,7 +42,7 @@ export const useGetMiningPoints = () => {
                     minedTokenRewardMultiplier: multiplier,
                     appliedRewardCeiling: gemCeiling,
                     blockHeight,
-                } = lastMinedBlock;
+                } = lastMinedBlock || {};
                 const gems = Number(tXTM) * multiplier;
                 const reward = (gems <= Number(gemCeiling) ? gems : Number(gemCeiling)) / 1_000_000;
 
@@ -54,5 +57,5 @@ export const useGetMiningPoints = () => {
 
     useEffect(() => {
         getLastMined();
-    }, [getLastMined]);
+    }, [getLastMined, earnings]);
 };
