@@ -24,11 +24,11 @@ const mapStatusToText = (status: ExternalDependencyStatus) => {
 const getChipStylingForStatus = (status: ExternalDependencyStatus) => {
     switch (status) {
         case ExternalDependencyStatus.Installed:
-            return { color: 'white', backgroundColor: 'green' };
+            return { color: 'white', background: 'green' };
         case ExternalDependencyStatus.NotInstalled:
-            return { color: 'white', backgroundColor: 'red' };
+            return { color: 'white', background: 'red' };
         case ExternalDependencyStatus.Unknown:
-            return { color: 'white', backgroundColor: 'grey' };
+            return { color: 'white', background: 'grey' };
     }
 };
 
@@ -45,8 +45,13 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
 
     return (
         <Stack direction="row" alignItems="flex-start" gap={16} style={{ width: '100%' }}>
-            <Stack>
+            <Stack gap={12} alignItems="center">
                 {manufacturer.logo && <img src={manufacturer.logo} alt={manufacturer.name} width={40} height={40} />}
+                {status === ExternalDependencyStatus.NotInstalled && (
+                    <Button onClick={handleDownload} size="small" variant="squared" color="primary">
+                        Download
+                    </Button>
+                )}
             </Stack>
             <Stack gap={4} style={{ width: '100%' }} alignItems="flex-start">
                 <Stack direction="row" gap={8}>
@@ -63,13 +68,6 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
                     <Typography variant="p">{version}</Typography>
                 </Stack>
                 <Typography variant="p">{display_description}</Typography>
-                <Stack gap={4} direction="row" alignItems="center" justifyContent="flex-start">
-                    {status === ExternalDependencyStatus.NotInstalled && (
-                        <Button onClick={handleDownload} size="small" variant="squared" color="primary">
-                            Download
-                        </Button>
-                    )}
-                </Stack>
             </Stack>
         </Stack>
     );
