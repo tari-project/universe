@@ -2,21 +2,14 @@ import { modeType } from '@app/store/types';
 import {
     AppConfig,
     ApplicationsVersions,
+    ExternalDependency,
     MinerMetrics,
     P2poolStatsResult,
     TariWalletDetails,
     TransactionInfo,
 } from './app-status';
-import {
-    AppConfig,
-    ApplicationsVersions,
-    ExternalDependency,
-    MinerMetrics,
-    P2poolStatsResult,
-    TariWalletDetails,
-} from './app-status';
 import { Language } from '@app/i18initializer';
-//should_always_use_system_language
+
 declare module '@tauri-apps/api/tauri' {
     function invoke(
         param: 'set_should_always_use_system_language',
