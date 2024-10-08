@@ -1,116 +1,18 @@
 import { Button } from '@app/components/elements/Button';
-import { Chip } from '@app/components/elements/Chip';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Divider } from '@app/components/elements/Divider';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useUIStore } from '@app/store/useUIStore';
-import { ExternalDependencyStatus, ExternalDependency } from '@app/types/app-status';
+import { ExternalDependencyStatus } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useCallback, useState } from 'react';
-import { IoArrowDownCircleOutline } from 'react-icons/io5';
-import { StyledIcon } from '../Dashboard/MiningView/components/MiningButton.styles';
-
-const mapStatusToText = (status: ExternalDependencyStatus) => {
-    console.log('status', status);
-    switch (status) {
-        case ExternalDependencyStatus.Installed:
-            return 'Installed';
-        case ExternalDependencyStatus.NotInstalled:
-            return 'Not installed';
-        case ExternalDependencyStatus.Unknown:
-            return 'Unknown';
-    }
-};
-
-const getChipStylingForStatus = (status: ExternalDependencyStatus) => {
-    switch (status) {
-        case ExternalDependencyStatus.Installed:
-            return { color: 'white', background: 'green' };
-        case ExternalDependencyStatus.NotInstalled:
-            return { color: 'white', background: 'red' };
-        case ExternalDependencyStatus.Unknown:
-            return { color: 'white', background: 'grey' };
-    }
-};
-
-const ExternalDependencyCard = ({
-    missingDependency,
-    isInstallationSlotOccupied,
-    occupyInstallationSlot,
-    isInInstallationSlot,
-    freeInstallationSlot,
-}: {
-    missingDependency: ExternalDependency;
-    isInstallationSlotOccupied: boolean;
-    isInInstallationSlot: boolean;
-    occupyInstallationSlot: () => void;
-    freeInstallationSlot: () => void;
-}) => {
-    const fetchExternalDependencies = useAppStateStore((s) => s.fetchExternalDependencies);
-    const setError = useAppStateStore((s) => s.setError);
-    const { display_description, display_name, download_url, manufacturer, status, version } = missingDependency;
-
-    const handleDownload = useCallback(async () => {
-        try {
-            occupyInstallationSlot();
-            await invoke('download_and_start_installer', { missingDependency })
-                .then(async () => {
-                    await fetchExternalDependencies();
-                })
-                .catch((e) => {
-                    setError(`Failed to download and start installer: ${e} Please try again.`);
-                });
-        } catch (e) {
-            console.error(e);
-        }
-
-        freeInstallationSlot();
-    }, [download_url]);
-
-    return (
-        <Stack direction="row" alignItems="flex-start" gap={16} style={{ width: '100%' }}>
-            <Stack gap={12} alignItems="center">
-                {manufacturer.logo && <img src={manufacturer.logo} alt={manufacturer.name} width={40} height={40} />}
-            </Stack>
-            <Stack style={{ width: '100%' }} gap={12} alignItems="flex-start">
-                <Stack gap={8} style={{ width: '100%' }} alignItems="flex-start">
-                    <Stack direction="row" gap={6}>
-                        <Typography variant="span" style={{ fontSize: '12px', color: 'CaptionText' }}>
-                            {manufacturer.name}
-                        </Typography>
-                        <Chip size="small" {...getChipStylingForStatus(status)}>
-                            {mapStatusToText(status)}
-                        </Chip>
-                    </Stack>
-
-                    <Stack direction="row" gap={4}>
-                        <Typography variant="h5">{display_name}</Typography>
-                        <Typography variant="p">{version}</Typography>
-                    </Stack>
-                    <Typography variant="p">{display_description}</Typography>
-                </Stack>
-                {status === ExternalDependencyStatus.NotInstalled && (
-                    <Button
-                        onClick={handleDownload}
-                        size="small"
-                        variant="squared"
-                        color="primary"
-                        style={{ height: 'unset', width: '256px' }}
-                        icon={isInInstallationSlot ? <StyledIcon /> : <IoArrowDownCircleOutline size={16} />}
-                        iconPosition="start"
-                        disabled={isInstallationSlotOccupied}
-                    >
-                        Download and install
-                    </Button>
-                )}
-            </Stack>
-        </Stack>
-    );
-};
+import { ExternalDependencyCard } from './ExternalDependencyCard';
+import { useTranslation } from 'react-i18next';
 
 export const ExternalDependenciesDialog = () => {
+    const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
     const setShowExternalDependenciesDialog = useUIStore((s) => s.setShowExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
@@ -147,10 +49,8 @@ export const ExternalDependenciesDialog = () => {
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4}>
-                        <Typography variant="h4">External Dependencies</Typography>
-                        <Typography variant="p">
-                            The following external dependencies are required for the application to function correctly.
-                        </Typography>
+                        <Typography variant="h4">{t('title')}</Typography>
+                        <Typography variant="p">{t('description')}</Typography>
                     </Stack>
 
                     {Object.values(externalDependencies).map((missingDependency, index, array) => (
@@ -175,7 +75,7 @@ export const ExternalDependenciesDialog = () => {
                             disabled={isRestarting || !shouldAllowContinue}
                             style={{ width: '100px' }}
                         >
-                            Continue
+                            {t('continue')}
                         </Button>
                         <Button
                             variant="squared"
@@ -185,7 +85,7 @@ export const ExternalDependenciesDialog = () => {
                             disabled={isRestarting}
                             style={{ width: '100px' }}
                         >
-                            Restart
+                            {t('restart')}
                         </Button>
                     </Stack>
                 </Stack>
