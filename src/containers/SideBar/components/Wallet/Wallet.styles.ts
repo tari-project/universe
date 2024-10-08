@@ -55,7 +55,7 @@ export const BalanceVisibilityButton = styled(IconButton)`
 `;
 
 export const ShowHistoryButton = styled(ButtonBase).attrs({
-    size: 'small',
+    size: 'xs',
     variant: 'outlined',
     color: 'secondary',
 })`
