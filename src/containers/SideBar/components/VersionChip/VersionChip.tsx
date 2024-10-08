@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import ConnectedPulse from './ConnectedPulse/ConnectedPulse';
 import { Divider, Wrapper } from './styles';
-import { useAppStateStore } from '@app/store/appStateStore';
+import { useMiningStore } from '@app/store/useMiningStore';
 
 interface Props {
     version: string;
@@ -10,13 +10,11 @@ interface Props {
 export default function VersionChip({ version }: Props) {
     const { t } = useTranslation('common', { useSuspense: false });
 
-    const isAppSettingUp = useAppStateStore((s) => s.isSettingUp);
-
-    const isConnected = !isAppSettingUp;
+    const isConnectedToTariNetwork = useMiningStore((s) => s.base_node?.is_connected);
 
     return (
         <Wrapper>
-            <ConnectedPulse isConnected={isConnected} />
+            <ConnectedPulse isConnected={isConnectedToTariNetwork} />
             <Divider />
             {t('testnet')} <span>{version}</span>
         </Wrapper>
