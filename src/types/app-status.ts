@@ -20,6 +20,31 @@ export interface AppConfig {
     use_tor: boolean;
 }
 
+export enum ExternalDependencyStatus {
+    Installed = 'Installed',
+    NotInstalled = 'NotInstalled',
+    Unknown = 'Unknown',
+}
+
+export interface Manufacturer {
+    name: string;
+    logo: string;
+    url: string;
+}
+export interface ExternalDependency {
+    required_version_names: string[];
+    display_name: string;
+    display_description: string;
+    download_url: string;
+    version?: string;
+    manufacturer: Manufacturer;
+    status: ExternalDependencyStatus;
+}
+
+export interface ExternalDependencies {
+    additional_runtime: ExternalDependency;
+    minimum_runtime: ExternalDependency;
+}
 export interface CpuMinerMetrics {
     hardware?: HardwareParameters;
     mining: CpuMinerStatus;

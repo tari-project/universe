@@ -19,5 +19,7 @@
     "testnet": "测试网",
     "critical-error": "Critical error",
     "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
-    "close-tari-universe": "Close Tari Universe"
+    "close-tari-universe": "Close Tari Universe",
+    "continue": "Continue",
+    "restart": "Restart"
 }
