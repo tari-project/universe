@@ -1,6 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(target_os = "windows")]
+use external_dependencies::ExternalDependencies;
+
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
@@ -51,6 +54,9 @@ mod binaries;
 mod consts;
 mod cpu_miner;
 mod download_utils;
+#[cfg(target_os = "windows")]
+mod external_dependencies;
+
 mod feedback;
 mod format_utils;
 mod github;
@@ -413,6 +419,9 @@ async fn setup_inner(
         .path_resolver()
         .app_log_dir()
         .expect("Could not get log dir");
+
+    #[cfg(target_os = "windows")]
+    ExternalDependencies::current().check_if_required_installed_applications_are_installed()?;
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
