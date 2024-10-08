@@ -1,5 +1,6 @@
 import { Button } from '@app/components/elements/Button';
 import { Chip } from '@app/components/elements/Chip';
+import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Divider } from '@app/components/elements/Divider';
 import { Stack } from '@app/components/elements/Stack';
@@ -9,6 +10,7 @@ import { useUIStore } from '@app/store/useUIStore';
 import { ExternalDependencyStatus, ExternalDependency } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useCallback, useState } from 'react';
+import { IoArrowDown, IoArrowDownCircleOutline, IoDownload } from 'react-icons/io5';
 
 const mapStatusToText = (status: ExternalDependencyStatus) => {
     console.log('status', status);
@@ -33,18 +35,38 @@ const getChipStylingForStatus = (status: ExternalDependencyStatus) => {
     }
 };
 
-const ExternalDependencyCard = ({ missingDependency }: { missingDependency: ExternalDependency }) => {
+const ExternalDependencyCard = ({
+    missingDependency,
+    isInstallationSlotOccupied,
+    occupyInstallationSlot,
+    isInInstallationSlot,
+    freeInstallationSlot,
+}: {
+    missingDependency: ExternalDependency;
+    isInstallationSlotOccupied: boolean;
+    isInInstallationSlot: boolean;
+    occupyInstallationSlot: () => void;
+    freeInstallationSlot: () => void;
+}) => {
     const fetchExternalDependencies = useAppStateStore((s) => s.fetchExternalDependencies);
+    const setError = useAppStateStore((s) => s.setError);
     const { display_description, display_name, download_url, manufacturer, status, version } = missingDependency;
 
     const handleDownload = useCallback(async () => {
         try {
-            await invoke('download_and_start_installer', { missingDependency }).then(async () => {
-                await fetchExternalDependencies();
-            });
+            occupyInstallationSlot();
+            await invoke('download_and_start_installer', { missingDependency })
+                .then(async () => {
+                    await fetchExternalDependencies();
+                })
+                .catch((e) => {
+                    setError(`Failed to download and start installer: ${e} Please try again.`);
+                });
         } catch (e) {
             console.error(e);
         }
+
+        freeInstallationSlot();
     }, [download_url]);
 
     return (
@@ -75,9 +97,12 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
                         size="small"
                         variant="squared"
                         color="primary"
-                        style={{ height: 'unset' }}
+                        style={{ height: 'unset', width: '256px' }}
+                        icon={isInInstallationSlot ? <CircularProgress /> : <IoArrowDownCircleOutline size={16} />}
+                        iconPosition="start"
+                        disabled={isInstallationSlotOccupied}
                     >
-                        Download
+                        Download and install
                     </Button>
                 )}
             </Stack>
@@ -88,11 +113,11 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
 export const ExternalDependenciesDialog = () => {
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
-    const fetchExternalDependencies = useAppStateStore((s) => s.fetchExternalDependencies);
     const setView = useUIStore((s) => s.setView);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
-
     const [isRestarting, setIsRestarting] = useState(false);
+
+    const [instalationSlot, setInstalationSlot] = useState<number | null>(null);
 
     const handleRestart = useCallback(async () => {
         try {
@@ -131,6 +156,10 @@ export const ExternalDependenciesDialog = () => {
                             <ExternalDependencyCard
                                 key={missingDependency.display_name}
                                 missingDependency={missingDependency}
+                                freeInstallationSlot={() => setInstalationSlot(null)}
+                                isInInstallationSlot={instalationSlot === index}
+                                isInstallationSlotOccupied={instalationSlot !== null}
+                                occupyInstallationSlot={() => setInstalationSlot(index)}
                             />
                             {index === array.length - 1 ? null : <Divider />}
                         </>
