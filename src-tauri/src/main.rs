@@ -1,9 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-#[cfg(target_os = "windows")]
-use external_dependencies::ExternalDependencies;
-
+use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
@@ -54,9 +52,7 @@ mod binaries;
 mod consts;
 mod cpu_miner;
 mod download_utils;
-#[cfg(target_os = "windows")]
 mod external_dependencies;
-
 mod feedback;
 mod format_utils;
 mod github;
@@ -371,6 +367,47 @@ async fn resolve_application_language(
 }
 
 #[tauri::command]
+async fn get_external_dependencies() -> Result<RequiredExternalDependency, String> {
+    let timer = Instant::now();
+    let external_dependencies = ExternalDependencies::current()
+        .get_external_dependencies()
+        .await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "get_external_dependencies took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(external_dependencies)
+}
+
+#[tauri::command]
+async fn download_and_start_installer(
+    _missing_dependency: ExternalDependency,
+) -> Result<(), String> {
+    let timer = Instant::now();
+
+    #[cfg(target_os = "windows")]
+    if cfg!(target_os = "windows") {
+        ExternalDependencies::current()
+            .install_missing_dependencies(_missing_dependency)
+            .await
+            .map_err(|e| {
+                error!(target: LOG_TARGET, "Could not install missing dependency: {:?}", e);
+                e.to_string()
+            })?;
+    }
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "download_and_start_installer took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -421,7 +458,26 @@ async fn setup_inner(
         .expect("Could not get log dir");
 
     #[cfg(target_os = "windows")]
-    ExternalDependencies::current().check_if_required_installed_applications_are_installed()?;
+    if cfg!(target_os = "windows") {
+        ExternalDependencies::current()
+            .read_registry_installed_applications()
+            .await?;
+        let is_missing = ExternalDependencies::current()
+            .check_if_some_dependency_is_not_installed()
+            .await;
+        let external_dependencies = ExternalDependencies::current()
+            .get_external_dependencies()
+            .await;
+
+        if is_missing {
+            window
+                .emit(
+                    "missing-applications",
+                    external_dependencies
+                ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
+            return Ok(());
+        }
+    }
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
@@ -1708,6 +1764,8 @@ fn main() {
             get_tari_wallet_details,
             exit_application,
             set_should_always_use_system_language,
+            download_and_start_installer,
+            get_external_dependencies,
             set_use_tor,
             get_transaction_history
         ])

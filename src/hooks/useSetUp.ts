@@ -9,17 +9,33 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import useWalletDetailsUpdater from './useWalletUpdater.ts';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import { ExternalDependency } from '@app/types/app-status.ts';
 
 export function useSetUp() {
     const setView = useUIStore((s) => s.setView);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setError = useAppStateStore((s) => s.setError);
+    const { setShowExternalDependenciesDialog } = useUIStore();
     const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setSeenPermissions = useAirdropStore((s) => s.setSeenPermissions);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
+
+    const { loadExternalDependencies } = useAppStateStore();
+
+    useEffect(() => {
+        const unlistenPromise = listen<ExternalDependency[]>('missing-applications', (event) => {
+            const missingDependencies = event.payload;
+            loadExternalDependencies(missingDependencies);
+            setShowExternalDependenciesDialog(true);
+        });
+
+        return () => {
+            unlistenPromise.then((unlisten) => unlisten());
+        };
+    }, [loadExternalDependencies]);
 
     useEffect(() => {
         async function initialize() {

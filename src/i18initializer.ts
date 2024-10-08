@@ -103,6 +103,7 @@ i18n.use(HttpBackend)
         lng: Language.EN,
         compatibilityJSON: 'v4',
         fallbackLng: Language.EN,
+        fallbackNS: 'common',
         backend: {
             loadPath: '/locales/{{lng}}/{{ns}}.json',
         },
