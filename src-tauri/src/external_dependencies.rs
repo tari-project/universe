@@ -69,6 +69,7 @@ pub struct RequiredExternalDependency {
     pub minimum_runtime: ExternalDependency,
 }
 
+#[cfg(target_os = "windows")]
 #[derive(Debug, Clone)]
 pub struct RegistryEntry {
     display_name: String,
@@ -166,9 +167,10 @@ impl ExternalDependencies {
         }
     }
 
+    #[cfg(target_os = "windows")]
     async fn check_status_of_external_dependency(&self, registry_entries: Vec<RegistryEntry>) {
         let mut external_dependencies = self.external_dependencies.write().await;
-        for app in registry_entries.iter() {
+        registry_entries.iter().for_each(|app| {
             if external_dependencies
                 .additional_runtime
                 .required_version_names
@@ -202,7 +204,7 @@ impl ExternalDependencies {
                 external_dependencies.minimum_runtime.status = ExternalDependencyStatus::Installed;
                 external_dependencies.minimum_runtime.version = Some(app.display_version.clone());
             }
-        }
+        });
 
         if external_dependencies.additional_runtime.status == ExternalDependencyStatus::Unknown {
             info!(target: LOG_TARGET, "Additional runtime not found");
