@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import GemsAnimation from '../GemsAnimation/GemsAnimation';
 import { Background, Wrapper } from './styles';
 import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
+import { formatNumber } from '@app/utils/formatNumber.ts';
 
 interface Props {
     gems: number;
@@ -12,7 +13,7 @@ export default function BonusGems({ gems, onAnimationComplete }: Props) {
     useEffect(() => {
         const timer = setTimeout(() => {
             onAnimationComplete();
-        }, 5000);
+        }, 3500);
 
         return () => clearTimeout(timer);
     }, [onAnimationComplete]);
@@ -25,7 +26,7 @@ export default function BonusGems({ gems, onAnimationComplete }: Props) {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ delay: 0.5 }}
             >
-                {gems.toLocaleString()}
+                {formatNumber(gems, 1)}
             </Number>
 
             <Text
