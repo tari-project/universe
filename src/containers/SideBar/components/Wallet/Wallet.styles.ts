@@ -10,8 +10,6 @@ import { sidebarWidth } from '@app/theme/styles.ts';
 export const WalletContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
     background-image: url(${cardBg});
     background-size: cover;
     background-repeat: no-repeat;
@@ -27,6 +25,7 @@ export const WalletContainer = styled(m.div)`
     min-height: 178px;
     z-index: 2;
     overflow: hidden;
+    justify-content: space-between;
 `;
 
 export const WalletBalance = styled.div`
@@ -36,14 +35,16 @@ export const WalletBalance = styled.div`
     width: 100%;
 `;
 
-export const WalletBalanceContainer = styled.div`
+export const WalletBalanceContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+    position: relative;
+    justify-content: flex-end;
     align-items: flex-start;
     width: 100%;
     color: ${({ theme }) => theme.palette.text.secondary};
-    padding: 60px 5px 5px;
+    padding: 10px 5px 5px;
+    height: 140px;
 `;
 
 export const BalanceVisibilityButton = styled(IconButton)`

@@ -71,4 +71,5 @@ export const Bottom = styled(m.div)`
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-bottom: 188px; // to cater for wallet card
 `;
