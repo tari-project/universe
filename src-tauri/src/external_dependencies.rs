@@ -229,7 +229,7 @@ impl ExternalDependencies {
                     let app_key = match uninstall_key.open_subkey(&key) {
                         Ok(app_key) => app_key,
                         Err(e) => {
-                            warn!(target: LOG_TARGET, "Error opening uninstall key: {}", e);
+                            log::warn!(target: LOG_TARGET, "Error opening uninstall key: {}", e);
                             continue;
                         }
                     };
@@ -246,7 +246,7 @@ impl ExternalDependencies {
                     }
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Error enumerating uninstall keys: {}", e);
+                    log::warn!(target: LOG_TARGET, "Error enumerating uninstall keys: {}", e);
                 }
             }
         }
