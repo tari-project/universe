@@ -58,5 +58,6 @@
   "not-connected-to-tari": "Tari Ağına bağlı değil",
   "connected-peers": "Bağlantılı Eşler",
   "should-use-system-language": "Sistem dilini kullan",
-  "use-tor": "Tor'u kullan"
+  "use-tor": "Tor'u kullan",
+  "report-issue": "Bir sorun bildirin"
 }
