@@ -67,7 +67,7 @@ export const light = {
         success: {
             main: success[200],
             dark: success[300],
-            light: success[100],
+            light: success[50],
             contrastText: success[300],
         },
         warning: {
@@ -128,9 +128,9 @@ export const dark = {
         },
         success: {
             main: success[200],
-            dark: success[100],
+            dark: success[50],
             light: success[300],
-            contrastText: success[100],
+            contrastText: success[50],
         },
         warning: {
             main: warning[200],
