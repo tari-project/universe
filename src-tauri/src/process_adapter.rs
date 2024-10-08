@@ -46,7 +46,7 @@ pub(crate) trait ProcessAdapter {
                 }
                 Err(e) => {
                     let error_msg =
-                        format!("Error parsing pid file: {}. Pid file name: {}", e, pid);
+                        format!("Error parsing pid file: {}. Pid file content: {}", e, pid);
                     error!(target: LOG_TARGET, "{}", error_msg);
                     sentry::capture_event(Event {
                         message: Some(error_msg),
