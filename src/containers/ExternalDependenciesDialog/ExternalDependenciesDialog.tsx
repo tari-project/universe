@@ -112,6 +112,7 @@ const ExternalDependencyCard = ({
 
 export const ExternalDependenciesDialog = () => {
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
+    const setShowExternalDependenciesDialog = useUIStore((s) => s.setShowExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
     const setView = useUIStore((s) => s.setView);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
@@ -130,6 +131,7 @@ export const ExternalDependenciesDialog = () => {
     }, []);
 
     const handleContinue = useCallback(() => {
+        setShowExternalDependenciesDialog(false);
         invoke('setup_application').catch((e) => {
             setCriticalError(`Failed to setup application: ${e}`);
             setView('mining');
