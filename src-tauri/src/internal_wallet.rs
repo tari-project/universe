@@ -72,10 +72,13 @@ impl InternalWallet {
         Ok(wallet)
     }
 
-    pub async fn create_from_seed(config_path: PathBuf, seed_words: Vec<String>) -> Result<Self, anyhow::Error> {
+    pub async fn create_from_seed(
+        config_path: PathBuf,
+        seed_words: Vec<String>,
+    ) -> Result<Self, anyhow::Error> {
         let network = Network::get_current_or_user_setting_or_default()
-        .to_string()
-        .to_lowercase();
+            .to_string()
+            .to_lowercase();
         let file = config_path.join(network).join("wallet_config.json");
         let file_parent = file
             .parent()
@@ -94,7 +97,9 @@ impl InternalWallet {
         self.tari_address.clone()
     }
 
-    async fn create_new_wallet(seed_words: Option<Vec<String>>) -> Result<(Self, WalletConfig), anyhow::Error> {
+    async fn create_new_wallet(
+        seed_words: Option<Vec<String>>,
+    ) -> Result<(Self, WalletConfig), anyhow::Error> {
         let mut config = WalletConfig {
             tari_address_base58: "".to_string(),
             view_key_private_hex: "".to_string(),
@@ -132,9 +137,13 @@ impl InternalWallet {
         let seed = match seed_words {
             Some(sw) => {
                 let seed_words = SeedWords::from_str(&sw.join(" "))?;
-                CipherSeed::from_mnemonic_with_language(&seed_words, MnemonicLanguage::English, None)?
+                CipherSeed::from_mnemonic_with_language(
+                    &seed_words,
+                    MnemonicLanguage::English,
+                    None,
+                )?
             }
-            None => CipherSeed::new()
+            None => CipherSeed::new(),
         };
         let seed_file = seed.encipher(Some(passphrase))?;
         config.seed_words_encrypted_base58 = seed_file.to_base58();
