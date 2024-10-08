@@ -1724,7 +1724,7 @@ fn main() {
 
     let mut shutdown = Shutdown::new();
 
-    // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
+    // NOTE: Nothing is started at this point, so ports are not known. You can only start setting ports
     // and addresses once the different services have been started.
     // A better way is to only provide the config when we start the service.
     let node_manager = NodeManager::new();
@@ -1823,7 +1823,7 @@ fn main() {
                     .expect("Could not get log dir"),
                 include_str!("../log4rs_sample.yml"),
             )
-            .expect("Could not set up logging");
+                .expect("Could not set up logging");
 
             let config_path = app
                 .path_resolver()

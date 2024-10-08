@@ -2,6 +2,7 @@ use anyhow::anyhow;
 use keyring::{Entry, Error as KeyringError};
 use log::{info, warn};
 use rand::Rng;
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
 use std::path::PathBuf;
@@ -17,6 +18,7 @@ use tari_utilities::encoding::Base58;
 use tari_utilities::SafePassword;
 use tokio::fs;
 
+use crate::APPLICATION_FOLDER_ID;
 use tari_core::transactions::key_manager::{
     create_memory_db_key_manager_from_seed, SecretTransactionKeyManagerInterface,
     TransactionKeyManagerInterface,
@@ -24,8 +26,6 @@ use tari_core::transactions::key_manager::{
 use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
-
-use crate::APPLICATION_FOLDER_ID;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -35,13 +35,25 @@ pub struct InternalWallet {
     config: WalletConfig,
 }
 
+#[derive(Debug, Deserialize)]
+struct WalletSettings {
+    #[serde(rename = "ProvidedKeys")]
+    provided_keys: ProvidedKeys,
+}
+
+#[derive(Debug, Deserialize)]
+struct ProvidedKeys {
+    public_spend_key: String,
+    view_key: String,
+}
+
 impl InternalWallet {
     pub async fn load_or_create(config_path: PathBuf) -> Result<Self, anyhow::Error> {
         let network = Network::get_current_or_user_setting_or_default()
             .to_string()
             .to_lowercase();
 
-        let file = config_path.join(network).join("wallet_config.json");
+        let file = config_path.join(&network).join("wallet_config.json");
 
         let file_parent = file
             .parent()
@@ -50,22 +62,42 @@ impl InternalWallet {
         create_dir_all(file_parent).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
         });
-        if file.exists() {
+
+        let wallet_path = config_path.join("wallet").join(&network);
+        let wallet_db = wallet_path.join("data/wallet/db/console_wallet.db");
+
+        if file.exists() && wallet_db.exists() {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
             match serde_json::from_str::<WalletConfig>(&config) {
                 Ok(config) => {
-                    return Ok(Self {
-                        tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
-                        config,
-                    })
+                    info!(target: LOG_TARGET, "Validating wallet config matches existing wallet");
+
+                    let conn = Connection::open(&wallet_db)?;
+                    let mut stmt = conn.prepare("SELECT value FROM wallet_settings WHERE key == 'WalletType'")?;
+                    let value: String = stmt.query_row([], |row| row.get(0))?;
+                    let wallet_settings: WalletSettings = serde_json::from_str(&value)?;
+
+                    if wallet_settings.provided_keys.public_spend_key == config.spend_public_key_hex && wallet_settings.provided_keys.view_key == config.view_key_private_hex {
+                        info!(target: LOG_TARGET, "Wallet keys matched all good");
+                        return Ok(Self {
+                            tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
+                            config,
+                        });
+                    }
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to parse wallet config: {}", e.to_string());
                 }
             }
         }
-        info!(target: LOG_TARGET, "Wallet config does not exist or is corrupt. Creating new wallet");
+
+        if wallet_db.exists() {
+            warn!(target: LOG_TARGET, "Wallet exists, but wallet config is missing, mismatched, or corrupt, removing old wallet, hope you have your seeds backed up");
+            fs::remove_dir_all(wallet_path).await?;
+        }
+
+        info!(target: LOG_TARGET, "Wallet does not exist or is corrupt. Creating new wallet");
         let (wallet, config) = InternalWallet::create_new_wallet(None).await?;
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;

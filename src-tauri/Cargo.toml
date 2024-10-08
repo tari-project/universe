@@ -87,13 +87,12 @@ zip = "2.2.0"
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
 
-# needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
 chrono = "0.4.38"
 device_query = "2.1.0"
-libsqlite3-sys = {version = "0.25.1", features = ["bundled"] }
 log = "0.4.22"
 nvml-wrapper = "0.10.0"
 rand = "0.8.5"
+rusqlite = "0.25.1"
 sentry-tauri = "0.3.0"
 sys-locale = "0.3.1"
 # tonic = "0.12.0"
