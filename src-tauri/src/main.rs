@@ -1,9 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-#[cfg(target_os = "windows")]
 use external_dependencies::{ ExternalDependencies,ExternalDependency, RequiredExternalDependency};
-
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
@@ -52,9 +50,7 @@ mod binaries;
 mod consts;
 mod cpu_miner;
 mod download_utils;
-#[cfg(target_os = "windows")]
 mod external_dependencies;
-
 mod feedback;
 mod format_utils;
 mod github;

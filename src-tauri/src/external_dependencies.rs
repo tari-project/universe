@@ -2,9 +2,10 @@ use anyhow::{anyhow, Error};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
-use std::ops::Deref;
 use std::sync::LazyLock;
+#[cfg(target_os = "windows")]
 use winreg::enums::HKEY_LOCAL_MACHINE;
+#[cfg(target_os = "windows")]
 use winreg::RegKey;
 use reqwest::Client;
 use std::env;
@@ -176,6 +177,7 @@ impl ExternalDependencies {
         }
     }
 
+    #[cfg(target_os = "windows")]
     pub async fn read_registry_installed_applications(&self) -> Result<Vec<RegistryEntry>, Error> {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         let uninstall_key = hklm
