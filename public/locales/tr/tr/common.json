@@ -1,0 +1,23 @@
+{
+  "submit": "Gönder",
+  "cancel": "İptal et",
+  "temperature": "Sıcaklık",
+  "max-temperature": "Maks. sıcaklık",
+  "usage": "Kullanım",
+  "seconds": "saniye",
+  "copied": "Kopyalandı",
+  "unknown": "Bilinmeyen",
+  "versions": "Sürümler",
+  "version": "Sürüm",
+  "resources": "Kaynaklar",
+  "hashrate": "Hashrate",
+  "utilization": "Kullanım",
+  "mode": "Mod",
+  "day": "Gün",
+  "shutting-down": "Kapatılıyor..",
+  "tari-universe": "Tari Universe",
+  "testnet": "Testnet",
+  "critical-error": "Kritik hata",
+  "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse lütfen bizimle iletişime geçin.",
+  "close-tari-universe": "Tari Universe'ü Kapat"
+}
