@@ -133,6 +133,7 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
+    seenPermissions?: boolean;
 }
 
 interface AirdropStore extends AirdropState {
@@ -146,11 +147,13 @@ interface AirdropStore extends AirdropState {
     setReferralCount: (referralCount: ReferralCount) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
+    setSeenPermissions: (seenPermissions: boolean) => void;
     logout: () => void;
 }
 
 const clearState: AirdropState = {
     authUuid: '',
+    seenPermissions: false,
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
@@ -162,6 +165,7 @@ export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
+            seenPermissions: false,
             setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
             setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
@@ -179,6 +183,7 @@ export const useAirdropStore = create<AirdropStore>()(
             setUserPoints: (userPoints) => set({ userPoints }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
+            setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
         }),
         {
             name: 'airdrop-store',

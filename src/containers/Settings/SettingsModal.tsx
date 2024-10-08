@@ -15,7 +15,7 @@ import { GeneralSettings } from './GeneralSettings.tsx';
 import { ExperimentalSettings } from './ExperimentalSettings.tsx';
 import { WalletSettings } from './WalletSettings.tsx';
 
-import { SettingsType } from './types.ts';
+import { SETTINGS_TYPES, SettingsType } from './types.ts';
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
 import { AirdropSettings } from './AirdropSettings.tsx';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
@@ -26,7 +26,7 @@ export default function SettingsModal() {
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
     const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
 
-    const [activeSection, setActiveSection] = useState<SettingsType>('airdrop');
+    const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
 
     const miningMarkup = activeSection === 'mining' ? <MiningSettings /> : null;
     const generalMarkup = activeSection === 'general' ? <GeneralSettings /> : null;
@@ -36,7 +36,7 @@ export default function SettingsModal() {
 
     function onOpenChange() {
         if (isSettingsOpen) {
-            setActiveSection('mining');
+            setActiveSection(SETTINGS_TYPES[0]);
         }
         setIsSettingsOpen(!isSettingsOpen);
     }
