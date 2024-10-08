@@ -5,14 +5,9 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useUIStore } from '@app/store/useUIStore';
-import {
-    ExternalDependencyStatus,
-    ExternalDependencies,
-    ExternalDependency,
-    Manufacturer,
-} from '@app/types/app-status';
+import { ExternalDependencyStatus, ExternalDependency } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/tauri';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 const mapStatusToText = (status: ExternalDependencyStatus) => {
     console.log('status', status);
@@ -48,8 +43,6 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
         }
     }, [download_url]);
 
-    console.log('mapStatusToText', mapStatusToText(status));
-
     return (
         <Stack direction="row" alignItems="flex-start" gap={16} style={{ width: '100%' }}>
             <Stack>
@@ -72,7 +65,7 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
                 <Typography variant="p">{display_description}</Typography>
                 <Stack gap={4} direction="row" alignItems="center" justifyContent="flex-start">
                     {status === ExternalDependencyStatus.NotInstalled && (
-                        <Button onClick={handleDownload} size="small" variant="text" color="primary">
+                        <Button onClick={handleDownload} size="small" variant="squared" color="primary">
                             Download
                         </Button>
                     )}
@@ -110,7 +103,7 @@ export const ExternalDependenciesDialog = () => {
     }, []);
 
     return (
-        <Dialog open={true}>
+        <Dialog open={!!showExternalDependenciesDialog}>
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4}>
@@ -128,8 +121,8 @@ export const ExternalDependenciesDialog = () => {
                     ))}
                     <Stack direction="row" justifyContent="flex-end">
                         <Button
-                            variant="text"
-                            color="error"
+                            variant="squared"
+                            color="warning"
                             size="medium"
                             onClick={handleRestart}
                             disabled={isRestarting}
@@ -138,8 +131,8 @@ export const ExternalDependenciesDialog = () => {
                             Restart
                         </Button>
                         <Button
-                            variant="text"
-                            color="warning"
+                            variant="squared"
+                            color="error"
                             size="medium"
                             onClick={handleExit}
                             disabled={isRestarting}
