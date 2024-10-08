@@ -19,5 +19,7 @@
   "please-try-again-later": "Spróbuj ponownie później. Jeśli problem będzie się powtarzał, skontaktuj się z nami.",
   "close-tari-universe": "Zamknij Tari Universe",
   "tari-universe": "Tari Universe",
-  "testnet": "Testnet"
+  "testnet": "Testnet",
+  "continue": "Continue",
+  "restart": "Restart"
 }
