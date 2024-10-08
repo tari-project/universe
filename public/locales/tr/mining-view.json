@@ -1,15 +1,15 @@
 {
   "floor": "Zemin",
-  "current-block-time": "Geçerli blok zamanı",
+  "current-block-time": "Mevcut blok zamanı",
   "your-reward-is": "Ödülünüz",
-  "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
+  "connection-to-node-lost": "Madenciye bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
   "mining-button-text": {
-    "starting-mining": "Madenci Başlatılıyor",
-    "start-mining": "Madenciyi Başlat",
+    "starting-mining": "Madencilik Başlatılıyor",
+    "start-mining": "Madenciliğe Başla",
     "stop-mining": "Madenciliği Durdur",
     "changing-mode": "Mod değiştirme",
-    "cancel-mining": "Madenciyi İptal Et",
+    "cancel-mining": "Madenciliği İptal Et",
     "waiting-for-idle": "Boşta Bekliyor",
-    "started-auto-mining": "Otomatik Madencilik Başladı",
+    "started-auto-mining": "Otomatik Madencilik Başladı"
   }
 }
