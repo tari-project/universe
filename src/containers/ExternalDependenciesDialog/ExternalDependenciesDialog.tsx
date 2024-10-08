@@ -1,6 +1,7 @@
 import { Button } from '@app/components/elements/Button';
 import { Chip } from '@app/components/elements/Chip';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
+import { Divider } from '@app/components/elements/Divider';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
@@ -50,27 +51,35 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
         <Stack direction="row" alignItems="flex-start" gap={16} style={{ width: '100%' }}>
             <Stack gap={12} alignItems="center">
                 {manufacturer.logo && <img src={manufacturer.logo} alt={manufacturer.name} width={40} height={40} />}
+            </Stack>
+            <Stack style={{ width: '100%' }} gap={12} alignItems="flex-start">
+                <Stack gap={8} style={{ width: '100%' }} alignItems="flex-start">
+                    <Stack direction="row" gap={6}>
+                        <Typography variant="span" style={{ fontSize: '12px', color: 'CaptionText' }}>
+                            {manufacturer.name}
+                        </Typography>
+                        <Chip size="small" {...getChipStylingForStatus(status)}>
+                            {mapStatusToText(status)}
+                        </Chip>
+                    </Stack>
+
+                    <Stack direction="row" gap={4}>
+                        <Typography variant="h5">{display_name}</Typography>
+                        <Typography variant="p">{version}</Typography>
+                    </Stack>
+                    <Typography variant="p">{display_description}</Typography>
+                </Stack>
                 {status === ExternalDependencyStatus.NotInstalled && (
-                    <Button onClick={handleDownload} size="small" variant="squared" color="primary">
+                    <Button
+                        onClick={handleDownload}
+                        size="small"
+                        variant="squared"
+                        color="primary"
+                        style={{ height: 'unset' }}
+                    >
                         Download
                     </Button>
                 )}
-            </Stack>
-            <Stack gap={4} style={{ width: '100%' }} alignItems="flex-start">
-                <Stack direction="row" gap={8}>
-                    <Typography variant="span" style={{ fontSize: '12px', color: 'CaptionText' }}>
-                        {manufacturer.name}
-                    </Typography>
-                    <Chip size="small" {...getChipStylingForStatus(status)}>
-                        {mapStatusToText(status)}
-                    </Chip>
-                </Stack>
-
-                <Stack direction="row" gap={4}>
-                    <Typography variant="h5">{display_name}</Typography>
-                    <Typography variant="p">{version}</Typography>
-                </Stack>
-                <Typography variant="p">{display_description}</Typography>
             </Stack>
         </Stack>
     );
@@ -79,6 +88,9 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
 export const ExternalDependenciesDialog = () => {
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
+    const fetchExternalDependencies = useAppStateStore((s) => s.fetchExternalDependencies);
+    const setView = useUIStore((s) => s.setView);
+    const setCriticalError = useAppStateStore((s) => s.setCriticalError);
 
     const [isRestarting, setIsRestarting] = useState(false);
 
@@ -92,15 +104,16 @@ export const ExternalDependenciesDialog = () => {
         setIsRestarting(false);
     }, []);
 
-    const handleExit = useCallback(async () => {
-        try {
-            setIsRestarting(true);
-            await invoke('exit_application');
-        } catch (e) {
-            console.error(e);
-        }
-        setIsRestarting(false);
+    const handleContinue = useCallback(() => {
+        invoke('setup_application').catch((e) => {
+            setCriticalError(`Failed to setup application: ${e}`);
+            setView('mining');
+        });
     }, []);
+
+    const shouldAllowContinue = Object.values(externalDependencies).every(
+        (missingDependency) => missingDependency.status === ExternalDependencyStatus.Installed
+    );
 
     return (
         <Dialog open={!!showExternalDependenciesDialog}>
@@ -113,32 +126,35 @@ export const ExternalDependenciesDialog = () => {
                         </Typography>
                     </Stack>
 
-                    {Object.values(externalDependencies).map((missingDependency) => (
-                        <ExternalDependencyCard
-                            key={missingDependency.display_name}
-                            missingDependency={missingDependency}
-                        />
+                    {Object.values(externalDependencies).map((missingDependency, index, array) => (
+                        <>
+                            <ExternalDependencyCard
+                                key={missingDependency.display_name}
+                                missingDependency={missingDependency}
+                            />
+                            {index === array.length - 1 ? null : <Divider />}
+                        </>
                     ))}
-                    <Stack direction="row" justifyContent="flex-end">
+                    <Stack direction="row" justifyContent="flex-end" gap={8}>
                         <Button
                             variant="squared"
-                            color="warning"
+                            color="secondary"
+                            size="medium"
+                            onClick={handleContinue}
+                            disabled={isRestarting || !shouldAllowContinue}
+                            style={{ width: '100px' }}
+                        >
+                            Continue
+                        </Button>
+                        <Button
+                            variant="squared"
+                            color="error"
                             size="medium"
                             onClick={handleRestart}
                             disabled={isRestarting}
                             style={{ width: '100px' }}
                         >
                             Restart
-                        </Button>
-                        <Button
-                            variant="squared"
-                            color="error"
-                            size="medium"
-                            onClick={handleExit}
-                            disabled={isRestarting}
-                            style={{ width: '100px' }}
-                        >
-                            Exit
                         </Button>
                     </Stack>
                 </Stack>

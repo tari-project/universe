@@ -258,6 +258,11 @@ impl ExternalDependencies {
 
         thread.wait().await?;
 
+        #[cfg(target_os = "windows")]
+        {
+            self.read_registry_installed_applications().await?;
+        }
+
         Ok(())
     }
 
