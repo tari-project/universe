@@ -48,9 +48,9 @@ export const light = {
             wisp: tariPurpleAlpha[5],
         },
         secondary: {
-            main: brightGreen[600],
-            dark: brightGreen[700],
-            light: brightGreen[500],
+            main: grey[600],
+            dark: grey[700],
+            light: grey[500],
             wisp: tariPurpleAlpha[5],
         },
         divider: 'rgba(0,0,0,0.06)',

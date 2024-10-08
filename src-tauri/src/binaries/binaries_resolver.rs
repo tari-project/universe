@@ -10,6 +10,7 @@ use tari_common::configuration::Network;
 use tokio::sync::RwLock;
 
 use super::adapter_github::GithubReleasesAdapter;
+use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
@@ -53,6 +54,7 @@ pub struct BinaryResolver {
 }
 
 impl BinaryResolver {
+    #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
 
@@ -71,6 +73,7 @@ impl BinaryResolver {
             Binaries::Xmrig,
             BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
+                None,
                 Box::new(XmrigVersionApiAdapter {}),
                 None,
                 true,
@@ -81,6 +84,7 @@ impl BinaryResolver {
             Binaries::GpuMiner,
             BinaryManager::new(
                 Binaries::GpuMiner.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tarigpuminer".to_string(),
                     owner: "stringhandler".to_string(),
@@ -95,6 +99,7 @@ impl BinaryResolver {
             Binaries::MergeMiningProxy,
             BinaryManager::new(
                 Binaries::MergeMiningProxy.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
@@ -109,6 +114,7 @@ impl BinaryResolver {
             Binaries::MinotariNode,
             BinaryManager::new(
                 Binaries::MinotariNode.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
@@ -123,6 +129,7 @@ impl BinaryResolver {
             Binaries::Wallet,
             BinaryManager::new(
                 Binaries::Wallet.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
@@ -137,11 +144,23 @@ impl BinaryResolver {
             Binaries::ShaP2pool,
             BinaryManager::new(
                 Binaries::ShaP2pool.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "sha-p2pool".to_string(),
                     owner: "tari-project".to_string(),
                     specific_name: None,
                 }),
+                None,
+                true,
+            ),
+        );
+
+        binary_manager.insert(
+            Binaries::Tor,
+            BinaryManager::new(
+                Binaries::Tor.name().to_string(),
+                Some("tor".to_string()),
+                Box::new(TorReleaseAdapter {}),
                 None,
                 true,
             ),
@@ -174,6 +193,11 @@ impl BinaryResolver {
             )
         })?;
 
+        if let Some(sub_folder) = manager.binary_subfolder() {
+            return Ok(base_dir
+                .join(sub_folder)
+                .join(binary.binary_file_name(version)));
+        }
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 

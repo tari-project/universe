@@ -3,7 +3,7 @@ name = "tari-universe"
 authors = ["The Tari Development Community"]
 description = "Tari Universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.5.6"
+version = "0.5.11"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -91,12 +91,7 @@ custom-protocol = ["tauri/custom-protocol"]
 airdrop-local = []
 airdrop-env = []
 release-ci = ["tauri/custom-protocol"]
+release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = [
-    "log4rs",
-    "xz2",
-    "libsqlite3-sys",
-    "minotari_wallet_grpc_client",
-    "dirs-next",
-]
+ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]

@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { sidebarWidth } from '../../theme/styles';
-import cardBg from '../../assets/images/card.png';
 import gem from '../../assets/images/gem-sml.png';
 
 import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
@@ -22,31 +21,6 @@ export const SideBarContainer = styled(m.div)`
     padding: 16px 0 0;
 `;
 
-// Wallet
-export const WalletContainer = styled(m.div)`
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    background-image: url(${cardBg});
-    height: 178px;
-    background-repeat: no-repeat;
-    background-position: top left;
-    padding: 10px;
-    border-radius: 20px;
-    width: 100%;
-    position: relative;
-    box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
-`;
-
-export const Handle = styled(m.div)`
-    background-color: ${({ theme }) => theme.palette.text.secondary};
-    width: 52px;
-    height: 3px;
-    border-radius: 2px;
-    display: flex;
-`;
-
 // Milestones
 export const ProgressBox = styled(m.div)`
     background-color: ${({ theme }) => theme.palette.background.paper};
@@ -59,7 +33,6 @@ export const ProgressBox = styled(m.div)`
     align-items: center;
     justify-content: space-between;
     gap: 1px;
-    position: relative;
 `;
 
 export const StyledLinearProgress = styled(LinearProgress)`
@@ -98,4 +71,5 @@ export const Bottom = styled(m.div)`
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-bottom: 188px; // to cater for wallet card
 `;

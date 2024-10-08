@@ -1,0 +1,33 @@
+{
+  "airdropGame": "Testnet Ödülleri",
+  "loginButton": "Mücevherleri talep etmek için giriş yapın",
+  "logout": "Çıkış Yap",
+  "referral": "Bir arkadaşını davet et",
+  "unclaimedGems": "Talep Edilmeyen Mücevherler",
+  "inviteFirends": "Arkadaşlarını davet et",
+  "inviteFriendsText": "Bağlantıyı kopyala ve paylaş",
+  "invitedAmount": "<span>{{count}}</span> arkadaşınızı davet ettiniz",
+  "nextTierBonus": "<strong>{{count}} arkadaşınızı</strong> davet edin ve {{bonusGems}} bonus mücevher kazanın",
+  "claimGems": "Mücevherleri Talep Et",
+  "doLater": "Bunu daha sonra yapacağım",
+  "linkCopied": "Bağlantı kopyalandı!",
+  "giftReferralCodeHeader": "Yönlendirme kodunuzu talep edin <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> mücevherler.",
+  "claimReferralCode": "Yönlendirme kodunuzu talep edin <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> mücevherler.",
+  "claimReferralGifts": "Yönlendirme kodunuzu talep edin ve {{gems}} mücevher kazanın. Hesabınızı bağladığınızda, mücevherleriniz size verilecektir.",
+  "giftReferralCode": "Tari Universe'e davet ettiğiniz her arkadaşınız için {{gems}} mücevher kazanın. Hesaplarını bağladıklarında, mücevherleriniz size verilecektir.",
+  "permissionNoGems": {
+    "title": "Tari Universe'ü daha iyi hale getirin",
+    "text": "Tari Universe, deneyiminizi iyileştirmek için analizleri kullanmak istiyor."
+  },
+  "permission": {
+    "title": "Mücevher kazanın ve Tari Universe'ü daha iyi hale getirin",
+    "text": "Tari Universe, deneyiminizi iyileştirmek ve madencilik için sizi mücevherlerle ödüllendirmek amacıyla analizleri kullanmak istiyor."
+  },
+  "claimModalTitle": "TESTNET'TE MADENCİLİK İÇİN ÖDÜLLER KAZANIN",
+  "claimModalText": "Madencilik yaparak ve arkadaşlarınızı yönlendirerek mücevher kazanın. Ne kadar çok mücevher kazanırsanız, Tari airdrop'unuz o kadar büyük olur. Bir yönlendirme kodunuz mu var? Aşağıya girin ve bonusunuzu <strong>{{gems1}} mücevherden</strong> <strong>{{gems2}} mücevhere</strong> ikiye katlayın!",
+  "claimModalFieldLabel": "İsteğe bağlı",
+  "claimModalFieldPlaceholder": "Davet kodunu girin",
+  "claimModalFinePrint": "<strong>Lütfen dikkat:</strong> mücevherleri talep etmek, Universe'ü iyileştirebilmemiz için analitiği etkinleştirir",
+  "topTooltipTitle": "Testnet Ödülleri",
+  "topTooltipText": "Mücevher toplayarak bir Tari Airdrop'u kazanın. Ne kadar çok mücevher kazanırsanız, airdrop'unuz o kadar büyük olur."
+}

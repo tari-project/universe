@@ -14,6 +14,7 @@ export enum Language {
     JA = 'ja',
     KO = 'ko',
     RU = 'ru',
+    FR = 'fr',
 }
 
 // System can have various regional variations for language codes, so we resolve them
@@ -43,6 +44,7 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
         case 'tr':
         case 'tr-TR':
             return Language.TR;
+        case 'cn':
         case 'zh':
         case 'zh-CN':
         case 'zh-HK':
@@ -65,6 +67,14 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
         case 'ru':
         case 'ru-RU':
             return Language.RU;
+        case 'fr':
+        case 'fr-BE':
+        case 'fr-CA':
+        case 'fr-CH':
+        case 'fr-FR':
+        case 'fr-LU':
+        case 'fr-MC':
+            return Language.FR;
         default:
             return Language.EN;
     }
@@ -82,6 +92,7 @@ export const LanguageList: Record<Language, string> = {
     [Language.JA]: '日本語', // Japanese
     [Language.KO]: '한국어', // Korean
     [Language.RU]: 'Русский', // Russian
+    [Language.FR]: 'Français', // French
 };
 
 // Initialize i18n with new supported languages
@@ -106,6 +117,7 @@ i18n.use(HttpBackend)
             Language.JA,
             Language.KO,
             Language.RU,
+            Language.FR,
         ],
         saveMissingTo: 'all',
     });
