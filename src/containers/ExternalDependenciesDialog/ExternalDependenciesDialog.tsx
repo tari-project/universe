@@ -1,6 +1,5 @@
 import { Button } from '@app/components/elements/Button';
 import { Chip } from '@app/components/elements/Chip';
-import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Divider } from '@app/components/elements/Divider';
 import { Stack } from '@app/components/elements/Stack';
@@ -10,7 +9,8 @@ import { useUIStore } from '@app/store/useUIStore';
 import { ExternalDependencyStatus, ExternalDependency } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useCallback, useState } from 'react';
-import { IoArrowDown, IoArrowDownCircleOutline, IoDownload } from 'react-icons/io5';
+import { IoArrowDownCircleOutline } from 'react-icons/io5';
+import { StyledIcon } from '../Dashboard/MiningView/components/MiningButton.styles';
 
 const mapStatusToText = (status: ExternalDependencyStatus) => {
     console.log('status', status);
@@ -98,7 +98,7 @@ const ExternalDependencyCard = ({
                         variant="squared"
                         color="primary"
                         style={{ height: 'unset', width: '256px' }}
-                        icon={isInInstallationSlot ? <CircularProgress /> : <IoArrowDownCircleOutline size={16} />}
+                        icon={isInInstallationSlot ? <StyledIcon /> : <IoArrowDownCircleOutline size={16} />}
                         iconPosition="start"
                         disabled={isInstallationSlotOccupied}
                     >

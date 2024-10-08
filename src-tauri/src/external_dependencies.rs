@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Error};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
 use std::sync::LazyLock;
 #[cfg(target_os = "windows")]
@@ -9,6 +11,7 @@ use winreg::enums::HKEY_LOCAL_MACHINE;
 use winreg::RegKey;
 use reqwest::Client;
 use std::env;
+use futures_util::StreamExt;
 
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
@@ -230,9 +233,9 @@ impl ExternalDependencies {
     }
 
 
-    async fn download_installer(&self, client: &Client, app: &ExternalDependency) -> Result<String, Error> {
+    async fn download_installer(&self, app: &ExternalDependency) -> Result<String, Error> {
         info!(target: LOG_TARGET, "Downloading installer for {}", app.display_name);
-        let response = client.get(&app.download_url).send().await?;
+        let response = reqwest::get(&app.download_url).await?;
         if response.status() != 200 {
             return Err(anyhow!(
                 "Failed to download installer for {}: {}",
@@ -241,17 +244,19 @@ impl ExternalDependencies {
             ));
         }
         info!(target: LOG_TARGET, "Installer downloaded for {}", app.display_name);
-        let data = response.bytes().await?;
         let installer_path = format!("{}/{}", env::temp_dir().to_string_lossy(), app.display_name);
-        info!(target: LOG_TARGET, "Writing installer to {}", installer_path);
-        tokio::fs::write(installer_path.clone(), data).await?;
+        let mut dest = File::create(installer_path.clone()).await?;
+        let mut stream = response.bytes_stream();
+        while let Some(item) = stream.next().await {
+            dest.write_all(&item?).await?;
+        }
+        info!(target: LOG_TARGET, "Writing installer to {}", installer_path.clone());
         Ok(installer_path.clone())
     }
 
     pub async fn install_missing_dependencies(&self, missing_dependency: ExternalDependency) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Installing missing dependency: {}", missing_dependency.display_name);
-        let client = Client::new();
-        let installer_path = self.download_installer(&client, &missing_dependency).await?;
+        let installer_path = self.download_installer( &missing_dependency).await?;
         let mut thread = tokio::process::Command::new(installer_path)
             .spawn()
             .map_err(|e| anyhow!("Failed to start installer for {}: {}", missing_dependency.display_name, e))?;
