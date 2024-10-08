@@ -1,11 +1,9 @@
 import { InputHTMLAttributes, ReactNode, useCallback, useState } from 'react';
 import { InputWrapper, StyledInput, StyledInputLabel } from './Input.styles.ts';
 
-type InputPattern = 'text' | 'wholeNumber' | 'wholeNumberPositive' | 'number';
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     subIcon?: ReactNode;
     labelText?: string;
-    patternType?: InputPattern;
     endAdornment?: ReactNode;
     hasError?: boolean;
 }

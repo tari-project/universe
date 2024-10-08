@@ -54,5 +54,6 @@
   "connected-to-tari": "Подключено к сети Tari",
   "not-connected-to-tari": "Не подключено к сети Tari",
   "connected-peers": "Подключенные узлы",
-  "should-use-system-language": "Использовать системный язык"
+  "should-use-system-language": "Использовать системный язык",
+  "use-tor": "Use Tor"
 }

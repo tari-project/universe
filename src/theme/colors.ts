@@ -21,7 +21,8 @@
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 const success = {
-    100: '#E6FAF6',
+    50: '#E6FAF6',
+    100: '#a1d2c1',
     200: '#06C983',
     300: '#094E41',
 };

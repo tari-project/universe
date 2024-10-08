@@ -18,7 +18,6 @@ const StyledStack = styled(Stack)`
 `;
 
 const StyledInput = styled(Input)`
-    padding: 8px;
     font-size: 12px;
 `;
 

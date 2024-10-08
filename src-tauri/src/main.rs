@@ -1,6 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+#[cfg(target_os = "windows")]
+use external_dependencies::ExternalDependencies;
+
 use external_dependencies::{ ExternalDependencies,ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
@@ -20,6 +23,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use wallet_adapter::TransactionInfo;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
@@ -41,6 +45,7 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::tor_manager::TorManager;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 
@@ -75,6 +80,8 @@ mod setup_status_event;
 mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
+mod tor_adapter;
+mod tor_manager;
 mod user_listener;
 mod utils;
 mod wallet_adapter;
@@ -100,7 +107,7 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[serde(rename_all = "camelCase")]
 struct UpdateProgressRustEvent {
     chunk_length: usize,
-    content_length: Option<u64>,
+    content_length: u64,
     downloaded: u64,
 }
 
@@ -159,6 +166,27 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_use_tor(
+    use_tor: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_use_tor(use_tor)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_use_tor {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_use_tor took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -449,6 +477,9 @@ async fn setup_inner(
     }
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
+    let app_config = state.config.read().await;
+    let use_tor = app_config.use_tor();
+    drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let progress = ProgressTracker::new(window.clone());
@@ -469,6 +500,16 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
+    if use_tor && cfg!(target_os = "windows") {
+        progress.set_max(5).await;
+        progress
+            .update("checking-latest-version-tor".to_string(), None, 0)
+            .await;
+        binary_resolver
+            .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+            .await?;
+        sleep(Duration::from_secs(1));
+    }
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -556,6 +597,17 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
+    if use_tor && cfg!(target_os = "windows") {
+        state
+            .tor_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+    }
     for _i in 0..2 {
         match state
             .node_manager
@@ -564,6 +616,7 @@ async fn setup_inner(
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
+                use_tor,
             )
             .await
         {
@@ -1074,6 +1127,11 @@ async fn get_p2pool_stats(
 ) -> Result<HashMap<String, Stats>, String> {
     let timer = Instant::now();
     if state.is_getting_p2pool_stats.load(Ordering::SeqCst) {
+        let read = state.cached_p2pool_stats.read().await;
+        if let Some(stats) = &*read {
+            warn!(target: LOG_TARGET, "Already getting p2pool stats, returning cached value");
+            return Ok(stats.clone());
+        }
         warn!(target: LOG_TARGET, "Already getting p2pool stats");
         return Err("Already getting p2pool stats".to_string());
     }
@@ -1083,8 +1141,42 @@ async fn get_p2pool_stats(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
     }
+    let mut lock = state.cached_p2pool_stats.write().await;
+    *lock = Some(p2pool_stats.clone());
     state.is_getting_p2pool_stats.store(false, Ordering::SeqCst);
     Ok(p2pool_stats)
+}
+
+#[tauri::command]
+async fn get_transaction_history(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<TransactionInfo>, String> {
+    let timer = Instant::now();
+    if state.is_getting_transaction_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting transaction history");
+        return Err("Already getting transaction history".to_string());
+    }
+    state
+        .is_getting_transaction_history
+        .store(true, Ordering::SeqCst);
+    let transactions = match state.wallet_manager.get_transaction_history().await {
+        Ok(t) => t,
+        Err(e) => {
+            if !matches!(e, WalletManagerError::WalletNotStarted) {
+                warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
+            }
+            vec![]
+        }
+    };
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_transaction_history took too long: {:?}", timer.elapsed());
+    }
+
+    state
+        .is_getting_transaction_history
+        .store(false, Ordering::SeqCst);
+    Ok(transactions)
 }
 
 #[tauri::command]
@@ -1093,6 +1185,11 @@ async fn get_tari_wallet_details(
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
     if state.is_getting_wallet_balance.load(Ordering::SeqCst) {
+        let read = state.cached_wallet_details.read().await;
+        if let Some(details) = &*read {
+            warn!(target: LOG_TARGET, "Already getting wallet balance, returning cached value");
+            return Ok(details.clone());
+        }
         warn!(target: LOG_TARGET, "Already getting wallet balance");
         return Err("Already getting wallet balance".to_string());
     }
@@ -1114,14 +1211,18 @@ async fn get_tari_wallet_details(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
     }
-    state
-        .is_getting_wallet_balance
-        .store(false, Ordering::SeqCst);
-    Ok(TariWalletDetails {
+    let result = TariWalletDetails {
         wallet_balance,
         tari_address_base58: tari_address.to_base58(),
         tari_address_emoji: tari_address.to_emoji_string(),
-    })
+    };
+    let mut lock = state.cached_wallet_details.write().await;
+    *lock = Some(result.clone());
+    state
+        .is_getting_wallet_balance
+        .store(false, Ordering::SeqCst);
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -1140,6 +1241,11 @@ async fn get_miner_metrics(
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
     if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
+        let read = state.cached_miner_metrics.read().await;
+        if let Some(metrics) = &*read {
+            warn!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
+            return Ok(metrics.clone());
+        }
         warn!(target: LOG_TARGET, "Already getting miner metrics");
         return Err("Already getting miner metrics".to_string());
     }
@@ -1208,11 +1314,8 @@ async fn get_miner_metrics(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
-    state
-        .is_getting_miner_metrics
-        .store(false, Ordering::SeqCst);
 
-    Ok(MinerMetrics {
+    let ret = MinerMetrics {
         cpu: CpuMinerMetrics {
             hardware: hardware_status.cpu,
             mining: cpu_mining_status,
@@ -1228,7 +1331,15 @@ async fn get_miner_metrics(
             is_connected: !connected_peers.is_empty(),
             connected_peers,
         },
-    })
+    };
+    let mut lock = state.cached_miner_metrics.write().await;
+    *lock = Some(ret.clone());
+
+    state
+        .is_getting_miner_metrics
+        .store(false, Ordering::SeqCst);
+
+    Ok(ret)
 }
 
 #[tauri::command]
@@ -1257,6 +1368,7 @@ async fn reset_settings<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     stop_all_miners(state.inner().clone(), 5).await?;
+    let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path_resolver().app_config_dir();
     let app_cache_dir = app.path_resolver().app_cache_dir();
@@ -1269,7 +1381,7 @@ async fn reset_settings<'r>(
         app_data_dir,
         app_local_data_dir,
     ];
-    let missing_dirs: Vec<String> = dirs_to_remove
+    let valid_dir_paths: Vec<String> = dirs_to_remove
         .iter()
         .filter_map(|dir| {
             if let Some(path) = dir {
@@ -1280,17 +1392,12 @@ async fn reset_settings<'r>(
         })
         .collect();
 
-    if !missing_dirs.is_empty() {
-        error!(target: LOG_TARGET, "Could not get app directories for {:?}", missing_dirs);
+    if valid_dir_paths.is_empty() {
+        error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
         return Err("Could not get app directories".to_string());
     }
-
     // Exclude EBWebView because it is still being used.
-    let mut folder_block_list = vec!["EBWebView"];
-    if !reset_wallet {
-        folder_block_list.push("esmeralda");
-        folder_block_list.push("nextnet");
-    }
+    let folder_block_list = vec!["EBWebView"];
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -1300,9 +1407,35 @@ async fn reset_settings<'r>(
                 if path.is_dir() {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
                         if folder_block_list.contains(&file_name) {
+                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory", path);
                             continue;
                         }
                     }
+
+                    let contains_wallet_config =
+                        read_dir(&path)
+                            .map_err(|e| e.to_string())?
+                            .any(|inner_entry| {
+                                inner_entry
+                                    .map(|e| e.file_name() == "wallet_config.json")
+                                    .unwrap_or(false)
+                            });
+
+                    let is_network_dir = path
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .map(|name| name == network)
+                        .unwrap_or(false);
+
+                    if !reset_wallet && contains_wallet_config {
+                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json and reset_wallet is false", path);
+                        continue;
+                    }
+                    if reset_wallet && contains_wallet_config && !is_network_dir {
+                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json and does not matches network name", path);
+                        continue;
+                    }
+
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
                     remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
@@ -1324,26 +1457,26 @@ async fn reset_settings<'r>(
     Ok(())
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
     hardware: Option<HardwareParameters>,
     mining: CpuMinerStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
     hardware: Option<HardwareParameters>,
     mining: GpuMinerStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct MinerMetrics {
     cpu: CpuMinerMetrics,
     gpu: GpuMinerMetrics,
     base_node: BaseNodeStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct TariWalletDetails {
     wallet_balance: Option<WalletBalance>,
     tari_address_base58: String,
@@ -1361,7 +1494,7 @@ pub struct ApplicationsVersions {
     xtrgpuminer: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct BaseNodeStatus {
     block_height: u64,
     block_time: u64,
@@ -1369,7 +1502,7 @@ pub struct BaseNodeStatus {
     is_connected: bool,
     connected_peers: Vec<String>,
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: f64,
@@ -1377,7 +1510,7 @@ pub struct CpuMinerStatus {
     pub connection: CpuMinerConnectionStatus,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
     // pub error: Option<String>,
@@ -1397,6 +1530,7 @@ struct UniverseAppState {
     is_getting_wallet_balance: Arc<AtomicBool>,
     is_getting_p2pool_stats: Arc<AtomicBool>,
     is_getting_miner_metrics: Arc<AtomicBool>,
+    is_getting_transaction_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -1412,6 +1546,10 @@ struct UniverseAppState {
     feedback: Arc<RwLock<Feedback>>,
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
+    tor_manager: TorManager,
+    cached_p2pool_stats: Arc<RwLock<Option<HashMap<String, Stats>>>>,
+    cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
+    cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -1484,6 +1622,7 @@ fn main() {
         is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
         is_getting_wallet_balance: Arc::new(AtomicBool::new(false)),
         is_setup_finished: Arc::new(RwLock::new(false)),
+        is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
         shutdown: shutdown.clone(),
@@ -1498,6 +1637,10 @@ fn main() {
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
+        tor_manager: TorManager::new(),
+        cached_p2pool_stats: Arc::new(RwLock::new(None)),
+        cached_wallet_details: Arc::new(RwLock::new(None)),
+        cached_miner_metrics: Arc::new(RwLock::new(None)),
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
@@ -1619,7 +1762,9 @@ fn main() {
             exit_application,
             set_should_always_use_system_language,
             download_and_start_installer,
-            get_external_dependencies
+            get_external_dependencies,
+            set_use_tor,
+            get_transaction_history
         ])
         .build(tauri::generate_context!())
         .inspect_err(
@@ -1641,8 +1786,15 @@ fn main() {
             }
             UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
                 downloaded += chunk_length as u64;
+                let content_length = content_length.unwrap_or_else(|| {
+                    warn!(target: LOG_TARGET, "Unable to determine content length");
+                    downloaded
+                });
+
+                info!(target: LOG_TARGET, "Chunk Length: {} | Download progress: {} / {}", chunk_length, downloaded, content_length);
+
                 if let Some(window) = _app_handle.get_window("main") {
-                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
+                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded: downloaded.min(content_length) }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
                     );
                 }
             }

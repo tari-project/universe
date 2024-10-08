@@ -43,15 +43,15 @@ impl Clone for NodeManager {
 impl NodeManager {
     pub fn new() -> Self {
         // TODO: wire up to front end
-        let mut use_tor = true;
+        // let mut use_tor = true;
 
         // Unix systems have built in tor.
         // TODO: Add tor service for windows.
-        if cfg!(target_os = "windows") {
-            use_tor = false;
-        }
+        // if cfg!(target_os = "windows") {
+        // use_tor = false;
+        // }
 
-        let adapter = MinotariNodeAdapter::new(use_tor);
+        let adapter = MinotariNodeAdapter::new();
         let process_watcher = ProcessWatcher::new(adapter);
 
         Self {
@@ -70,9 +70,11 @@ impl NodeManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        use_tor: bool,
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
+            process_watcher.adapter.use_tor = use_tor;
             process_watcher
                 .start(app_shutdown, base_path, config_path, log_path)
                 .await?;
@@ -99,6 +101,11 @@ impl NodeManager {
     pub async fn get_grpc_port(&self) -> Result<u16, anyhow::Error> {
         let lock = self.watcher.read().await;
         Ok(lock.adapter.grpc_port)
+    }
+
+    pub async fn get_tcp_listener_port(&self) -> u16 {
+        let lock = self.watcher.read().await;
+        lock.adapter.tcp_listener_port
     }
 
     pub async fn wait_synced(

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Gems from '../../components/Gems/Gems';
 import UserInfo from './segments/UserInfo/UserInfo';
 import { UserRow, Wrapper } from './styles';
-import { useAirdropStore, REFERRAL_GEMS, GIFT_GEMS } from '@app/store/useAirdropStore';
+import { useAirdropStore, REFERRAL_GEMS } from '@app/store/useAirdropStore';
 import Invite from './segments/Invite/Invite';
 import Flare from './segments/Flare/Flare';
 import { AnimatePresence } from 'framer-motion';
@@ -10,23 +10,19 @@ import { AnimatePresence } from 'framer-motion';
 export default function LoggedIn() {
     const [gems, setGems] = useState(0);
 
-    const { userDetails, userPoints, flareAnimationType, bonusTiers, setFlareAnimationType, referralQuestPoints } =
-        useAirdropStore();
+    const {
+        userDetails,
+        userPoints,
+        flareAnimationType,
+        bonusTiers,
+        setFlareAnimationType,
+        referralQuestPoints,
+        miningRewardPoints,
+    } = useAirdropStore();
 
     useEffect(() => {
         setGems(userPoints?.base.gems || userDetails?.user?.rank?.gems || 0);
     }, [userPoints?.base.gems, userDetails?.user?.rank?.gems]);
-
-    // const handleShowFlare = () => {
-    //     if (flareAnimationType) {
-    //         setFlareAnimationType();
-    //         return;
-    //     }
-    //
-    //     //setFlareAnimationType('GoalComplete');
-    //     setFlareAnimationType('FriendAccepted');
-    //     //setFlareAnimationType('BonusGems');
-    // };
 
     const bonusTier = useMemo(
         () =>
@@ -43,11 +39,16 @@ export default function LoggedIn() {
             case 'FriendAccepted':
                 return referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS;
             case 'BonusGems':
-                return referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS;
+                return miningRewardPoints?.reward || 0;
             default:
                 return 0;
         }
-    }, [flareAnimationType, bonusTier?.bonusGems, referralQuestPoints?.pointsForClaimingReferral]);
+    }, [
+        flareAnimationType,
+        bonusTier?.bonusGems,
+        referralQuestPoints?.pointsForClaimingReferral,
+        miningRewardPoints?.reward,
+    ]);
 
     return (
         <Wrapper>

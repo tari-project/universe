@@ -18,6 +18,7 @@ import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorD
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
+import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
 
 export default function App() {
     useLangaugeResolver();
@@ -45,6 +46,7 @@ export default function App() {
 
     return (
         <ThemeProvider>
+            <GlobalFontFace />
             <GlobalReset />
             <GlobalStyle />
             <LazyMotion features={domMax} strict>
