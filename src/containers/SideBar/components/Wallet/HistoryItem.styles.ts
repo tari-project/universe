@@ -12,8 +12,9 @@ export const Wrapper = styled(m.div)`
     border-radius: 10px;
     background: ${({ theme }) => theme.palette.colors.gothic[950]};
     box-shadow: 0 4px 65px 0 rgba(90, 90, 90, 0.2);
-    height: 269px;
-
+    flex-shrink: 0;
+    flex-grow: 0;
+    max-height: 269px;
     font-family:
         GTAmerica Standard,
         sans-serif;

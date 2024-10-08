@@ -36,7 +36,7 @@ export default function History() {
             {isTransactionLoading ? (
                 <CircularProgress />
             ) : (
-                transactions.map((tx) => <HistoryItem key={tx.tx_id} item={tx} />)
+                transactions.slice(0, 2).map((tx) => <HistoryItem key={tx.tx_id} item={tx} />)
             )}
         </HistoryContainer>
     );

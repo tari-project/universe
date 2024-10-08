@@ -12,7 +12,7 @@ export default function BonusGems({ gems, onAnimationComplete }: Props) {
     useEffect(() => {
         const timer = setTimeout(() => {
             onAnimationComplete();
-        }, 10000);
+        }, 5000);
 
         return () => clearTimeout(timer);
     }, [onAnimationComplete]);
