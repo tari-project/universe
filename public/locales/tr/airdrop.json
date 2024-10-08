@@ -11,6 +11,7 @@
   "claimGems": "Mücevherleri Talep Et",
   "doLater": "Bunu daha sonra yapacağım",
   "linkCopied": "Bağlantı kopyalandı!",
+  "logged-in-as": "<strong>@{{twitter}}</strong> Olarak giriş yaptı ",
   "giftReferralCodeHeader": "Referans kodunuzu talep edin <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> mücevherler.",
   "claimReferralCode": "Referans kodunuzu talep edin <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> mücevherler.",
   "claimReferralGifts": "Referans kodunuzu talep edin ve {{gems}} mücevher kazanın. Hesabınızı bağladığınızda mücevherleriniz verilecektir.",
