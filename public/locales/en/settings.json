@@ -3,7 +3,7 @@
     "settings": "Settings",
     "seed-words": "Seed words",
     "send-logs": "Submit an Issue & Logs",
-    "your-feedback": "Please describe your issue",
+    "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
     "feedback-required": "Feedback is required",
     "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
     "change-language": "Language",
@@ -58,5 +58,6 @@
     "not-connected-to-tari": "Not connected to the Tari Network",
     "connected-peers": "Connected Peers",
     "should-use-system-language": "Use system language",
-    "use-tor": "Use Tor"
+    "use-tor": "Use Tor",
+    "report-issue": "Report an issue"
 }

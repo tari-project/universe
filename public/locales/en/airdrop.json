@@ -11,6 +11,7 @@
     "claimGems": "Claim Gems",
     "doLater": "I'll do this later",
     "linkCopied": "Link copied!",
+    "logged-in-as": "Logged in as <strong>@{{twitter}}</strong>",
     "giftReferralCodeHeader": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
     "claimReferralCode": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
     "claimReferralGifts": "Claim your referral code and earn {{gems}} gems. Once you connect your account, you’ll be awarded your gems.",
