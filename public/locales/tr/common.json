@@ -1,6 +1,8 @@
 {
     "submit": "Onayla",
     "cancel": "İptal",
+    "connection": "Bağlantı",
+    "disconnect": "Bağlantıyı Kes",
     "temperature": "Sıcaklık",
     "max-temperature": "Maks. Sıcaklık",
     "usage": "Kullanım",
@@ -19,5 +21,7 @@
     "testnet": "Testnet",
     "critical-error": "Kritik hata",
     "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse bizimle iletişime geçin.",
-    "close-tari-universe": "Tari Universe'i kapat"
+    "close-tari-universe": "Tari Universe'i kapat",
+    "continue": "Devam et",
+    "restart": "Yeniden başlat"
 }
