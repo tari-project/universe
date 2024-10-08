@@ -1,25 +1,66 @@
-use anyhow::{anyhow, Error, Ok};
+use anyhow::{anyhow, Error};
 use log::{info, warn};
 use tokio::sync::RwLock;
+use std::ops::Deref;
 use std::sync::LazyLock;
 use winreg::enums::HKEY_LOCAL_MACHINE;
 use winreg::RegKey;
 use reqwest::Client;
+use std::env;
 
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
 
 #[derive(Debug)]
-struct InstalledApplication {
-    display_names: Vec<String>,
-    download_name: String,
-    download_url: String,
+pub enum ExternalDependencyStatus {
+    Installed,
+    NotInstalled,
+    Unknown,
 }
 
 #[derive(Debug)]
-struct RequiredInstalledApplications {
-    additional_runtime: InstalledApplication,
-    minimum_runtime: InstalledApplication,
+pub enum ManufacturerName {
+    Microsoft
+}
+
+impl ManufacturerName {
+    pub fn to_string(&self) -> String {
+        match self {
+            ManufacturerName::Microsoft => "Microsoft".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Manufacturer {
+    pub name: String,
+    pub logo: String,
+    pub url: String,
+}
+
+impl Manufacturer {
+    pub fn new(name: ManufacturerName, url: String, logo: String) -> Self {
+        Self { name: name.to_string(), url, logo }
+    }
+}
+
+
+
+#[derive(Debug, Clone)]
+pub struct ExternalDependency {
+    required_version_names: Vec<String>,
+    display_name: String,
+    display_description: String,
+    download_url: String,
+    version: Option<String>,
+    manufacturer: Manufacturer,
+    status: ExternalDependencyStatus,
+}
+
+#[derive(Debug, Clone)]
+struct RequiredExternalDependency {
+    additional_runtime: ExternalDependency,
+    minimum_runtime: ExternalDependency,
 }
 
 #[derive(Debug)]
@@ -29,66 +70,105 @@ struct RegistryEntry {
 }
 
 pub struct ExternalDependencies {
-    required_installed_applications: RequiredInstalledApplications,
-    missing_applications: RwLock<Vec<InstalledApplication>>,
+    external_dependencies: RequiredExternalDependency,
 }
 
 impl ExternalDependencies {
     fn new() -> Self {
         Self {
-            required_installed_applications: Self::initialize_required_installed_applications(),
-            missing_applications: RwLock::new(Vec::new()),
+            external_dependencies: RwLock::new(Self::initialize_required_installed_applications())
         }
     }
 
-    fn initialize_required_installed_applications() -> RequiredInstalledApplications {
+    fn initialize_required_installed_applications() -> RequiredExternalDependency {
         if cfg!(target_arch = "x86") {
-            RequiredInstalledApplications {
-                additional_runtime: InstalledApplication {
-                    display_names: vec![
+            RequiredExternalDependency {
+                additional_runtime: ExternalDependency {
+                    required_version_names: vec![
                         "Microsoft Visual C++ 2019 x86 Additional Runtime".to_string(),
                         "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
                     ],
-                    download_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
+                    display_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
+                    display_description: "This is the additional runtime required to run Tari applications.".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
+                    manufacturer: Manufacturer::new(ManufacturerName::Microsoft, "https://www.microsoft.com".to_string(), "https://www.microsoft.com/favicon.ico".to_string()),
+                    status: ExternalDependencyStatus::Unknown,
+                    version: None,
                 },
-                minimum_runtime: InstalledApplication {
-                    display_names: vec![
+                minimum_runtime: ExternalDependency {
+                    required_version_names: vec![
                         "Microsoft Visual C++ 2019 x86 Minimum Runtime".to_string(),
                         "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
                     ],
-                    download_name: "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
+                    display_name: "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
+                    display_description: "This is the minimum runtime required to run Tari applications.".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
+                    manufacturer: Manufacturer::new(ManufacturerName::Microsoft, "https://www.microsoft.com".to_string(), "https://www.microsoft.com/favicon.ico".to_string()),
+                    status: ExternalDependencyStatus::Unknown,
+                    version: None,
                 },
             }
         } else {
-            RequiredInstalledApplications {
-                additional_runtime: InstalledApplication {
-                    display_names: vec![
+            RequiredExternalDependency {
+                additional_runtime: ExternalDependency {
+                    required_version_names: vec![
                         "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string(),
                         "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
                     ],
-                    download_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+                    display_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+                    display_description: "This is the additional runtime required to run Tari applications.".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+                    manufacturer: Manufacturer::new(ManufacturerName::Microsoft, "https://www.microsoft.com".to_string(), "https://www.microsoft.com/favicon.ico".to_string()),
+                    status: ExternalDependencyStatus::Unknown,
+                    version: None,
                 },
-                minimum_runtime: InstalledApplication {
-                    display_names: vec![
+                minimum_runtime: ExternalDependency {
+                    required_version_names: vec![
                         "Microsoft Visual C++ 2019 x64 Minimum Runtime".to_string(),
                         "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
                     ],
-                    download_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+                    display_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+                    display_description: "This is the minimum runtime required to run Tari applications.".to_string(),
                     download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+                    manufacturer: Manufacturer::new(ManufacturerName::Microsoft, "https://www.microsoft.com".to_string(), "https://www.microsoft.com/favicon.ico".to_string()),
+                    status: ExternalDependencyStatus::Unknown,
+                    version: None,
                 },
             }
         }
     }
 
-    fn read_installed_applications(&self) -> Result<Vec<RegistryEntry>, Error> {
+    async fn check_status_of_external_dependency(&self, registry_entries: Vec<RegistryEntry>) {
+        let mut external_dependencies = self.external_dependencies.write().await?;
+        for app in registry_entries.iter() {
+            if external_dependencies.additional_runtime.required_version_names.iter().any(|required_app_name| {
+                app.display_name
+                    .to_lowercase()
+                    .as_str()
+                    .contains(required_app_name.to_lowercase().as_str())
+            }) {
+                external_dependencies.additional_runtime.status = ExternalDependencyStatus::Installed;
+                external_dependencies.additional_runtime.version = Some(app.display_version.clone());
+            }
+
+            if external_dependencies.minimum_runtime.required_version_names.iter().any(|required_app_name| {
+                app.display_name
+                    .to_lowercase()
+                    .as_str()
+                    .contains(required_app_name.to_lowercase().as_str())
+            }) {
+                external_dependencies.minimum_runtime.status = ExternalDependencyStatus::Installed;
+                external_dependencies.minimum_runtime.version = Some(app.display_version.clone());
+            }
+        }
+    }
+
+    pub async fn read_registry_installed_applications(&self) -> Result<Vec<RegistryEntry>, Error> {
         let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
         let uninstall_key = hklm
             .open_subkey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall")
             .map_err(|e| anyhow!("Error opening uninstall key: {}", e))?;
-        let mut installed_applications = Vec::new();
+        let mut registry_application_entry = Vec::new();
         for key in uninstall_key.enum_keys() {
             match key {
                 Ok(key) => {
@@ -105,7 +185,7 @@ impl ExternalDependencies {
                     if let (Some(display_name), Some(display_version)) =
                         (display_name, display_version)
                     {
-                        installed_applications.push(RegistryEntry {
+                        registry_application_entry.push(RegistryEntry {
                             display_name,
                             display_version,
                         });
@@ -117,79 +197,52 @@ impl ExternalDependencies {
             }
         }
 
-        installed_applications.iter().for_each(|app| {
-            info!(target: LOG_TARGET, "Installed application: {} {}", app.display_name, app.display_version);
-        });
+        self.check_status_of_external_dependency(registry_entries.clone()).await?;
 
-        Ok(installed_applications)
+        Ok(registry_application_entry)
     }
 
-    pub async fn check_if_required_installed_applications_are_installed(&self) -> Result<Vec<InstalledApplication>, Error> {
-        let installed_applications = self.read_installed_applications()?;
-        let mut missing_applications = Vec::new();
-
-        if !installed_applications.iter().any(|app| {
-            self.required_installed_applications
-                .additional_runtime
-                .display_names
-                .iter()
-                .any(|required_app_name| {
-                    app.display_name
-                        .to_lowercase()
-                        .as_str()
-                        .contains(required_app_name.to_lowercase().as_str())
-                })
-        }) {
-            missing_applications.push(&self.required_installed_applications.additional_runtime);
-        }
-
-        if !installed_applications.iter().any(|app| {
-            self.required_installed_applications
-                .minimum_runtime
-                .display_names
-                .iter()
-                .any(|required_app_name| {
-                    app.display_name
-                        .to_lowercase()
-                        .as_str()
-                        .contains(required_app_name.to_lowercase().as_str())
-                })
-        }) {
-            missing_applications.push(&self.required_installed_applications.minimum_runtime);
-        }
-
-        self.missing_applications.write().await.extend(missing_applications);
-        Ok(missing_applications)
+    pub async fn get_external_dependencies(&self) -> RequiredExternalDependency {
+        self.external_dependencies.read().await.clone()
     }
 
-    pub async fn get_missing_applications(&self) -> Vec<InstalledApplication> {
-        self.missing_applications.read().await.clone()
+
+    pub async fn check_if_some_dependency_is_not_installed(&self) -> bool {
+        let registry_application_entry = self.get_external_dependencies().await;
+
+        registry_application_entry.additional_runtime.status == ExternalDependencyStatus::NotInstalled ||
+            registry_application_entry.minimum_runtime.status == ExternalDependencyStatus::NotInstalled
     }
 
-    async fn download_installer(&self, client: &Client, app: &InstalledApplication) -> Result<String, Error> {
+
+    async fn download_installer(&self, client: &Client, app: &ExternalDependency) -> Result<String, Error> {
+        info!(target: LOG_TARGET, "Downloading installer for {}", app.display_name);
         let response = client.get(&app.download_url).send().await?;
         if response.status() != 200 {
             return Err(anyhow!(
                 "Failed to download installer for {}: {}",
-                app.download_name,
+                app.display_name,
                 response.status()
             ));
         }
+        info!(target: LOG_TARGET, "Installer downloaded for {}", app.display_name);
         let data = response.bytes().await?;
-        let installer_path = format!("C:\\temp\\{}", app.download_name);
-        tokio::fs::write(installer_path, data).await?;
-        Ok(installer_path)
+        let installer_path = format!("{}/{}", env::temp_dir().to_string_lossy(), app.display_name);
+        info!(target: LOG_TARGET, "Writing installer to {}", installer_path);
+        tokio::fs::write(installer_path.clone(), data).await?;
+        Ok(installer_path.clone())
     }
 
-    pub async fn install_missing_applications(&self) -> Result<(), Error> {
-        let missing_applications = self.get_missing_applications().await;
+    pub async fn install_missing_dependencies(&self, missing_dependency: ExternalDependency) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "Installing missing dependency: {}", missing_dependency.display_name);
         let client = Client::new();
-        for app in missing_applications {
-            let installer_path = self.download_installer(&client, &app).await?;
-            tokio::process::Command::new(installer_path)
-                .spawn()
-                .map_err(|e| anyhow!("Failed to start installer for {}: {}", app.download_name, e))?;
-        }
+        let installer_path = self.download_installer(&client, &app).await?;
+        let thread = tokio::process::Command::new(installer_path)
+            .spawn()
+            .map_err(|e| anyhow!("Failed to start installer for {}: {}", app.display_name, e))?;
+
+        thread.wait().await?;
+
         Ok(())
     }
 

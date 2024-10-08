@@ -1,4 +1,4 @@
-import { ApplicationsVersions } from '@app/types/app-status';
+import { ApplicationsVersions, ExternalDependency } from '@app/types/app-status';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api';
 import { useAppConfigStore } from './useAppConfigStore';
@@ -21,6 +21,10 @@ interface AppState {
     setIsSettingsOpen: (value: boolean) => void;
     isSettingUp: boolean;
     settingUpFinished: () => Promise<void>;
+    externalDependencies: ExternalDependency[];
+    fetchExternalDependencies: () => Promise<void>;
+    missingExternalDependencies: ExternalDependency[];
+    loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
     applications_versions?: ApplicationsVersions;
     fetchApplicationsVersions: () => Promise<void>;
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
@@ -89,4 +93,16 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             console.error('Error updating applications versions', error);
         }
     },
+    externalDependencies: [],
+    fetchExternalDependencies: async () => {
+        try {
+            const missingExternalDependencies = await invoke('get_external_dependencies');
+            set({ missingExternalDependencies });
+        } catch (error) {
+            console.error('Error loading missing external dependencies', error);
+        }
+    },
+    missingExternalDependencies: [],
+    loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) =>
+        set({ externalDependencies: missingExternalDependencies }),
 }));

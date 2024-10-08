@@ -4,6 +4,7 @@
 #[cfg(target_os = "windows")]
 use external_dependencies::ExternalDependencies;
 
+use external_dependencies::ExternalDependency;
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
@@ -346,6 +347,42 @@ async fn resolve_application_language(
 }
 
 #[tauri::command]
+async fn get_external_dependencies() -> Result<Vec<ExternalDependency>, String> {
+    let timer = Instant::now();
+    let external_dependencies = ExternalDependencies::current()
+        .get_external_dependencies()
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "get_external_dependencies took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(external_dependencies)
+}
+
+#[tauri::command]
+async fn download_and_start_installer(
+    missing_dependency: ExternalDependency,
+) -> Result<(), String> {
+    let timer = Instant::now();
+
+    #[cfg(target_os = "windows")]
+    if cfg!(target_os = "windows") {
+        ExternalDependencies::current().install_missing_dependencies(missing_dependency).await?;
+    }
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "download_and_start_installer took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -396,18 +433,19 @@ async fn setup_inner(
         .expect("Could not get log dir");
 
     #[cfg(target_os = "windows")]
-    let missing_applications = ExternalDependencies::current().check_if_required_installed_applications_are_installed().await?;
-
-    if !missing_applications.is_empty() {
-        window
-            .emit(
-                "missing-applications",
-                missing_applications
-                    .iter()
-                    .map(|app| app.display_name.clone())
-                    .collect::<Vec<String>>(),
-            ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
-        return;
+    if cfg!(target_os = "windows") {
+        ExternalDependencies::current().read_registry_installed_applications().await?;
+        let is_missing = ExternalDependencies::current().check_if_some_dependency_is_not_installed().await?;
+        let external_dependencies = ExternalDependencies::current().get_external_dependencies().await?;
+        
+        if is_missing {
+            window
+                .emit(
+                    "missing-applications",
+                    external_dependencies
+                ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
+            return;
+        }
     }
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -1579,7 +1617,9 @@ fn main() {
             get_p2pool_stats,
             get_tari_wallet_details,
             exit_application,
-            set_should_always_use_system_language
+            set_should_always_use_system_language,
+            download_and_start_installer,
+            get_external_dependencies
         ])
         .build(tauri::generate_context!())
         .inspect_err(
