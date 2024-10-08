@@ -6119,6 +6119,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-util 0.7.12",
+ "winreg 0.52.0",
  "xz2",
  "zip 2.2.0",
 ]
