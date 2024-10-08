@@ -9,11 +9,13 @@ interface State extends WalletBalance {
     balance: number | null;
     transactions: TransactionInfo[];
     isTransactionLoading: boolean;
+    is_wallet_importing: boolean;
 }
 
 interface Actions {
     fetchWalletDetails: () => Promise<void>;
     fetchTransactionHistory: () => Promise<void>;
+    importSeedWords: (seedWords: string[]) => Promise<void>;
 }
 
 type WalletStoreState = State & Actions;
@@ -28,6 +30,7 @@ const initialState: State = {
     pending_outgoing_balance: 0,
     transactions: [],
     isTransactionLoading: false,
+    is_wallet_importing: false,
 };
 
 export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
@@ -67,6 +70,14 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
             console.error('Could not get transaction history: ', error);
         } finally {
             set({ isTransactionLoading: false });
+        }
+    },
+    importSeedWords: async (seedWords: string[]) => {
+        try {
+            set({ is_wallet_importing: true });
+            await invoke('import_seed_words', { seedWords });
+        } catch (error) {
+            console.error('Could not import seed words: ', error);
         }
     },
 }));

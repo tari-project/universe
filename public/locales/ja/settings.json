@@ -58,5 +58,8 @@
   "applyInviteCode": "招待コードを適用",
   "disconnect": "エアドロップから切断",
   "inviteCode": "招待コード",
-  "use-tor": "Torを使用する"
+  "use-tor": "Torを使用する",
+  "importing-wallet": "Importing wallet",
+  "action-requires-restart": "This action requires restart to apply changes",
+  "invalid-seed-words": "Enter 24 words separated by spaces"
 }

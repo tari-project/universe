@@ -5,11 +5,13 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/Button.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
-import { SeedWords } from './SeedWords';
+import { SeedWordsView } from './SeedWordsView';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import { SeedWordsEdit } from './SeedWordsEdit';
 
 const SeedWordsMarkup = () => {
     const [showSeedWords, setShowSeedWords] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
 
     const toggleSeedWordsVisibility = useCallback(async () => {
@@ -19,21 +21,41 @@ const SeedWordsMarkup = () => {
         setShowSeedWords((prev) => !prev);
     }, [seedWordsFetched, getSeedWords]);
 
+    const toggleEdit = useCallback(async () => {
+        if (!seedWordsFetched) {
+            await getSeedWords();
+        }
+
+        setIsEditing((p) => !p);
+    }, [getSeedWords, seedWordsFetched]);
+
     return (
         <SettingsGroupWrapper>
-            <Stack direction="row" justifyContent="flex-start" alignItems="center">
+            <Stack direction="row" justifyContent="flex-start" alignItems="center" style={{ height: '34px' }}>
                 <Typography variant="h6">Seed Words</Typography>
-                <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
-                    {seedWordsFetching ? (
-                        <CircularProgress />
-                    ) : showSeedWords ? (
-                        <IoEyeOffOutline size={18} />
-                    ) : (
-                        <IoEyeOutline size={18} />
-                    )}
-                </IconButton>
+                {!isEditing && (
+                    <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
+                        {seedWordsFetching ? (
+                            <CircularProgress />
+                        ) : showSeedWords ? (
+                            <IoEyeOffOutline size={18} />
+                        ) : (
+                            <IoEyeOutline size={18} />
+                        )}
+                    </IconButton>
+                )}
             </Stack>
-            <SeedWords showSeedWords={showSeedWords} seedWords={seedWords} />
+            {isEditing ? (
+                <SeedWordsEdit seedWordsFetching={seedWordsFetching} seedWords={seedWords} toggleEdit={toggleEdit} />
+            ) : (
+                <SeedWordsView
+                    showSeedWords={showSeedWords}
+                    seedWords={seedWords}
+                    toggleEdit={toggleEdit}
+                    getSeedWords={getSeedWords}
+                    seedWordsFetched={seedWordsFetched}
+                />
+            )}
         </SettingsGroupWrapper>
     );
 };
