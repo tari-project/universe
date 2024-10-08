@@ -8,6 +8,7 @@ import { useAppStateStore } from '../store/appStateStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import useWalletDetailsUpdater from './useWalletUpdater.ts';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
 
 export function useSetUp() {
@@ -19,6 +20,7 @@ export function useSetUp() {
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
+    const setSeenPermissions = useAirdropStore((s) => s.setSeenPermissions);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
 
     const { loadExternalDependencies } = useAppStateStore();
@@ -65,6 +67,7 @@ export function useSetUp() {
                         fetchApplicationsVersionsWithRetry();
                         setView('mining');
                         setAnimationState('showVisual');
+                        setSeenPermissions(true);
                     }
                     break;
                 default:
@@ -73,6 +76,7 @@ export function useSetUp() {
             }
         });
         if (isAfterAutoUpdate) {
+            setSeenPermissions(false);
             clearStorage();
             invoke('setup_application').catch((e) => {
                 setCriticalError(`Failed to setup application: ${e}`);
@@ -91,5 +95,6 @@ export function useSetUp() {
         setView,
         settingUpFinished,
         setCriticalError,
+        setSeenPermissions,
     ]);
 }

@@ -7,10 +7,10 @@ import {
 } from '@app/containers/Settings/components/SettingsGroup.styles';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 export default function AirdropLogout() {
-    const { t } = useTranslation(['settings'], { useSuspense: false });
+    const { t } = useTranslation(['common', 'airdrop'], { useSuspense: false });
 
     const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
     const logout = useAirdropStore((state) => state.logout);
@@ -22,7 +22,14 @@ export default function AirdropLogout() {
                 <Typography variant="h6">{t('connection')}</Typography>
             </SettingsGroupTitle>
             <SettingsGroupContent>
-                <Typography> Logged in as {userDetails?.user.name}</Typography>
+                <Typography variant="p">
+                    <Trans
+                        i18nKey="logged-in-as"
+                        ns="airdrop"
+                        values={{ twitter: userDetails?.user.name }}
+                        components={{ strong: <strong /> }}
+                    />
+                </Typography>
                 <div style={{ maxWidth: 'fit-content', marginLeft: 'auto', padding: '20px' }}>
                     <Button color="error" variant="text" size="medium" onClick={logout}>
                         {t('disconnect')}
