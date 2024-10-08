@@ -33,11 +33,14 @@ const getChipStylingForStatus = (status: ExternalDependencyStatus) => {
 };
 
 const ExternalDependencyCard = ({ missingDependency }: { missingDependency: ExternalDependency }) => {
+    const fetchExternalDependencies = useAppStateStore((s) => s.fetchExternalDependencies);
     const { display_description, display_name, download_url, manufacturer, status, version } = missingDependency;
 
     const handleDownload = useCallback(async () => {
         try {
-            await invoke('download_and_start_installer', { missingDependency });
+            await invoke('download_and_start_installer', { missingDependency }).then(async () => {
+                await fetchExternalDependencies();
+            });
         } catch (e) {
             console.error(e);
         }
@@ -76,7 +79,6 @@ const ExternalDependencyCard = ({ missingDependency }: { missingDependency: Exte
 export const ExternalDependenciesDialog = () => {
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
-    const fetchExternalDependencies = useAppStateStore((s) => s.fetchExternalDependencies);
 
     const [isRestarting, setIsRestarting] = useState(false);
 
