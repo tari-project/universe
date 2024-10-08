@@ -19,7 +19,8 @@ export default function LoggedIn() {
         referralQuestPoints,
         miningRewardPoints,
     } = useAirdropStore();
-
+    console.debug(miningRewardPoints);
+    console.debug(`flareAnimationType= ${flareAnimationType}`);
     useEffect(() => {
         setGems(userPoints?.base.gems || userDetails?.user?.rank?.gems || 0);
     }, [userPoints?.base.gems, userDetails?.user?.rank?.gems]);

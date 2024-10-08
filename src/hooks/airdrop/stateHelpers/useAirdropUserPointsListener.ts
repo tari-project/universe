@@ -1,7 +1,6 @@
 import { useAirdropStore, UserPoints } from '@app/store/useAirdropStore';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
-import { useGetMiningPoints } from '@app/hooks/airdrop/stateHelpers/useGetMiningPoints.ts';
 
 export const useAirdropUserPointsListener = () => {
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
@@ -9,7 +8,6 @@ export const useAirdropUserPointsListener = () => {
     const bonusTiers = useAirdropStore((state) => state.bonusTiers);
     const setUserPointsReferralCount = useAirdropStore((state) => state.setReferralCount);
     const setFlareAnimationType = useAirdropStore((state) => state.setFlareAnimationType);
-    const getMiningPoints = useGetMiningPoints();
 
     useEffect(() => {
         let unListen: () => void = () => {
@@ -18,7 +16,6 @@ export const useAirdropUserPointsListener = () => {
 
         listen('UserPoints', (event) => {
             if (event.payload) {
-                void getMiningPoints();
                 const payload = event.payload as UserPoints;
                 setUserPoints(payload);
                 if (payload.referralCount) {
