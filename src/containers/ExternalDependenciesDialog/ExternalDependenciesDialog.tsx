@@ -82,20 +82,24 @@ export const ExternalDependenciesDialog = () => {
         setIsRestarting(false);
     }, []);
 
-    <Dialog open={!!showExternalDependenciesDialog}>
-        <DialogContent>
-            {Object.values(externalDependencies).map((missingDependency) => (
-                <ExternalDependencyCard key={missingDependency.display_name} missingDependency={missingDependency} />
-            ))}
-            <Stack>
-                <Button onClick={fetchExternalDependencies}>Refresh</Button>
-                <Button onClick={handleRestart} disabled={isRestarting}>
-                    Restart
-                </Button>
-                <Button onClick={handleExit} disabled={isRestarting}>
-                    Exit
-                </Button>
-            </Stack>
-        </DialogContent>
-    </Dialog>;
+    return (
+        <Dialog open={!!showExternalDependenciesDialog}>
+            <DialogContent>
+                {Object.values(externalDependencies).map((missingDependency) => (
+                    <ExternalDependencyCard
+                        key={missingDependency.display_name}
+                        missingDependency={missingDependency}
+                    />
+                ))}
+                <Stack>
+                    <Button onClick={handleRestart} disabled={isRestarting}>
+                        Restart
+                    </Button>
+                    <Button onClick={handleExit} disabled={isRestarting}>
+                        Exit
+                    </Button>
+                </Stack>
+            </DialogContent>
+        </Dialog>
+    );
 };

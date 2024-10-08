@@ -2,9 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 #[cfg(target_os = "windows")]
-use external_dependencies::ExternalDependencies;
+use external_dependencies::{ ExternalDependencies, RequiredExternalDependency};
 
-use external_dependencies::ExternalDependency;
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
@@ -347,12 +346,11 @@ async fn resolve_application_language(
 }
 
 #[tauri::command]
-async fn get_external_dependencies() -> Result<Vec<ExternalDependency>, String> {
+async fn get_external_dependencies() -> Result<RequiredExternalDependency, String> {
     let timer = Instant::now();
     let external_dependencies = ExternalDependencies::current()
         .get_external_dependencies()
-        .await
-        .map_err(|e| e.to_string())?;
+        .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "get_external_dependencies took too long: {:?}",
@@ -362,6 +360,7 @@ async fn get_external_dependencies() -> Result<Vec<ExternalDependency>, String> 
     Ok(external_dependencies)
 }
 
+
 #[tauri::command]
 async fn download_and_start_installer(
     missing_dependency: ExternalDependency,
@@ -370,7 +369,12 @@ async fn download_and_start_installer(
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") {
-        ExternalDependencies::current().install_missing_dependencies(missing_dependency).await?;
+        ExternalDependencies::current().install_missing_dependencies(missing_dependency).await.map_err(
+            |e| {
+                error!(target: LOG_TARGET, "Could not install missing dependency: {:?}", e);
+                e.to_string()
+            },
+        )?;
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -435,8 +439,8 @@ async fn setup_inner(
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") {
         ExternalDependencies::current().read_registry_installed_applications().await?;
-        let is_missing = ExternalDependencies::current().check_if_some_dependency_is_not_installed().await?;
-        let external_dependencies = ExternalDependencies::current().get_external_dependencies().await?;
+        let is_missing = ExternalDependencies::current().check_if_some_dependency_is_not_installed().await;
+        let external_dependencies = ExternalDependencies::current().get_external_dependencies().await;
         
         if is_missing {
             window
@@ -444,7 +448,7 @@ async fn setup_inner(
                     "missing-applications",
                     external_dependencies
                 ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
-            return;
+            return Ok(());
         }
     }
 

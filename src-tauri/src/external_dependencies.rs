@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Error};
 use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use std::ops::Deref;
 use std::sync::LazyLock;
@@ -11,14 +12,14 @@ use std::env;
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ExternalDependencyStatus {
     Installed,
     NotInstalled,
     Unknown,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ManufacturerName {
     Microsoft
 }
@@ -31,7 +32,7 @@ impl ManufacturerName {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Manufacturer {
     pub name: String,
     pub logo: String,
@@ -46,7 +47,7 @@ impl Manufacturer {
 
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExternalDependency {
     required_version_names: Vec<String>,
     display_name: String,
@@ -57,20 +58,20 @@ pub struct ExternalDependency {
     status: ExternalDependencyStatus,
 }
 
-#[derive(Debug, Clone)]
-struct RequiredExternalDependency {
-    additional_runtime: ExternalDependency,
-    minimum_runtime: ExternalDependency,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RequiredExternalDependency {
+    pub additional_runtime: ExternalDependency,
+    pub minimum_runtime: ExternalDependency,
 }
 
-#[derive(Debug)]
-struct RegistryEntry {
+#[derive(Debug, Clone)]
+pub struct RegistryEntry {
     display_name: String,
     display_version: String,
 }
 
 pub struct ExternalDependencies {
-    external_dependencies: RequiredExternalDependency,
+    external_dependencies: RwLock<RequiredExternalDependency>,
 }
 
 impl ExternalDependencies {
@@ -139,7 +140,7 @@ impl ExternalDependencies {
     }
 
     async fn check_status_of_external_dependency(&self, registry_entries: Vec<RegistryEntry>) {
-        let mut external_dependencies = self.external_dependencies.write().await?;
+        let mut external_dependencies = self.external_dependencies.write().await;
         for app in registry_entries.iter() {
             if external_dependencies.additional_runtime.required_version_names.iter().any(|required_app_name| {
                 app.display_name
@@ -147,6 +148,7 @@ impl ExternalDependencies {
                     .as_str()
                     .contains(required_app_name.to_lowercase().as_str())
             }) {
+                info!(target: LOG_TARGET, "Found installed additional runtime: {}", app.display_name);
                 external_dependencies.additional_runtime.status = ExternalDependencyStatus::Installed;
                 external_dependencies.additional_runtime.version = Some(app.display_version.clone());
             }
@@ -157,9 +159,20 @@ impl ExternalDependencies {
                     .as_str()
                     .contains(required_app_name.to_lowercase().as_str())
             }) {
+                info!(target: LOG_TARGET, "Found installed minimum runtime: {}", app.display_name);
                 external_dependencies.minimum_runtime.status = ExternalDependencyStatus::Installed;
                 external_dependencies.minimum_runtime.version = Some(app.display_version.clone());
             }
+        }
+
+        if external_dependencies.additional_runtime.status == ExternalDependencyStatus::Unknown {
+            info!(target: LOG_TARGET, "Additional runtime not found");
+            external_dependencies.additional_runtime.status = ExternalDependencyStatus::NotInstalled;
+        }
+
+        if external_dependencies.minimum_runtime.status == ExternalDependencyStatus::Unknown {
+            info!(target: LOG_TARGET, "Minimum runtime not found");
+            external_dependencies.minimum_runtime.status = ExternalDependencyStatus::NotInstalled;
         }
     }
 
@@ -197,7 +210,7 @@ impl ExternalDependencies {
             }
         }
 
-        self.check_status_of_external_dependency(registry_entries.clone()).await?;
+        self.check_status_of_external_dependency(registry_application_entry.clone()).await;
 
         Ok(registry_application_entry)
     }
@@ -236,10 +249,10 @@ impl ExternalDependencies {
     pub async fn install_missing_dependencies(&self, missing_dependency: ExternalDependency) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Installing missing dependency: {}", missing_dependency.display_name);
         let client = Client::new();
-        let installer_path = self.download_installer(&client, &app).await?;
-        let thread = tokio::process::Command::new(installer_path)
+        let installer_path = self.download_installer(&client, &missing_dependency).await?;
+        let mut thread = tokio::process::Command::new(installer_path)
             .spawn()
-            .map_err(|e| anyhow!("Failed to start installer for {}: {}", app.display_name, e))?;
+            .map_err(|e| anyhow!("Failed to start installer for {}: {}", missing_dependency.display_name, e))?;
 
         thread.wait().await?;
 
