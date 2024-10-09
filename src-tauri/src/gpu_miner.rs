@@ -63,6 +63,7 @@ impl GpuMiner {
     pub async fn stop(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Stopping xtrgpuminer");
         let mut process_watcher = self.watcher.write().await;
+        process_watcher.status_monitor = None;
         process_watcher.stop().await?;
         info!(target: LOG_TARGET, "xtrgpuminer stopped");
         Ok(())
