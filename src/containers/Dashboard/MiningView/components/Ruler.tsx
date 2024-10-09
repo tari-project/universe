@@ -66,7 +66,7 @@ export function Ruler() {
                                 data-before={height?.toString()}
                                 animate={{
                                     fontSize: '25px',
-                                    fontFamily: 'Druk, sans-serif',
+                                    fontFamily: 'DrukWide, sans-serif',
                                     color: theme.palette.text.primary,
                                 }}
                             />

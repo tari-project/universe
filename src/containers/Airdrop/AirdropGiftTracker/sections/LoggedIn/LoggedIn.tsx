@@ -13,12 +13,14 @@ export default function LoggedIn() {
     const {
         userDetails,
         userPoints,
-        flareAnimationType,
+        // flareAnimationType,
         bonusTiers,
         setFlareAnimationType,
         referralQuestPoints,
         miningRewardPoints,
     } = useAirdropStore();
+
+    const flareAnimationType = 'BonusGems';
 
     useEffect(() => {
         setGems(userPoints?.base.gems || userDetails?.user?.rank?.gems || 0);
@@ -32,23 +34,23 @@ export default function LoggedIn() {
         [bonusTiers, userDetails?.user?.rank?.gems, userPoints?.base.gems]
     );
 
-    const flareGems = useMemo(() => {
-        switch (flareAnimationType) {
-            case 'GoalComplete':
-                return bonusTier?.bonusGems || 0;
-            case 'FriendAccepted':
-                return referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS;
-            case 'BonusGems':
-                return miningRewardPoints?.reward || 0;
-            default:
-                return 0;
-        }
-    }, [
-        flareAnimationType,
-        bonusTier?.bonusGems,
-        referralQuestPoints?.pointsForClaimingReferral,
-        miningRewardPoints?.reward,
-    ]);
+    // const flareGems = useMemo(() => {
+    //     switch (flareAnimationType) {
+    //         case 'GoalComplete':
+    //             return bonusTier?.bonusGems || 0;
+    //         case 'FriendAccepted':
+    //             return referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS;
+    //         case 'BonusGems':
+    //             return miningRewardPoints?.reward || 0;
+    //         default:
+    //             return 0;
+    //     }
+    // }, [
+    //     flareAnimationType,
+    //     bonusTier?.bonusGems,
+    //     referralQuestPoints?.pointsForClaimingReferral,
+    //     miningRewardPoints?.reward,
+    // ]);
 
     return (
         <Wrapper>
@@ -62,7 +64,7 @@ export default function LoggedIn() {
             <AnimatePresence>
                 {flareAnimationType && (
                     <Flare
-                        gems={flareGems}
+                        gems={100}
                         animationType={flareAnimationType}
                         onAnimationComplete={() => setFlareAnimationType()}
                         onClick={() => setFlareAnimationType()}
