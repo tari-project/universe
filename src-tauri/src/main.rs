@@ -458,7 +458,7 @@ async fn setup_inner(
         .expect("Could not get log dir");
 
     #[cfg(target_os = "windows")]
-    if cfg!(target_os = "windows") {
+    if cfg!(target_os = "windows") && !cfg!(dev) {
         ExternalDependencies::current()
             .read_registry_installed_applications()
             .await?;
