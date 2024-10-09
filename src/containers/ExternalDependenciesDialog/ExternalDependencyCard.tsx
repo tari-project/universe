@@ -27,7 +27,7 @@ export const ExternalDependencyCard = ({
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
     const fetchExternalDependencies = useAppStateStore((s) => s.fetchExternalDependencies);
     const setError = useAppStateStore((s) => s.setError);
-    const { display_description, display_name, download_url, manufacturer, status, version } = missingDependency;
+    const { display_description, display_name, manufacturer, status, version } = missingDependency;
 
     const handleDownload = useCallback(async () => {
         try {
@@ -44,7 +44,7 @@ export const ExternalDependencyCard = ({
         }
 
         freeInstallationSlot();
-    }, [download_url]);
+    }, [fetchExternalDependencies, freeInstallationSlot, missingDependency, occupyInstallationSlot, setError]);
 
     return (
         <Stack direction="row" alignItems="flex-start" gap={16} style={{ width: '100%' }}>
