@@ -35,7 +35,7 @@ export function BlockHeightAccent() {
     }, []);
 
     return (
-        <AccentWrapper layoutId="accent-wrapper" style={{ width: deferredFontSize, top: 0, right: `-20px` }}>
+        <AccentWrapper layoutId="accent-wrapper" style={{ width: deferredFontSize }}>
             <AnimatePresence>
                 {height && height > 0 ? (
                     <LayoutGroup id="accent-content">
