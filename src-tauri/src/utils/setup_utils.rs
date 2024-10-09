@@ -27,7 +27,7 @@ mod setup_utils {
             let lines: Vec<&str> = stdout.split('\n').collect();
             for line in lines {
                 if line.contains("Action:") {
-                    let action = line.split(':').nth(1).unwrap().trim();
+                    let action = line.split(':').nth(1).unwrap_or("").trim();
                     if action == "Allow" {
                         return true;
                     }
@@ -49,7 +49,7 @@ mod setup_utils {
                     &format!("name={}", binary_name),
                     "dir=in",
                     "action=allow",
-                    &format!("program={}.exe", &binary_path.to_str().unwrap()),
+                    &format!("program={}.exe", &binary_path.to_str().expect("Could not get binary path")),
                     "profile=public",
                 ])
                 .stdout(std::process::Stdio::null())
