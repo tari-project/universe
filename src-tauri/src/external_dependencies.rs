@@ -75,7 +75,7 @@ impl ExternalDependencies {
             RequiredExternalDependency {
                 additional_runtime: ExternalDependency {
                     required_version_names: vec![
-                        "Microsoft Visual C++ 2019 x86 Additional Runtime".to_string()
+                        "Microsoft Visual C++ 2019 x86 Additional Runtime".to_string(),
                     ],
                     display_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
                     display_description:
@@ -111,7 +111,7 @@ impl ExternalDependencies {
             RequiredExternalDependency {
                 additional_runtime: ExternalDependency {
                     required_version_names: vec![
-                        "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string()
+                        "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string(),
                     ],
                     display_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
                     display_description:
