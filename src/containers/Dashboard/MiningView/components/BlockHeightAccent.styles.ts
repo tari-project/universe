@@ -11,7 +11,7 @@ export const AccentWrapper = styled(m.div)`
     display: flex;
 
     top: 0;
-    right: -60px;
+    right: -25px;
 `;
 
 export const AccentText = styled(m.div)`
