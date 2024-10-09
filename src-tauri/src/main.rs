@@ -1346,9 +1346,13 @@ async fn get_miner_metrics(
 }
 
 #[tauri::command]
-fn log_web_message(level: String, message: Vec<String>) {
+fn log_web_message(level: String, message: Vec<String>, trace: String) {
     match level.as_str() {
         "error" => {
+            sentry::add_breadcrumb(sentry::Breadcrumb {
+                message: Some(trace.clone()),
+                ..Default::default()
+            });
             let joined_message = message.join(" ");
             sentry::capture_event(Event {
                 message: Some(joined_message.clone()),
@@ -1358,7 +1362,6 @@ fn log_web_message(level: String, message: Vec<String>) {
             });
             error!(target: LOG_TARGET_WEB, "{}", joined_message)
         }
-
         _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
     }
 }
