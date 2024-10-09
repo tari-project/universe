@@ -44,6 +44,7 @@ function ModeSelect() {
                         { label: 'ECO', value: 'Eco', iconSrc: eco },
                         { label: 'Ludicrous', value: 'Ludicrous', iconSrc: fire },
                     ]}
+                    forceHeight={21}
                 />
             </ModeSelectWrapper>
         </TileItem>

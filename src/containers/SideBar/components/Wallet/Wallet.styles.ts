@@ -62,7 +62,7 @@ export const ShowHistoryButton = styled(ButtonBase).attrs({
     align-self: flex-end;
 `;
 
-export const ScrollMask = styled.div`
+export const ScrollMask = styled(m.div)`
     position: absolute;
     background: linear-gradient(to top, #000 20%, rgba(9, 11, 12, 0.01));
     bottom: 0;
@@ -72,6 +72,7 @@ export const ScrollMask = styled.div`
     z-index: 1;
     opacity: 0.7;
 `;
+
 export const HistoryContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
