@@ -84,7 +84,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
 
             set(metrics);
         } catch (e) {
-            console.error(e);
+            console.error('Fetch mining metrics error: ', e);
         }
     },
     startMining: async () => {
@@ -98,7 +98,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining started.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to start mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: false });
         }
@@ -111,7 +111,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining stopped.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to stop mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: true });
         }
@@ -123,7 +123,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining paused.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to pause (stop) mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: true });
         }
@@ -146,7 +146,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info(`Mode changed to ${mode}`);
             set({ isChangingMode: false });
         } catch (e) {
-            console.error(e);
+            console.error('Failed to change mode: ', e);
             set({ isChangingMode: false });
         }
     },

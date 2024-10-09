@@ -40,7 +40,7 @@ export const ExternalDependencyCard = ({
                     setError(`Failed to download and start installer: ${e} Please try again.`);
                 });
         } catch (e) {
-            console.error(e);
+            console.error('Error downloading installer: ', e);
         }
 
         freeInstallationSlot();

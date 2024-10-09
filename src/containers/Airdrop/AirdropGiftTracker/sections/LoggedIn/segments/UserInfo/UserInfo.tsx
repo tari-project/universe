@@ -10,9 +10,11 @@ export default function UserInfo() {
     return (
         <Wrapper>
             <Avatar $image={profileimageurl} />
-            <Info>
-                <Name>@{name}</Name>
-            </Info>
+            {name ? (
+                <Info>
+                    <Name>@{name}</Name>
+                </Info>
+            ) : null}
         </Wrapper>
     );
 }
