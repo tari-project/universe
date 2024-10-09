@@ -29,7 +29,7 @@ export default function Wallet() {
     const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
 
     const balanceMarkup = (
-        <WalletBalanceContainer layout>
+        <WalletBalanceContainer>
             <Stack direction="row" alignItems="center">
                 <Typography variant="span" style={{ fontSize: '15px' }}>
                     {t('wallet-balance')}
@@ -49,11 +49,7 @@ export default function Wallet() {
     );
 
     return (
-        <WalletContainer
-            layout
-            style={{ height: showHistory ? 'auto' : 178 }}
-            transition={{ duration: 0.1, ease: 'linear' }}
-        >
+        <WalletContainer>
             {balance ? (
                 <ShowHistoryButton onClick={() => setShowHistory((c) => !c)} style={{ minWidth: 80 }}>
                     {!showHistory ? 'Show' : 'Hide'} history

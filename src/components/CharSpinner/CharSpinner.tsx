@@ -38,7 +38,6 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
         if (!isNum) {
             return (
                 <Characters
-                    layout
                     $decimal={isDec}
                     key={`dec-${i}`}
                     layout-id={`dec-${i}`}
@@ -94,8 +93,8 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
     return (
         <Wrapper>
             <LayoutGroup id="char-spinner">
-                <SpinnerWrapper style={{ height: letterHeight }} $variant={variant} layout>
-                    <CharacterWrapper style={{ height: letterHeight * 10 }} layout>
+                <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
+                    <CharacterWrapper style={{ height: letterHeight * 10 }}>
                         <LayoutGroup id="characters">{charMarkup}</LayoutGroup>
                     </CharacterWrapper>
                 </SpinnerWrapper>
