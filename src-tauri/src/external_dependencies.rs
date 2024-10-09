@@ -75,14 +75,13 @@ impl ExternalDependencies {
             RequiredExternalDependency {
                 additional_runtime: ExternalDependency {
                     required_version_names: vec![
-                        "Microsoft Visual C++ 2019 x86 Additional Runtime".to_string(),
-                        "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
+                        "Microsoft Visual C++ 2019 x86 Additional Runtime".to_string()
                     ],
                     display_name: "Microsoft Visual C++ 2022 x86 Additional Runtime".to_string(),
                     display_description:
                         "This is the additional runtime required to run Tari applications."
                             .to_string(),
-                    download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
+                    download_url: "https://aka.ms/vs/16/release/vc_redist.x86.exe".to_string(),
                     manufacturer: Manufacturer::new(
                         "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
@@ -93,13 +92,12 @@ impl ExternalDependencies {
                 },
                 minimum_runtime: ExternalDependency {
                     required_version_names: vec![
-                        "Microsoft Visual C++ 2019 x86 Minimum Runtime".to_string(),
-                        "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
+                        "Microsoft Visual C++ 2019 x86 Minimum Runtime".to_string()
                     ],
                     display_name: "Microsoft Visual C++ 2022 x86 Minimum Runtime".to_string(),
                     display_description:
                         "This is the minimum runtime required to run Tari applications.".to_string(),
-                    download_url: "https://aka.ms/vs/17/release/vc_redist.x86.exe".to_string(),
+                    download_url: "https://aka.ms/vs/16/release/vc_redist.x86.exe".to_string(),
                     manufacturer: Manufacturer::new(
                         "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
@@ -113,14 +111,13 @@ impl ExternalDependencies {
             RequiredExternalDependency {
                 additional_runtime: ExternalDependency {
                     required_version_names: vec![
-                        "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string(),
-                        "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
+                        "Microsoft Visual C++ 2019 x64 Additional Runtime".to_string()
                     ],
                     display_name: "Microsoft Visual C++ 2022 x64 Additional Runtime".to_string(),
                     display_description:
                         "This is the additional runtime required to run Tari applications."
                             .to_string(),
-                    download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+                    download_url: "https://aka.ms/vs/16/release/vc_redist.x64.exe".to_string(),
                     manufacturer: Manufacturer::new(
                         "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
@@ -131,13 +128,12 @@ impl ExternalDependencies {
                 },
                 minimum_runtime: ExternalDependency {
                     required_version_names: vec![
-                        "Microsoft Visual C++ 2019 x64 Minimum Runtime".to_string(),
-                        "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
+                        "Microsoft Visual C++ 2019 x64 Minimum Runtime".to_string()
                     ],
                     display_name: "Microsoft Visual C++ 2022 x64 Minimum Runtime".to_string(),
                     display_description:
                         "This is the minimum runtime required to run Tari applications.".to_string(),
-                    download_url: "https://aka.ms/vs/17/release/vc_redist.x64.exe".to_string(),
+                    download_url: "https://aka.ms/vs/16/release/vc_redist.x64.exe".to_string(),
                     manufacturer: Manufacturer::new(
                         "Microsoft".to_string(),
                         "https://www.microsoft.com".to_string(),
