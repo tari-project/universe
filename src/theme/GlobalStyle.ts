@@ -61,7 +61,7 @@ export const GlobalStyle = createGlobalStyle`
 
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
-        letter-spacing: -0.02px;
+        line-height: 1.1;
         font-weight: 400;
 
         * {

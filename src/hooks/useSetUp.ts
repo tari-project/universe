@@ -35,7 +35,7 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [loadExternalDependencies]);
+    }, [loadExternalDependencies, setShowExternalDependenciesDialog]);
 
     useEffect(() => {
         async function initialize() {
