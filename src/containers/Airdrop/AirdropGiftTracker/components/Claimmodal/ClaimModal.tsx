@@ -14,7 +14,6 @@ import {
     InputWrapper,
     StyledInput,
     Text,
-    TextButton,
     TextWrapper,
     Title,
     Wrapper,
@@ -23,7 +22,7 @@ import {
 import gemImage from './images/gems.png';
 import gemLargeImage from './images/gem-large.png';
 import { useCallback, useState } from 'react';
-import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
+import { GIFT_GEMS, MAX_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { Trans, useTranslation } from 'react-i18next';
 import { GemImage } from '../Gems/styles';
 import XLogoIcon from './icons/XLogoIcon';
@@ -67,7 +66,8 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
                     <Text
                         dangerouslySetInnerHTML={{
                             __html: t('claimModalText', {
-                                gems: (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString(),
+                                gems1: (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString(),
+                                gems2: MAX_GEMS.toLocaleString(),
                             }),
                         }}
                     />

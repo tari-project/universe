@@ -1,9 +1,6 @@
 import styled from 'styled-components';
 import { sidebarWidth } from '../../theme/styles';
-import cardBg from '../../assets/images/card.png';
-import gem from '../../assets/images/gem-sml.png';
 
-import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 import { m } from 'framer-motion';
 
 // SideBar
@@ -22,66 +19,6 @@ export const SideBarContainer = styled(m.div)`
     padding: 16px 0 0;
 `;
 
-// Wallet
-export const WalletContainer = styled(m.div)`
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    align-items: center;
-    background-image: url(${cardBg});
-    height: 178px;
-    background-repeat: no-repeat;
-    background-position: top left;
-    padding: 10px;
-    border-radius: 20px;
-    width: 100%;
-    position: relative;
-    box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
-`;
-
-export const Handle = styled(m.div)`
-    background-color: ${({ theme }) => theme.palette.text.secondary};
-    width: 52px;
-    height: 3px;
-    border-radius: 2px;
-    display: flex;
-`;
-
-// Milestones
-export const ProgressBox = styled(m.div)`
-    background-color: ${({ theme }) => theme.palette.background.paper};
-    padding: 3px;
-    border-radius: 10px;
-    width: 100%;
-    border: 1px solid ${({ theme }) => theme.palette.divider};
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1px;
-    position: relative;
-`;
-
-export const StyledLinearProgress = styled(LinearProgress)`
-    background-color: transparent;
-    padding: 3px;
-    border-radius: 10px;
-    flex-grow: 1;
-`;
-
-export const GemBox = styled(m.div)`
-    background-image: url(${gem});
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: 8px;
-    width: 14px;
-    height: 14px;
-    position: relative;
-    right: 1px;
-    border-radius: 50%;
-    border: 1px solid #d3d3d3;
-`;
-
 export const Scroll = styled(m.div)`
     display: flex;
     flex-direction: column;
@@ -98,4 +35,5 @@ export const Bottom = styled(m.div)`
     display: flex;
     flex-direction: column;
     gap: 12px;
+    padding-bottom: 188px; // to cater for wallet card
 `;

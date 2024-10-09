@@ -15,24 +15,28 @@ import { GeneralSettings } from './GeneralSettings.tsx';
 import { ExperimentalSettings } from './ExperimentalSettings.tsx';
 import { WalletSettings } from './WalletSettings.tsx';
 
-import { SettingsType } from './types.ts';
+import { SETTINGS_TYPES, SettingsType } from './types.ts';
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
+import { AirdropSettings } from './AirdropSettings.tsx';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export default function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
+    const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
 
-    const [activeSection, setActiveSection] = useState<SettingsType>('mining');
+    const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
 
     const miningMarkup = activeSection === 'mining' ? <MiningSettings /> : null;
     const generalMarkup = activeSection === 'general' ? <GeneralSettings /> : null;
     const walletMarkup = activeSection === 'wallet' ? <WalletSettings /> : null;
     const experimentalMarkup = activeSection === 'experimental' ? <ExperimentalSettings /> : null;
+    const airdropMarkup = airdropUIEnabled && activeSection === 'airdrop' ? <AirdropSettings /> : null;
 
     function onOpenChange() {
         if (isSettingsOpen) {
-            setActiveSection('mining');
+            setActiveSection(SETTINGS_TYPES[0]);
         }
         setIsSettingsOpen(!isSettingsOpen);
     }
@@ -56,6 +60,7 @@ export default function SettingsModal() {
                                 {generalMarkup}
                                 {walletMarkup}
                                 {experimentalMarkup}
+                                {airdropMarkup}
                             </SectionWrapper>
                         </AnimatePresence>
                     </ContentContainer>
