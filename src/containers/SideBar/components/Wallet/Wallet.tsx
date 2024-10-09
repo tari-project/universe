@@ -56,8 +56,14 @@ export default function Wallet() {
                 </ShowHistoryButton>
             ) : null}
             {balanceMarkup}
-            <AnimatePresence mode="wait">{showHistory ? <History /> : null}</AnimatePresence>
-            <ScrollMask />
+            <AnimatePresence mode="wait">
+                {showHistory ? (
+                    <>
+                        <History />
+                        <ScrollMask initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+                    </>
+                ) : null}
+            </AnimatePresence>
         </WalletContainer>
     );
 }

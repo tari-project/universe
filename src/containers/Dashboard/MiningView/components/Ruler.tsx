@@ -30,6 +30,7 @@ export function Ruler() {
             </MarkGroup>
         );
     });
+
     const bottomMarkSegments = rulerSegments.map((segment, i) => {
         const diff = height && height > 50 ? 10 : 5;
         const renderNumber = heightSegment && heightSegment > diff;
@@ -41,11 +42,13 @@ export function Ruler() {
         const prevSegment = (heightSegment || 0) + diff;
         const groupOpacity = (rulerSegments.length * 1.25 - segment) * 0.075;
         const numberMark =
-            heightSegment && heightSegment > diff && heightSegment != prevSegment ? heightSegment?.toString() : '';
+            heightSegment && heightSegment > diff && heightSegment != prevSegment
+                ? heightSegment?.toLocaleString()
+                : '';
         return (
             <MarkGroup key={`row-${segment}-${i}`} layout style={{ opacity: groupOpacity }}>
                 <RulerMarkGroup>
-                    <RulerMark $opacity={1} data-before={numberMark}></RulerMark>
+                    <RulerMark $opacity={1} data-before={numberMark} />
                     <RulerMark />
                     <RulerMark />
                     <RulerMark />
