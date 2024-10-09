@@ -49,7 +49,10 @@ mod setup_utils {
                     &format!("name={}", binary_name),
                     "dir=in",
                     "action=allow",
-                    &format!("program={}.exe", &binary_path.to_str().expect("Could not get binary path")),
+                    &format!(
+                        "program={}.exe",
+                        &binary_path.to_str().expect("Could not get binary path")
+                    ),
                     "profile=public",
                 ])
                 .stdout(std::process::Stdio::null())
