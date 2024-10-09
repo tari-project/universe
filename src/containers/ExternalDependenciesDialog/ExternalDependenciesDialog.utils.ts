@@ -1,7 +1,6 @@
 import { ExternalDependencyStatus } from '@app/types/app-status';
 
 export const mapStatusToText = (status: ExternalDependencyStatus) => {
-    console.log('status', status);
     switch (status) {
         case ExternalDependencyStatus.Installed:
             return 'Installed';
