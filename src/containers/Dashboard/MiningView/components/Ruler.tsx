@@ -1,12 +1,13 @@
 import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 import { useTheme } from 'styled-components';
-import { useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
 export function Ruler() {
     const theme = useTheme();
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
     const columnRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +55,17 @@ export function Ruler() {
         );
     });
 
+    useLayoutEffect(() => {
+        function handleResize() {
+            setWindowWidth(window.innerWidth);
+        }
+        window.addEventListener('resize', handleResize);
+        handleResize();
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     return (
         <Wrapper layout layoutId="ruler-wrapper">
             <AnimatePresence>
@@ -63,10 +75,10 @@ export function Ruler() {
                         <RulerMarkGroup layout>
                             <RulerMark
                                 $opacity={1}
-                                data-before={height?.toString()}
+                                data-before={height?.toLocaleString()}
                                 animate={{
-                                    fontSize: '25px',
-                                    fontFamily: 'Druk, sans-serif',
+                                    fontSize: windowWidth < 1200 ? '18px' : '25px',
+                                    fontFamily: 'DrukWide, sans-serif',
                                     color: theme.palette.text.primary,
                                 }}
                             />
