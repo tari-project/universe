@@ -61,7 +61,7 @@ export const GlobalStyle = createGlobalStyle`
 
         -ms-overflow-style: none; /* IE and Edge */
         scrollbar-width: none; /* Firefox */
-        line-height: 1.1;
+        letter-spacing: -0.02px;
         font-weight: 400;
 
         * {
@@ -79,6 +79,7 @@ export const GlobalStyle = createGlobalStyle`
     #canvas {
         z-index: 0;
         pointer-events: auto;
+        width: 100vw;
     }
 
     #root {
