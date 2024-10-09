@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export const INSTALL_BONUS_GEMS = 1000;
-export const GIFT_GEMS = 2000;
-export const REFERRAL_GEMS = 2000;
+export const GIFT_GEMS = 5000;
+export const REFERRAL_GEMS = 5000;
+export const MAX_GEMS = 10000;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
@@ -23,6 +23,13 @@ function parseJwt(token: string): TokenResponse {
 }
 
 //////////////////////////////////////////
+//
+
+export interface BonusTier {
+    id: string;
+    target: number;
+    bonusGems: number;
+}
 
 interface TokenResponse {
     exp: number;
@@ -101,45 +108,67 @@ export interface BackendInMemoryConfig {
     airdropTwitterAuthUrl: string;
 }
 
+type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
+
+export interface ReferralQuestPoints {
+    pointsPerReferral: number;
+    pointsForClaimingReferral: number;
+}
+
 //////////////////////////////////////////
+
+interface MiningPoint {
+    blockHeight: string;
+    reward: number;
+}
 
 interface AirdropState {
     authUuid: string;
-    wipUI?: boolean;
-    acceptedReferral?: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
     referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
+    flareAnimationType?: AnimationType;
+    bonusTiers?: BonusTier[];
+    referralQuestPoints?: ReferralQuestPoints;
+    miningRewardPoints?: MiningPoint;
+    seenPermissions?: boolean;
 }
 
 interface AirdropStore extends AirdropState {
+    setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
+    setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
     setUserPoints: (userPoints: UserPoints) => void;
-    setWipUI: (wipUI: boolean) => void;
     setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
     setReferralCount: (referralCount: ReferralCount) => void;
-    setAcceptedReferral: (acceptedReferral: boolean) => void;
+    setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
+    setBonusTiers: (bonusTiers: BonusTier[]) => void;
+    setSeenPermissions: (seenPermissions: boolean) => void;
     logout: () => void;
 }
 
 const clearState: AirdropState = {
     authUuid: '',
-    acceptedReferral: true,
+    seenPermissions: false,
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
+    miningRewardPoints: undefined,
 };
 
+const NOT_PERSISTED_KEYS = ['userPoints', 'backendInMemoryConfig', 'userDetails', 'authUuid', 'referralCount'];
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
-            setWipUI: (wipUI) => set({ wipUI }),
-            setAcceptedReferral: (acceptedReferral) => set({ acceptedReferral }),
+            seenPermissions: false,
+            setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
+            setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
+            setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
@@ -153,13 +182,13 @@ export const useAirdropStore = create<AirdropStore>()(
             setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
+            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
+            setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
         }),
         {
             name: 'airdrop-store',
             partialize: (state) =>
-                Object.fromEntries(
-                    Object.entries(state).filter(([key]) => !['userPoints', 'backendInMemoryConfig'].includes(key))
-                ),
+                Object.fromEntries(Object.entries(state).filter(([key]) => !NOT_PERSISTED_KEYS.includes(key))),
         }
     )
 );

@@ -1,0 +1,28 @@
+{
+  "setting-up": "Настройка машины правды Tari...",
+  "this-might-take-a-few-minutes": "Это может занять несколько минут",
+  "dont-worry": "Не волнуйтесь, в следующий раз это займет меньше времени",
+  "title": {
+    "starting-mmproxy": "Запуск прокси для объединенного майнинга",
+    "starting-p2pool": "Запуск P2Pool",
+    "application-started": "Приложения запущены",
+    "preparing-for-initial-sync": "Подключение к узлам сети {{initial_connected_peers}}/{{required_peers}}",
+    "starting-up": "Запуск",
+    "checking-latest-version-node": "Проверка последней версии узла",
+    "waiting-for-node": "Ожидание синхронизации узла",
+    "waiting-for-block-sync": "Ожидание синхронизации блоков. Синхронизировано {{local_height}}/{{tip_height}} блоков",
+    "checking-latest-version-xmrig": "Проверка последней версии xmrig",
+    "checking-latest-version-mmproxy": "Проверка последней версии mmproxy",
+    "download-completed": "Загрузка завершена",
+    "checking-latest-version-sha-p2pool": "Проверка последней версии sha-p2pool",
+    "checking-latest-version-wallet": "Проверка последней версии кошелька",
+    "waiting-for-wallet": "Ожидание кошелька",
+    "downloading": "Загрузка",
+    "waiting-for-header-sync": "Ожидание синхронизации заголовков. Синхронизировано {{local_height}}/{{tip_height}} заголовков",
+    "checking-latest-version-gpuminer": "Проверка последней версии xtrgpuminer"
+  },
+  "new-tari-version-available": "Доступна новая версия Tari Universe!",
+  "would-you-like-to-install": "Хотите установить Tari Universe {{version}} сейчас?",
+  "yes": "Да",
+  "no": "Нет"
+}

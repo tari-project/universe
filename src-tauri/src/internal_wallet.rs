@@ -24,6 +24,8 @@ use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
+use crate::APPLICATION_FOLDER_ID;
+
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
 
@@ -40,7 +42,13 @@ impl InternalWallet {
 
         let file = config_path.join(network).join("wallet_config.json");
 
-        create_dir_all(file.parent().unwrap())?;
+        let file_parent = file
+            .parent()
+            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
+
+        create_dir_all(file_parent).unwrap_or_else(|error| {
+            warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
+        });
         if file.exists() {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
@@ -76,7 +84,7 @@ impl InternalWallet {
             passphrase: None,
         };
 
-        let passphrase = match Entry::new("com.tari.universe", "internal_wallet") {
+        let passphrase = match Entry::new(APPLICATION_FOLDER_ID, "internal_wallet") {
             Ok(entry) => match entry.get_password() {
                 Ok(pass) => SafePassword::from(pass),
                 Err(_err @ KeyringError::PlatformFailure(_))
@@ -88,7 +96,7 @@ impl InternalWallet {
                 }
                 Err(_) => {
                     let passphrase = SafePassword::from(generate_password(32));
-                    entry.delete_credential()?;
+                    let _unused = entry.delete_credential();
                     entry.set_password(&String::from_utf8(passphrase.reveal().clone())?)?;
                     passphrase
                 }
@@ -147,7 +155,7 @@ impl InternalWallet {
         let passphrase = match &self.config.passphrase {
             Some(passphrase) => passphrase.clone(),
             None => {
-                let entry = Entry::new("com.tari.universe", "internal_wallet")?;
+                let entry = Entry::new(APPLICATION_FOLDER_ID, "internal_wallet")?;
                 SafePassword::from(entry.get_password()?)
             }
         };

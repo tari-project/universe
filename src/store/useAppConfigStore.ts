@@ -5,6 +5,7 @@ import { useAppStateStore } from './appStateStore.ts';
 import { modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { changeLanguage } from 'i18next';
 
 type State = Partial<AppConfig>;
 
@@ -18,6 +19,7 @@ interface Actions {
     setMode: (mode: modeType) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
+    setUseTor: (useTor: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -34,6 +36,8 @@ const initialState: State = {
     monero_address: '',
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
+    airdrop_ui_enabled: false,
+    use_tor: true,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
@@ -56,12 +60,18 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         });
     },
     setApplicationLanguage: async (applicationLanguage: Language) => {
+        const prevApplicationLanguage = useAppConfigStore.getState().application_language;
         set({ application_language: applicationLanguage });
-        invoke('set_application_language', { applicationLanguage }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set application language', e);
-            appStateStore.setError('Could not change application language');
-        });
+        invoke('set_application_language', { applicationLanguage })
+            .then(() => {
+                changeLanguage(applicationLanguage);
+            })
+            .catch((e) => {
+                const appStateStore = useAppStateStore.getState();
+                console.error('Could not set application language', e);
+                appStateStore.setError('Could not change application language');
+                set({ application_language: prevApplicationLanguage });
+            });
     },
     setAllowTelemetry: async (allowTelemetry) => {
         set({ allow_telemetry: allowTelemetry });
@@ -128,7 +138,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     },
     setP2poolEnabled: async (p2poolEnabled) => {
         set({ p2pool_enabled: p2poolEnabled });
-        invoke('set_p2pool_enabled', { p2pool_enabled: p2poolEnabled }).catch((e) => {
+        invoke('set_p2pool_enabled', { p2poolEnabled }).catch((e) => {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set P2pool enabled', e);
             appStateStore.setError('Could not change P2pool enabled');
@@ -153,6 +163,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set mode', e);
             appStateStore.setError('Could not change mode');
             set({ mode: prevMode });
+        });
+    },
+    setUseTor: async (useTor) => {
+        set({ use_tor: useTor });
+        invoke('set_use_tor', { useTor }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set use Tor', e);
+            appStateStore.setError('Could not change Tor usage');
+            set({ use_tor: !useTor });
         });
     },
 }));
