@@ -82,7 +82,7 @@ impl ProcessAdapter for XmrigAdapter {
         let mut shutdown_signal = xmrig_shutdown.to_signal();
         let mut args = self.node_connection.generate_args();
         let xmrig_log_file = log_dir.join("xmrig").join("xmrig.log");
-        std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
+        std::fs::create_dir_all(xmrig_log_file.parent().expect("Could not get xmrig root log dir"))?;
 
         let xmrig_log_file_parent = xmrig_log_file
             .parent()
