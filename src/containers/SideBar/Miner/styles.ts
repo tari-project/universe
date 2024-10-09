@@ -10,7 +10,7 @@ export const MinerContainer = styled(m.div)`
 
 export const TileItem = styled(m.div)`
     height: 65px;
-    width: 155px;
+    width: 161px;
     flex-shrink: 0;
     flex-grow: 0;
     padding: 10px;
