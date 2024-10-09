@@ -11,12 +11,15 @@ import {
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useMemo } from 'react';
+import { formatHashrate } from '@app/utils/formatHashrate';
 
 export default function DebugSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const lastBlockTime = useBlockchainVisualisationStore((state) => state.displayBlockTime);
     const isConnectedToTariNetwork = useMiningStore((s) => s.base_node?.is_connected);
     const connectedPeers = useMiningStore((state) => state.base_node?.connected_peers || []);
+    const sha_network_hash_rate = useMiningStore((state) => state?.sha_network_hash_rate);
+    const randomx_network_hash_rate = useMiningStore((state) => state?.randomx_network_hash_rate);
 
     const displayTime = useMemo(() => {
         if (!lastBlockTime) return '-';
@@ -46,6 +49,14 @@ export default function DebugSettings() {
                             </Typography>
                         </Stack>
                         <Typography>{displayTime}</Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="p">{t('sha-network-hash-rate', { ns: 'settings' })}</Typography>
+                        <Typography>{formatHashrate(sha_network_hash_rate || 0)}</Typography>
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="p">{t('randomx-network-hash-rate', { ns: 'settings' })}</Typography>
+                        <Typography>{formatHashrate(randomx_network_hash_rate || 0)}</Typography>
                     </Stack>
                 </SettingsGroup>
             </SettingsGroupWrapper>
