@@ -61,14 +61,14 @@ pub async fn list_releases(
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let mut attempts = 0;
     let releases = loop {
-        let result = list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await;
+        let result = list_releases_from(ReleaseSource::Github, repo_owner, repo_name).await;
         if result.as_ref().map_or(false, |r| !r.is_empty()) || attempts >= 3 {
             break result;
         }
         attempts += 1;
         warn!(
             target: LOG_TARGET,
-            "Failed to fetch releases from mirror, attempt {}",
+            "Failed to fetch releases from github, attempt {}",
             attempts
         );
     };
@@ -76,7 +76,7 @@ pub async fn list_releases(
     if releases.as_ref().map_or(false, |r| !r.is_empty()) {
         releases
     } else {
-        list_releases_from(ReleaseSource::Github, repo_owner, repo_name).await
+        list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await
     }
 }
 
