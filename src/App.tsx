@@ -57,7 +57,6 @@ export default function App() {
                     <CriticalErrorDialog />
                     <SettingsModal />
                     <LayoutGroup id="app-content">
-                        <AirdropLogin />
                         {shutDownMarkup}
                         {!visualMode || view != 'mining' ? (
                             <BackgroundImage layout transition={{ duration: 0.3 }} />
