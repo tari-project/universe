@@ -60,6 +60,10 @@ export const ShowHistoryButton = styled(ButtonBase).attrs({
 })`
     display: flex;
     align-self: flex-end;
+
+    &:hover {
+        border-color: rgba(255, 255, 255, 0.4);
+    }
 `;
 
 export const ScrollMask = styled(m.div)`
