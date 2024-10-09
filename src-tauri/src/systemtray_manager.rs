@@ -195,7 +195,8 @@ impl SystemtrayManager {
 
     pub fn update_minimize(&self, app: AppHandle) {
         let window = app.get_window("main").unwrap();
-        let _ = app.tray_handle()
+        let _ = app
+            .tray_handle()
             .get_item(SystrayItemId::UnMinimize.to_str())
             .set_enabled(window.is_minimized().unwrap());
     }
