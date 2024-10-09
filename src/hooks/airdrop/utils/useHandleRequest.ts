@@ -7,7 +7,7 @@ interface RequestProps {
     onError?: (e: unknown) => void;
 }
 
-export const useAridropRequest = () => {
+export const useAirdropRequest = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
 

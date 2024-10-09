@@ -14,6 +14,7 @@ export const StyledInput = styled.input<{ $hasError?: boolean }>`
     background-color: ${({ theme }) => theme.palette.background.default};
     border-radius: 10px;
     align-items: center;
+    padding: 8px;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
 export const StyledInputLabel = styled.label`

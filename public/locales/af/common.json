@@ -19,5 +19,7 @@
   "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
   "close-tari-universe": "Close Tari Universe",
   "tari-universe": "Tari Heelal",
-  "testnet": "Toetsnetwerk"
+  "testnet": "Toetsnetwerk",
+  "continue": "Continue",
+  "restart": "Restart"
 }

@@ -19,6 +19,7 @@ interface Actions {
     setMode: (mode: modeType) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
+    setUseTor: (useTor: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -36,6 +37,7 @@ const initialState: State = {
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
     airdrop_ui_enabled: false,
+    use_tor: true,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
@@ -161,6 +163,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set mode', e);
             appStateStore.setError('Could not change mode');
             set({ mode: prevMode });
+        });
+    },
+    setUseTor: async (useTor) => {
+        set({ use_tor: useTor });
+        invoke('set_use_tor', { useTor }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set use Tor', e);
+            appStateStore.setError('Could not change Tor usage');
+            set({ use_tor: !useTor });
         });
     },
 }));
