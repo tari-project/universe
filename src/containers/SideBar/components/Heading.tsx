@@ -11,7 +11,7 @@ function Heading() {
     const { t } = useTranslation('common', { useSuspense: false });
     return (
         <Stack direction="row" justifyContent="space-between">
-            <Stack direction="row" alignItems="center" gap={10}>
+            <Stack direction="row" alignItems="center" gap={6}>
                 <Typography variant="h3">{t('tari-universe')}</Typography>
                 <VersionChip version={versionString} />
             </Stack>

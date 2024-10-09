@@ -24,6 +24,7 @@ export const TileItem = styled(m.div)`
     gap: 3px;
 
     color: ${({ theme }) => theme.palette.text.secondary};
+    font-family: Poppins, sans-serif;
     font-size: 12px;
     font-weight: 500;
     position: relative;

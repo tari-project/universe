@@ -9,23 +9,30 @@ import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisuali
 
 export function BlockHeightAccent() {
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
-    const heightString = height?.toString();
+    const heightString = height?.toLocaleString();
 
-    const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+    const [windowHeight, setWindowHeight] = useState(window.innerHeight - 80);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const [fontSize, setFontSize] = useState(0);
     const heightStringArr = heightString?.split('') || [];
     const deferredHeight = useDeferredValue(windowHeight);
-    const deferredFontSize = useDeferredValue(fontSize || 120);
+    const deferredFontSize = useDeferredValue(fontSize || 110);
 
     useEffect(() => {
-        const height = deferredHeight - 60;
-        const dividend = (height - 100) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
-        setFontSize(Math.floor(dividend));
-    }, [heightStringArr.length, deferredHeight]);
+        let dividend = (deferredHeight - 70) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
+
+        // checking discrepancy between height to mitigate overlap a bit
+        if (Math.abs(deferredHeight - windowWidth) < 210 && deferredHeight / windowWidth >= 0.65) {
+            dividend = dividend * 0.6;
+        }
+        const font = Math.floor(dividend);
+        setFontSize(font);
+    }, [heightStringArr.length, deferredHeight, windowWidth]);
 
     useLayoutEffect(() => {
         function handleResize() {
-            setWindowHeight(window.innerHeight);
+            setWindowHeight(window.innerHeight - 80);
+            setWindowWidth(window.innerWidth);
         }
         window.addEventListener('resize', handleResize);
         handleResize();
@@ -35,7 +42,7 @@ export function BlockHeightAccent() {
     }, []);
 
     return (
-        <AccentWrapper layoutId="accent-wrapper" style={{ width: deferredFontSize }}>
+        <AccentWrapper layoutId="accent-wrapper" style={{ width: deferredFontSize, top: 0, right: `-25px` }}>
             <AnimatePresence>
                 {height && height > 0 ? (
                     <LayoutGroup id="accent-content">
@@ -48,7 +55,7 @@ export function BlockHeightAccent() {
                             }}
                         >
                             {heightStringArr?.map((c, i) => (
-                                <SpacedNum layout key={`spaced-char-${c}-${i}`}>
+                                <SpacedNum layout key={`spaced-char-${c}-${i}`} $isDec={isNaN(Number(c))}>
                                     {c}
                                 </SpacedNum>
                             ))}

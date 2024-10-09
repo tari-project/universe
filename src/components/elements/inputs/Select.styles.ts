@@ -64,6 +64,7 @@ export const SelectedOption = styled.div<{ $isBordered?: boolean; $forceHeight?:
     font-weight: 500;
 
     width: 100%;
+    letter-spacing: -0.2px;
 
     img {
         width: 14px;
@@ -81,7 +82,7 @@ export const OptionLabelWrapper = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 9px;
+    gap: 6px;
     img {
         width: 18px;
         display: flex;
