@@ -1,0 +1,33 @@
+{
+  "airdropGame": "Игра Airdrop",
+  "loginButton": "Войдите, чтобы получить гемы",
+  "logout": "Выйти",
+  "referral": "Пригласить друга",
+  "unclaimedGems": "Неполученные гемы",
+  "inviteFirends": "Пригласить друзей",
+  "invitedAmount": "Вы пригласили <span>{{count}}</span> друзей",
+  "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
+  "claimGems": "Получить гемы",
+  "doLater": "Я сделаю это позже",
+  "linkCopied": "Ссылка скопирована!",
+  "giftReferralCodeHeader": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
+  "claimReferralCode": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
+  "claimReferralGifts": "Получите ваш реферальный код и заработайте {{gems}} гемов. Как только вы подключите свой аккаунт, вы получите свои гемы.",
+  "giftReferralCode": "Заработайте {{gems}} гемов за каждого друга, которого вы пригласите в Tari Universe. Как только они подключат свой аккаунт, вы получите свои гемы.",
+  "permissionNoGems": {
+    "title": "Сделайте Tari Universe лучше",
+    "text": "Tari Universe хочет использовать аналитику для улучшения вашего опыта."
+  },
+  "permission": {
+    "title": "Зарабатывайте гемы и улучшайте Tari Universe",
+    "text": "Tari Universe хочет использовать аналитику для улучшения вашего опыта и вознаграждать вас гемами за майнинг."
+  },
+  "claimModalTitle": "Зарабатывайте награды за майнинг в тестовой сети",
+  "claimModalText": "Зарабатывайте гемы, майня и приглашая друзей, чтобы увеличить свою награду за airdrop в тестовой сети! У вас есть реферальный код? Введите его ниже и получите дополнительные <strong>{{gems}}</strong> гемов для вас и вашего друга!",
+  "claimModalFieldLabel": "Необязательно",
+  "claimModalFieldPlaceholder": "Введите реферальный код",
+  "topTooltipText": "Получите Tari Airdrop, собирая драгоценные камни. Чем больше камней вы заработаете, тем больше будет ваш airdrop.",
+  "topTooltipTitle": "Награды Testnet",
+  "claimModalFinePrint": "<strong>Обратите внимание:</strong> получение камней включает аналитику, чтобы мы могли улучшить Universe",
+  "inviteFriendsText": "Скопируйте ссылку и поделитесь ею"
+}

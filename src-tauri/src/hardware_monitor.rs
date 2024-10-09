@@ -170,7 +170,13 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         system.refresh_cpu_all();
 
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().first().unwrap().brand().to_string();
+        let label: String = match system.cpus().first() {
+            Some(cpu) => cpu.brand().to_string(),
+            None => {
+                warn!("Failed to get CPU brand");
+                "N/A".to_string()
+            }
+        };
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -199,7 +205,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
                     usage_percentage: 0.0,
                     current_temperature: 0.0,
                     max_temperature: 0.0,
-                }
+                };
             }
         };
 
@@ -216,9 +222,17 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
             }
         };
 
-        let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
-        let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
-        let label = main_gpu.name().unwrap();
+        let current_temperature = main_gpu
+            .temperature(TemperatureSensor::Gpu)
+            .unwrap_or_default() as f32;
+        let usage_percentage = match main_gpu.utilization_rates() {
+            Ok(usage) => usage.gpu as f32,
+            Err(e) => {
+                warn!("Failed to get GPU usage: {}", e);
+                0.0
+            }
+        };
+        let label = main_gpu.name().unwrap_or_default();
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -292,7 +306,13 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
 
         let usage = system.global_cpu_usage();
 
-        let label: String = system.cpus().first().unwrap().brand().to_string();
+        let label: String = match system.cpus().first() {
+            Some(cpu) => cpu.brand().to_string(),
+            None => {
+                warn!("Failed to get CPU brand");
+                "N/A".to_string()
+            }
+        };
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -339,9 +359,17 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             }
         };
 
-        let current_temperature = main_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
-        let usage_percentage = main_gpu.utilization_rates().unwrap().gpu as f32;
-        let label = main_gpu.name().unwrap();
+        let current_temperature = main_gpu
+            .temperature(TemperatureSensor::Gpu)
+            .unwrap_or_default() as f32;
+        let usage_percentage = match main_gpu.utilization_rates() {
+            Ok(usage) => usage.gpu as f32,
+            Err(e) => {
+                warn!("Failed to get GPU usage: {}", e);
+                0.0
+            }
+        };
+        let label = main_gpu.name().unwrap_or_default();
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -411,7 +439,13 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         system.refresh_cpu_all();
 
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().first().unwrap().brand().to_string() + " CPU";
+        let label: String = match system.cpus().first() {
+            Some(cpu) => cpu.brand().to_string() + " CPU",
+            None => {
+                warn!("Failed to get CPU brand");
+                "N/A".to_string()
+            }
+        };
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -444,7 +478,13 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
             / gpu_components.len() as f32;
         //TODO: Implement GPU usage for MacOS
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().first().unwrap().brand().to_string() + " GPU";
+        let label: String = match system.cpus().first() {
+            Some(cpu) => cpu.brand().to_string() + " GPU",
+            None => {
+                warn!("Failed to get GPU brand");
+                "N/A".to_string()
+            }
+        };
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {

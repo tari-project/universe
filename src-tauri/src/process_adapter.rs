@@ -1,9 +1,10 @@
+use anyhow::{anyhow, Error};
+use async_trait::async_trait;
+use log::{error, info, warn};
+use sentry::protocol::Event;
+use sentry_tauri::sentry;
 use std::fs;
 use std::path::PathBuf;
-
-use anyhow::Error;
-use async_trait::async_trait;
-use log::{info, warn};
 use tari_shutdown::Shutdown;
 use tokio::runtime::Handle;
 use tokio::task::JoinHandle;
@@ -38,11 +39,23 @@ pub(crate) trait ProcessAdapter {
     fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
-            Ok(pid) => {
-                let pid = pid.trim().parse::<i32>()?;
-                warn!(target: LOG_TARGET, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
-                kill_process(pid)?;
-            }
+            Ok(pid) => match pid.trim().parse::<i32>() {
+                Ok(pid) => {
+                    warn!(target: LOG_TARGET, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
+                    kill_process(pid)?;
+                }
+                Err(e) => {
+                    let error_msg =
+                        format!("Error parsing pid file: {}. Pid file content: {}", e, pid);
+                    error!(target: LOG_TARGET, "{}", error_msg);
+                    sentry::capture_event(Event {
+                        message: Some(error_msg),
+                        level: sentry::Level::Error,
+                        culprit: Some("process-adapter".to_string()),
+                        ..Default::default()
+                    });
+                }
+            },
             Err(e) => {
                 if let Ok(true) = std::path::Path::new(&base_folder)
                     .join(self.pid_file_name())
@@ -78,7 +91,9 @@ impl ProcessInstance {
     pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
-        handle.unwrap().await?
+        handle
+            .ok_or_else(|| anyhow!("Handle is not present"))?
+            .await?
     }
 }
 
@@ -87,9 +102,9 @@ impl Drop for ProcessInstance {
         self.shutdown.trigger();
         if let Some(handle) = self.handle.take() {
             Handle::current().block_on(async move {
-                let _ = handle.await.unwrap().map_err(|e| {
+                if let Err(e) = handle.await {
                     warn!(target: LOG_TARGET, "Error in Process Adapter: {}", e);
-                });
+                }
             });
         }
     }

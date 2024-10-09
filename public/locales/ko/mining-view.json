@@ -1,0 +1,16 @@
+{
+  "floor": "최저값",
+  "current-block-time": "현재 블록 시간",
+  "your-reward-is": "당신의 보상은",
+  "connection-to-node-lost": "마이너와의 연결이 끊어졌습니다. 마이너가 다시 연결되거나 재시작될 때까지 기다려주세요.",
+  "mining-button-text": {
+    "starting-mining": "채굴 시작 중",
+    "start-mining": "채굴 시작",
+    "pause-mining": "채굴 일시 중지",
+    "changing-mode": "모드 변경 중",
+    "cancel-mining": "채굴 취소",
+    "waiting-for-idle": "유휴 상태 대기 중",
+    "started-auto-mining": "자동 채굴 시작됨",
+    "stop-mining": "채굴 중지"
+  }
+}

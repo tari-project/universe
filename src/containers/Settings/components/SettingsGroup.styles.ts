@@ -34,6 +34,7 @@ export const SettingsGroup = styled.div`
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
+    gap: 6px;
     position: relative;
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
@@ -51,15 +52,5 @@ export const SettingsGroupContent = styled.div`
 export const SettingsGroupAction = styled.div`
     display: flex;
     font-size: 12px;
-`;
-
-export const SettingsGroupTextAction = styled.div`
-    display: flex;
-    font-size: 12px;
-    font-weight: 500;
-    color: ${({ theme }) => theme.palette.text.secondary};
-    cursor: pointer;
-    &:hover {
-        text-decoration: underline;
-    }
+    gap: 6px;
 `;

@@ -1,0 +1,12 @@
+{
+  "auto-miner": "自動マイナー",
+  "auto-miner-description": "自動マイナーは、マシンがアイドル状態のときにマイナーを起動します",
+  "next-milestone": "次のマイルストーン",
+  "wallet-balance": "ウォレット残高",
+  "setup-scheduler": "スケジューラの設定",
+  "mining-schedules": "マイニングスケジュール",
+  "mining-schedules-description": "マイニング活動をスケジュールする",
+  "lost-connection": "Tariネットワークへの接続が失われました。再接続中..",
+  "block": "Block",
+  "recent-wins": "Recent wins"
+}
