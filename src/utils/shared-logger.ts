@@ -39,7 +39,7 @@ const getOptions = (args, level) => {
     void invoke('log_web_message', {
         level,
         message: args?.map(parseArgument),
-        trace: level === 'error' ? trace : trace.slice(0, 3), // so it doesn't get too noisy
+        trace: level === 'error' ? trace : trace.slice(0, 1), // so it doesn't get too noisy
     });
     return originalConsole[level](...args);
 };

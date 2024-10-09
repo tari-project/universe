@@ -24,11 +24,11 @@ export const useGetMiningPoints = () => {
     const handleRequest = useAirdropRequest();
     const setMiningRewardPoints = useAirdropStore((s) => s.setMiningRewardPoints);
     const miningRewardPoints = useAirdropStore((s) => s.miningRewardPoints);
+    const airdropTokens = useAirdropStore((s) => s.airdropTokens);
     const earnings = useBlockchainVisualisationStore((s) => s.earnings);
 
     const getLastMined = useCallback(async () => {
-        if (!anon_id) return;
-
+        if (!anon_id || !airdropTokens) return;
         handleRequest<{ lastMinedBlock: LastMinedBlock }>({
             path: `/miner/blocks/last-mined?appId=${encodeURIComponent(anon_id)}`,
             method: 'GET',
@@ -53,7 +53,7 @@ export const useGetMiningPoints = () => {
             .catch((e) => {
                 console.error('Error getting last mined block data from airdrop', e);
             });
-    }, [anon_id, handleRequest, miningRewardPoints?.blockHeight, setMiningRewardPoints]);
+    }, [airdropTokens, anon_id, handleRequest, miningRewardPoints?.blockHeight, setMiningRewardPoints]);
 
     useEffect(() => {
         void getLastMined();

@@ -13,7 +13,6 @@ export const useAirdropRequest = () => {
 
     return async <T>({ body, method, path, onError }: RequestProps) => {
         if (!baseUrl || !airdropToken) return;
-
         const response = await fetch(`${baseUrl}${path}`, {
             method: method,
             headers: {
@@ -31,9 +30,10 @@ export const useAirdropRequest = () => {
                 }
                 return;
             }
-            return (await response.json()) as Promise<T>;
+            return response.json() as Promise<T>;
         } catch (e) {
             console.error('Caught error fetching airdrop data:', e);
+
             if (onError) {
                 onError(e);
             }

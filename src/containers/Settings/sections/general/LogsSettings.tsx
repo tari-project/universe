@@ -31,7 +31,7 @@ export default function LogsSettings() {
                 console.info('Opening logs directory');
             })
             .catch((error) => {
-                console.error(error);
+                console.error('Error opening logs directory: ', error);
             });
     };
 

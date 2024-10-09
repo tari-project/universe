@@ -27,7 +27,7 @@ export const ExternalDependenciesDialog = () => {
             setIsRestarting(true);
             await invoke('restart_application');
         } catch (e) {
-            console.error(e);
+            console.error('Error restarting application:', e);
         }
         setIsRestarting(false);
     }, []);
