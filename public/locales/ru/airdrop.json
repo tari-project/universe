@@ -25,5 +25,9 @@
   "claimModalTitle": "Зарабатывайте награды за майнинг в тестовой сети",
   "claimModalText": "Зарабатывайте гемы, майня и приглашая друзей, чтобы увеличить свою награду за airdrop в тестовой сети! У вас есть реферальный код? Введите его ниже и получите дополнительные <strong>{{gems}}</strong> гемов для вас и вашего друга!",
   "claimModalFieldLabel": "Необязательно",
-  "claimModalFieldPlaceholder": "Введите реферальный код"
+  "claimModalFieldPlaceholder": "Введите реферальный код",
+  "topTooltipText": "Получите Tari Airdrop, собирая драгоценные камни. Чем больше камней вы заработаете, тем больше будет ваш airdrop.",
+  "topTooltipTitle": "Награды Testnet",
+  "claimModalFinePrint": "<strong>Обратите внимание:</strong> получение камней включает аналитику, чтобы мы могли улучшить Universe",
+  "inviteFriendsText": "Скопируйте ссылку и поделитесь ею"
 }

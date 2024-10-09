@@ -40,7 +40,7 @@ export const BoxWrapper = styled(m.div)`
     position: relative;
     z-index: 1;
 
-    padding: 180px 50px 22px 50px;
+    padding: 180px 50px 42px 50px;
 
     display: flex;
     flex-direction: column;
@@ -303,4 +303,32 @@ export const XLogo = styled('div')`
     right: 16px;
 
     transform: translateY(-50%);
+`;
+
+export const FinePrint = styled('div')`
+    color: #000;
+    text-align: center;
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120.7%;
+
+    padding-top: 4px;
+
+    strong {
+        font-weight: 700;
+    }
+`;
+
+export const CloseButton = styled('button')`
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-left: 18px;
+
+    transition: transform 0.2s ease;
+
+    &:hover {
+        transform: scale(1.1);
+    }
 `;

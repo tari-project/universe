@@ -1,39 +1,21 @@
-import {
-    Wrapper,
-    InviteButton,
-    Image,
-    TextWrapper,
-    Title,
-    Text,
-    GemPill,
-    BonusWrapper,
-    BonusText,
-    Copied,
-} from './styles';
-import giftImage from '../../../../images/gift.png';
+import { Wrapper, InviteButton, Image, TextWrapper, Title, Text, GemPill, Copied } from './styles';
 import gemImage from '../../../../images/gem.png';
-import boxImage from '../../../../images/gold_box.png';
 import { REFERRAL_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
+import LinkIcon from './LinkIcon';
 
 export default function Invite() {
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const { userDetails, referralCount, bonusTiers, referralQuestPoints } = useAirdropStore();
+    const { userDetails, referralQuestPoints } = useAirdropStore();
 
     const referralCode = userDetails?.user?.referral_code || '';
 
     const [copied, setCopied] = useState(false);
 
     const url = `${airdropUrl}/download/${referralCode}`;
-
-    const nextBonusTier = useMemo(
-        () => bonusTiers?.sort((a, b) => a.target - b.target).find((t) => t.target > (referralCount?.count || 0)),
-        [bonusTiers, referralCount?.count]
-    );
-    const friendsRemaining = nextBonusTier?.target && (nextBonusTier.target - (referralCount?.count || 0) || 0);
 
     const handleCopy = () => {
         setCopied(true);
@@ -64,18 +46,11 @@ export default function Invite() {
                     )}
                 </AnimatePresence>
 
-                <Image src={giftImage} alt="" />
+                <LinkIcon />
 
                 <TextWrapper>
                     <Title>{t('inviteFirends')}</Title>
-                    <Text>
-                        <Trans
-                            ns="airdrop"
-                            i18nKey="invitedAmount"
-                            components={{ span: <span /> }}
-                            values={{ count: referralCount?.count || 0 }}
-                        />
-                    </Text>
+                    <Text>{t('inviteFriendsText')}</Text>
                 </TextWrapper>
 
                 <GemPill>
@@ -83,23 +58,6 @@ export default function Invite() {
                     <Image src={gemImage} alt="" />
                 </GemPill>
             </InviteButton>
-
-            {nextBonusTier && (
-                <BonusWrapper>
-                    <BonusText>
-                        <Trans
-                            ns="airdrop"
-                            i18nKey="nextTierBonus"
-                            components={{ strong: <strong /> }}
-                            values={{
-                                count: `${friendsRemaining}`,
-                                bonusGems: nextBonusTier?.bonusGems.toLocaleString(),
-                            }}
-                        />
-                    </BonusText>
-                    <Image src={boxImage} alt="" className="giftImage" />
-                </BonusWrapper>
-            )}
         </Wrapper>
     );
 }
