@@ -458,7 +458,7 @@ async fn setup_inner(
         .expect("Could not get log dir");
 
     #[cfg(target_os = "windows")]
-    if cfg!(target_os = "windows") {
+    if cfg!(target_os = "windows") && !cfg!(dev) {
         ExternalDependencies::current()
             .read_registry_installed_applications()
             .await?;
@@ -1346,19 +1346,24 @@ async fn get_miner_metrics(
 }
 
 #[tauri::command]
-fn log_web_message(level: String, message: Vec<String>) {
+fn log_web_message(level: String, message: Vec<String>, trace: Vec<String>) {
     match level.as_str() {
         "error" => {
             let joined_message = message.join(" ");
+            let joined_stack = trace.join("\n");
+            sentry::add_breadcrumb(sentry::Breadcrumb {
+                message: Some(joined_stack.clone()),
+                ..Default::default()
+            });
             sentry::capture_event(Event {
                 message: Some(joined_message.clone()),
                 level: sentry::Level::Error,
                 culprit: Some("universe-web".to_string()),
                 ..Default::default()
             });
+
             error!(target: LOG_TARGET_WEB, "{}", joined_message)
         }
-
         _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
     }
 }

@@ -27,7 +27,7 @@ const CriticalErrorDialog = () => {
             setIsExiting(true);
             await invoke('exit_application');
         } catch (e) {
-            console.error(e);
+            console.error('Error closing application: ', e);
         }
         setIsExiting(false);
     }, []);
