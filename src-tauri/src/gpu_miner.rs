@@ -69,12 +69,25 @@ impl GpuMiner {
         Ok(())
     }
 
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
+
     pub async fn status(
         &mut self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<GpuMinerStatus, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return Ok(GpuMinerStatus {
+                hash_rate: 0,
+                estimated_earnings: 0,
+                is_mining: false,
+                is_available: self.is_available,
+            });
+        }
         match &process_watcher.status_monitor {
             Some(status_monitor) => {
                 let mut status = status_monitor.status().await?;
