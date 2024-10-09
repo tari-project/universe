@@ -45,7 +45,7 @@ export const GlobalStyle = createGlobalStyle`
     #root {
         margin: 0;
         padding: 0;
-        font-family: "PoppinsMedium", sans-serif;
+        font-family: Poppins, sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         height: 100%;
@@ -79,6 +79,7 @@ export const GlobalStyle = createGlobalStyle`
     #canvas {
         z-index: 0;
         pointer-events: auto;
+        width: 100vw;
     }
 
     #root {
