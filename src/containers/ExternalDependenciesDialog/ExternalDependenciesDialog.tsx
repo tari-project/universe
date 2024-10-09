@@ -20,7 +20,7 @@ export const ExternalDependenciesDialog = () => {
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const [isRestarting, setIsRestarting] = useState(false);
 
-    const [instalationSlot, setInstalationSlot] = useState<number | null>(null);
+    const [installationSlot, setInstallationSlot] = useState<number | null>(null);
 
     const handleRestart = useCallback(async () => {
         try {
@@ -38,7 +38,7 @@ export const ExternalDependenciesDialog = () => {
             setCriticalError(`Failed to setup application: ${e}`);
             setView('mining');
         });
-    }, []);
+    }, [setCriticalError, setShowExternalDependenciesDialog, setView]);
 
     const shouldAllowContinue = Object.values(externalDependencies).every(
         (missingDependency) => missingDependency.status === ExternalDependencyStatus.Installed
@@ -58,10 +58,10 @@ export const ExternalDependenciesDialog = () => {
                             <ExternalDependencyCard
                                 key={missingDependency.display_name}
                                 missingDependency={missingDependency}
-                                freeInstallationSlot={() => setInstalationSlot(null)}
-                                isInInstallationSlot={instalationSlot === index}
-                                isInstallationSlotOccupied={instalationSlot !== null}
-                                occupyInstallationSlot={() => setInstalationSlot(index)}
+                                freeInstallationSlot={() => setInstallationSlot(null)}
+                                isInInstallationSlot={installationSlot === index}
+                                isInstallationSlotOccupied={installationSlot !== null}
+                                occupyInstallationSlot={() => setInstallationSlot(index)}
                             />
                             {index === array.length - 1 ? null : <Divider />}
                         </>

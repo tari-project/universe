@@ -13,22 +13,21 @@ export const AccentWrapper = styled(m.div)`
 
 export const AccentText = styled(m.div)`
     display: flex;
-    font-family: Druk, sans-serif;
+    font-family: DrukWide, sans-serif;
     white-space: pre;
     line-height: 1;
     opacity: 0.55;
     position: relative;
-    color: ${({ theme }) => theme.palette.base};
+    color: rgba(255, 255, 255, 0.4);
     user-select: none;
     height: min-content;
-    text-shadow: -4px -4px 40px rgba(206, 206, 206, 0.25);
 `;
 
-export const SpacedNum = styled(m.span)`
+export const SpacedNum = styled(m.span)<{ $isDec?: boolean }>`
     font-variant-numeric: tabular-nums;
     display: flex;
     position: relative;
     align-items: flex-end;
     justify-content: center;
-    width: 1ch;
+    width: ${({ $isDec }) => ($isDec ? 'min-content' : '1ch')};
 `;

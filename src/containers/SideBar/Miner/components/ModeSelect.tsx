@@ -26,7 +26,7 @@ function ModeSelect() {
 
     const handleChange = useCallback(
         async (mode: string) => {
-            changeMiningMode(mode as modeType);
+            await changeMiningMode(mode as modeType);
         },
         [changeMiningMode]
     );
