@@ -74,8 +74,7 @@ xz2 = { version = "0.1.7", features = ["static"] }
 open = "5"
 thiserror = "1.0.26"
 
-# needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
-libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
+rusqlite = "0.25.1"
 log = "0.4.22"
 rand = "0.8.5"
 device_query = "2.1.0"
