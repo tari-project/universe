@@ -58,5 +58,8 @@
   "applyInviteCode": "초대 코드 적용",
   "disconnect": "에어드롭 연결 해제",
   "inviteCode": "초대 코드",
-  "use-tor": "Tor 사용하기"
+  "use-tor": "Tor 사용하기",
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network"
 }

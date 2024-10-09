@@ -200,7 +200,7 @@ impl NodeManager {
                 error!(target: LOG_TARGET, "Error list_connected_peers: {}", e);
                 Vec::<Peer>::new()
             });
-        let connected_peers = peers_list
+            let connected_peers = peers_list
             .iter()
             .filter(|peer| {
                 let since = match NaiveDateTime::parse_from_str(

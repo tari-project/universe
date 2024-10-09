@@ -58,5 +58,8 @@
   "applyInviteCode": "Terapkan Kode Undangan",
   "disconnect": "Putuskan dari Airdrop",
   "inviteCode": "Kode Undangan",
-  "use-tor": "Gunakan Tor"
+  "use-tor": "Gunakan Tor",
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network"
 }

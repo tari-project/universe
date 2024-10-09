@@ -50,27 +50,40 @@ export default function DebugSettings() {
                         </Stack>
                         <Typography>{displayTime}</Typography>
                     </Stack>
-                    <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="p">{t('sha-network-hash-rate', { ns: 'settings' })}</Typography>
-                        <Typography>{formatHashrate(sha_network_hash_rate || 0)}</Typography>
-                    </Stack>
-                    <Stack direction="row" justifyContent="space-between">
-                        <Typography variant="p">{t('randomx-network-hash-rate', { ns: 'settings' })}</Typography>
-                        <Typography>{formatHashrate(randomx_network_hash_rate || 0)}</Typography>
-                    </Stack>
                 </SettingsGroup>
             </SettingsGroupWrapper>
             <SettingsGroupWrapper>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{t('connected-peers', { ns: 'settings' })}</Typography>
-                </SettingsGroupTitle>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <SettingsGroupTitle>
+                            <Typography variant="h6">{t('network', { ns: 'settings' })}</Typography>
+                        </SettingsGroupTitle>
+                    </SettingsGroupContent>
+                </SettingsGroup>
                 <SettingsGroup>
                     <SettingsGroupContent style={{ fontSize: '11px' }}>
-                        {connectedPeers.map((peer, i) => (
-                            <Typography key={peer}>
-                                {i + 1}. {peer}
-                            </Typography>
-                        ))}
+                        <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="p">{t('sha-network-hash-rate', { ns: 'settings' })}</Typography>
+                            <Typography>{formatHashrate(sha_network_hash_rate || 0)}</Typography>
+                        </Stack>
+                        <Stack direction="row" justifyContent="space-between">
+                            <Typography variant="p">{t('randomx-network-hash-rate', { ns: 'settings' })}</Typography>
+                            <Typography>{formatHashrate(randomx_network_hash_rate || 0)}</Typography>
+                        </Stack>
+                    </SettingsGroupContent>
+                </SettingsGroup>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <Typography variant="p">{t('connected-peers', { ns: 'settings' })}</Typography>
+                    </SettingsGroupContent>
+                    <SettingsGroupContent style={{ fontSize: '11px', textAlign: 'right' }}>
+                        {connectedPeers.length
+                            ? connectedPeers.map((peer, i) => (
+                                  <Typography key={peer}>
+                                      {i + 1}. {peer}
+                                  </Typography>
+                              ))
+                            : '-'}
                     </SettingsGroupContent>
                 </SettingsGroup>
             </SettingsGroupWrapper>

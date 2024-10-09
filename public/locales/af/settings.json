@@ -58,5 +58,6 @@
   "inviteCode": "Uitnodigingskode",
   "use-tor": "Gebruik Tor",
   "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate"
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network"
 }

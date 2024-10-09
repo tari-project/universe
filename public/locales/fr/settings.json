@@ -56,5 +56,8 @@
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
   "seed-words": "Mots de récupération",
   "feedback-required": "Les commentaires sont requis",
-  "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?"
+  "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network"
 }

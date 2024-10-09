@@ -58,5 +58,8 @@
   "applyInviteCode": "Применить код приглашения",
   "disconnect": "Отключиться от Airdrop",
   "inviteCode": "Код приглашения",
-  "use-tor": "Использовать Tor"
+  "use-tor": "Использовать Tor",
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network"
 }

@@ -61,6 +61,7 @@
   "disconnect": "Odłącz od Airdrop",
   "inviteCode": "Kod Zaproszenia",
   "use-tor": "Użyj Tor",
-  "sha-network-hash-rate": "Hashrate sieci Sha3",
-  "randomx-network-hash-rate": "Hashrate sieci Randomx"
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network"
 }

@@ -60,5 +60,6 @@
   "inviteCode": "Davet Kodu",
   "use-tor": "Tor Kullan",
   "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate"
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Sieć"
 }

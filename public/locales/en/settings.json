@@ -61,5 +61,6 @@
     "use-tor": "Use Tor",
     "report-issue": "Report an issue",
     "sha-network-hash-rate": "Sha3 network hashrate",
-    "randomx-network-hash-rate": "Randomx network hashrate"
+    "randomx-network-hash-rate": "Randomx network hashrate",
+    "network": "Network"
 }
