@@ -86,7 +86,7 @@ impl ProcessAdapter for WalletAdapter {
             "--spend-key".to_string(),
             self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
-            format!("--log-config={}", config_dir.to_str().unwrap()).to_string(),
+            format!("--log-config={}", config_dir.to_str().expect("Could not get config dir")).to_string(),
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
