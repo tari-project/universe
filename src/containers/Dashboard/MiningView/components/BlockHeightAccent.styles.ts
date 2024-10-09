@@ -9,6 +9,9 @@ export const AccentWrapper = styled(m.div)`
     align-items: center;
     justify-content: center;
     display: flex;
+
+    top: 0;
+    right: -40px;
 `;
 
 export const AccentText = styled(m.div)`
@@ -29,5 +32,9 @@ export const SpacedNum = styled(m.span)<{ $isDec?: boolean }>`
     position: relative;
     align-items: flex-end;
     justify-content: center;
+
+    opacity: 0.6;
+    mix-blend-mode: multiply;
+
     width: ${({ $isDec }) => ($isDec ? 'min-content' : '1ch')};
 `;
