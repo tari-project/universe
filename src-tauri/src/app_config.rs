@@ -1,4 +1,5 @@
 use std::{path::PathBuf, time::SystemTime};
+use sys_locale::get_locale;
 
 use anyhow::anyhow;
 use log::{debug, info, warn};
@@ -32,6 +33,16 @@ pub struct AppConfigFromFile {
     gpu_mining_enabled: bool,
     #[serde(default = "default_true")]
     cpu_mining_enabled: bool,
+    #[serde(default = "default_false")]
+    has_system_language_been_proposed: bool,
+    #[serde(default = "default_false")]
+    should_always_use_system_language: bool,
+    #[serde(default = "default_application_language")]
+    application_language: String,
+    #[serde(default = "default_true")]
+    airdrop_ui_enabled: bool,
+    #[serde(default = "default_true")]
+    use_tor: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -47,6 +58,11 @@ impl Default for AppConfigFromFile {
             monero_address: default_monero_address(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
+            application_language: default_application_language(),
+            airdrop_ui_enabled: true,
+            use_tor: true,
         }
     }
 }
@@ -88,6 +104,11 @@ pub(crate) struct AppConfig {
     monero_address: String,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
+    has_system_language_been_proposed: bool,
+    should_always_use_system_language: bool,
+    application_language: String,
+    airdrop_ui_enabled: bool,
+    use_tor: bool,
 }
 
 impl AppConfig {
@@ -104,13 +125,12 @@ impl AppConfig {
             monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
+            has_system_language_been_proposed: false,
+            should_always_use_system_language: false,
+            application_language: default_application_language(),
+            airdrop_ui_enabled: true,
+            use_tor: true,
         }
-    }
-
-    pub fn config_dir(&self) -> Option<PathBuf> {
-        self.config_file
-            .as_ref()
-            .and_then(|p| p.parent().map(|parent| parent.to_path_buf()))
     }
 
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
@@ -142,6 +162,11 @@ impl AppConfig {
                 self.monero_address = config.monero_address;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
+                self.has_system_language_been_proposed = config.has_system_language_been_proposed;
+                self.should_always_use_system_language = config.should_always_use_system_language;
+                self.application_language = config.application_language;
+                self.airdrop_ui_enabled = config.airdrop_ui_enabled;
+                self.use_tor = config.use_tor;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -153,6 +178,10 @@ impl AppConfig {
             // Change the default value of p2pool_enabled to false in version 7
             self.config_version = 7;
             self.p2pool_enabled = true;
+        }
+        if self.config_version <= 7 {
+            self.config_version = 8;
+            self.airdrop_ui_enabled = true;
         }
     }
 
@@ -209,6 +238,12 @@ impl AppConfig {
         self.auto_mining
     }
 
+    // pub async fn set_airdrop_ui_enabled(&mut self, airdrop_ui_enabled: bool) -> Result<(), anyhow::Error> {
+    //     self.airdrop_ui_enabled = airdrop_ui_enabled;
+    //     self.update_config_file().await?;
+    //     Ok(())
+    // }
+
     pub async fn set_allow_telemetry(
         &mut self,
         allow_telemetry: bool,
@@ -244,12 +279,59 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn application_language(&self) -> &str {
+        &self.application_language
+    }
+
+    pub async fn set_application_language(
+        &mut self,
+        language: String,
+    ) -> Result<(), anyhow::Error> {
+        self.application_language = language;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_should_always_use_system_language(
+        &mut self,
+        should_always_use_system_language: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.should_always_use_system_language = should_always_use_system_language;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+        if self.has_system_language_been_proposed | !self.should_always_use_system_language {
+            Ok(())
+        } else {
+            let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+            info!(target: LOG_TARGET, "Proposing system language: {}", system_language);
+            self.application_language = system_language;
+            self.has_system_language_been_proposed = true;
+            self.update_config_file().await?;
+            Ok(())
+        }
+    }
+
+    pub fn use_tor(&self) -> bool {
+        self.use_tor
+    }
+
+    pub async fn set_use_tor(&mut self, use_tor: bool) -> Result<(), anyhow::Error> {
+        self.use_tor = use_tor;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
-        let file = self.config_file.clone().unwrap();
-        let default_config = AppConfigFromFile::default();
+        let file = self
+            .config_file
+            .clone()
+            .ok_or_else(|| anyhow!("Config file not set"))?;
 
         let config = &AppConfigFromFile {
             version: self.config_version,
@@ -262,7 +344,11 @@ impl AppConfig {
             monero_address: self.monero_address.clone(),
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
-            ..default_config
+            has_system_language_been_proposed: self.has_system_language_been_proposed,
+            should_always_use_system_language: self.should_always_use_system_language,
+            application_language: self.application_language.clone(),
+            airdrop_ui_enabled: self.airdrop_ui_enabled,
+            use_tor: self.use_tor,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -298,4 +384,8 @@ fn default_system_time() -> SystemTime {
 
 fn default_monero_address() -> String {
     DEFAULT_MONERO_ADDRESS.to_string()
+}
+
+fn default_application_language() -> String {
+    "en".to_string()
 }

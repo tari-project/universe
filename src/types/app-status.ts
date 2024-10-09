@@ -1,3 +1,4 @@
+import { Language } from '@app/i18initializer';
 import { modeType } from '../store/types';
 
 export interface AppConfig {
@@ -7,13 +8,43 @@ export interface AppConfig {
     auto_mining: boolean;
     p2pool_enabled: boolean;
     last_binaries_update_timestamp: string;
+    has_system_language_been_proposed: boolean;
+    should_always_use_system_language: boolean;
+    application_language: Language;
     allow_telemetry: boolean;
     anon_id: string;
     monero_address: string;
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
+    airdrop_ui_enabled: boolean;
+    use_tor: boolean;
 }
 
+export enum ExternalDependencyStatus {
+    Installed = 'Installed',
+    NotInstalled = 'NotInstalled',
+    Unknown = 'Unknown',
+}
+
+export interface Manufacturer {
+    name: string;
+    logo: string;
+    url: string;
+}
+export interface ExternalDependency {
+    required_version_names: string[];
+    display_name: string;
+    display_description: string;
+    download_url: string;
+    version?: string;
+    manufacturer: Manufacturer;
+    status: ExternalDependencyStatus;
+}
+
+export interface ExternalDependencies {
+    additional_runtime: ExternalDependency;
+    minimum_runtime: ExternalDependency;
+}
 export interface CpuMinerMetrics {
     hardware?: HardwareParameters;
     mining: CpuMinerStatus;
@@ -38,6 +69,21 @@ export interface TariWalletDetails {
     tari_address_emoji: string;
 }
 
+export interface TransactionInfo {
+    tx_id: number;
+    source_address: string;
+    dest_address: string;
+    status: number;
+    direction: number;
+    amount: number;
+    fee: number;
+    is_cancelled: boolean;
+    excess_sig: string;
+    timestamp: number;
+    message: string;
+    payment_id: string;
+}
+
 export interface P2poolStatsResult {
     randomx: P2poolStats;
     sha3: P2poolStats;
@@ -46,7 +92,7 @@ export interface P2poolStatsResult {
 export interface P2poolStats {
     connected: boolean;
     connected_since?: number;
-    tribe: P2poolTribeDetails;
+    squad: P2poolSquadDetails;
     num_of_miners: number;
     last_block_won?: P2poolStatsBlock;
     share_chain_height: number;
@@ -59,7 +105,7 @@ export interface P2poolStats {
     p2pool_block_stats: P2poolBlockStats;
 }
 
-export interface P2poolTribeDetails {
+export interface P2poolSquadDetails {
     id: string;
     name: string;
 }

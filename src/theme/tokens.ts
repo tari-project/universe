@@ -42,15 +42,15 @@ export const light = {
         contrast: '#000000',
         primary: {
             main: tariPurple[600],
-            dark: tariPurple[800],
-            light: tariPurple[400],
+            dark: tariPurple[700],
+            light: tariPurple[500],
             shadow: tariPurpleAlpha[10],
             wisp: tariPurpleAlpha[5],
         },
         secondary: {
-            main: brightGreen[600],
-            dark: brightGreen[700],
-            light: brightGreen[500],
+            main: grey[700],
+            dark: grey[800],
+            light: grey[500],
             wisp: tariPurpleAlpha[5],
         },
         divider: 'rgba(0,0,0,0.06)',
@@ -67,7 +67,7 @@ export const light = {
         success: {
             main: success[200],
             dark: success[300],
-            light: success[100],
+            light: success[50],
             contrastText: success[300],
         },
         warning: {
@@ -128,9 +128,9 @@ export const dark = {
         },
         success: {
             main: success[200],
-            dark: success[100],
+            dark: success[50],
             light: success[300],
-            contrastText: success[100],
+            contrastText: success[50],
         },
         warning: {
             main: warning[200],
@@ -163,7 +163,9 @@ export const componentSettings = {
     shape: {
         borderRadius: {
             app: '10px',
+            dialog: '20px',
             button: '30px',
+            buttonBase: '50px',
             buttonSquared: '10px',
         },
     },

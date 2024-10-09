@@ -1,0 +1,12 @@
+{
+  "auto-miner": "자동 마이너",
+  "auto-miner-description": "자동 마이너는 기기가 유휴 상태일 때 마이너를 켭니다",
+  "next-milestone": "다음 이정표",
+  "wallet-balance": "지갑 잔액",
+  "setup-scheduler": "스케줄러 설정",
+  "mining-schedules": "채굴 일정",
+  "mining-schedules-description": "채굴 활동을 예약하세요",
+  "lost-connection": "Tari 네트워크와의 연결이 끊어졌습니다. 다시 연결 중..",
+  "block": "Block",
+  "recent-wins": "Recent wins"
+}

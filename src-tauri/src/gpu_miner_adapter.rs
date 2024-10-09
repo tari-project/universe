@@ -12,7 +12,7 @@ use tokio::select;
 
 use crate::{
     app_config::MiningMode,
-    binary_resolver::{Binaries, BinaryResolver},
+    binaries::{Binaries, BinaryResolver},
     network_utils::get_free_port,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
 };
@@ -56,6 +56,7 @@ impl GpuMinerAdapter {
 impl ProcessAdapter for GpuMinerAdapter {
     type StatusMonitor = GpuMinerStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -74,9 +75,12 @@ impl ProcessAdapter for GpuMinerAdapter {
             return Err(anyhow!("GpuMinerAdapter node_source is not set"));
         }
 
-        let tari_node_port = match self.node_source.as_ref().unwrap() {
-            GpuNodeSource::BaseNode { port } => port,
-            GpuNodeSource::P2Pool { port } => port,
+        let tari_node_port = match self.node_source.as_ref() {
+            Some(GpuNodeSource::BaseNode { port }) => port,
+            Some(GpuNodeSource::P2Pool { port }) => port,
+            None => {
+                return Err(anyhow!("GpuMinerAdapter node_source is not set"));
+            }
         };
 
         let mut args: Vec<String> = vec![
@@ -120,9 +124,12 @@ impl ProcessAdapter for GpuMinerAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::GpuMiner)
-                        .await?;
-                    crate::download_utils::set_permissions(&file_path).await?;
+                        .read()
+                        .await
+                        .resolve_path_to_binary_files(Binaries::GpuMiner)
+                        .await
+                        .unwrap_or_else(|_| panic!("Could not resolve gpu_miner path"));
+                    crate::download_utils::set_permissions(&file_path.clone()).await?;
                     let mut child;
 
                     // if cfg!(debug_assertions) {
@@ -265,7 +272,7 @@ struct XtrGpuminerHttpApiStatus {
     hashes_per_second: u64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: u64,

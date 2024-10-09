@@ -1,9 +1,10 @@
 import { m } from 'framer-motion';
 import { CharSpinnerVariant } from '@app/components/CharSpinner/CharSpinner.tsx';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 interface Props {
     $decimal?: boolean;
+    $unit?: boolean;
     $letterHeight?: number;
     $letterWidth?: number;
     $fontSize?: number;
@@ -17,6 +18,7 @@ export const Wrapper = styled.div<{ $letterHeight?: number }>`
     flex-direction: row;
     align-items: baseline;
     gap: 4px;
+
     span {
         display: flex;
         font-weight: 600;
@@ -43,7 +45,6 @@ export const Characters = styled(m.div)<Props>`
     display: flex;
     flex-direction: column;
     align-items: center;
-    letter-spacing: -4px;
     font-weight: ${({ $variant }) => ($variant == 'simple' ? 600 : 700)};
     font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'Druk')}, sans-serif;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
@@ -54,6 +55,17 @@ export const Character = styled(m.div)<Props>`
     display: flex;
     justify-self: center;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
-    letter-spacing: -0.02ch;
     text-transform: lowercase;
+    width: min-content;
+    letter-spacing: -3px;
+    z-index: 1;
+    // for the unit & decimal
+
+    ${({ $decimal, $unit }) =>
+        ($decimal || $unit) &&
+        css`
+            letter-spacing: normal;
+            margin-left: 1px;
+            margin-right: -1px;
+        `}
 `;

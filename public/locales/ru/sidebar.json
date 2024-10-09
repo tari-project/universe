@@ -1,0 +1,12 @@
+{
+  "auto-miner": "Авто-майнер",
+  "auto-miner-description": "Авто-майнер включит ваш майнер, когда ваш компьютер будет в простое",
+  "next-milestone": "Следующий этап",
+  "wallet-balance": "Баланс кошелька",
+  "setup-scheduler": "Настройка планировщика",
+  "mining-schedules": "Графики майнинга",
+  "mining-schedules-description": "Запланируйте вашу майнинговую активность",
+  "lost-connection": "Потеряно соединение с сетью Tari. Переподключение..",
+  "block": "Block",
+  "recent-wins": "Recent wins"
+}

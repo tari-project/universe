@@ -50,7 +50,7 @@ export const Options = styled.div<{ $open?: boolean; $isBordered?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-weight: 500;
     letter-spacing: -1px;
-    z-index: 2;
+    z-index: 10;
 `;
 
 export const SelectedOption = styled.div<{ $isBordered?: boolean }>`

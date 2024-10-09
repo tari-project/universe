@@ -1,7 +1,27 @@
 import { modeType } from '@app/store/types';
-import { AppConfig, ApplicationsVersions, MinerMetrics, P2poolStatsResult, TariWalletDetails } from './app-status';
+import {
+    AppConfig,
+    ApplicationsVersions,
+    ExternalDependency,
+    MinerMetrics,
+    P2poolStatsResult,
+    TariWalletDetails,
+    TransactionInfo,
+} from './app-status';
+import { Language } from '@app/i18initializer';
 
 declare module '@tauri-apps/api/tauri' {
+    function invoke(
+        param: 'set_should_always_use_system_language',
+        payload: { shouldAlwaysUseSystemLanguage: boolean }
+    ): Promise<void>;
+    function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
+    function invoke(
+        param: 'download_and_start_installer',
+        payload: { missingDependency: ExternalDependency }
+    ): Promise<void>;
+    function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
+    function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_mining'): Promise<void>;
@@ -14,7 +34,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_seed_words'): Promise<string[]>;
     function invoke(param: 'get_applications_versions'): Promise<ApplicationsVersions>;
     function invoke(param: 'set_monero_address', payload: { moneroAddress: string }): Promise<void>;
-    function invoke(param: 'send_feedback', payload: { feedback: string; includeLogs: boolean }): Promise<void>;
+    function invoke(param: 'send_feedback', payload: { feedback: string; includeLogs: boolean }): Promise<string>;
     function invoke(param: 'reset_settings', payload: { resetWallet: boolean }): Promise<string>;
     function invoke(param: 'get_app_config'): Promise<AppConfig>;
     function invoke(param: 'set_p2pool_enabled', payload: { p2pool_enabled: boolean }): Promise<void>;
@@ -24,6 +44,9 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
+    function invoke(param: 'restart_application'): Promise<string>;
+    function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
+    function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }

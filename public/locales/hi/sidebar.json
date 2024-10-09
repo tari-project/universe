@@ -1,0 +1,12 @@
+{
+  "auto-miner": "स्वचालित माइनर",
+  "auto-miner-description": "स्वचालित माइनर आपके माइनर को चालू करेगा जब आपकी मशीन निष्क्रिय होगी",
+  "next-milestone": "अगला मील का पत्थर",
+  "wallet-balance": "वॉलेट शेष",
+  "setup-scheduler": "शेड्यूलर सेटअप करें",
+  "mining-schedules": "माइनिंग अनुसूचियाँ",
+  "mining-schedules-description": "अपनी माइनिंग गतिविधि का समय निर्धारित करें",
+  "lost-connection": "Tari नेटवर्क से कनेक्शन खो गया। पुनः कनेक्ट हो रहा है..",
+  "block": "Block",
+  "recent-wins": "Recent wins"
+}

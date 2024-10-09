@@ -23,10 +23,15 @@ import { ContentWrapper, Overlay } from '@app/components/elements/dialog/Dialog.
 
 interface DialogOptions {
     open: boolean;
-    onOpenChange: (open: boolean) => void;
+    onOpenChange?: (open: boolean) => void;
+    disableClose?: boolean;
 }
 
-export function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen }: DialogOptions) {
+export function useDialog({
+    open: controlledOpen,
+    onOpenChange: setControlledOpen,
+    disableClose = false,
+}: DialogOptions) {
     const [labelId, setLabelId] = useState<string | undefined>();
     const [descriptionId, setDescriptionId] = useState<string | undefined>();
 
@@ -43,7 +48,7 @@ export function useDialog({ open: controlledOpen, onOpenChange: setControlledOpe
     const click = useClick(context, {
         enabled: controlledOpen == null,
     });
-    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown' });
+    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: !disableClose });
     const role = useRole(context);
 
     const interactions = useInteractions([click, dismiss, role]);
@@ -92,7 +97,7 @@ export function Dialog({
     return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>;
 }
 
-export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement>>(
+export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement> & { $unPadded?: boolean }>(
     function DialogContent(props, propRef) {
         const context = useDialogContext();
         const ref = useMergeRefs([context.refs.setFloating, propRef]);
@@ -108,6 +113,7 @@ export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement
                             aria-labelledby={context.labelId}
                             aria-describedby={context.descriptionId}
                             {...context.getFloatingProps(props)}
+                            $unPadded={props.$unPadded}
                         >
                             {props.children}
                         </ContentWrapper>

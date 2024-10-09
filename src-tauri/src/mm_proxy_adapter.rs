@@ -1,10 +1,11 @@
 use std::fs;
 use std::path::PathBuf;
 
-use crate::binary_resolver::{Binaries, BinaryResolver};
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils;
-use anyhow::Error;
+use crate::utils::file_utils::convert_to_string;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{debug, warn};
 use tari_common_types::tari_address::TariAddress;
@@ -47,6 +48,7 @@ impl MergeMiningProxyAdapter {
 impl ProcessAdapter for MergeMiningProxyAdapter {
     type StatusMonitor = MergeMiningProxyStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -62,13 +64,20 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         if self.config.is_none() {
             return Err(Error::msg("MergeMiningProxyAdapter config is None"));
         }
-        let config = self.config.as_ref().unwrap();
+
+        let config = self
+            .config
+            .as_ref()
+            .ok_or_else(|| anyhow!("MergeMiningProxyAdapter config is None"))?;
+        let working_dir_string = convert_to_string(working_dir)?;
+        let log_dir_string = convert_to_string(log_dir)?;
+
         let mut args: Vec<String> = vec![
             "-b".to_string(),
-            working_dir.to_str().unwrap().to_string(),
+            working_dir_string,
             "--non-interactive-mode".to_string(),
             "--log-path".to_string(),
-            log_dir.to_str().unwrap().to_string(),
+            log_dir_string,
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
@@ -111,7 +120,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                 shutdown: inner_shutdown,
                 handle: Some(tokio::spawn(async move {
                     let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MergeMiningProxy)
+                        .read()
+                        .await
+                        .resolve_path_to_binary_files(Binaries::MergeMiningProxy)
                         .await?;
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;

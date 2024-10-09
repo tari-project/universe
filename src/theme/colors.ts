@@ -21,7 +21,8 @@
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 const success = {
-    100: '#E6FAF6',
+    50: '#E6FAF6',
+    100: '#a1d2c1',
     200: '#06C983',
     300: '#094E41',
 };
@@ -35,7 +36,7 @@ const info = {
 const warning = {
     100: '#FFEED3',
     200: '#D18A18',
-    300: '#442F0C',
+    300: '#9d6303',
 };
 
 const error = {
@@ -63,8 +64,8 @@ const brightGreen = {
 };
 
 const grey = {
-    50: '#f7f7f8',
-    100: '#eeeef0',
+    50: '#fafafa',
+    100: '#f5f5f5',
     200: '#d8d9df',
     300: '#b6b7c3',
     400: '#8f91a1',
