@@ -25,15 +25,15 @@ export const useAirdropRequest = () => {
 
         try {
             if (!response.ok) {
-                console.error('Error fetching airdrop data', response);
+                console.error('Error fetching airdrop request:', response);
                 if (onError) {
                     onError(response);
                 }
                 return;
             }
-            return response.json() as Promise<T>;
+            return (await response.json()) as Promise<T>;
         } catch (e) {
-            console.error('Error fetching airdrop data', e);
+            console.error('Caught error fetching airdrop data:', e);
             if (onError) {
                 onError(e);
             }

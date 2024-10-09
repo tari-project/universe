@@ -25,17 +25,21 @@ const parseArgument = (a?: ParseArgs) => {
 };
 
 const getStackTrace = function () {
-    const obj: Record<string, unknown> = {};
+    const obj: Record<string, string> = {};
     Error.captureStackTrace(obj, getStackTrace);
-    return obj.stack;
+
+    const splitStack = obj.stack.split('\n');
+    splitStack.shift();
+
+    return splitStack;
 };
 
 const getOptions = (args, level) => {
     const trace = getStackTrace();
-    invoke('log_web_message', {
+    void invoke('log_web_message', {
         level,
         message: args?.map(parseArgument),
-        trace,
+        trace: level === 'error' ? trace : trace.slice(0, 3), // so it doesn't get too noisy
     });
     return originalConsole[level](...args);
 };

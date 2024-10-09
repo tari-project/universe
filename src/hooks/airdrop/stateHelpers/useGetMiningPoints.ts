@@ -29,33 +29,33 @@ export const useGetMiningPoints = () => {
     const getLastMined = useCallback(async () => {
         if (!anon_id) return;
 
-        try {
-            const res = await handleRequest<{ lastMinedBlock: LastMinedBlock }>({
-                path: `/miner/blocks/last-mined?appId=${encodeURIComponent(anon_id)}`,
-                method: 'GET',
-            });
+        handleRequest<{ lastMinedBlock: LastMinedBlock }>({
+            path: `/miner/blocks/last-mined?appId=${encodeURIComponent(anon_id)}`,
+            method: 'GET',
+        })
+            .then((res) => {
+                const lastMinedBlock = res?.lastMinedBlock;
+                if (lastMinedBlock) {
+                    const {
+                        minedTestTokens: tXTM,
+                        minedTokenRewardMultiplier: multiplier,
+                        appliedRewardCeiling: gemCeiling,
+                        blockHeight,
+                    } = lastMinedBlock || {};
+                    const gems = Number(tXTM) * multiplier;
+                    const reward = (gems <= Number(gemCeiling) ? gems : Number(gemCeiling)) / 1_000_000;
 
-            const lastMinedBlock = res?.lastMinedBlock;
-            if (lastMinedBlock) {
-                const {
-                    minedTestTokens: tXTM,
-                    minedTokenRewardMultiplier: multiplier,
-                    appliedRewardCeiling: gemCeiling,
-                    blockHeight,
-                } = lastMinedBlock || {};
-                const gems = Number(tXTM) * multiplier;
-                const reward = (gems <= Number(gemCeiling) ? gems : Number(gemCeiling)) / 1_000_000;
-
-                if (reward && blockHeight !== miningRewardPoints?.blockHeight) {
-                    setMiningRewardPoints({ blockHeight, reward });
+                    if (reward && blockHeight !== miningRewardPoints?.blockHeight) {
+                        setMiningRewardPoints({ blockHeight, reward });
+                    }
                 }
-            }
-        } catch (e) {
-            console.error('Last block error:', e);
-        }
+            })
+            .catch((e) => {
+                console.error('Error getting last mined block data from airdrop', e);
+            });
     }, [anon_id, handleRequest, miningRewardPoints?.blockHeight, setMiningRewardPoints]);
 
     useEffect(() => {
-        getLastMined();
+        void getLastMined();
     }, [getLastMined, earnings]);
 };
