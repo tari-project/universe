@@ -200,9 +200,9 @@ export const componentSettings = {
         },
         h3: {
             fontSize: '24px',
-            lineHeight: '32px',
+            lineHeight: '28px',
             fontFamily: '"Poppins", sans-serif',
-            letterSpacing: '-0.4px',
+            letterSpacing: '-0.5px',
             fontWeight: 600,
         },
         h4: {

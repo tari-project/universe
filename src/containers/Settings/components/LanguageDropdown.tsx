@@ -30,6 +30,7 @@ export default function LanguageDropdown() {
                 onChange={(value) => setApplicationLanguage(value as Language)}
                 selectedValue={resolveI18nLanguage(i18n.language)}
                 variant="bordered"
+                forceHeight={36}
             />
         </Wrapper>
     );

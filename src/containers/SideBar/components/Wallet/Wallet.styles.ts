@@ -4,7 +4,6 @@ import styled from 'styled-components';
 import { IconButton } from '@app/components/elements/Button';
 import cardBg from '../../../../assets/images/wallet-bg.png';
 import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
-import { sidebarWidth } from '@app/theme/styles.ts';
 
 // Wallet
 export const WalletContainer = styled(m.div)`
@@ -17,9 +16,9 @@ export const WalletContainer = styled(m.div)`
     padding: 10px;
     border-radius: 20px;
     position: absolute;
-    bottom: 16px;
-    left: 16px;
-    width: calc(${sidebarWidth} - 32px);
+    bottom: 12px;
+    left: 10px;
+    width: 328px;
     box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
     max-height: 508px;
     min-height: 178px;
@@ -63,7 +62,7 @@ export const ShowHistoryButton = styled(ButtonBase).attrs({
     align-self: flex-end;
 `;
 
-export const ScrollMask = styled.div`
+export const ScrollMask = styled(m.div)`
     position: absolute;
     background: linear-gradient(to top, #000 20%, rgba(9, 11, 12, 0.01));
     bottom: 0;
@@ -73,6 +72,7 @@ export const ScrollMask = styled.div`
     z-index: 1;
     opacity: 0.7;
 `;
+
 export const HistoryContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
