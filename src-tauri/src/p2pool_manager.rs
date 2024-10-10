@@ -11,7 +11,7 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 
 use crate::network_utils;
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::{ChainStats, ConnectionInfo, NetworkInfo, Stats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::process_adapter::StatusMonitor;
 use crate::process_watcher::ProcessWatcher;
@@ -93,23 +93,40 @@ impl P2poolManager {
         }
     }
 
-    fn default_stats(&self) -> HashMap<String, Stats> {
-        let mut p2pool_stats = HashMap::with_capacity(2);
-        p2pool_stats.insert(
-            PowAlgorithm::Sha3x.to_string().to_lowercase(),
-            Stats::default(),
-        );
-        p2pool_stats.insert(
-            PowAlgorithm::RandomX.to_string().to_lowercase(),
-            Stats::default(),
-        );
-        p2pool_stats
+    fn default_stats(&self) -> Stats {
+        Stats {
+            connected: false,
+            peer_count: 0,
+            connection_info: ConnectionInfo { listener_addresses: vec![], connected_peers: 0, network_info: NetworkInfo{
+                num_peers: 0,
+                connection_counters: crate::p2pool::models::ConnectionCounters { pending_incoming: 0, pending_outgoing: 0, established_incoming: 0, established_outgoing: 0 }
+            } 
+        },
+            connected_since: Default::default(),
+            randomx_stats: ChainStats {
+                squad: crate::p2pool::models::SquadDetails { id: "".to_string(), name: "".to_string() },
+                num_of_miners: 0,
+                share_chain_height: 0,
+                miner_block_stats: BlockStats { hash: "".to_string(), height: 0, timestamp: 0, miner_wallet_address: None },
+                p2pool_block_stats: BlockStats { hash: "".to_string(), height: 0, timestamp: 0, miner_wallet_address: None },
+            },
+            sha3x_stats: ChainStats {
+                squad: crate::p2pool::models::SquadDetails { id: "".to_string(), name: "".to_string() },
+                num_of_miners: 0,
+                share_chain_height: 0,
+                miner_block_stats: BlockStats { hash: "".to_string(), height: 0, timestamp: 0, miner_wallet_address: None },
+                p2pool_block_stats: BlockStats { hash: "".to_string(), height: 0, timestamp: 0, miner_wallet_address: None },
+            }
+        }
     }
 
-    pub async fn stats(&self) -> HashMap<String, Stats> {
+    pub async fn stats(&self) -> Stats {
         match self.get_stats().await {
             Ok(stats) => stats,
-            Err(_) => self.default_stats(),
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to get stats: {}", e);   
+                self.default_stats(),
+            }
         }
     }
 

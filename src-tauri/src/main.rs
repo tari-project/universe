@@ -144,6 +144,8 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
         .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
 
+    let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
     state.shutdown.clone().trigger();
 
     // TODO: Find a better way of knowing that all miners have stopped
@@ -417,7 +419,6 @@ async fn setup_application(
     let timer = Instant::now();
     setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        capture_anyhow(&e);
         e.to_string()
     })?;
 

@@ -371,8 +371,8 @@ async fn get_telemetry_data(
         (false, false) => TelemetryResource::None,
     };
 
-    let p2pool_gpu_stats_sha3 = p2pool_stats.get("sha3").map(|stats| stats.squad.clone());
-    let p2pool_cpu_stats_randomx = p2pool_stats.get("randomx").map(|stats| stats.squad.clone());
+    let p2pool_gpu_stats_sha3 = p2pool_stats.sha3x_stats.clone();
+    let p2pool_cpu_stats_randomx = p2pool_stats.randomx_stats.clone();
     let p2pool_enabled =
         config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
     let cpu_tribe_name = p2pool_cpu_stats_randomx
