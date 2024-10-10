@@ -59,5 +59,8 @@
     "connected-peers": "Connected Peers",
     "should-use-system-language": "Use system language",
     "use-tor": "Use Tor",
-    "report-issue": "Report an issue"
+    "report-issue": "Report an issue",
+    "importing-wallet": "Importing wallet",
+    "action-requires-restart": "This action requires restart to apply changes",
+    "invalid-seed-words": "Enter 24 words separated by spaces"
 }
