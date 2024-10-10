@@ -124,6 +124,12 @@ impl GpuMiner {
                 .join("config.json")
                 .to_string_lossy()
                 .to_string(),
+            "--gpu-status-file".to_string(),
+            config_dir
+                .join("gpuminer")
+                .join("gpu_status.json")
+                .to_string_lossy()
+                .to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
             .read()
