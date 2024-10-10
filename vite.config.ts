@@ -4,8 +4,6 @@ import eslintPlugin from '@nabla/vite-plugin-eslint';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import * as path from 'node:path';
 
-// https://vitejs.dev/config/
-
 export default defineConfig(() => {
     return {
         // prevent vite from obscuring rust errors
@@ -31,5 +29,6 @@ export default defineConfig(() => {
                 '@app': path.resolve(__dirname, './src'),
             },
         },
+        logLevel: 'error',
     };
 });
