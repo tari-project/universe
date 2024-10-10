@@ -173,7 +173,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         let label: String = match system.cpus().first() {
             Some(cpu) => cpu.brand().to_string(),
             None => {
-                warn!("Failed to get CPU brand");
+                warn!(target: LOG_TARGET, "Failed to get CPU brand");
                 "N/A".to_string()
             }
         };
@@ -228,7 +228,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         let usage_percentage = match main_gpu.utilization_rates() {
             Ok(usage) => usage.gpu as f32,
             Err(e) => {
-                warn!("Failed to get GPU usage: {}", e);
+                warn!(target: LOG_TARGET, "Failed to get GPU usage: {}", e);
                 0.0
             }
         };
@@ -309,7 +309,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let label: String = match system.cpus().first() {
             Some(cpu) => cpu.brand().to_string(),
             None => {
-                warn!("Failed to get CPU brand");
+                warn!(target: LOG_TARGET, "Failed to get CPU brand");
                 "N/A".to_string()
             }
         };
@@ -365,7 +365,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let usage_percentage = match main_gpu.utilization_rates() {
             Ok(usage) => usage.gpu as f32,
             Err(e) => {
-                warn!("Failed to get GPU usage: {}", e);
+                warn!(target: LOG_TARGET, "Failed to get GPU usage: {}", e);
                 0.0
             }
         };
@@ -442,7 +442,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         let label: String = match system.cpus().first() {
             Some(cpu) => cpu.brand().to_string() + " CPU",
             None => {
-                warn!("Failed to get CPU brand");
+                warn!(target: LOG_TARGET, "Failed to get CPU brand");
                 "N/A".to_string()
             }
         };
@@ -481,7 +481,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         let label: String = match system.cpus().first() {
             Some(cpu) => cpu.brand().to_string() + " GPU",
             None => {
-                warn!("Failed to get GPU brand");
+                warn!(target: LOG_TARGET, "Failed to get GPU brand");
                 "N/A".to_string()
             }
         };
