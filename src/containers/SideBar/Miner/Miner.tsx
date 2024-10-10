@@ -16,11 +16,10 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
-import useMiningMetricsUpdater from '@app/hooks/useMiningMetricsUpdater.ts';
-import useMining from '@app/hooks/mining/useMining.ts';
-import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachine.ts';
+import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
 
 export default function Miner() {
+    useMiningStatesSync();
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
@@ -39,10 +38,6 @@ export default function Miner() {
             gpu_is_mining: s.gpu.mining.is_mining,
         }))
     );
-
-    useMiningMetricsUpdater();
-    useMining();
-    useUiMiningStateMachine();
 
     const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 

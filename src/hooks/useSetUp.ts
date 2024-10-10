@@ -7,7 +7,7 @@ import { useUIStore } from '../store/useUIStore.ts';
 import { useAppStateStore } from '../store/appStateStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { setAnimationState } from '@app/visuals.ts';
-import useWalletDetailsUpdater from './useWalletUpdater.ts';
+
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
 
@@ -53,9 +53,6 @@ export function useSetUp() {
             localStorage.setItem('airdrop-store', airdropStorage);
         }
     }, []);
-
-    // fetch initial wallet details
-    useWalletDetailsUpdater();
 
     useEffect(() => {
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
