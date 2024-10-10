@@ -34,6 +34,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     handleWin: async (blockHeight, earnings) => {
         console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
         const canAnimate = await checkCanAnimate();
+
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
             setAnimationState('success');

@@ -20,7 +20,7 @@ const useMiningMetricsUpdater = () => {
 
             const setDisplayBlockHeight = useBlockchainVisualisationStore.getState().setDisplayBlockHeight;
             setDisplayBlockHeight(metrics.base_node.block_height);
-            console.debug(metrics.base_node.block_height);
+
             setMiningMetrics(metrics);
         } catch (e) {
             console.error('Fetch mining metrics error: ', e);
