@@ -337,6 +337,11 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
             .filter(|c| c.label().contains("k10temp Tctl"))
             .collect();
 
+        /*
+         * TODO if the following PR is merged
+         * https://github.com/tari-project/universe/pull/612
+         * use `exlcude gpu device` to not disable not available devices
+         */
         let available_cpu_components = if amd_cpu_component.is_empty() {
             intel_cpu_component
         } else {
