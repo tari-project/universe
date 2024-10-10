@@ -1178,6 +1178,7 @@ async fn get_p2pool_stats(state: tauri::State<'_, UniverseAppState>) -> Result<S
     }
     state.is_getting_p2pool_stats.store(true, Ordering::SeqCst);
     let p2pool_stats = state.p2pool_manager.stats().await;
+    dbg!(&p2pool_stats);
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());

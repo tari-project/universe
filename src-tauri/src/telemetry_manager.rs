@@ -375,11 +375,27 @@ async fn get_telemetry_data(
     let p2pool_cpu_stats_randomx = p2pool_stats.randomx_stats.clone();
     let p2pool_enabled =
         config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
-    let cpu_tribe_name = p2pool_cpu_stats_randomx.squad.name.clone();
+    let cpu_tribe_name = if p2pool_enabled {
+        Some(p2pool_cpu_stats_randomx.squad.name.clone())
+    } else {
+        None
+    };
 
-    let cpu_tribe_id = p2pool_cpu_stats_randomx.squad.id.clone();
-    let gpu_tribe_name = p2pool_gpu_stats_sha3.squad.name.clone();
-    let gpu_tribe_id = p2pool_gpu_stats_sha3.squad.id.clone();
+    let cpu_tribe_id = if p2pool_enabled {
+        Some(p2pool_cpu_stats_randomx.squad.id.clone())
+    } else {
+        None
+    };
+    let gpu_tribe_name = if p2pool_enabled {
+        Some(p2pool_gpu_stats_sha3.squad.name.clone())
+    } else {
+        None
+    };
+    let gpu_tribe_id = if p2pool_enabled {
+        Some(p2pool_gpu_stats_sha3.squad.id.clone())
+    } else {
+        None
+    };
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),

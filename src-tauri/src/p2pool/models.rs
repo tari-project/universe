@@ -44,7 +44,7 @@ pub(crate) struct ConnectionCounters {
     pub established_outgoing: u32,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Stats {
     pub connected: bool,
     pub peer_count: u64,
@@ -54,7 +54,7 @@ pub struct Stats {
     pub sha3x_stats: ChainStats,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChainStats {
     pub squad: SquadDetails,
     pub num_of_miners: usize,
@@ -63,7 +63,7 @@ pub struct ChainStats {
     pub p2pool_block_stats: BlockStats,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct BlockStats {
     pub accepted: u64,
     pub rejected: u64,

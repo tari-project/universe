@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::anyhow;
-use log::warn;
+use log::{error, warn};
 use tari_core::proof_of_work::PowAlgorithm;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
@@ -97,26 +97,56 @@ impl P2poolManager {
         Stats {
             connected: false,
             peer_count: 0,
-            connection_info: ConnectionInfo { listener_addresses: vec![], connected_peers: 0, network_info: NetworkInfo{
-                num_peers: 0,
-                connection_counters: crate::p2pool::models::ConnectionCounters { pending_incoming: 0, pending_outgoing: 0, established_incoming: 0, established_outgoing: 0 }
-            } 
-        },
+            connection_info: ConnectionInfo {
+                listener_addresses: vec![],
+                connected_peers: 0,
+                network_info: NetworkInfo {
+                    num_peers: 0,
+                    connection_counters: crate::p2pool::models::ConnectionCounters {
+                        pending_incoming: 0,
+                        pending_outgoing: 0,
+                        established_incoming: 0,
+                        established_outgoing: 0,
+                    },
+                },
+            },
             connected_since: Default::default(),
             randomx_stats: ChainStats {
-                squad: crate::p2pool::models::SquadDetails { id: "".to_string(), name: "".to_string() },
+                squad: crate::p2pool::models::SquadDetails {
+                    id: "".to_string(),
+                    name: "".to_string(),
+                },
                 num_of_miners: 0,
                 share_chain_height: 0,
-                miner_block_stats: BlockStats { accepted: 0, rejected: 0, submitted: 0 },
-                p2pool_block_stats: BlockStats { accepted: 0, rejected: 0, submitted: 0 },
+                miner_block_stats: BlockStats {
+                    accepted: 0,
+                    rejected: 0,
+                    submitted: 0,
+                },
+                p2pool_block_stats: BlockStats {
+                    accepted: 0,
+                    rejected: 0,
+                    submitted: 0,
+                },
             },
             sha3x_stats: ChainStats {
-                squad: crate::p2pool::models::SquadDetails { id: "".to_string(), name: "".to_string() },
+                squad: crate::p2pool::models::SquadDetails {
+                    id: "".to_string(),
+                    name: "".to_string(),
+                },
                 num_of_miners: 0,
                 share_chain_height: 0,
-                miner_block_stats: BlockStats { accepted: 0, rejected: 0, submitted: 0 },
-                p2pool_block_stats: BlockStats { accepted: 0, rejected: 0, submitted: 0 },
-            }
+                miner_block_stats: BlockStats {
+                    accepted: 0,
+                    rejected: 0,
+                    submitted: 0,
+                },
+                p2pool_block_stats: BlockStats {
+                    accepted: 0,
+                    rejected: 0,
+                    submitted: 0,
+                },
+            },
         }
     }
 
@@ -124,8 +154,8 @@ impl P2poolManager {
         match self.get_stats().await {
             Ok(stats) => stats,
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to get stats: {}", e);   
-                self.default_stats(),
+                error!(target: LOG_TARGET, "Failed to get stats: {}", e);
+                self.default_stats()
             }
         }
     }
