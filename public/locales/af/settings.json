@@ -56,5 +56,8 @@
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "disconnect": "Ontkoppel van Airdrop",
   "inviteCode": "Uitnodigingskode",
-  "use-tor": "Gebruik Tor"
+  "use-tor": "Gebruik Tor",
+  "importing-wallet": "Importing wallet",
+  "action-requires-restart": "This action requires restart to apply changes",
+  "invalid-seed-words": "Enter 24 words separated by spaces"
 }

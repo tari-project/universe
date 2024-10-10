@@ -832,6 +832,44 @@ async fn set_gpu_mining_enabled(
 }
 
 #[tauri::command]
+async fn import_seed_words(
+    seed_words: Vec<String>,
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let data_dir = app
+        .path_resolver()
+        .app_local_data_dir()
+        .expect("Could not get data dir");
+
+    tauri::async_runtime::spawn(async move {
+        match InternalWallet::create_from_seed(config_path, seed_words).await {
+            Ok(_wallet) => {
+                InternalWallet::clear_wallet_local_data(data_dir).await?;
+                info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
+                app.restart();
+                Ok(())
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+                Err(e)
+            }
+        }
+    });
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 async fn get_seed_words(
     _window: tauri::Window,
     _state: tauri::State<'_, UniverseAppState>,
@@ -1774,7 +1812,8 @@ fn main() {
             download_and_start_installer,
             get_external_dependencies,
             set_use_tor,
-            get_transaction_history
+            get_transaction_history,
+            import_seed_words
         ])
         .build(tauri::generate_context!())
         .inspect_err(

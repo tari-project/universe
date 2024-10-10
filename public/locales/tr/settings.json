@@ -58,5 +58,8 @@
   "applyInviteCode": "Davet Kodunu Uygula",
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
   "inviteCode": "Davet Kodu",
-  "use-tor": "Tor Kullan"
+  "use-tor": "Tor Kullan",
+  "importing-wallet": "Importing wallet",
+  "action-requires-restart": "This action requires restart to apply changes",
+  "invalid-seed-words": "Enter 24 words separated by spaces"
 }
