@@ -7,6 +7,7 @@ import { setAnimationState } from '@app/visuals.ts';
 
 interface State {
     displayBlockTime?: BlockTimeData;
+    debugBlockTime?: BlockTimeData;
     displayBlockHeight?: number;
     earnings?: number;
 }
@@ -16,6 +17,7 @@ interface Actions {
     handleFail: (blockHeight: number) => Promise<void>;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
+    setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -59,4 +61,5 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     },
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
+    setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
 }));
