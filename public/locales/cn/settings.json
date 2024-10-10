@@ -58,5 +58,8 @@
   "applyInviteCode": "应用邀请代码",
   "disconnect": "断开与空投的连接",
   "inviteCode": "邀请代码",
-  "use-tor": "使用Tor"
+  "use-tor": "使用Tor",
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network"
 }

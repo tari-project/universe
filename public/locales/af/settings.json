@@ -56,5 +56,8 @@
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "disconnect": "Ontkoppel van Airdrop",
   "inviteCode": "Uitnodigingskode",
-  "use-tor": "Gebruik Tor"
+  "use-tor": "Gebruik Tor",
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network"
 }

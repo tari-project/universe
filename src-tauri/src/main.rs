@@ -1321,6 +1321,8 @@ async fn get_miner_metrics(
     }
 
     let ret = MinerMetrics {
+        sha_network_hash_rate: sha_hash_rate,
+        randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
             hardware: hardware_status.cpu,
             mining: cpu_mining_status,
@@ -1481,6 +1483,8 @@ pub struct GpuMinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MinerMetrics {
+    sha_network_hash_rate: u64,
+    randomx_network_hash_rate: u64,
     cpu: CpuMinerMetrics,
     gpu: GpuMinerMetrics,
     base_node: BaseNodeStatus,

@@ -58,5 +58,8 @@
   "applyInviteCode": "Davet Kodunu Uygula",
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
   "inviteCode": "Davet Kodu",
-  "use-tor": "Tor Kullan"
+  "use-tor": "Tor Kullan",
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Sieć"
 }
