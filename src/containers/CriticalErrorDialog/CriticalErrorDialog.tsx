@@ -1,9 +1,9 @@
+import Linkify from 'linkify-react';
 import { Button, IconButton } from '@app/components/elements/Button';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { IoAlertCircleOutline, IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
-
 import { Trans, useTranslation } from 'react-i18next';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api';
@@ -20,13 +20,14 @@ const CriticalErrorDialog = () => {
     const [logsReference, setLogsReference] = useState('');
     const criticalError = useAppStateStore((s) => s.criticalError);
     const [isExiting, setIsExiting] = useState(false);
-
+    // Write the critical error to the web log file
+    // console.error(criticalError);
     const handleExit = useCallback(async () => {
         try {
             setIsExiting(true);
             await invoke('exit_application');
         } catch (e) {
-            console.error(e);
+            console.error('Error closing application: ', e);
         }
         setIsExiting(false);
     }, []);
@@ -38,8 +39,8 @@ const CriticalErrorDialog = () => {
                     <Typography variant="h1">{t('critical-error')}</Typography>
                     <Stack direction="row" alignItems="center" justifyContent="flex-start">
                         <IoAlertCircleOutline size={20} color="red" />
-                        <Typography variant="p" style={{ fontStyle: 'italic' }}>
-                            {criticalError}
+                        <Typography variant="p" style={{ fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                            <Linkify options={{ attributes: { target: '_blank' } }}>{criticalError}</Linkify>
                         </Typography>
                     </Stack>
                     <Typography variant="p">{t('please-try-again-later')}</Typography>

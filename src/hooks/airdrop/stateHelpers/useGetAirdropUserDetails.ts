@@ -1,6 +1,6 @@
 import { useAirdropStore, UserEntryPoints, UserDetails, ReferralCount, BonusTier } from '@app/store/useAirdropStore';
 import { useCallback, useEffect } from 'react';
-import { useAridropRequest } from '../utils/useHandleRequest';
+import { useAirdropRequest } from '../utils/useHandleRequest';
 
 export const useGetAirdropUserDetails = () => {
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
@@ -9,7 +9,7 @@ export const useGetAirdropUserDetails = () => {
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
     const setReferralCount = useAirdropStore((state) => state.setReferralCount);
-    const handleRequest = useAridropRequest();
+    const handleRequest = useAirdropRequest();
     const setBonusTiers = useAirdropStore((state) => state.setBonusTiers);
     const logout = useAirdropStore((state) => state.logout);
 

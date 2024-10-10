@@ -1,5 +1,7 @@
 use std::path::{Component, Path, PathBuf};
 
+use anyhow::anyhow;
+
 /// Returns a relative path from one path to another.
 pub fn make_relative_path(root: &Path, current: &Path) -> PathBuf {
     let mut result = PathBuf::new();
@@ -31,4 +33,10 @@ pub fn path_as_string(path: &Path) -> String {
         }
     }
     path_str
+}
+
+pub fn convert_to_string(path: PathBuf) -> Result<String, anyhow::Error> {
+    path.to_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| anyhow!("Could not convert path to string"))
 }

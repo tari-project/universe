@@ -54,5 +54,12 @@
   "feedback-required": "Geri bildirim gereklidir",
   "your-reference": "Referansınız",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
-  "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak."
+  "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak.",
+  "applyInviteCode": "Davet Kodunu Uygula",
+  "disconnect": "Airdrop\"tan Bağlantıyı Kes",
+  "inviteCode": "Davet Kodu",
+  "use-tor": "Tor Kullan",
+  "importing-wallet": "Importing wallet",
+  "action-requires-restart": "This action requires restart to apply changes",
+  "invalid-seed-words": "Enter 24 words separated by spaces"
 }

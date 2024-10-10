@@ -1,11 +1,11 @@
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import Gems from '../../components/Gems/Gems';
-import { ClaimButton, Wrapper } from './styles';
+import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
 import { useCallback, useEffect, useState } from 'react';
 import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
 import ClaimModal from '../../components/Claimmodal/ClaimModal';
 import { useTranslation } from 'react-i18next';
+import gemImage from '../../images/gem.png';
 
 export default function LoggedOut() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -64,10 +64,13 @@ export default function LoggedOut() {
         <>
             <Wrapper>
                 <ClaimButton onClick={() => setModalIsOpen(true)}>
-                    <span>{t('claimGems')}</span>
-                </ClaimButton>
+                    <Title>{t('claimGems')}</Title>
 
-                <Gems number={referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS} label={t('unclaimedGems')} />
+                    <GemPill>
+                        {(referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString()}
+                        <Image src={gemImage} alt="" />
+                    </GemPill>
+                </ClaimButton>
             </Wrapper>
             {modalIsOpen && <ClaimModal onSubmit={handleAuth} onClose={() => setModalIsOpen(false)} />}
         </>

@@ -232,11 +232,21 @@ impl SystemtrayManager {
     }
 
     pub fn handle_system_tray_event(&self, app: AppHandle, event: SystemTrayEvent) {
-        let window = app.get_window("main").unwrap();
+        let window = match app.get_window("main") {
+            Some(window) => window,
+            None => {
+                error!(target: LOG_TARGET, "Failed to get main window");
+                return;
+            }
+        };
         match event {
             SystemTrayEvent::DoubleClick { .. } => {
-                window.unminimize().unwrap();
-                window.set_focus().unwrap();
+                window.unminimize().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                });
+                window.set_focus().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                });
             }
             SystemTrayEvent::MenuItemClick { id, .. } => {
                 info!(target: LOG_TARGET, "System tray menu item click event: {}", id);
@@ -245,18 +255,33 @@ impl SystemtrayManager {
                         info!(target: LOG_TARGET, "Unminimizing window");
                         match SystemtrayManager::detect_current_os() {
                             CurrentOperatingSystem::Linux => {
-                                if window.is_minimized().unwrap() | !window.is_visible().unwrap() {
+                                let is_minimized = window.is_minimized().unwrap_or(false);
+                                let is_visible = window.is_visible().unwrap_or(false);
+
+                                if is_minimized | !is_visible {
                                     // Ony soultion to unminimize and show the window on Linux
                                     // At least one that I found
-                                    window.hide().unwrap();
-                                    window.unminimize().unwrap();
-                                    window.show().unwrap();
-                                    window.set_focus().unwrap();
+                                    window.hide().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed hide window: {}", error);
+                                    });
+                                    window.unminimize().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                                    });
+                                    window.show().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed to show window: {}", error);
+                                    });
+                                    window.set_focus().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                                    });
                                 }
                             }
                             CurrentOperatingSystem::MacOS => {
-                                window.unminimize().unwrap();
-                                window.set_focus().unwrap();
+                                window.unminimize().unwrap_or_else(|error| {
+                                    error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                                });
+                                window.set_focus().unwrap_or_else(|error| {
+                                    error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                                });
                             }
                             _ => {}
                         }

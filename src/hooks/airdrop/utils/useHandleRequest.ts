@@ -7,13 +7,12 @@ interface RequestProps {
     onError?: (e: unknown) => void;
 }
 
-export const useAridropRequest = () => {
+export const useAirdropRequest = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
 
     return async <T>({ body, method, path, onError }: RequestProps) => {
         if (!baseUrl || !airdropToken) return;
-
         const response = await fetch(`${baseUrl}${path}`, {
             method: method,
             headers: {
@@ -25,7 +24,7 @@ export const useAridropRequest = () => {
 
         try {
             if (!response.ok) {
-                console.error('Error fetching airdrop data', response);
+                console.error('Error fetching airdrop request:', response);
                 if (onError) {
                     onError(response);
                 }
@@ -33,7 +32,8 @@ export const useAridropRequest = () => {
             }
             return response.json() as Promise<T>;
         } catch (e) {
-            console.error('Error fetching airdrop data', e);
+            console.error('Caught error fetching airdrop data:', e);
+
             if (onError) {
                 onError(e);
             }

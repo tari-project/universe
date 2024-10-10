@@ -29,21 +29,31 @@ export const StyledButtonBase = styled.button<Props>`
         opacity: 0.5;
         cursor: inherit;
     }
+    &:hover {
+        opacity: 0.85;
+    }
 
-    ${({ $variant }) => {
+    ${({ $variant, $color }) => {
         switch ($variant) {
             case 'outlined':
-                return css``;
+                return css`
+                    border: 1px solid ${({ theme }) => theme.palette[$color || 'primary'].light};
+                    color: ${({ theme }) => theme.palette.base};
+                    background: ${({ theme }) => theme.palette[$color || 'primary'].main};
+                `;
             case 'gradient':
                 return css`
                     background: linear-gradient(86deg, #780eff -4.33%, #bf28ff 102.27%);
                     color: ${({ theme }) => theme.palette.text.contrast};
+                    &:hover {
+                        background: linear-gradient(86deg, #780eff -24.33%, #bf28ff 78.27%);
+                    }
                 `;
             case 'secondary':
                 return css`
-                    box-shadow: 0 2px 20px -10px rgba(0, 0, 0, 0.06);
-                    color: ${({ theme }) => theme.palette.primary.main};
-                    background: ${({ theme }) => theme.palette.background.paper};
+                    box-shadow: 0 2px 20px -10px rgba(0, 0, 0, 0.076);
+                    color: ${({ theme }) => theme.palette[$color || 'primary'].main};
+                    background: ${({ theme }) => theme.palette[$color || 'background'].paper};
                 `;
             case 'primary':
             default:
@@ -58,8 +68,16 @@ export const StyledButtonBase = styled.button<Props>`
 
     ${({ $size }) => {
         switch ($size) {
+            case 'xs':
+                return css`
+                    padding: 0 8px;
+                    font-size: 10px;
+                `;
             case 'small':
-                return css``;
+                return css`
+                    padding: 6px 12px;
+                    font-size: 14px;
+                `;
             case 'large':
                 return css`
                     height: 50px;

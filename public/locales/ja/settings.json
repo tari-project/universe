@@ -54,5 +54,12 @@
   "connected-to-tari": "Tariネットワークに接続されています",
   "not-connected-to-tari": "Tariネットワークに接続されていません",
   "connected-peers": "接続されたピア",
-  "should-use-system-language": "システム言語を使用"
+  "should-use-system-language": "システム言語を使用",
+  "applyInviteCode": "招待コードを適用",
+  "disconnect": "エアドロップから切断",
+  "inviteCode": "招待コード",
+  "use-tor": "Torを使用する",
+  "importing-wallet": "Importing wallet",
+  "action-requires-restart": "This action requires restart to apply changes",
+  "invalid-seed-words": "Enter 24 words separated by spaces"
 }
