@@ -7,9 +7,10 @@ import { useUIStore } from '../store/useUIStore.ts';
 import { useAppStateStore } from '../store/appStateStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { setAnimationState } from '@app/visuals.ts';
-import useWalletDetailsUpdater from './useWalletUpdater.ts';
+
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 export function useSetUp() {
     const setView = useUIStore((s) => s.setView);
@@ -22,7 +23,7 @@ export function useSetUp() {
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setSeenPermissions = useAirdropStore((s) => s.setSeenPermissions);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
-
+    const fetchWalletDetails = useWalletStore((s) => s.fetchWalletDetails);
     const { loadExternalDependencies } = useAppStateStore();
 
     useEffect(() => {
@@ -55,7 +56,7 @@ export function useSetUp() {
     }, []);
 
     // fetch initial wallet details
-    useWalletDetailsUpdater();
+    fetchWalletDetails();
 
     useEffect(() => {
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {

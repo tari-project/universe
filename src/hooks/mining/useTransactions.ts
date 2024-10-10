@@ -2,22 +2,48 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api';
+import { TransactionInfo } from '@app/types/app-status.ts';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
 export default function useFetchTx() {
-    const setError = useAppStateStore((s) => s.setError);
+    const transactions = useWalletStore((s) => s.transactions);
+    const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const setTransactionsLoading = useWalletStore((s) => s.setTransactionsLoading);
+    const handleWin = useBlockchainVisualisationStore((s) => s.handleWin);
     const setTransactions = useWalletStore((s) => s.setTransactions);
+    const setError = useAppStateStore((s) => s.setError);
+
+    const setItems = useCallback(
+        async (newTx: TransactionInfo[]) => {
+            const latestTx = newTx[0];
+            const latestId = latestTx?.tx_id;
+            const hasNewItems = !transactions?.find((tx) => tx.tx_id === latestId);
+
+            if (hasNewItems || (!transactions && newTx)) {
+                const lastMinedBlock = latestTx.message?.split(': ')[1];
+
+                setTransactions(newTx);
+                await handleWin(Number(lastMinedBlock), latestTx.amount);
+            }
+        },
+        [handleWin, setTransactions, transactions]
+    );
+
     return useCallback(async () => {
+        if (isTransactionLoading) return;
         setTransactionsLoading(true);
         try {
             const txs = await invoke('get_transaction_history');
             const sortedTransactions = txs.sort((a, b) => b.timestamp - a.timestamp);
-            setTransactions(sortedTransactions);
+
+            if (sortedTransactions?.length) {
+                await setItems(sortedTransactions);
+            }
         } catch (error) {
             setError('Could not get transaction history');
             console.error('Could not get transaction history: ', error);
         } finally {
             setTransactionsLoading(false);
         }
-    }, [setError, setTransactions, setTransactionsLoading]);
+    }, [isTransactionLoading, setError, setItems, setTransactionsLoading]);
 }

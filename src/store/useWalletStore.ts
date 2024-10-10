@@ -52,6 +52,6 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
             console.error('Could not get tari wallet details: ', error);
         }
     },
-    setTransactions: (transactions) => set({ transactions, isTransactionLoading: false }),
+    setTransactions: (transactions) => set({ transactions }),
     setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),
 }));

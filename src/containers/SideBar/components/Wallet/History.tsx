@@ -18,11 +18,10 @@ export default function History() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const transactions = useWalletStore((s) => s.transactions);
-
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
             <Typography variant="h6">{t('recent-wins')}</Typography>
-            {isTransactionLoading ? (
+            {isTransactionLoading && !transactions?.length ? (
                 <CircularProgress />
             ) : (
                 transactions.map((tx) => <HistoryItem key={tx.tx_id} item={tx} />)

@@ -8,6 +8,7 @@ const useWalletDetailsUpdater = () => {
         const fetchWalletInterval = setInterval(async () => {
             try {
                 await fetchWalletDetails();
+                console.debug('hello');
             } catch (error) {
                 console.error('Error fetching wallet details:', error);
             }
