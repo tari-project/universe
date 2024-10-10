@@ -58,5 +58,8 @@
   "applyInviteCode": "应用邀请代码",
   "disconnect": "断开与空投的连接",
   "inviteCode": "邀请代码",
-  "use-tor": "使用Tor"
+  "use-tor": "使用Tor",
+  "importing-wallet": "Importing wallet",
+  "action-requires-restart": "This action requires restart to apply changes",
+  "invalid-seed-words": "Enter 24 words separated by spaces"
 }

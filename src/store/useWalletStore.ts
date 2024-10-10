@@ -8,12 +8,14 @@ interface State extends WalletBalance {
     balance: number | null;
     transactions: TransactionInfo[];
     isTransactionLoading: boolean;
+    is_wallet_importing: boolean;
 }
 
 interface Actions {
     fetchWalletDetails: () => Promise<void>;
     setTransactionsLoading: (isTransactionLoading: boolean) => void;
     setTransactions: (transactions?: TransactionInfo[]) => void;
+    importSeedWords: (seedWords: string[]) => Promise<void>;
 }
 
 type WalletStoreState = State & Actions;
@@ -28,6 +30,7 @@ const initialState: State = {
     pending_outgoing_balance: 0,
     transactions: [],
     isTransactionLoading: false,
+    is_wallet_importing: false,
 };
 
 export const useWalletStore = create<WalletStoreState>()((set) => ({
@@ -54,4 +57,12 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
     },
     setTransactions: (transactions) => set({ transactions }),
     setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),
+    importSeedWords: async (seedWords: string[]) => {
+        try {
+            set({ is_wallet_importing: true });
+            await invoke('import_seed_words', { seedWords });
+        } catch (error) {
+            console.error('Could not import seed words: ', error);
+        }
+    },
 }));

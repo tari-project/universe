@@ -39,6 +39,7 @@ export const StatWrapper = styled(m.div)<{ $useLowerCase?: boolean }>`
     justify-content: space-between;
     align-items: baseline;
     color: ${({ theme }) => theme.palette.text.primary};
+    min-height: 16px;
 `;
 export const Unit = styled(m.div)`
     line-height: 1;

@@ -47,6 +47,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'restart_application'): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
+    function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }

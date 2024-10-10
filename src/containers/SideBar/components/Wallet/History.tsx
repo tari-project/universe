@@ -1,4 +1,4 @@
-import { HistoryContainer } from '@app/containers/SideBar/components/Wallet/Wallet.styles.ts';
+import { HistoryContainer, HistoryPadding } from '@app/containers/SideBar/components/Wallet/Wallet.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import HistoryItem from '@app/containers/SideBar/components/Wallet/HistoryItem.tsx';
 import { useWalletStore } from '@app/store/useWalletStore';
@@ -23,8 +23,10 @@ export default function History() {
 
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
-            <Typography variant="h6">{t('recent-wins')}</Typography>
-            {isTransactionLoading && !transactions?.length ? <CircularProgress /> : txMarkup}
+            <HistoryPadding>
+                <Typography variant="h6">{t('recent-wins')}</Typography>
+                {isTransactionLoading && !transactions?.length ? <CircularProgress /> : txMarkup}
+            </HistoryPadding>
         </HistoryContainer>
     );
 }

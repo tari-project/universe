@@ -3,14 +3,16 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import styled from 'styled-components';
 
 import { IconButton } from '@app/components/elements/Button.tsx';
-import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
+import { IoCopyOutline, IoCheckmarkOutline, IoPencil } from 'react-icons/io5';
 import { useCallback } from 'react';
-import { useGetSeedWords } from './useGetSeedWords';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 
 export interface SeedWordsProps {
     showSeedWords: boolean;
     seedWords: string[];
+    toggleEdit: () => Promise<void>;
+    getSeedWords: () => Promise<void>;
+    seedWordsFetched: boolean;
 }
 
 export const Wrapper = styled.div`
@@ -49,10 +51,14 @@ export const CopyIconContainer = styled.div`
     color: ${({ theme }) => theme.palette.text.primary};
 `;
 
-export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
+export const SeedWordsView = ({
+    showSeedWords,
+    seedWords,
+    getSeedWords,
+    seedWordsFetched,
+    toggleEdit,
+}: SeedWordsProps) => {
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-
-    const { getSeedWords, seedWordsFetched } = useGetSeedWords();
 
     const copySeedWords = useCallback(async () => {
         if (!seedWordsFetched) {
@@ -62,9 +68,9 @@ export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
     }, [copyToClipboard, getSeedWords, seedWords, seedWordsFetched]);
 
     return (
-        <>
+        <Wrapper>
             {showSeedWords ? (
-                <Wrapper>
+                <>
                     <SeedWordsContainer>
                         {seedWords.map((word, index) => (
                             <Stack key={`seed-word-${word}`} direction="row" justifyContent="flex-start">
@@ -81,13 +87,23 @@ export const SeedWords = ({ showSeedWords, seedWords }: SeedWordsProps) => {
                         <IconButton onClick={copySeedWords}>
                             {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                         </IconButton>
+                        <IconButton onClick={toggleEdit}>
+                            <IoPencil />
+                        </IconButton>
                     </CopyIconContainer>
-                </Wrapper>
+                </>
             ) : (
-                <HiddenContainer>
-                    <Typography>****************************************************</Typography>
-                </HiddenContainer>
+                <>
+                    <HiddenContainer>
+                        <Typography>****************************************************</Typography>
+                    </HiddenContainer>
+                    <CopyIconContainer>
+                        <IconButton onClick={toggleEdit}>
+                            <IoPencil />
+                        </IconButton>
+                    </CopyIconContainer>
+                </>
             )}
-        </>
+        </Wrapper>
     );
 };

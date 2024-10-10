@@ -60,5 +60,8 @@
   "applyInviteCode": "Zastosuj Kod Zaproszenia",
   "disconnect": "Odłącz od Airdrop",
   "inviteCode": "Kod Zaproszenia",
-  "use-tor": "Użyj Tor"
+  "use-tor": "Używaj Tor",
+  "importing-wallet": "Importowanie portfela",
+  "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
+  "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami"
 }
