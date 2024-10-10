@@ -165,7 +165,7 @@ impl P2poolManager {
         if let Some(status_monitor) = &process_watcher.status_monitor {
             return status_monitor.status().await;
         }
-        Err(anyhow!("Failed to get stats"))
+        Err(anyhow!("P2pool Status monitor not started"))
     }
 
     pub async fn is_running(&self) -> Result<bool, anyhow::Error> {
