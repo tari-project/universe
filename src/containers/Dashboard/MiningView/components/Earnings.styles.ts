@@ -16,7 +16,7 @@ export const EarningsWrapper = styled(m.div)`
     justify-content: center;
     span {
         display: flex;
-        font-family: Druk, sans-serif;
+        font-family: DrukWide, sans-serif;
         font-weight: 700;
         font-size: 14px;
         letter-spacing: -0.1px;

@@ -69,11 +69,11 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'SHA-3',
-                                labelValue: '' + p2poolSha3MinersCount,
+                                labelValue: '' + (p2poolSha3MinersCount ?? 0),
                             },
                             {
                                 labelText: 'RandomX',
-                                labelValue: '' + p2poolRandomxMinersCount,
+                                labelValue: '' + (p2poolRandomxMinersCount ?? 0),
                             },
                         ]}
                     />
@@ -111,11 +111,11 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'SHA-3',
-                                labelValue: '#' + p2poolSha3ChainTip,
+                                labelValue: '#' + (p2poolSha3ChainTip ?? 0),
                             },
                             {
                                 labelText: 'RandomX',
-                                labelValue: '#' + p2poolRandomxChainTip,
+                                labelValue: '#' + (p2poolRandomxChainTip ?? 0),
                             },
                         ]}
                     />

@@ -76,18 +76,18 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
                 setAnimationState('start');
             }
 
-            const { displayBlockHeight, setDisplayBlockHeight } = useBlockchainVisualisationStore.getState();
+            const { displayBlockHeight, setDisplayBlockHeight, handleNewBlock } =
+                useBlockchainVisualisationStore.getState();
+
             if (!displayBlockHeight) {
                 setDisplayBlockHeight(metrics.base_node.block_height);
             } else if (metrics.base_node.block_height > getState().base_node.block_height) {
-                await useBlockchainVisualisationStore
-                    .getState()
-                    .handleNewBlock(isMining, metrics.base_node.block_height);
+                await handleNewBlock(isMining, metrics.base_node.block_height);
             }
 
             set(metrics);
         } catch (e) {
-            console.error(e);
+            console.error('Fetch mining metrics error: ', e);
         }
     },
     startMining: async () => {
@@ -101,7 +101,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining started.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to start mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: false });
         }
@@ -114,7 +114,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining stopped.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to stop mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: true });
         }
@@ -126,7 +126,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining paused.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to pause (stop) mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: true });
         }
@@ -149,7 +149,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info(`Mode changed to ${mode}`);
             set({ isChangingMode: false });
         } catch (e) {
-            console.error(e);
+            console.error('Failed to change mode: ', e);
             set({ isChangingMode: false });
         }
     },

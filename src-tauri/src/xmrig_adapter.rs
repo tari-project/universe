@@ -82,9 +82,25 @@ impl ProcessAdapter for XmrigAdapter {
         let mut shutdown_signal = xmrig_shutdown.to_signal();
         let mut args = self.node_connection.generate_args();
         let xmrig_log_file = log_dir.join("xmrig.log");
-        std::fs::create_dir_all(xmrig_log_file.parent().unwrap())?;
 
-        args.push(format!("--log-file={}", &xmrig_log_file.to_str().unwrap()));
+        let xmrig_log_file_parent = xmrig_log_file
+            .parent()
+            .ok_or_else(|| anyhow::anyhow!("Could not get parent directory of xmrig log file"))?;
+
+        match xmrig_log_file.to_str() {
+            Some(log_file) => {
+                args.push(format!("--log-file={}", &log_file));
+            }
+            None => {
+                warn!(target: LOG_TARGET, "Could not convert xmrig log file path to string");
+                warn!(target: LOG_TARGET, "Logs argument will not be added to xmrig");
+            }
+        };
+
+        std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(| error | {
+            warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {}", error);
+        });
+
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));
         args.push("--donate-level=1".to_string());

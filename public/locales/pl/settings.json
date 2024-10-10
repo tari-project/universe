@@ -56,5 +56,12 @@
   "experimental-title": "Funkcje eksperymentalne",
   "experimental-warning": "⚠️ Ostrzeżenie: Te funkcje są w trakcie aktywnego rozwoju i mogą działać nieprzewidywalnie. Proszę postępować ostrożnie.",
   "connected-to-tari": "Połączono z siecią Tari",
-  "not-connected-to-tari": "Nie połączono z siecią Tari"
+  "not-connected-to-tari": "Nie połączono z siecią Tari",
+  "applyInviteCode": "Zastosuj Kod Zaproszenia",
+  "disconnect": "Odłącz od Airdrop",
+  "inviteCode": "Kod Zaproszenia",
+  "use-tor": "Używaj Tor",
+  "importing-wallet": "Importowanie portfela",
+  "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
+  "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami"
 }

@@ -18,6 +18,7 @@ export const Wrapper = styled.div<{ $letterHeight?: number }>`
     flex-direction: row;
     align-items: baseline;
     gap: 4px;
+
     span {
         display: flex;
         font-weight: 600;
@@ -45,7 +46,7 @@ export const Characters = styled(m.div)<Props>`
     flex-direction: column;
     align-items: center;
     font-weight: ${({ $variant }) => ($variant == 'simple' ? 600 : 700)};
-    font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'Druk')}, sans-serif;
+    font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'DrukWide')}, sans-serif;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
     line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
 `;
@@ -57,6 +58,7 @@ export const Character = styled(m.div)<Props>`
     text-transform: lowercase;
     width: min-content;
     letter-spacing: -3px;
+    z-index: 1;
     // for the unit & decimal
 
     ${({ $decimal, $unit }) =>

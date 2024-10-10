@@ -6,5 +6,7 @@
   "setup-scheduler": "Ustawienia harmonogramu",
   "mining-schedules": "Ustaw twój harmonogram kopania",
   "lost-connection": "Utracono połączenie z siecią Tari. Łączenie..",
-  "mining-schedules-description": "Zaplanuj swoją aktywność wydobywczą"
+  "mining-schedules-description": "Zaplanuj swoją aktywność wydobywczą",
+  "block": "Blok",
+  "recent-wins": "Ostanie wygrane"
 }

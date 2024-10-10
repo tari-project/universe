@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export const INSTALL_BONUS_GEMS = 1000;
-export const GIFT_GEMS = 2000;
-export const REFERRAL_GEMS = 2000;
+export const GIFT_GEMS = 5000;
+export const REFERRAL_GEMS = 5000;
+export const MAX_GEMS = 10000;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
@@ -117,6 +117,11 @@ export interface ReferralQuestPoints {
 
 //////////////////////////////////////////
 
+interface MiningPoint {
+    blockHeight: string;
+    reward: number;
+}
+
 interface AirdropState {
     authUuid: string;
     airdropTokens?: AirdropTokens;
@@ -127,11 +132,13 @@ interface AirdropState {
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
+    miningRewardPoints?: MiningPoint;
+    seenPermissions?: boolean;
 }
 
 interface AirdropStore extends AirdropState {
     setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
-
+    setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
@@ -140,14 +147,17 @@ interface AirdropStore extends AirdropState {
     setReferralCount: (referralCount: ReferralCount) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
+    setSeenPermissions: (seenPermissions: boolean) => void;
     logout: () => void;
 }
 
 const clearState: AirdropState = {
     authUuid: '',
+    seenPermissions: false,
     airdropTokens: undefined,
     userDetails: undefined,
     userPoints: undefined,
+    miningRewardPoints: undefined,
 };
 
 const NOT_PERSISTED_KEYS = ['userPoints', 'backendInMemoryConfig', 'userDetails', 'authUuid', 'referralCount'];
@@ -155,6 +165,7 @@ export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
             authUuid: '',
+            seenPermissions: false,
             setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
             setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
@@ -171,6 +182,8 @@ export const useAirdropStore = create<AirdropStore>()(
             setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
+            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
+            setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
         }),
         {
             name: 'airdrop-store',

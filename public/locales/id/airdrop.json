@@ -25,5 +25,9 @@
   "claimModalTitle": "Dapatkan hadiah untuk Menambang di Testnet",
   "claimModalText": "Dapatkan permata dengan menambang dan merujuk teman untuk meningkatkan hadiah airdrop Anda selama testnet! Punya kode referensi? Masukkan di bawah ini dan dapatkan tambahan <strong>{{gems}}</strong> permata untuk Anda dan teman Anda!",
   "claimModalFieldLabel": "Opsional",
-  "claimModalFieldPlaceholder": "Masukkan kode referensi"
+  "claimModalFieldPlaceholder": "Masukkan kode referensi",
+  "topTooltipText": "Dapatkan Airdrop Tari dengan mengumpulkan permata. Semakin banyak permata yang Anda kumpulkan, semakin besar airdrop Anda.",
+  "topTooltipTitle": "Hadiah Testnet",
+  "claimModalFinePrint": "<strong>Harap diperhatikan:</strong> mengklaim permata mengaktifkan analitik sehingga kami dapat meningkatkan Universe",
+  "inviteFriendsText": "Salin tautan dan bagikan"
 }

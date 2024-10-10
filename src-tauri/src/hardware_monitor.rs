@@ -207,7 +207,13 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         system.refresh_cpu_all();
 
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().first().unwrap().brand().to_string();
+        let label: String = match system.cpus().first() {
+            Some(cpu) => cpu.brand().to_string(),
+            None => {
+                warn!("Failed to get CPU brand");
+                "N/A".to_string()
+            }
+        };
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -355,7 +361,13 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
 
         let usage = system.global_cpu_usage();
 
-        let label: String = system.cpus().first().unwrap().brand().to_string();
+        let label: String = match system.cpus().first() {
+            Some(cpu) => cpu.brand().to_string(),
+            None => {
+                warn!("Failed to get CPU brand");
+                "N/A".to_string()
+            }
+        };
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {
@@ -512,7 +524,13 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         system.refresh_cpu_all();
 
         let usage = system.global_cpu_usage();
-        let label: String = system.cpus().first().unwrap().brand().to_string() + " CPU";
+        let label: String = match system.cpus().first() {
+            Some(cpu) => cpu.brand().to_string() + " CPU",
+            None => {
+                warn!("Failed to get CPU brand");
+                "N/A".to_string()
+            }
+        };
 
         match current_parameters {
             Some(current_parameters) => HardwareParameters {

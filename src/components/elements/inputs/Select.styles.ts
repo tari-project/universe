@@ -53,27 +53,36 @@ export const Options = styled.div<{ $open?: boolean; $isBordered?: boolean }>`
     z-index: 10;
 `;
 
-export const SelectedOption = styled.div<{ $isBordered?: boolean }>`
+export const SelectedOption = styled.div<{ $isBordered?: boolean; $forceHeight?: number }>`
     color: ${({ theme }) => theme.palette.text.primary};
+
     display: flex;
     align-items: center;
     gap: 5px;
 
     font-size: ${({ $isBordered }) => ($isBordered ? '14px' : '18px')};
     font-weight: 500;
-    height: 36px;
+
     width: 100%;
+    letter-spacing: -0.2px;
+
     img {
         width: 14px;
         display: flex;
     }
+
+    ${({ $forceHeight }) =>
+        $forceHeight &&
+        css`
+            height: ${$forceHeight}px;
+        `}
 `;
 
 export const OptionLabelWrapper = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 9px;
+    gap: 6px;
     img {
         width: 18px;
         display: flex;

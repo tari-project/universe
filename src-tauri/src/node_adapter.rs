@@ -2,6 +2,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::utils::file_utils::convert_to_string;
 use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -22,20 +23,23 @@ use tokio::select;
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub(crate) struct MinotariNodeAdapter {
-    use_tor: bool,
+    pub(crate) use_tor: bool,
     pub(crate) grpc_port: u16,
+    pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
     required_initial_peers: u32,
 }
 
 impl MinotariNodeAdapter {
-    pub fn new(use_tor: bool) -> Self {
+    pub fn new() -> Self {
         let port = get_free_port().unwrap_or(18142);
+        let tcp_listener_port = get_free_port().unwrap_or(18189);
         Self {
-            use_tor,
             grpc_port: port,
+            tcp_listener_port,
             use_pruned_mode: false,
             required_initial_peers: 3,
+            use_tor: false,
         }
     }
 }
@@ -43,6 +47,7 @@ impl MinotariNodeAdapter {
 impl ProcessAdapter for MinotariNodeAdapter {
     type StatusMonitor = MinotariNodeStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -53,15 +58,18 @@ impl ProcessAdapter for MinotariNodeAdapter {
         let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting minotari node");
-        let working_dir = data_dir.join("node");
+        let working_dir: PathBuf = data_dir.join("node");
         std::fs::create_dir_all(&working_dir)?;
+
+        let working_dir_string = convert_to_string(working_dir)?;
+        let log_dir_string = convert_to_string(log_dir)?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
-            working_dir.to_str().unwrap().to_string(),
+            working_dir_string,
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
-            format!("--log-path={}", log_dir.to_str().unwrap()).to_string(),
+            format!("--log-path={}", log_dir_string),
             "-p".to_string(),
             "base_node.grpc_enabled=true".to_string(),
             "-p".to_string(),
@@ -72,14 +80,14 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "-p".to_string(),
             "base_node.report_grpc_error=true".to_string(),
             "-p".to_string(),
-            "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
-            "-p".to_string(),
             format!(
                 "base_node.state_machine.initial_sync_peer_count={}",
                 self.required_initial_peers
             ),
             "-p".to_string(),
             "base_node.grpc_server_allow_methods=\"list_connected_peers\"".to_string(),
+            "-p".to_string(),
+            "base_node.p2p.allow_test_addresses=true".to_string(),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
@@ -91,27 +99,34 @@ impl ProcessAdapter for MinotariNodeAdapter {
         // args.push("localnet".to_string());
         // }
         if self.use_tor {
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
-                    .to_string(),
-            );
-        } else {
-            // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
-            // In future we should change the base node to not error if it is tcp and doesn't have a public address
-            args.push("-p".to_string());
-            args.push("base_node.p2p.transport.type=tcp".to_string());
-            // args.push("-p".to_string());
-            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
-            args.push("-p".to_string());
-            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
-            args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
-            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
-            // args.push("-p".to_string());
-            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
             // args.push("-p".to_string());
             // args.push(
-            //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
+            //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
+            //         .to_string(),
+            // );
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/{0}",
+                self.tcp_listener_port
+            ));
+            args.push("-p".to_string());
+            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
+        } else {
+            args.push("-p".to_string());
+            args.push("base_node.p2p.transport.type=tcp".to_string());
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/{}",
+                self.tcp_listener_port
+            ));
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.transport.tcp.listener_address=/ip4/127.0.0.1/tcp/{}",
+                self.tcp_listener_port
+            ));
+            // args.push("-p".to_string());
+            // args.push(
+            // "base_node.p2p.dht.excluded_dial_addresses=/ip4/127.*.*.*/tcp/0:18188".to_string(),
             // );
         }
         Ok((
@@ -122,8 +137,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                         .read()
                         .await
                         .resolve_path_to_binary_files(Binaries::MinotariNode)
-                        .await
-                        .unwrap();
+                        .await?;
 
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
@@ -219,18 +233,32 @@ impl MinotariNodeStatusMonitor {
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
-        let reward = res.miner_data.unwrap().reward;
+
+        let reward = res
+            .miner_data
+            .ok_or_else(|| {
+                MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
+            })?
+            .reward;
 
         let res = client
             .get_tip_info(Empty {})
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
+        let metadata = match res.metadata {
+            Some(metadata) => metadata,
+            None => {
+                return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
+                    "No metadata found"
+                )));
+            }
+        };
         let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
-            res.metadata.as_ref().unwrap().best_block_height,
-            res.metadata.as_ref().unwrap().best_block_hash.clone(),
-            res.metadata.unwrap().timestamp,
+            metadata.best_block_height,
+            metadata.best_block_hash.clone(),
+            metadata.timestamp,
         );
         // First try with 10 blocks
         let blocks = [10, 100];

@@ -54,5 +54,12 @@
   "connected-to-tari": "Подключено к сети Tari",
   "not-connected-to-tari": "Не подключено к сети Tari",
   "connected-peers": "Подключенные узлы",
-  "should-use-system-language": "Использовать системный язык"
+  "should-use-system-language": "Использовать системный язык",
+  "applyInviteCode": "Применить код приглашения",
+  "disconnect": "Отключиться от Airdrop",
+  "inviteCode": "Код приглашения",
+  "use-tor": "Использовать Tor",
+  "importing-wallet": "Importing wallet",
+  "action-requires-restart": "This action requires restart to apply changes",
+  "invalid-seed-words": "Enter 24 words separated by spaces"
 }

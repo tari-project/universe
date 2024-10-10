@@ -20,9 +20,9 @@ export const Wrapper = styled(m.div)`
 export const Number = styled(m.div)`
     text-align: center;
     font-family: Druk, sans-serif;
-    font-size: 38px;
+    font-size: 68px;
     font-weight: 700;
-
+    line-height: 1.1;
     position: relative;
     z-index: 2;
 `;
