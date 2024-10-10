@@ -56,5 +56,6 @@
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
   "seed-words": "Mots de récupération",
   "feedback-required": "Les commentaires sont requis",
+  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
   "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?"
 }

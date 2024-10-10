@@ -6,6 +6,7 @@ import { Bottom, Scroll, SideBarContainer, SidebarTop, Top } from './styles';
 import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
 import AirdropGiftTracker from '@app/containers/Airdrop/AirdropGiftTracker/AirdropGiftTracker';
 import LostConnectionAlert from './components/LostConnectionAlert';
+import { LowHashRateWarning } from './components/LowHashRateWarning/LowHashRateWarning.tsx';
 
 function SideBar() {
     return (
@@ -14,6 +15,7 @@ function SideBar() {
                 <Heading />
                 <MiningButton />
                 <LostConnectionAlert />
+                <LowHashRateWarning />
             </SidebarTop>
             <Scroll>
                 <Top>
