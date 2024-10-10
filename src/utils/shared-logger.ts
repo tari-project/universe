@@ -35,19 +35,16 @@ const getStackTrace = function () {
 };
 
 const isDevelopment = import.meta.env.DEV || import.meta.env.MODE == 'development';
+
 const getOptions = (args, level) => {
-    if (isDevelopment) {
-        return originalConsole[level](...args);
-    } else {
-        const trace = getStackTrace();
-        const firstStackItem = trace.slice(0, 1);
-        void invoke('log_web_message', {
-            level,
-            message: [...args.map(parseArgument), firstStackItem], // in case no breadcrumbs are added
-            trace: level === 'error' ? trace : firstStackItem, // so it doesn't get too noisy
-        });
-        return originalConsole[level](...args);
-    }
+    const trace = getStackTrace();
+    const firstStackItem = trace.slice(0, 1);
+    void invoke('log_web_message', {
+        level: isDevelopment ? `info` : level, // so it isn't logged to sentry if error
+        message: args.map(parseArgument),
+        trace: level === 'error' ? trace : firstStackItem, // so it doesn't get too noisy
+    });
+    return originalConsole[level](...args);
 };
 
 export const setupLogger = () => {
