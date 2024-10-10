@@ -13,6 +13,7 @@ export const spin = keyframes`
 export const StyledIcon = styled(ImSpinner3)`
     animation: ${spin} 2s infinite;
     animation-timing-function: cubic-bezier(0.76, 0.89, 0.95, 0.85);
+    height: 16px;
 `;
 
 export const IconWrapper = styled.div`
