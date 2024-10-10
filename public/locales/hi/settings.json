@@ -58,5 +58,8 @@
   "applyInviteCode": "आमंत्रण कोड लागू करें",
   "disconnect": "एयरड्रॉप से डिस्कनेक्ट करें",
   "inviteCode": "आमंत्रण कोड",
-  "use-tor": "टोर का उपयोग करें"
+  "use-tor": "टोर का उपयोग करें",
+  "importing-wallet": "Importing wallet",
+  "action-requires-restart": "This action requires restart to apply changes",
+  "invalid-seed-words": "Enter 24 words separated by spaces"
 }

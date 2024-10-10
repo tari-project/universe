@@ -83,7 +83,14 @@ export const HistoryContainer = styled(m.div)`
     overflow-y: auto;
     width: 100%;
     position: relative;
-    gap: 6px;
-    padding-bottom: 10px;
+
     color: ${({ theme }) => theme.palette.base};
+`;
+
+export const HistoryPadding = styled('div')`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    padding: 0 5px 60px 5px;
 `;
