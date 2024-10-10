@@ -46,7 +46,7 @@ export const Characters = styled(m.div)<Props>`
     flex-direction: column;
     align-items: center;
     font-weight: ${({ $variant }) => ($variant == 'simple' ? 600 : 700)};
-    font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'Druk')}, sans-serif;
+    font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'DrukWide')}, sans-serif;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
     line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
 `;
