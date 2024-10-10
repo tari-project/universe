@@ -59,5 +59,8 @@
   "connected-peers": "Bağlantılı Eşler",
   "should-use-system-language": "Sistem dilini kullan",
   "use-tor": "Tor'u kullan",
-  "report-issue": "Bir sorun bildirin"
+  "report-issue": "Bir sorun bildirin",
+  "importing-wallet": "Cüzdanı içe aktarma",
+  "action-requires-restart": "Bu eylem, değişikliklerin uygulanması için yeniden başlatma gerektirir",
+  "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin"
 }
