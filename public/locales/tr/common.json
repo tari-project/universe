@@ -1,6 +1,8 @@
 {
     "submit": "Onayla",
     "cancel": "İptal",
+    "connection": "Bağlantı",
+    "disconnect": "Bağlantıyı Kes",
     "temperature": "Sıcaklık",
     "max-temperature": "Maks. Sıcaklık",
     "usage": "Kullanım",
@@ -11,15 +13,15 @@
     "version": "Versiyon",
     "resources": "Kaynaklar",
     "hashrate": "Hashrate",
-    "utilization": "Fayda",
+    "utilization": "Kullanım",
     "mode": "Mode",
     "day": "Gün",
     "shutting-down": "Kapatılıyor..",
     "tari-universe": "Tari Universe",
     "testnet": "Testnet",
-    "critical-error": "Critical error",
-    "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
-    "close-tari-universe": "Close Tari Universe",
-    "continue": "Continue",
-    "restart": "Restart"
+    "critical-error": "Kritik hata",
+    "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse bizimle iletişime geçin.",
+    "close-tari-universe": "Tari Universe'i kapat",
+    "continue": "Devam et",
+    "restart": "Yeniden başlat"
 }
