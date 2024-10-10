@@ -5,7 +5,6 @@ use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredEx
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
-use sentry_anyhow::capture_anyhow;
 use sentry_tauri::sentry;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -1166,9 +1165,7 @@ async fn update_applications(
 }
 
 #[tauri::command]
-async fn get_p2pool_stats(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<HashMap<String, Stats>, String> {
+async fn get_p2pool_stats(state: tauri::State<'_, UniverseAppState>) -> Result<Stats, String> {
     let timer = Instant::now();
     if state.is_getting_p2pool_stats.load(Ordering::SeqCst) {
         let read = state.cached_p2pool_stats.read().await;
@@ -1596,7 +1593,7 @@ struct UniverseAppState {
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
-    cached_p2pool_stats: Arc<RwLock<Option<HashMap<String, Stats>>>>,
+    cached_p2pool_stats: Arc<RwLock<Option<Stats>>>,
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
 }

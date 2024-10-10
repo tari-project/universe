@@ -19,7 +19,7 @@ pub struct SquadDetails {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConnectionInfo {
-    pub listener_addresses: Vec<Multiaddr>,
+    pub listener_addresses: Vec<String>,
     pub connected_peers: usize,
     pub network_info: NetworkInfo,
 }

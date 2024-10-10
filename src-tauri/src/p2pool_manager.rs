@@ -11,7 +11,7 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 
 use crate::network_utils;
-use crate::p2pool::models::{ChainStats, ConnectionInfo, NetworkInfo, Stats};
+use crate::p2pool::models::{BlockStats, ChainStats, ConnectionInfo, NetworkInfo, Stats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::process_adapter::StatusMonitor;
 use crate::process_watcher::ProcessWatcher;
@@ -107,15 +107,15 @@ impl P2poolManager {
                 squad: crate::p2pool::models::SquadDetails { id: "".to_string(), name: "".to_string() },
                 num_of_miners: 0,
                 share_chain_height: 0,
-                miner_block_stats: BlockStats { hash: "".to_string(), height: 0, timestamp: 0, miner_wallet_address: None },
-                p2pool_block_stats: BlockStats { hash: "".to_string(), height: 0, timestamp: 0, miner_wallet_address: None },
+                miner_block_stats: BlockStats { accepted: 0, rejected: 0, submitted: 0 },
+                p2pool_block_stats: BlockStats { accepted: 0, rejected: 0, submitted: 0 },
             },
             sha3x_stats: ChainStats {
                 squad: crate::p2pool::models::SquadDetails { id: "".to_string(), name: "".to_string() },
                 num_of_miners: 0,
                 share_chain_height: 0,
-                miner_block_stats: BlockStats { hash: "".to_string(), height: 0, timestamp: 0, miner_wallet_address: None },
-                p2pool_block_stats: BlockStats { hash: "".to_string(), height: 0, timestamp: 0, miner_wallet_address: None },
+                miner_block_stats: BlockStats { accepted: 0, rejected: 0, submitted: 0 },
+                p2pool_block_stats: BlockStats { accepted: 0, rejected: 0, submitted: 0 },
             }
         }
     }
@@ -130,7 +130,7 @@ impl P2poolManager {
         }
     }
 
-    async fn get_stats(&self) -> Result<HashMap<String, Stats>, anyhow::Error> {
+    async fn get_stats(&self) -> Result<Stats, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             return status_monitor.status().await;
