@@ -1,7 +1,6 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api';
-import { useAppStateStore } from './appStateStore.ts';
 
 interface State extends WalletBalance {
     tari_address_base58: string;
@@ -13,7 +12,8 @@ interface State extends WalletBalance {
 
 interface Actions {
     fetchWalletDetails: () => Promise<void>;
-    fetchTransactionHistory: () => Promise<void>;
+    setTransactionsLoading: (isTransactionLoading: boolean) => void;
+    setTransactions: (transactions?: TransactionInfo[]) => void;
 }
 
 type WalletStoreState = State & Actions;
@@ -30,7 +30,7 @@ const initialState: State = {
     isTransactionLoading: false,
 };
 
-export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
+export const useWalletStore = create<WalletStoreState>()((set) => ({
     ...initialState,
     fetchWalletDetails: async () => {
         try {
@@ -52,21 +52,6 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
             console.error('Could not get tari wallet details: ', error);
         }
     },
-    fetchTransactionHistory: async () => {
-        if (getState().isTransactionLoading) return;
-
-        set({ isTransactionLoading: true });
-        try {
-            const txs = await invoke('get_transaction_history');
-            set({
-                transactions: txs.sort((a, b) => b.timestamp - a.timestamp),
-            });
-        } catch (error) {
-            const appStateStore = useAppStateStore.getState();
-            appStateStore.setError('Could not get transaction history');
-            console.error('Could not get transaction history: ', error);
-        } finally {
-            set({ isTransactionLoading: false });
-        }
-    },
+    setTransactions: (transactions) => set({ transactions, isTransactionLoading: false }),
+    setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),
 }));

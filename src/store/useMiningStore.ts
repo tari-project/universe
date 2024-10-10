@@ -73,14 +73,9 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
                 setAnimationState('start');
             }
 
-            const { displayBlockHeight, setDisplayBlockHeight, handleNewBlock } =
-                useBlockchainVisualisationStore.getState();
+            const setDisplayBlockHeight = useBlockchainVisualisationStore.getState().setDisplayBlockHeight;
 
-            if (!displayBlockHeight) {
-                setDisplayBlockHeight(metrics.base_node.block_height);
-            } else if (metrics.base_node.block_height > getState().base_node.block_height) {
-                await handleNewBlock(isMining, metrics.base_node.block_height);
-            }
+            setDisplayBlockHeight(metrics.base_node.block_height);
 
             set(metrics);
         } catch (e) {

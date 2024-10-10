@@ -2,7 +2,7 @@ import { HistoryContainer } from '@app/containers/SideBar/components/Wallet/Wall
 import { Typography } from '@app/components/elements/Typography.tsx';
 import HistoryItem from '@app/containers/SideBar/components/Wallet/HistoryItem.tsx';
 import { useWalletStore } from '@app/store/useWalletStore';
-import { useEffect } from 'react';
+
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { useTranslation } from 'react-i18next';
 
@@ -15,14 +15,9 @@ const container = {
 };
 
 export default function History() {
+    const { t } = useTranslation('sidebar', { useSuspense: false });
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const transactions = useWalletStore((s) => s.transactions);
-    const fetchTransactionHistory = useWalletStore((s) => s.fetchTransactionHistory);
-    const { t } = useTranslation('sidebar', { useSuspense: false });
-
-    useEffect(() => {
-        fetchTransactionHistory();
-    }, [fetchTransactionHistory]);
 
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
