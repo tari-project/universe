@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use log::{error, info};
+use log::{debug, error};
 use tokio::sync::RwLock;
 
 use crate::setup_status_event::SetupStatusEvent;
@@ -69,7 +69,7 @@ impl ProgressTrackerInner {
         title_params: Option<HashMap<String, String>>,
         progress: u64,
     ) {
-        info!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
+        debug!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
         self.window
             .emit(
                 "message",

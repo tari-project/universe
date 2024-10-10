@@ -52,5 +52,9 @@
   "p2pool-chain-tip": "Punt van kettings",
   "p2pool-user-total-earnings": "Totale verdienste",
   "experimental-title": "Eksperimentele Kenmerke",
-  "experimental-warning": "⚠️ Waarskuwing: Hierdie kenmerke is onder aktiewe ontwikkeling en kan onvoorspelbaar optree. Gaan asseblief versigtig voort."
+  "experimental-warning": "⚠️ Waarskuwing: Hierdie kenmerke is onder aktiewe ontwikkeling en kan onvoorspelbaar optree. Gaan asseblief versigtig voort.",
+  "applyInviteCode": "Pas Uitnodigingskode Toe",
+  "disconnect": "Ontkoppel van Airdrop",
+  "inviteCode": "Uitnodigingskode",
+  "use-tor": "Gebruik Tor"
 }

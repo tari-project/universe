@@ -19,5 +19,7 @@
   "testnet": "Testnet",
   "critical-error": "Kesalahan kritis",
   "please-try-again-later": "Silakan coba lagi nanti. Jika masalah berlanjut, silakan hubungi kami.",
-  "close-tari-universe": "Tutup Tari Universe"
+  "close-tari-universe": "Tutup Tari Universe",
+  "continue": "Continue",
+  "restart": "Restart"
 }

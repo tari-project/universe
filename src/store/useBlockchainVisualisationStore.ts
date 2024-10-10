@@ -55,6 +55,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 
                     if (hasEarnings) {
                         logBalanceChanges({ currBalance, prevBalance, balanceDiff });
+                        await useWalletStore.getState().fetchTransactionHistory();
                         await getState().handleWin(blockHeight, balanceDiff);
                         clearInterval(checkEarningsInterval);
                     } else {
@@ -82,7 +83,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
             setTimeout(() => {
                 useMiningStore.getState().setMiningControlsEnabled(true);
                 set({ displayBlockHeight: blockHeight, earnings: undefined });
-            }, 3000);
+            }, 2000);
         } else {
             set({ displayBlockHeight: blockHeight, earnings: undefined });
         }
@@ -95,7 +96,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
             setTimeout(() => {
                 useMiningStore.getState().setMiningControlsEnabled(true);
                 set({ displayBlockHeight: blockHeight, earnings: undefined });
-            }, 3000);
+            }, 2000);
         } else {
             set({ displayBlockHeight: blockHeight, earnings: undefined });
         }

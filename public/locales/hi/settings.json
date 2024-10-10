@@ -54,5 +54,9 @@
   "connected-to-tari": "Tari नेटवर्क से जुड़ा",
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",
   "connected-peers": "जुड़े हुए सहकर्मी",
-  "should-use-system-language": "सिस्टम भाषा का उपयोग करें"
+  "should-use-system-language": "सिस्टम भाषा का उपयोग करें",
+  "applyInviteCode": "आमंत्रण कोड लागू करें",
+  "disconnect": "एयरड्रॉप से डिस्कनेक्ट करें",
+  "inviteCode": "आमंत्रण कोड",
+  "use-tor": "टोर का उपयोग करें"
 }

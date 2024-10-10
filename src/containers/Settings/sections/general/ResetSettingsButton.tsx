@@ -35,6 +35,8 @@ export const ResetSettingsButton = () => {
             .catch((e) => {
                 console.error('Error when resetting settings: ', e);
                 setError('Resetting settings failed: ' + e);
+                setLoading(false);
+                setOpen(false);
             });
     };
 

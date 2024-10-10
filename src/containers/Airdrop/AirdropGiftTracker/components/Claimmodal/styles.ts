@@ -64,7 +64,7 @@ export const Title = styled('div')`
     font-weight: 800;
     line-height: 99.7%;
     text-transform: uppercase;
-    font-family: Druk, sans-serif;
+    font-family: DrukWide, sans-serif;
 
     span {
         color: #ff4a55;
@@ -181,7 +181,7 @@ export const ClaimButton = styled('button')`
     color: #c9eb00;
     font-size: 21px;
     text-align: center;
-    font-family: Druk, sans-serif;
+    font-family: DrukWide, sans-serif;
     width: 100%;
     border-radius: 49px;
     background: #000;

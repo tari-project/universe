@@ -89,6 +89,7 @@ jobs:
           sed -i.bak -E "s/^version\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"/version = \"\1-${BETA_DATE}\"/" \
             Cargo.toml
           cat Cargo.toml
+          sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json
 
       - name: Set environment variables for RELEASE builds
         if: ${{ startsWith(github.ref, 'refs/heads/release') }}

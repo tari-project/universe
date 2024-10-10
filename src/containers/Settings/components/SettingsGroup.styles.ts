@@ -34,6 +34,7 @@ export const SettingsGroup = styled.div`
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
+    gap: 6px;
     position: relative;
     color: ${({ theme }) => theme.palette.text.secondary};
 `;

@@ -17,6 +17,30 @@ pub(crate) struct TorReleaseAdapter {}
 #[async_trait]
 impl LatestVersionApiAdapter for TorReleaseAdapter {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
+        let cdn_tor_bundle_url = "https://cdn-universe.tari.com/torbrowser/13.5.6/tor-expert-bundle-windows-x86_64-13.5.6.tar.gz";
+        let mut cdn_responded = false;
+
+        for _ in 0..3 {
+            let response = reqwest::get(cdn_tor_bundle_url).await;
+            if let Ok(resp) = response {
+                if resp.status().is_success() {
+                    cdn_responded = true;
+                    break;
+                }
+            }
+        }
+
+        if cdn_responded {
+            let version = VersionDownloadInfo {
+                version: "13.5.6".parse().expect("Bad tor version"),
+                assets: vec![VersionAsset {
+                    url: cdn_tor_bundle_url.to_string(),
+                    name: "tor-expert-bundle-windows-x86_64-13.5.6.tar.gz".to_string(),
+                }],
+            };
+            return Ok(vec![version]);
+        }
+
         // Tor doesn't have a nice API for this so just return specific ones
         let version = VersionDownloadInfo {
             version: "13.5.6".parse().expect("Bad tor version"),

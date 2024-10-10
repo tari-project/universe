@@ -31,7 +31,7 @@ export default function LogsSettings() {
                 console.info('Opening logs directory');
             })
             .catch((error) => {
-                console.error(error);
+                console.error('Error opening logs directory: ', error);
             });
     };
 
@@ -40,7 +40,7 @@ export default function LogsSettings() {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{t('logs', { ns: 'settings' })}</Typography>
+                        <Typography variant="h6">{t('report-issue', { ns: 'settings' })}</Typography>
                     </SettingsGroupTitle>
                     {reference && (
                         <Stack direction="row" alignItems="center" justifyContent="flex-start" gap={5}>
