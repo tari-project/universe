@@ -5,6 +5,7 @@ use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredEx
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
+use sentry_anyhow::capture_anyhow;
 use sentry_tauri::sentry;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -416,6 +417,7 @@ async fn setup_application(
     let timer = Instant::now();
     setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
+        capture_anyhow(&e);
         e.to_string()
     })?;
 
