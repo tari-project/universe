@@ -1,20 +1,35 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create';
-import { P2poolStats, P2poolStatsResult } from '../types/app-status.ts';
+import { P2poolStatsResult } from '../types/app-status.ts';
 
 type State = Partial<P2poolStatsResult>;
 
 interface Actions {
-    randomx?: P2poolStats;
-    sha3?: P2poolStats;
+    set?: P2poolStatsResult;
     fetchP2poolStats: () => Promise<void>;
 }
 
 type P2poolStatsStoreState = State & Actions;
 
 const initialState: State = {
-    randomx: undefined,
-    sha3: undefined,
+    connected: false,
+    peer_count: 0,
+    connection_info: {
+        listener_addresses: [],
+        connected_peers: 0,
+        network_info: {
+            num_peers: 0,
+            connection_counters: {
+                pending_incoming: 0,
+                pending_outgoing: 0,
+                established_incoming: 0,
+                established_outgoing: 0,
+            },
+        },
+    },
+    connected_since: undefined,
+    randomx_stats: undefined,
+    sha3x_stats: undefined,
 };
 
 export const useP2poolStatsStore = create<P2poolStatsStoreState>()((set) => ({

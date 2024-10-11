@@ -5,10 +5,8 @@ use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredEx
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
-use sentry_anyhow::capture_anyhow;
 use sentry_tauri::sentry;
 use serde::Serialize;
-use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -144,6 +142,8 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
         .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
 
+    let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
     state.shutdown.clone().trigger();
 
     // TODO: Find a better way of knowing that all miners have stopped
@@ -417,7 +417,6 @@ async fn setup_application(
     let timer = Instant::now();
     setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        capture_anyhow(&e);
         e.to_string()
     })?;
 
@@ -1167,7 +1166,7 @@ async fn update_applications(
 #[tauri::command]
 async fn get_p2pool_stats(
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<HashMap<String, Stats>, String> {
+) -> Result<Option<Stats>, String> {
     let timer = Instant::now();
     if state.is_getting_p2pool_stats.load(Ordering::SeqCst) {
         let read = state.cached_p2pool_stats.read().await;
@@ -1179,7 +1178,13 @@ async fn get_p2pool_stats(
         return Err("Already getting p2pool stats".to_string());
     }
     state.is_getting_p2pool_stats.store(true, Ordering::SeqCst);
-    let p2pool_stats = state.p2pool_manager.stats().await;
+    let p2pool_stats = match state.p2pool_manager.get_stats().await {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
+            None
+        }
+    };
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
@@ -1440,7 +1445,7 @@ async fn reset_settings<'r>(
         return Err("Could not get app directories".to_string());
     }
     // Exclude EBWebView because it is still being used.
-    let folder_block_list = vec!["EBWebView"];
+    let folder_block_list = ["EBWebView"];
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -1590,7 +1595,7 @@ struct UniverseAppState {
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
-    cached_p2pool_stats: Arc<RwLock<Option<HashMap<String, Stats>>>>,
+    cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
 }

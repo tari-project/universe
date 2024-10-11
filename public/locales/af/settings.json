@@ -59,5 +59,6 @@
   "use-tor": "Gebruik Tor",
   "importing-wallet": "Importing wallet",
   "action-requires-restart": "This action requires restart to apply changes",
+  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
   "invalid-seed-words": "Enter 24 words separated by spaces"
 }
