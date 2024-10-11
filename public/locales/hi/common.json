@@ -21,5 +21,7 @@
   "please-try-again-later": "कृपया बाद में पुनः प्रयास करें। यदि समस्या बनी रहती है, तो कृपया हमसे संपर्क करें।",
   "close-tari-universe": "Tari Universe बंद करें",
   "continue": "Continue",
-  "restart": "Restart"
+  "restart": "Restart",
+  "connection": "कनेक्शन",
+  "disconnect": "Disconnect"
 }

@@ -29,5 +29,6 @@
   "topTooltipText": "रत्नों को इकट्ठा करके एक Tari Airdrop प्राप्त करें। जितने अधिक रत्न आप कमाते हैं, आपका airdrop उतना ही बड़ा होगा।",
   "topTooltipTitle": "टेस्टनेट पुरस्कार",
   "claimModalFinePrint": "<strong>कृपया ध्यान दें:</strong> रत्नों का दावा करने से विश्लेषण चालू हो जाता है ताकि हम Universe को बेहतर बना सकें",
-  "inviteFriendsText": "लिंक कॉपी करें और साझा करें"
+  "inviteFriendsText": "लिंक कॉपी करें और साझा करें",
+  "logged-in-as": "<strong>@{{twitter}}</strong> के रूप में लॉग इन"
 }

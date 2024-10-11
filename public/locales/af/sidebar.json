@@ -1,12 +1,12 @@
 {
-    "auto-miner": "Outomatiese mynwerker",
-    "auto-miner-description": "Outomatiese mynwerker sal aanskakel wanneer jou masjien onaktief is",
-    "next-milestone": "Volgende mylpaal",
-    "wallet-balance": "Beursie balans",
-    "setup-scheduler": "Stel skeduleerder op",
-    "mining-schedules": "Mynskedules",
-    "mining-schedules-description": "Skeduleer jou myn-aktiwiteit",
-    "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
-    "block": "Block",
-    "recent-wins": "Recent wins"
+  "auto-miner": "Outomatiese mynwerker",
+  "auto-miner-description": "Outomatiese mynwerker sal aanskakel wanneer jou masjien onaktief is",
+  "next-milestone": "Volgende mylpaal",
+  "wallet-balance": "Beursie balans",
+  "setup-scheduler": "Stel skeduleerder op",
+  "mining-schedules": "Mynskedules",
+  "mining-schedules-description": "Skeduleer jou myn-aktiwiteit",
+  "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
+  "block": "Block",
+  "recent-wins": "Recent wins"
 }

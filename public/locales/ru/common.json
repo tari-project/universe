@@ -21,5 +21,7 @@
   "please-try-again-later": "Пожалуйста, попробуйте позже. Если проблема сохраняется, свяжитесь с нами.",
   "close-tari-universe": "Закрыть Tari Universe",
   "continue": "Continue",
-  "restart": "Restart"
+  "restart": "Restart",
+  "connection": "Соединение",
+  "disconnect": "Disconnect"
 }

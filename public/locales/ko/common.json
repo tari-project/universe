@@ -21,5 +21,7 @@
   "please-try-again-later": "나중에 다시 시도해 주세요. 문제가 계속되면 저희에게 연락해 주세요.",
   "close-tari-universe": "Tari Universe 닫기",
   "continue": "Continue",
-  "restart": "Restart"
+  "restart": "Restart",
+  "connection": "연결",
+  "disconnect": "Disconnect"
 }

@@ -21,5 +21,7 @@
   "tari-universe": "Tari Heelal",
   "testnet": "Toetsnetwerk",
   "continue": "Continue",
-  "restart": "Restart"
+  "restart": "Restart",
+  "connection": "Verbinding",
+  "disconnect": "Disconnect"
 }

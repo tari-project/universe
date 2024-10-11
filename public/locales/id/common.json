@@ -21,5 +21,7 @@
   "please-try-again-later": "Silakan coba lagi nanti. Jika masalah berlanjut, silakan hubungi kami.",
   "close-tari-universe": "Tutup Tari Universe",
   "continue": "Continue",
-  "restart": "Restart"
+  "restart": "Restart",
+  "connection": "Koneksi",
+  "disconnect": "Disconnect"
 }
