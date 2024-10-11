@@ -125,7 +125,6 @@ impl ProcessAdapter for GpuMinerAdapter {
         ) {
             args.push("--p2pool-enabled".to_string());
         }
-        info!(target: LOG_TARGET, "Gpu miner: exclude device {:?}", self.excluded_gpu_devices);
         if !self.excluded_gpu_devices.is_empty() {
             info!(target: LOG_TARGET, "Gpu miner: add argument --exclude-devices {:?}", self.excluded_gpu_devices);
             args.push("--exclude-devices".to_string());

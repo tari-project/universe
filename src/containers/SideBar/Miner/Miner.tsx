@@ -73,7 +73,7 @@ export default function Miner() {
                     title="GPU Power"
                     stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
                     isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
-                    chipValue={gpuHardwareStats?.usage_percentage}
+                    chipValue={gpuChipValue}
                     unit="H/s"
                     useLowerCase
                 />

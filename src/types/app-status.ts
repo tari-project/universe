@@ -161,7 +161,6 @@ export interface GpuMinerStatus {
     hash_rate: number;
     estimated_earnings: number;
     is_available: boolean;
-    // excluded_devices: number[];
 }
 
 export interface BaseNodeStatus {

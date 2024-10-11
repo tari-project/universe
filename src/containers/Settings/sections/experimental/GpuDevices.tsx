@@ -29,7 +29,6 @@ const GpuDevices = () => {
     const setExcludedDevice = useMiningStore((s) => s.setExcludedGpuDevice);
     const { gpu: gpuHardwareStats } = useHardwareStats();
     const gpuDevicesList: string[] = gpuHardwareStats?.map((gpu) => gpu.label) ?? [];
-    console.log('gpu list', gpuHardwareStats, gpuDevicesList);
 
     const handleSetExcludedDevice = useCallback(
         async (device: number) => {
