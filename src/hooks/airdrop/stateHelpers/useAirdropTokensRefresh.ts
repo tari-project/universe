@@ -35,7 +35,7 @@ export function useAirdropTokensRefresh() {
 
     useEffect(() => {
         if (!backendInMemoryConfig?.airdropApiUrl) return;
-        const interval = setInterval(handleRefresh, 1000 * 60 * 60, backendInMemoryConfig?.airdropApiUrl);
+        const interval = setInterval(() => handleRefresh(backendInMemoryConfig?.airdropApiUrl), 1000 * 60 * 60);
         return () => clearInterval(interval);
     }, [handleRefresh, backendInMemoryConfig?.airdropApiUrl]);
 
