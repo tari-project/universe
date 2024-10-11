@@ -59,5 +59,6 @@
     "connected-peers": "Verbundenen Peers",
     "should-use-system-language": "Systemsprache verwenden",
     "use-tor": "Tor verwenden",
+    "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
     "report-issue": "Ein Problem melden"
 }
