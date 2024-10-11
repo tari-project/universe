@@ -25,6 +25,10 @@ export const WalletContainer = styled(m.div)`
     z-index: 2;
     overflow: hidden;
     justify-content: space-between;
+
+    @media (max-height: 670px) {
+        min-height: 140px;
+    }
 `;
 
 export const WalletBalance = styled.div`
@@ -44,6 +48,10 @@ export const WalletBalanceContainer = styled(m.div)`
     color: ${({ theme }) => theme.palette.text.secondary};
     padding: 10px 5px 5px;
     height: 140px;
+
+    @media (max-height: 670px) {
+        height: 90px;
+    }
 `;
 
 export const BalanceVisibilityButton = styled(IconButton)`
