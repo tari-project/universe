@@ -1,16 +1,16 @@
 import { AnimatePresence } from 'framer-motion';
 
-import { EarningsContainer, EarningsWrapper } from './Earnings.styles.ts';
+import { EarningsContainer, EarningsWrapper, RecapText, ShinyWrapper, WinText, WinWrapper } from './Earnings.styles.ts';
 import formatBalance from '@app/utils/formatBalance.ts';
 
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
 const variants = {
     visible: {
         opacity: 1,
-        y: -190,
+        y: '-150%',
         scale: 1.05,
         transition: {
             duration: 1.25,
@@ -22,7 +22,7 @@ const variants = {
     },
     hidden: {
         opacity: 0.2,
-        y: -160,
+        y: '-100%',
         transition: { duration: 0.2, delay: 3, ease: 'linear' },
     },
 };
@@ -33,8 +33,9 @@ export default function Earnings() {
     const earnings = useBlockchainVisualisationStore((s) => s.earnings);
     const recapData = useBlockchainVisualisationStore((s) => s.recapData);
 
-    const displayEarnings = recapData ? recapData?.totalEarnings : earnings;
-    const formatted = formatBalance(displayEarnings || 0);
+    const displayEarnings = recapData?.totalEarnings || earnings;
+
+    const formatted = formatBalance(displayEarnings || 0, 1);
 
     return (
         <EarningsContainer>
@@ -42,15 +43,23 @@ export default function Earnings() {
                 {displayEarnings ? (
                     <EarningsWrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
                         {recapData?.totalEarnings ? (
-                            <div>
-                                you won {recapData.count} blockss while away
-                                {t('you-won-while-away', {
-                                    blocks: `${recapData.count} block${recapData.count === 1 ? '' : 's'}`,
-                                })}
-                            </div>
+                            <RecapText>
+                                <Trans
+                                    ns="mining-view"
+                                    i18nKey={'you-won-while-away'}
+                                    values={{
+                                        blocks: `${recapData.count} block${recapData.count === 1 ? `` : 's'}`,
+                                    }}
+                                    components={{ span: <span /> }}
+                                />
+                            </RecapText>
                         ) : null}
-                        <span>{t('your-reward-is')}</span>
-                        <CharSpinner value={formatted.toString()} fontSize={72} />
+                        <WinWrapper>
+                            <WinText>{t('your-reward-is')}</WinText>
+                            <ShinyWrapper>
+                                <CharSpinner value={formatted.toString()} fontSize={76} XTMAlignment="center" />
+                            </ShinyWrapper>
+                        </WinWrapper>
                     </EarningsWrapper>
                 ) : null}
             </AnimatePresence>
