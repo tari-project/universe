@@ -12,7 +12,7 @@ export const RecapText = styled.div`
     display: flex;
     font-family: DrukWide, sans-serif;
     font-weight: 700;
-    font-size: 25px;
+    font-size: 22px;
     text-transform: uppercase;
     text-align: center;
     letter-spacing: -0.3px;
