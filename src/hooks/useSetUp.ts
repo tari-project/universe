@@ -101,7 +101,7 @@ export function useSetUp() {
         settingUpFinished,
         setCriticalError,
         setSeenPermissions,
-        backendInMemoryConfig.airdropApiUrl,
+        backendInMemoryConfig?.airdropApiUrl,
         handleRefreshAirdropTokens,
     ]);
 }
