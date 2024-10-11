@@ -4,6 +4,7 @@ import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachi
 
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useCallback, useEffect } from 'react';
+import useEarningsRecap from '@app/hooks/mining/useEarningsRecap.ts';
 
 export default function useMiningStatesSync() {
     const fetchMiningMetrics = useMiningMetricsUpdater();
@@ -11,6 +12,7 @@ export default function useMiningStatesSync() {
 
     useBlockInfo();
     useUiMiningStateMachine();
+    useEarningsRecap();
 
     const callIntervalItems = useCallback(async () => {
         await fetchMiningMetrics();

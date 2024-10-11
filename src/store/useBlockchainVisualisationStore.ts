@@ -53,7 +53,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
             set((curr) => ({ recapIds: [...curr.recapIds, latestTx.tx_id] }));
             set({ displayBlockHeight: blockHeight, earnings: undefined });
         }
-        console.debug('recapIds', getState().recapIds);
     },
     handleFail: async (blockHeight, canAnimate) => {
         if (canAnimate) {
