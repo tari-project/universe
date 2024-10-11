@@ -20,10 +20,8 @@ export default function useFetchTx() {
             const hasNewItems = !transactions?.find((tx) => tx.tx_id === latestId);
 
             if (hasNewItems || (!transactions && newTx)) {
-                const lastMinedBlock = latestTx.message?.split(': ')[1];
-
                 setTransactions(newTx);
-                await handleWin(Number(lastMinedBlock), latestTx.amount);
+                await handleWin(latestTx);
             }
         },
         [handleWin, setTransactions, transactions]
@@ -31,6 +29,7 @@ export default function useFetchTx() {
 
     return useCallback(async () => {
         if (isTransactionLoading) return;
+        console.debug(isTransactionLoading);
         setTransactionsLoading(true);
         try {
             const txs = await invoke('get_transaction_history');

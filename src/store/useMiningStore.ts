@@ -17,7 +17,7 @@ interface State extends MinerMetrics {
 }
 
 interface Actions {
-    setMiningMetrics: (metrics: MinerMetrics) => void;
+    setMiningMetrics: (metrics: MinerMetrics, isNewBlock?: boolean) => void;
     startMining: () => Promise<void>;
     stopMining: () => Promise<void>;
     pauseMining: () => Promise<void>;

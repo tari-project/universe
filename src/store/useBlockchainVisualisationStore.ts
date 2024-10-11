@@ -4,17 +4,19 @@ import { useMiningStore } from './useMiningStore.ts';
 import { appWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
+import { TransactionInfo } from '@app/types/app-status.ts';
 
 interface State {
     displayBlockTime?: BlockTimeData;
     debugBlockTime?: BlockTimeData;
     displayBlockHeight?: number;
     earnings?: number;
+    recapIds?: TransactionInfo['tx_id'][];
 }
 
 interface Actions {
-    handleWin: (blockHeight: number, earnings: number) => Promise<void>;
-    handleFail: (blockHeight: number) => Promise<void>;
+    handleWin: (latestTx: TransactionInfo) => Promise<void>;
+    handleFail: () => Promise<void>;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
@@ -31,7 +33,9 @@ const checkCanAnimate = async () => {
 };
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
-    handleWin: async (blockHeight, earnings) => {
+    handleWin: async (latestTx: TransactionInfo) => {
+        const blockHeight = Number(latestTx.message?.split(': ')[1]);
+        const earnings = latestTx.amount;
         console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
         const canAnimate = await checkCanAnimate();
 
@@ -47,17 +51,14 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
             set({ displayBlockHeight: blockHeight, earnings: undefined });
         }
     },
-    handleFail: async (blockHeight) => {
+    handleFail: async () => {
         const canAnimate = await checkCanAnimate();
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
             setAnimationState('fail');
             setTimeout(() => {
                 useMiningStore.getState().setMiningControlsEnabled(true);
-                set({ displayBlockHeight: blockHeight, earnings: undefined });
-            }, 2000);
-        } else {
-            set({ displayBlockHeight: blockHeight, earnings: undefined });
+            }, 1000);
         }
     },
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
