@@ -62,5 +62,6 @@
   "report-issue": "Bir sorun bildirin",
   "importing-wallet": "Cüzdanı içe aktarma",
   "action-requires-restart": "Bu eylem, değişikliklerin uygulanması için yeniden başlatma gerektirir",
+  "low-hash-rate-warning": "Hash oranınız çok düşük. Tari Universe dışındaki tüm uygulamaları kapatmayı deneyin",
   "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin"
 }

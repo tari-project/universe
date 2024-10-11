@@ -5,6 +5,7 @@ import { useWalletStore } from '@app/store/useWalletStore';
 import { useEffect } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { useTranslation } from 'react-i18next';
+import { ListLabel } from './HistoryItem.styles';
 
 const container = {
     hidden: { opacity: 0, height: 0 },
@@ -27,7 +28,7 @@ export default function History() {
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
             <HistoryPadding>
-                <Typography variant="h6">{t('recent-wins')}</Typography>
+                <ListLabel>{t('recent-wins')}</ListLabel>
                 {isTransactionLoading ? (
                     <CircularProgress />
                 ) : (

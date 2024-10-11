@@ -59,6 +59,7 @@ export const Character = styled(m.div)<Props>`
     width: min-content;
     letter-spacing: -3px;
     z-index: 1;
+
     // for the unit & decimal
 
     ${({ $decimal, $unit }) =>
@@ -67,5 +68,11 @@ export const Character = styled(m.div)<Props>`
             letter-spacing: normal;
             margin-left: 1px;
             margin-right: -1px;
+        `}
+
+    ${({ $unit }) =>
+        $unit &&
+        css`
+            margin-top: 3px;
         `}
 `;

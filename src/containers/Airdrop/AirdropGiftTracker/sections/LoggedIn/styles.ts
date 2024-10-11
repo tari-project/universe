@@ -5,6 +5,10 @@ export const Wrapper = styled('div')`
     flex-direction: column;
     gap: 20px;
     width: 100%;
+
+    @media (max-height: 670px) {
+        gap: 10px;
+    }
 `;
 
 export const UserRow = styled('div')`
