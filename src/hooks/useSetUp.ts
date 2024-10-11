@@ -10,6 +10,7 @@ import { setAnimationState } from '@app/visuals.ts';
 
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
+import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
     const setView = useUIStore((s) => s.setView);
@@ -22,6 +23,8 @@ export function useSetUp() {
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setSeenPermissions = useAirdropStore((s) => s.setSeenPermissions);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
+    const { backendInMemoryConfig } = useAirdropStore();
+    const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
 
     const { loadExternalDependencies } = useAppStateStore();
 
@@ -44,6 +47,13 @@ export function useSetUp() {
         initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        if (backendInMemoryConfig?.airdropApiUrl) {
+            handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [backendInMemoryConfig?.airdropApiUrl]);
 
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
@@ -92,5 +102,7 @@ export function useSetUp() {
         settingUpFinished,
         setCriticalError,
         setSeenPermissions,
+        backendInMemoryConfig?.airdropApiUrl,
+        handleRefreshAirdropTokens,
     ]);
 }
