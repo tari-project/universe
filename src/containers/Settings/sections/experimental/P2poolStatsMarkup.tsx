@@ -48,11 +48,11 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'Address',
-                                labelValue: p2poolStats.connection_info.listener_addresses.join(', '),
+                                labelValue: p2poolStats.connection_info?.listener_addresses.join(', ') || '',
                             },
                             {
                                 labelText: 'Connected peers',
-                                labelValue: '' + (p2poolStats.connection_info.connected_peers ?? 0),
+                                labelValue: '' + (p2poolStats.connection_info?.connected_peers ?? 0),
                             },
                         ]}
                     />

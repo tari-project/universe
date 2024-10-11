@@ -88,7 +88,7 @@ export interface P2poolStatsResult {
     connection_info: P2poolConnectionInfo;
     connected_since?: number;
     randomx_stats: P2poolStats;
-    sha3_stats: P2poolStats;
+    sha3x_stats: P2poolStats;
 }
 
 export interface P2poolConnectionInfo {

@@ -29,7 +29,7 @@ const initialState: State = {
     },
     connected_since: undefined,
     randomx_stats: undefined,
-    sha3_stats: undefined,
+    sha3x_stats: undefined,
 };
 
 export const useP2poolStatsStore = create<P2poolStatsStoreState>()((set) => ({
