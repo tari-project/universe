@@ -43,6 +43,9 @@ export function useSetUp() {
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
+            if (backendInMemoryConfig?.airdropApiUrl) {
+                handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
+            }
         }
         initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,9 +89,6 @@ export function useSetUp() {
             });
         }
         return () => {
-            if (backendInMemoryConfig?.airdropApiUrl) {
-                handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
-            }
             unlistenPromise.then((unlisten) => unlisten());
         };
     }, [
