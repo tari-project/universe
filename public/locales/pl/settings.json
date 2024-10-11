@@ -63,5 +63,6 @@
   "use-tor": "Używaj Tor",
   "importing-wallet": "Importowanie portfela",
   "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
+  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami"
 }
