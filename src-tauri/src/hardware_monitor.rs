@@ -288,8 +288,6 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
                     warn!(target: LOG_TARGET, "Failed to parse gpu status: {:?}", e);
                 }
             }
-        } else {
-            warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
         }
         gpu_devices
     }
@@ -454,8 +452,6 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
                     warn!(target: LOG_TARGET, "Failed to parse gpu status: {}", e.to_string());
                 }
             }
-        } else {
-            warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
         }
         gpu_devices
     }
@@ -608,8 +604,6 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
                     warn!(target: LOG_TARGET, "Failed to parse gpu status: {:?}", e);
                 }
             }
-        } else {
-            warn!(target: LOG_TARGET, "Error while getting gpu status: {:?} not found", file);
         }
         gpu_devices
     }

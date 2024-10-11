@@ -146,7 +146,7 @@ impl GpuMiner {
             .resolve_path_to_binary_files(Binaries::GpuMiner)
             .await?;
 
-        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone().to_str());
+        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
         crate::download_utils::set_permissions(&gpuminer_bin).await?;
         let child = process_utils::launch_child_process(&gpuminer_bin, None, &args)?;
         let output = child.wait_with_output().await?;
@@ -174,10 +174,6 @@ impl GpuMiner {
         &mut self,
         excluded_gpu_devices: Vec<u8>,
     ) -> Result<(), anyhow::Error> {
-        println!(
-            "set_excluded_gpu_devices gpuminer.rs -> {:?}",
-            excluded_gpu_devices
-        );
         self.excluded_gpu_devices = excluded_gpu_devices;
         Ok(())
     }

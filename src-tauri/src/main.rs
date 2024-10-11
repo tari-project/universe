@@ -874,7 +874,6 @@ async fn set_excluded_gpu_devices(
     excluded_gpu_devices: Vec<u8>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-    println!("set_excluded_gpu_devices {:?}", excluded_gpu_devices);
     let mut gpu_miner = state.gpu_miner.write().await;
     gpu_miner
         .set_excluded_device(excluded_gpu_devices)
