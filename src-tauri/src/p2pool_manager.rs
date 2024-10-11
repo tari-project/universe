@@ -150,22 +150,13 @@ impl P2poolManager {
         }
     }
 
-    pub async fn stats(&self) -> Stats {
-        match self.get_stats().await {
-            Ok(stats) => stats,
-            Err(e) => {
-                error!(target: LOG_TARGET, "Failed to get stats: {}", e);
-                self.default_stats()
-            }
-        }
-    }
-
-    async fn get_stats(&self) -> Result<Stats, anyhow::Error> {
+    pub async fn get_stats(&self) -> Result<Option<Stats>, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
-            return status_monitor.status().await;
+            Ok(Some(status_monitor.status().await?))
+        } else {
+            Ok(None)
         }
-        Err(anyhow!("P2pool Status monitor not started"))
     }
 
     pub async fn is_running(&self) -> Result<bool, anyhow::Error> {

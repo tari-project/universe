@@ -12,11 +12,10 @@ import { SettingsGroupWrapper } from '@app/containers/Settings/components/Settin
 
 const P2PoolStats = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const walletAddress = useWalletStore((s) => s.tari_address_base58);
     const isP2poolEnabled = useAppConfigStore((s) => s.p2pool_enabled);
     const p2poolStats = useP2poolStatsStore((s) => s);
-    const p2poolSha3Stats = useP2poolStatsStore((s) => s.sha3x_stats);
-    const p2poolRandomXStats = useP2poolStatsStore((s) => s.randomx_stats);
+    const p2poolSha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
+    const p2poolRandomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
     const fetchP2pStats = useP2poolStatsStore((s) => s.fetchP2poolStats);
 
     const p2poolSquad = p2poolSha3Stats?.squad?.name;
