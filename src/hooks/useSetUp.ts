@@ -10,6 +10,7 @@ import { setAnimationState } from '@app/visuals.ts';
 import useWalletDetailsUpdater from './useWalletUpdater.ts';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
+import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
     const setView = useUIStore((s) => s.setView);
@@ -22,6 +23,8 @@ export function useSetUp() {
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setSeenPermissions = useAirdropStore((s) => s.setSeenPermissions);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
+    const { backendInMemoryConfig } = useAirdropStore();
+    const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
 
     const { loadExternalDependencies } = useAppStateStore();
 
@@ -83,6 +86,9 @@ export function useSetUp() {
             });
         }
         return () => {
+            if (backendInMemoryConfig?.airdropApiUrl) {
+                handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
+            }
             unlistenPromise.then((unlisten) => unlisten());
         };
     }, [
@@ -95,5 +101,7 @@ export function useSetUp() {
         settingUpFinished,
         setCriticalError,
         setSeenPermissions,
+        backendInMemoryConfig.airdropApiUrl,
+        handleRefreshAirdropTokens,
     ]);
 }

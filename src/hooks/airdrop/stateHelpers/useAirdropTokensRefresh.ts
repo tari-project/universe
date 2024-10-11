@@ -1,13 +1,11 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
-// import { useInterval } from "../useInterval";
 import { useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 
-export function useAirdropTokensRefresh() {
-    const { airdropTokens, setAirdropTokens, backendInMemoryConfig } = useAirdropStore();
+export function useHandleAirdropTokensRefresh() {
+    const { airdropTokens, setAirdropTokens } = useAirdropStore();
 
-    // Handle refreshing the access token
-    const handleRefresh = useCallback(
+    return useCallback(
         (airdropApiUrl: string) => {
             // 5 hours from now
             const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
@@ -32,6 +30,12 @@ export function useAirdropTokensRefresh() {
         },
         [airdropTokens, setAirdropTokens]
     );
+}
+export function useAirdropTokensRefresh() {
+    const { airdropTokens, backendInMemoryConfig } = useAirdropStore();
+
+    // Handle refreshing the access token
+    const handleRefresh = useHandleAirdropTokensRefresh();
 
     useEffect(() => {
         if (!backendInMemoryConfig?.airdropApiUrl) return;
