@@ -7,7 +7,6 @@ use log::{debug, error, info, warn};
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
 use serde::Serialize;
-use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -1446,7 +1445,7 @@ async fn reset_settings<'r>(
         return Err("Could not get app directories".to_string());
     }
     // Exclude EBWebView because it is still being used.
-    let folder_block_list = vec!["EBWebView"];
+    let folder_block_list = ["EBWebView"];
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {

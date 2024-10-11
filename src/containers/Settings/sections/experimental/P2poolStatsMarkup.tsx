@@ -1,10 +1,8 @@
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
-import formatBalance from '@app/utils/formatBalance';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
-import { useWalletStore } from '@app/store/useWalletStore';
 import { useEffect } from 'react';
 import { CardContainer } from '@app/containers/Settings/components/Settings.styles.tsx';
 import { CardComponent } from '@app/containers/Settings/components/Card.component.tsx';
@@ -23,8 +21,6 @@ const P2PoolStats = () => {
     const p2poolRandomxMinersCount = p2poolRandomXStats?.num_of_miners;
     const p2poolSha3ChainTip = p2poolSha3Stats?.share_chain_height;
     const p2poolRandomxChainTip = p2poolRandomXStats?.share_chain_height;
-
-    console.log('p2poolStats', p2poolStats);
 
     useEffect(() => {
         if (isP2poolEnabled) {

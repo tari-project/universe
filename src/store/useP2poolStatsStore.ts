@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create';
-import { P2poolStats, P2poolStatsResult } from '../types/app-status.ts';
+import { P2poolStatsResult } from '../types/app-status.ts';
 
 type State = Partial<P2poolStatsResult>;
 

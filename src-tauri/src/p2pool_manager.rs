@@ -1,17 +1,15 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::anyhow;
-use log::{error, warn};
-use tari_core::proof_of_work::PowAlgorithm;
+use log::warn;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
 use crate::network_utils;
-use crate::p2pool::models::{BlockStats, ChainStats, ConnectionInfo, NetworkInfo, Stats};
+use crate::p2pool::models::Stats;
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::process_adapter::StatusMonitor;
 use crate::process_watcher::ProcessWatcher;
@@ -90,63 +88,6 @@ impl P2poolManager {
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
-        }
-    }
-
-    fn default_stats(&self) -> Stats {
-        Stats {
-            connected: false,
-            peer_count: 0,
-            connection_info: ConnectionInfo {
-                listener_addresses: vec![],
-                connected_peers: 0,
-                network_info: NetworkInfo {
-                    num_peers: 0,
-                    connection_counters: crate::p2pool::models::ConnectionCounters {
-                        pending_incoming: 0,
-                        pending_outgoing: 0,
-                        established_incoming: 0,
-                        established_outgoing: 0,
-                    },
-                },
-            },
-            connected_since: Default::default(),
-            randomx_stats: ChainStats {
-                squad: crate::p2pool::models::SquadDetails {
-                    id: "".to_string(),
-                    name: "".to_string(),
-                },
-                num_of_miners: 0,
-                share_chain_height: 0,
-                miner_block_stats: BlockStats {
-                    accepted: 0,
-                    rejected: 0,
-                    submitted: 0,
-                },
-                p2pool_block_stats: BlockStats {
-                    accepted: 0,
-                    rejected: 0,
-                    submitted: 0,
-                },
-            },
-            sha3x_stats: ChainStats {
-                squad: crate::p2pool::models::SquadDetails {
-                    id: "".to_string(),
-                    name: "".to_string(),
-                },
-                num_of_miners: 0,
-                share_chain_height: 0,
-                miner_block_stats: BlockStats {
-                    accepted: 0,
-                    rejected: 0,
-                    submitted: 0,
-                },
-                p2pool_block_stats: BlockStats {
-                    accepted: 0,
-                    rejected: 0,
-                    submitted: 0,
-                },
-            },
         }
     }
 

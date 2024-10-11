@@ -1,6 +1,5 @@
 use crate::p2pool::models::Stats;
 use anyhow::Error;
-use std::collections::HashMap;
 
 pub struct Client {
     stats_server_address: String,
