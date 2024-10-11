@@ -60,7 +60,6 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                             layout-id={`${i}-${char}`}
                             $letterWidth={letterWidth}
                             $fontSize={fontSize - 8}
-                            style={{ marginTop: '4px' }}
                         >
                             {char}
                         </Character>

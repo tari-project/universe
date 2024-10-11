@@ -50,6 +50,7 @@ export const Title = styled('div')`
     text-align: center;
     font-size: 12px;
     font-weight: 600;
+    line-height: 120%;
 `;
 
 export const Text = styled('div')`
@@ -57,6 +58,7 @@ export const Text = styled('div')`
     text-align: center;
     font-size: 11px;
     font-weight: 600;
+    line-height: 120%;
 
     span {
         color: #fff;

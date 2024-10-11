@@ -34,16 +34,8 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
                 <StyledIcon />
             ) : (
                 <StatWrapper $useLowerCase={useLowerCase} layout>
-                    <Typography
-                        variant="h5"
-                        title={stats}
-                        style={{ textTransform: useLowerCase ? 'lowercase' : 'inherit', lineHeight: '1.02' }}
-                    >
-                        {truncateString(stats, 8)}
-                    </Typography>
-                    <Unit>
-                        <Typography>{unit}</Typography>
-                    </Unit>
+                    {truncateString(stats, 8)}
+                    <Unit>{unit}</Unit>
                 </StatWrapper>
             )}
         </TileItem>

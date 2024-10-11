@@ -13,7 +13,8 @@ export const TileItem = styled(m.div)`
     width: 161px;
     flex-shrink: 0;
     flex-grow: 0;
-    padding: 10px;
+    padding: 9px 15px;
+
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
@@ -39,11 +40,23 @@ export const StatWrapper = styled(m.div)<{ $useLowerCase?: boolean }>`
     justify-content: space-between;
     align-items: baseline;
     color: ${({ theme }) => theme.palette.text.primary};
-    min-height: 16px;
+    min-height: 18px;
+
+    color: #000;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    line-height: 100%;
+    text-transform: ${({ $useLowerCase }) => ($useLowerCase ? 'lowercase' : 'uppercase')};
 `;
+
 export const Unit = styled(m.div)`
-    line-height: 1;
+    color: #000;
     font-size: 10px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 100%;
 `;
 
 export const TileContainer = styled(m.div)`
