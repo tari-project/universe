@@ -12,7 +12,7 @@ interface State {
     debugBlockTime?: BlockTimeData;
     displayBlockHeight?: number;
     earnings?: number;
-    recapIds?: TransactionInfo['tx_id'][];
+    recapIds: TransactionInfo['tx_id'][];
 }
 
 interface Actions {
@@ -35,6 +35,7 @@ const checkCanAnimate = async () => {
 };
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set, getState) => ({
+    recapIds: [],
     handleWin: async (latestTx: TransactionInfo, canAnimate) => {
         const blockHeight = Number(latestTx.message?.split(': ')[1]);
         const earnings = latestTx.amount;
@@ -49,8 +50,10 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
                 set({ displayBlockHeight: blockHeight, earnings: undefined });
             }, 2000);
         } else {
+            set((curr) => ({ recapIds: [...curr.recapIds, latestTx.tx_id] }));
             set({ displayBlockHeight: blockHeight, earnings: undefined });
         }
+        console.debug('recapIds', getState().recapIds);
     },
     handleFail: async (blockHeight, canAnimate) => {
         if (canAnimate) {

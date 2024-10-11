@@ -3,8 +3,10 @@ import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api';
 import { setAnimationState } from '@app/visuals.ts';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
+import useFetchTx from '@app/hooks/mining/useTransactions.ts';
 
 const useMiningMetricsUpdater = () => {
+    const fetchTx = useFetchTx();
     const currentBlockHeight = useMiningStore((s) => s.base_node.block_height);
     const baseNodeConnected = useMiningStore((s) => s.base_node.is_connected);
     const setMiningMetrics = useMiningStore((s) => s.setMiningMetrics);
@@ -24,14 +26,15 @@ const useMiningMetricsUpdater = () => {
             const blockHeight = metrics.base_node.block_height;
 
             if (blockHeight > currentBlockHeight) {
-                await handleNewBlock(blockHeight, isMining);
+                await fetchTx();
+                void handleNewBlock(blockHeight, isMining);
             }
 
             setMiningMetrics(metrics);
         } catch (e) {
             console.error('Fetch mining metrics error: ', e);
         }
-    }, [baseNodeConnected, currentBlockHeight, handleNewBlock, setMiningMetrics]);
+    }, [baseNodeConnected, currentBlockHeight, fetchTx, handleNewBlock, setMiningMetrics]);
 };
 
 export default useMiningMetricsUpdater;
