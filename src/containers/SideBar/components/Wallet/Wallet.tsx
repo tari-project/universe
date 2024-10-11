@@ -43,7 +43,7 @@ export default function Wallet() {
                 </BalanceVisibilityButton>
             </Stack>
             <WalletBalance>
-                <CharSpinner value={displayValue} variant="simple" fontSize={sizing} />
+                <CharSpinner value={'0'} variant="simple" fontSize={sizing} />
             </WalletBalance>
         </WalletBalanceContainer>
     );
