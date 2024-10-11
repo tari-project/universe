@@ -3,13 +3,12 @@ import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api';
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
 export default function useFetchTx() {
     const transactions = useWalletStore((s) => s.transactions);
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const setTransactionsLoading = useWalletStore((s) => s.setTransactionsLoading);
-    const handleWin = useBlockchainVisualisationStore((s) => s.handleWin);
+
     const setTransactions = useWalletStore((s) => s.setTransactions);
     const setError = useAppStateStore((s) => s.setError);
 
@@ -21,15 +20,13 @@ export default function useFetchTx() {
 
             if (hasNewItems || (!transactions && newTx)) {
                 setTransactions(newTx);
-                await handleWin(latestTx);
             }
         },
-        [handleWin, setTransactions, transactions]
+        [setTransactions, transactions]
     );
 
     return useCallback(async () => {
         if (isTransactionLoading) return;
-        console.debug(isTransactionLoading);
         setTransactionsLoading(true);
         try {
             const txs = await invoke('get_transaction_history');
