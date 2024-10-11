@@ -43,13 +43,17 @@ export function useSetUp() {
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
-            if (backendInMemoryConfig?.airdropApiUrl) {
-                handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
-            }
         }
         initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        if (backendInMemoryConfig?.airdropApiUrl) {
+            handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [backendInMemoryConfig?.airdropApiUrl]);
 
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
