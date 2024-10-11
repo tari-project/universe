@@ -1,0 +1,15 @@
+{
+    "floor": "Stockwerk",
+    "current-block-time": "Aktuelle Blockzeit",
+    "your-reward-is": "Deine Belohnung ist",
+    "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
+    "mining-button-text": {
+        "starting-mining": "Mining wird gestartet",
+        "start-mining": "Mining starten",
+        "stop-mining": "Mining stoppen",
+        "changing-mode": "Modus wird geändert",
+        "cancel-mining": "Mining abbrechen",
+        "waiting-for-idle": "Warten auf Leerlauf",
+        "started-auto-mining": "Auto Mining gestartet"
+    }
+}

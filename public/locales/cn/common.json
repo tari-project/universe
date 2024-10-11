@@ -17,11 +17,11 @@
   "shutting-down": "停工..",
   "tari-universe": "Tari Universe",
   "testnet": "测试网",
-  "critical-error": "Critical error",
-  "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
-  "close-tari-universe": "Close Tari Universe",
-  "continue": "Continue",
-  "restart": "Restart",
+  "critical-error": "严重错误",
+  "please-try-again-later": "请稍后再试。如果问题仍然存在，请联系我们。",
+  "close-tari-universe": "关闭Tari Universe",
+  "continue": "继续",
+  "restart": "重启",
   "connection": "连接",
-  "disconnect": "Disconnect"
+  "disconnect": "断开连接"
 }

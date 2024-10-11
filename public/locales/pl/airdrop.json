@@ -1,9 +1,9 @@
 {
-  "loginButton": "Log in to claim gems",
-  "logout": "Logout",
+  "loginButton": "Zaloguj się, aby odebrać klejnoty",
+  "logout": "Wyloguj się",
   "permission": {
-    "title": "Earn Gems & make Tari Universe better",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining."
+    "title": "Zarabiaj klejnoty i ulepszaj Tari Universe",
+    "text": "Tari Universe chciałby używać analityki, aby poprawić Twoje doświadczenia i nagrodzić Cię klejnotami za kopanie."
   },
   "airdropGame": "Gra Airdrop",
   "referral": "Zaproś znajomego",

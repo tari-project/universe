@@ -1,5 +1,5 @@
 {
-  "title": "External Dependencies",
-  "description": "The following external dependencies are required for the application to function correctly.",
-  "download-and-install": "Download and install"
+  "title": "外部依存関係",
+  "description": "アプリケーションが正しく機能するためには、以下の外部依存関係が必要です。",
+  "download-and-install": "ダウンロードしてインストール"
 }

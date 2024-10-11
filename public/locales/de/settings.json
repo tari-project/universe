@@ -9,7 +9,7 @@
   "change-language": "Sprache",
   "logs": "Protokolle",
   "open-logs-directory": "Protokollverzeichnis öffnen",
-  "debug-info": "Debug",
+  "debug-info": "Debuggen",
   "disconnect": "Von Airdrop trennen",
   "hardware-status": "Hardware-Status",
   "update-versions": "Versionen aktualisieren",
@@ -37,7 +37,7 @@
   "gpu-mining-enabled": "GPU-Mining",
   "gpu-unavailable": "⚠️ GPU deaktiviert, da deine Hardware dies nicht unterstützt",
   "p2pool-stats": "Squad-Statistiken",
-  "tribe": "Squad",
+  "tribe": "Gruppe",
   "miners": "Miner",
   "mining-toggle-warning": "Mining wird pausiert, während die Änderungen wirksam werden.",
   "tribe-earnings": "Squad-Einnahmen",
@@ -62,6 +62,6 @@
   "report-issue": "Ein Problem melden",
   "importing-wallet": "Wallet wird importiert",
   "action-requires-restart": "Diese Aktion erfordert einen Neustart, um Änderungen anzuwenden",
-  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
+  "low-hash-rate-warning": "Ihre Hashrate ist sehr niedrig. Versuchen Sie, alle Apps außer Tari Universe zu schließen",
   "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen"
 }
