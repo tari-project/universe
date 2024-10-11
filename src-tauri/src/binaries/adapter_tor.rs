@@ -22,7 +22,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         let mut dist_responded = false;
 
         for _ in 0..3 {
-            let response = reqwest::get(dist_tor_bundle_url).await;
+            let response = reqwest::Client::new()
+                .head(dist_tor_bundle_url)
+                .send()
+                .await;
             if let Ok(resp) = response {
                 if resp.status().is_success() {
                     dist_responded = true;
