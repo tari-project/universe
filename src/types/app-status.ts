@@ -83,23 +83,36 @@ export interface TransactionInfo {
 }
 
 export interface P2poolStatsResult {
-    randomx: P2poolStats;
-    sha3: P2poolStats;
+    connected: boolean;
+    peer_count: number;
+    connection_info: P2poolConnectionInfo;
+    connected_since?: number;
+    randomx_stats: P2poolStats;
+    sha3x_stats: P2poolStats;
+}
+
+export interface P2poolConnectionInfo {
+    listener_addresses: string[];
+    connected_peers: number;
+    network_info: P2poolNetworkInfo;
+}
+
+export interface P2poolNetworkInfo {
+    num_peers: number;
+    connection_counters: P2poolConnectionCounters;
+}
+
+export interface P2poolConnectionCounters {
+    pending_incoming: number;
+    pending_outgoing: number;
+    established_incoming: number;
+    established_outgoing: number;
 }
 
 export interface P2poolStats {
-    connected: boolean;
-    connected_since?: number;
     squad: P2poolSquadDetails;
     num_of_miners: number;
-    last_block_won?: P2poolStatsBlock;
     share_chain_height: number;
-    pool_hash_rate: number;
-    pool_total_earnings: number;
-    pool_total_estimated_earnings: P2poolEstimatedEarnings;
-    total_earnings: Record<string, number>;
-    estimated_earnings: Map<string, P2poolEstimatedEarnings>;
-    miner_block_stats: P2poolBlockStats;
     p2pool_block_stats: P2poolBlockStats;
 }
 
