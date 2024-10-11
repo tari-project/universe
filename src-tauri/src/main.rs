@@ -1349,7 +1349,7 @@ async fn get_miner_metrics(
     };
 
     let config_path = app.path_resolver().app_config_dir().unwrap();
-    let _ = HardwareMonitor::current()
+    let _unused = HardwareMonitor::current()
         .write()
         .await
         .load_status_file(config_path);
