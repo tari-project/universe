@@ -180,7 +180,7 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    type Status = HashMap<String, Stats>;
+    type Status = Stats;
 
     async fn status(&self) -> Result<Self::Status, Error> {
         self.stats_client.stats().await
