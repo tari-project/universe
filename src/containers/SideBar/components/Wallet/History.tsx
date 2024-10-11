@@ -5,6 +5,7 @@ import { useWalletStore } from '@app/store/useWalletStore';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { useTranslation } from 'react-i18next';
+import { ListLabel } from './HistoryItem.styles';
 import { useMemo } from 'react';
 
 const container = {
@@ -24,7 +25,7 @@ export default function History() {
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
             <HistoryPadding>
-                <Typography variant="h6">{t('recent-wins')}</Typography>
+                <ListLabel>{t('recent-wins')}</ListLabel>
                 {isTransactionLoading && !transactions?.length ? <CircularProgress /> : txMarkup}
             </HistoryPadding>
         </HistoryContainer>

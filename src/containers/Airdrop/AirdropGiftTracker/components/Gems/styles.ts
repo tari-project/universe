@@ -18,12 +18,16 @@ export const Number = styled('div')`
     color: #000;
     font-size: 18px;
     font-weight: 600;
+    line-height: 100%;
+
+    font-variant-numeric: tabular-nums;
 `;
 
 export const Label = styled('div')`
     color: #797979;
     font-size: 12px;
     font-weight: 500;
+    line-height: 100%;
 `;
 
 export const GemImage = styled('img')`

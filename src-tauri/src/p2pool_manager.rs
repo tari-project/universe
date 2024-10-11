@@ -1,11 +1,9 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::anyhow;
 use log::warn;
-use tari_core::proof_of_work::PowAlgorithm;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -93,32 +91,13 @@ impl P2poolManager {
         }
     }
 
-    fn default_stats(&self) -> HashMap<String, Stats> {
-        let mut p2pool_stats = HashMap::with_capacity(2);
-        p2pool_stats.insert(
-            PowAlgorithm::Sha3x.to_string().to_lowercase(),
-            Stats::default(),
-        );
-        p2pool_stats.insert(
-            PowAlgorithm::RandomX.to_string().to_lowercase(),
-            Stats::default(),
-        );
-        p2pool_stats
-    }
-
-    pub async fn stats(&self) -> HashMap<String, Stats> {
-        match self.get_stats().await {
-            Ok(stats) => stats,
-            Err(_) => self.default_stats(),
-        }
-    }
-
-    async fn get_stats(&self) -> Result<HashMap<String, Stats>, anyhow::Error> {
+    pub async fn get_stats(&self) -> Result<Option<Stats>, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
-            return status_monitor.status().await;
+            Ok(Some(status_monitor.status().await?))
+        } else {
+            Ok(None)
         }
-        Err(anyhow!("Failed to get stats"))
     }
 
     pub async fn is_running(&self) -> Result<bool, anyhow::Error> {

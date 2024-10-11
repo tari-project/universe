@@ -1,6 +1,5 @@
 use crate::p2pool::models::Stats;
 use anyhow::Error;
-use std::collections::HashMap;
 
 pub struct Client {
     stats_server_address: String,
@@ -13,10 +12,10 @@ impl Client {
         }
     }
 
-    pub async fn stats(&self) -> Result<HashMap<String, Stats>, Error> {
+    pub async fn stats(&self) -> Result<Stats, Error> {
         let stats = reqwest::get(format!("{}/stats", self.stats_server_address))
             .await?
-            .json::<HashMap<String, Stats>>()
+            .json::<Stats>()
             .await?;
         Ok(stats)
     }
