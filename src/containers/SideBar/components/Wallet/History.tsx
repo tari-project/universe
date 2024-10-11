@@ -1,5 +1,5 @@
 import { HistoryContainer, HistoryPadding } from '@app/containers/SideBar/components/Wallet/Wallet.styles.ts';
-import { Typography } from '@app/components/elements/Typography.tsx';
+
 import HistoryItem from '@app/containers/SideBar/components/Wallet/HistoryItem.tsx';
 import { useWalletStore } from '@app/store/useWalletStore';
 

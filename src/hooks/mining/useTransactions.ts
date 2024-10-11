@@ -18,7 +18,7 @@ export default function useFetchTx() {
             const latestId = latestTx?.tx_id;
             const hasNewItems = !transactions?.find((tx) => tx.tx_id === latestId);
 
-            if (hasNewItems || (!transactions && newTx)) {
+            if (hasNewItems) {
                 setTransactions(newTx);
             }
         },

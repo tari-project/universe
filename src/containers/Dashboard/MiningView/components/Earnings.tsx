@@ -31,13 +31,24 @@ export default function Earnings() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
     const earnings = useBlockchainVisualisationStore((s) => s.earnings);
-    const formatted = formatBalance(earnings || 0);
+    const recapData = useBlockchainVisualisationStore((s) => s.recapData);
+
+    const displayEarnings = recapData ? recapData?.totalEarnings : earnings;
+    const formatted = formatBalance(displayEarnings || 0);
 
     return (
         <EarningsContainer>
             <AnimatePresence mode="wait">
-                {earnings ? (
+                {displayEarnings ? (
                     <EarningsWrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
+                        {recapData?.totalEarnings ? (
+                            <div>
+                                you won {recapData.count} blockss while away
+                                {t('you-won-while-away', {
+                                    blocks: `${recapData.count} block${recapData.count === 1 ? '' : 's'}`,
+                                })}
+                            </div>
+                        ) : null}
                         <span>{t('your-reward-is')}</span>
                         <CharSpinner value={formatted.toString()} fontSize={72} />
                     </EarningsWrapper>

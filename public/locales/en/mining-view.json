@@ -2,6 +2,7 @@
     "floor": "Floor",
     "current-block-time": "Current block time",
     "your-reward-is": "Your reward is",
+    "you-won-while-away": "You won {{ blocks }} while you were away",
     "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
     "mining-button-text": {
         "starting-mining": "Starting Mining",

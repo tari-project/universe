@@ -7,16 +7,22 @@ import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 
+interface Recap {
+    count: number;
+    totalEarnings: number;
+}
 interface State {
     displayBlockTime?: BlockTimeData;
     debugBlockTime?: BlockTimeData;
     displayBlockHeight?: number;
     earnings?: number;
+    recapData?: Recap;
     recapIds: TransactionInfo['tx_id'][];
 }
 
 interface Actions {
     handleWin: (latestTx: TransactionInfo, canAnimate?: boolean) => Promise<void>;
+    handleWinRecap: (recapData: Recap) => void;
     handleFail: (blockHeight: number, canAnimate?: boolean) => Promise<void>;
     handleNewBlock: (newBlockHeight: number, isMining?: boolean) => Promise<void>;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
@@ -36,6 +42,17 @@ const checkCanAnimate = async () => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set, getState) => ({
     recapIds: [],
+    handleWinRecap: (recapData) => {
+        useMiningStore.getState().setMiningControlsEnabled(false);
+        setAnimationState('success');
+
+        set({ recapData });
+
+        setTimeout(() => {
+            useMiningStore.getState().setMiningControlsEnabled(true);
+            set({ recapData: undefined, recapIds: [] });
+        }, 2000);
+    },
     handleWin: async (latestTx: TransactionInfo, canAnimate) => {
         const blockHeight = Number(latestTx.message?.split(': ')[1]);
         const earnings = latestTx.amount;
