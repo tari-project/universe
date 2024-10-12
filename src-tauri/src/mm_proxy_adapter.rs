@@ -58,7 +58,6 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         binary_verison_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         let working_dir = data_dir.join("mmproxy");
         std::fs::create_dir_all(&working_dir)?;

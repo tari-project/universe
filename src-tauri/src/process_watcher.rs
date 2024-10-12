@@ -2,11 +2,12 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, StatusMonitor};
 use log::{debug, error, info, warn};
 use std::path::PathBuf;
+use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
-use tokio::time::timeout;
 use tokio::time::MissedTickBehavior;
+use tokio::time::{sleep, timeout};
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
@@ -75,6 +76,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let mut app_shutdown = app_shutdown.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             child.start().await?;
+            sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET, "Starting process watcher for {}", name);
             let mut watch_timer = tokio::time::interval(poll_time);
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
@@ -112,7 +114,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                       return Err(e);
                                    }
                                }
-                               break;
+                               // Restart dead app
+                               sleep(Duration::from_secs(2)).await;
+                               warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
+                               child.start().await?;
+                               // Wait for a bit before checking health again
+                               sleep(Duration::from_secs(10)).await;
+                            //    break;
                             }
                       },
                     _ = inner_shutdown.wait() => {

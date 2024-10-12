@@ -75,7 +75,6 @@ impl ProcessAdapter for GpuMinerAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         let http_api_port = get_free_port().unwrap_or(18000);
         let working_dir = data_dir.join("gpuminer");

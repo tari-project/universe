@@ -108,13 +108,20 @@ impl ProcessInstance {
             warn!(target: LOG_TARGET, "Process is already running");
             return Ok(());
         }
+        dbg!("asdf");
+        info!(target: LOG_TARGET, "Starting {} node", self.startup_spec.name);
         let spec = self.startup_spec.clone();
+        // Reset the shutdown each time.
+        self.shutdown = Shutdown::new();
         let shutdown_signal = self.shutdown.to_signal();
         self.handle = Some(tokio::spawn(async move {
+            dbg!("asdf");
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
+            info!(target: LOG_TARGET, "Launching {} node", spec.name);
             let mut child = launch_child_process(&spec.file_path, spec.envs.as_ref(), &spec.args)?;
 
+            dbg!("asdf");
             if let Some(id) = child.id() {
                 fs::write(
                     spec.data_dir.join(spec.pid_file_name.clone()),
@@ -123,8 +130,10 @@ impl ProcessInstance {
             }
             let exit_code;
 
+            dbg!("asdf");
             select! {
                 _res = shutdown_signal =>{
+                    dbg!("asdf");
                     child.kill().await?;
                     exit_code = 0;
                     // res
@@ -133,6 +142,7 @@ impl ProcessInstance {
                     match res2
                      {
                         Ok(res) => {
+                            dbg!("adsfadf");
                             exit_code = res.code().unwrap_or(0)
                             },
                         Err(e) => {
@@ -142,7 +152,8 @@ impl ProcessInstance {
                     }
                 },
             };
-            info!(target: LOG_TARGET, "Stopping {} node", spec.name);
+            dbg!("asdf");
+            info!(target: LOG_TARGET, "Stopping {} node with exit code: {}", spec.name, exit_code);
 
             if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
                 warn!(target: LOG_TARGET, "Could not clear {}'s pid file: {:?}", spec.name, error);
@@ -159,6 +170,7 @@ impl ProcessInstance {
         handle
             .ok_or_else(|| anyhow!("Handle is not present"))?
             .await?
+        // Reset the shutdown
     }
 }
 
