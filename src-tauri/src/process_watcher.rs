@@ -1,3 +1,4 @@
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{ProcessAdapter, StatusMonitor};
 use log::{debug, error, info, warn};
 use std::path::PathBuf;
@@ -45,6 +46,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        binary: Binaries,
     ) -> Result<(), anyhow::Error> {
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
@@ -60,12 +62,19 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let poll_time = self.poll_time;
         let health_timeout = self.health_timeout;
 
-        let (mut child, status_monitor) = self.adapter.spawn(base_path, config_path, log_path)?;
+        let binary_path = BinaryResolver::current()
+            .read()
+            .await
+            .resolve_path_to_binary_files(binary)?;
+        let (mut child, status_monitor) =
+            self.adapter
+                .spawn(base_path, config_path, log_path, binary_path)?;
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
 
         let mut app_shutdown = app_shutdown.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
+            child.start().await?;
             info!(target: LOG_TARGET, "Starting process watcher for {}", name);
             let mut watch_timer = tokio::time::interval(poll_time);
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);

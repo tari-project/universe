@@ -175,7 +175,7 @@ impl BinaryResolver {
         &INSTANCE
     }
 
-    pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
+    pub fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
         let manager = self
             .managers
             .get(&binary)

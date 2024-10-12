@@ -1,4 +1,5 @@
 use crate::app_config::MiningMode;
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::ProcessAdapter;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
@@ -81,8 +82,18 @@ impl CpuMiner {
             monero_address.clone(),
             cpu_max_percentage,
         );
-        let (mut xmrig_child, _xmrig_status_monitor) =
-            xmrig.spawn_inner(base_path.clone(), config_path.clone(), log_dir.clone())?;
+
+        let binary_path = BinaryResolver::current()
+            .read()
+            .await
+            .resolve_path_to_binary_files(Binaries::Xmrig)?;
+
+        let (mut xmrig_child, _xmrig_status_monitor) = xmrig.spawn_inner(
+            base_path.clone(),
+            config_path.clone(),
+            log_dir.clone(),
+            binary_path,
+        )?;
         self.api_client = Some(xmrig.client);
 
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {

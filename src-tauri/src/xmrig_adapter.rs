@@ -5,8 +5,9 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::warn;
 use tari_shutdown::Shutdown;
+use tokio::runtime::Handle;
 
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor};
 use crate::process_utils;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 
@@ -75,6 +76,7 @@ impl ProcessAdapter for XmrigAdapter {
         data_dir: PathBuf,
         _config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         self.kill_previous_instances(data_dir.clone())?;
 
@@ -111,32 +113,15 @@ impl ProcessAdapter for XmrigAdapter {
         Ok((
             ProcessInstance {
                 shutdown: xmrig_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let xmrig_dir = BinaryResolver::current()
-                        .read()
-                        .await
-                        .resolve_path_to_binary_files(Binaries::Xmrig)
-                        .await
-                        .unwrap_or_else(|_| panic!("Could not resolve xmrig path"));
-                    let xmrig_bin = xmrig_dir.join("xmrig");
-                    let mut xmrig = process_utils::launch_child_process(&xmrig_bin, None, &args)?;
-
-                    if let Some(id) = xmrig.id() {
-                        std::fs::write(data_dir.join("xmrig_pid"), id.to_string())?;
-                    }
-                    shutdown_signal.wait().await;
-
-                    xmrig.kill().await?;
-
-                    match std::fs::remove_file(data_dir.join("xmrig_pid")) {
-                        Ok(_) => {}
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Could not clear xmrig's pid file -  {e}");
-                        }
-                    }
-
-                    Ok(0)
-                })),
+                handle: None,
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_version_path,
+                    envs: None,
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
             },
             XmrigStatusMonitor {},
         ))

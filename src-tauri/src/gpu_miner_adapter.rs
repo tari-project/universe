@@ -1,3 +1,4 @@
+use crate::process_adapter::ProcessStartupSpec;
 use crate::process_utils;
 use anyhow::anyhow;
 use anyhow::Error;
@@ -8,6 +9,8 @@ use std::{fs, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
+use tokio::runtime::Handle;
+use tokio::runtime::Runtime;
 use tokio::select;
 
 use crate::{
@@ -68,6 +71,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         data_dir: PathBuf,
         config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
@@ -137,85 +141,31 @@ impl ProcessAdapter for GpuMinerAdapter {
             );
         }
         info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
+        let mut envs = std::collections::HashMap::new();
+        match Network::get_current_or_user_setting_or_default() {
+            Network::Esmeralda => {
+                envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
+            }
+            Network::NextNet => {
+                envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
+            }
+            _ => {
+                return Err(anyhow!("Unsupported network"));
+            }
+        }
 
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .read()
-                        .await
-                        .resolve_path_to_binary_files(Binaries::GpuMiner)
-                        .await
-                        .unwrap_or_else(|_| panic!("Could not resolve gpu_miner path"));
-                    crate::download_utils::set_permissions(&file_path.clone()).await?;
-                    let mut child;
-
-                    // if cfg!(debug_assertions) {
-                    //     child = tokio::process::Command::new(file_path)
-                    //         .args(args)
-                    //         .env("TARI_NETWORK", "localnet")
-                    //         // .stdout(std::process::Stdio::null())
-                    //         // .stderr(std::process::Stdio::null())
-                    //         .kill_on_drop(true)
-                    //         .spawn()?;
-                    // } else {
-                    //     child = tokio::process::Command::new(file_path)
-                    //         .args(args)
-                    //         .env("TARI_NETWORK", "esme")
-                    //         // .stdout(std::process::Stdio::null())
-                    //         // .stderr(std::process::Stdio::null())
-                    //         .kill_on_drop(true)
-                    //         .spawn()?;
-                    // }
-                    let mut envs = std::collections::HashMap::new();
-                    match Network::get_current_or_user_setting_or_default() {
-                        Network::Esmeralda => {
-                            envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
-                        }
-                        Network::NextNet => {
-                            envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
-                        }
-                        _ => {
-                            return Err(anyhow!("Unsupported network"));
-                        }
-                    }
-                    // envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
-                    child = process_utils::launch_child_process(&file_path, Some(envs), &args)?;
-                    if let Some(id) = child.id() {
-                        fs::write(data_dir.join("xtrgpuminer_pid"), id.to_string())?;
-                    }
-                    let exit_code;
-
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                        res2 = child.wait() => {
-                            match res2
-                             {
-                                Ok(res) => {
-                                    exit_code = res.code().unwrap_or(0)
-                                    },
-                                Err(e) => {
-                                    warn!(target: LOG_TARGET, "Error in XtrGpuInstance: {}", e);
-                                    return Err(e.into());
-                                }
-                            }
-
-                        },
-                    };
-
-                    match fs::remove_file(data_dir.join("xtrgpuminer_pid")) {
-                        Ok(_) => {}
-                        Err(_e) => {
-                            debug!(target: LOG_TARGET, "Could not clear xtrgpuminer's pid file");
-                        }
-                    }
-                    Ok(exit_code)
-                })),
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_version_path,
+                    envs: Some(envs),
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
+                handle: None,
             },
             GpuMinerStatusMonitor { http_api_port },
         ))
