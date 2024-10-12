@@ -51,7 +51,7 @@ export interface CpuMinerMetrics {
 }
 
 export interface GpuMinerMetrics {
-    hardware?: HardwareParameters;
+    hardware: HardwareParameters[];
     mining: GpuMinerStatus;
 }
 
@@ -151,7 +151,7 @@ export interface HardwareParameters {
 
 export interface HardwareStatus {
     cpu: HardwareParameters;
-    gpu: HardwareParameters;
+    gpu: HardwareParameters[];
 }
 
 export interface CpuMinerStatus {

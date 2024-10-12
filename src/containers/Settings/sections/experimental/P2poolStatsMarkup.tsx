@@ -14,7 +14,7 @@ const P2PoolStats = () => {
     const p2poolStats = useP2poolStatsStore((s) => s);
     const p2poolSha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
     const p2poolRandomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
-    const fetchP2pStats = useP2poolStatsStore((s) => s.fetchP2poolStats);
+    const fetchP2pStats = useP2poolStatsStore((s) => s?.fetchP2poolStats);
 
     const p2poolSquad = p2poolSha3Stats?.squad?.name;
     const p2poolSha3MinersCount = p2poolSha3Stats?.num_of_miners;
