@@ -94,6 +94,9 @@ impl ProcessAdapter for WalletAdapter {
             .join(Network::get_current_or_user_setting_or_default().to_string())
             .join("peer_db");
 
+        let wallet_data_folder =
+            working_dir.join(Network::get_current_or_user_setting_or_default().to_string());
+
         if self.use_tor {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
@@ -129,6 +132,11 @@ impl ProcessAdapter for WalletAdapter {
                         warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
                     }
 
+                    //  Delete any old wallets on startup
+                    if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
+                        warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
+                    }
+
                     crate::download_utils::set_permissions(&file_path).await?;
                     let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
 
@@ -149,6 +157,10 @@ impl ProcessAdapter for WalletAdapter {
                                exit_code = res.code().unwrap_or(0)
                                },
                            Err(e) => {
+                            // Delete wallet on shutdown
+                            if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
+                                warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
+                            }
                                warn!(target: LOG_TARGET, "Error in NodeInstance: {}", e);
                                return Err(e.into());
                            }
@@ -156,6 +168,11 @@ impl ProcessAdapter for WalletAdapter {
                         },
                     };
                     info!(target: LOG_TARGET, "Stopping minotari wallet");
+                    info!(target: LOG_TARGET, "Clearing wallet data folder");
+
+                    if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
+                        warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
+                    }
 
                     match fs::remove_file(data_dir.join("wallet_pid")) {
                         Ok(_) => {}
@@ -189,14 +206,13 @@ pub enum WalletStatusMonitorError {
     UnknownError(#[from] anyhow::Error),
 }
 
+#[derive(Clone)]
 pub struct WalletStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> bool {
+        self.get_balance().await.is_ok()
     }
 }
 

@@ -128,13 +128,13 @@ impl ProcessAdapter for TorAdapter {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct TorStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> bool {
+        // TODO: Implement health check
+        true
     }
 }

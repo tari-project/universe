@@ -175,13 +175,13 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     }
 }
 
+#[derive(Clone)]
 pub struct MergeMiningProxyStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> bool {
+        // TODO: Implement a call to the jsonrpc api to check the health of the mmproxy
+        true
     }
 }

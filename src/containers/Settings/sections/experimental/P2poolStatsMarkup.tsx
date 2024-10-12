@@ -23,20 +23,18 @@ const P2PoolStats = () => {
     const p2poolRandomxChainTip = p2poolRandomXStats?.share_chain_height;
 
     useEffect(() => {
-        if (isP2poolEnabled) {
-            const fetchP2pStatsInterval = setInterval(async () => {
-                try {
-                    await fetchP2pStats();
-                } catch (error) {
-                    console.error('Error fetching p2pool stats:', error);
-                }
-            }, 5000);
+        const fetchP2pStatsInterval = setInterval(async () => {
+            try {
+                await fetchP2pStats();
+            } catch (error) {
+                console.error('Error fetching p2pool stats:', error);
+            }
+        }, 5000);
 
-            return () => {
-                clearInterval(fetchP2pStatsInterval);
-            };
-        }
-    }, [fetchP2pStats, isP2poolEnabled]);
+        return () => {
+            clearInterval(fetchP2pStatsInterval);
+        };
+    }, [fetchP2pStats]);
 
     return isP2poolEnabled ? (
         <SettingsGroupWrapper>

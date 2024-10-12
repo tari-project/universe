@@ -16,7 +16,7 @@ use std::fs;
 use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
-use tari_shutdown::Shutdown;
+use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::ByteArray;
 use tokio::select;
 
@@ -56,6 +56,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let shutdown_signal = inner_shutdown.to_signal();
+        let status_shutdown = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting minotari node");
         let working_dir: PathBuf = data_dir.join("node");
@@ -180,6 +181,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             MinotariNodeStatusMonitor {
                 grpc_port: self.grpc_port,
                 required_sync_peers: self.required_initial_peers,
+                shutdown_signal: status_shutdown,
             },
         ))
     }
@@ -201,17 +203,17 @@ pub enum MinotariNodeStatusMonitorError {
     NodeNotStarted,
 }
 
+#[derive(Clone)]
 pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
     required_sync_peers: u32,
+    shutdown_signal: ShutdownSignal,
 }
 
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> bool {
+        self.get_identity().await.is_ok()
     }
 }
 
@@ -326,6 +328,9 @@ impl MinotariNodeStatusMonitor {
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
 
         loop {
+            if self.shutdown_signal.is_triggered() {
+                break;
+            }
             let tip = client.get_tip_info(Empty {}).await?;
             let sync_progress = client.get_sync_progress(Empty {}).await?;
             let tip_res = tip.into_inner();

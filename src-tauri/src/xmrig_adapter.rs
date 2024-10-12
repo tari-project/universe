@@ -151,13 +151,13 @@ impl ProcessAdapter for XmrigAdapter {
     }
 }
 
+#[derive(Clone)]
 pub struct XmrigStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for XmrigStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> bool {
+        // TODO: Connect this to actual stats
+        true
     }
 }

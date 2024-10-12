@@ -21,7 +21,7 @@ pub fn launch_child_process(
         Ok(tokio::process::Command::new(file_path)
             .args(args)
             .envs(envs.unwrap_or_default())
-            .stdout(std::process::Stdio::null())
+            .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .kill_on_drop(true)
             .creation_flags(PROCESS_CREATION_NO_WINDOW)

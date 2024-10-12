@@ -166,6 +166,7 @@ impl ProcessAdapter for P2poolAdapter {
     }
 }
 
+#[derive(Clone)]
 pub struct P2poolStatusMonitor {
     stats_client: p2pool::stats_client::Client,
 }
@@ -180,9 +181,16 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    type Status = Stats;
+    async fn check_health(&self) -> bool {
+        match self.stats_client.stats().await {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+}
 
-    async fn status(&self) -> Result<Self::Status, Error> {
+impl P2poolStatusMonitor {
+    pub async fn status(&self) -> Result<Stats, Error> {
         self.stats_client.stats().await
     }
 }

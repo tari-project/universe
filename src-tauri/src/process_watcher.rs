@@ -1,9 +1,10 @@
-use crate::process_adapter::ProcessAdapter;
+use crate::process_adapter::{ProcessAdapter, StatusMonitor};
 use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
+use tokio::time::timeout;
 use tokio::time::MissedTickBehavior;
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
@@ -12,6 +13,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
     poll_time: tokio::time::Duration,
+    health_timeout: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
 }
 
@@ -21,7 +23,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             adapter,
             watcher_task: None,
             internal_shutdown: Shutdown::new(),
-            poll_time: tokio::time::Duration::from_secs(1),
+            poll_time: tokio::time::Duration::from_secs(5),
+            health_timeout: tokio::time::Duration::from_secs(4),
             status_monitor: None,
         }
     }
@@ -55,8 +58,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let mut inner_shutdown = self.internal_shutdown.to_signal();
 
         let poll_time = self.poll_time;
+        let health_timeout = self.health_timeout;
 
         let (mut child, status_monitor) = self.adapter.spawn(base_path, config_path, log_path)?;
+        let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
 
         let mut app_shutdown = app_shutdown.clone();
@@ -68,9 +73,21 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             loop {
                 select! {
                       _ = watch_timer.tick() => {
+                            let mut is_healthy = false;
+
                             if child.ping() {
-                            } else {
-                               debug!(target: LOG_TARGET, "{} is not running", name);
+                                if let Ok(inner) = timeout(health_timeout, status_monitor2.check_health()).await.inspect_err(|e|
+                                error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name)) {
+                                            if inner {
+                                                is_healthy = true;
+                                            }
+                                            else {
+                                                error!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
+                                            }
+                                    }
+                            }
+
+                            if !is_healthy {
                                match child.stop().await {
                                    Ok(exit_code) => {
                                       if exit_code != 0 {

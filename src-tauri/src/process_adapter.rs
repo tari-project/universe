@@ -70,9 +70,8 @@ pub(crate) trait ProcessAdapter {
 }
 
 #[async_trait]
-pub(crate) trait StatusMonitor {
-    type Status;
-    async fn status(&self) -> Result<Self::Status, anyhow::Error>;
+pub(crate) trait StatusMonitor: Clone + Send + 'static {
+    async fn check_health(&self) -> bool;
 }
 
 pub(crate) struct ProcessInstance {

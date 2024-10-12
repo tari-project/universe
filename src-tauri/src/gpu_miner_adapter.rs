@@ -230,15 +230,20 @@ impl ProcessAdapter for GpuMinerAdapter {
     }
 }
 
+#[derive(Clone)]
 pub struct GpuMinerStatusMonitor {
     http_api_port: u16,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
-    type Status = GpuMinerStatus;
+    async fn check_health(&self) -> bool {
+        self.status().await.is_ok()
+    }
+}
 
-    async fn status(&self) -> Result<Self::Status, anyhow::Error> {
+impl GpuMinerStatusMonitor {
+    pub async fn status(&self) -> Result<GpuMinerStatus, anyhow::Error> {
         let client = reqwest::Client::new();
         let response = match client
             .get(format!("http://127.0.0.1:{}/stats", self.http_api_port))
