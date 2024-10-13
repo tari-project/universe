@@ -313,6 +313,7 @@ async fn validate_jwt(airdrop_access_token: Arc<RwLock<Option<String>>>) -> Opti
     })
 }
 
+#[allow(clippy::too_many_lines)]
 async fn get_telemetry_data(
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,

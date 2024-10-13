@@ -31,7 +31,7 @@ export const ExperimentalSettings = () => {
                     {showExperimental && (
                         <>
                             <P2pMarkup />
-                            <P2poolStatsMarkup />
+                            {/* <P2poolStatsMarkup /> */}
                             <GpuDevices />
                             <DebugSettings />
                             <AppVersions />

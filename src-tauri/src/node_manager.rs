@@ -76,7 +76,13 @@ impl NodeManager {
             let mut process_watcher = self.watcher.write().await;
             process_watcher.adapter.use_tor = use_tor;
             process_watcher
-                .start(app_shutdown, base_path, config_path, log_path)
+                .start(
+                    app_shutdown,
+                    base_path,
+                    config_path,
+                    log_path,
+                    crate::binaries::Binaries::MinotariNode,
+                )
                 .await?;
         }
         self.wait_ready().await?;
@@ -92,7 +98,13 @@ impl NodeManager {
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(
+                app_shutdown,
+                base_path,
+                config_path,
+                log_path,
+                crate::binaries::Binaries::MinotariNode,
+            )
             .await?;
 
         Ok(())

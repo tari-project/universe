@@ -43,7 +43,7 @@ impl Binaries {
         match self {
             Binaries::Xmrig => {
                 let file_name = format!("xmrig-{}", version);
-                PathBuf::from(file_name)
+                PathBuf::from(file_name).join("xmrig")
             }
             Binaries::MergeMiningProxy => {
                 let file_name = "minotari_merge_mining_proxy";

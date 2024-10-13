@@ -1,13 +1,21 @@
+use crate::process_adapter::HealthStatus;
+use crate::process_adapter::ProcessStartupSpec;
 use crate::process_utils;
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::atomic::AtomicU16;
+use std::sync::Arc;
+use std::time::Instant;
 use std::{fs, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
+use tokio::runtime::Handle;
+use tokio::runtime::Runtime;
 use tokio::select;
 
 use crate::{
@@ -19,7 +27,7 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
-pub const ECO_MODE_GPU_PERCENTAGE: u16 = 1;
+pub const ECO_MODE_GPU_PERCENTAGE: u16 = 10;
 pub const LUDICROUS_MODE_GPU_PERCENTAGE: u16 = 800; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
@@ -68,10 +76,10 @@ impl ProcessAdapter for GpuMinerAdapter {
         data_dir: PathBuf,
         config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         let http_api_port = get_free_port().unwrap_or(18000);
         let working_dir = data_dir.join("gpuminer");
@@ -113,6 +121,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                 .to_string(),
             "--log-dir".to_string(),
             log_dir.to_string_lossy().to_string(),
+            "--template-timeout-secs".to_string(),
+            "1".to_string(),
         ];
 
         // Only available after 0.1.8-pre.2
@@ -137,87 +147,36 @@ impl ProcessAdapter for GpuMinerAdapter {
             );
         }
         info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
+        let mut envs = std::collections::HashMap::new();
+        match Network::get_current_or_user_setting_or_default() {
+            Network::Esmeralda => {
+                envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
+            }
+            Network::NextNet => {
+                envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
+            }
+            _ => {
+                return Err(anyhow!("Unsupported network"));
+            }
+        }
 
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .read()
-                        .await
-                        .resolve_path_to_binary_files(Binaries::GpuMiner)
-                        .await
-                        .unwrap_or_else(|_| panic!("Could not resolve gpu_miner path"));
-                    crate::download_utils::set_permissions(&file_path.clone()).await?;
-                    let mut child;
-
-                    // if cfg!(debug_assertions) {
-                    //     child = tokio::process::Command::new(file_path)
-                    //         .args(args)
-                    //         .env("TARI_NETWORK", "localnet")
-                    //         // .stdout(std::process::Stdio::null())
-                    //         // .stderr(std::process::Stdio::null())
-                    //         .kill_on_drop(true)
-                    //         .spawn()?;
-                    // } else {
-                    //     child = tokio::process::Command::new(file_path)
-                    //         .args(args)
-                    //         .env("TARI_NETWORK", "esme")
-                    //         // .stdout(std::process::Stdio::null())
-                    //         // .stderr(std::process::Stdio::null())
-                    //         .kill_on_drop(true)
-                    //         .spawn()?;
-                    // }
-                    let mut envs = std::collections::HashMap::new();
-                    match Network::get_current_or_user_setting_or_default() {
-                        Network::Esmeralda => {
-                            envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
-                        }
-                        Network::NextNet => {
-                            envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
-                        }
-                        _ => {
-                            return Err(anyhow!("Unsupported network"));
-                        }
-                    }
-                    // envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
-                    child = process_utils::launch_child_process(&file_path, Some(envs), &args)?;
-                    if let Some(id) = child.id() {
-                        fs::write(data_dir.join("xtrgpuminer_pid"), id.to_string())?;
-                    }
-                    let exit_code;
-
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                        res2 = child.wait() => {
-                            match res2
-                             {
-                                Ok(res) => {
-                                    exit_code = res.code().unwrap_or(0)
-                                    },
-                                Err(e) => {
-                                    warn!(target: LOG_TARGET, "Error in XtrGpuInstance: {}", e);
-                                    return Err(e.into());
-                                }
-                            }
-
-                        },
-                    };
-
-                    match fs::remove_file(data_dir.join("xtrgpuminer_pid")) {
-                        Ok(_) => {}
-                        Err(_e) => {
-                            debug!(target: LOG_TARGET, "Could not clear xtrgpuminer's pid file");
-                        }
-                    }
-                    Ok(exit_code)
-                })),
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_version_path,
+                    envs: Some(envs),
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
+                handle: None,
             },
-            GpuMinerStatusMonitor { http_api_port },
+            GpuMinerStatusMonitor {
+                http_api_port,
+                start_time: Instant::now(),
+            },
         ))
     }
 
@@ -230,15 +189,30 @@ impl ProcessAdapter for GpuMinerAdapter {
     }
 }
 
+#[derive(Clone)]
 pub struct GpuMinerStatusMonitor {
     http_api_port: u16,
+    start_time: Instant,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
-    type Status = GpuMinerStatus;
+    async fn check_health(&self) -> HealthStatus {
+        if let Ok(status) = self.status().await {
+            // GPU returns 0 for first 10 seconds until it has an average
+            if status.hash_rate > 0 || self.start_time.elapsed().as_secs() < 11 {
+                HealthStatus::Healthy
+            } else {
+                HealthStatus::Warning
+            }
+        } else {
+            HealthStatus::Unhealthy
+        }
+    }
+}
 
-    async fn status(&self) -> Result<Self::Status, anyhow::Error> {
+impl GpuMinerStatusMonitor {
+    pub async fn status(&self) -> Result<GpuMinerStatus, anyhow::Error> {
         let client = reqwest::Client::new();
         let response = match client
             .get(format!("http://127.0.0.1:{}/stats", self.http_api_port))
@@ -279,8 +253,8 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         };
         Ok(GpuMinerStatus {
             is_mining: true,
-            hash_rate: body.hashes_per_second,
             estimated_earnings: 0,
+            hash_rate: body.total_hashrate.ten_seconds.unwrap_or(0.0) as u64,
             is_available: true,
         })
     }
@@ -288,11 +262,18 @@ impl StatusMonitor for GpuMinerStatusMonitor {
 
 #[derive(Debug, Deserialize)]
 struct XtrGpuminerHttpApiStatus {
-    hashes_per_second: u64,
+    hashrate_per_device: HashMap<u32, AverageHashrate>,
+    total_hashrate: AverageHashrate,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct AverageHashrate {
+    ten_seconds: Option<f64>,
+    one_minute: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct GpuMinerStatus {
+pub(crate) struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: u64,
     pub estimated_earnings: u64,
