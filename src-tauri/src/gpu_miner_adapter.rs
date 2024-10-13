@@ -5,6 +5,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::{fs, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
@@ -22,7 +23,7 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
-pub const ECO_MODE_GPU_PERCENTAGE: u16 = 1;
+pub const ECO_MODE_GPU_PERCENTAGE: u16 = 10;
 pub const LUDICROUS_MODE_GPU_PERCENTAGE: u16 = 800; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
@@ -116,6 +117,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                 .to_string(),
             "--log-dir".to_string(),
             log_dir.to_string_lossy().to_string(),
+            "--template-timeout-secs".to_string(),
+            "1".to_string(),
         ];
 
         // Only available after 0.1.8-pre.2
@@ -233,8 +236,8 @@ impl GpuMinerStatusMonitor {
         };
         Ok(GpuMinerStatus {
             is_mining: true,
-            hash_rate: body.hashes_per_second,
             estimated_earnings: 0,
+            hash_rate: body.total_hashrate.ten_seconds.unwrap_or(0.0) as u64,
             is_available: true,
         })
     }
@@ -242,11 +245,18 @@ impl GpuMinerStatusMonitor {
 
 #[derive(Debug, Deserialize)]
 struct XtrGpuminerHttpApiStatus {
-    hashes_per_second: u64,
+    hashrate_per_device: HashMap<u32, AverageHashrate>,
+    total_hashrate: AverageHashrate,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct AverageHashrate {
+    ten_seconds: Option<f64>,
+    one_minute: Option<f64>,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct GpuMinerStatus {
+pub(crate) struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: u64,
     pub estimated_earnings: u64,

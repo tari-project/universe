@@ -46,11 +46,11 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'Address',
-                                labelValue: p2poolStats.connection_info?.listener_addresses.join(', ') || '',
+                                labelValue: p2poolStats?.connection_info?.listener_addresses.join(', ') || '',
                             },
                             {
                                 labelText: 'Connected peers',
-                                labelValue: '' + (p2poolStats.connection_info?.connected_peers ?? 0),
+                                labelValue: '' + (p2poolStats?.connection_info?.connected_peers ?? 0),
                             },
                         ]}
                     />
@@ -61,7 +61,7 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'Connected',
-                                labelValue: p2poolStats.connected ? 'Yes' : 'No',
+                                labelValue: p2poolStats?.connected ? 'Yes' : 'No',
                             },
                         ]}
                     />
@@ -70,34 +70,34 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'Num Peers',
-                                labelValue: '' + (p2poolStats.connection_info?.network_info.num_peers ?? 0),
+                                labelValue: '' + (p2poolStats?.connection_info?.network_info.num_peers ?? 0),
                             },
                             {
                                 labelText: 'Pending incoming',
                                 labelValue:
                                     '' +
-                                    (p2poolStats.connection_info?.network_info.connection_counters.pending_incoming ??
+                                    (p2poolStats?.connection_info?.network_info.connection_counters.pending_incoming ??
                                         0),
                             },
                             {
                                 labelText: 'Pending outgoing',
                                 labelValue:
                                     '' +
-                                    (p2poolStats.connection_info?.network_info.connection_counters.pending_outgoing ??
+                                    (p2poolStats?.connection_info?.network_info.connection_counters.pending_outgoing ??
                                         0),
                             },
                             {
                                 labelText: 'Established incoming',
                                 labelValue:
                                     '' +
-                                    (p2poolStats.connection_info?.network_info.connection_counters
+                                    (p2poolStats?.connection_info?.network_info.connection_counters
                                         .established_incoming ?? 0),
                             },
                             {
                                 labelText: 'Established outgoing',
                                 labelValue:
                                     '' +
-                                    (p2poolStats.connection_info?.network_info.connection_counters
+                                    (p2poolStats?.connection_info?.network_info.connection_counters
                                         .established_outgoing ?? 0),
                             },
                         ]}
