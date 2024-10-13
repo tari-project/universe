@@ -8,7 +8,9 @@ use tokio::{runtime::Handle, select};
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor},
+    process_adapter::{
+        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    },
     process_utils,
     utils::file_utils::convert_to_string,
 };
@@ -99,8 +101,8 @@ pub(crate) struct TorStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
-    async fn check_health(&self) -> bool {
+    async fn check_health(&self) -> HealthStatus {
         // TODO: Implement health check
-        true
+        HealthStatus::Healthy
     }
 }

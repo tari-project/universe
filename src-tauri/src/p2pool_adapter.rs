@@ -15,6 +15,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
+use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::process_utils::launch_child_process;
@@ -136,10 +137,10 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    async fn check_health(&self) -> bool {
+    async fn check_health(&self) -> HealthStatus {
         match self.stats_client.stats().await {
-            Ok(_) => true,
-            Err(_) => false,
+            Ok(_) => HealthStatus::Healthy,
+            Err(_) => HealthStatus::Unhealthy,
         }
     }
 }

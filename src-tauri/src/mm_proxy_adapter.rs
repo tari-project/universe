@@ -2,7 +2,9 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor};
+use crate::process_adapter::{
+    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+};
 use crate::process_utils;
 use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
@@ -147,8 +149,8 @@ pub struct MergeMiningProxyStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    async fn check_health(&self) -> bool {
+    async fn check_health(&self) -> HealthStatus {
         // TODO: Implement a call to the jsonrpc api to check the health of the mmproxy
-        true
+        HealthStatus::Healthy
     }
 }

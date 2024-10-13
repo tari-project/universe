@@ -12,7 +12,6 @@ use crate::process_utils;
 use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
-    process_adapter::StatusMonitor,
     process_watcher::ProcessWatcher,
 };
 

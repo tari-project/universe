@@ -1,5 +1,7 @@
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor};
+use crate::process_adapter::{
+    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+};
 use crate::process_utils;
 use crate::utils::file_utils::convert_to_string;
 use anyhow::Error;
@@ -165,8 +167,12 @@ pub struct WalletStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
-    async fn check_health(&self) -> bool {
-        self.get_balance().await.is_ok()
+    async fn check_health(&self) -> HealthStatus {
+        if self.get_balance().await.is_ok() {
+            HealthStatus::Healthy
+        } else {
+            HealthStatus::Unhealthy
+        }
     }
 }
 

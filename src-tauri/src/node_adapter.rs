@@ -1,7 +1,9 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor};
+use crate::process_adapter::{
+    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+};
 use crate::utils::file_utils::convert_to_string;
 use crate::{process_utils, ProgressTracker};
 use anyhow::{anyhow, Error};
@@ -180,8 +182,12 @@ pub struct MinotariNodeStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
-    async fn check_health(&self) -> bool {
-        self.get_identity().await.is_ok()
+    async fn check_health(&self) -> HealthStatus {
+        if self.get_identity().await.is_ok() {
+            HealthStatus::Healthy
+        } else {
+            HealthStatus::Unhealthy
+        }
     }
 }
 

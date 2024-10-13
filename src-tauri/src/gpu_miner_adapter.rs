@@ -1,3 +1,4 @@
+use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_utils;
 use anyhow::anyhow;
@@ -6,6 +7,9 @@ use async_trait::async_trait;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::atomic::AtomicU16;
+use std::sync::Arc;
+use std::time::Instant;
 use std::{fs, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
@@ -169,7 +173,10 @@ impl ProcessAdapter for GpuMinerAdapter {
                 },
                 handle: None,
             },
-            GpuMinerStatusMonitor { http_api_port },
+            GpuMinerStatusMonitor {
+                http_api_port,
+                start_time: Instant::now(),
+            },
         ))
     }
 
@@ -185,12 +192,22 @@ impl ProcessAdapter for GpuMinerAdapter {
 #[derive(Clone)]
 pub struct GpuMinerStatusMonitor {
     http_api_port: u16,
+    start_time: Instant,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
-    async fn check_health(&self) -> bool {
-        self.status().await.is_ok()
+    async fn check_health(&self) -> HealthStatus {
+        if let Ok(status) = self.status().await {
+            // GPU returns 0 for first 10 seconds until it has an average
+            if status.hash_rate > 0 || self.start_time.elapsed().as_secs() < 11 {
+                HealthStatus::Healthy
+            } else {
+                HealthStatus::Warning
+            }
+        } else {
+            HealthStatus::Unhealthy
+        }
     }
 }
 

@@ -73,6 +73,7 @@ impl BinaryResolver {
             Binaries::Xmrig,
             BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
+                // Some("xmrig-6.22.0".to_string()),
                 None,
                 Box::new(XmrigVersionApiAdapter {}),
                 None,

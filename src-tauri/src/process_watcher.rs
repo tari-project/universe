@@ -1,5 +1,5 @@
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, StatusMonitor};
+use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::time::Duration;
@@ -67,6 +67,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             .read()
             .await
             .resolve_path_to_binary_files(binary)?;
+        info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
         let (mut child, status_monitor) =
             self.adapter
                 .spawn(base_path, config_path, log_path, binary_path)?;
@@ -79,7 +80,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET, "Starting process watcher for {}", name);
             let mut watch_timer = tokio::time::interval(poll_time);
-            watch_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
+            watch_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
+            let mut warning_count = 0;
             // read events such as stdout
             loop {
                 select! {
@@ -89,14 +91,25 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             if child.ping() {
                                 if let Ok(inner) = timeout(health_timeout, status_monitor2.check_health()).await.inspect_err(|e|
                                 error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name)) {
-                                            if inner {
-                                                is_healthy = true;
-                                            }
-                                            else {
+                                            match inner {
+                                                HealthStatus::Healthy => {
+                                                    warning_count = 0;
+                                                    is_healthy = true;
+                                            },
+                                            HealthStatus::Warning => {
+                                                warning_count += 1;
+                                                if warning_count > 20 {
+                                                    error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
+                                                    warning_count = 0;
+                                                }
+                                            },
+                                            HealthStatus::Unhealthy => {
+
                                                 error!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
                                             }
                                     }
                             }
+                        }
 
                             if !is_healthy {
                                match child.stop().await {
@@ -132,7 +145,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                     }
                 }
             }
-            Ok(0)
         }));
         Ok(())
     }
