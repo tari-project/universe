@@ -37,7 +37,13 @@ impl TorManager {
         {
             let mut process_watcher = self.watcher.write().await;
             process_watcher
-                .start(app_shutdown, base_path, config_path, log_path)
+                .start(
+                    app_shutdown,
+                    base_path,
+                    config_path,
+                    log_path,
+                    crate::binaries::Binaries::Tor,
+                )
                 .await?;
         }
         self.wait_ready().await?;

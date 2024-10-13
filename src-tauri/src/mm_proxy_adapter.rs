@@ -2,7 +2,9 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_adapter::{
+    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+};
 use crate::process_utils;
 use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
@@ -10,6 +12,7 @@ use async_trait::async_trait;
 use log::{debug, warn};
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
+use tokio::runtime::Handle;
 use tokio::select;
 
 const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
@@ -54,9 +57,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         data_dir: PathBuf,
         _config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_verison_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         let working_dir = data_dir.join("mmproxy");
         std::fs::create_dir_all(&working_dir)?;
@@ -118,49 +121,15 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .read()
-                        .await
-                        .resolve_path_to_binary_files(Binaries::MergeMiningProxy)
-                        .await?;
-                    crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
-
-                    if let Some(id) = child.id() {
-                        fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;
-                    }
-                    let exit_code;
-
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                        res2 = child.wait() => {
-                            match res2
-                             {
-                                Ok(res) => {
-                                    exit_code = res.code().unwrap_or(0)
-                                    },
-                                Err(e) => {
-                                    warn!(target: LOG_TARGET, "Error in MergeMiningProxyInstance: {}", e);
-                                    return Err(e.into());
-                                }
-                            }
-
-                        },
-                    };
-
-                    match fs::remove_file(data_dir.join("mmproxy_pid")) {
-                        Ok(_) => {}
-                        Err(_e) => {
-                            debug!(target: LOG_TARGET, "Could not clear mmproxy's pid file");
-                        }
-                    }
-                    Ok(exit_code)
-                })),
+                handle: None,
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_verison_path,
+                    envs: None,
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
             },
             MergeMiningProxyStatusMonitor {},
         ))
@@ -175,13 +144,13 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     }
 }
 
+#[derive(Clone)]
 pub struct MergeMiningProxyStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> HealthStatus {
+        // TODO: Implement a call to the jsonrpc api to check the health of the mmproxy
+        HealthStatus::Healthy
     }
 }
