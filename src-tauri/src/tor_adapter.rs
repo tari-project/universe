@@ -45,7 +45,6 @@ impl ProcessAdapter for TorAdapter {
         binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting tor");
         let working_dir: PathBuf = data_dir.join("tor-data");

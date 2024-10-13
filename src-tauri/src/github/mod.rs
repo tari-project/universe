@@ -61,7 +61,7 @@ pub async fn list_releases(
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let mut attempts = 0;
     let mut releases = loop {
-        let result = match list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await {
+        let _result = match list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await {
             Ok(r) => break r,
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to fetch releases from mirror: {}", e);

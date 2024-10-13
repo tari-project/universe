@@ -59,7 +59,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
         binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
         let status_shutdown = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting minotari node");
