@@ -13,12 +13,22 @@ import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
 
 export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const showLogsDialog = useUIStore((s) => s.showLogsDialog);
-    const setShowLogsDialog = useUIStore((s) => s.setShowLogsDialog);
+    const dialogToShow = useUIStore((s) => s.dialogToShow);
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
+
+    const showLogsDialog = dialogToShow === 'logs';
 
     const [error, setError] = useState('');
     const [feedback, setFeedback] = useState('');
     const [loading, setLoading] = useState(false);
+
+    const setShowLogsDialog = useCallback(() => {
+        if (showLogsDialog) {
+            setDialogToShow(null);
+        } else {
+            setDialogToShow('logs');
+        }
+    }, [setDialogToShow, showLogsDialog]);
 
     const sendLogs = useCallback(() => {
         setLoading(true);
@@ -30,7 +40,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
         }
         invoke('send_feedback', { feedback, includeLogs: true })
             .then((r) => {
-                setShowLogsDialog(false);
+                setDialogToShow(null);
                 onSetReference?.(r);
             })
             .catch((error) => {
@@ -39,7 +49,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
             .finally(() => {
                 setLoading(false);
             });
-    }, [feedback, onSetReference, setShowLogsDialog, t]);
+    }, [feedback, onSetReference, setDialogToShow, t]);
 
     return (
         <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
@@ -59,7 +69,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                             <CircularProgress />
                         ) : (
                             <>
-                                <Button disabled={loading} onClick={() => setShowLogsDialog(false)} color="warning">
+                                <Button disabled={loading} onClick={setShowLogsDialog} color="warning">
                                     {t('cancel')}
                                 </Button>
                                 <Button
