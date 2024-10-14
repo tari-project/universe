@@ -16,11 +16,10 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
-import useMiningMetricsUpdater from '@app/hooks/useMiningMetricsUpdater.ts';
-import useMining from '@app/hooks/mining/useMining.ts';
-import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachine.ts';
+import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
 
 export default function Miner() {
+    useMiningStatesSync();
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
@@ -40,10 +39,6 @@ export default function Miner() {
         }))
     );
 
-    useMiningMetricsUpdater();
-    useMining();
-    useUiMiningStateMachine();
-
     const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 
     const isWaitingForCPUHashRate = isCpuMiningEnabled && cpu_is_mining && cpu_hash_rate <= 0;
@@ -52,6 +47,11 @@ export default function Miner() {
 
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
+
+    const gpuChipValue = gpuHardwareStats
+        ? gpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
+          (gpuHardwareStats?.length || 1)
+        : 0;
 
     return (
         <MinerContainer>
@@ -68,7 +68,7 @@ export default function Miner() {
                     title="GPU Power"
                     stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
                     isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
-                    chipValue={gpuHardwareStats?.usage_percentage}
+                    chipValue={gpuChipValue}
                     unit="H/s"
                     useLowerCase
                 />

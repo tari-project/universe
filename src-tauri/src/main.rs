@@ -869,6 +869,20 @@ async fn import_seed_words(
 }
 
 #[tauri::command]
+async fn set_excluded_gpu_devices(
+    excluded_gpu_devices: Vec<u8>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let mut gpu_miner = state.gpu_miner.write().await;
+    gpu_miner
+        .set_excluded_device(excluded_gpu_devices)
+        .await
+        .inspect_err(|e| error!("error at set_excluded_gpu_devices {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 async fn get_seed_words(
     _window: tauri::Window,
     _state: tauri::State<'_, UniverseAppState>,
@@ -1339,6 +1353,15 @@ async fn get_miner_metrics(
         }
     };
 
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let _unused = HardwareMonitor::current()
+        .write()
+        .await
+        .load_status_file(config_path);
+
     let hardware_status = HardwareMonitor::current()
         .write()
         .await
@@ -1513,7 +1536,7 @@ pub struct CpuMinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Option<HardwareParameters>,
+    hardware: Vec<HardwareParameters>,
     mining: GpuMinerStatus,
 }
 
@@ -1808,6 +1831,7 @@ fn main() {
             get_p2pool_stats,
             get_tari_wallet_details,
             exit_application,
+            set_excluded_gpu_devices,
             set_should_always_use_system_language,
             download_and_start_installer,
             get_external_dependencies,

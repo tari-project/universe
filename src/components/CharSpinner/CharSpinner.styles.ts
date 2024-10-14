@@ -11,19 +11,20 @@ interface Props {
     $variant?: CharSpinnerVariant;
 }
 
-export const Wrapper = styled.div<{ $letterHeight?: number }>`
+export const Wrapper = styled.div<{ $variant?: Props['$variant']; $alignment?: string }>`
     width: 100%;
     display: flex;
     overflow: hidden;
     flex-direction: row;
-    align-items: baseline;
+    align-items: ${({ $alignment }) => $alignment};
+    font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'DrukWide')}, sans-serif;
     gap: 4px;
+`;
 
-    span {
-        display: flex;
-        font-weight: 600;
-        letter-spacing: -1px;
-    }
+export const XTMWrapper = styled.span`
+    display: flex;
+    font-weight: 600;
+    letter-spacing: -1px;
 `;
 
 export const SpinnerWrapper = styled(m.div)<Props>`
@@ -45,7 +46,7 @@ export const Characters = styled(m.div)<Props>`
     display: flex;
     flex-direction: column;
     align-items: center;
-    font-weight: ${({ $variant }) => ($variant == 'simple' ? 600 : 700)};
+    font-weight: ${({ $variant }) => ($variant == 'simple' ? 600 : 900)};
     font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'DrukWide')}, sans-serif;
     font-size: ${({ $fontSize }) => `${$fontSize}px`};
     line-height: ${({ $letterHeight }) => `${$letterHeight}px`};
