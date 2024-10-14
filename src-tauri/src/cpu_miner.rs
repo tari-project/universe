@@ -8,7 +8,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_shutdown::{Shutdown, ShutdownSignal};
+use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
@@ -16,7 +16,6 @@ const LOG_TARGET: &str = "tari::universe::cpu_miner";
 
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
-    miner_shutdown: Shutdown,
 }
 
 impl CpuMiner {
@@ -25,7 +24,6 @@ impl CpuMiner {
         let process_watcher = ProcessWatcher::new(xmrig_adapter);
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
-            miner_shutdown: Shutdown::new(),
         }
     }
 
