@@ -1,26 +1,19 @@
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
-use crate::process_utils;
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::atomic::AtomicU16;
-use std::sync::Arc;
+use std::path::PathBuf;
 use std::time::Instant;
-use std::{fs, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
-use tokio::runtime::Runtime;
-use tokio::select;
 
 use crate::{
     app_config::MiningMode,
-    binaries::{Binaries, BinaryResolver},
     network_utils::get_free_port,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
 };

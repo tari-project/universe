@@ -434,7 +434,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
                 .utilization_rates()
                 .map(|e| e.gpu)
                 .unwrap_or_default() as f32;
-            let label = current_gpu.name().unwrap_or_else(|e| "N/A".to_string());
+            let label = current_gpu.name().unwrap_or("N/A".to_string());
 
             let max_temperature = match current_parameters.get(i as usize) {
                 Some(current_parameters) => {

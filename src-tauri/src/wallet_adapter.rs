@@ -1,16 +1,13 @@
-use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
-use crate::process_utils;
 use crate::utils::file_utils::convert_to_string;
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{GetBalanceRequest, GetCompletedTransactionsRequest};
 use serde::Serialize;
-use std::fs;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
@@ -18,8 +15,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::runtime::Handle;
-use tokio::select;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -56,7 +51,7 @@ impl ProcessAdapter for WalletAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
+        // let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting read only wallet");
         let working_dir = data_dir.join("wallet");

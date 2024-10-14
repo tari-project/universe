@@ -1,17 +1,14 @@
-use crate::binaries::{Binaries, BinaryResolver};
-use std::path::PathBuf;
-
 use anyhow::Error;
 use async_trait::async_trait;
 use log::warn;
+use std::path::PathBuf;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
 
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::xmrig;
 use crate::xmrig::http_api::XmrigHttpApiClient;
-use crate::{process_utils, xmrig};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
