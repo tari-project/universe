@@ -35,7 +35,7 @@
   "gpu-mining-enabled": "Penambangan GPU",
   "gpu-unavailable": "⚠️ GPU dinonaktifkan karena perangkat keras Anda tidak mendukungnya",
   "p2pool-stats": "Statistik Squad",
-  "tribe": "Squad",
+  "tribe": "Tim",
   "miners": "Penambang",
   "mining-toggle-warning": "Penambangan akan dijeda saat perubahan diterapkan.",
   "tribe-earnings": "Pendapatan Squad",
@@ -59,8 +59,9 @@
   "disconnect": "Putuskan dari Airdrop",
   "inviteCode": "Kode Undangan",
   "use-tor": "Gunakan Tor",
-  "importing-wallet": "Importing wallet",
-  "action-requires-restart": "This action requires restart to apply changes",
-  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-  "invalid-seed-words": "Enter 24 words separated by spaces"
+  "importing-wallet": "Mengimpor dompet",
+  "action-requires-restart": "Tindakan ini memerlukan restart untuk menerapkan perubahan",
+  "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",
+  "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
+  "report-issue": "Laporkan masalah"
 }

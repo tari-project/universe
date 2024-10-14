@@ -15,11 +15,13 @@
   "mode": "Modus",
   "day": "Dag",
   "shutting-down": "Afskakel..",
-  "critical-error": "Critical error",
-  "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
-  "close-tari-universe": "Close Tari Universe",
+  "critical-error": "Kritieke fout",
+  "please-try-again-later": "Probeer asseblief later weer. As die probleem voortduur, kontak ons asseblief.",
+  "close-tari-universe": "Sluit Tari Universe",
   "tari-universe": "Tari Heelal",
   "testnet": "Toetsnetwerk",
-  "continue": "Continue",
-  "restart": "Restart"
+  "continue": "Gaan voort",
+  "restart": "Herbegin",
+  "connection": "Verbinding",
+  "disconnect": "Ontkoppel"
 }
