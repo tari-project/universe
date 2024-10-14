@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "auto-miner":"Otomatik Madenci",
     "auto-miner-description":"Otomatik madenci, makineniz boştayken madencinizi açacaktır",
     "next-milestone":"Sonraki Dönüm Noktası",
@@ -10,3 +11,16 @@
     "block": "Blok",
     "recent-wins": "Son kazanımlar"
 }
+=======
+  "auto-miner": "Otomatik Madenci",
+  "auto-miner-description": "Otomatik madenci, makineniz boştayken madencinizi açacaktır",
+  "next-milestone": "Sonraki Dönüm Noktası",
+  "wallet-balance": "Cüzdan Bakiyesi",
+  "setup-scheduler": "Kurulum Planlayıcısı",
+  "mining-schedules": "Madencilik Planları",
+  "mining-schedules-description": "Madencilik faaliyetinizi planlayın",
+  "lost-connection": "Tari Ağı ile bağlantı kesildi. Yeniden bağlanılıyor..",
+  "block": "Blok",
+  "recent-wins": "Son Kazançlar"
+}
+>>>>>>> upstream/main

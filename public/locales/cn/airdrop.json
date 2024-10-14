@@ -29,5 +29,6 @@
   "topTooltipText": "通过收集宝石获得 Tari 空投。你赚取的宝石越多，空投就越大。",
   "topTooltipTitle": "测试网奖励",
   "claimModalFinePrint": "<strong>请注意：</strong> 领取宝石会开启分析功能，以便我们改进 Universe",
-  "inviteFriendsText": "复制链接并分享"
+  "inviteFriendsText": "复制链接并分享",
+  "logged-in-as": "登录为 <strong>@{{twitter}}</strong>"
 }

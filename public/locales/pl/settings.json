@@ -20,7 +20,7 @@
   },
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
   "visual-mode": "Tryb wizualny",
-  "pool-mining": "Pool Mining",
+  "pool-mining": "Kopanie w puli",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
   "yes": "Tak",
   "cancel": "Anuluj",
@@ -31,7 +31,7 @@
   "connected-to-tari-network": null,
   "not-connected-to-tari-network": null,
   "connected-peers": "Połączone węzły",
-  "should-use-system-language": "Use system language",
+  "should-use-system-language": "Użyj języka systemowego",
   "send-logs": "Wyślij logi",
   "your-feedback": "Proszę opisać swój problem",
   "feedback-required": "Wymagana jest opinia",
@@ -63,6 +63,7 @@
   "use-tor": "Używaj Tor",
   "importing-wallet": "Importowanie portfela",
   "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
-  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-  "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami"
+  "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
+  "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
+  "report-issue": "Zgłoś problem"
 }

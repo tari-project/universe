@@ -29,5 +29,6 @@
   "topTooltipText": "Dapatkan Airdrop Tari dengan mengumpulkan permata. Semakin banyak permata yang Anda kumpulkan, semakin besar airdrop Anda.",
   "topTooltipTitle": "Hadiah Testnet",
   "claimModalFinePrint": "<strong>Harap diperhatikan:</strong> mengklaim permata mengaktifkan analitik sehingga kami dapat meningkatkan Universe",
-  "inviteFriendsText": "Salin tautan dan bagikan"
+  "inviteFriendsText": "Salin tautan dan bagikan",
+  "logged-in-as": "Masuk sebagai <strong>@{{twitter}}</strong>"
 }

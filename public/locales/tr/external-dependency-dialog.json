@@ -1,5 +1,12 @@
 {
+<<<<<<< HEAD
     "title": "Dış Bağımlılıklar",
     "description": "Uygulamanın düzgün çalışması için aşağıdaki harici bağımlılıklar gereklidir.",
     "download-and-install": "İndirin ve yükleyin"
 }
+=======
+  "title": "Dış Bağımlılıklar",
+  "description": "Uygulamanın doğru çalışabilmesi için aşağıdaki dış bağımlılıklar gereklidir.",
+  "download-and-install": "İndir ve Yükle"
+}
+>>>>>>> upstream/main

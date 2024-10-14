@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "submit": "Onayla",
     "cancel": "İptal",
     "connection": "Bağlantı",
@@ -25,3 +26,31 @@
     "continue": "Devam et",
     "restart": "Yeniden başlat"
 }
+=======
+  "submit": "Onayla",
+  "cancel": "İptal",
+  "temperature": "Sıcaklık",
+  "max-temperature": "Maks. Sıcaklık",
+  "usage": "Kullanım",
+  "seconds": "saniye",
+  "copied": "Kopyalandı",
+  "unknown": "Bilinmeyen",
+  "versions": "Versiyon",
+  "version": "Versiyon",
+  "resources": "Kaynaklar",
+  "hashrate": "Hashrate",
+  "utilization": "Fayda",
+  "mode": "Mod",
+  "day": "Gün",
+  "shutting-down": "Kapatılıyor..",
+  "tari-universe": "Tari Evreni",
+  "testnet": "Testnet",
+  "critical-error": "Kritik Hata",
+  "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse, lütfen bizimle iletişime geçin.",
+  "close-tari-universe": "Tari Evreni\"ni Kapat",
+  "continue": "Devam Et",
+  "restart": "Yeniden Başlat",
+  "connection": "Bağlantı",
+  "disconnect": "Bağlantıyı Kes"
+}
+>>>>>>> upstream/main

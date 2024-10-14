@@ -55,11 +55,13 @@ export default function DebugSettings() {
                 </SettingsGroupTitle>
                 <SettingsGroup>
                     <SettingsGroupContent style={{ fontSize: '11px' }}>
-                        {connectedPeers.map((peer, i) => (
-                            <Typography key={peer}>
-                                {i + 1}. {peer}
-                            </Typography>
-                        ))}
+                        {connectedPeers?.length
+                            ? connectedPeers.map((peer, i) => (
+                                  <Typography key={`peer-${peer}:${i}`}>
+                                      {i + 1}. {peer}
+                                  </Typography>
+                              ))
+                            : null}
                     </SettingsGroupContent>
                 </SettingsGroup>
             </SettingsGroupWrapper>
