@@ -1301,7 +1301,8 @@ async fn get_paper_wallet_code(app: tauri::AppHandle) -> Result<String, String> 
     let qr_link = format!(
         "tari://{}/paper_wallet?private_key={}",
         network,
-        internal_wallet.get_view_key().to_string());
+        internal_wallet.get_view_key().to_string()
+    );
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_paper_wallet_code took too long: {:?}", timer.elapsed());
