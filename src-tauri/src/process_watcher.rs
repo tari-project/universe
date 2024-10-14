@@ -98,9 +98,12 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                             },
                                             HealthStatus::Warning => {
                                                 warning_count += 1;
-                                                if warning_count > 20 {
+                                                if warning_count > 10 {
                                                     error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
                                                     warning_count = 0;
+                                                }
+                                                else {
+                                                   is_healthy = true;
                                                 }
                                             },
                                             HealthStatus::Unhealthy => {
@@ -116,7 +119,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                    Ok(exit_code) => {
                                       if exit_code != 0 {
                                           error!(target: LOG_TARGET, "{} exited with error code: {}", name, exit_code);
-                                          return Ok(exit_code);
+                                        //   return Ok(exit_code);
                                       }
                                       else {
                                         info!(target: LOG_TARGET, "{} exited successfully", name);
@@ -124,7 +127,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                    }
                                    Err(e) => {
                                       error!(target: LOG_TARGET, "{} exited with error: {}", name, e);
-                                      return Err(e);
+                                    //   return Err(e);
                                    }
                                }
                                // Restart dead app
