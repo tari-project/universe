@@ -10,8 +10,8 @@ import {
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { useUIStore } from '@app/store/useUIStore.ts';
+// import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+// import { useUIStore } from '@app/store/useUIStore.ts';
 
 const StyledWrapper = styled.div`
     display: flex;
@@ -20,19 +20,25 @@ const StyledWrapper = styled.div`
 `;
 
 export default function PaperWallet() {
-    const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
-    const showExperimental = useUIStore((s) => s.showExperimental);
+    // const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
+    // const showExperimental = useUIStore((s) => s.showExperimental);
     const [qrCodeValue, setValue] = useState('');
+    const [password, setPassword] = useState('');
     const [showCode, setShowCode] = useState(false);
     const load = useCallback(async () => {
-        const url = await invoke('get_paper_wallet_code');
-        if (url) {
+        const r = await invoke('get_paper_wallet_details');
+        console.debug(r);
+        if (r) {
+            const url = r.qr_link;
+            const password = r.password;
+
             setValue(url);
+            setPassword(password);
             setShowCode(true);
         }
     }, []);
 
-    if (!paperWalletEnabled || !showExperimental) return null;
+    // if (!paperWalletEnabled || !showExperimental) return null;
 
     return (
         <SettingsGroupWrapper>
@@ -52,6 +58,7 @@ export default function PaperWallet() {
                         </ButtonBase>
                     )}
                 </SettingsGroup>
+                {password ? <Typography variant="h6">Passphrase: {password}</Typography> : null}
                 <SettingsGroup>
                     {qrCodeValue?.length && showCode ? (
                         <StyledWrapper>

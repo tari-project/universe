@@ -9,6 +9,7 @@ import {
     TransactionInfo,
 } from './app-status';
 import { Language } from '@app/i18initializer';
+import { PaperWalletDetails } from '@app/types/app-status.ts';
 
 declare module '@tauri-apps/api/tauri' {
     function invoke(
@@ -21,7 +22,7 @@ declare module '@tauri-apps/api/tauri' {
         payload: { missingDependency: ExternalDependency }
     ): Promise<void>;
     function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
-    function invoke(param: 'get_paper_wallet_code'): Promise<string>;
+    function invoke(param: 'get_paper_wallet_details'): Promise<PaperWalletDetails>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;

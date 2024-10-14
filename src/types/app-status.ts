@@ -200,3 +200,8 @@ export interface ApplicationsVersions {
     wallet: string;
     sha_p2pool: string;
 }
+
+export interface PaperWalletDetails {
+    qr_link: string;
+    password: string;
+}

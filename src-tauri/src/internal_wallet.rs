@@ -97,6 +97,29 @@ impl InternalWallet {
         self.tari_address.clone()
     }
 
+    pub async fn get_paper_wallet_details(&self) -> Result<PaperWalletConfig, anyhow::Error> {
+        let mut paper_wallet_details = PaperWalletConfig {
+            qr_link: "".to_string(),
+            password: Option::from(SafePassword::from("".to_string())),
+        };
+
+        let _network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .trim()
+            .to_lowercase();
+
+        let link = format!(
+            "tari://{}/paper_wallet?private_key={}",
+            _network,
+            self.config.view_key_private_hex.clone()
+        );
+
+        paper_wallet_details.qr_link = link;
+        paper_wallet_details.password = self.config.passphrase.clone();
+
+        Ok(paper_wallet_details)
+    }
+
     async fn create_new_wallet(
         seed_words: Option<Vec<String>>,
     ) -> Result<(Self, WalletConfig), anyhow::Error> {
@@ -245,4 +268,9 @@ pub struct WalletConfig {
     spend_public_key_hex: String,
     seed_words_encrypted_base58: String,
     passphrase: Option<SafePassword>,
+}
+#[derive(Debug, Serialize, Clone)]
+pub struct PaperWalletConfig {
+    qr_link: String,
+    password: Option<SafePassword>,
 }
