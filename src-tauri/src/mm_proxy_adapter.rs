@@ -1,19 +1,19 @@
-use std::fs;
 use std::path::PathBuf;
 use std::time::Instant;
 
-use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
 use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, warn};
+use log::warn;
 use reqwest::Client;
 use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
+
+const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 
 #[derive(Clone, PartialEq, Default)]
 pub(crate) struct MergeMiningProxyConfig {

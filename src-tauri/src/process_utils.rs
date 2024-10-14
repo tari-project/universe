@@ -11,7 +11,7 @@ pub fn launch_child_process(
             .args(args)
             .envs(envs.cloned().unwrap_or_default())
             .stdout(std::process::Stdio::null()) // TODO: uncomment, only for testing
-            .stderr(std::process::Stdio::piped()) // TODO: uncomment, only for testing
+            .stderr(std::process::Stdio::null()) // TODO: uncomment, only for testing
             .kill_on_drop(true)
             .spawn()?)
     }
@@ -21,8 +21,8 @@ pub fn launch_child_process(
         Ok(tokio::process::Command::new(file_path)
             .args(args)
             .envs(envs.cloned().unwrap_or_default())
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
             .kill_on_drop(true)
             .creation_flags(PROCESS_CREATION_NO_WINDOW)
             .spawn()?)
