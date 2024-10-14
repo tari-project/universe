@@ -159,9 +159,7 @@ impl HardwareMonitor {
                 debug!(target: LOG_TARGET, "Gpu status file loaded successfully");
                 Ok(())
             }
-            Err(e) => {
-                return Err(anyhow!("Fail to load gpu status file: {:?}", e));
-            }
+            Err(e) => Err(anyhow!("Fail to load gpu status file: {:?}", e)),
         }
     }
 }

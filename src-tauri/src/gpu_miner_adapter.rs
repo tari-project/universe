@@ -205,6 +205,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
 }
 
 impl GpuMinerStatusMonitor {
+    #[allow(clippy::cast_possible_truncation)]
     pub async fn status(&self) -> Result<GpuMinerStatus, anyhow::Error> {
         let client = reqwest::Client::new();
         let response = match client
@@ -254,12 +255,15 @@ impl GpuMinerStatusMonitor {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct XtrGpuminerHttpApiStatus {
+    #[allow(dead_code)]
     hashrate_per_device: HashMap<u32, AverageHashrate>,
     total_hashrate: AverageHashrate,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub(crate) struct AverageHashrate {
     ten_seconds: Option<f64>,
     one_minute: Option<f64>,

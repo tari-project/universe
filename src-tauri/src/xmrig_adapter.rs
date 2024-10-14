@@ -41,8 +41,6 @@ pub struct XmrigAdapter {
     pub http_api_token: String,
     pub http_api_port: u16,
     pub cpu_max_percentage: Option<isize>,
-    pub client: XmrigHttpApiClient,
-    // TODO: secure
 }
 
 impl XmrigAdapter {
@@ -55,10 +53,6 @@ impl XmrigAdapter {
             http_api_token: http_api_token.clone(),
             http_api_port,
             cpu_max_percentage: None,
-            client: XmrigHttpApiClient::new(
-                format!("http://127.0.0.1:{}", http_api_port).clone(),
-                http_api_token.clone(),
-            ),
         }
     }
 }
