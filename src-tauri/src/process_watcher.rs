@@ -1,6 +1,6 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -89,7 +89,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             let mut is_healthy = false;
 
                             if child.ping() {
-                                if let Ok(inner) = timeout(health_timeout, status_monitor2.check_health()).await.inspect_err(|e|
+                                if let Ok(inner) = timeout(health_timeout, status_monitor2.check_health()).await.inspect_err(|_|
                                 error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name)) {
                                             match inner {
                                                 HealthStatus::Healthy => {
