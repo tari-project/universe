@@ -62,6 +62,9 @@
     "report-issue": "Report an issue",
     "importing-wallet": "Importing wallet",
     "action-requires-restart": "This action requires restart to apply changes",
-    "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-    "invalid-seed-words": "Enter 24 words separated by spaces"
+    "invalid-seed-words": "Enter 24 words separated by spaces",
+    "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe", 
+    "gpu-device-enabled": "GPU Mining devices",
+    "gpu-device-enabled-description": "Enable or disable specific GPU device.",
+    "gpu-device-no-found": "⚠️ No GPU devices found"
 }

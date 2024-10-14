@@ -2,14 +2,14 @@ use std::path::Path;
 
 pub fn launch_child_process(
     file_path: &Path,
-    envs: Option<std::collections::HashMap<String, String>>,
+    envs: Option<&std::collections::HashMap<String, String>>,
     args: &[String],
 ) -> Result<tokio::process::Child, anyhow::Error> {
     #[cfg(not(target_os = "windows"))]
     {
         Ok(tokio::process::Command::new(file_path)
             .args(args)
-            .envs(envs.unwrap_or_default())
+            .envs(envs.cloned().unwrap_or_default())
             .stdout(std::process::Stdio::null()) // TODO: uncomment, only for testing
             .stderr(std::process::Stdio::piped()) // TODO: uncomment, only for testing
             .kill_on_drop(true)
@@ -20,8 +20,8 @@ pub fn launch_child_process(
         use crate::consts::PROCESS_CREATION_NO_WINDOW;
         Ok(tokio::process::Command::new(file_path)
             .args(args)
-            .envs(envs.unwrap_or_default())
-            .stdout(std::process::Stdio::null())
+            .envs(envs.cloned().unwrap_or_default())
+            .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .kill_on_drop(true)
             .creation_flags(PROCESS_CREATION_NO_WINDOW)

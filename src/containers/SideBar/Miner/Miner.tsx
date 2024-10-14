@@ -48,6 +48,11 @@ export default function Miner() {
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
 
+    const gpuChipValue = gpuHardwareStats
+        ? gpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
+          (gpuHardwareStats?.length || 1)
+        : 0;
+
     return (
         <MinerContainer>
             <TileContainer>
@@ -63,7 +68,7 @@ export default function Miner() {
                     title="GPU Power"
                     stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
                     isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
-                    chipValue={gpuHardwareStats?.usage_percentage}
+                    chipValue={gpuChipValue}
                     unit="H/s"
                     useLowerCase
                 />

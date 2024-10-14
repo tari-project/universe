@@ -11,6 +11,7 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import GpuDevices from './sections/experimental/GpuDevices.tsx';
 
 export const ExperimentalSettings = () => {
     const showExperimental = useUIStore((s) => s.showExperimental);
@@ -30,7 +31,8 @@ export const ExperimentalSettings = () => {
                     {showExperimental && (
                         <>
                             <P2pMarkup />
-                            <P2poolStatsMarkup />
+                            {/* <P2poolStatsMarkup /> */}
+                            <GpuDevices />
                             <DebugSettings />
                             <AppVersions />
                             <SettingsGroupWrapper>
