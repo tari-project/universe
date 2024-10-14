@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.5.18"
+version = "0.5.20"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -41,7 +41,6 @@ regex = "1.10.5"
 reqwest = {version = "0.12.5", features = ["stream", "json", "multipart"] }
 sanitize-filename = "0.5"
 semver = "1.0.23"
-sentry-anyhow = {version = "0.34.0"}
 sentry-tauri = "0.3.0"
 serde = {version = "1", features = ["derive"] }
 serde_json = "1"

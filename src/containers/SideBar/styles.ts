@@ -40,6 +40,10 @@ export const SidebarTop = styled('div')`
     flex-direction: column;
     padding: 0 10px 10px 10px;
     gap: 20px;
+
+    @media (max-height: 670px) {
+        gap: 5px;
+    }
 `;
 
 export const Bottom = styled(m.div)`
