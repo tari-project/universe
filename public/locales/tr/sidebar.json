@@ -1,12 +1,12 @@
 {
-  "auto-miner": "Otomatik Madenci",
-  "auto-miner-description": "Otomatik madenci, makineniz boştayken madencinizi açacaktır",
-  "next-milestone": "Sonraki Dönüm Noktası",
-  "wallet-balance": "Cüzdan Bakiyesi",
-  "setup-scheduler": "Kurulum Planlayıcısı",
-  "mining-schedules": "Madencilik Planları",
-  "mining-schedules-description": "Madencilik faaliyetinizi planlayın",
-  "lost-connection": "Tari Ağı ile bağlantı kesildi. Yeniden bağlanılıyor..",
+  "auto-miner":"Otomatik Madenci",
+  "auto-miner-description":"Otomatik madenci, makineniz boştayken madencinizi açacaktır",
+  "next-milestone":"Sonraki Dönüm Noktası",
+  "wallet-balance":"Cüzdan Bakiyesi",
+  "setup-scheduler":"Kurulum Planlayıcısı",
+  "mining-schedules":"Madencilik Planları",
+  "mining-schedules-description":"Madencilik faaliyetinizi planlayın",
+  "lost-connection": "Tari Ağına bağlantı kesildi. Yeniden Bağlanıyor..",
   "block": "Blok",
-  "recent-wins": "Son Kazançlar"
+  "recent-wins": "Son kazanımlar"
 }
