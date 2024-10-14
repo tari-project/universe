@@ -13,7 +13,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::{TariAddress, TariAddressError};
+use tari_common_types::tari_address::{TariAddress};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
@@ -1301,7 +1301,7 @@ async fn get_paper_wallet_code(app: tauri::AppHandle) -> Result<String, String> 
     let qr_link = format!(
         "tari://{}/paper_wallet?private_key={}",
         network,
-        internal_wallet.get_view_key().to_string()
+        internal_wallet.get_view_key()
     );
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
