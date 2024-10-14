@@ -11,7 +11,6 @@ use tokio::time::sleep;
 use crate::network_utils;
 use crate::p2pool::models::Stats;
 use crate::p2pool_adapter::P2poolAdapter;
-use crate::process_adapter::StatusMonitor;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";

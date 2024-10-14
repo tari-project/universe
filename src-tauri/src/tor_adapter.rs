@@ -1,17 +1,14 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::info;
 use tari_shutdown::Shutdown;
-use tokio::{runtime::Handle, select};
 
 use crate::{
-    binaries::{Binaries, BinaryResolver},
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
     },
-    process_utils,
     utils::file_utils::convert_to_string,
 };
 

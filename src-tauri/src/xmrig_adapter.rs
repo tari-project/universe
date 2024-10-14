@@ -1,17 +1,14 @@
-use crate::binaries::{Binaries, BinaryResolver};
-use std::path::PathBuf;
-
 use anyhow::Error;
 use async_trait::async_trait;
 use log::warn;
+use std::path::PathBuf;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
 
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::xmrig;
 use crate::xmrig::http_api::XmrigHttpApiClient;
-use crate::{process_utils, xmrig};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -44,8 +41,6 @@ pub struct XmrigAdapter {
     pub http_api_token: String,
     pub http_api_port: u16,
     pub cpu_max_percentage: Option<isize>,
-    pub client: XmrigHttpApiClient,
-    // TODO: secure
 }
 
 impl XmrigAdapter {
@@ -58,10 +53,6 @@ impl XmrigAdapter {
             http_api_token: http_api_token.clone(),
             http_api_port,
             cpu_max_percentage: None,
-            client: XmrigHttpApiClient::new(
-                format!("http://127.0.0.1:{}", http_api_port).clone(),
-                http_api_token.clone(),
-            ),
         }
     }
 }
