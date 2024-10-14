@@ -12,7 +12,6 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { useTranslation } from 'react-i18next';
 import GpuDevices from './sections/experimental/GpuDevices.tsx';
-import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
 
 export const ExperimentalSettings = () => {
     const showExperimental = useUIStore((s) => s.showExperimental);
@@ -52,7 +51,6 @@ export const ExperimentalSettings = () => {
                                     />
                                 </SettingsGroup>
                             </SettingsGroupWrapper>
-                            <RestartDialog />
                         </>
                     )}
                 </AnimatePresence>
