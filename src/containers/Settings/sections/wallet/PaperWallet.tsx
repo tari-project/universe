@@ -11,6 +11,7 @@ import {
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 const StyledWrapper = styled.div`
     display: flex;
@@ -20,6 +21,7 @@ const StyledWrapper = styled.div`
 
 export default function PaperWallet() {
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
+    const showExperimental = useUIStore((s) => s.showExperimental);
     const [qrCodeValue, setValue] = useState('');
     const [showCode, setShowCode] = useState(false);
     const load = useCallback(async () => {
@@ -30,7 +32,7 @@ export default function PaperWallet() {
         }
     }, []);
 
-    if (!paperWalletEnabled) return null;
+    if (!paperWalletEnabled || !showExperimental) return null;
 
     return (
         <SettingsGroupWrapper>
