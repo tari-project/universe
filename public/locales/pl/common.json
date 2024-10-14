@@ -20,6 +20,8 @@
   "close-tari-universe": "Zamknij Tari Universe",
   "tari-universe": "Tari Universe",
   "testnet": "Testnet",
-  "continue": "Continue",
-  "restart": "Restart"
+  "continue": "Kontynuuj",
+  "restart": "Uruchom ponownie",
+  "connection": "Połączenie",
+  "disconnect": "Odłącz"
 }

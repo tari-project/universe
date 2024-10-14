@@ -59,8 +59,9 @@
   "disconnect": "Отключиться от Airdrop",
   "inviteCode": "Код приглашения",
   "use-tor": "Использовать Tor",
-  "importing-wallet": "Importing wallet",
-  "action-requires-restart": "This action requires restart to apply changes",
-  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-  "invalid-seed-words": "Enter 24 words separated by spaces"
+  "importing-wallet": "Импорт кошелька",
+  "action-requires-restart": "Для применения изменений требуется перезапуск",
+  "low-hash-rate-warning": "Ваш хешрейт очень низкий. Попробуйте закрыть все приложения, кроме Tari Universe",
+  "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
+  "report-issue": "Сообщить о проблеме"
 }
