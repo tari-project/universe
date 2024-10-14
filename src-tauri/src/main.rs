@@ -13,7 +13,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddress;
+use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
@@ -1288,6 +1288,28 @@ async fn get_tari_wallet_details(
 }
 
 #[tauri::command]
+async fn get_paper_wallet_code(app: tauri::AppHandle) -> Result<String, String> {
+    let timer = Instant::now();
+    let network = Network::get_current_or_user_setting_or_default().as_key_str();
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let internal_wallet = InternalWallet::load_or_create(config_path)
+        .await
+        .map_err(|e| e.to_string())?;
+    let qr_link = format!(
+        "tari://{}/paper_wallet?private_key={}",
+        network,
+        internal_wallet.get_view_key().to_string());
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_paper_wallet_code took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(qr_link)
+}
+#[tauri::command]
 async fn get_app_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -1827,6 +1849,7 @@ fn main() {
             get_app_config,
             get_p2pool_stats,
             get_tari_wallet_details,
+            get_paper_wallet_code,
             exit_application,
             set_excluded_gpu_devices,
             set_should_always_use_system_language,

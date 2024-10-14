@@ -2,7 +2,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import ExperimentalWarning from './sections/experimental/ExperimentalWarning.tsx';
 import P2pMarkup from './sections/experimental/P2pMarkup.tsx';
-import P2poolStatsMarkup from './sections/experimental/P2poolStatsMarkup.tsx';
+
 import DebugSettings from '@app/containers/Settings/sections/experimental/DebugSettings.tsx';
 import AppVersions from '@app/containers/Settings/sections/experimental/AppVersions.tsx';
 import VisualMode from '@app/containers/Dashboard/components/VisualMode.tsx';
@@ -26,32 +26,30 @@ export const ExperimentalSettings = () => {
     return (
         <>
             <ExperimentalWarning />
-            {
-                <AnimatePresence>
-                    {showExperimental && (
-                        <>
-                            <P2pMarkup />
-                            {/* <P2poolStatsMarkup /> */}
-                            <GpuDevices />
-                            <DebugSettings />
-                            <AppVersions />
-                            <SettingsGroupWrapper>
-                                <SettingsGroup>
-                                    <VisualMode />
-                                </SettingsGroup>
-                                <SettingsGroup style={{ padding: '0 10px' }}>
-                                    <ToggleSwitch
-                                        label={t('use-tor')}
-                                        variant="gradient"
-                                        checked={useTor}
-                                        onChange={toggleUseTor}
-                                    />
-                                </SettingsGroup>
-                            </SettingsGroupWrapper>
-                        </>
-                    )}
-                </AnimatePresence>
-            }
+            <AnimatePresence>
+                {showExperimental && (
+                    <>
+                        <P2pMarkup />
+                        {/* <P2poolStatsMarkup /> */}
+                        <GpuDevices />
+                        <DebugSettings />
+                        <AppVersions />
+                        <SettingsGroupWrapper>
+                            <SettingsGroup>
+                                <VisualMode />
+                            </SettingsGroup>
+                            <SettingsGroup style={{ padding: '0 10px' }}>
+                                <ToggleSwitch
+                                    label={t('use-tor')}
+                                    variant="gradient"
+                                    checked={useTor}
+                                    onChange={toggleUseTor}
+                                />
+                            </SettingsGroup>
+                        </SettingsGroupWrapper>
+                    </>
+                )}
+            </AnimatePresence>
         </>
     );
 };
