@@ -56,7 +56,8 @@
                 "resizable": true,
                 "fullscreen": false,
                 "decorations": true,
-                "transparent": false
+                "transparent": false,
+                "additionalBrowserArgs": "--enable-features=ignore-gpu-blocklist, --disable=features=disable-accelerated-2d-canvas"
             }
         ],
         "security": {
