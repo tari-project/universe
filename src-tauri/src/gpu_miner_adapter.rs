@@ -20,7 +20,7 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
-pub const ECO_MODE_GPU_PERCENTAGE: u16 = 10;
+pub const ECO_MODE_GPU_PERCENTAGE: u16 = 2;
 pub const LUDICROUS_MODE_GPU_PERCENTAGE: u16 = 800; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
