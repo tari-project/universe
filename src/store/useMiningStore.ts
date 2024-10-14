@@ -5,7 +5,7 @@ import { invoke } from '@tauri-apps/api';
 import { useAppStateStore } from './appStateStore';
 import { useAppConfigStore } from './useAppConfigStore';
 import { modeType } from './types';
-import { setAnimationState } from '@app/visuals';
+
 import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
 
 interface State extends MinerMetrics {
@@ -18,7 +18,7 @@ interface State extends MinerMetrics {
 }
 
 interface Actions {
-    fetchMiningMetrics: () => Promise<void>;
+    setMiningMetrics: (metrics: MinerMetrics, isNewBlock?: boolean) => void;
     startMining: () => Promise<void>;
     stopMining: () => Promise<void>;
     pauseMining: () => Promise<void>;
@@ -65,31 +65,7 @@ const initialState: State = {
 
 export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     ...initialState,
-    fetchMiningMetrics: async () => {
-        try {
-            const metrics = await invoke('get_miner_metrics');
-            const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
-            // Pause animation when lost connection to the Tari Network
-            if (isMining && !metrics.base_node?.is_connected && getState().base_node?.is_connected) {
-                setAnimationState('stop');
-            } else if (isMining && metrics.base_node?.is_connected && !getState().base_node?.is_connected) {
-                setAnimationState('start');
-            }
-
-            const { displayBlockHeight, setDisplayBlockHeight, handleNewBlock } =
-                useBlockchainVisualisationStore.getState();
-
-            if (!displayBlockHeight) {
-                setDisplayBlockHeight(metrics.base_node.block_height);
-            } else if (metrics.base_node.block_height > getState().base_node.block_height) {
-                await handleNewBlock(isMining, metrics.base_node.block_height);
-            }
-
-            set(metrics);
-        } catch (e) {
-            console.error('Fetch mining metrics error: ', e);
-        }
-    },
+    setMiningMetrics: (metrics) => set({ ...metrics }),
     startMining: async () => {
         console.info('Mining starting....');
         set({ miningInitiated: true });

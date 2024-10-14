@@ -1,5 +1,5 @@
-import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper } from './CharSpinner.styles.ts';
-import { LayoutGroup, m } from 'framer-motion';
+import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper, XTMWrapper } from './CharSpinner.styles.ts';
+import { LayoutGroup } from 'framer-motion';
 
 const transition = {
     type: 'spring',
@@ -14,6 +14,7 @@ interface CharSpinnerProps {
     value: string;
     fontSize: number;
     variant?: CharSpinnerVariant;
+    XTMAlignment?: 'baseline' | 'center';
 }
 
 const sizing = {
@@ -27,7 +28,12 @@ const sizing = {
     },
 };
 
-export default function CharSpinner({ value, variant = 'large', fontSize }: CharSpinnerProps) {
+export default function CharSpinner({
+    value,
+    variant = 'large',
+    fontSize,
+    XTMAlignment = 'baseline',
+}: CharSpinnerProps) {
     const letterHeight = Math.ceil(fontSize * 1.01);
     const charArray = value.split('').map((c) => c);
     const letterWidth = Math.floor(fontSize / sizing[variant].widthDiv);
@@ -90,14 +96,14 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
     });
 
     return (
-        <Wrapper>
+        <Wrapper $alignment={XTMAlignment} $variant={variant}>
             <LayoutGroup id="char-spinner">
                 <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
                     <CharacterWrapper style={{ height: letterHeight * 10 }}>
                         <LayoutGroup id="characters">{charMarkup}</LayoutGroup>
                     </CharacterWrapper>
                 </SpinnerWrapper>
-                {value === '-' ? null : <m.span layout>tXTM</m.span>}
+                {value === '-' ? null : <XTMWrapper>tXTM</XTMWrapper>}
             </LayoutGroup>
         </Wrapper>
     );
