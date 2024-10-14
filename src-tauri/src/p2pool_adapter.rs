@@ -4,21 +4,16 @@ use async_trait::async_trait;
 use dirs_next::data_local_dir;
 use log::{info, warn};
 use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
-use tokio::select;
 
-use crate::binaries::{Binaries, BinaryResolver};
 use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::process_utils::launch_child_process;
 use crate::utils::file_utils::convert_to_string;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";

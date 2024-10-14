@@ -19,6 +19,7 @@ import { SETTINGS_TYPES, SettingsType } from './types.ts';
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
 import { AirdropSettings } from './AirdropSettings.tsx';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
 
 export default function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -65,6 +66,7 @@ export default function SettingsModal() {
                         </AnimatePresence>
                     </ContentContainer>
                 </Container>
+                <RestartDialog />
             </DialogContent>
         </Dialog>
     );

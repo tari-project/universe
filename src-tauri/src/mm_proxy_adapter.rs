@@ -6,7 +6,6 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
-use crate::process_utils;
 use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -15,10 +14,6 @@ use reqwest::Client;
 use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
-use tokio::select;
-
-const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
 
 #[derive(Clone, PartialEq, Default)]
 pub(crate) struct MergeMiningProxyConfig {

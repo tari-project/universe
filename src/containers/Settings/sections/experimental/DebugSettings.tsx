@@ -14,7 +14,7 @@ import { useMemo } from 'react';
 
 export default function DebugSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const lastBlockTime = useBlockchainVisualisationStore((state) => state.displayBlockTime);
+    const lastBlockTime = useBlockchainVisualisationStore((state) => state.debugBlockTime);
     const isConnectedToTariNetwork = useMiningStore((s) => s.base_node?.is_connected);
     const connectedPeers = useMiningStore((state) => state.base_node?.connected_peers || []);
 
