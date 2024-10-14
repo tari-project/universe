@@ -1,28 +1,21 @@
 use crate::app_config::MiningMode;
-use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::ProcessAdapter;
+use crate::binaries::Binaries;
 use crate::process_watcher::ProcessWatcher;
-use crate::xmrig::http_api::XmrigHttpApiClient;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
-use sysinfo::Process;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_shutdown::{Shutdown, ShutdownSignal};
-use tauri::async_runtime::JoinHandle;
-use tokio::select;
+use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
-use tokio::time::MissedTickBehavior;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
-    miner_shutdown: Shutdown,
 }
 
 impl CpuMiner {
@@ -31,14 +24,13 @@ impl CpuMiner {
         let process_watcher = ProcessWatcher::new(xmrig_adapter);
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
-            miner_shutdown: Shutdown::new(),
         }
     }
 
     #[allow(clippy::too_many_arguments)]
     pub async fn start(
         &mut self,
-        mut app_shutdown: ShutdownSignal,
+        app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
         monero_address: String,
         monero_port: u16,
