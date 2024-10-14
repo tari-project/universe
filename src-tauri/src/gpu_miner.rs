@@ -12,7 +12,6 @@ use crate::process_utils;
 use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
-    process_adapter::StatusMonitor,
     process_watcher::ProcessWatcher,
 };
 
@@ -58,7 +57,13 @@ impl GpuMiner {
             .set_excluded_gpu_devices(self.excluded_gpu_devices.clone());
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(
+                app_shutdown,
+                base_path,
+                config_path,
+                log_path,
+                Binaries::GpuMiner,
+            )
             .await?;
         info!(target: LOG_TARGET, "xtrgpuminer started");
 
@@ -143,8 +148,7 @@ impl GpuMiner {
         let gpuminer_bin = BinaryResolver::current()
             .read()
             .await
-            .resolve_path_to_binary_files(Binaries::GpuMiner)
-            .await?;
+            .resolve_path_to_binary_files(Binaries::GpuMiner)?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
         crate::download_utils::set_permissions(&gpuminer_bin).await?;

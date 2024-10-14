@@ -255,10 +255,14 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
                 }
             };
 
-            let current_temperature =
-                current_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
-            let usage_percentage = current_gpu.utilization_rates().unwrap().gpu as f32;
-            let label = current_gpu.name().unwrap();
+            let current_temperature = current_gpu
+                .temperature(TemperatureSensor::Gpu)
+                .unwrap_or_default() as f32;
+            let usage_percentage = current_gpu
+                .utilization_rates()
+                .map(|e| e.gpu)
+                .unwrap_or_default() as f32;
+            let label = current_gpu.name().unwrap_or_else(|_e| "N/A".to_string());
 
             let max_temperature = match current_parameters.get(i as usize) {
                 Some(current_parameters) => {
@@ -281,7 +285,13 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         let mut gpu_devices = vec![];
 
         if let Some(file_path) = file {
-            let gpu_status_file = fs::read_to_string(file_path).unwrap();
+            let gpu_status_file = match fs::read_to_string(file_path) {
+                Ok(f) => f,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to read gpu status file: {}", e);
+                    return gpu_devices;
+                }
+            };
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => gpu_devices = gpu.gpu_devices,
                 Err(e) => {
@@ -417,10 +427,14 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
                 }
             };
 
-            let current_temperature =
-                current_gpu.temperature(TemperatureSensor::Gpu).unwrap() as f32;
-            let usage_percentage = current_gpu.utilization_rates().unwrap().gpu as f32;
-            let label = current_gpu.name().unwrap();
+            let current_temperature = current_gpu
+                .temperature(TemperatureSensor::Gpu)
+                .unwrap_or_default() as f32;
+            let usage_percentage = current_gpu
+                .utilization_rates()
+                .map(|e| e.gpu)
+                .unwrap_or_default() as f32;
+            let label = current_gpu.name().unwrap_or_else(|e| "N/A".to_string());
 
             let max_temperature = match current_parameters.get(i as usize) {
                 Some(current_parameters) => {
@@ -443,7 +457,13 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let mut gpu_devices = vec![];
 
         if let Some(file_path) = file {
-            let gpu_status_file = fs::read_to_string(file_path).unwrap();
+            let gpu_status_file = match fs::read_to_string(file_path) {
+                Ok(f) => f,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to read gpu status file: {}", e);
+                    return gpu_devices;
+                }
+            };
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => {
                     gpu_devices = gpu.gpu_devices;
@@ -595,7 +615,13 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         let mut gpu_devices = vec![];
 
         if let Some(file_path) = file {
-            let gpu_status_file = fs::read_to_string(file_path).unwrap();
+            let gpu_status_file = match fs::read_to_string(file_path) {
+                Ok(f) => f,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to read gpu status file: {}", e);
+                    return gpu_devices;
+                }
+            };
             match serde_json::from_str::<GpuStatusFile>(&gpu_status_file) {
                 Ok(gpu) => {
                     gpu_devices = gpu.gpu_devices;
