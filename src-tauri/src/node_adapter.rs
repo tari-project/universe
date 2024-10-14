@@ -1,27 +1,23 @@
-use crate::binaries::{Binaries, BinaryResolver};
 use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
 use crate::utils::file_utils::convert_to_string;
-use crate::{process_utils, ProgressTracker};
+use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::info;
 use minotari_node_grpc_client::grpc::{
     Empty, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::ByteArray;
-use tokio::runtime::Handle;
-use tokio::select;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 

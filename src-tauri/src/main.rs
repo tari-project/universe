@@ -1375,7 +1375,10 @@ async fn get_miner_metrics(
         }
     };
 
-    let config_path = app.path_resolver().app_config_dir().unwrap();
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
     let _unused = HardwareMonitor::current()
         .write()
         .await
