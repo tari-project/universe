@@ -1,12 +1,12 @@
 {
-    "auto-miner":"Otomatik Madenci",
-    "auto-miner-description":"Otomatik madenci, makineniz boştayken madencinizi açacaktır",
-    "next-milestone":"Sonraki Dönüm Noktası",
-    "wallet-balance":"Cüzdan Bakiyesi",
-    "setup-scheduler":"Kurulum Planlayıcısı",
-    "mining-schedules":"Madencilik Planları",
-    "mining-schedules-description":"Madencilik faaliyetinizi planlayın",
-    "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
-    "block": "Block",
-    "recent-wins": "Recent wins"
+  "auto-miner": "Otomatik Madenci",
+  "auto-miner-description": "Otomatik madenci, makineniz boştayken madencinizi açacaktır",
+  "next-milestone": "Sonraki Dönüm Noktası",
+  "wallet-balance": "Cüzdan Bakiyesi",
+  "setup-scheduler": "Kurulum Planlayıcısı",
+  "mining-schedules": "Madencilik Planları",
+  "mining-schedules-description": "Madencilik faaliyetinizi planlayın",
+  "lost-connection": "Tari Ağı ile bağlantı kesildi. Yeniden bağlanılıyor..",
+  "block": "Blok",
+  "recent-wins": "Son Kazançlar"
 }
