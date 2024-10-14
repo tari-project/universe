@@ -51,7 +51,6 @@ impl ProcessAdapter for WalletAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
-        // let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting read only wallet");
         let working_dir = data_dir.join("wallet");
