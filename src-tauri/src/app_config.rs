@@ -3,10 +3,14 @@ use sys_locale::get_locale;
 
 use anyhow::anyhow;
 use log::{debug, info, warn};
+use monero_address_creator::network::Mainnet;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
-
+use monero_address_creator::Seed as MoneroSeed;
+use tari_utilities::message_format::MessageFormat;
+use tari_utilities::SafePassword;
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
+use crate::credential_manager::CredentialManager;
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -155,7 +159,7 @@ impl AppConfig {
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
-            monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
+            monero_address: default_monero_address(),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -491,9 +495,32 @@ fn default_system_time() -> SystemTime {
 }
 
 fn default_monero_address() -> String {
-    DEFAULT_MONERO_ADDRESS.to_string()
+    match MoneroSeed::generate() {
+        Ok(seed) => {
+            let cm = CredentialManager::default_with_dir(PathBuf::new());
+            match cm.get_credentials() {
+                Ok(mut cred) => {
+                    let monero_seed = match SafePassword::from_binary(seed.inner()) {
+                        Ok(seed) => {
+                            Some(seed)
+                        },
+                        Err(err) => {
+                            warn!(target: LOG_TARGET, "Failed to get contain monero seed in safe password: {}", err);
+                            None
+                        }
+                    };
+                    cred.monero_seed = monero_seed;
+                    seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string())
+                },
+                Err(err_) => {
+                    warn!(target: LOG_TARGET, "Failed to get monero address from keyring: {}", err_);
+                    DEFAULT_MONERO_ADDRESS.to_string()
+                }
+            }
+        }
+        Err(_) => DEFAULT_MONERO_ADDRESS.to_string(),
+    }
 }
-
 fn default_application_language() -> String {
     "en".to_string()
 }
