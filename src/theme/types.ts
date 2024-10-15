@@ -18,11 +18,13 @@ export const COLOUR_TYPES = [
 type ColourTuple = typeof COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
 export type Colour = { [key in ColourKey]?: string };
+export type Gradients = { [key in ColourKey]?: string };
 
 export interface ThemePalette {
     mode: Theme;
     palette: Palette;
     colors: Colours;
+    gradients: Gradients;
 }
 
 export interface Palette {

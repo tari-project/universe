@@ -46,7 +46,7 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
     position: relative;
     cursor: pointer;
     overflow: hidden;
-
+    padding: 16px 0;
     background: ${({ $hasStarted }) =>
         $hasStarted
             ? 'linear-gradient(90deg, #929292 0%, rgba(0,0,0,0.7) 99.49%)'

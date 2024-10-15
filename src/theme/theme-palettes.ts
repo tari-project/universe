@@ -22,6 +22,7 @@
 
 import { colors } from './colors';
 import { ThemePalette } from './types.ts';
+import { darkGradients, lightGradients } from '@app/theme/gradients.ts';
 
 const { tariPurple, grey, success, info, warning, error, green, tariPurpleAlpha, warningDarkAlpha, errorDarkAlpha } =
     colors;
@@ -87,6 +88,7 @@ export const lightPalette: ThemePalette = {
         },
     },
     colors,
+    gradients: lightGradients,
 };
 
 export const darkPalette: ThemePalette = {
@@ -150,4 +152,5 @@ export const darkPalette: ThemePalette = {
         },
     },
     colors,
+    gradients: darkGradients,
 };
