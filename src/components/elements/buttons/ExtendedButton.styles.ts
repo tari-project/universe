@@ -1,23 +1,7 @@
 import styled, { css } from 'styled-components';
-import { ButtonProps } from '@app/components/elements/Button.tsx';
+import { ButtonStyleProps, IconPosition } from '@app/components/elements/buttons/button.types.ts';
 
 const PADDING = '1rem';
-
-interface Props {
-    $variant?: ButtonProps['variant'];
-    $color?: ButtonProps['color'];
-    $size?: ButtonProps['size'];
-    $outlined?: boolean;
-    $simple?: boolean;
-}
-
-const ROUNDED_BASE_STYLES = css`
-    height: 55px;
-    border-radius: ${({ theme }) => theme.shape.borderRadius.button};
-    box-shadow:
-            0 0 10px 0 ${({ theme }) => theme.palette.primary.shadow};,
-0 0 13px 0 rgba(255, 255, 255, 0.55) inset;
-`;
 
 const SQUARED_BASE_STYLES = css`
     height: 36px;
@@ -48,41 +32,37 @@ const BASE_STYLES = css`
     }
 `;
 
-export const BaseButton = styled.button<Props>`
+export const BaseButton = styled.button<ButtonStyleProps>`
     border-color: ${({ theme, $color }) => theme.palette[$color || 'primary'].light};
-    background: ${({ theme, $outlined }) => ($outlined ? theme.palette.background.paper : theme.palette.primary.main)};
-    color: ${({ theme, $outlined, $color }) => ($outlined ? theme.palette[$color || 'primary'].main : theme.palette.text.contrast)};
+    background: ${({ theme }) => theme.palette.primary.main};
+    color: ${({ theme, $color }) => ($color ? theme.palette[$color].main : theme.palette.text.contrast)};
     font-size: ${({ theme, $size }) => ($size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize)};
     padding:  ${({ $size }) => ($size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`)};
 
     &:hover {
-        background: ${({ theme, $outlined, $color }) => ($outlined ? theme.palette[$color || 'primary'].wisp : theme.palette[$color || 'primary'].dark)};
+        background: ${({ theme, $color }) => theme.palette[$color || 'primary'].dark};
     }
     ${BASE_STYLES}
 
-    ${({ $variant, $simple, theme, $color, $size }) => {
+    ${({ $variant, theme, $color, $size }) => {
         switch ($variant) {
             case 'text':
                 return css`
                     background: ${theme.palette.background.paper};
                     color: ${theme.palette[$color || 'primary'].main};
                     height: unset;
-                    padding: ${$simple
-                        ? '0 4px'
-                        : $size === 'small'
-                          ? '4px 6px'
-                          : $size === 'large'
-                            ? `12px ${PADDING}`
-                            : `10px ${PADDING}`};
+                    padding: ${$size === 'small'
+                        ? '4px 6px'
+                        : $size === 'large'
+                          ? `12px ${PADDING}`
+                          : `10px ${PADDING}`};
                     &:hover {
-                        background: ${$simple ? 'none' : theme.palette.primary.wisp};
+                        background: ${theme.palette.primary.wisp};
                         color: ${theme.palette[$color || 'primary'].dark};
                         border-radius: ${theme.shape.borderRadius.buttonSquared};
                     }
                 `;
-            case 'rounded':
-                return ROUNDED_BASE_STYLES;
-            case 'squared':
+
             default:
                 return SQUARED_BASE_STYLES;
         }
@@ -96,7 +76,7 @@ export const ChildrenWrapper = styled.div`
     -webkit-user-select: none;
     position: relative;
 `;
-export const IconWrapper = styled.div<{ $position?: ButtonProps['iconPosition'] }>`
+export const IconWrapper = styled.div<{ $position?: IconPosition }>`
     display: flex;
     position: absolute;
     ${({ $position }) => {
@@ -123,25 +103,4 @@ export const IconWrapper = styled.div<{ $position?: ButtonProps['iconPosition'] 
         max-width: 100%;
         max-height: 100%;
     }
-`;
-
-export const BaseIconButton = styled.button<Props>`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 34px;
-    width: 34px;
-    border-radius: 100%;
-    transition: background-color 0.2s ease-in-out;
-    cursor: pointer;
-    &:hover {
-        background-color: ${({ theme }) => theme.palette.primary.wisp};
-    }
-
-    ${({ $size }) =>
-        $size === 'small' &&
-        css`
-            height: 24px;
-            width: 24px;
-        `}
 `;

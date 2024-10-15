@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
 
 export default function RestartDialog() {
@@ -37,12 +37,12 @@ export default function RestartDialog() {
                     </Stack>
 
                     <Stack direction="row" gap={8}>
-                        <ButtonBase size="small" onClick={setShowRestartModal}>
+                        <Button size="small" onClick={setShowRestartModal}>
                             {t('cancel')}
-                        </ButtonBase>
-                        <ButtonBase size="small" variant="outlined" onClick={handleRestart}>
+                        </Button>
+                        <Button size="small" variant="outlined" onClick={handleRestart}>
                             {t('restart-now')}
-                        </ButtonBase>
+                        </Button>
                     </Stack>
                 </Stack>
             </DialogContent>

@@ -9,7 +9,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@app/components/elements/inputs/Input';
-import { Button } from '@app/components/elements/Button';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { v4 as uuidv4 } from 'uuid';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
@@ -104,9 +104,9 @@ export const ApplyInviteCode = () => {
                     {loading ? (
                         <CircularProgress />
                     ) : (
-                        <Button variant="text" size="medium" onClick={() => handleAuth()} disabled={loading}>
+                        <SquaredButton variant="text" size="medium" onClick={() => handleAuth()} disabled={loading}>
                             {t('applyInviteCode')}
-                        </Button>
+                        </SquaredButton>
                     )}
                 </SettingsGroupAction>
             </SettingsGroup>

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
 import emojiRegex from 'emoji-regex';
 import { styled } from 'styled-components';

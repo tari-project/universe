@@ -1,7 +1,8 @@
-import { ImSpinner3 } from 'react-icons/im';
 import styled, { css, keyframes } from 'styled-components';
-import { Button } from '@app/components/elements/Button.tsx';
+import { ImSpinner3 } from 'react-icons/im';
+
 import { m } from 'framer-motion';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 export const spin = keyframes`
   from {
   transform:rotate(0deg)

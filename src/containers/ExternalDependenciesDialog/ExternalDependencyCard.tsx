@@ -3,7 +3,7 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { getChipStylingForStatus, mapStatusToText } from './ExternalDependenciesDialog.utils';
 import { ExternalDependency, ExternalDependencyStatus } from '@app/types/app-status';
-import { Button } from '@app/components/elements/Button';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { IoArrowDownCircleOutline } from 'react-icons/io5';
 import { StyledIcon } from '../Dashboard/MiningView/components/MiningButton.styles';
 import { useAppStateStore } from '@app/store/appStateStore';
@@ -69,10 +69,9 @@ export const ExternalDependencyCard = ({
                     <Typography variant="p">{display_description}</Typography>
                 </Stack>
                 {status === ExternalDependencyStatus.NotInstalled && (
-                    <Button
+                    <SquaredButton
                         onClick={handleDownload}
                         size="small"
-                        variant="squared"
                         color="primary"
                         style={{ height: 'unset', width: '256px' }}
                         icon={isInInstallationSlot ? <StyledIcon /> : <IoArrowDownCircleOutline size={16} />}
@@ -80,7 +79,7 @@ export const ExternalDependencyCard = ({
                         disabled={isInstallationSlotOccupied}
                     >
                         {t('download-and-install')}
-                    </Button>
+                    </SquaredButton>
                 )}
             </Stack>
         </Stack>

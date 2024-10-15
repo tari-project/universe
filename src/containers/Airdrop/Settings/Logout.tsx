@@ -1,4 +1,4 @@
-import { Button } from '@app/components/elements/Button';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroupContent,
@@ -31,9 +31,9 @@ export default function AirdropLogout() {
                     />
                 </Typography>
                 <div style={{ maxWidth: 'fit-content', marginLeft: 'auto', padding: '20px' }}>
-                    <Button color="error" variant="text" size="medium" onClick={logout}>
+                    <SquaredButton color="error" variant="text" size="medium" onClick={logout}>
                         {t('disconnect')}
-                    </Button>
+                    </SquaredButton>
                 </div>
             </SettingsGroupContent>
         </SettingsGroupWrapper>

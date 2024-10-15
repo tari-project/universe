@@ -1,12 +1,8 @@
 import styled, { css } from 'styled-components';
-import { ButtonBaseProps } from './ButtonBase.tsx';
 
-interface Props {
-    $variant?: ButtonBaseProps['variant'];
-    $size?: ButtonBaseProps['size'];
-    $color?: ButtonBaseProps['color'];
-}
-export const StyledButtonBase = styled.button<Props>`
+import { ButtonStyleProps } from './button.types.ts';
+
+export const StyledButton = styled.button<ButtonStyleProps>`
     line-height: ${({ theme }) => theme.typography.h6.lineHeight};
     font-family: ${({ theme }) => theme.typography.fontFamily};
     letter-spacing: ${({ theme }) => theme.typography.h6.letterSpacing};

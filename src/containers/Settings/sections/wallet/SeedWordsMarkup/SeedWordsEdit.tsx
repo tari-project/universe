@@ -1,8 +1,6 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
 import styled from 'styled-components';
 
-import { IconButton } from '@app/components/elements/Button.tsx';
-
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { useCallback, useEffect } from 'react';
 import { useWalletStore } from '@app/store/useWalletStore';
@@ -11,6 +9,7 @@ import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export interface SeedWordsEditProps {
     toggleEdit: () => Promise<void>;

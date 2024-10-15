@@ -1,4 +1,4 @@
-import { Button } from '@app/components/elements/Button';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Divider } from '@app/components/elements/Divider';
 import { Stack } from '@app/components/elements/Stack';
@@ -67,8 +67,7 @@ export const ExternalDependenciesDialog = () => {
                         </>
                     ))}
                     <Stack direction="row" justifyContent="flex-end" gap={8}>
-                        <Button
-                            variant="squared"
+                        <SquaredButton
                             color="secondary"
                             size="medium"
                             onClick={handleContinue}
@@ -76,9 +75,8 @@ export const ExternalDependenciesDialog = () => {
                             style={{ width: '100px' }}
                         >
                             {t('continue')}
-                        </Button>
-                        <Button
-                            variant="squared"
+                        </SquaredButton>
+                        <SquaredButton
                             color="error"
                             size="medium"
                             onClick={handleRestart}
@@ -86,7 +84,7 @@ export const ExternalDependenciesDialog = () => {
                             style={{ width: '100px' }}
                         >
                             {t('restart')}
-                        </Button>
+                        </SquaredButton>
                     </Stack>
                 </Stack>
             </DialogContent>

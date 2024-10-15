@@ -6,10 +6,11 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { Button } from '@app/components/elements/Button.tsx';
+
 import { Stack } from '@app/components/elements/Stack.tsx';
 
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 
 export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -69,15 +70,15 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                             <CircularProgress />
                         ) : (
                             <>
-                                <Button disabled={loading} onClick={setShowLogsDialog} color="warning">
+                                <SquaredButton disabled={loading} onClick={setShowLogsDialog} color="warning">
                                     {t('cancel')}
-                                </Button>
-                                <Button
+                                </SquaredButton>
+                                <SquaredButton
                                     disabled={loading || !feedback?.length || feedback?.trim() === ''}
                                     onClick={sendLogs}
                                 >
                                     {t('submit')}
-                                </Button>
+                                </SquaredButton>
                             </>
                         )}
                     </Stack>

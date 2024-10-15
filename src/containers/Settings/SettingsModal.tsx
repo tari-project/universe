@@ -5,7 +5,7 @@ import { IoClose } from 'react-icons/io5';
 
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import SettingsNavigation from './components/Navigation.tsx';
@@ -20,6 +20,7 @@ import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants 
 import { AirdropSettings } from './AirdropSettings.tsx';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export default function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });

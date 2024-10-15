@@ -2,10 +2,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import styled from 'styled-components';
 
-import { IconButton } from '@app/components/elements/Button.tsx';
 import { IoCopyOutline, IoCheckmarkOutline, IoPencil } from 'react-icons/io5';
 import { useCallback } from 'react';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export interface SeedWordsProps {
     showSeedWords: boolean;

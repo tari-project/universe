@@ -2,7 +2,7 @@ import { useAppStateStore } from '@app/store/appStateStore';
 
 import { invoke } from '@tauri-apps/api';
 import { useCallback, useState } from 'react';
-import { Button } from '@app/components/elements/Button.tsx';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
@@ -16,7 +16,8 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 
 export const ResetSettingsButton = () => {
     const [open, setOpen] = useState(false);
@@ -54,7 +55,7 @@ export const ResetSettingsButton = () => {
                         </SettingsGroupTitle>
                     </SettingsGroupContent>
                     <SettingsGroupAction>
-                        <ButtonBase onClick={() => setOpen(true)}>{t('reset-settings')}</ButtonBase>
+                        <Button onClick={() => setOpen(true)}>{t('reset-settings')}</Button>
                     </SettingsGroupAction>
                 </SettingsGroup>
             </SettingsGroupWrapper>
@@ -69,16 +70,16 @@ export const ResetSettingsButton = () => {
                     />
                     <Typography variant="p">{t('reset-permanently')}</Typography>
                     <Stack direction="row" justifyContent="space-between" style={{ marginTop: '8px' }}>
-                        <Button disabled={loading} onClick={handleClose} color="warning">
+                        <SquaredButton disabled={loading} onClick={handleClose} color="warning">
                             {t('cancel')}
-                        </Button>
+                        </SquaredButton>
 
                         {loading ? (
                             <CircularProgress />
                         ) : (
-                            <Button disabled={loading} onClick={resetSettings}>
+                            <SquaredButton disabled={loading} onClick={resetSettings}>
                                 {t('yes')}
-                            </Button>
+                            </SquaredButton>
                         )}
                     </Stack>
                 </Stack>

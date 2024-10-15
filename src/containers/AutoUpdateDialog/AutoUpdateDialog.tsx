@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
 
 import { invoke } from '@tauri-apps/api/tauri';
-import { Button } from '@app/components/elements/Button';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { Typography } from '@app/components/elements/Typography';
@@ -77,7 +77,7 @@ function AutoUpdateDialog() {
     }, [checkUpdateTariUniverse]);
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={true} onOpenChange={onOpenChange}>
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t('would-you-like-to-install', { version: latestVersion })}</Typography>
@@ -85,8 +85,8 @@ function AutoUpdateDialog() {
                 <ButtonsWrapper>
                     {!isLoading && (
                         <>
-                            <Button onClick={handleUpdate}>{t('yes')}</Button>
-                            <Button onClick={handleClose}>{t('no')}</Button>
+                            <SquaredButton onClick={handleUpdate}>{t('yes')}</SquaredButton>
+                            <SquaredButton onClick={handleClose}>{t('no')}</SquaredButton>
                         </>
                     )}
                 </ButtonsWrapper>
