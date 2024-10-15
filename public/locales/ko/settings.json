@@ -27,6 +27,14 @@
     "title": "모네로 주소",
     "placeholder": "모네로 주소 입력"
   },
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "last-block-added-time": "마지막 블록 체인 추가 시간",
   "visual-mode": "시각 모드",
   "pool-mining": "풀 채굴",
