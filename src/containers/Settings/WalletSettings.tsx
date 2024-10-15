@@ -6,10 +6,10 @@ import PaperWallet from '@app/containers/Settings/sections/wallet/PaperWallet.ts
 export const WalletSettings = () => {
     return (
         <>
-            <PaperWallet />
             <WalletAddressMarkup />
             <SeedWordsMarkup />
             <MoneroAddressMarkup />
+            <PaperWallet />
         </>
     );
 };
