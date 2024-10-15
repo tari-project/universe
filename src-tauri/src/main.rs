@@ -89,6 +89,7 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
+mod credential_manager;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
@@ -1846,7 +1847,7 @@ fn main() {
                     .expect("Could not get log dir"),
                 include_str!("../log4rs_sample.yml"),
             )
-            .expect("Could not set up logging");
+                .expect("Could not set up logging");
 
             let config_path = app
                 .path_resolver()

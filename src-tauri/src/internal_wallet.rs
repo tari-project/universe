@@ -280,8 +280,12 @@ pub struct WalletConfig {
     view_key_private_hex: String,
     spend_public_key_hex: String,
     seed_words_encrypted_base58: String,
-    passphrase: Option<SafePassword>,
+    #[deprecated(
+        note = "This is for Universe users < v0.5.20 who wouldn't be migrated yet. Once we're confident that all users have been migrated, we can remove this."
+    )]
+    pub(crate) passphrase: Option<SafePassword>,
 }
+
 #[derive(Debug, Serialize, Clone)]
 pub struct PaperWalletConfig {
     qr_link: String,
