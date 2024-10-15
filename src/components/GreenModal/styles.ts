@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled('div')`
     position: fixed;
@@ -27,7 +27,7 @@ export const Cover = styled(m.div)`
     cursor: pointer;
 `;
 
-export const BoxWrapper = styled(m.div)`
+export const BoxWrapper = styled(m.div)<{ $boxWidth?: number }>`
     width: 100%;
     max-width: 635px;
     flex-shrink: 0;
@@ -45,6 +45,12 @@ export const BoxWrapper = styled(m.div)`
     flex-direction: column;
     justify-content: flex-end;
     gap: 40px;
+
+    ${({ $boxWidth }) =>
+        $boxWidth &&
+        css`
+            max-width: ${$boxWidth}px;
+        `}
 `;
 
 export const CloseButton = styled('button')`

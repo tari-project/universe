@@ -44,6 +44,8 @@ export const BlackButton = styled('button')`
     width: 100%;
     height: 81px;
 
+    transition: opacity 0.2s ease;
+
     span {
         display: block;
         transition: transform 0.2s ease;
@@ -53,5 +55,10 @@ export const BlackButton = styled('button')`
         span {
             transform: scale(1.05);
         }
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        pointer-events: none;
     }
 `;
