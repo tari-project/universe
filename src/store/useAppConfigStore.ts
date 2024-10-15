@@ -16,10 +16,12 @@ interface Actions {
     setGpuMiningEnabled: (enabled: boolean) => Promise<void>;
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
+    setMineOnAppStart: (mineOnAppStart: boolean) => Promise<void>;
     setMode: (mode: modeType) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
     setUseTor: (useTor: boolean) => Promise<void>;
+    setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -29,6 +31,7 @@ const initialState: State = {
     config_file: undefined,
     mode: 'Eco',
     auto_mining: true,
+    mine_on_app_start: false,
     p2pool_enabled: false,
     last_binaries_update_timestamp: '0',
     allow_telemetry: false,
@@ -50,6 +53,24 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         } catch (e) {
             console.error('Could not get app config: ', e);
         }
+    },
+    setShouldAutoLaunch: async (shouldAutoLaunch) => {
+        set({ should_auto_launch: shouldAutoLaunch });
+        invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set auto launch', e);
+            appStateStore.setError('Could not change auto launch');
+            set({ should_auto_launch: !shouldAutoLaunch });
+        });
+    },
+    setMineOnAppStart: async (mineOnAppStart) => {
+        set({ mine_on_app_start: mineOnAppStart });
+        invoke('set_mine_on_app_start', { mineOnAppStart }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set mine on app start', e);
+            appStateStore.setError('Could not change mine on app start');
+            set({ mine_on_app_start: !mineOnAppStart });
+        });
     },
     setShouldAlwaysUseSystemLanguage: async (shouldAlwaysUseSystemLanguage: boolean) => {
         set({ should_always_use_system_language: shouldAlwaysUseSystemLanguage });

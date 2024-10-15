@@ -16,6 +16,7 @@ declare module '@tauri-apps/api/tauri' {
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
     ): Promise<void>;
+    function invoke(param: 'set_should_auto_launch', payload: { shouldAutoLaunch: boolean }): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(
         param: 'download_and_start_installer',
@@ -24,6 +25,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
     function invoke(param: 'get_paper_wallet_details'): Promise<PaperWalletDetails>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;
+    function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_mining'): Promise<void>;

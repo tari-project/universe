@@ -19,6 +19,8 @@ pub struct AppConfigFromFile {
     mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
+    #[serde(default = "default_false")]
+    mine_on_app_start: bool,
     #[serde(default = "default_true")]
     p2pool_enabled: bool,
     #[serde(default = "default_system_time")]
@@ -37,6 +39,8 @@ pub struct AppConfigFromFile {
     has_system_language_been_proposed: bool,
     #[serde(default = "default_false")]
     should_always_use_system_language: bool,
+    #[serde(default = "default_false")]
+    should_auto_launch: bool,
     #[serde(default = "default_application_language")]
     application_language: String,
     #[serde(default = "default_true")]
@@ -53,6 +57,7 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             auto_mining: true,
+            mine_on_app_start: false,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: false,
@@ -62,6 +67,7 @@ impl Default for AppConfigFromFile {
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
+            should_auto_launch: false,
             application_language: default_application_language(),
             airdrop_ui_enabled: true,
             paper_wallet_enabled: false,
@@ -100,6 +106,7 @@ pub(crate) struct AppConfig {
     config_file: Option<PathBuf>,
     mode: MiningMode,
     auto_mining: bool,
+    mine_on_app_start: bool,
     p2pool_enabled: bool,
     last_binaries_update_timestamp: SystemTime,
     allow_telemetry: bool,
@@ -109,6 +116,7 @@ pub(crate) struct AppConfig {
     cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
+    should_auto_launch: bool,
     application_language: String,
     airdrop_ui_enabled: bool,
     paper_wallet_enabled: bool,
@@ -122,6 +130,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
+            mine_on_app_start: false,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
@@ -131,6 +140,7 @@ impl AppConfig {
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
+            should_auto_launch: false,
             application_language: default_application_language(),
             airdrop_ui_enabled: true,
             use_tor: true,
@@ -160,6 +170,7 @@ impl AppConfig {
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                 self.auto_mining = config.auto_mining;
+                self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
                 self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                 self.allow_telemetry = config.allow_telemetry;
@@ -169,6 +180,7 @@ impl AppConfig {
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
                 self.should_always_use_system_language = config.should_always_use_system_language;
+                self.should_auto_launch = config.should_auto_launch;
                 self.application_language = config.application_language;
                 self.airdrop_ui_enabled = config.airdrop_ui_enabled;
                 self.use_tor = config.use_tor;
@@ -249,6 +261,28 @@ impl AppConfig {
     //     self.update_config_file().await?;
     //     Ok(())
     // }
+
+    pub fn should_auto_launch(&self) -> bool {
+        self.should_auto_launch
+    }
+
+    pub async fn set_should_auto_launch(
+        &mut self,
+        should_auto_launch: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.should_auto_launch = should_auto_launch;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_mine_on_app_start(
+        &mut self,
+        mine_on_app_start: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.mine_on_app_start = mine_on_app_start;
+        self.update_config_file().await?;
+        Ok(())
+    }
 
     pub async fn set_allow_telemetry(
         &mut self,
@@ -343,6 +377,7 @@ impl AppConfig {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
             auto_mining: self.auto_mining,
+            mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             allow_telemetry: self.allow_telemetry,
@@ -352,6 +387,7 @@ impl AppConfig {
             cpu_mining_enabled: self.cpu_mining_enabled,
             has_system_language_been_proposed: self.has_system_language_been_proposed,
             should_always_use_system_language: self.should_always_use_system_language,
+            should_auto_launch: self.should_auto_launch,
             application_language: self.application_language.clone(),
             airdrop_ui_enabled: self.airdrop_ui_enabled,
             paper_wallet_enabled: self.paper_wallet_enabled,
