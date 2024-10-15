@@ -3,6 +3,7 @@ import { ButtonContainer, Container, DarkModeContainer, SectionButton } from './
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { setAnimationProperties } from '@app/visuals.ts';
 
 interface SettingsNavigationProps {
     activeSection: SettingsType;
@@ -14,6 +15,21 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
     const isDarkMode = theme === 'dark';
     function handleClick(section: SettingsType) {
         onChangeActiveSection(section);
+    }
+
+    function toggleDarkMode() {
+        setTheme(isDarkMode ? 'light' : 'dark');
+        const lightBg = [
+            { property: 'bgColor1', value: '#F6F6F6' },
+            { property: 'bgColor2', value: '#EEEEEE' },
+        ];
+
+        const darkBg = [
+            { property: 'bgColor1', value: '#1B1B1B' },
+            { property: 'bgColor2', value: '#2E2E2E' },
+        ];
+
+        setAnimationProperties(isDarkMode ? darkBg : lightBg);
     }
     return (
         <Container>
@@ -37,7 +53,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
             <DarkModeContainer>
                 <ToggleSwitch
                     checked={isDarkMode}
-                    onChange={() => setTheme(isDarkMode ? 'light' : 'dark')}
+                    onChange={() => toggleDarkMode()}
                     label="Dark mode"
                     variant="gradient"
                 />

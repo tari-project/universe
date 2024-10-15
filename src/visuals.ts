@@ -13,3 +13,15 @@ export function setAnimationState(state: GlAppState) {
         sM.isPaused = true;
     }
 }
+
+interface Property {
+    property: string;
+    value: unknown;
+}
+export function setAnimationProperties(properties: Property[]) {
+    const app = window?.glApp;
+
+    for (const item of properties) {
+        app.properties[item.property] = item.value;
+    }
+}
