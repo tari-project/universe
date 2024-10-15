@@ -19,7 +19,7 @@ pub struct AppConfigFromFile {
     mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     mine_on_app_start: bool,
     #[serde(default = "default_true")]
     p2pool_enabled: bool,
@@ -57,7 +57,7 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             auto_mining: true,
-            mine_on_app_start: false,
+            mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: false,
@@ -130,7 +130,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
-            mine_on_app_start: false,
+            mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
@@ -200,6 +200,10 @@ impl AppConfig {
         if self.config_version <= 7 {
             self.config_version = 8;
             self.airdrop_ui_enabled = true;
+        }
+        if self.config_version <= 8 {
+            self.config_version = 9;
+            self.mine_on_app_start = true;
         }
     }
 
@@ -402,7 +406,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    7
+    9
 }
 
 fn default_mode() -> String {
