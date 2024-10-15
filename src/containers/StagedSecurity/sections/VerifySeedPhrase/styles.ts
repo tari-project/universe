@@ -36,7 +36,7 @@ export const WordButtons = styled('div')`
     max-width: 566px;
 `;
 
-export const WordButton = styled('div')<{ $selected?: boolean }>`
+export const WordButton = styled('button')`
     display: flex;
     padding: 5px 10px;
     align-items: flex-start;
@@ -58,24 +58,24 @@ export const WordButton = styled('div')<{ $selected?: boolean }>`
         background: rgba(0, 0, 0, 0.2);
     }
 
-    ${({ $selected }) =>
-        $selected &&
-        css`
-            opacity: 0.2;
-        `};
+    &:disabled {
+        opacity: 0.2;
+        cursor: default;
+        pointer-events: none;
+    }
 `;
 
-export const WordsSelected = styled('div')`
+export const WordsSelected = styled(m.div)`
     width: 100%;
     max-width: 566px;
-    height: 225px;
+    min-height: 225px;
 
     border-radius: 15px;
     background: rgba(0, 0, 0, 0.15);
 
     display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
+    align-content: flex-start;
+
     flex-wrap: wrap;
     gap: 10px;
 
@@ -100,6 +100,7 @@ export const WordPill = styled(m.div)`
 
     cursor: pointer;
     transition: background 0.2s ease;
+    user-select: none;
 
     &:hover {
         background: rgba(0, 0, 0, 0.2);

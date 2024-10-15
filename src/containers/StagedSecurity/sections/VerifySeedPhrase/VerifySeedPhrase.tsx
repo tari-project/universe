@@ -49,11 +49,13 @@ export default function VerifySeedPhrase({ setSection }: Props) {
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<string[]>([]);
 
-    const toggleSelectedWord = (word: string) => {
+    const addWord = (word: string) => {
+        setSelectedWords([...selectedWords, word]);
+    };
+
+    const removeWord = (word: string) => {
         if (selectedWords.includes(word)) {
             setSelectedWords(selectedWords.filter((w) => w !== word));
-        } else {
-            setSelectedWords([...selectedWords, word]);
         }
     };
 
@@ -65,7 +67,7 @@ export default function VerifySeedPhrase({ setSection }: Props) {
             </TextWrapper>
 
             <PhraseWrapper>
-                <WordsSelected>
+                <WordsSelected layout>
                     <AnimatePresence mode="popLayout">
                         {selectedWords.map((word) => (
                             <WordPill
@@ -75,7 +77,7 @@ export default function VerifySeedPhrase({ setSection }: Props) {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.5 }}
                                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                                onClick={() => toggleSelectedWord(word)}
+                                onClick={() => removeWord(word)}
                             >
                                 {word}
                                 <PillCloseIcon />
@@ -86,11 +88,7 @@ export default function VerifySeedPhrase({ setSection }: Props) {
 
                 <WordButtons>
                     {words.map((word, index) => (
-                        <WordButton
-                            key={index}
-                            onClick={() => toggleSelectedWord(word)}
-                            $selected={selectedWords.includes(word)}
-                        >
+                        <WordButton key={index} onClick={() => addWord(word)} disabled={selectedWords.includes(word)}>
                             {word}
                         </WordButton>
                     ))}
