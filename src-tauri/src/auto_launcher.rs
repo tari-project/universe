@@ -143,8 +143,16 @@ impl AutoLauncher {
             self.initialize_auto_launcher(is_auto_launcher_enabled)
                 .await?;
         } else {
-            let auto_launcher_ref = auto_launcher.as_ref().unwrap();
-            AutoLauncher::toggle_auto_launcher(auto_launcher_ref, is_auto_launcher_enabled)?;
+            let auto_launcher_ref = auto_launcher.as_ref();
+            match auto_launcher_ref {
+                Some(auto_launcher) => {
+                    AutoLauncher::toggle_auto_launcher(auto_launcher, is_auto_launcher_enabled)?;
+                }
+                None => {
+                    warn!(target: LOG_TARGET, "Could not get auto-launcher reference");
+                    drop(auto_launcher);
+                }
+            }
         }
         Ok(())
     }
