@@ -30,9 +30,6 @@ keyring = {version = "3.0.5", features = [
   "apple-native",
   "linux-native",
 ] }
-libsqlite3-sys = {version = "0.25.1", features = [
-  "bundled",
-] }# Required for tari_wallet
 log = "0.4.22"
 log4rs = "1.3.0"
 minotari_node_grpc_client = {git = "https://github.com/tari-project/tari.git", branch = "development"}
@@ -43,6 +40,7 @@ open = "5"
 rand = "0.8.5"
 regex = "1.10.5"
 reqwest = {version = "0.12.5", features = ["stream", "json", "multipart"] }
+rusqlite = { version = "0.25.2", features = ["bundled"] }
 sanitize-filename = "0.5"
 semver = "1.0.23"
 sentry-tauri = "0.3.0"
@@ -86,16 +84,6 @@ zip = "2.2.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
-
-chrono = "0.4.38"
-device_query = "2.1.0"
-log = "0.4.22"
-nvml-wrapper = "0.10.0"
-rand = "0.8.5"
-rusqlite = "0.25.1"
-sentry-tauri = "0.3.0"
-sys-locale = "0.3.1"
-# tonic = "0.12.0"
 
 [features]
 airdrop-env = []
