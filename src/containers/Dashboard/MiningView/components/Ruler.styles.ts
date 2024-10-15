@@ -53,8 +53,9 @@ export const RulerMark = styled(m.div)<{ $opacity?: number }>`
         content: attr(data-before);
         position: absolute;
         transform: translateY(-50%);
-        right: 15px;
+        right: 24px;
     }
+
     &:after {
         content: '';
         width: 10px;

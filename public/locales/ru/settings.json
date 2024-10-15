@@ -55,5 +55,13 @@
   "not-connected-to-tari": "Не подключено к сети Tari",
   "connected-peers": "Подключенные узлы",
   "should-use-system-language": "Использовать системный язык",
-  "use-tor": "Use Tor"
+  "applyInviteCode": "Применить код приглашения",
+  "disconnect": "Отключиться от Airdrop",
+  "inviteCode": "Код приглашения",
+  "use-tor": "Использовать Tor",
+  "importing-wallet": "Импорт кошелька",
+  "action-requires-restart": "Для применения изменений требуется перезапуск",
+  "low-hash-rate-warning": "Ваш хешрейт очень низкий. Попробуйте закрыть все приложения, кроме Tari Universe",
+  "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
+  "report-issue": "Сообщить о проблеме"
 }

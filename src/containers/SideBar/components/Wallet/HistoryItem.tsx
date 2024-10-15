@@ -52,16 +52,13 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                         {t('block')} #{item.message.split(': ')[1]}
                     </Typography>
                     <Typography variant="p">
-                        {new Date(item.timestamp * 1000)
-                            ?.toLocaleString(undefined, {
-                                month: 'short',
-                                day: '2-digit',
-                                hourCycle: 'h11',
-                                hour: 'numeric',
-                                minute: 'numeric',
-                            })
-                            .replace('am', 'AM')
-                            .replace('pm', 'PM')}
+                        {new Date(item.timestamp * 1000)?.toLocaleString(undefined, {
+                            month: 'short',
+                            day: '2-digit',
+                            hourCycle: 'h24',
+                            hour: 'numeric',
+                            minute: 'numeric',
+                        })}
                     </Typography>
                 </InfoWrapper>
             </LeftContent>

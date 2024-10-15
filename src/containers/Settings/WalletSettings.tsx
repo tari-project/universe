@@ -6,8 +6,8 @@ export const WalletSettings = () => {
     return (
         <>
             <WalletAddressMarkup />
-            <MoneroAddressMarkup />
             <SeedWordsMarkup />
+            <MoneroAddressMarkup />
         </>
     );
 };

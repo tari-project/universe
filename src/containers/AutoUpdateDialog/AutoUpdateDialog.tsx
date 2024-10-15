@@ -33,7 +33,7 @@ function AutoUpdateDialog() {
                 setIsAfterAutoUpdate(true);
             }
         } catch (error) {
-            console.error(error);
+            console.error('AutoUpdate error:', error);
             setIsAfterAutoUpdate(true);
         }
     }, [setIsAfterAutoUpdate]);

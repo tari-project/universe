@@ -1,35 +1,36 @@
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
-import { useWalletStore } from './useWalletStore.ts';
+
 import { appWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
+import { TransactionInfo } from '@app/types/app-status.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
+interface Recap {
+    count: number;
+    totalEarnings: number;
+}
 interface State {
     displayBlockTime?: BlockTimeData;
+    debugBlockTime?: BlockTimeData;
     displayBlockHeight?: number;
     earnings?: number;
+    recapData?: Recap;
+    recapIds: TransactionInfo['tx_id'][];
 }
 
 interface Actions {
-    handleNewBlock: (isMining: boolean, blockHeight: number) => Promise<void>;
-    handleWin: (blockHeight: number, earnings: number) => Promise<void>;
-    handleFail: (blockHeight: number) => Promise<void>;
+    handleWin: (latestTx: TransactionInfo, canAnimate?: boolean) => Promise<void>;
+    handleWinRecap: (recapData: Recap) => void;
+    handleFail: (blockHeight: number, canAnimate?: boolean) => Promise<void>;
+    handleNewBlock: (newBlockHeight: number, isMining?: boolean) => Promise<void>;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
+    setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
-
-const FETCH_EARNING_RETRIES = 15;
-
-function logBalanceChanges({ currBalance, prevBalance, balanceDiff }) {
-    console.groupCollapsed('Balance changes:');
-    console.info('New Balance:', currBalance);
-    console.info('Previous Balance:', prevBalance);
-    console.info('Diff/Earnings:', balanceDiff);
-    console.groupEnd();
-}
 
 const checkCanAnimate = async () => {
     const focused = await appWindow?.isFocused();
@@ -40,42 +41,23 @@ const checkCanAnimate = async () => {
 };
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set, getState) => ({
-    handleNewBlock: async (isMining, blockHeight) => {
-        try {
-            if (isMining) {
-                const { balance: prevBalance } = useWalletStore.getState();
+    recapIds: [],
+    handleWinRecap: (recapData) => {
+        useMiningStore.getState().setMiningControlsEnabled(false);
+        setAnimationState('success');
 
-                let retries = FETCH_EARNING_RETRIES;
+        set({ recapData });
 
-                const checkEarningsInterval = setInterval(async () => {
-                    await useWalletStore.getState().fetchWalletDetails();
-                    const { balance: currBalance } = useWalletStore.getState();
-                    const balanceDiff = (currBalance || 0) - (prevBalance || 0);
-                    const hasEarnings = currBalance && currBalance > 0 && balanceDiff > 0;
-
-                    if (hasEarnings) {
-                        logBalanceChanges({ currBalance, prevBalance, balanceDiff });
-                        await useWalletStore.getState().fetchTransactionHistory();
-                        await getState().handleWin(blockHeight, balanceDiff);
-                        clearInterval(checkEarningsInterval);
-                    } else {
-                        retries--;
-                        if (retries === 0) {
-                            await getState().handleFail(blockHeight);
-                            clearInterval(checkEarningsInterval);
-                        }
-                    }
-                }, 1000);
-            } else {
-                set({ displayBlockHeight: blockHeight });
-            }
-        } catch (e) {
-            console.error('Could not get app config: ', e);
-        }
+        setTimeout(() => {
+            useMiningStore.getState().setMiningControlsEnabled(true);
+            set({ recapData: undefined, recapIds: [] });
+        }, 2000);
     },
-    handleWin: async (blockHeight, earnings) => {
+    handleWin: async (latestTx: TransactionInfo, canAnimate) => {
+        const blockHeight = Number(latestTx.message?.split(': ')[1]);
+        const earnings = latestTx.amount;
         console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
-        const canAnimate = await checkCanAnimate();
+
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
             setAnimationState('success');
@@ -83,24 +65,41 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
             setTimeout(() => {
                 useMiningStore.getState().setMiningControlsEnabled(true);
                 set({ displayBlockHeight: blockHeight, earnings: undefined });
-            }, 3000);
+            }, 2000);
         } else {
+            set((curr) => ({ recapIds: [...curr.recapIds, latestTx.tx_id] }));
             set({ displayBlockHeight: blockHeight, earnings: undefined });
         }
     },
-    handleFail: async (blockHeight) => {
-        const canAnimate = await checkCanAnimate();
+    handleFail: async (blockHeight, canAnimate) => {
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
             setAnimationState('fail');
             setTimeout(() => {
                 useMiningStore.getState().setMiningControlsEnabled(true);
-                set({ displayBlockHeight: blockHeight, earnings: undefined });
-            }, 3000);
+                set({ displayBlockHeight: blockHeight });
+            }, 1000);
         } else {
-            set({ displayBlockHeight: blockHeight, earnings: undefined });
+            set({ displayBlockHeight: blockHeight });
+        }
+    },
+    handleNewBlock: async (newBlockHeight, isMining) => {
+        if (isMining) {
+            const canAnimate = await checkCanAnimate();
+
+            const latestTransaction = useWalletStore.getState().transactions?.[0];
+            const latestTxBlock = latestTransaction?.message?.split(': ')?.[1];
+
+            if (latestTxBlock === newBlockHeight.toString()) {
+                await getState().handleWin(latestTransaction, canAnimate);
+            } else {
+                await getState().handleFail(newBlockHeight, canAnimate);
+            }
+        } else {
+            set({ displayBlockHeight: newBlockHeight });
         }
     },
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
+    setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
 }));

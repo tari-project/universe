@@ -1,18 +1,19 @@
-use std::fs;
 use std::path::PathBuf;
+use std::time::Instant;
 
-use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::process_utils;
+use crate::process_adapter::{
+    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+};
 use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, warn};
+use log::warn;
+use reqwest::Client;
+use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-use tokio::select;
 
-const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
+const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 
 #[derive(Clone, PartialEq, Default)]
 pub(crate) struct MergeMiningProxyConfig {
@@ -54,9 +55,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         data_dir: PathBuf,
         _config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_verison_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         let working_dir = data_dir.join("mmproxy");
         std::fs::create_dir_all(&working_dir)?;
@@ -118,51 +119,20 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .read()
-                        .await
-                        .resolve_path_to_binary_files(Binaries::MergeMiningProxy)
-                        .await?;
-                    crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
-
-                    if let Some(id) = child.id() {
-                        fs::write(data_dir.join("mmproxy_pid"), id.to_string())?;
-                    }
-                    let exit_code;
-
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                        res2 = child.wait() => {
-                            match res2
-                             {
-                                Ok(res) => {
-                                    exit_code = res.code().unwrap_or(0)
-                                    },
-                                Err(e) => {
-                                    warn!(target: LOG_TARGET, "Error in MergeMiningProxyInstance: {}", e);
-                                    return Err(e.into());
-                                }
-                            }
-
-                        },
-                    };
-
-                    match fs::remove_file(data_dir.join("mmproxy_pid")) {
-                        Ok(_) => {}
-                        Err(_e) => {
-                            debug!(target: LOG_TARGET, "Could not clear mmproxy's pid file");
-                        }
-                    }
-                    Ok(exit_code)
-                })),
+                handle: None,
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_verison_path,
+                    envs: None,
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
             },
-            MergeMiningProxyStatusMonitor {},
+            MergeMiningProxyStatusMonitor {
+                json_rpc_port: config.port,
+                start_time: Instant::now(),
+            },
         ))
     }
 
@@ -175,13 +145,72 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
     }
 }
 
-pub struct MergeMiningProxyStatusMonitor {}
+#[derive(Clone)]
+pub struct MergeMiningProxyStatusMonitor {
+    json_rpc_port: u16,
+    start_time: std::time::Instant,
+}
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    type Status = ();
+    async fn check_health(&self) -> HealthStatus {
+        let monero_donate_address = "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
 
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+        if self
+            .get_block_template(monero_donate_address)
+            .await
+            .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
+            .is_ok()
+        {
+            HealthStatus::Healthy
+        } else {
+            if self.start_time.elapsed().as_secs() < 10 {
+                return HealthStatus::Healthy;
+            }
+            // HealthStatus::Unhealthy
+            // This can return a bad error from time to time, especially on startup
+            HealthStatus::Warning
+        }
+    }
+}
+
+impl MergeMiningProxyStatusMonitor {
+    pub async fn get_block_template(&self, monero_address: &str) -> Result<String, Error> {
+        let rpc_url = format!("http://127.0.0.1:{}/json_rpc", self.json_rpc_port);
+        let request_body = json!({
+            "jsonrpc": "2.0",
+            "id": "0",
+            "method": "get_block_template",
+            "params": {
+                "wallet_address": monero_address,
+            }
+        });
+
+        // Create an HTTP client
+        let client = Client::new();
+
+        // Send the POST request
+        let response = client.post(rpc_url).json(&request_body).send().await?;
+
+        // Parse the response body
+        if response.status().is_success() {
+            let response_text = response.text().await?;
+            let response_json: serde_json::Value = serde_json::from_str(&response_text)?;
+            if response_json.get("error").is_some() {
+                return Err(anyhow!(
+                    "Failed to get block template Jsonrpc error: {}",
+                    response_text
+                ));
+            }
+            if response_json.get("result").is_none() {
+                return Err(anyhow!("Failed to get block template: {}", response_text));
+            }
+            Ok(response_text)
+        } else {
+            Err(anyhow!(
+                "Failed to get block template: {}",
+                response.status()
+            ))
+        }
     }
 }

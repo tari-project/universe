@@ -34,10 +34,7 @@ export const ApplyInviteCode = () => {
 
             setAllowTelemetry(true).then(() => {
                 setAuthUuid(token);
-
-                open(refUrl).then((r) => {
-                    console.debug(r);
-                });
+                open(refUrl);
             });
         }
     }, [backendInMemoryConfig?.airdropTwitterAuthUrl, claimCode, setAllowTelemetry, setAuthUuid]);

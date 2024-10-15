@@ -1,12 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
 use serde::Serialize;
-use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -51,6 +51,7 @@ mod binaries;
 mod consts;
 mod cpu_miner;
 mod download_utils;
+mod external_dependencies;
 mod feedback;
 mod format_utils;
 mod github;
@@ -141,6 +142,8 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
         .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
 
+    let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
     state.shutdown.clone().trigger();
 
     // TODO: Find a better way of knowing that all miners have stopped
@@ -365,6 +368,47 @@ async fn resolve_application_language(
 }
 
 #[tauri::command]
+async fn get_external_dependencies() -> Result<RequiredExternalDependency, String> {
+    let timer = Instant::now();
+    let external_dependencies = ExternalDependencies::current()
+        .get_external_dependencies()
+        .await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "get_external_dependencies took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(external_dependencies)
+}
+
+#[tauri::command]
+async fn download_and_start_installer(
+    _missing_dependency: ExternalDependency,
+) -> Result<(), String> {
+    let timer = Instant::now();
+
+    #[cfg(target_os = "windows")]
+    if cfg!(target_os = "windows") {
+        ExternalDependencies::current()
+            .install_missing_dependencies(_missing_dependency)
+            .await
+            .map_err(|e| {
+                error!(target: LOG_TARGET, "Could not install missing dependency: {:?}", e);
+                e.to_string()
+            })?;
+    }
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "download_and_start_installer took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -413,6 +457,28 @@ async fn setup_inner(
         .path_resolver()
         .app_log_dir()
         .expect("Could not get log dir");
+
+    #[cfg(target_os = "windows")]
+    if cfg!(target_os = "windows") && !cfg!(dev) {
+        ExternalDependencies::current()
+            .read_registry_installed_applications()
+            .await?;
+        let is_missing = ExternalDependencies::current()
+            .check_if_some_dependency_is_not_installed()
+            .await;
+        let external_dependencies = ExternalDependencies::current()
+            .get_external_dependencies()
+            .await;
+
+        if is_missing {
+            window
+                .emit(
+                    "missing-applications",
+                    external_dependencies
+                ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
+            return Ok(());
+        }
+    }
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
@@ -765,6 +831,58 @@ async fn set_gpu_mining_enabled(
 }
 
 #[tauri::command]
+async fn import_seed_words(
+    seed_words: Vec<String>,
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let data_dir = app
+        .path_resolver()
+        .app_local_data_dir()
+        .expect("Could not get data dir");
+
+    tauri::async_runtime::spawn(async move {
+        match InternalWallet::create_from_seed(config_path, seed_words).await {
+            Ok(_wallet) => {
+                InternalWallet::clear_wallet_local_data(data_dir).await?;
+                info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
+                app.restart();
+                Ok(())
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+                Err(e)
+            }
+        }
+    });
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_excluded_gpu_devices(
+    excluded_gpu_devices: Vec<u8>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let mut gpu_miner = state.gpu_miner.write().await;
+    gpu_miner
+        .set_excluded_device(excluded_gpu_devices)
+        .await
+        .inspect_err(|e| error!("error at set_excluded_gpu_devices {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 async fn get_seed_words(
     _window: tauri::Window,
     _state: tauri::State<'_, UniverseAppState>,
@@ -1062,7 +1180,7 @@ async fn update_applications(
 #[tauri::command]
 async fn get_p2pool_stats(
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<HashMap<String, Stats>, String> {
+) -> Result<Option<Stats>, String> {
     let timer = Instant::now();
     if state.is_getting_p2pool_stats.load(Ordering::SeqCst) {
         let read = state.cached_p2pool_stats.read().await;
@@ -1074,7 +1192,13 @@ async fn get_p2pool_stats(
         return Err("Already getting p2pool stats".to_string());
     }
     state.is_getting_p2pool_stats.store(true, Ordering::SeqCst);
-    let p2pool_stats = state.p2pool_manager.stats().await;
+    let p2pool_stats = match state.p2pool_manager.get_stats().await {
+        Ok(s) => s,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
+            None
+        }
+    };
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
@@ -1229,6 +1353,15 @@ async fn get_miner_metrics(
         }
     };
 
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let _unused = HardwareMonitor::current()
+        .write()
+        .await
+        .load_status_file(config_path);
+
     let hardware_status = HardwareMonitor::current()
         .write()
         .await
@@ -1291,9 +1424,9 @@ fn log_web_message(level: String, message: Vec<String>) {
                 culprit: Some("universe-web".to_string()),
                 ..Default::default()
             });
+
             error!(target: LOG_TARGET_WEB, "{}", joined_message)
         }
-
         _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
     }
 }
@@ -1335,7 +1468,7 @@ async fn reset_settings<'r>(
         return Err("Could not get app directories".to_string());
     }
     // Exclude EBWebView because it is still being used.
-    let folder_block_list = vec!["EBWebView"];
+    let folder_block_list = ["EBWebView"];
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -1403,7 +1536,7 @@ pub struct CpuMinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Option<HardwareParameters>,
+    hardware: Vec<HardwareParameters>,
     mining: GpuMinerStatus,
 }
 
@@ -1485,7 +1618,7 @@ struct UniverseAppState {
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
-    cached_p2pool_stats: Arc<RwLock<Option<HashMap<String, Stats>>>>,
+    cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
 }
@@ -1698,9 +1831,13 @@ fn main() {
             get_p2pool_stats,
             get_tari_wallet_details,
             exit_application,
+            set_excluded_gpu_devices,
             set_should_always_use_system_language,
+            download_and_start_installer,
+            get_external_dependencies,
             set_use_tor,
-            get_transaction_history
+            get_transaction_history,
+            import_seed_words
         ])
         .build(tauri::generate_context!())
         .inspect_err(

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAridropRequest } from '../utils/useHandleRequest';
+import { useAirdropRequest } from '../utils/useHandleRequest';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
 export enum QuestNames {
@@ -22,7 +22,7 @@ interface QuestDataResponse {
 }
 
 export const useGetReferralQuestPoints = () => {
-    const handleRequest = useAridropRequest();
+    const handleRequest = useAirdropRequest();
     const { setReferralQuestPoints } = useAirdropStore();
 
     useEffect(() => {

@@ -17,6 +17,7 @@ import { useMemo } from 'react';
 import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
+import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
 
 export default function App() {
@@ -57,15 +58,16 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <AutoUpdateDialog />
                     <CriticalErrorDialog />
+                    <ExternalDependenciesDialog />
                     <SettingsModal />
                     <LayoutGroup id="app-content">
-                        <SplashScreen />
                         {shutDownMarkup}
                         {!visualMode || view != 'mining' ? (
                             <BackgroundImage layout transition={{ duration: 0.3 }} />
                         ) : null}
                         {mainMarkup}
                         <ErrorSnackbar />
+                        <SplashScreen />
                     </LayoutGroup>
                 </MotionConfig>
             </LazyMotion>

@@ -1,6 +1,10 @@
 import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
 
+export const DIALOG_TYPES = ['logs', 'restart'] as const;
+type DialogTypeTuple = typeof DIALOG_TYPES;
+export type DialogType = DialogTypeTuple[number];
+
 interface State {
     showSplash: boolean;
     background: backgroundType;
@@ -8,7 +12,8 @@ interface State {
     visualMode: boolean;
     sidebarOpen: boolean;
     showExperimental: boolean;
-    showLogsDialog: boolean;
+    showExternalDependenciesDialog: boolean;
+    dialogToShow?: DialogType | null;
 }
 interface Actions {
     setShowSplash: (showSplash: boolean) => void;
@@ -17,7 +22,8 @@ interface Actions {
     toggleVisualMode: () => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setShowExperimental: (showExperimental: boolean) => void;
-    setShowLogsDialog: (showLogsDialog: boolean) => void;
+    setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
+    setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -28,8 +34,9 @@ const initialState: State = {
     view: 'setup',
     visualMode: true,
     sidebarOpen: false,
-    showLogsDialog: false,
+    dialogToShow: null,
     showExperimental: false,
+    showExternalDependenciesDialog: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -40,5 +47,6 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setShowExperimental: (showExperimental) => set({ showExperimental }),
-    setShowLogsDialog: (showLogsDialog) => set({ showLogsDialog }),
+    setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
+    setDialogToShow: (dialogToShow) => set({ dialogToShow }),
 }));

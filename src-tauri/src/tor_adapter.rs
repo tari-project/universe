@@ -1,15 +1,14 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::info;
 use tari_shutdown::Shutdown;
-use tokio::select;
 
 use crate::{
-    binaries::{Binaries, BinaryResolver},
-    process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
-    process_utils,
+    process_adapter::{
+        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    },
     utils::file_utils::convert_to_string,
 };
 
@@ -40,9 +39,9 @@ impl ProcessAdapter for TorAdapter {
         data_dir: PathBuf,
         _config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting tor");
         let working_dir: PathBuf = data_dir.join("tor-data");
@@ -70,50 +69,15 @@ impl ProcessAdapter for TorAdapter {
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .read()
-                        .await
-                        .resolve_path_to_binary_files(Binaries::Tor)
-                        .await?;
-
-                    crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
-
-                    if let Some(id) = child.id() {
-                        fs::write(data_dir.join("tor_pid"), id.to_string())?;
-                    }
-
-                    let exit_code;
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                        res2 = child.wait() => {
-                            match res2
-                             {
-                                Ok(res) => {
-                                    exit_code = res.code().unwrap_or(0)
-                                    },
-                                Err(e) => {
-                                    warn!(target: LOG_TARGET, "Error in tor: {}", e);
-                                    return Err(e.into());
-                                }
-                            }
-
-                        },
-                    }
-
-                    match fs::remove_file(data_dir.join("tor_pid")) {
-                        Ok(_) => {}
-                        Err(_e) => {
-                            debug!(target: LOG_TARGET, "Could not clear tor's pid file");
-                        }
-                    }
-                    Ok(exit_code)
-                })),
+                handle: None,
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_version_path,
+                    envs: None,
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
             },
             TorStatusMonitor {},
         ))
@@ -128,13 +92,13 @@ impl ProcessAdapter for TorAdapter {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct TorStatusMonitor {}
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> HealthStatus {
+        // TODO: Implement health check
+        HealthStatus::Healthy
     }
 }

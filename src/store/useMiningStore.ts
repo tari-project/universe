@@ -5,7 +5,7 @@ import { invoke } from '@tauri-apps/api';
 import { useAppStateStore } from './appStateStore';
 import { useAppConfigStore } from './useAppConfigStore';
 import { modeType } from './types';
-import { setAnimationState } from '@app/visuals';
+
 import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
 
 interface State extends MinerMetrics {
@@ -13,17 +13,19 @@ interface State extends MinerMetrics {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
+    excludedGpuDevices: number[];
     counter: number;
 }
 
 interface Actions {
-    fetchMiningMetrics: () => Promise<void>;
+    setMiningMetrics: (metrics: MinerMetrics, isNewBlock?: boolean) => void;
     startMining: () => Promise<void>;
     stopMining: () => Promise<void>;
     pauseMining: () => Promise<void>;
     changeMiningMode: (mode: modeType) => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
+    setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
 }
 type MiningStoreState = State & Actions;
 
@@ -33,6 +35,7 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
+    excludedGpuDevices: [],
     cpu: {
         hardware: undefined,
         mining: {
@@ -43,7 +46,7 @@ const initialState: State = {
         },
     },
     gpu: {
-        hardware: undefined,
+        hardware: [],
         mining: {
             is_mining: false,
             hash_rate: 0,
@@ -62,31 +65,7 @@ const initialState: State = {
 
 export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     ...initialState,
-    fetchMiningMetrics: async () => {
-        try {
-            const metrics = await invoke('get_miner_metrics');
-            const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
-            // Pause animation when lost connection to the Tari Network
-            if (isMining && !metrics.base_node?.is_connected && getState().base_node?.is_connected) {
-                setAnimationState('stop');
-            } else if (isMining && metrics.base_node?.is_connected && !getState().base_node?.is_connected) {
-                setAnimationState('start');
-            }
-
-            const { displayBlockHeight, setDisplayBlockHeight } = useBlockchainVisualisationStore.getState();
-            if (!displayBlockHeight) {
-                setDisplayBlockHeight(metrics.base_node.block_height);
-            } else if (metrics.base_node.block_height > getState().base_node.block_height) {
-                await useBlockchainVisualisationStore
-                    .getState()
-                    .handleNewBlock(isMining, metrics.base_node.block_height);
-            }
-
-            set(metrics);
-        } catch (e) {
-            console.error(e);
-        }
-    },
+    setMiningMetrics: (metrics) => set({ ...metrics }),
     startMining: async () => {
         console.info('Mining starting....');
         set({ miningInitiated: true });
@@ -98,7 +77,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining started.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to start mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: false });
         }
@@ -111,7 +90,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining stopped.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to stop mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: true });
         }
@@ -123,7 +102,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info('Mining paused.');
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to pause (stop) mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: true });
         }
@@ -146,10 +125,21 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info(`Mode changed to ${mode}`);
             set({ isChangingMode: false });
         } catch (e) {
-            console.error(e);
+            console.error('Failed to change mode: ', e);
             set({ isChangingMode: false });
         }
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setExcludedGpuDevice: async (excludedGpuDevices) => {
+        set({ excludedGpuDevices });
+        try {
+            await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
+        } catch (e) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set excluded gpu device: ', e);
+            appStateStore.setError(e as string);
+            set({ excludedGpuDevices: undefined });
+        }
+    },
 }));

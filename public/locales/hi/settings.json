@@ -55,5 +55,13 @@
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",
   "connected-peers": "जुड़े हुए सहकर्मी",
   "should-use-system-language": "सिस्टम भाषा का उपयोग करें",
-  "use-tor": "Use Tor"
+  "applyInviteCode": "आमंत्रण कोड लागू करें",
+  "disconnect": "एयरड्रॉप से डिस्कनेक्ट करें",
+  "inviteCode": "आमंत्रण कोड",
+  "use-tor": "टोर का उपयोग करें",
+  "importing-wallet": "वॉलेट आयात किया जा रहा है",
+  "action-requires-restart": "इस क्रिया के लिए परिवर्तनों को लागू करने हेतु पुनः आरंभ करना आवश्यक है",
+  "low-hash-rate-warning": "आपकी हैश रेट बहुत कम है। Tari Universe के अलावा सभी ऐप्स को बंद करने का प्रयास करें",
+  "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
+  "report-issue": "समस्या की रिपोर्ट करें"
 }

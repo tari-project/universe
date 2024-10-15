@@ -29,5 +29,6 @@
   "topTooltipText": "Получите Tari Airdrop, собирая драгоценные камни. Чем больше камней вы заработаете, тем больше будет ваш airdrop.",
   "topTooltipTitle": "Награды Testnet",
   "claimModalFinePrint": "<strong>Обратите внимание:</strong> получение камней включает аналитику, чтобы мы могли улучшить Universe",
-  "inviteFriendsText": "Скопируйте ссылку и поделитесь ею"
+  "inviteFriendsText": "Скопируйте ссылку и поделитесь ею",
+  "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>"
 }

@@ -1,29 +1,41 @@
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useInterval } from '@app/hooks/useInterval';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 
 const INTERVAL = 1000; // 1 sec
 
 export function useBlockInfo() {
-    const timeSinceLastAnimation = useRef(0);
     const setDisplayBlockTime = useBlockchainVisualisationStore((s) => s.setDisplayBlockTime);
+    const setDebugBlockTime = useBlockchainVisualisationStore((s) => s.setDebugBlockTime);
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
-    const isCpuMining = useMiningStore((s) => s.cpu.mining.is_mining);
-    const isGpuMining = useMiningStore((s) => s.gpu.mining.is_mining);
-    const isMining = isGpuMining || isCpuMining;
+    const block_time = useMiningStore((s) => s.base_node.block_time);
+
+    const diff = useMemo(() => {
+        const now = new Date();
+        const btDate = new Date(block_time * 1000);
+        return now.getTime() - btDate.getTime();
+    }, [block_time]);
+
+    const displayCounter = useRef(0);
+    const debugCounter = useRef(diff);
 
     useEffect(() => {
-        timeSinceLastAnimation.current = 0;
-    }, [displayBlockHeight, isMining]);
+        displayCounter.current = 0;
+    }, [displayBlockHeight]);
 
-    useInterval(
-        () => {
-            timeSinceLastAnimation.current += 1;
-            const blockTime = calculateTimeSince(0, timeSinceLastAnimation.current * INTERVAL);
-            setDisplayBlockTime(blockTime);
-        },
-        isMining ? INTERVAL : null
-    );
+    useEffect(() => {
+        debugCounter.current = diff;
+    }, [diff, displayBlockHeight]);
+
+    useInterval(() => {
+        displayCounter.current += INTERVAL;
+        debugCounter.current += INTERVAL;
+
+        const displayTime = calculateTimeSince(0, displayCounter.current);
+        const debugTime = calculateTimeSince(0, debugCounter.current);
+        setDisplayBlockTime(displayTime);
+        setDebugBlockTime(debugTime);
+    }, INTERVAL);
 }

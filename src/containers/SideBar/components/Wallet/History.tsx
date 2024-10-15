@@ -1,43 +1,33 @@
-import { HistoryContainer } from '@app/containers/SideBar/components/Wallet/Wallet.styles.ts';
-import { Typography } from '@app/components/elements/Typography.tsx';
+import { HistoryContainer, HistoryPadding } from '@app/containers/SideBar/components/Wallet/Wallet.styles.ts';
+
 import HistoryItem from '@app/containers/SideBar/components/Wallet/HistoryItem.tsx';
 import { useWalletStore } from '@app/store/useWalletStore';
-import { useEffect } from 'react';
+
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { useTranslation } from 'react-i18next';
+import { ListLabel } from './HistoryItem.styles';
+import { useMemo } from 'react';
 
 const container = {
-    hidden: { opacity: 1, height: 0 },
+    hidden: { opacity: 0, height: 0 },
     visible: {
-        height: 'auto',
         opacity: 1,
-        transition: {
-            delayChildren: 0.1,
-            staggerChildren: 0.05,
-            ease: 'easeIn',
-            duration: 0.2,
-        },
+        height: 326,
     },
 };
 
 export default function History() {
+    const { t } = useTranslation('sidebar', { useSuspense: false });
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const transactions = useWalletStore((s) => s.transactions);
-    const fetchTransactionHistory = useWalletStore((s) => s.fetchTransactionHistory);
-    const { t } = useTranslation('sidebar', { useSuspense: false });
-
-    useEffect(() => {
-        fetchTransactionHistory();
-    }, [fetchTransactionHistory]);
+    const txMarkup = useMemo(() => transactions.map((tx) => <HistoryItem key={tx.tx_id} item={tx} />), [transactions]);
 
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
-            <Typography variant="h6">{t('recent-wins')}</Typography>
-            {isTransactionLoading ? (
-                <CircularProgress />
-            ) : (
-                transactions.map((tx) => <HistoryItem key={tx.tx_id} item={tx} />)
-            )}
+            <HistoryPadding>
+                <ListLabel>{t('recent-wins')}</ListLabel>
+                {isTransactionLoading && !transactions?.length ? <CircularProgress /> : txMarkup}
+            </HistoryPadding>
         </HistoryContainer>
     );
 }

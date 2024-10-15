@@ -37,7 +37,13 @@ impl TorManager {
         {
             let mut process_watcher = self.watcher.write().await;
             process_watcher
-                .start(app_shutdown, base_path, config_path, log_path)
+                .start(
+                    app_shutdown,
+                    base_path,
+                    config_path,
+                    log_path,
+                    crate::binaries::Binaries::Tor,
+                )
                 .await?;
         }
         self.wait_ready().await?;
@@ -60,5 +66,11 @@ impl TorManager {
         }
 
         Ok(())
+    }
+
+    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
+        let mut process_watcher = self.watcher.write().await;
+        let exit_code = process_watcher.stop().await?;
+        Ok(exit_code)
     }
 }
