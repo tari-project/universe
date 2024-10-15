@@ -38,6 +38,14 @@
     "placeholder": "Entrez l\"adresse Monero",
     "title": "Adresse Monero"
   },
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "connected-to-tari": "Connecté au réseau Tari",
   "reset-settings": "Réinitialiser les paramètres",
   "visual-mode": "Mode visuel",

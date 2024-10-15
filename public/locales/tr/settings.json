@@ -46,10 +46,14 @@
   "reset-wallet": "Cüzdanı Sıfırla",
   "experimental-title": "Deneysel Özellikler",
   "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatlice ilerleyin.",
-    "mine-on-app-start": {
+  "mine-on-app-start": {
       "title": "Mining on startup",
-      "description": "When enabled, the app will start mining automatically when it is launched."
-    },
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "connected-to-tari": "Tari Ağına Bağlı",
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",
   "connected-peers": "Bağlı Eşler",

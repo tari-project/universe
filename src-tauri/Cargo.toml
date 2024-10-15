@@ -94,6 +94,7 @@ nvml-wrapper = "0.10.0"
 sentry-tauri = "0.3.0"
 chrono = "0.4.38"
 sys-locale = "0.3.1"
+
 auto-launch = "0.5.0"
 dunce = "1.0.5"
 # tonic = "0.12.0"
