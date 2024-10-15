@@ -104,7 +104,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
             "-p".to_string(),
-            "merge_mining_proxy.use_dynamic_fail_data=false".to_string()
+            "merge_mining_proxy.use_dynamic_fail_data=false".to_string(),
         ];
 
         // TODO: uncomment if p2pool is needed in CPU mining
