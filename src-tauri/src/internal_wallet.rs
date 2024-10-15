@@ -121,8 +121,7 @@ impl InternalWallet {
 
         let link = format!(
             "tari://{}/paper_wallet?private_key={}",
-            network,
-            seed_words_encrypted_base58,
+            network, seed_words_encrypted_base58,
         );
 
         let paper_wallet_details = PaperWalletConfig {
