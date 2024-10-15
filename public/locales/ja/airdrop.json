@@ -29,5 +29,6 @@
   "topTooltipText": "ジェムを集めてTariのエアドロップを獲得しましょう。ジェムを多く集めるほど、エアドロップが大きくなります。",
   "topTooltipTitle": "テストネット報酬",
   "claimModalFinePrint": "<strong>ご注意ください:</strong> ジェムを請求すると、Universeを改善するために分析が有効になります",
-  "inviteFriendsText": "リンクをコピーして共有する"
+  "inviteFriendsText": "リンクをコピーして共有する",
+  "logged-in-as": "<strong>@{{twitter}}</strong> としてログイン中"
 }

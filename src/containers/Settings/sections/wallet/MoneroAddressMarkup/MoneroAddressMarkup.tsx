@@ -4,16 +4,19 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import MoneroAddressEditor from './MoneroAddressEditor';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { SettingsGroupTitle, SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 const MoneroAddressMarkup = () => {
     const moneroAddress = useAppConfigStore((s) => s.monero_address);
     const setMoneroAddress = useAppConfigStore((s) => s.setMoneroAddress);
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     const handleMoneroAddressChange = useCallback(
         async (moneroAddress: string) => {
             await setMoneroAddress(moneroAddress);
+            setDialogToShow('restart');
         },
-        [setMoneroAddress]
+        [setDialogToShow, setMoneroAddress]
     );
 
     return (

@@ -12,7 +12,6 @@ use crate::process_utils;
 use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
-    process_adapter::StatusMonitor,
     process_watcher::ProcessWatcher,
 };
 
@@ -22,6 +21,7 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner";
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
     is_available: bool,
+    excluded_gpu_devices: Vec<u8>,
 }
 
 impl GpuMiner {
@@ -31,6 +31,7 @@ impl GpuMiner {
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             is_available: false,
+            excluded_gpu_devices: vec![],
         }
     }
 
@@ -51,9 +52,18 @@ impl GpuMiner {
         process_watcher.adapter.set_mode(mining_mode);
         process_watcher.adapter.node_source = Some(node_source);
         process_watcher.adapter.coinbase_extra = coinbase_extra;
+        process_watcher
+            .adapter
+            .set_excluded_gpu_devices(self.excluded_gpu_devices.clone());
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(
+                app_shutdown,
+                base_path,
+                config_path,
+                log_path,
+                Binaries::GpuMiner,
+            )
             .await?;
         info!(target: LOG_TARGET, "xtrgpuminer started");
 
@@ -128,14 +138,19 @@ impl GpuMiner {
                 .join("config.json")
                 .to_string_lossy()
                 .to_string(),
+            "--gpu-status-file".to_string(),
+            config_dir
+                .join("gpuminer")
+                .join("gpu_status.json")
+                .to_string_lossy()
+                .to_string(),
         ];
         let gpuminer_bin = BinaryResolver::current()
             .read()
             .await
-            .resolve_path_to_binary_files(Binaries::GpuMiner)
-            .await?;
+            .resolve_path_to_binary_files(Binaries::GpuMiner)?;
 
-        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone().to_str());
+        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
         crate::download_utils::set_permissions(&gpuminer_bin).await?;
         let child = process_utils::launch_child_process(&gpuminer_bin, None, &args)?;
         let output = child.wait_with_output().await?;
@@ -157,5 +172,13 @@ impl GpuMiner {
 
     pub fn is_gpu_mining_available(&self) -> bool {
         self.is_available
+    }
+
+    pub async fn set_excluded_device(
+        &mut self,
+        excluded_gpu_devices: Vec<u8>,
+    ) -> Result<(), anyhow::Error> {
+        self.excluded_gpu_devices = excluded_gpu_devices;
+        Ok(())
     }
 }

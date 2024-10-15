@@ -11,7 +11,6 @@ use tokio::time::sleep;
 use crate::network_utils;
 use crate::p2pool::models::Stats;
 use crate::p2pool_adapter::P2poolAdapter;
-use crate::process_adapter::StatusMonitor;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
@@ -122,7 +121,13 @@ impl P2poolManager {
         }
         process_watcher.adapter.config = Some(config);
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(
+                app_shutdown,
+                base_path,
+                config_path,
+                log_path,
+                crate::binaries::Binaries::ShaP2pool,
+            )
             .await?;
         process_watcher.wait_ready().await?;
         if let Some(status_monitor) = &process_watcher.status_monitor {
@@ -130,6 +135,8 @@ impl P2poolManager {
                 sleep(Duration::from_secs(5)).await;
                 if let Ok(_stats) = status_monitor.status().await {
                     break;
+                } else {
+                    warn!(target: LOG_TARGET, "P2pool stats not available yet");
                 }
             } // wait until we have stats from p2pool, so its started
         }

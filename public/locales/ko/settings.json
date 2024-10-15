@@ -27,6 +27,14 @@
     "title": "모네로 주소",
     "placeholder": "모네로 주소 입력"
   },
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "last-block-added-time": "마지막 블록 체인 추가 시간",
   "visual-mode": "시각 모드",
   "pool-mining": "풀 채굴",
@@ -59,8 +67,9 @@
   "disconnect": "에어드롭 연결 해제",
   "inviteCode": "초대 코드",
   "use-tor": "Tor 사용하기",
-  "importing-wallet": "Importing wallet",
-  "action-requires-restart": "This action requires restart to apply changes",
-  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-  "invalid-seed-words": "Enter 24 words separated by spaces"
+  "importing-wallet": "지갑 가져오기",
+  "action-requires-restart": "이 작업은 변경 사항을 적용하기 위해 재시작이 필요합니다",
+  "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
+  "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",
+  "report-issue": "문제 보고"
 }

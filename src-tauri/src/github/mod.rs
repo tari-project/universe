@@ -60,11 +60,13 @@ pub async fn list_releases(
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let mut attempts = 0;
-    let releases = loop {
-        let result = list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await;
-        if result.as_ref().map_or(false, |r| !r.is_empty()) || attempts >= 3 {
-            break result;
-        }
+    let mut releases = loop {
+        match list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await {
+            Ok(r) => break r,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to fetch releases from mirror: {}", e);
+            }
+        };
         attempts += 1;
         warn!(
             target: LOG_TARGET,
@@ -72,12 +74,26 @@ pub async fn list_releases(
             attempts
         );
     };
+    // Add any missing releases from github
+    let github_releases = list_releases_from(ReleaseSource::Github, repo_owner, repo_name)
+        .await
+        .inspect_err(|e| {
+            warn!(target: LOG_TARGET, "Failed to fetch releases from Github: {}", e);
+        })
+        .unwrap_or_default();
 
-    if releases.as_ref().map_or(false, |r| !r.is_empty()) {
-        releases
-    } else {
-        list_releases_from(ReleaseSource::Github, repo_owner, repo_name).await
+    for release in &github_releases {
+        if !releases.iter().any(|r| r.version == release.version) {
+            releases.push(release.clone());
+        }
     }
+    Ok(releases)
+
+    // if releases.as_ref().map_or(false, |r| !r.is_empty()) {
+    //     releases
+    // } else {
+    //     list_releases_from(ReleaseSource::Github, repo_owner, repo_name).await
+    // }
 }
 
 async fn list_releases_from(

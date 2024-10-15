@@ -1,11 +1,12 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create';
-import { P2poolStatsResult } from '../types/app-status.ts';
+import { P2poolStats, P2poolStatsResult } from '../types/app-status.ts';
 
 type State = Partial<P2poolStatsResult>;
 
 interface Actions {
-    set?: P2poolStatsResult;
+    randomx_stats?: P2poolStats;
+    sha3x_stats?: P2poolStats;
     fetchP2poolStats: () => Promise<void>;
 }
 

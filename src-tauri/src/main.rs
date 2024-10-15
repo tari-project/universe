@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
@@ -47,6 +48,7 @@ use crate::wallet_manager::WalletManager;
 
 mod app_config;
 mod app_in_memory_config;
+mod auto_launcher;
 mod binaries;
 mod consts;
 mod cpu_miner;
@@ -215,6 +217,29 @@ async fn send_feedback(
         warn!(target: LOG_TARGET, "send_feedback took too long: {:?}", timer.elapsed());
     }
     Ok(reference)
+}
+
+#[tauri::command]
+async fn set_mine_on_app_start(
+    mine_on_app_start: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+
+    state
+        .config
+        .write()
+        .await
+        .set_mine_on_app_start(mine_on_app_start)
+        .await
+        .inspect_err(|e| error!("error at set_mine_on_app_start {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_mine_on_app_start took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -409,6 +434,36 @@ async fn download_and_start_installer(
 }
 
 #[tauri::command]
+async fn set_should_auto_launch(
+    should_auto_launch: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    match state
+        .config
+        .write()
+        .await
+        .set_should_auto_launch(should_auto_launch)
+        .await
+    {
+        Ok(_) => {
+            AutoLauncher::current()
+                .update_auto_launcher(should_auto_launch)
+                .await
+                .map_err(|e| {
+                    error!(target: LOG_TARGET, "Error setting should_auto_launch: {:?}", e);
+                    e.to_string()
+                })?;
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Error setting should_auto_launch: {:?}", e);
+            return Err(e.to_string());
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -485,6 +540,11 @@ async fn setup_inner(
     let use_tor = app_config.use_tor();
     drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
+
+    let is_auto_launcher_enabled = state.config.read().await.should_auto_launch();
+    AutoLauncher::current()
+        .initialize_auto_launcher(is_auto_launcher_enabled)
+        .await?;
 
     let progress = ProgressTracker::new(window.clone());
 
@@ -865,6 +925,20 @@ async fn import_seed_words(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_excluded_gpu_devices(
+    excluded_gpu_devices: Vec<u8>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let mut gpu_miner = state.gpu_miner.write().await;
+    gpu_miner
+        .set_excluded_device(excluded_gpu_devices)
+        .await
+        .inspect_err(|e| error!("error at set_excluded_gpu_devices {:?}", e))
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -1339,6 +1413,15 @@ async fn get_miner_metrics(
         }
     };
 
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let _unused = HardwareMonitor::current()
+        .write()
+        .await
+        .load_status_file(config_path);
+
     let hardware_status = HardwareMonitor::current()
         .write()
         .await
@@ -1513,7 +1596,7 @@ pub struct CpuMinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Option<HardwareParameters>,
+    hardware: Vec<HardwareParameters>,
     mining: GpuMinerStatus,
 }
 
@@ -1803,12 +1886,15 @@ fn main() {
             restart_application,
             resolve_application_language,
             set_application_language,
+            set_mine_on_app_start,
             get_miner_metrics,
             get_app_config,
             get_p2pool_stats,
             get_tari_wallet_details,
             exit_application,
+            set_excluded_gpu_devices,
             set_should_always_use_system_language,
+            set_should_auto_launch,
             download_and_start_installer,
             get_external_dependencies,
             set_use_tor,
