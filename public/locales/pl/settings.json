@@ -28,6 +28,14 @@
   "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
   "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
   "reset-wallet": "Resetuj porfel",
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "connected-to-tari-network": null,
   "not-connected-to-tari-network": null,
   "connected-peers": "Połączone węzły",

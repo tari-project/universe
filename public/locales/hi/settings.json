@@ -27,6 +27,14 @@
     "title": "मोनरो पता",
     "placeholder": "मोनरो पता दर्ज करें"
   },
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
   "visual-mode": "दृश्य मोड",
   "pool-mining": "पूल माइनिंग",

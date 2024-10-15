@@ -45,6 +45,14 @@
   "reset-wallet": "重置钱包",
   "experimental-title": "实验性功能",
   "experimental-warning": "⚠️ 警告：这些功能正在积极开发中，可能会表现得不可预测。请谨慎操作。",
+  "mine-on-app-start": {
+    "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "connected-to-tari": "已连接到Tari网络",
   "not-connected-to-tari": "未连接到Tari网络",
   "connected-peers": "已连接的节点",
