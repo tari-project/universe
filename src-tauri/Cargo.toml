@@ -15,10 +15,12 @@ tauri-build = { version = "1.5.5", features = ["isolation"] }
 anyhow = "1"
 async-trait = "0.1.81"
 async_zip = { version = "0.0.17", features = ["full"] }
+auto-launch = "0.5.0"
 blake2 = "0.10"
 chrono = "0.4.38"
 device_query = "2.1.0"
 dirs-next = "2.0.0"
+dunce = "1.0.5"
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
 futures-util = "0.3.30"
@@ -94,8 +96,6 @@ nvml-wrapper = "0.10.0"
 sentry-tauri = "0.3.0"
 chrono = "0.4.38"
 sys-locale = "0.3.1"
-auto-launch = "0.5.0"
-dunce = "1.0.5"
 # tonic = "0.12.0"
 
 [features]
