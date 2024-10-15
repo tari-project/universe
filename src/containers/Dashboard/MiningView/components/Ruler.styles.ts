@@ -42,7 +42,7 @@ export const RulerMark = styled(m.div)<{ $opacity?: number }>`
     height: 100%;
     position: relative;
     font-weight: 700;
-    color: ${({ theme }) => theme.palette.colors.darkAlpha[20]};
+    color: ${({ theme }) => theme.colors.darkAlpha[20]};
     font-family: Poppins, sans-serif;
     font-variant-numeric: tabular-nums;
     text-align: right;

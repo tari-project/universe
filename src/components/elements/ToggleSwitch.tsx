@@ -34,8 +34,8 @@ const Switch = styled.div<{ $isSolid?: boolean }>`
     position: relative;
     background: ${({ $isSolid, theme }) =>
         $isSolid
-            ? theme.palette.colors.grey[300]
-            : `linear-gradient(90deg, ${theme.palette.colors.grey[200]} 0%,  ${theme.palette.base} 100%)`};
+            ? theme.colors.grey[300]
+            : `linear-gradient(90deg, ${theme.colors.grey[200]} 0%,  ${theme.palette.base} 100%)`};
 
     border-radius: 24px;
     transition: 300ms all;
@@ -62,7 +62,7 @@ const Input = styled.input<{ $isSolid?: boolean }>`
     display: none;
     &:disabled + ${Switch} {
         pointer-events: none;
-        background: ${({ theme }) => theme.palette.colors.success[100]};
+        background: ${({ theme }) => theme.colors.success[100]};
     }
     &:checked + ${Switch} {
         &:before {
@@ -75,7 +75,7 @@ const Input = styled.input<{ $isSolid?: boolean }>`
         background: ${({ $isSolid, theme }) =>
             $isSolid
                 ? theme.palette.success.main
-                : `linear-gradient(90deg, ${theme.palette.colors.teal[700]} 0%, ${theme.palette.contrast} 100%)`};
+                : `linear-gradient(90deg, ${theme.colors.teal[700]} 0%, ${theme.palette.contrast} 100%)`};
     }
 `;
 

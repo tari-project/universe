@@ -1,6 +1,6 @@
 import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
-import { Theme } from '@app/theme/themes.ts';
+import { Theme } from '@app/theme/types.ts';
 import { persist } from 'zustand/middleware';
 
 export const DIALOG_TYPES = ['logs', 'restart'] as const;

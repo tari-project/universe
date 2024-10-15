@@ -54,6 +54,8 @@ export const GlobalStyle = createGlobalStyle`
         width: 100%;
         box-sizing: border-box;
         position: relative;
+        color: ${({ theme }) => theme.palette.text.primary};
+        background-color: ${({ theme }) => theme.palette.background.default};
 
         ::-webkit-scrollbar {
             display: none;

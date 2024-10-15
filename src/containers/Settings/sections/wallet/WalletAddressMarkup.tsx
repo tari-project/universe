@@ -37,7 +37,7 @@ const AddressContainer = styled.div`
     display: flex;
     padding: 10px;
     background-color: ${({ theme }) => theme.palette.background.default};
-    border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    border: 1px solid ${({ theme }) => theme.colors.darkAlpha[10]};
     border-radius: 10px;
 `;
 

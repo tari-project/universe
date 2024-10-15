@@ -21,6 +21,7 @@
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { colors } from './colors';
+import { ThemePalette } from './types.ts';
 
 const {
     tariPurple,
@@ -35,9 +36,9 @@ const {
     errorDarkAlpha,
 } = colors;
 
-export const light = {
+export const lightPalette: ThemePalette = {
+    mode: 'light',
     palette: {
-        mode: 'light',
         base: '#fff',
         contrast: '#000000',
         primary: {
@@ -68,38 +69,38 @@ export const light = {
             main: success[200],
             dark: success[300],
             light: success[50],
-            contrastText: success[300],
+            contrast: success[300],
         },
         warning: {
             main: warning[200],
             dark: warning[300],
             light: warning[100],
-            contrastText: warning[300],
+            contrast: warning[300],
             wisp: warningDarkAlpha[5],
         },
         error: {
             main: error[200],
             dark: error[300],
             light: error[100],
-            contrastText: error[300],
+            contrast: error[300],
             wisp: errorDarkAlpha[5],
         },
         info: {
             main: info[200],
             dark: info[300],
             light: info[100],
-            contrastText: info[300],
+            contrast: info[300],
         },
         action: {
             hover: 'rgba(0,0,0,0.02)',
         },
-        colors,
     },
+    colors,
 };
 
-export const dark = {
+export const darkPalette: ThemePalette = {
+    mode: 'dark',
     palette: {
-        mode: 'dark',
         base: '#000',
         contrast: '#fff',
         primary: {
@@ -130,105 +131,31 @@ export const dark = {
             main: success[200],
             dark: success[50],
             light: success[300],
-            contrastText: success[50],
+            contrast: success[50],
         },
         warning: {
             main: warning[200],
             dark: warning[100],
             light: warning[300],
-            contrastText: warning[100],
+            contrast: warning[100],
             wisp: warningDarkAlpha[5],
         },
         error: {
             main: error[200],
             dark: error[100],
             light: error[300],
-            contrastText: error[100],
+            contrast: error[100],
             wisp: errorDarkAlpha[5],
         },
         info: {
             main: info[200],
             dark: info[100],
             light: info[300],
-            contrastText: info[100],
+            contrast: info[100],
         },
         action: {
             hover: 'rgba(255,255,255,0.1)',
         },
-        colors,
     },
+    colors,
 };
-
-export const componentSettings = {
-    shape: {
-        borderRadius: {
-            app: '10px',
-            dialog: '20px',
-            button: '30px',
-            buttonBase: '50px',
-            buttonSquared: '10px',
-        },
-    },
-    typography: {
-        fontFamily: '"Poppins", sans-serif',
-        fontSize: '16px',
-        fontWeight: 400,
-        span: {
-            lineHeight: 1.1,
-            letterSpacing: '-0.1px',
-            fontWeight: 'inherit',
-        },
-        p: {
-            fontSize: '12px',
-            lineHeight: 1.1,
-            letterSpacing: '-0.1px',
-            fontWeight: 400,
-        },
-        h1: {
-            fontSize: '30px',
-            lineHeight: '42px',
-            fontFamily: '"Poppins", sans-serif',
-            letterSpacing: '-0.4px',
-            fontWeight: 600,
-        },
-        h2: {
-            fontSize: '26px',
-            lineHeight: '36px',
-            fontWeight: 600,
-            fontFamily: '"Poppins", sans-serif',
-            letterSpacing: '-1.2px',
-        },
-        h3: {
-            fontSize: '24px',
-            lineHeight: '28px',
-            fontFamily: '"Poppins", sans-serif',
-            letterSpacing: '-0.5px',
-            fontWeight: 600,
-        },
-        h4: {
-            fontSize: '20px',
-            lineHeight: '28px',
-            fontFamily: '"Poppins", sans-serif',
-            fontWeight: 600,
-            letterSpacing: '-1.6px',
-        },
-        h5: {
-            fontSize: '16px',
-            lineHeight: '1.05',
-            fontFamily: '"Poppins", sans-serif',
-            letterSpacing: '-0.4px',
-            fontWeight: 600,
-        },
-        h6: {
-            fontSize: '14px',
-            lineHeight: '20px',
-            fontFamily: '"Poppins", sans-serif',
-            letterSpacing: '-0.4px',
-            fontWeight: 500,
-        },
-    },
-};
-
-export type ThemeComponents = typeof componentSettings;
-
-export type Palette = typeof dark.palette | typeof light.palette;

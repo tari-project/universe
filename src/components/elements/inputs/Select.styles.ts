@@ -102,10 +102,10 @@ export const StyledOption = styled.div<{ $selected?: boolean }>`
     justify-content: space-between;
     align-items: center;
     align-self: stretch;
-    background: ${({ theme, $selected }) => ($selected ? theme.palette.colors.darkAlpha[5] : 'none')};
+    background: ${({ theme, $selected }) => ($selected ? theme.colors.darkAlpha[5] : 'none')};
 
     &:hover {
-        background: ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+        background: ${({ theme }) => theme.colors.darkAlpha[10]};
     }
 `;
 

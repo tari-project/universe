@@ -29,7 +29,7 @@ export const StyledTextArea = styled.textarea<{ $hasError: boolean }>(({ $hasErr
     backgroundColor: theme.palette.background.default,
     width: '100%',
     borderRadius: '10px',
-    border: `1px solid ${$hasError ? theme.palette.error.main : theme.palette.colors.darkAlpha[10]}`,
+    border: `1px solid ${$hasError ? theme.palette.error.main : theme.colors.darkAlpha[10]}`,
     padding: '20px',
 }));
 

@@ -1,17 +1,14 @@
-import { light, dark, componentSettings } from './tokens';
 import { DefaultTheme } from 'styled-components';
-
-export const THEME_TYPES = ['light', 'dark'] as const;
-type ThemeTuple = typeof THEME_TYPES;
-export type Theme = ThemeTuple[number];
+import { componentSettings } from './components.ts';
+import { lightPalette, darkPalette } from './theme-palettes';
 
 const lightTheme: DefaultTheme = {
-    ...light,
+    ...lightPalette,
     ...componentSettings,
 };
 
-const darkTheme: DefaultTheme = {
-    ...dark,
+const darkTheme = {
+    ...darkPalette,
     ...componentSettings,
 };
 

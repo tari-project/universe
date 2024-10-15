@@ -60,7 +60,7 @@ export const StyledButtonBase = styled.button<Props>`
                 return css`
                     background: ${({ theme }) => theme.palette.background.default};
                     &:hover {
-                        background: ${({ theme }) => theme.palette.colors.grey[100]};
+                        background: ${({ theme }) => theme.colors.grey[100]};
                     }
                 `;
         }
