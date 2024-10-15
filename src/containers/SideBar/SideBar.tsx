@@ -7,11 +7,19 @@ import MiningButton from '@app/containers/Dashboard/MiningView/components/Mining
 import AirdropGiftTracker from '@app/containers/Airdrop/AirdropGiftTracker/AirdropGiftTracker';
 import LostConnectionAlert from './components/LostConnectionAlert';
 import { LowHashRateWarning } from './components/LowHashRateWarning/LowHashRateWarning.tsx';
+import StagedSecurityModal from '../StagedSecurity/StagedSecurityModal.tsx';
+import { useState } from 'react';
 
 function SideBar() {
+    const [open, setOpen] = useState(false);
+
     return (
         <SideBarContainer>
-            <SidebarTop>
+            <SidebarTop
+                onClick={() => {
+                    setOpen(true);
+                }}
+            >
                 <Heading />
                 <MiningButton />
                 <LostConnectionAlert />
@@ -26,6 +34,8 @@ function SideBar() {
                     <Wallet />
                 </Bottom>
             </Scroll>
+
+            <StagedSecurityModal open={open} setOpen={setOpen} />
         </SideBarContainer>
     );
 }

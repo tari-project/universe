@@ -39,7 +39,7 @@ export const BoxWrapper = styled(m.div)`
     position: relative;
     z-index: 1;
 
-    padding: 180px 50px 42px 50px;
+    padding: 50px;
 
     display: flex;
     flex-direction: column;

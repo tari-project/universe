@@ -8,6 +8,8 @@ export const TextWrapper = styled('div')`
     justify-content: center;
     align-items: center;
     gap: 15px;
+
+    padding-top: 130px;
 `;
 
 export const Title = styled('div')`
