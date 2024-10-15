@@ -7,7 +7,7 @@ export const Wrapper = styled.div`
     justify-content: center;
 `;
 export const ContentWrapper = styled.div<{ $unPadded?: boolean }>`
-    background-color: ${({ theme }) => theme.palette.background.accent};
+    background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.dialog};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
     display: flex;

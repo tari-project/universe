@@ -3,7 +3,7 @@ import { ButtonContainer, Container, DarkModeContainer, SectionButton } from './
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { setAnimationProperties } from '@app/visuals.ts';
+
 import { useSwitchTheme } from '@app/hooks/useTheming.ts';
 
 interface SettingsNavigationProps {
@@ -28,8 +28,8 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                         <SectionButton
                             key={type}
                             size="large"
-                            color="secondary"
-                            variant={isActive ? 'secondary' : 'primary'}
+                            color={isActive ? 'primary' : 'secondary'}
+                            variant={isActive ? 'primary' : 'secondary'}
                             onClick={() => handleClick(type)}
                         >
                             {type}
@@ -38,12 +38,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                 })}
             </ButtonContainer>
             <DarkModeContainer>
-                <ToggleSwitch
-                    checked={isDarkMode}
-                    onChange={() => switchTheme()}
-                    label="Dark mode"
-                    variant="gradient"
-                />
+                <ToggleSwitch checked={isDarkMode} onChange={() => switchTheme()} label="Dark mode" />
             </DarkModeContainer>
         </Container>
     );

@@ -24,7 +24,7 @@ const Label = styled.label`
     align-items: center;
     gap: 10px;
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 12px;
     width: max-content;
     padding: 5px 5px 5px 15px;

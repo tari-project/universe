@@ -17,7 +17,7 @@ export const Container = styled.div`
 
 export const HeaderContainer = styled.div`
     width: 100%;
-    background-color: ${({ theme }) => theme.palette.background.accent};
+    background-color: ${({ theme }) => theme.palette.background.paper};
     display: flex;
     justify-content: space-between;
     align-items: center;

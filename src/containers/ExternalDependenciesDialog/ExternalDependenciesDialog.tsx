@@ -45,7 +45,7 @@ export const ExternalDependenciesDialog = () => {
     );
 
     return (
-        <Dialog open={!!showExternalDependenciesDialog}>
+        <Dialog open={showExternalDependenciesDialog}>
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4}>

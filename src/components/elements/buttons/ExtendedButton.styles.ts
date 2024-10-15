@@ -33,6 +33,8 @@ const BASE_STYLES = css`
 `;
 
 export const BaseButton = styled.button<ButtonStyleProps>`
+    ${BASE_STYLES}
+    ${SQUARED_BASE_STYLES}
     border-color: ${({ theme, $color }) => theme.palette[$color || 'primary'].light};
     background: ${({ theme, $color }) => theme.palette[$color || 'primary'].main};
     color: ${({ theme, $color }) => theme.palette[$color || 'primary'].contrast};
@@ -42,8 +44,7 @@ export const BaseButton = styled.button<ButtonStyleProps>`
     &:hover {
         background: ${({ theme, $color }) => theme.palette[$color || 'primary'].dark};
     }
-    ${BASE_STYLES}
-    ${SQUARED_BASE_STYLES}
+   
 }`;
 
 export const ChildrenWrapper = styled.div`
@@ -85,7 +86,6 @@ export const StyledTextButton = styled.button<ButtonStyleProps>`
     ${BASE_STYLES}
     ${({ theme, $color, $size }) => {
         return css`
-            background: ${theme.palette.background.paper};
             color: ${theme.palette[$color || 'primary'].main};
             font-size: ${$size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize};
             padding: ${$size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`};

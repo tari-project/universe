@@ -17,16 +17,12 @@ export const StyledButton = styled.button<ButtonStyleProps>`
     display: flex;
     font-size: inherit;
     transition: all 0.25s ease-in-out;
-
     &:active {
-        opacity: 0.9;
+        opacity: 0.8;
     }
     &:disabled {
         opacity: 0.5;
         cursor: inherit;
-    }
-    &:hover {
-        opacity: 0.85;
     }
 
     ${({ $variant, $color }) => {
@@ -47,14 +43,17 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 `;
             case 'secondary':
                 return css`
-                    box-shadow: 0 2px 20px -10px rgba(0, 0, 0, 0.076);
-                    color: ${({ theme }) => theme.palette[$color || 'primary'].main};
-                    background: ${({ theme }) => theme.palette[$color || 'background'].paper};
+                    box-shadow: 0 2px 20px -10px rgba(0, 0, 0, 0.09);
+                    color: ${({ theme }) => theme.palette[$color || 'primary'].dark};
+                    background: ${({ theme }) => theme.palette[$color || 'primary'].main};
+                    &:hover {
+                        background: ${({ theme }) => theme.palette[$color || 'primary'].light};
+                    }
                 `;
             case 'primary':
             default:
                 return css`
-                    background: ${({ theme }) => theme.palette.background.default};
+                    background: ${({ theme }) => theme.palette.background.paper};
                     &:hover {
                         background: ${({ theme }) => theme.palette.background.accent};
                     }

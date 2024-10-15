@@ -17,7 +17,6 @@ export const Container = styled.div`
 
 export const ButtonContainer = styled.div`
     display: flex;
-    background: ${({ theme }) => theme.palette.background.default};
     flex-direction: column;
     align-items: center;
     width: 100%;
@@ -27,6 +26,7 @@ export const ButtonContainer = styled.div`
 export const SectionButton = styled(Button)`
     display: flex;
     text-transform: capitalize;
+    cursor: pointer;
 `;
 
 export const DarkModeContainer = styled.div`

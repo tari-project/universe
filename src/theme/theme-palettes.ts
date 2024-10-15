@@ -41,9 +41,9 @@ export const lightPalette: ThemePalette = {
             contrast: '#FFFFFF',
         },
         secondary: {
-            main: grey[700],
-            dark: grey[800],
-            light: grey[500],
+            main: grey[100],
+            dark: grey[900],
+            light: grey[50],
             wisp: tariPurpleAlpha[5],
         },
         divider: 'rgba(0,0,0,0.06)',
@@ -54,9 +54,9 @@ export const lightPalette: ThemePalette = {
             contrast: '#FFFFFF',
         },
         background: {
-            default: grey[50],
-            paper: '#f3f3f3',
-            accent: '#fff',
+            default: grey[100],
+            paper: '#fff',
+            accent: '#f3f3f3',
         },
         success: {
             main: success[200],
@@ -106,9 +106,9 @@ export const darkPalette: ThemePalette = {
             contrast: '#FFFFFF',
         },
         secondary: {
-            main: green[500],
-            dark: green[600],
-            light: green[400],
+            main: green[600],
+            dark: green[700],
+            light: green[500],
             wisp: tariPurpleAlpha[5],
         },
         divider: 'rgba(255,255,255,0.1)',
@@ -124,10 +124,10 @@ export const darkPalette: ThemePalette = {
             accent: '#2E2E2E',
         },
         success: {
-            main: success[200],
-            dark: success[50],
-            light: success[300],
-            contrast: success[50],
+            main: green[600],
+            dark: green[700],
+            light: green[300],
+            contrast: green[50],
         },
         warning: {
             main: colors.orange[500],
@@ -138,7 +138,7 @@ export const darkPalette: ThemePalette = {
         },
         error: {
             main: error[200],
-            dark: error[100],
+            dark: error[300],
             light: error[300],
             contrast: error[100],
             wisp: errorDarkAlpha[5],
