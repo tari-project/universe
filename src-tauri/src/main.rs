@@ -1,8 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use auto_launcher::AutoLauncher;
+use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;

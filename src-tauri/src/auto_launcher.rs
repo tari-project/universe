@@ -17,7 +17,6 @@ pub enum CurrentOperatingSystem {
     MacOS,
 }
 
-
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
 }
@@ -50,26 +49,32 @@ impl AutoLauncher {
                     .set_app_name(app_name)
                     .set_app_path(app_path)
                     .set_use_launch_agent(false)
-                    .build().map_err(|e| e.into());
+                    .build()
+                    .map_err(|e| e.into());
             }
             CurrentOperatingSystem::Linux => {
                 return AutoLaunchBuilder::new()
                     .set_app_name(app_name)
                     .set_app_path(app_path)
                     .set_use_launch_agent(false)
-                    .build().map_err(|e| e.into());
+                    .build()
+                    .map_err(|e| e.into());
             }
             CurrentOperatingSystem::MacOS => {
                 return AutoLaunchBuilder::new()
                     .set_app_name(app_name)
                     .set_app_path(app_path)
                     .set_use_launch_agent(true)
-                    .build().map_err(|e| e.into());
+                    .build()
+                    .map_err(|e| e.into());
             }
         }
     }
 
-    fn toggle_auto_launcher(auto_launcher: &AutoLaunch, config_is_auto_launcher_enabled: bool) -> Result<(), anyhow::Error> {
+    fn toggle_auto_launcher(
+        auto_launcher: &AutoLaunch,
+        config_is_auto_launcher_enabled: bool,
+    ) -> Result<(), anyhow::Error> {
         let is_auto_launcher_enabled = auto_launcher.is_enabled().unwrap_or(false);
 
         if config_is_auto_launcher_enabled && !is_auto_launcher_enabled {
