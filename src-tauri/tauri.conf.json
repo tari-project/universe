@@ -29,6 +29,9 @@
                 "open": true,
                 "sidecar": false
             },
+          "http": {
+            "all": true
+          },
             "window": {
                 "all": false,
                 "close": true,
@@ -63,7 +66,8 @@
             }
         ],
         "security": {
-            "csp": null
+            "csp": null,
+          "dangerousUseHttpScheme": true
         },
         "bundle": {
             "active": true,

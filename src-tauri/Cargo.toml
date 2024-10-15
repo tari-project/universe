@@ -62,6 +62,7 @@ tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = 
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_utilities = "0.7.0"
 tauri = { version = "1.8.0", features = [
+  "http-all",
   "system-tray",
   "updater",
   "window-show",
