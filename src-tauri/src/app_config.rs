@@ -47,6 +47,8 @@ pub struct AppConfigFromFile {
     airdrop_ui_enabled: bool,
     #[serde(default = "default_true")]
     use_tor: bool,
+    #[serde(default = "default_false")]
+    paper_wallet_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -68,6 +70,7 @@ impl Default for AppConfigFromFile {
             should_auto_launch: false,
             application_language: default_application_language(),
             airdrop_ui_enabled: true,
+            paper_wallet_enabled: false,
             use_tor: true,
         }
     }
@@ -116,6 +119,7 @@ pub(crate) struct AppConfig {
     should_auto_launch: bool,
     application_language: String,
     airdrop_ui_enabled: bool,
+    paper_wallet_enabled: bool,
     use_tor: bool,
 }
 
@@ -140,6 +144,7 @@ impl AppConfig {
             application_language: default_application_language(),
             airdrop_ui_enabled: true,
             use_tor: true,
+            paper_wallet_enabled: false,
         }
     }
 
@@ -179,6 +184,7 @@ impl AppConfig {
                 self.application_language = config.application_language;
                 self.airdrop_ui_enabled = config.airdrop_ui_enabled;
                 self.use_tor = config.use_tor;
+                self.paper_wallet_enabled = config.paper_wallet_enabled;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -388,6 +394,7 @@ impl AppConfig {
             should_auto_launch: self.should_auto_launch,
             application_language: self.application_language.clone(),
             airdrop_ui_enabled: self.airdrop_ui_enabled,
+            paper_wallet_enabled: self.paper_wallet_enabled,
             use_tor: self.use_tor,
         };
         let config = serde_json::to_string(config)?;
