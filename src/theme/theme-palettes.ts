@@ -23,18 +23,8 @@
 import { colors } from './colors';
 import { ThemePalette } from './types.ts';
 
-const {
-    tariPurple,
-    grey,
-    success,
-    info,
-    warning,
-    error,
-    brightGreen,
-    tariPurpleAlpha,
-    warningDarkAlpha,
-    errorDarkAlpha,
-} = colors;
+const { tariPurple, grey, success, info, warning, error, green, tariPurpleAlpha, warningDarkAlpha, errorDarkAlpha } =
+    colors;
 
 export const lightPalette: ThemePalette = {
     mode: 'light',
@@ -47,6 +37,7 @@ export const lightPalette: ThemePalette = {
             light: tariPurple[500],
             shadow: tariPurpleAlpha[10],
             wisp: tariPurpleAlpha[5],
+            contrast: '#FFFFFF',
         },
         secondary: {
             main: grey[700],
@@ -104,16 +95,17 @@ export const darkPalette: ThemePalette = {
         base: '#000',
         contrast: '#fff',
         primary: {
-            main: tariPurple[500],
-            dark: tariPurple[200],
+            main: tariPurple[900],
+            dark: tariPurple[950],
             light: tariPurple[50],
             shadow: tariPurpleAlpha[80],
             wisp: tariPurpleAlpha[5],
+            contrast: '#FFFFFF',
         },
         secondary: {
-            main: brightGreen[500],
-            dark: brightGreen[400],
-            light: brightGreen[600],
+            main: green[500],
+            dark: green[600],
+            light: green[400],
             wisp: tariPurpleAlpha[5],
         },
         divider: 'rgba(255,255,255,0.1)',
@@ -134,10 +126,10 @@ export const darkPalette: ThemePalette = {
             contrast: success[50],
         },
         warning: {
-            main: warning[200],
-            dark: warning[100],
-            light: warning[300],
-            contrast: warning[100],
+            main: colors.orange[500],
+            dark: colors.orange[700],
+            light: colors.orange[400],
+            contrast: colors.orange[100],
             wisp: warningDarkAlpha[5],
         },
         error: {

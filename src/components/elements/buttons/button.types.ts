@@ -1,8 +1,8 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient' | 'text';
+export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large';
-export type ButtonColor = 'primary' | 'secondary' | 'gradient' | 'error' | 'warning';
+export type ButtonColor = 'primary' | 'secondary' | 'gradient' | 'error' | 'warning' | 'info';
 
 export type IconPosition = 'end' | 'start' | 'hug';
 

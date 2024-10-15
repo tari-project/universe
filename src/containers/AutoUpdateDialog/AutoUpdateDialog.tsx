@@ -77,7 +77,7 @@ function AutoUpdateDialog() {
     }, [checkUpdateTariUniverse]);
 
     return (
-        <Dialog open={true} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t('would-you-like-to-install', { version: latestVersion })}</Typography>
@@ -85,8 +85,12 @@ function AutoUpdateDialog() {
                 <ButtonsWrapper>
                     {!isLoading && (
                         <>
-                            <SquaredButton onClick={handleUpdate}>{t('yes')}</SquaredButton>
-                            <SquaredButton onClick={handleClose}>{t('no')}</SquaredButton>
+                            <SquaredButton onClick={handleClose} color="warning">
+                                {t('no')}
+                            </SquaredButton>
+                            <SquaredButton onClick={handleUpdate} color="secondary">
+                                {t('yes')}
+                            </SquaredButton>
                         </>
                     )}
                 </ButtonsWrapper>

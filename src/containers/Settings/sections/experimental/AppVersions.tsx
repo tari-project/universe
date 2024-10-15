@@ -8,7 +8,7 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { CardComponent } from '@app/containers/Settings/components/Card.component.tsx';
 import { CardContainer } from '@app/containers/Settings/components/Settings.styles.tsx';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
 export default function AppVersions() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -23,13 +23,13 @@ export default function AppVersions() {
                 <Typography variant="h6">{t('versions', { ns: 'common' })}</Typography>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                     {currentEnvironment === Environment.Development && (
-                        <SquaredButton variant="text" size="small" onClick={updateApplicationsVersions}>
+                        <TextButton size="small" onClick={updateApplicationsVersions}>
                             {t('update-versions', { ns: 'settings' })}
-                        </SquaredButton>
+                        </TextButton>
                     )}
-                    <SquaredButton variant="text" size="small" onClick={fetchApplicationsVersions}>
+                    <TextButton size="small" onClick={fetchApplicationsVersions}>
                         {t('refresh-versions', { ns: 'settings' })}
-                    </SquaredButton>
+                    </TextButton>
                 </Stack>
             </Stack>
             <Stack>

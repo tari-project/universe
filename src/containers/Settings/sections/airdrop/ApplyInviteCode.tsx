@@ -9,13 +9,14 @@ import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@app/components/elements/inputs/Input';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
+
 import { v4 as uuidv4 } from 'uuid';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { open } from '@tauri-apps/api/shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
 export const ApplyInviteCode = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -104,9 +105,9 @@ export const ApplyInviteCode = () => {
                     {loading ? (
                         <CircularProgress />
                     ) : (
-                        <SquaredButton variant="text" size="medium" onClick={() => handleAuth()} disabled={loading}>
+                        <TextButton size="medium" onClick={() => handleAuth()} disabled={loading}>
                             {t('applyInviteCode')}
-                        </SquaredButton>
+                        </TextButton>
                     )}
                 </SettingsGroupAction>
             </SettingsGroup>

@@ -34,8 +34,8 @@ const BASE_STYLES = css`
 
 export const BaseButton = styled.button<ButtonStyleProps>`
     border-color: ${({ theme, $color }) => theme.palette[$color || 'primary'].light};
-    background: ${({ theme }) => theme.palette.primary.main};
-    color: ${({ theme, $color }) => ($color ? theme.palette[$color].main : theme.palette.text.contrast)};
+    background: ${({ theme, $color }) => theme.palette[$color || 'primary'].main};
+    color: ${({ theme, $color }) => theme.palette[$color || 'primary'].contrast};
     font-size: ${({ theme, $size }) => ($size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize)};
     padding:  ${({ $size }) => ($size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`)};
 
@@ -43,31 +43,7 @@ export const BaseButton = styled.button<ButtonStyleProps>`
         background: ${({ theme, $color }) => theme.palette[$color || 'primary'].dark};
     }
     ${BASE_STYLES}
-
-    ${({ $variant, theme, $color, $size }) => {
-        switch ($variant) {
-            case 'text':
-                return css`
-                    background: ${theme.palette.background.paper};
-                    color: ${theme.palette[$color || 'primary'].main};
-                    height: unset;
-                    padding: ${$size === 'small'
-                        ? '4px 6px'
-                        : $size === 'large'
-                          ? `12px ${PADDING}`
-                          : `10px ${PADDING}`};
-                    &:hover {
-                        background: ${theme.palette.primary.wisp};
-                        color: ${theme.palette[$color || 'primary'].dark};
-                        border-radius: ${theme.shape.borderRadius.buttonSquared};
-                    }
-                `;
-
-            default:
-                return SQUARED_BASE_STYLES;
-        }
-    }}
-
+    ${SQUARED_BASE_STYLES}
 }`;
 
 export const ChildrenWrapper = styled.div`
@@ -104,3 +80,20 @@ export const IconWrapper = styled.div<{ $position?: IconPosition }>`
         max-height: 100%;
     }
 `;
+
+export const StyledTextButton = styled.button<ButtonStyleProps>`
+    ${BASE_STYLES}
+    ${({ theme, $color, $size }) => {
+        return css`
+            background: ${theme.palette.background.paper};
+            color: ${theme.palette[$color || 'primary'].main};
+            font-size: ${$size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize};
+            padding: ${$size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`};
+            &:hover {
+                background: ${theme.palette[$color || 'primary'].wisp};
+                color: ${theme.palette[$color || 'primary'].dark};
+                border-radius: ${theme.shape.borderRadius.buttonSquared};
+            }
+        `;
+    }}}
+}`;

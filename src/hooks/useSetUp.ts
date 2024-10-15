@@ -11,6 +11,7 @@ import { setAnimationState } from '@app/visuals.ts';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
 import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
+import { useThemeSetup } from '@app/hooks/useTheming.ts';
 
 export function useSetUp() {
     const setView = useUIStore((s) => s.setView);
@@ -25,7 +26,7 @@ export function useSetUp() {
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const { backendInMemoryConfig } = useAirdropStore();
     const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
-
+    const setupThemeBg = useThemeSetup();
     const { loadExternalDependencies } = useAppStateStore();
 
     useEffect(() => {
@@ -74,6 +75,8 @@ export function useSetUp() {
                         fetchApplicationsVersionsWithRetry();
                         setView('mining');
                         setAnimationState('showVisual');
+                        setupThemeBg();
+
                         setSeenPermissions(true);
                     }
                     break;
@@ -104,5 +107,6 @@ export function useSetUp() {
         setSeenPermissions,
         backendInMemoryConfig?.airdropApiUrl,
         handleRefreshAirdropTokens,
+        setupThemeBg,
     ]);
 }
