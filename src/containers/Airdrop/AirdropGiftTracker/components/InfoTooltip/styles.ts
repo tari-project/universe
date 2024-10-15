@@ -29,7 +29,7 @@ export const Menu = styled(m.div)`
     padding: 20px;
 
     border-radius: 10px;
-    background: #fff;
+    background-color: ${({ theme }) => theme.palette.background.accent};
     box-shadow: 0px 4px 45px 0px rgba(0, 0, 0, 0.08);
 
     width: 100%;

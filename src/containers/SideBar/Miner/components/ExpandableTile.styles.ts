@@ -20,7 +20,7 @@ export const ExpandableTileItem = styled(m.div)`
 `;
 export const ExpandedWrapper = styled(m.div)`
     display: flex;
-    background-color: ${({ theme }) => theme.palette.background.paper};
+    background-color: ${({ theme }) => theme.palette.background.accent};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     flex-direction: column;

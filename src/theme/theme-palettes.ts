@@ -55,7 +55,8 @@ export const lightPalette: ThemePalette = {
         },
         background: {
             default: grey[50],
-            paper: '#fff',
+            paper: '#f3f3f3',
+            accent: '#fff',
         },
         success: {
             main: success[200],
@@ -118,8 +119,9 @@ export const darkPalette: ThemePalette = {
             contrast: '#000000',
         },
         background: {
-            default: '#1D1D1D',
-            paper: '#2A2A2A',
+            default: '#222222',
+            paper: '#1B1B1B',
+            accent: '#2E2E2E',
         },
         success: {
             main: success[200],

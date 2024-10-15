@@ -56,7 +56,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 return css`
                     background: ${({ theme }) => theme.palette.background.default};
                     &:hover {
-                        background: ${({ theme }) => theme.colors.grey[100]};
+                        background: ${({ theme }) => theme.palette.background.accent};
                     }
                 `;
         }

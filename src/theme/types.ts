@@ -41,6 +41,7 @@ export interface Palette {
     background: {
         default: string;
         paper: string;
+        accent: string;
     };
     action: {
         hover: string;

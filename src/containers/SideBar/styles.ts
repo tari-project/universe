@@ -26,7 +26,7 @@ export const Scroll = styled(m.div)`
     overflow-y: auto;
     gap: 8px;
     height: 100%;
-    padding: 0px 10px 12px 10px;
+    padding: 0 10px 12px 10px;
 `;
 
 export const Top = styled(m.div)`

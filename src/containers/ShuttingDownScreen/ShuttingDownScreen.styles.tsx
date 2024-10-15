@@ -2,7 +2,7 @@ import styled from 'styled-components';
 
 export const ShuttingDownScreenContainer = styled.div`
     position: absolute;
-    background-color: #fff;
+    background-color: ${({ theme }) => theme.palette.background.accent};
     background-size: cover;
     z-index: 100;
     width: 100%;

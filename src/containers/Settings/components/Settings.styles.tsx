@@ -13,7 +13,7 @@ export const CardItem = styled(Stack)`
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
-    background-color: ${({ theme }) => theme.palette.background.paper};
+    background-color: ${({ theme }) => theme.palette.background.accent};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     color: ${({ theme }) => theme.palette.text.secondary};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);

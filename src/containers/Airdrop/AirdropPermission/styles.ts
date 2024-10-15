@@ -23,7 +23,7 @@ export const BoxWrapper = styled('div')`
     padding: 20px;
 
     border-radius: 10px;
-    background: #fff;
+    background-color: ${({ theme }) => theme.palette.background.accent};
     box-shadow:
         0 10px 25px -12.5px rgba(0, 0, 0, 0.07),
         0 12.5px 33.33px -16.66px rgba(0, 0, 0, 0.05),

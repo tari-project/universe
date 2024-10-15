@@ -10,7 +10,7 @@ export const Wrapper = styled(m.div)`
     padding: 15px 20px 20px 20px;
 
     border-radius: 10px;
-    background: #fff;
+    background-color: ${({ theme }) => theme.palette.background.accent};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
 
     position: relative;

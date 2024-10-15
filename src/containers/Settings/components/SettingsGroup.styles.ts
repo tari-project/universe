@@ -16,7 +16,7 @@ export const SettingsGroupWrapper = styled.div<{ $advanced?: boolean }>`
             &:before {
                 content: 'Advanced';
                 position: absolute;
-                background-color: ${({ theme }) => theme.palette.background.paper};
+                background-color: ${({ theme }) => theme.palette.background.accent};
                 top: -9px;
 
                 color: ${({ theme }) => theme.palette.primary.light};

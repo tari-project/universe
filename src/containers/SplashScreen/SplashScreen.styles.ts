@@ -11,7 +11,7 @@ export const SplashScreenWrapper = styled(m.div)`
 `;
 export const SplashScreenContainer = styled.div`
     position: absolute;
-    background-color: #fff;
+    background-color: ${({ theme }) => theme.palette.background.accent};
     background-size: cover;
     width: 100%;
     height: 100vh;

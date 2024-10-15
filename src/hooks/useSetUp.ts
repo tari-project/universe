@@ -59,9 +59,13 @@ export function useSetUp() {
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
         const airdropStorage = localStorage.getItem('airdrop-store');
+        const uiStorage = localStorage.getItem('ui');
         localStorage.clear();
         if (airdropStorage) {
             localStorage.setItem('airdrop-store', airdropStorage);
+        }
+        if (uiStorage) {
+            localStorage.setItem('ui', uiStorage);
         }
     }, []);
 

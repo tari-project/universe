@@ -5,11 +5,15 @@ import { setAnimationProperties } from '@app/visuals.ts';
 const animationLightBg = [
     { property: 'bgColor1', value: '#F6F6F6' },
     { property: 'bgColor2', value: '#EEEEEE' },
+    { property: 'neutralColor', value: '#FFFFFF' },
+    { property: 'mainColor', value: '#40d1f7' },
 ];
 
 const animationDarkBg = [
     { property: 'bgColor1', value: '#1B1B1B' },
     { property: 'bgColor2', value: '#2E2E2E' },
+    { property: 'neutralColor', value: '#b6b6b6' },
+    { property: 'mainColor', value: '#0d81a1' },
 ];
 
 export function useSwitchTheme() {
