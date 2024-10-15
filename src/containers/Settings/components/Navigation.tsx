@@ -29,7 +29,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
             { property: 'bgColor2', value: '#2E2E2E' },
         ];
 
-        setAnimationProperties(isDarkMode ? darkBg : lightBg);
+        setAnimationProperties(isDarkMode ? lightBg : darkBg);
     }
     return (
         <Container>
