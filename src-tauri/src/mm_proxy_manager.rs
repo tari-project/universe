@@ -140,6 +140,7 @@ impl MmProxyManager {
                 config.base_path,
                 config.config_path,
                 config.log_path,
+                crate::binaries::Binaries::MergeMiningProxy,
             )
             .await?;
 

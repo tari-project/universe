@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
@@ -14,23 +13,22 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 const P2pMarkup = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const isP2poolEnabled = useAppConfigStore((state) => state.p2pool_enabled);
     const setP2poolEnabled = useAppConfigStore((state) => state.setP2poolEnabled);
     const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
-    const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
-    const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
-    const isMiningInProgress = isCPUMining || isGPUMining;
-    const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed;
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
+    const isDisabled = !miningAllowed;
 
     const handleP2poolEnabled = useCallback(
         async (event: React.ChangeEvent<HTMLInputElement>) => {
             await setP2poolEnabled(event.target.checked);
+            setDialogToShow('restart');
         },
-        [setP2poolEnabled]
+        [setDialogToShow, setP2poolEnabled]
     );
 
     return (

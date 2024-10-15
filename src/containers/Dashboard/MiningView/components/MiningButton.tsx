@@ -11,9 +11,10 @@ import ButtonOrbitAnimation from '@app/containers/SideBar/Miner/components/Butto
 import { AnimatePresence } from 'framer-motion';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import LoadingSvg from '@app/components/svgs/LoadingSvg.tsx';
 
 enum MiningButtonStateText {
-    STARTED = 'pause-mining',
+    STARTED = 'stop-mining',
     START = 'start-mining',
 }
 
@@ -33,6 +34,7 @@ export default function MiningButton() {
     const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
     const anyMiningEnabled = isCpuMiningEnabled || isGPUMiningEnabled;
     const isMiningButtonDisabled = isAppSettingUp || isMiningLoading || !isMiningControlsEnabled || !anyMiningEnabled;
+    const isAppLoading = isAppSettingUp || isMiningLoading;
 
     const miningButtonStateText = useMemo(() => {
         return isMining && isMiningInitiated ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
@@ -47,16 +49,19 @@ export default function MiningButton() {
     }, [isMining, startMining, stopMining]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
+    const iconFinal = <IconWrapper>{isMiningLoading ? <StyledIcon /> : icon}</IconWrapper>;
+
     return (
         <ButtonWrapper>
             <StyledButton
                 variant="rounded"
                 $hasStarted={isMining}
                 onClick={handleClick}
-                icon={<IconWrapper>{isMiningLoading ? <StyledIcon /> : icon}</IconWrapper>}
+                icon={!isAppLoading ? iconFinal : null}
                 disabled={isMiningButtonDisabled}
+                $isLoading={isAppLoading}
             >
-                <span>{t(`mining-button-text.${miningButtonStateText}`)}</span>
+                {!isAppLoading ? <span>{t(`mining-button-text.${miningButtonStateText}`)}</span> : <LoadingSvg />}
             </StyledButton>
             <AnimatePresence>{isMining ? <ButtonOrbitAnimation /> : null}</AnimatePresence>
         </ButtonWrapper>

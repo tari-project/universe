@@ -5,6 +5,7 @@ use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
 use std::path::PathBuf;
+use std::str::FromStr;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError, TariAddressFeatures};
 use tari_crypto::keys::PublicKey;
@@ -24,6 +25,8 @@ use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
+use crate::APPLICATION_FOLDER_ID;
+
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
 
@@ -40,7 +43,13 @@ impl InternalWallet {
 
         let file = config_path.join(network).join("wallet_config.json");
 
-        create_dir_all(file.parent().unwrap())?;
+        let file_parent = file
+            .parent()
+            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
+
+        create_dir_all(file_parent).unwrap_or_else(|error| {
+            warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
+        });
         if file.exists() {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
@@ -57,7 +66,28 @@ impl InternalWallet {
             }
         }
         info!(target: LOG_TARGET, "Wallet config does not exist or is corrupt. Creating new wallet");
-        let (wallet, config) = InternalWallet::create_new_wallet().await?;
+        let (wallet, config) = InternalWallet::create_new_wallet(None).await?;
+        let config = serde_json::to_string(&config)?;
+        fs::write(file, config).await?;
+        Ok(wallet)
+    }
+
+    pub async fn create_from_seed(
+        config_path: PathBuf,
+        seed_words: Vec<String>,
+    ) -> Result<Self, anyhow::Error> {
+        let network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .to_lowercase();
+        let file = config_path.join(network).join("wallet_config.json");
+        let file_parent = file
+            .parent()
+            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
+        create_dir_all(file_parent).unwrap_or_else(|error| {
+            warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
+        });
+
+        let (wallet, config) = InternalWallet::create_new_wallet(Some(seed_words)).await?;
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
         Ok(wallet)
@@ -67,7 +97,9 @@ impl InternalWallet {
         self.tari_address.clone()
     }
 
-    async fn create_new_wallet() -> Result<(Self, WalletConfig), anyhow::Error> {
+    async fn create_new_wallet(
+        seed_words: Option<Vec<String>>,
+    ) -> Result<(Self, WalletConfig), anyhow::Error> {
         let mut config = WalletConfig {
             tari_address_base58: "".to_string(),
             view_key_private_hex: "".to_string(),
@@ -76,7 +108,7 @@ impl InternalWallet {
             passphrase: None,
         };
 
-        let passphrase = match Entry::new("com.tari.universe", "internal_wallet") {
+        let passphrase = match Entry::new(APPLICATION_FOLDER_ID, "internal_wallet") {
             Ok(entry) => match entry.get_password() {
                 Ok(pass) => SafePassword::from(pass),
                 Err(_err @ KeyringError::PlatformFailure(_))
@@ -88,7 +120,7 @@ impl InternalWallet {
                 }
                 Err(_) => {
                     let passphrase = SafePassword::from(generate_password(32));
-                    entry.delete_credential()?;
+                    let _unused = entry.delete_credential();
                     entry.set_password(&String::from_utf8(passphrase.reveal().clone())?)?;
                     passphrase
                 }
@@ -102,9 +134,17 @@ impl InternalWallet {
             }
             Err(e) => return Err(anyhow!(e.to_string())),
         };
-
-        let seed = CipherSeed::new();
-
+        let seed = match seed_words {
+            Some(sw) => {
+                let seed_words = SeedWords::from_str(&sw.join(" "))?;
+                CipherSeed::from_mnemonic_with_language(
+                    &seed_words,
+                    MnemonicLanguage::English,
+                    None,
+                )?
+            }
+            None => CipherSeed::new(),
+        };
         let seed_file = seed.encipher(Some(passphrase))?;
         config.seed_words_encrypted_base58 = seed_file.to_base58();
 
@@ -147,7 +187,7 @@ impl InternalWallet {
         let passphrase = match &self.config.passphrase {
             Some(passphrase) => passphrase.clone(),
             None => {
-                let entry = Entry::new("com.tari.universe", "internal_wallet")?;
+                let entry = Entry::new(APPLICATION_FOLDER_ID, "internal_wallet")?;
                 SafePassword::from(entry.get_password()?)
             }
         };
@@ -169,6 +209,15 @@ impl InternalWallet {
     pub fn get_network(&self) -> Result<Network, TariAddressError> {
         let address = TariAddress::from_base58(&self.config.tari_address_base58);
         address.map(|a| a.network())
+    }
+
+    pub async fn clear_wallet_local_data(cache_path: PathBuf) -> Result<(), anyhow::Error> {
+        let network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .to_lowercase();
+        let wallet_dir = cache_path.join("wallet").join(network);
+        fs::remove_dir_all(wallet_dir).await?;
+        Ok(())
     }
 }
 

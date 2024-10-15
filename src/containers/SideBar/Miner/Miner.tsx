@@ -13,14 +13,13 @@ import {
     ExpandedContentTile,
 } from '@app/containers/SideBar/Miner/components/ExpandableTile.styles.ts';
 import { useShallow } from 'zustand/react/shallow';
-import { LayoutGroup } from 'framer-motion';
+
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
-import useMiningMetricsUpdater from '@app/hooks/useMiningMetricsUpdater.ts';
-import useMining from '@app/hooks/mining/useMining.ts';
-import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachine.ts';
+import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
 
 export default function Miner() {
+    useMiningStatesSync();
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
@@ -40,10 +39,6 @@ export default function Miner() {
         }))
     );
 
-    useMiningMetricsUpdater();
-    useMining();
-    useUiMiningStateMachine();
-
     const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 
     const isWaitingForCPUHashRate = isCpuMiningEnabled && cpu_is_mining && cpu_hash_rate <= 0;
@@ -53,81 +48,78 @@ export default function Miner() {
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
 
+    const gpuChipValue = gpuHardwareStats
+        ? gpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
+          (gpuHardwareStats?.length || 1)
+        : 0;
+
     return (
-        <MinerContainer layout>
-            <TileContainer layout>
-                <LayoutGroup id="miner-stat-tiles">
-                    <Tile
-                        title="CPU Power"
-                        stats={isCpuMiningEnabled && cpu_is_mining ? formatNumber(cpu_hash_rate) : '-'}
-                        isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
-                        chipValue={cpuHardwareStats?.usage_percentage}
-                        unit="H/s"
-                        useLowerCase
-                    />
-                    <Tile
-                        title="GPU Power"
-                        stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
-                        isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
-                        chipValue={gpuHardwareStats?.usage_percentage}
-                        unit="H/s"
-                        useLowerCase
-                    />
-                    <ModeSelect />
-                    <ExpandableTile
-                        title="Est tXTM/day"
-                        stats={
-                            isMiningInProgress && Number.isFinite(totalEarnings) ? formatBalance(totalEarnings) : '-'
-                        }
-                        isLoading={earningsLoading}
-                        useLowerCase
-                    >
-                        <Typography variant="h5" style={{ color: '#000' }}>
-                            Estimated earnings
-                        </Typography>
-                        <Typography>You earn rewards for mining CPU and GPU separately</Typography>
-                        <ExpandedContentTile>
-                            <Typography>CPU Estimated earnings</Typography>
-                            <ExpandableTileItem>
-                                <Typography
-                                    variant="h5"
-                                    style={{
-                                        textTransform: 'lowercase',
-                                        fontWeight: 500,
-                                        lineHeight: '1.02',
-                                    }}
-                                >
-                                    {isMiningInProgress && isCpuMiningEnabled
-                                        ? formatBalance(cpu_estimated_earnings)
-                                        : '-'}
-                                </Typography>
-                                <Unit>
-                                    <Typography>tXTM/day</Typography>
-                                </Unit>
-                            </ExpandableTileItem>
-                        </ExpandedContentTile>
-                        <ExpandedContentTile>
-                            <Typography>GPU Estimated earnings</Typography>
-                            <ExpandableTileItem>
-                                <Typography
-                                    variant="h5"
-                                    style={{
-                                        textTransform: 'lowercase',
-                                        fontWeight: 500,
-                                        lineHeight: '1.02',
-                                    }}
-                                >
-                                    {isMiningInProgress && isGpuMiningEnabled
-                                        ? formatBalance(gpu_estimated_earnings)
-                                        : '-'}
-                                </Typography>
-                                <Unit>
-                                    <Typography>tXTM/day</Typography>
-                                </Unit>
-                            </ExpandableTileItem>
-                        </ExpandedContentTile>
-                    </ExpandableTile>
-                </LayoutGroup>
+        <MinerContainer>
+            <TileContainer>
+                <Tile
+                    title="CPU Power"
+                    stats={isCpuMiningEnabled && cpu_is_mining ? formatNumber(cpu_hash_rate) : '-'}
+                    isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
+                    chipValue={cpuHardwareStats?.usage_percentage}
+                    unit="H/s"
+                    useLowerCase
+                />
+                <Tile
+                    title="GPU Power"
+                    stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
+                    isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
+                    chipValue={gpuChipValue}
+                    unit="H/s"
+                    useLowerCase
+                />
+                <ModeSelect />
+                <ExpandableTile
+                    title="Est tXTM/day"
+                    stats={isMiningInProgress && Number.isFinite(totalEarnings) ? formatBalance(totalEarnings) : '-'}
+                    isLoading={earningsLoading}
+                    useLowerCase
+                >
+                    <Typography variant="h5" style={{ color: '#000' }}>
+                        Estimated earnings
+                    </Typography>
+                    <Typography>You earn rewards for mining CPU and GPU separately</Typography>
+                    <ExpandedContentTile>
+                        <Typography>CPU Estimated earnings</Typography>
+                        <ExpandableTileItem>
+                            <Typography
+                                variant="h5"
+                                style={{
+                                    textTransform: 'lowercase',
+                                    fontWeight: 500,
+                                    lineHeight: '1.02',
+                                }}
+                            >
+                                {isMiningInProgress && isCpuMiningEnabled ? formatBalance(cpu_estimated_earnings) : '-'}
+                            </Typography>
+                            <Unit>
+                                <Typography>tXTM/day</Typography>
+                            </Unit>
+                        </ExpandableTileItem>
+                    </ExpandedContentTile>
+                    <ExpandedContentTile>
+                        <Typography>GPU Estimated earnings</Typography>
+                        <ExpandableTileItem>
+                            <Typography
+                                variant="h5"
+                                style={{
+                                    textTransform: 'lowercase',
+                                    fontWeight: 500,
+                                    lineHeight: '1.02',
+                                }}
+                            >
+                                {isMiningInProgress && isGpuMiningEnabled ? formatBalance(gpu_estimated_earnings) : '-'}
+                            </Typography>
+                            <Unit>
+                                <Typography>tXTM/day</Typography>
+                            </Unit>
+                        </ExpandableTileItem>
+                    </ExpandedContentTile>
+                </ExpandableTile>
             </TileContainer>
         </MinerContainer>
     );

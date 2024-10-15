@@ -9,25 +9,32 @@ export const AccentWrapper = styled(m.div)`
     align-items: center;
     justify-content: center;
     display: flex;
+
+    top: 0;
+    right: -40px;
 `;
 
 export const AccentText = styled(m.div)`
     display: flex;
-    font-family: Druk, sans-serif;
+    font-family: DrukWide, sans-serif;
     white-space: pre;
     line-height: 1;
     opacity: 0.55;
     position: relative;
-    color: ${({ theme }) => theme.palette.base};
+    color: rgba(255, 255, 255, 0.4);
     user-select: none;
     height: min-content;
 `;
 
-export const SpacedNum = styled(m.span)`
+export const SpacedNum = styled(m.span)<{ $isDec?: boolean }>`
     font-variant-numeric: tabular-nums;
     display: flex;
     position: relative;
     align-items: flex-end;
     justify-content: center;
-    width: 1ch;
+
+    opacity: 0.6;
+    mix-blend-mode: multiply;
+
+    width: ${({ $isDec }) => ($isDec ? 'min-content' : '1ch')};
 `;

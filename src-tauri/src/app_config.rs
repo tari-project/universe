@@ -43,6 +43,10 @@ pub struct AppConfigFromFile {
     should_auto_launch: bool,
     #[serde(default = "default_application_language")]
     application_language: String,
+    #[serde(default = "default_true")]
+    airdrop_ui_enabled: bool,
+    #[serde(default = "default_true")]
+    use_tor: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -63,6 +67,8 @@ impl Default for AppConfigFromFile {
             should_always_use_system_language: false,
             should_auto_launch: false,
             application_language: default_application_language(),
+            airdrop_ui_enabled: true,
+            use_tor: true,
         }
     }
 }
@@ -109,6 +115,8 @@ pub(crate) struct AppConfig {
     should_always_use_system_language: bool,
     should_auto_launch: bool,
     application_language: String,
+    airdrop_ui_enabled: bool,
+    use_tor: bool,
 }
 
 impl AppConfig {
@@ -130,6 +138,8 @@ impl AppConfig {
             should_always_use_system_language: false,
             should_auto_launch: false,
             application_language: default_application_language(),
+            airdrop_ui_enabled: true,
+            use_tor: true,
         }
     }
 
@@ -167,6 +177,8 @@ impl AppConfig {
                 self.should_always_use_system_language = config.should_always_use_system_language;
                 self.should_auto_launch = config.should_auto_launch;
                 self.application_language = config.application_language;
+                self.airdrop_ui_enabled = config.airdrop_ui_enabled;
+                self.use_tor = config.use_tor;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -178,6 +190,10 @@ impl AppConfig {
             // Change the default value of p2pool_enabled to false in version 7
             self.config_version = 7;
             self.p2pool_enabled = true;
+        }
+        if self.config_version <= 7 {
+            self.config_version = 8;
+            self.airdrop_ui_enabled = true;
         }
     }
 
@@ -233,6 +249,12 @@ impl AppConfig {
     pub fn auto_mining(&self) -> bool {
         self.auto_mining
     }
+
+    // pub async fn set_airdrop_ui_enabled(&mut self, airdrop_ui_enabled: bool) -> Result<(), anyhow::Error> {
+    //     self.airdrop_ui_enabled = airdrop_ui_enabled;
+    //     self.update_config_file().await?;
+    //     Ok(())
+    // }
 
     pub fn should_auto_launch(&self) -> bool {
         self.should_auto_launch
@@ -326,12 +348,24 @@ impl AppConfig {
         }
     }
 
+    pub fn use_tor(&self) -> bool {
+        self.use_tor
+    }
+
+    pub async fn set_use_tor(&mut self, use_tor: bool) -> Result<(), anyhow::Error> {
+        self.use_tor = use_tor;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
-        let file = self.config_file.clone().unwrap();
-        let default_config = AppConfigFromFile::default();
+        let file = self
+            .config_file
+            .clone()
+            .ok_or_else(|| anyhow!("Config file not set"))?;
 
         let config = &AppConfigFromFile {
             version: self.config_version,
@@ -349,7 +383,8 @@ impl AppConfig {
             should_always_use_system_language: self.should_always_use_system_language,
             should_auto_launch: self.should_auto_launch,
             application_language: self.application_language.clone(),
-            ..default_config
+            airdrop_ui_enabled: self.airdrop_ui_enabled,
+            use_tor: self.use_tor,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
