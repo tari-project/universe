@@ -58,7 +58,7 @@ export default function PaperWallet() {
                         </ButtonBase>
                     )}
                 </SettingsGroup>
-                {password ? <Typography variant="h6">Passphrase: {password}</Typography> : null}
+                {password && showCode ? <Typography variant="h6">Passphrase: {password}</Typography> : null}
                 <SettingsGroup>
                     {qrCodeValue?.length && showCode ? (
                         <StyledWrapper>
