@@ -1,4 +1,4 @@
-import { Container, SectionButton } from './Navigation.styles.ts';
+import { ButtonContainer, Container, SectionButton } from './Navigation.styles.ts';
 
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 
@@ -12,20 +12,24 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
     }
     return (
         <Container>
-            {SETTINGS_TYPES.map((type) => {
-                const isActive = activeSection === type;
-                return (
-                    <SectionButton
-                        key={type}
-                        size="large"
-                        color="secondary"
-                        variant={isActive ? 'secondary' : 'primary'}
-                        onClick={() => handleClick(type)}
-                    >
-                        {type}
-                    </SectionButton>
-                );
-            })}
+            <ButtonContainer>
+                {SETTINGS_TYPES.map((type) => {
+                    const isActive = activeSection === type;
+
+                    return (
+                        <SectionButton
+                            key={type}
+                            size="large"
+                            color="secondary"
+                            variant={isActive ? 'secondary' : 'primary'}
+                            onClick={() => handleClick(type)}
+                        >
+                            {type}
+                        </SectionButton>
+                    );
+                })}
+            </ButtonContainer>
+            <div>mc toggle</div>
         </Container>
     );
 }

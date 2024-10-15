@@ -6,14 +6,22 @@ export const Container = styled.div`
     display: flex;
     background: ${({ theme }) => theme.palette.background.default};
     flex-direction: column;
-    align-items: center;
+    justify-content: space-between;
     height: 100%;
     width: 250px;
-    gap: 10px;
 
     @media (max-width: 1110px) {
         width: 220px;
     }
+`;
+
+export const ButtonContainer = styled.div`
+    display: flex;
+    background: ${({ theme }) => theme.palette.background.default};
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 10px;
 `;
 
 export const SectionButton = styled(ButtonBase)`
