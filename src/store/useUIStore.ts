@@ -1,11 +1,14 @@
 import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
+import { Theme } from '@app/theme/themes.ts';
+import { persist } from 'zustand/middleware';
 
 export const DIALOG_TYPES = ['logs', 'restart'] as const;
 type DialogTypeTuple = typeof DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number];
 
 interface State {
+    theme: Theme;
     showSplash: boolean;
     background: backgroundType;
     view: viewType;
@@ -16,6 +19,7 @@ interface State {
     dialogToShow?: DialogType | null;
 }
 interface Actions {
+    setTheme: (theme: Theme) => void;
     setShowSplash: (showSplash: boolean) => void;
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
@@ -29,6 +33,7 @@ interface Actions {
 type UIStoreState = State & Actions;
 
 const initialState: State = {
+    theme: 'light',
     showSplash: true,
     background: 'onboarding',
     view: 'setup',
@@ -39,14 +44,24 @@ const initialState: State = {
     showExternalDependenciesDialog: false,
 };
 
-export const useUIStore = create<UIStoreState>()((set) => ({
-    ...initialState,
-    setShowSplash: (showSplash) => set({ showSplash }),
-    setBackground: (background) => set({ background }),
-    setView: (view) => set({ view }),
-    toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
-    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    setShowExperimental: (showExperimental) => set({ showExperimental }),
-    setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
-    setDialogToShow: (dialogToShow) => set({ dialogToShow }),
-}));
+export const useUIStore = create<UIStoreState>()(
+    persist(
+        (set) => ({
+            ...initialState,
+            setTheme: (theme) => set({ theme }),
+            setShowSplash: (showSplash) => set({ showSplash }),
+            setBackground: (background) => set({ background }),
+            setView: (view) => set({ view }),
+            toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
+            setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+            setShowExperimental: (showExperimental) => set({ showExperimental }),
+            setShowExternalDependenciesDialog: (showExternalDependenciesDialog) =>
+                set({ showExternalDependenciesDialog }),
+            setDialogToShow: (dialogToShow) => set({ dialogToShow }),
+        }),
+        {
+            name: 'ui',
+            partialize: (s) => ({ theme: s.theme }),
+        }
+    )
+);

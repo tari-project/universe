@@ -1,12 +1,17 @@
-import { ButtonContainer, Container, SectionButton } from './Navigation.styles.ts';
+import { ButtonContainer, Container, DarkModeContainer, SectionButton } from './Navigation.styles.ts';
 
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
 }
 export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
+    const theme = useUIStore((s) => s.theme);
+    const setTheme = useUIStore((s) => s.setTheme);
+    const isDarkMode = theme === 'dark';
     function handleClick(section: SettingsType) {
         onChangeActiveSection(section);
     }
@@ -29,7 +34,14 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                     );
                 })}
             </ButtonContainer>
-            <div>mc toggle</div>
+            <DarkModeContainer>
+                <ToggleSwitch
+                    checked={isDarkMode}
+                    onChange={() => setTheme(isDarkMode ? 'light' : 'dark')}
+                    label="Dark mode"
+                    variant="gradient"
+                />
+            </DarkModeContainer>
         </Container>
     );
 }

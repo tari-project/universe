@@ -28,3 +28,7 @@ export const SectionButton = styled(ButtonBase)`
     display: flex;
     text-transform: capitalize;
 `;
+
+export const DarkModeContainer = styled.div`
+    display: flex;
+`;
