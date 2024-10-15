@@ -98,24 +98,30 @@ impl InternalWallet {
     }
 
     pub async fn get_paper_wallet_details(&self) -> Result<PaperWalletConfig, anyhow::Error> {
-        let mut paper_wallet_details = PaperWalletConfig {
-            qr_link: "".to_string(),
-            password: Option::from(SafePassword::from("".to_string())),
-        };
-
-        let _network = Network::get_current_or_user_setting_or_default()
+        let network = Network::get_current_or_user_setting_or_default()
             .to_string()
             .trim()
             .to_lowercase();
 
         let link = format!(
             "tari://{}/paper_wallet?private_key={}",
-            _network,
-            self.config.view_key_private_hex.clone()
+            network,
+            &self.config.view_key_private_hex,
         );
 
-        paper_wallet_details.qr_link = link;
-        paper_wallet_details.password = self.config.passphrase.clone();
+        // Maybe this should be zeroized
+        let passphrase = match &self.config.passphrase {
+            Some(passphrase) => String::from_utf8(passphrase.reveal().clone())?,
+            None => {
+                let entry = Entry::new(APPLICATION_FOLDER_ID, "internal_wallet")?;
+                entry.get_password()?
+            }
+        };
+
+        let paper_wallet_details = PaperWalletConfig {
+            qr_link: link,
+            password: passphrase,
+        };
 
         Ok(paper_wallet_details)
     }
@@ -272,5 +278,5 @@ pub struct WalletConfig {
 #[derive(Debug, Serialize, Clone)]
 pub struct PaperWalletConfig {
     qr_link: String,
-    password: Option<SafePassword>,
+    password: String,
 }
