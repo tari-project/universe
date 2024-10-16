@@ -15,6 +15,7 @@ import {
 import { AnimatePresence } from 'framer-motion';
 import PillCloseIcon from '../../icons/PillCloseIcon';
 import { seedWordsTEMP } from '../SeedPhrase/SeedPhrase';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     setSection: (section: StagedSecuritySectionType) => void;
@@ -22,6 +23,8 @@ interface Props {
 }
 
 export default function VerifySeedPhrase({ setSection, setOpen }: Props) {
+    const { t } = useTranslation(['staged-security'], { useSuspense: false });
+
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<string[]>([]);
 
@@ -63,8 +66,8 @@ export default function VerifySeedPhrase({ setSection, setOpen }: Props) {
     return (
         <Wrapper>
             <TextWrapper>
-                <Title>Verify your seed phrase</Title>
-                <Text>Select the words in the correct order.</Text>
+                <Title>{t('verifySeed.title')}</Title>
+                <Text>{t('verifySeed.text')}</Text>
             </TextWrapper>
 
             <PhraseWrapper>
@@ -76,7 +79,7 @@ export default function VerifySeedPhrase({ setSection, setOpen }: Props) {
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0 }}
                             >
-                                Click the words below in the correct order
+                                {t('verifySeed.placeholder')}
                             </Placeholder>
                         )}
                     </AnimatePresence>
@@ -110,7 +113,7 @@ export default function VerifySeedPhrase({ setSection, setOpen }: Props) {
 
             <ButtonWrapper>
                 <BlackButton onClick={handleSubmit} disabled={!completed}>
-                    <span>Complete Verification</span>
+                    <span>{t('verifySeed.button')}</span>
                 </BlackButton>
             </ButtonWrapper>
         </Wrapper>

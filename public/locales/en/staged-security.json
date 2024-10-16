@@ -1,0 +1,23 @@
+{
+    "intro": {
+        "warning": "❗ Highly recommended",
+        "title": "Protect your tokens by backing up your seed phrase",
+        "text": "Tari Universe automatically sets up a wallet for you when you start mining. Make sure you always have access to your wallet by storing your seed phrase in a safe spot.",
+        "balance": "Your wallet has <span>{{balance}}</span> XTM",
+        "button": "Back up seed phrase"
+    },
+    "seedPhrase": {
+        "title": "Write down your seed phrase and store it somewhere safe",
+        "text": "You will need this code again to restore your wallet.",
+        "copy": "Copy to clipboard",
+        "copied": "Copied!",
+        "checkbox": "I understand that if I lose my recovery seed phrase I will not be able to restore my wallet.",
+        "button": "VERIFY SEED PHRASE"
+    },
+    "verifySeed": {
+        "title": "Verify your seed phrase",
+        "text": "To make sure you wrote down your seed phrase correctly, please select the words in the correct order.",
+        "placeholder": "Click the words below in the correct order",
+        "button": "CONFIRM SEED PHRASE"
+    }
+}

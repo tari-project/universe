@@ -3,12 +3,15 @@ import { StagedSecuritySectionType } from '../../StagedSecurityModal';
 import { BlackButton, Text, Title } from '../../styles';
 import { WalletText, Warning, Wrapper } from './styles';
 import formatBalance from '@app/utils/formatBalance';
+import { Trans, useTranslation } from 'react-i18next';
 
 interface Props {
     setSection: (section: StagedSecuritySectionType) => void;
 }
 
 export default function ProtectIntro({ setSection }: Props) {
+    const { t } = useTranslation(['staged-security'], { useSuspense: false });
+
     const balance = useWalletStore((state) => state.balance);
     const formatted = formatBalance(balance || 0);
 
@@ -18,21 +21,24 @@ export default function ProtectIntro({ setSection }: Props) {
 
     return (
         <Wrapper>
-            <Warning>❗ Highly recommended</Warning>
+            <Warning>{t('intro.warning')}</Warning>
 
-            <Title>Protect your tokens by backing up your seed phrase</Title>
+            <Title>{t('intro.title')}</Title>
 
-            <Text>
-                Tari Universe automatically sets up a wallet for you when you start mining. Make sure you always have
-                access to your wallet by storing your seed phrase in a safe spot.
-            </Text>
+            <Text>{t('intro.text')}</Text>
 
             <WalletText>
-                Your wallet has <span>{formatted}</span> XTM
+                <Trans
+                    i18nKey="staged-security:intro.balance"
+                    components={{
+                        span: <span />,
+                    }}
+                    values={{ balance: formatted }}
+                />
             </WalletText>
 
             <BlackButton onClick={handleButtonClick}>
-                <span>Back up seed phrase</span>
+                <span>{t('intro.button')}</span>
             </BlackButton>
         </Wrapper>
     );

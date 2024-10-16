@@ -14,10 +14,19 @@ export const Wrapper = styled('div')`
     align-items: center;
 
     pointer-events: all;
+
+    overflow: hidden;
+    overflow-y: auto;
+
+    padding: 140px 40px;
+
+    @media (max-height: 955px) {
+        align-items: flex-start;
+    }
 `;
 
 export const Cover = styled(m.div)`
-    position: absolute;
+    position: fixed;
     width: 100%;
     height: 100%;
     top: 0;

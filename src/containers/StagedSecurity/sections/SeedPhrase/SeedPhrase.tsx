@@ -19,6 +19,7 @@ import {
 import CopyIcon from '../../icons/CopyIcon';
 import CheckIcon from '../../icons/CheckIcon';
 import { AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 
 export const seedWordsTEMP: string[] = [
     'Mother',
@@ -52,6 +53,8 @@ interface Props {
 }
 
 export default function SeedPhrase({ setSection }: Props) {
+    const { t } = useTranslation(['staged-security'], { useSuspense: false });
+
     const [copied, setCopied] = useState(false);
     const [checked, setChecked] = useState(false);
 
@@ -77,8 +80,8 @@ export default function SeedPhrase({ setSection }: Props) {
     return (
         <Wrapper>
             <TextWrapper>
-                <Title>Write down your seed phrase and store it somewhere safe</Title>
-                <Text>You will need this code again to restore your wallet.</Text>
+                <Title>{t('seedPhrase.title')}</Title>
+                <Text>{t('seedPhrase.text')}</Text>
             </TextWrapper>
 
             <PhraseWrapper>
@@ -100,10 +103,10 @@ export default function SeedPhrase({ setSection }: Props) {
 
                 <CopyButton onClick={copyToClipboard}>
                     {copied ? (
-                        'Copied!'
+                        t('seedPhrase.copied')
                     ) : (
                         <>
-                            Copy to clipboard <CopyIcon />
+                            {t('seedPhrase.copy')} <CopyIcon />
                         </>
                     )}
                 </CopyButton>
@@ -124,13 +127,11 @@ export default function SeedPhrase({ setSection }: Props) {
                             )}
                         </AnimatePresence>
                     </Checkbox>
-                    <CheckboxText>
-                        I understand that if I lose my recovery seed phrase I will not be able to restore my wallet.
-                    </CheckboxText>
+                    <CheckboxText>{t('seedPhrase.checkbox')}</CheckboxText>
                 </CheckboxWrapper>
 
                 <BlackButton onClick={() => setSection('VerifySeedPhrase')} disabled={!checked}>
-                    <span>VERIFY SEED PHRASE</span>
+                    <span>{t('seedPhrase.button')}</span>
                 </BlackButton>
             </ButtonWrapper>
         </Wrapper>
