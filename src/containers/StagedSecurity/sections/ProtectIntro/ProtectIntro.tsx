@@ -1,12 +1,17 @@
+import { useWalletStore } from '@app/store/useWalletStore';
 import { StagedSecuritySectionType } from '../../StagedSecurityModal';
 import { BlackButton, Text, Title } from '../../styles';
 import { WalletText, Warning, Wrapper } from './styles';
+import formatBalance from '@app/utils/formatBalance';
 
 interface Props {
     setSection: (section: StagedSecuritySectionType) => void;
 }
 
 export default function ProtectIntro({ setSection }: Props) {
+    const balance = useWalletStore((state) => state.balance);
+    const formatted = formatBalance(balance || 0);
+
     const handleButtonClick = () => {
         setSection('SeedPhrase');
     };
@@ -22,7 +27,9 @@ export default function ProtectIntro({ setSection }: Props) {
                 access to your wallet by storing your seed phrase in a safe spot.
             </Text>
 
-            <WalletText>Your wallet has 450.2 XTM</WalletText>
+            <WalletText>
+                Your wallet has <span>{formatted}</span> XTM
+            </WalletText>
 
             <BlackButton onClick={handleButtonClick}>
                 <span>Back up seed phrase</span>

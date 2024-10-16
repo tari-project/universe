@@ -39,7 +39,7 @@ export default function StagedSecurityModal({ open, setOpen }: Props) {
 
                     {section == 'ProtectIntro' && <ProtectIntro setSection={setSection} />}
                     {section == 'SeedPhrase' && <SeedPhrase setSection={setSection} />}
-                    {section == 'VerifySeedPhrase' && <VerifySeedPhrase setSection={setSection} />}
+                    {section == 'VerifySeedPhrase' && <VerifySeedPhrase setSection={setSection} setOpen={setOpen} />}
                 </GreenModal>
             )}
         </AnimatePresence>

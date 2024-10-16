@@ -20,7 +20,7 @@ import CopyIcon from '../../icons/CopyIcon';
 import CheckIcon from '../../icons/CheckIcon';
 import { AnimatePresence } from 'framer-motion';
 
-const words: string[] = [
+export const seedWordsTEMP: string[] = [
     'Mother',
     'Dog',
     'Shaker',
@@ -54,6 +54,8 @@ interface Props {
 export default function SeedPhrase({ setSection }: Props) {
     const [copied, setCopied] = useState(false);
     const [checked, setChecked] = useState(false);
+
+    const words = seedWordsTEMP;
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(words.join(' ')).then(() => {

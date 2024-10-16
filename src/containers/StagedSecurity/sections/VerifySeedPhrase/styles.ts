@@ -68,7 +68,7 @@ export const WordButton = styled('button')`
 export const WordsSelected = styled(m.div)`
     width: 100%;
     max-width: 566px;
-    min-height: 225px;
+    min-height: 270px;
 
     border-radius: 15px;
     background: rgba(0, 0, 0, 0.15);
@@ -80,6 +80,7 @@ export const WordsSelected = styled(m.div)`
     gap: 10px;
 
     padding: 15px;
+    position: relative;
 `;
 
 export const WordPill = styled(m.div)`
@@ -100,7 +101,6 @@ export const WordPill = styled(m.div)`
 
     cursor: pointer;
     transition: background 0.2s ease;
-    user-select: none;
 
     &:hover {
         background: rgba(0, 0, 0, 0.2);
@@ -110,4 +110,23 @@ export const WordPill = styled(m.div)`
 export const ButtonWrapper = styled('div')`
     width: 100%;
     max-width: 566px;
+`;
+
+export const Placeholder = styled(m.div)`
+    color: #000;
+    text-align: center;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 100%;
+
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
 `;

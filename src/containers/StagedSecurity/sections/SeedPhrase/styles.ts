@@ -145,5 +145,5 @@ export const CheckboxText = styled('div')`
     color: rgba(0, 0, 0, 0.75);
     font-size: 14px;
     font-weight: 400;
-    line-height: 122%;
+    line-height: 100%;
 `;
