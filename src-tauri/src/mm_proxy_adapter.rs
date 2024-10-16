@@ -107,6 +107,22 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "merge_mining_proxy.use_dynamic_fail_data=false".to_string(),
         ];
 
+        let nodes = [
+            "https://xmr-01.tari.com",
+            "http://node1.xmr-tw.org:18081",
+            // x"https://monero.homeqloud.com:443",
+            // x"http://monero1.com:18089",
+            "http://node.c3pool.org:18081",
+            "http://xmr-full.p2pool.uk:18089",
+            // x"https://monero.stackwallet.com:18081",
+            "http://xmr.support:18081",
+            //x "http://xmr.nthrow.nyc:18081",
+        ];
+        for node in nodes {
+            args.push("-p".to_string());
+            args.push(format!("merge_mining_proxy.monerod_url={}", node));
+        }
+
         // TODO: uncomment if p2pool is needed in CPU mining
         if config.p2pool_enabled {
             args.push("-p".to_string());
