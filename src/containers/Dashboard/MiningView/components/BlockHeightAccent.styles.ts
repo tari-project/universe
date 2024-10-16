@@ -5,11 +5,10 @@ export const AccentWrapper = styled(m.div)`
     overflow: hidden;
     pointer-events: none;
     height: 100%;
-    position: absolute;
+    position: fixed;
     align-items: center;
     justify-content: center;
     display: flex;
-
     top: 0;
     right: -40px;
 `;
