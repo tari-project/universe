@@ -38,7 +38,7 @@ jobs:
                     # - platform: 'ubuntu-20.04'
                     #   args: ''
                     - platform: 'windows-2019'
-                      args: '--bundles msi,updater'
+                      args: '--bundles msi'
                     # - platform: 'macos-latest'
                     #   args: '--target universal-apple-darwin'
 
