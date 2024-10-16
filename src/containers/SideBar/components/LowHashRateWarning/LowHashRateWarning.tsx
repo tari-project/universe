@@ -13,7 +13,7 @@ export const LowHashRateWarning = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const { hash_rate, is_mining } = useMiningStore((s) => s.cpu.mining);
 
-    const showHashRateWarning = is_mining && hash_rate > 0 && hash_rate < 250;
+    const showHashRateWarning = is_mining && hash_rate > 0 && hash_rate < 100;
 
     return showHashRateWarning ? (
         <Stack direction="row" justifyContent="space-between" alignItems="center">
