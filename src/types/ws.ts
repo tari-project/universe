@@ -9,6 +9,11 @@ export interface QuestCompletedEvent {
         userId: string;
         questPointType?: unknown;
         quetPoints?: number;
-        totalUserPoints?: number;
+        userPoints?: {
+            gems: number;
+            shells: number;
+            hammers: number;
+        };
     };
 }
+
