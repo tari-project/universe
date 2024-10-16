@@ -19,6 +19,7 @@ export interface AppConfig {
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
     airdrop_ui_enabled: boolean;
+    paper_wallet_enabled: boolean;
     use_tor: boolean;
 }
 
@@ -200,4 +201,9 @@ export interface ApplicationsVersions {
     mm_proxy: string;
     wallet: string;
     sha_p2pool: string;
+}
+
+export interface PaperWalletDetails {
+    qr_link: string;
+    password: string;
 }

@@ -37,7 +37,7 @@ use wallet_manager::WalletManagerError;
 use crate::cpu_miner::CpuMiner;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
-use crate::internal_wallet::InternalWallet;
+use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
@@ -1348,6 +1348,26 @@ async fn get_tari_wallet_details(
 }
 
 #[tauri::command]
+async fn get_paper_wallet_details(app: tauri::AppHandle) -> Result<PaperWalletConfig, String> {
+    let timer = Instant::now();
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let internal_wallet = InternalWallet::load_or_create(config_path)
+        .await
+        .map_err(|e| e.to_string())?;
+    let result = internal_wallet
+        .get_paper_wallet_details()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
+    }
+    Ok(result)
+}
+#[tauri::command]
 async fn get_app_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -1891,6 +1911,7 @@ fn main() {
             get_app_config,
             get_p2pool_stats,
             get_tari_wallet_details,
+            get_paper_wallet_details,
             exit_application,
             set_excluded_gpu_devices,
             set_should_always_use_system_language,
