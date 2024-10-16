@@ -23,3 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 src-tauri/gpu_status.json
+
+# tari-win-bundler
+tari-win-bundler/.vs
+tari-win-bundler/logs
