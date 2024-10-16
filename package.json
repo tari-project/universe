@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.5.22",
+    "version": "0.5.25",
     "type": "module",
     "scripts": {
         "dev": "vite dev --mode development",
@@ -52,6 +52,7 @@
         "eslint-plugin-react-hooks": "^5.0.0",
         "prettier": "3.3.3",
         "prettier-eslint": "^16.3.0",
+        "react-qr-code": "^2.0.15",
         "typescript": "^5.6.3",
         "typescript-eslint": "^8.8.1",
         "vite": "^5.4.9"
