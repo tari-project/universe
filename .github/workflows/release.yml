@@ -230,7 +230,7 @@ jobs:
                   args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
             - name: Debug step {artifactPaths}
-              if: ${{ false }}
+              if: ${{ true }}
               continue-on-error: true
               env:
                   artifactPaths: ${{ steps.build.outputs.artifactPaths }}
