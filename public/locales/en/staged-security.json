@@ -19,5 +19,13 @@
         "text": "To make sure you wrote down your seed phrase correctly, please select the words in the correct order.",
         "placeholder": "Click the words below in the correct order",
         "button": "CONFIRM SEED PHRASE"
+    },
+    "reminderTip": {
+        "title": "Quickly back up your seed phrase in settings",
+        "text": "It is highly recommended to back up your seed phrase for your unique wallet"
+    },
+    "completedTip": {
+        "title": "Seed phrase",
+        "text": "Your seed phrase can be found again in your settings"
     }
 }

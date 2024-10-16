@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { StagedSecuritySectionType } from '../../StagedSecurityModal';
+import { StagedSecuritySectionType } from '../../StagedSecurity';
 import { BlackButton, Text, Title } from '../../styles';
 import {
     ButtonWrapper,
@@ -14,23 +14,24 @@ import {
 } from './styles';
 import { AnimatePresence } from 'framer-motion';
 import PillCloseIcon from '../../icons/PillCloseIcon';
-import { seedWordsTEMP } from '../SeedPhrase/SeedPhrase';
 import { useTranslation } from 'react-i18next';
+import { useStagedSecurityStore } from '@app/store/useStagedSecurityStore';
 
 interface Props {
     setSection: (section: StagedSecuritySectionType) => void;
-    setOpen: (open: boolean) => void;
+    words: string[];
 }
 
-export default function VerifySeedPhrase({ setSection, setOpen }: Props) {
+export default function VerifySeedPhrase({ setSection, words }: Props) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
+
+    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
+    const setShowCompletedTip = useStagedSecurityStore((s) => s.setShowCompletedTip);
 
     const [completed, setCompleted] = useState(false);
     const [selectedWords, setSelectedWords] = useState<string[]>([]);
 
-    const words = seedWordsTEMP;
-
-    const shuffledWords = useMemo(() => [...words].sort(() => Math.random() - 0.5), []);
+    const shuffledWords = useMemo(() => [...words].sort(() => Math.random() - 0.5), [words]);
 
     const checkCompletion = (selectedWords: string[]) => {
         if (selectedWords.length === words.length) {
@@ -59,8 +60,9 @@ export default function VerifySeedPhrase({ setSection, setOpen }: Props) {
     };
 
     const handleSubmit = () => {
-        setOpen(false);
+        setShowModal(false);
         setSection('ProtectIntro');
+        setShowCompletedTip(true);
     };
 
     return (
@@ -87,7 +89,7 @@ export default function VerifySeedPhrase({ setSection, setOpen }: Props) {
                     <AnimatePresence mode="popLayout">
                         {selectedWords.map((word) => (
                             <WordPill
-                                key={word}
+                                key={'VerifySeedPhrase' + word}
                                 layout
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}

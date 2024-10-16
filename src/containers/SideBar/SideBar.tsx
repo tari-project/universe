@@ -7,36 +7,35 @@ import MiningButton from '@app/containers/Dashboard/MiningView/components/Mining
 import AirdropGiftTracker from '@app/containers/Airdrop/AirdropGiftTracker/AirdropGiftTracker';
 import LostConnectionAlert from './components/LostConnectionAlert';
 import { LowHashRateWarning } from './components/LowHashRateWarning/LowHashRateWarning.tsx';
-import StagedSecurityModal from '../StagedSecurity/StagedSecurityModal.tsx';
-import { useState } from 'react';
+
+import { useStagedSecurityStore } from '@app/store/useStagedSecurityStore.ts';
+import StagedSecurity from '../StagedSecurity/StagedSecurity.tsx';
 
 function SideBar() {
-    const [open, setOpen] = useState(false);
+    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
 
     return (
-        <SideBarContainer>
-            <SidebarTop
-                onClick={() => {
-                    setOpen(true);
-                }}
-            >
-                <Heading />
-                <MiningButton />
-                <LostConnectionAlert />
-                <LowHashRateWarning />
-            </SidebarTop>
-            <Scroll>
-                <Top>
-                    <Miner />
-                </Top>
-                <Bottom>
-                    <AirdropGiftTracker />
-                    <Wallet />
-                </Bottom>
-            </Scroll>
+        <>
+            <SideBarContainer>
+                <SidebarTop>
+                    <Heading />
+                    <MiningButton />
+                    <LostConnectionAlert />
+                    <LowHashRateWarning />
+                </SidebarTop>
+                <Scroll>
+                    <Top onClick={() => setShowModal(true)}>
+                        <Miner />
+                    </Top>
+                    <Bottom>
+                        <AirdropGiftTracker />
+                        <Wallet />
+                    </Bottom>
+                </Scroll>
+            </SideBarContainer>
 
-            <StagedSecurityModal open={open} setOpen={setOpen} />
-        </SideBarContainer>
+            <StagedSecurity />
+        </>
     );
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StagedSecuritySectionType } from '../../StagedSecurityModal';
+import { StagedSecuritySectionType } from '../../StagedSecurity';
 import { BlackButton, Text, Title } from '../../styles';
 import {
     ButtonWrapper,
@@ -20,45 +20,16 @@ import CopyIcon from '../../icons/CopyIcon';
 import CheckIcon from '../../icons/CheckIcon';
 import { AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-
-export const seedWordsTEMP: string[] = [
-    'Mother',
-    'Dog',
-    'Shaker',
-    'Drag',
-    'Shoe',
-    'Snow',
-    'Bee',
-    'Thirst',
-    'Draw',
-    'Snake',
-    'Pickle',
-    'Smear',
-    'Crane',
-    'Trunk',
-    'Salt',
-    'Drain',
-    'Clap',
-    'Smack',
-    'Rust',
-    'Red',
-    'Juice',
-    'Lemon',
-    'Drink',
-    'Well',
-];
-
 interface Props {
     setSection: (section: StagedSecuritySectionType) => void;
+    words: string[];
 }
 
-export default function SeedPhrase({ setSection }: Props) {
+export default function SeedPhrase({ setSection, words }: Props) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
 
     const [copied, setCopied] = useState(false);
     const [checked, setChecked] = useState(false);
-
-    const words = seedWordsTEMP;
 
     const copyToClipboard = () => {
         navigator.clipboard.writeText(words.join(' ')).then(() => {
@@ -90,7 +61,7 @@ export default function SeedPhrase({ setSection }: Props) {
                         <>
                             <WordColumn key={groupIndex}>
                                 {group.map((word, index) => (
-                                    <Word key={index}>
+                                    <Word key={'SeedPhrase' + word}>
                                         <span>{groupIndex * 6 + index + 1}.</span>
                                         {word}
                                     </Word>

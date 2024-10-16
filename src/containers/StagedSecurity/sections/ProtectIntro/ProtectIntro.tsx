@@ -1,23 +1,20 @@
 import { useWalletStore } from '@app/store/useWalletStore';
-import { StagedSecuritySectionType } from '../../StagedSecurityModal';
 import { BlackButton, Text, Title } from '../../styles';
 import { WalletText, Warning, Wrapper } from './styles';
 import formatBalance from '@app/utils/formatBalance';
 import { Trans, useTranslation } from 'react-i18next';
+import LoadingSvg from '@app/components/svgs/LoadingSvg';
 
 interface Props {
-    setSection: (section: StagedSecuritySectionType) => void;
+    onButtonClick: () => void;
+    isLoading: boolean;
 }
 
-export default function ProtectIntro({ setSection }: Props) {
+export default function ProtectIntro({ onButtonClick, isLoading }: Props) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
 
     const balance = useWalletStore((state) => state.balance);
     const formatted = formatBalance(balance || 0);
-
-    const handleButtonClick = () => {
-        setSection('SeedPhrase');
-    };
 
     return (
         <Wrapper>
@@ -37,8 +34,8 @@ export default function ProtectIntro({ setSection }: Props) {
                 />
             </WalletText>
 
-            <BlackButton onClick={handleButtonClick}>
-                <span>{t('intro.button')}</span>
+            <BlackButton onClick={onButtonClick}>
+                {isLoading ? <LoadingSvg /> : <span>{t('intro.button')}</span>}
             </BlackButton>
         </Wrapper>
     );

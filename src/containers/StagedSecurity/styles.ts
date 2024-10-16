@@ -51,6 +51,10 @@ export const BlackButton = styled('button')`
         transition: transform 0.2s ease;
     }
 
+    svg {
+        width: 48px;
+    }
+
     &:hover {
         span {
             transform: scale(1.05);
