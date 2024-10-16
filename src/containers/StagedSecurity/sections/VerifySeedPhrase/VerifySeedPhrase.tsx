@@ -22,6 +22,11 @@ interface Props {
     words: string[];
 }
 
+interface SelectedWord {
+    index: number;
+    word: string;
+}
+
 export default function VerifySeedPhrase({ setSection, words }: Props) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
 
@@ -29,7 +34,7 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
     const setShowCompletedTip = useStagedSecurityStore((s) => s.setShowCompletedTip);
 
     const [completed, setCompleted] = useState(false);
-    const [selectedWords, setSelectedWords] = useState<string[]>([]);
+    const [selectedWords, setSelectedWords] = useState<SelectedWord[]>([]);
 
     const shuffledWords = useMemo(() => [...words].sort(() => Math.random() - 0.5), [words]);
 
@@ -47,16 +52,18 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
         }
     };
 
-    const addWord = (word: string) => {
-        const newSelectedWords = [...selectedWords, word];
-        setSelectedWords(newSelectedWords);
-        checkCompletion(newSelectedWords);
+    const addWord = (index: number, word: string) => {
+        if (!selectedWords.some((w) => w.index === index)) {
+            const newSelectedWords = [...selectedWords, { index, word }];
+            setSelectedWords(newSelectedWords);
+            checkCompletion(newSelectedWords.map((w) => w.word));
+        }
     };
 
-    const removeWord = (word: string) => {
-        const newSelectedWords = selectedWords.filter((w) => w !== word);
+    const removeWord = (index: number) => {
+        const newSelectedWords = selectedWords.filter((w) => w.index !== index);
         setSelectedWords(newSelectedWords);
-        checkCompletion(newSelectedWords);
+        checkCompletion(newSelectedWords.map((w) => w.word));
     };
 
     const handleSubmit = () => {
@@ -87,17 +94,17 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
                     </AnimatePresence>
 
                     <AnimatePresence mode="popLayout">
-                        {selectedWords.map((word) => (
+                        {selectedWords.map((data) => (
                             <WordPill
-                                key={'VerifySeedPhrase' + word}
+                                key={'VerifySeedPhrase' + data.word + data.index}
                                 layout
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.5 }}
                                 transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                                onClick={() => removeWord(word)}
+                                onClick={() => removeWord(data.index)}
                             >
-                                {word}
+                                {data.word}
                                 <PillCloseIcon />
                             </WordPill>
                         ))}
@@ -106,7 +113,11 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
 
                 <WordButtons>
                     {shuffledWords.map((word, index) => (
-                        <WordButton key={index} onClick={() => addWord(word)} disabled={selectedWords.includes(word)}>
+                        <WordButton
+                            key={index}
+                            onClick={() => addWord(index, word)}
+                            disabled={selectedWords.some((w) => w.index === index && w.word === word)}
+                        >
                             {word}
                         </WordButton>
                     ))}

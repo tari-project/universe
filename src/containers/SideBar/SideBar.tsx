@@ -8,34 +8,25 @@ import AirdropGiftTracker from '@app/containers/Airdrop/AirdropGiftTracker/Airdr
 import LostConnectionAlert from './components/LostConnectionAlert';
 import { LowHashRateWarning } from './components/LowHashRateWarning/LowHashRateWarning.tsx';
 
-import { useStagedSecurityStore } from '@app/store/useStagedSecurityStore.ts';
-import StagedSecurity from '../StagedSecurity/StagedSecurity.tsx';
-
 function SideBar() {
-    const setShowModal = useStagedSecurityStore((s) => s.setShowModal);
-
     return (
-        <>
-            <SideBarContainer>
-                <SidebarTop>
-                    <Heading />
-                    <MiningButton />
-                    <LostConnectionAlert />
-                    <LowHashRateWarning />
-                </SidebarTop>
-                <Scroll>
-                    <Top onClick={() => setShowModal(true)}>
-                        <Miner />
-                    </Top>
-                    <Bottom>
-                        <AirdropGiftTracker />
-                        <Wallet />
-                    </Bottom>
-                </Scroll>
-            </SideBarContainer>
-
-            <StagedSecurity />
-        </>
+        <SideBarContainer>
+            <SidebarTop>
+                <Heading />
+                <MiningButton />
+                <LostConnectionAlert />
+                <LowHashRateWarning />
+            </SidebarTop>
+            <Scroll>
+                <Top>
+                    <Miner />
+                </Top>
+                <Bottom>
+                    <AirdropGiftTracker />
+                    <Wallet />
+                </Bottom>
+            </Scroll>
+        </SideBarContainer>
     );
 }
 

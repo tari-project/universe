@@ -72,12 +72,14 @@ export default function StagedSecurity() {
                 )}
             </AnimatePresence>
 
-            <HelpTip
-                title={t('reminderTip.title')}
-                text={t('reminderTip.text')}
-                show={showReminderTip}
-                setShow={setShowReminderTip}
-            />
+            {!showCompletedTip && (
+                <HelpTip
+                    title={t('reminderTip.title')}
+                    text={t('reminderTip.text')}
+                    show={showReminderTip}
+                    setShow={setShowReminderTip}
+                />
+            )}
 
             <HelpTip
                 title={t('completedTip.title')}
