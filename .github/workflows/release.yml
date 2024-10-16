@@ -168,6 +168,14 @@ jobs:
                   vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
                   choco upgrade protoc -y
 
+            - name: Add msbuild to PATH (windows)
+              uses: microsoft/setup-msbuild@v2
+              if: startsWith(runner.os,'Windows')
+
+            - name: Install WiX (windows)
+              run: dotnet tool install --global wix
+              if: startsWith(runner.os,'Windows')
+
             - name: Set environment variables (windows)
               if: startsWith(runner.os,'Windows')
               shell: bash
