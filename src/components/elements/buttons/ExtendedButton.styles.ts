@@ -49,8 +49,6 @@ export const BaseButton = styled.button<ButtonStyleProps>`
 
 export const ChildrenWrapper = styled.div`
     display: flex;
-    user-select: none;
-    -webkit-user-select: none;
     position: relative;
 `;
 export const IconWrapper = styled.div<{ $position?: IconPosition }>`

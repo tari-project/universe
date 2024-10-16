@@ -44,6 +44,13 @@ export interface Palette {
         accent: string;
     };
     action: {
-        hover: string;
+        hover: {
+            default: string;
+            accent: string;
+        };
+        background: {
+            default: string;
+            accent: string;
+        };
     };
 }

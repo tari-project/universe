@@ -25,7 +25,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         cursor: inherit;
     }
 
-    ${({ $variant, $color }) => {
+    ${({ $variant, $color, theme }) => {
         switch ($variant) {
             case 'outlined':
                 return css`
@@ -43,19 +43,19 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 `;
             case 'secondary':
                 return css`
-                    box-shadow: 0 2px 20px -10px rgba(0, 0, 0, 0.09);
-                    color: ${({ theme }) => theme.palette[$color || 'primary'].dark};
-                    background: ${({ theme }) => theme.palette[$color || 'primary'].main};
+                    box-shadow: 0 2px 20px -10px ${theme.palette.action.hover.default};
+                    color: ${theme.palette[$color || 'primary'].main};
+                    background: ${theme.palette.action.background.accent};
                     &:hover {
-                        background: ${({ theme }) => theme.palette[$color || 'primary'].light};
+                        background: ${theme.palette.action.hover.accent};
                     }
                 `;
             case 'primary':
             default:
                 return css`
-                    background: ${({ theme }) => theme.palette.background.paper};
+                    background: ${theme.palette.action.background.default};
                     &:hover {
-                        background: ${({ theme }) => theme.palette.background.accent};
+                        background: ${theme.palette.action.hover.default};
                     }
                 `;
         }

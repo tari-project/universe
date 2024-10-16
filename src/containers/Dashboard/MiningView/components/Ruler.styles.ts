@@ -4,11 +4,10 @@ import { m } from 'framer-motion';
 export const Wrapper = styled(m.div)`
     overflow: hidden;
     top: 40px;
-    width: 100%;
+    width: 60vw;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    pointer-events: none;
     height: calc(100% - 100px);
     position: fixed;
     right: 10px;

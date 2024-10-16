@@ -31,9 +31,7 @@ export const SpacedNum = styled(m.span)<{ $isDec?: boolean }>`
     position: relative;
     align-items: flex-end;
     justify-content: center;
-
     opacity: 0.6;
     mix-blend-mode: multiply;
-
     width: ${({ $isDec }) => ($isDec ? 'min-content' : '1ch')};
 `;

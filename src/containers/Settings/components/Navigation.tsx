@@ -22,15 +22,15 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
         <Container>
             <ButtonContainer>
                 {SETTINGS_TYPES.map((type) => {
-                    const isActive = activeSection === type;
+                    const isActiveSection = activeSection === type;
 
                     return (
                         <SectionButton
                             key={type}
                             size="large"
-                            color={isActive ? 'primary' : 'secondary'}
-                            variant={isActive ? 'primary' : 'secondary'}
                             onClick={() => handleClick(type)}
+                            variant={isActiveSection ? 'secondary' : 'primary'}
+                            color="primary"
                         >
                             {type}
                         </SectionButton>

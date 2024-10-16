@@ -37,7 +37,6 @@ export const SetupDescription = styled(Typography)`
 
 export const SetupPercentage = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
-
     font-weight: 700;
     font-size: 15px;
     text-align: center;
