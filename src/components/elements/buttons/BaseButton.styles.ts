@@ -29,9 +29,9 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         switch ($variant) {
             case 'outlined':
                 return css`
-                    border: 1px solid ${({ theme }) => theme.palette[$color || 'primary'].light};
-                    color: ${({ theme }) => theme.palette.base};
-                    background: ${({ theme }) => theme.palette[$color || 'primary'].main};
+                    color: ${({ theme }) => theme.colors.lightAlpha[90]};
+                    border: 1px solid ${({ theme }) => theme.colors.lightAlpha[20]};
+                    background: ${({ theme }) => theme.colors.lightAlpha[10]};
                 `;
             case 'gradient':
                 return css`

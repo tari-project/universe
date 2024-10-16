@@ -54,7 +54,7 @@ export const InfoWrapper = styled.div`
     line-height: 1.3;
     letter-spacing: -0.26px;
     span {
-        color: ${({ theme }) => theme.palette.base};
+        color: #fff;
     }
     p {
         font-weight: 600;

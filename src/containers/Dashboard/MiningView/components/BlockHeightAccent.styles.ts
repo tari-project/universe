@@ -10,7 +10,7 @@ export const AccentWrapper = styled(m.div)`
     justify-content: center;
     display: flex;
     top: 0;
-    right: -40px;
+    right: -25px;
 `;
 
 export const AccentText = styled(m.div)`
@@ -20,7 +20,7 @@ export const AccentText = styled(m.div)`
     line-height: 1;
     opacity: 0.55;
     position: relative;
-    color: rgba(255, 255, 255, 0.4);
+    color: ${({ theme }) => (theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.095)' : 'rgba(255, 255, 255, 0.4)')};
     user-select: none;
     height: min-content;
 `;

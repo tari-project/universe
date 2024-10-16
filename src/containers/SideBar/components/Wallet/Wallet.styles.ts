@@ -64,7 +64,6 @@ export const BalanceVisibilityButton = styled(IconButton)`
 export const ShowHistoryButton = styled(Button).attrs({
     size: 'xs',
     variant: 'outlined',
-    color: 'secondary',
 })`
     display: flex;
     align-self: flex-end;
@@ -92,7 +91,7 @@ export const HistoryContainer = styled(m.div)`
     width: 100%;
     position: relative;
 
-    color: ${({ theme }) => theme.palette.base};
+    color: #fff;
 `;
 
 export const HistoryPadding = styled('div')`
