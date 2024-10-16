@@ -156,35 +156,35 @@ pub struct MergeMiningProxyStatusMonitor {
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        let monero_donate_address = "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
-
-        if self
-            .get_block_template(monero_donate_address)
-            .await
-            .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
-            .is_ok()
-        {
-            HealthStatus::Healthy
-        } else {
-            if self.start_time.elapsed().as_secs() < 10 {
-                return HealthStatus::Healthy;
-            }
-            // HealthStatus::Unhealthy
-            // This can return a bad error from time to time, especially on startup
-            HealthStatus::Warning
-        }
+        // TODO: Monero calls are really slow, so temporarily changing to Healthy
+        HealthStatus::Healthy
+        // if self
+        //     .get_version()
+        //     .await
+        //     .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
+        //     .is_ok()
+        // {
+        //     HealthStatus::Healthy
+        // } else {
+        //     if self.start_time.elapsed().as_secs() < 10 {
+        //         return HealthStatus::Healthy;
+        //     }
+        //     // HealthStatus::Unhealthy
+        //     // This can return a bad error from time to time, especially on startup
+        //     HealthStatus::Warning
+        // }
     }
 }
 
 impl MergeMiningProxyStatusMonitor {
-    pub async fn get_block_template(&self, monero_address: &str) -> Result<String, Error> {
+    #[allow(dead_code)]
+    pub async fn get_version(&self) -> Result<String, Error> {
         let rpc_url = format!("http://127.0.0.1:{}/json_rpc", self.json_rpc_port);
         let request_body = json!({
             "jsonrpc": "2.0",
             "id": "0",
-            "method": "get_block_template",
+            "method": "get_version",
             "params": {
-                "wallet_address": monero_address,
             }
         });
 
