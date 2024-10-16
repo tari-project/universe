@@ -2,7 +2,7 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:bal="http://schemas.microsoft.com/wix/BalExtension" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 	
 	<Bundle Name="Tari Universe (Alpha)"
-            Version=$(env.TARI_UNIVERSE_APP_VERSION)
+            Version="$(env.TARI_UNIVERSE_APP_VERSION)"
             Manufacturer="Tari Labs, LLC"
             UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37">
 
