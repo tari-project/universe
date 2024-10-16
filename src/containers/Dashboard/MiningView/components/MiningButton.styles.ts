@@ -48,7 +48,8 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
     cursor: pointer;
     overflow: hidden;
     padding: 16px 0;
-    background: ${({ $hasStarted }) =>
+    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.15)};
+    background-image: ${({ $hasStarted }) =>
         $hasStarted
             ? 'linear-gradient(90deg, rgba(100, 100, 100, 0.6) 0%, rgba(0,0,0,0.7) 99.49%)'
             : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
@@ -58,7 +59,7 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
     transition: opacity 0.4s ease-in-out background 0.4s ease-in-out;
 
     &:hover {
-        background: ${({ $hasStarted }) =>
+        background-image: ${({ $hasStarted }) =>
             $hasStarted
                 ? 'linear-gradient(90deg, rgba(100, 100, 100, 0.65) 0%, rgba(0, 0, 0, 0.65) 99.49%)'
                 : 'linear-gradient(90deg, #046937 0%, rgba(17, 110, 64, 0.96) 92.49%)'};
@@ -68,7 +69,7 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
         opacity: 0.45;
         cursor: wait;
         &:hover {
-            background: ${({ $hasStarted }) =>
+            background-image: ${({ $hasStarted }) =>
                 $hasStarted
                     ? 'linear-gradient(90deg, rgba(100, 100, 100, 0.6) 0%, rgba(0,0,0,0.7) 99.49%)'
                     : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
@@ -78,7 +79,7 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
     ${({ $isLoading }) =>
         $isLoading &&
         css`
-            background: linear-gradient(90deg, rgba(100, 100, 100, 0.6) 0%, rgba(0, 0, 0, 0.7) 99.49%);
+            background-image: linear-gradient(90deg, rgba(100, 100, 100, 0.6) 0%, rgba(0, 0, 0, 0.7) 99.49%);
             color: transparent;
             box-shadow: none;
             pointer-events: none;

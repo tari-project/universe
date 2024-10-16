@@ -8,7 +8,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
     letter-spacing: ${({ theme }) => theme.typography.h6.letterSpacing};
     font-weight: ${({ theme }) => theme.typography.h6.fontWeight};
     border-radius: ${({ theme }) => theme.shape.borderRadius.buttonBase};
-    background: ${({ theme }) => theme.palette.background.paper};
+    background-color: ${({ theme }) => theme.palette.background.paper};
     white-space: pre;
     padding: 0 25px;
     align-items: center;
@@ -31,32 +31,32 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 return css`
                     color: ${({ theme }) => theme.colors.lightAlpha[90]};
                     border: 1px solid ${({ theme }) => theme.colors.lightAlpha[20]};
-                    background: ${({ theme }) => theme.colors.lightAlpha[10]};
+                    background-color: ${({ theme }) => theme.colors.lightAlpha[10]};
                 `;
             case 'gradient':
                 return css`
-                    background: linear-gradient(86deg, #780eff -4.33%, #bf28ff 102.27%);
+                    background-image: linear-gradient(86deg, #780eff -4.33%, #bf28ff 102.27%);
                     color: ${({ theme }) => theme.palette.text.contrast};
                     &:hover {
-                        background: linear-gradient(86deg, #780eff -24.33%, #bf28ff 78.27%);
+                        background-image: linear-gradient(86deg, #780eff -24.33%, #bf28ff 78.27%);
                     }
                 `;
             case 'secondary':
                 return css`
                     box-shadow: 0 2px 20px -8px ${theme.palette.contrastAlpha};
-                    background: ${theme.palette.background.paper};
+                    background-color: ${theme.palette.background.paper};
                     color: ${theme.palette.text[$color || 'main']};
                     &:hover {
-                        background: ${theme.palette.action.hover.accent};
+                        background-color: ${theme.palette.action.hover.accent};
                         box-shadow: none;
                     }
                 `;
             case 'primary':
             default:
                 return css`
-                    background: ${theme.palette.action.background.default};
+                    background-color: ${theme.palette.action.background.default};
                     &:hover {
-                        background: ${theme.palette.action.hover.accent};
+                        background-color: ${theme.palette.action.hover.accent};
                     }
                 `;
         }

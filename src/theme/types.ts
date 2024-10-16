@@ -14,6 +14,8 @@ export const COLOUR_TYPES = [
     'secondary',
     'disabled',
     'contrast',
+    'accent',
+    'default',
 ] as const;
 type ColourTuple = typeof COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
@@ -45,13 +47,7 @@ export interface Palette {
         accent: string;
     };
     action: {
-        hover: {
-            default: string;
-            accent: string;
-        };
-        background: {
-            default: string;
-            accent: string;
-        };
+        hover: Colour;
+        background: Colour;
     };
 }

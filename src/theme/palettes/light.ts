@@ -87,6 +87,8 @@ const lightPalette: ThemePalette = {
             background: {
                 default: c.grey[50],
                 accent: c.grey[100],
+                contrast: c.brightGreen[500],
+                secondary: '#000',
             },
             hover: {
                 default: c.grey[150],

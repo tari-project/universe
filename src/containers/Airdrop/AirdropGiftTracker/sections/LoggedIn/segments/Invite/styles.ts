@@ -83,38 +83,6 @@ export const GemPill = styled('div')`
     font-weight: 600;
 `;
 
-export const BonusWrapper = styled('div')`
-    position: relative;
-
-    .giftImage {
-        position: absolute;
-        top: -5px;
-        right: -15px;
-    }
-`;
-
-export const BonusText = styled('div')`
-    display: flex;
-    align-items: center;
-
-    height: 30px;
-    padding-left: 12px;
-
-    border-radius: 100px;
-    background: #f0f0f0;
-
-    color: rgba(0, 0, 0, 0.5);
-    font-size: 11px;
-    font-weight: 500;
-
-    strong {
-        color: #000;
-        font-weight: 600;
-        display: inline;
-        margin: 0 3px;
-    }
-`;
-
 export const Copied = styled(m.div)`
     position: absolute;
     top: 0;
@@ -122,7 +90,7 @@ export const Copied = styled(m.div)`
     width: 100%;
     height: 100%;
 
-    background: #c9eb00;
+    background: ${({ theme }) => theme.colors.brightGreen[500]}
 
     color: #000;
     text-align: center;
