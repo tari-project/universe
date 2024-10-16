@@ -22,6 +22,7 @@ use tari_core::transactions::key_manager::{
     TransactionKeyManagerInterface,
 };
 use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
@@ -110,7 +111,7 @@ impl InternalWallet {
             .map_err(|e| anyhow!(e.to_string()))?;
         let seed = CipherSeed::from_enciphered_bytes(&seed_binary, Some(passphrase))?;
 
-        let raw_passphrase = generate_password(20);
+        let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
         let seed_file = seed.encipher(Some(SafePassword::from(&raw_passphrase)))?;
         let seed_words_encrypted_base58 = seed_file.to_base58();
 
