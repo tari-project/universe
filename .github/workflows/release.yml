@@ -229,6 +229,10 @@ jobs:
                   includeRelease: true
                   args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
+            - name: Build WiX on Windows
+              run: wix build .\tari-win-bundler\Bundle.wxs
+              if: runner.os == 'Windows'
+
             - name: Debug step {artifactPaths}
               if: ${{ true }}
               continue-on-error: true
@@ -236,6 +240,16 @@ jobs:
                   artifactPaths: ${{ steps.build.outputs.artifactPaths }}
               shell: bash
               run: echo "Artifact ID from previous job is $artifactPaths"
+
+            - name: Upload Wix installer
+              if: runner.os == 'Windows'
+              uses: actions/upload-artifact@v4
+              env:
+                  TARI_UNIVERSE_INSTALLER_NAME: Tari.Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
+                  TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+              with:
+                  name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_wix
+                  path: .\tari-win-bundler\bin\Debug\tari_win_bundler.exe
 
             - name: Upload none releases
               if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
