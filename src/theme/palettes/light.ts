@@ -95,6 +95,11 @@ const lightPalette: ThemePalette = {
                 accent: c.grey[100],
             },
         },
+        component: {
+            main: '#000',
+            accent: 'rgba(255,255,255,0.7)',
+            contrast: '#fff',
+        },
     },
     colors: c,
     gradients: lightGradients,

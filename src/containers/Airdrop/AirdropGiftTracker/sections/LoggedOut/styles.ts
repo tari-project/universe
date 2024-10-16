@@ -53,7 +53,6 @@ export const GemPill = styled('div')`
 
     border-radius: 100px;
     background: ${({ theme }) => theme.palette.action.background.contrast};
-
     color: ${({ theme }) => theme.palette.contrast};
     text-align: center;
     font-size: 12px;

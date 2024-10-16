@@ -95,6 +95,11 @@ const darkPalette: ThemePalette = {
                 accent: c.grey[800],
             },
         },
+        component: {
+            main: 'rgba(255,255,255,0.2)',
+            accent: 'rgba(255,255,255,0.6)',
+            contrast: '#fff',
+        },
     },
     colors: c,
     gradients: darkGradients,

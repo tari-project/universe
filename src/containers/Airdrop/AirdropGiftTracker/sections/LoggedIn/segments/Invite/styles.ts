@@ -18,13 +18,20 @@ export const InviteButton = styled('button')`
     padding: 12px 14px 12px 13px;
 
     border-radius: 60px;
-    background: #000;
+    background: ${({ theme }) => theme.palette.action.background.secondary};
+    color: ${({ theme }) => theme.palette.base};
 
     transition: transform 0.2s ease;
     overflow: hidden;
 
     svg {
         flex-shrink: 0;
+        circle {
+            fill: ${({ theme }) => theme.palette.base};
+        }
+        path {
+            fill: ${({ theme }) => theme.palette.contrast};
+        }
     }
 
     &:hover {
@@ -46,7 +53,7 @@ export const TextWrapper = styled('div')`
 export const Image = styled('img')``;
 
 export const Title = styled('div')`
-    color: #fff;
+    color: ${({ theme }) => theme.palette.base};
     text-align: center;
     font-size: 12px;
     font-weight: 600;
@@ -54,14 +61,14 @@ export const Title = styled('div')`
 `;
 
 export const Text = styled('div')`
-    color: rgba(255, 255, 255, 0.5);
+    color: ${({ theme }) => theme.colors.grey[500]};
     text-align: center;
     font-size: 11px;
     font-weight: 600;
     line-height: 120%;
 
     span {
-        color: #fff;
+        color: ${({ theme }) => theme.palette.action.background.contrast};
     }
 `;
 
@@ -74,10 +81,8 @@ export const GemPill = styled('div')`
     gap: 2px;
 
     border-radius: 100px;
-    background: linear-gradient(0deg, #c9eb00 0%, #c9eb00 100%), linear-gradient(180deg, #755cff 0%, #2946d9 100%),
-        linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
-
-    color: #000;
+    background: ${({ theme }) => theme.palette.action.background.contrast};
+    color: ${({ theme }) => theme.palette.contrast};
     text-align: center;
     font-size: 12px;
     font-weight: 600;
@@ -90,9 +95,9 @@ export const Copied = styled(m.div)`
     width: 100%;
     height: 100%;
 
-    background: ${({ theme }) => theme.colors.brightGreen[500]}
+    background: ${({ theme }) => theme.palette.action.background.secondary};
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.action.background.contrast};
     text-align: center;
     font-size: 12px;
     font-weight: 600;

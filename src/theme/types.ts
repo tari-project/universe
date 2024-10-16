@@ -40,6 +40,7 @@ export interface Palette {
     error: Colour;
     info: Colour;
     text: Colour;
+    component: Colour;
     divider: string;
     background: {
         default: string;
