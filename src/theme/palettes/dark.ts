@@ -33,7 +33,7 @@ const darkPalette: ThemePalette = {
         primary: {
             main: c.tariPurple[900],
             dark: c.tariPurple[950],
-            light: c.tariPurple[50],
+            light: c.tariPurple[400],
             shadow: c.tariPurpleAlpha[80],
             wisp: c.tariPurpleAlpha[5],
             contrast: '#FFFFFF',

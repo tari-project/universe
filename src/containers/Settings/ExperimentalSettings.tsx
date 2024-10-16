@@ -39,15 +39,15 @@ export const ExperimentalSettings = () => {
                         <AppVersions />
                         <SettingsGroupWrapper>
                             <SettingsGroup>
-                                <VisualMode />
-                            </SettingsGroup>
-                            <SettingsGroup style={{ padding: '0 10px' }}>
                                 <ToggleSwitch
                                     label={t('use-tor')}
                                     variant="gradient"
                                     checked={useTor}
                                     onChange={toggleUseTor}
                                 />
+                            </SettingsGroup>
+                            <SettingsGroup>
+                                <VisualMode />
                             </SettingsGroup>
                         </SettingsGroupWrapper>
                     </>

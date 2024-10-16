@@ -60,7 +60,7 @@ const lightPalette: ThemePalette = {
         success: {
             main: c.success[200],
             dark: c.success[300],
-            light: c.success[50],
+            light: c.success[100],
             contrast: c.success[300],
         },
         warning: {

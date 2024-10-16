@@ -77,14 +77,20 @@ export const GlobalStyle = createGlobalStyle`
         }
     }
 
+    html {
+        background:  ${({ theme }) => theme.palette.base};
+    }
+    
     #canvas {
         z-index: 0;
         pointer-events: auto;
         width: 100vw;
+        background: none;
     }
 
     #root {
         pointer-events: none;
+        
     }
 
 `;
