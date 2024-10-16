@@ -6,7 +6,7 @@ type ButtonProps = CommonButtonProps;
 export const Button = ({
     children,
     variant = 'primary',
-    color = 'primary',
+    color,
     size = 'medium',
     iconPosition,
     icon,

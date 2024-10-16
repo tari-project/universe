@@ -7,10 +7,13 @@ import MiningButton from '@app/containers/Dashboard/MiningView/components/Mining
 import AirdropGiftTracker from '@app/containers/Airdrop/AirdropGiftTracker/AirdropGiftTracker';
 import LostConnectionAlert from './components/LostConnectionAlert';
 import { LowHashRateWarning } from './components/LowHashRateWarning/LowHashRateWarning.tsx';
+import { ThemeSwitch } from '@app/containers/Settings/components/ThemeSwitch.tsx';
 
 function SideBar() {
     return (
         <SideBarContainer>
+            {/*TEMP FOR TESTING*/}
+            <ThemeSwitch />
             <SidebarTop>
                 <Heading />
                 <MiningButton />

@@ -17,8 +17,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
 import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
+import { useTheme } from 'styled-components';
 
 export default function Miner() {
+    const theme = useTheme();
     useMiningStatesSync();
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
@@ -79,7 +81,7 @@ export default function Miner() {
                     isLoading={earningsLoading}
                     useLowerCase
                 >
-                    <Typography variant="h5" style={{ color: '#000' }}>
+                    <Typography variant="h5" style={{ color: theme.palette.text.primary }}>
                         Estimated earnings
                     </Typography>
                     <Typography>You earn rewards for mining CPU and GPU separately</Typography>

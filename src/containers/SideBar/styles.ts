@@ -12,7 +12,7 @@ export const SideBarContainer = styled(m.div)`
     justify-content: space-between;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     border-radius: 20px;
-    background: ${({ theme }) => theme.palette.background.paper};
+    background: ${({ theme }) => theme.palette.background.default};
     position: relative;
     height: 100%;
     overflow: hidden;

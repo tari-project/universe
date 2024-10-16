@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { m } from 'framer-motion';
+import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const MinerContainer = styled(m.div)`
     display: flex;
@@ -15,9 +16,9 @@ export const TileItem = styled(m.div)`
     flex-grow: 0;
     padding: 9px 15px;
 
-    background-color: ${({ theme }) => theme.palette.background.accent};
+    background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
+    box-shadow: 2px 8px 8px 0 ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.04)};
 
     display: flex;
     flex-direction: column;
@@ -50,7 +51,7 @@ export const StatWrapper = styled(m.div)<{ $useLowerCase?: boolean }>`
 `;
 
 export const Unit = styled(m.div)`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 10px;
     font-style: normal;
     font-weight: 500;

@@ -9,7 +9,7 @@ export const Wrapper = styled.div`
 
 export const TriggerWrapper = styled.div<{ $disabled?: boolean; $isBordered?: boolean }>`
     width: 100%;
-    background: ${({ theme }) => theme.palette.background.accent};
+    background: ${({ theme }) => theme.palette.background.paper};
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -34,7 +34,7 @@ export const Options = styled.div<{ $open?: boolean; $isBordered?: boolean }>`
     display: flex;
     flex-direction: column;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
-    background: ${({ theme }) => theme.palette.background.accent};
+    background: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     height: auto;
     transition: all 0.1s ease-in;
@@ -91,7 +91,7 @@ export const OptionLabelWrapper = styled.div`
 export const StyledOption = styled.div<{ $selected?: boolean }>`
     display: flex;
     font-size: 14px;
-    background: ${({ theme }) => theme.palette.background.accent};
+    background: ${({ theme }) => theme.palette.background.paper};
     line-height: 1;
     cursor: pointer;
     border-radius: 10px;
@@ -116,7 +116,7 @@ export const IconWrapper = styled.div`
     align-items: center;
     justify-content: center;
     border-radius: 100%;
-    background: ${({ theme }) => theme.palette.background.accent};
+    background: ${({ theme }) => theme.palette.background.paper};
     color: ${({ theme }) => theme.palette.text.primary};
 
     svg {

@@ -29,6 +29,7 @@ const darkPalette: ThemePalette = {
     palette: {
         base: '#000',
         contrast: '#fff',
+        contrastAlpha: c.lightAlpha[5],
         primary: {
             main: c.tariPurple[900],
             dark: c.tariPurple[950],
@@ -45,14 +46,15 @@ const darkPalette: ThemePalette = {
         },
         divider: 'rgba(255,255,255,0.1)',
         text: {
+            main: c.tariPurple[300],
             primary: '#FFFFFF',
             secondary: c.grey[300],
             disabled: 'rgba(255,255,255,0.4)',
             contrast: '#000000',
         },
         background: {
-            default: c.grey[800],
-            paper: c.grey[900],
+            default: c.grey[900],
+            paper: c.grey[700],
             accent: c.grey[400],
         },
         success: {
@@ -83,8 +85,8 @@ const darkPalette: ThemePalette = {
         },
         action: {
             background: {
-                default: c.grey[800],
-                accent: c.grey[700],
+                default: c.grey[900],
+                accent: c.grey[850],
             },
             hover: {
                 default: c.grey[850],

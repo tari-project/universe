@@ -12,8 +12,8 @@ export const COLOUR_TYPES = [
     'wisp',
     'primary',
     'secondary',
-    'contrast',
     'disabled',
+    'contrast',
 ] as const;
 type ColourTuple = typeof COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
@@ -30,6 +30,7 @@ export interface ThemePalette {
 export interface Palette {
     base: string;
     contrast: string;
+    contrastAlpha: string;
     primary: Colour;
     secondary: Colour;
     success: Colour;

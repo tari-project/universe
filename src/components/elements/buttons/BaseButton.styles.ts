@@ -43,11 +43,12 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 `;
             case 'secondary':
                 return css`
-                    box-shadow: 0 2px 20px -10px ${theme.palette.action.hover.default};
-                    color: ${theme.palette[$color || 'primary'].main};
-                    background: ${theme.palette.action.background.accent};
+                    box-shadow: 0 2px 20px -8px ${theme.palette.contrastAlpha};
+                    background: ${theme.palette.background.paper};
+                    color: ${theme.palette.text[$color || 'main']};
                     &:hover {
                         background: ${theme.palette.action.hover.accent};
+                        box-shadow: none;
                     }
                 `;
             case 'primary':
@@ -55,7 +56,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 return css`
                     background: ${theme.palette.action.background.default};
                     &:hover {
-                        background: ${theme.palette.action.hover.default};
+                        background: ${theme.palette.action.hover.accent};
                     }
                 `;
         }

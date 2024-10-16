@@ -29,6 +29,7 @@ const lightPalette: ThemePalette = {
     palette: {
         base: '#fff',
         contrast: '#000000',
+        contrastAlpha: c.darkAlpha[5],
         primary: {
             main: c.tariPurple[600],
             dark: c.tariPurple[700],
@@ -45,6 +46,7 @@ const lightPalette: ThemePalette = {
         },
         divider: 'rgba(0,0,0,0.06)',
         text: {
+            main: c.tariPurple[600],
             primary: '#000000',
             secondary: '#797979',
             disabled: c.grey[400],
