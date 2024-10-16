@@ -115,7 +115,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "http://node.c3pool.org:18081",
             "http://xmr-full.p2pool.uk:18089",
             // x"https://monero.stackwallet.com:18081",
-            "http://xmr.support:18081",
+            // x "http://xmr.support:18081",
             //x "http://xmr.nthrow.nyc:18081",
         ];
         for node in nodes {
