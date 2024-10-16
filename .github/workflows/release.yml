@@ -35,12 +35,12 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    - platform: 'ubuntu-20.04'
-                      args: ''
+                    # - platform: 'ubuntu-20.04'
+                    #   args: ''
                     - platform: 'windows-2019'
                       args: '--bundles msi,updater'
-                    - platform: 'macos-latest'
-                      args: '--target universal-apple-darwin'
+                    # - platform: 'macos-latest'
+                    #   args: '--target universal-apple-darwin'
 
         runs-on: ${{ matrix.platform }}
         steps:
