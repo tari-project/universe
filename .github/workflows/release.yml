@@ -192,13 +192,6 @@ jobs:
               if: startsWith(runner.os,'Windows')
               run: |
                   choco install wixtoolset -y -f --version=3.14.1
-                  echo "%wix%\bin\candle.exe" >> $GITHUB_PATH
-                  echo "%wix%\bin\light.exe" >> $GITHUB_PATH
-                  echo $GITHUB_PATH
-
-            - name: tree2 ( windows )
-              if: startsWith(runner.os,'Windows')
-              run: tree /f
 
             # - name: Build Installer
             #   shell: bash
@@ -218,6 +211,8 @@ jobs:
               shell: bash
               run: |
                   echo "SQLITE3_LIB_DIR=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
+                  echo "CANDLE_PATH=%wix%\bin\candle.exe" >> $GITHUB_ENV
+                  echo "LIGHT_PATH=%wix%\bin\light.exe" >> $GITHUB_ENV
 
             - name: Azure code-signing setup (windows only)
               if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
@@ -267,11 +262,18 @@ jobs:
                   args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
             - name: Build WiX on Windows
-              if: runner.os == 'Windows'
+              shell: bash
+              if: startsWith(runner.os,'Windows')
               env:
                   TARI_UNIVERSE_INSTALLER_NAME: Tari.Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
                   TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
-              run: wix build .\tari-win-bundler\Bundle.wxs
+              run: |
+                  mkdir wixout
+                  "$WIX_PATH_CANDLE" ./tari-win-bundler/Bundle.wxs -o wixout/ -ext WixUtilExtension -ext WixBalExtension
+                  "$WIX_PATH_LIGHT" wixout/*.wixobj -o Installer.exe -ext WixUtilExtension -ext WixBalExtension
+                  git_hash=$(git rev-parse --short "$GITHUB_SHA")
+                  mv Installer.exe MyApplication-$(date +'%Y-%m-%d')-${git_hash}.exe
+                  ls
 
             - name: Debug step {artifactPaths}
               if: ${{ true }}
