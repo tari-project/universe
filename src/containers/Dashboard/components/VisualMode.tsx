@@ -1,4 +1,3 @@
-import { VisualModeContainer } from '../styles';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,11 +17,7 @@ function VisualMode() {
         toggleVisualMode();
     }, [canvasElement, toggleVisualMode, visualMode]);
 
-    return (
-        <VisualModeContainer>
-            <ToggleSwitch label={t('visual-mode')} variant="gradient" checked={visualMode} onChange={handleSwitch} />
-        </VisualModeContainer>
-    );
+    return <ToggleSwitch label={t('visual-mode')} variant="gradient" checked={visualMode} onChange={handleSwitch} />;
 }
 
 export default VisualMode;

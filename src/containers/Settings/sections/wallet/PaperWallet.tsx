@@ -9,15 +9,15 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
 import { IoClose } from 'react-icons/io5';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 const StyledWrapper = styled.div`
     display: flex;
@@ -63,9 +63,9 @@ export default function PaperWallet() {
                         {isLoading ? (
                             <CircularProgress />
                         ) : (
-                            <ButtonBase onClick={load} size="small" disabled={isLoading}>
+                            <Button onClick={load} size="small" disabled={isLoading}>
                                 Load QR code
-                            </ButtonBase>
+                            </Button>
                         )}
                     </Stack>
                 </SettingsGroup>
