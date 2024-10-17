@@ -192,8 +192,9 @@ jobs:
               if: startsWith(runner.os,'Windows')
               run: |
                   choco install wixtoolset -y -f --version=3.14.1
-                  echo "WIX_PATH_CANDLE=%wix%\bin\candle.exe" >> $GITHUB_PATH
-                  echo "WIX_PATH_LIGHT=%wix%\bin\light.exe" >> $GITHUB_PATH
+                  echo "%wix%\bin\candle.exe" >> $GITHUB_PATH
+                  echo "%wix%\bin\light.exe" >> $GITHUB_PATH
+                  echo $GITHUB_PATH
 
             - name: tree2 ( windows )
               if: startsWith(runner.os,'Windows')
