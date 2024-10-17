@@ -188,11 +188,11 @@ jobs:
               if: startsWith(runner.os,'Windows')
               run: |
                   choco install wixtoolset -y -f --version=3.14.1
-                  echo "%wix%"
-                  echo %wix%
                   echo "WIX_PATH_CANDLE=%wix%\bin\candle.exe" >> $GITHUB_PATH
                   echo "WIX_PATH_LIGHT=%wix%\bin\light.exe" >> $GITHUB_PATH
 
+            - name: XDTesting Print Directory Structure
+              uses: FiorelaCiroku/XDTesting-Print-Directory-Structure@v1.0.2
             # - name: Build Installer
             #   shell: bash
             #   env:
