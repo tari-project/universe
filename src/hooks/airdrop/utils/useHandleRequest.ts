@@ -13,6 +13,7 @@ export const useAirdropRequest = () => {
 
     return async <T>({ body, method, path, onError }: RequestProps) => {
         if (!baseUrl || !airdropToken) return;
+
         const response = await fetch(`${baseUrl}${path}`, {
             method: method,
             headers: {
