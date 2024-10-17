@@ -176,6 +176,10 @@ jobs:
               if: startsWith(runner.os,'Windows')
               run: dotnet tool search wix --take 1 --detail --prerelease
 
+            - name: Add nuget as source (windows)
+              if: startsWith(runner.os,'Windows')
+              run: dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org
+
             - name: Install WiX (windows)
               run: dotnet tool install --global wix --version 3.14.1 --allow-downgrade --create-manifest-if-needed
               if: startsWith(runner.os,'Windows')
