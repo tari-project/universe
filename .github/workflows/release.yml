@@ -189,18 +189,18 @@ jobs:
               run: |
                   choco install wixtoolset -y
 
-            - name: Build Installer
-              shell: bash
-              env:
-                  WIX_PATH_CANDLE: 'C:/Program Files (x86)/WiX Toolset v3.11/bin/candle.exe'
-                  WIX_PATH_LIGHT: 'C:/Program Files (x86)/WiX Toolset v3.11/bin/light.exe'
-              run: |
-                  mkdir wixout
-                  "$WIX_PATH_CANDLE" Product.wxs -o wixout/ -ext WixUtilExtension -ext WixUIExtension
-                  "$WIX_PATH_LIGHT" wixout/*.wixobj -o Installer.msi -ext WixUtilExtension -ext WixUIExtension
-                  git_hash=$(git rev-parse --short "$GITHUB_SHA")
-                  mv Installer.msi MyApplication-$(date +'%Y-%m-%d')-${git_hash}.msi
-                  ls
+            # - name: Build Installer
+            #   shell: bash
+            #   env:
+            #       WIX_PATH_CANDLE: 'C:/Program Files (x86)/WiX Toolset v3.11/bin/candle.exe'
+            #       WIX_PATH_LIGHT: 'C:/Program Files (x86)/WiX Toolset v3.11/bin/light.exe'
+            #   run: |
+            #       mkdir wixout
+            #       "$WIX_PATH_CANDLE" Product.wxs -o wixout/ -ext WixUtilExtension -ext WixUIExtension
+            #       "$WIX_PATH_LIGHT" wixout/*.wixobj -o Installer.msi -ext WixUtilExtension -ext WixUIExtension
+            #       git_hash=$(git rev-parse --short "$GITHUB_SHA")
+            #       mv Installer.msi MyApplication-$(date +'%Y-%m-%d')-${git_hash}.msi
+            #       ls
 
             - name: Set environment variables (windows)
               if: startsWith(runner.os,'Windows')
