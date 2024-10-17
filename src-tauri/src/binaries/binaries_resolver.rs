@@ -222,7 +222,9 @@ impl BinaryResolver {
 
         // Selects the highest version from the Vec of downloaded versions and local versions
         let mut highest_version = manager.select_highest_version();
-
+        if binary.name() == "tor" {
+            println!("111111111111111111111111 {:?}", highest_version);
+        }
         // This covers case when we do not check newest version and there is no local version
         if !should_check_for_update && highest_version.is_none() {
             manager.check_for_updates().await;
@@ -230,6 +232,9 @@ impl BinaryResolver {
             manager
                 .download_selected_version(highest_version.clone(), progress_tracker.clone())
                 .await?;
+        }
+        if binary.name() == "tor" {
+            println!("222222222222222222222222222222 {:?}", highest_version);
         }
 
         // Check if the files exist after download

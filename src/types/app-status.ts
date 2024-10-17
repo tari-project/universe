@@ -1,6 +1,11 @@
 import { Language } from '@app/i18initializer';
 import { modeType } from '../store/types';
 
+export interface TorConfig {
+    use_bridges: boolean;
+    bridges: string[];
+}
+
 export interface AppConfig {
     config_version: number;
     config_file?: string;
