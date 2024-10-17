@@ -31,14 +31,21 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         switch ($variant) {
             case 'outlined':
                 return css`
-                    color: ${({ theme }) => theme.colorsAlpha.lightAlpha[90]};
-                    border: 1px solid ${({ theme }) => theme.colorsAlpha.lightAlpha[20]};
-                    background-color: ${({ theme }) => theme.colorsAlpha.lightAlpha[10]};
+                    color: ${convertHexToRGBA(
+                        $color === 'transparent' ? '#fff' : $color || theme.palette.contrast,
+                        0.9
+                    )};
+                    border: 1px solid
+                        ${convertHexToRGBA($color === 'transparent' ? '#fff' : $color || theme.palette.contrast, 0.2)};
+                    background-color: ${convertHexToRGBA(
+                        $color === 'transparent' ? '#fff' : $color || theme.palette.contrast,
+                        0.1
+                    )};
                 `;
             case 'gradient':
                 return css`
                     background-image: linear-gradient(86deg, #780eff -4.33%, #bf28ff 102.27%);
-                    color: ${({ theme }) => theme.palette.text.contrast};
+                    color: ${theme.palette.text.contrast};
                     &:hover {
                         background-image: linear-gradient(86deg, #780eff -24.33%, #bf28ff 78.27%);
                     }
@@ -56,7 +63,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             case 'primary':
             default:
                 return css`
-                    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.7)};
+                    color: ${convertHexToRGBA(theme.palette.contrast, 0.7)};
                     background-color: ${$color === 'transparent'
                         ? 'transparent'
                         : theme.palette.action.background.default};

@@ -18,6 +18,7 @@ import {
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
 export const ResetSettingsButton = () => {
     const [open, setOpen] = useState(false);
@@ -60,24 +61,33 @@ export const ResetSettingsButton = () => {
                 </SettingsGroup>
             </SettingsGroupWrapper>
             <DialogContent>
-                <Stack direction="column" alignItems="center" justifyContent="space-between">
+                <Stack
+                    direction="column"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    gap={12}
+                    style={{ width: 500 }}
+                >
                     <Typography variant="h2">{t('reset-settings')}</Typography>
+                    <Typography variant="p">{t('reset-permanently')}</Typography>
+
                     <ToggleSwitch
                         checked={resetWallet}
                         disabled={loading}
                         onChange={() => setResetWallet((p) => !p)}
                         label={t('reset-wallet')}
                     />
-                    <Typography variant="p">{t('reset-permanently')}</Typography>
-                    <Stack direction="row" justifyContent="space-between" style={{ marginTop: '8px' }}>
-                        <SquaredButton disabled={loading} onClick={handleClose} color="warning">
+                    <Divider />
+
+                    <Stack direction="row" justifyContent="space-between" gap={8}>
+                        <SquaredButton disabled={loading} onClick={handleClose}>
                             {t('cancel')}
                         </SquaredButton>
 
                         {loading ? (
                             <CircularProgress />
                         ) : (
-                            <SquaredButton disabled={loading} onClick={resetSettings}>
+                            <SquaredButton disabled={loading} onClick={resetSettings} color="orange">
                                 {t('yes')}
                             </SquaredButton>
                         )}
