@@ -31,7 +31,7 @@ export default function AirdropLogout() {
                     />
                 </Typography>
                 <div style={{ maxWidth: 'fit-content', marginLeft: 'auto', padding: '20px' }}>
-                    <TextButton color="error" size="medium" onClick={logout}>
+                    <TextButton color="error" colorIntensity={200} size="medium" onClick={logout}>
                         {t('disconnect')}
                     </TextButton>
                 </div>

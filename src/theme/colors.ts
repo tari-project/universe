@@ -23,6 +23,7 @@
 const success = {
     50: '#E6FAF6',
     100: '#a1d2c1',
+    150: '#15D811',
     200: '#06C983',
     300: '#094E41',
 };
@@ -275,3 +276,4 @@ export const colors = {
 };
 
 export type Colours = typeof colors;
+export type ThemeColourGroup = keyof Colours;

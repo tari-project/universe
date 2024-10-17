@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
 
 import { ButtonStyleProps } from './button.types.ts';
+import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const StyledButton = styled.button<ButtonStyleProps>`
     line-height: ${({ theme }) => theme.typography.h6.lineHeight};
@@ -54,6 +55,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             case 'primary':
             default:
                 return css`
+                    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.7)};
                     background-color: ${$color === 'transparent'
                         ? 'transparent'
                         : theme.palette.action.background.default};

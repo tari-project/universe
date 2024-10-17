@@ -49,7 +49,7 @@ const CriticalErrorDialog = () => {
                     <Typography variant="p">{t('please-try-again-later')}</Typography>
 
                     {!logsReference ? (
-                        <TextButton color="warning" onClick={() => setDialogToShow('logs')}>
+                        <TextButton color="warning" colorIntensity={200} onClick={() => setDialogToShow('logs')}>
                             {t('send-logs', { ns: 'settings' })}
                         </TextButton>
                     ) : (

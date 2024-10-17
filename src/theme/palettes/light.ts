@@ -49,6 +49,7 @@ const lightPalette: ThemePalette = {
             main: c.tariPurple[600],
             primary: '#000000',
             secondary: '#797979',
+            accent: 'rgba(0,0,0,0.7)',
             disabled: c.grey[400],
             contrast: '#FFFFFF',
         },
@@ -58,7 +59,7 @@ const lightPalette: ThemePalette = {
             accent: c.grey[100],
         },
         success: {
-            main: c.success[200],
+            main: c.success[150],
             dark: c.success[300],
             light: c.success[100],
             contrast: c.success[300],

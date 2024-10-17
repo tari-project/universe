@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components';
 import { ButtonStyleProps, IconPosition } from '@app/components/elements/buttons/button.types.ts';
+import { ThemeColourGroup } from '@app/theme/colors.ts';
 
 const PADDING = '1rem';
 
@@ -80,17 +81,19 @@ export const IconWrapper = styled.div<{ $position?: IconPosition }>`
     }
 `;
 
-export const StyledTextButton = styled.button<ButtonStyleProps>`
+type TextButtonStyleProps = Omit<ButtonStyleProps, '$color'> & {
+    $color: ThemeColourGroup;
+    $colorIntensity?: number;
+};
+export const StyledTextButton = styled.button<TextButtonStyleProps>`
     ${BASE_STYLES}
-    ${({ theme, $color, $size }) => {
+    ${({ theme, $color, $colorIntensity, $size }) => {
         return css`
-            color: ${theme.palette[$color || 'primary'].main};
+            color: ${theme.colors[$color][$colorIntensity || 600]};
             font-size: ${$size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize};
             padding: ${$size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`};
             &:hover {
-                background: ${theme.palette[$color || 'primary'].wisp};
-                color: ${theme.palette[$color || 'primary'].dark};
-                border-radius: ${theme.shape.borderRadius.buttonSquared};
+                opacity: 0.7;
             }
         `;
     }}}

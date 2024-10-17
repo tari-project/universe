@@ -34,8 +34,8 @@ const darkPalette: ThemePalette = {
             main: c.tariPurple[900],
             dark: c.tariPurple[950],
             light: c.tariPurple[400],
-            shadow: c.tariPurpleAlpha[80],
-            wisp: c.tariPurpleAlpha[5],
+            shadow: c.tariPurpleAlpha[20],
+            wisp: c.tariPurpleAlpha[10],
             contrast: '#FFFFFF',
         },
         secondary: {
@@ -48,7 +48,8 @@ const darkPalette: ThemePalette = {
         text: {
             main: c.tariPurple[300],
             primary: '#FFFFFF',
-            secondary: c.grey[300],
+            accent: 'rgba(255,255,255,0.7)',
+            secondary: c.grey[400],
             disabled: 'rgba(255,255,255,0.4)',
             contrast: '#000000',
         },

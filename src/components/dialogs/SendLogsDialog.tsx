@@ -12,7 +12,7 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 
-export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference) => void }) {
+export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference: string) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
@@ -55,7 +55,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
     return (
         <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
             <DialogContent>
-                <Stack direction="column" alignItems="center" justifyContent="space-between">
+                <Stack direction="column" alignItems="center" justifyContent="space-between" gap={20}>
                     <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
                     <TextArea
                         onChange={(e) => setFeedback(e.target.value)}
