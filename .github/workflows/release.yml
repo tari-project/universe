@@ -172,6 +172,14 @@ jobs:
               uses: microsoft/setup-msbuild@v2
               if: startsWith(runner.os,'Windows')
 
+            - name: Install Wixsharp (windows)
+              run: dotnet ool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
+              if: startsWith(runner.os,'Windows')
+
+            - name: Install WiX (windows)
+              run: dotnet tool install --global wix --version 3.14.1 --allow-downgrade --create-manifest-if-needed
+              if: startsWith(runner.os,'Windows')
+
             - name: Build Installer
               shell: bash
               env:
@@ -184,14 +192,6 @@ jobs:
                   git_hash=$(git rev-parse --short "$GITHUB_SHA")
                   mv Installer.msi MyApplication-$(date +'%Y-%m-%d')-${git_hash}.msi
                   ls
-
-            - name: Install Wixsharp (windows)
-              run: dotnet ool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
-              if: startsWith(runner.os,'Windows')
-
-            - name: Install WiX (windows)
-              run: dotnet tool install --global wix --version 3.14.1 --allow-downgrade --create-manifest-if-needed
-              if: startsWith(runner.os,'Windows')
 
             - name: Set environment variables (windows)
               if: startsWith(runner.os,'Windows')
