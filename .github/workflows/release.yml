@@ -262,7 +262,6 @@ jobs:
                   args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
             - name: Build WiX on Windows
-              shell: bash
               if: startsWith(runner.os,'Windows')
               env:
                   TARI_UNIVERSE_INSTALLER_NAME: Tari.Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
