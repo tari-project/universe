@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::process_watcher::ProcessWatcher;
-use crate::tor_adapter::TorAdapter;
+use crate::tor_adapter::{TorAdapter, TorConfig};
 use tari_shutdown::ShutdownSignal;
 
 pub(crate) struct TorManager {
@@ -36,6 +36,7 @@ impl TorManager {
     ) -> Result<(), anyhow::Error> {
         {
             let mut process_watcher = self.watcher.write().await;
+            process_watcher.adapter.load_or_create_config(config_path.clone()).await?;
             process_watcher
                 .start(
                     app_shutdown,
@@ -66,6 +67,10 @@ impl TorManager {
         }
 
         Ok(())
+    }
+
+    pub async fn get_tor_config(&self) -> TorConfig {
+        self.watcher.read().await.adapter.get_tor_config()
     }
 
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {

@@ -8,6 +8,7 @@ use log::{debug, error, info, warn};
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
 use serde::Serialize;
+use tor_adapter::TorConfig;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -297,6 +298,20 @@ async fn set_airdrop_access_token(
 }
 
 #[tauri::command]
+async fn get_tor_config(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<TorConfig, String> {
+    let timer = Instant::now();
+    let tor_config = state.tor_manager.get_tor_config().await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_tor_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(tor_config)
+}
+
+#[tauri::command]
 async fn get_app_in_memory_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -572,7 +587,7 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
-    if use_tor && cfg!(target_os = "windows") {
+    if use_tor {
         progress.set_max(5).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
@@ -669,7 +684,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
-    if use_tor && cfg!(target_os = "windows") {
+    if use_tor {
         state
             .tor_manager
             .ensure_started(
@@ -1930,7 +1945,8 @@ fn main() {
             get_external_dependencies,
             set_use_tor,
             get_transaction_history,
-            import_seed_words
+            import_seed_words,
+            get_tor_config
         ])
         .build(tauri::generate_context!())
         .inspect_err(
