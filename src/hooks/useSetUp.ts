@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../types.ts';
 
@@ -14,6 +14,7 @@ import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/u
 import { useThemeSetup } from '@app/hooks/useTheming.ts';
 
 export function useSetUp() {
+    const [isInitializing, setIsInitializing] = useState(false);
     const setView = useUIStore((s) => s.setView);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setError = useAppStateStore((s) => s.setError);
@@ -89,12 +90,17 @@ export function useSetUp() {
                     break;
             }
         });
-        if (isAfterAutoUpdate) {
+        if (isAfterAutoUpdate && !isInitializing) {
+            setIsInitializing(true);
             clearStorage();
-            invoke('setup_application').catch((e) => {
-                setCriticalError(`Failed to setup application: ${e}`);
-                setView('mining');
-            });
+            invoke('setup_application')
+                .catch((e) => {
+                    setCriticalError(`Failed to setup application: ${e}`);
+                    setView('mining');
+                })
+                .then(() => {
+                    setIsInitializing(false);
+                });
         }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
@@ -112,5 +118,6 @@ export function useSetUp() {
         backendInMemoryConfig?.airdropApiUrl,
         handleRefreshAirdropTokens,
         setupThemeBg,
+        isInitializing,
     ]);
 }

@@ -7,7 +7,7 @@
     },
     "package": {
         "productName": "Tari Universe (Alpha)",
-        "version": "0.5.27"
+        "version": "0.5.28"
     },
     "tauri": {
         "systemTray": {

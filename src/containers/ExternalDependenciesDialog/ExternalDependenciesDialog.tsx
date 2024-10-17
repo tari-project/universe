@@ -19,6 +19,7 @@ export const ExternalDependenciesDialog = () => {
     const setView = useUIStore((s) => s.setView);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const [isRestarting, setIsRestarting] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(false);
 
     const [installationSlot, setInstallationSlot] = useState<number | null>(null);
 
@@ -34,11 +35,17 @@ export const ExternalDependenciesDialog = () => {
 
     const handleContinue = useCallback(() => {
         setShowExternalDependenciesDialog(false);
-        invoke('setup_application').catch((e) => {
-            setCriticalError(`Failed to setup application: ${e}`);
-            setView('mining');
-        });
-    }, [setCriticalError, setShowExternalDependenciesDialog, setView]);
+        if (isInitializing) return;
+        setIsInitializing(true);
+        invoke('setup_application')
+            .catch((e) => {
+                setCriticalError(`Failed to setup application: ${e}`);
+                setView('mining');
+            })
+            .then(() => {
+                setIsInitializing(false);
+            });
+    }, [setCriticalError, setShowExternalDependenciesDialog, setView, isInitializing]);
 
     const shouldAllowContinue = Object.values(externalDependencies).every(
         (missingDependency) => missingDependency.status === ExternalDependencyStatus.Installed

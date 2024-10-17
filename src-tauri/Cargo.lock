@@ -98,6 +98,55 @@ dependencies = [
 ]
 
 [[package]]
+name = "anstream"
+version = "0.6.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64e15c1ab1f89faffbf04a634d5e1962e9074f2741eef6d97f3c4e322426d526"
+dependencies = [
+ "anstyle",
+ "anstyle-parse",
+ "anstyle-query",
+ "anstyle-wincon",
+ "colorchoice",
+ "is_terminal_polyfill",
+ "utf8parse",
+]
+
+[[package]]
+name = "anstyle"
+version = "1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bec1de6f59aedf83baf9ff929c98f2ad654b97c9510f4e70cf6f661d49fd5b1"
+
+[[package]]
+name = "anstyle-parse"
+version = "0.2.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb47de1e80c2b463c735db5b217a0ddc39d612e7ac9e2e96a5aed1f57616c1cb"
+dependencies = [
+ "utf8parse",
+]
+
+[[package]]
+name = "anstyle-query"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d36fc52c7f6c869915e99412912f22093507da8d9e942ceaf66fe4b7c14422a"
+dependencies = [
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "anstyle-wincon"
+version = "3.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bf74e1b6e971609db8ca7a9ce79fd5768ab6ae46441c572e46cf596f59e57f8"
+dependencies = [
+ "anstyle",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.89"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -844,6 +893,65 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap"
+version = "4.5.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b97f376d85a664d5837dbae44bf546e6477a679ff6610010f17276f686d867e8"
+dependencies = [
+ "clap_builder",
+ "clap_derive",
+]
+
+[[package]]
+name = "clap_builder"
+version = "4.5.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19bc80abd44e4bed93ca373a0704ccbd1b710dc5749406201bb018272808dc54"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "clap_lex",
+ "strsim",
+]
+
+[[package]]
+name = "clap_complete"
+version = "4.5.33"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9646e2e245bf62f45d39a0f3f36f1171ad1ea0d6967fd114bca72cb02a8fcdfb"
+dependencies = [
+ "clap 4.5.20",
+]
+
+[[package]]
+name = "clap_derive"
+version = "4.5.18"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ac6a0c7b1a9e9a5186361f67dfa1b88213572f427fb9ab038efb2bd8c582dab"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.77",
+]
+
+[[package]]
+name = "clap_lex"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1462739cb27611015575c0c11df5df7601141071f07518d56fcc1be504cbec97"
+
+[[package]]
+name = "clap_mangen"
+version = "0.2.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fbae9cbfdc5d4fa8711c09bd7b83f644cb48281ac35bf97af3e47b0675864bdf"
+dependencies = [
+ "clap 4.5.20",
+ "roff",
+]
+
+[[package]]
 name = "cocoa"
 version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -878,6 +986,12 @@ name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
+
+[[package]]
+name = "colorchoice"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3fd119d74b830634cea2a0f58bbd0d54540518a14397557951e79340abc28c0"
 
 [[package]]
 name = "combine"
@@ -2665,6 +2779,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "include-lines"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4be037b494f74d7bded0680228b3133bc268cbe50282f51c25fa46b890cfedb9"
+dependencies = [
+ "include-lines-proc",
+]
+
+[[package]]
+name = "include-lines-proc"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd1ff2792810c5bb1b591ae8ac768bda8b0238a3b61cb546d062709f2a6a4f77"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2754,6 +2887,12 @@ dependencies = [
  "is-docker",
  "once_cell",
 ]
+
+[[package]]
+name = "is_terminal_polyfill"
+version = "1.70.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
 
 [[package]]
 name = "itertools"
@@ -4218,6 +4357,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "phraze"
+version = "0.3.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2dfa808155f59afafc457bd1a3835cb35d827f4387238099faa673447a656bfb"
+dependencies = [
+ "clap 4.5.20",
+ "clap_complete",
+ "clap_mangen",
+ "include-lines",
+ "rand 0.8.5",
+ "unicode-normalization",
+]
+
+[[package]]
 name = "pin-project"
 version = "0.4.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4934,6 +5087,12 @@ dependencies = [
  "untrusted 0.9.0",
  "windows-sys 0.52.0",
 ]
+
+[[package]]
+name = "roff"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "88f8660c1ff60292143c98d08fc6e2f654d722db50410e3f3797d40baaf9d8f3"
 
 [[package]]
 name = "rustc-demangle"
@@ -5785,7 +5944,7 @@ version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c6b5c64445ba8094a6ab0c3cd2ad323e07171012d9c98b0b15651daf1787a10"
 dependencies = [
- "clap",
+ "clap 2.34.0",
  "lazy_static",
  "structopt-derive",
 ]
@@ -6083,7 +6242,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.5.27"
+version = "0.5.28"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6107,6 +6266,7 @@ dependencies = [
  "nix 0.29.0",
  "nvml-wrapper",
  "open 5.3.0",
+ "phraze",
  "rand 0.8.5",
  "regex",
  "reqwest 0.12.7",
@@ -7532,6 +7692,12 @@ name = "utf-8"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
+
+[[package]]
+name = "utf8parse"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
