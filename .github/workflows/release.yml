@@ -172,8 +172,12 @@ jobs:
               uses: microsoft/setup-msbuild@v2
               if: startsWith(runner.os,'Windows')
 
+            - name: List wix versions (windows)
+              if: startsWith(runner.os,'Windows')
+              run: dotnet tool search wix --take 1 --detail --prerelease
+
             - name: Install WiX (windows)
-              run: dotnet tool install --global wix --version 3.14.1
+              run: dotnet tool install --global wix --version 3.14.1 --allow-downgrade --create-manifest-if-needed
               if: startsWith(runner.os,'Windows')
 
             - name: Set environment variables (windows)
