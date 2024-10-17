@@ -231,6 +231,10 @@ jobs:
                   includeRelease: true
                   args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
+            - name: Windows tree
+              if: startsWith(runner.os,'Windows')
+              run: tree /f /a
+
             - name: Build WiX on Windows
               if: runner.os == 'Windows'
               env:
