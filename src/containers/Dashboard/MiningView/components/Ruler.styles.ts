@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { m } from 'framer-motion';
+import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const Wrapper = styled(m.div)`
     overflow: hidden;
@@ -41,7 +42,7 @@ export const RulerMark = styled(m.div)<{ $opacity?: number }>`
     height: 100%;
     position: relative;
     font-weight: 700;
-    color: ${({ theme }) => theme.colors.darkAlpha[20]};
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.text.primary!, 0.2)};
     font-family: Poppins, sans-serif;
     font-variant-numeric: tabular-nums;
     text-align: right;

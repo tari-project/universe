@@ -18,7 +18,7 @@ export const TileItem = styled(m.div)`
 
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    box-shadow: 2px 8px 8px 0 ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.04)};
+    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
 
     display: flex;
     flex-direction: column;

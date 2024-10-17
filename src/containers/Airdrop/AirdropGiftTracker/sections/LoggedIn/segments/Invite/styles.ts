@@ -1,5 +1,6 @@
 import { m } from 'framer-motion';
 import styled from 'styled-components';
+import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -61,7 +62,7 @@ export const Title = styled('div')`
 `;
 
 export const Text = styled('div')`
-    color: ${({ theme }) => theme.colors.grey[500]};
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.5)};
     text-align: center;
     font-size: 11px;
     font-weight: 600;
