@@ -44,6 +44,10 @@ jobs:
 
         runs-on: ${{ matrix.platform }}
         steps:
+            - uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: '3.1.x'
+
             - name: Checkout repository
               uses: actions/checkout@v4
 
