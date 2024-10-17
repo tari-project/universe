@@ -173,7 +173,7 @@ jobs:
               if: startsWith(runner.os,'Windows')
 
             - name: Install WiX (windows)
-              run: dotnet tool install --global wix
+              run: dotnet tool install --global wix --version 3.14.1
               if: startsWith(runner.os,'Windows')
 
             - name: Set environment variables (windows)
