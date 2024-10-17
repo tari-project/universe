@@ -47,7 +47,6 @@ jobs:
             - uses: actions/setup-dotnet@v4
               with:
                   dotnet-version: '3.1.x'
-                  global-json-file: 'src-tauri/global.json'
 
             - name: Checkout repository
               uses: actions/checkout@v4
@@ -177,13 +176,22 @@ jobs:
               uses: microsoft/setup-msbuild@v2
               if: startsWith(runner.os,'Windows')
 
-            - name: Install Wixsharp (windows)
-              run: dotnet tool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
+            # - name: Install Wixsharp (windows)
+            #   run: dotnet tool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
+            #   if: startsWith(runner.os,'Windows')
+            - name: Wixsharp package (windows)
               if: startsWith(runner.os,'Windows')
+              run: |
+                  choco install wixsharp -y
+
+            # - name: Install WiX (windows)
+            #   run: dotnet tool install --global wix --version 3.14.1 --allow-downgrade --create-manifest-if-needed
+            #   if: startsWith(runner.os,'Windows')
 
             - name: Install WiX (windows)
-              run: dotnet tool install --global wix --version 3.14.1 --allow-downgrade --create-manifest-if-needed
               if: startsWith(runner.os,'Windows')
+              run: |
+                  choco install wixtoolset -y
 
             - name: Build Installer
               shell: bash
