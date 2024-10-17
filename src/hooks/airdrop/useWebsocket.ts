@@ -13,7 +13,7 @@ export const useWebsocket = () => {
 
     const init = () => {
         if (!socket && baseUrl) {
-            socket = io(baseUrl, { secure: true, path: '/socket.io', transports: ['websocket'] });
+            socket = io(baseUrl, { secure: true, transports: ['websocket', 'polling'] });
         }
 
         if (!socket) return;
