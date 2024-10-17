@@ -186,7 +186,7 @@ jobs:
               env:
                   TARI_UNIVERSE_INSTALLER_NAME: Tari Universe (Alpha)_0.5.13_x64_en-US.msi
                   TARI_UNIVERSE_APP_VERSION: 0.5.13
-              run: wix build .\tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext WixToolset.BootstrapperApplications.wixext
+              run: wix build .\tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext
 
             - name: Set environment variables (windows)
               if: startsWith(runner.os,'Windows')
