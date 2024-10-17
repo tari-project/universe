@@ -5,7 +5,7 @@
 		<Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" />
 		
 		<BootstrapperApplication>
-			<bal:WixStandardBootstrapperApplication LogoFile=".\resources\icon.png" ThemeFile=".\RtfTheme.xml" LocalizationFile=".\RtfTheme.wxl" LicenseFile=".\resources\license.rtf" Theme="rtfLicense" />
+			<bal:WixInternalUIBootstrapperApplication LogoFile=".\resources\icon.png" LocalizationFile="./resources/license.rtf" />
 		</BootstrapperApplication>
 
 
@@ -35,7 +35,7 @@
 			<ExePackage Id="VC_REDIST_ARM64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (Arm64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="(ARCH_NAME = &quot;ARM64&quot;)" DetectCondition="(VCRUNTIME_ARM64_VER &gt;= VCRUNTIME_VER) AND (ARCH_NAME = &quot;ARM64&quot;)" SourceFile=".\executables\VC_redist.arm64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
 
 			<!-- Tari Universe x64 -->
-			<MsiPackage SourceFile="..\src-tauri\target\release\bundle\msi\$(env.TARI_UNIVERSE_INSTALLER_NAME)" After="VC_REDIST_X64" InstallCondition="VersionNT64" DisplayInternalUI="yes" Vital="yes" />		
+			<MsiPackage SourceFile="..\src-tauri\target\release\bundle\msi\$(env.TARI_UNIVERSE_INSTALLER_NAME)" After="VC_REDIST_X64" InstallCondition="VersionNT64"  Vital="yes" />		
 		</Chain>
 	</Bundle>
 </Wix>
