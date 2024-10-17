@@ -5,7 +5,7 @@
         "minotari_node": "=1.7.0-rc.2",
         "wallet": "=1.7.0-rc.2",
         "sha-p2pool": "=0.4.2",
-        "xtrgpuminer": "=0.1.16",
+        "xtrgpuminer": "=0.1.17",
         "tor": "=13.5.6"
     }
 }
