@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::time::Instant;
 
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -7,11 +6,13 @@ use crate::process_adapter::{
 use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+// use log::warn;
 use reqwest::Client;
 use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 
+// const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 
 #[derive(Clone, PartialEq, Default)]
 pub(crate) struct MergeMiningProxyConfig {
@@ -113,7 +114,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "http://node.c3pool.org:18081",
             "http://xmr-full.p2pool.uk:18089",
             // x"https://monero.stackwallet.com:18081",
-            "http://xmr.support:18081",
+            // x "http://xmr.support:18081",
             //x "http://xmr.nthrow.nyc:18081",
         ];
         for node in nodes {
@@ -147,7 +148,6 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             },
             MergeMiningProxyStatusMonitor {
                 json_rpc_port: config.port,
-                start_time: Instant::now(),
             },
         ))
     }
@@ -164,8 +164,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 #[derive(Clone)]
 pub struct MergeMiningProxyStatusMonitor {
     json_rpc_port: u16,
-    #[allow(dead_code)]
-    start_time: std::time::Instant,
+    // start_time: std::time::Instant,
 }
 
 #[async_trait]
