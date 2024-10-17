@@ -8,8 +8,8 @@ use crate::network_utils::get_free_port;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::xmrig;
 use crate::xmrig::http_api::XmrigHttpApiClient;
-use crate::{utils, xmrig};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
