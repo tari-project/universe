@@ -179,10 +179,6 @@ jobs:
             # - name: Install Wixsharp (windows)
             #   run: dotnet tool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
             #   if: startsWith(runner.os,'Windows')
-            - name: Wixsharp package (windows)
-              if: startsWith(runner.os,'Windows')
-              run: |
-                  choco install wixsharp -y
 
             # - name: Install WiX (windows)
             #   run: dotnet tool install --global wix --version 3.14.1 --allow-downgrade --create-manifest-if-needed
