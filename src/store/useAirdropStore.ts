@@ -148,6 +148,7 @@ interface AirdropStore extends AirdropState {
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
     setSeenPermissions: (seenPermissions: boolean) => void;
+    setUserGems: (userGems: number) => void;
     logout: () => void;
 }
 
@@ -181,6 +182,17 @@ export const useAirdropStore = create<AirdropStore>()(
                 }),
             setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints }),
+            setUserGems: (userGems: number) =>
+                set((state) => {
+                    const userPointsFormatted = {
+                        ...state.userPoints,
+                        base: { ...state.userPoints?.base, gems: userGems },
+                    } as UserPoints;
+
+                    return {
+                        userPoints: userPointsFormatted,
+                    };
+                }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
             setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
