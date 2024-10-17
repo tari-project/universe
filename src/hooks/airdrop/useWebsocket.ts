@@ -27,12 +27,6 @@ export const useWebsocket = () => {
                     setUserGems(msgParsed.data.userPoints?.gems);
                 }
             });
-            socket.on(userId as string, (msg: string) => {
-                const msgParsed = JSON.parse(msg) as QuestCompletedEvent;
-                if (msgParsed.data.userPoints?.gems) {
-                    setUserGems(msgParsed.data.userPoints?.gems);
-                }
-            });
         });
     };
 
