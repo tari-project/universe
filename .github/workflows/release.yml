@@ -44,9 +44,9 @@ jobs:
 
         runs-on: ${{ matrix.platform }}
         steps:
-            - uses: actions/setup-dotnet@v4
-              with:
-                  dotnet-version: '3.1.x'
+            # - uses: actions/setup-dotnet@v4
+            #   with:
+            #       dotnet-version: '3.1.x'
 
             - name: Checkout repository
               uses: actions/checkout@v4
@@ -187,7 +187,11 @@ jobs:
             - name: Install WiX (windows)
               if: startsWith(runner.os,'Windows')
               run: |
-                  choco install wixtoolset -y
+                  choco install wixtoolset -y -f --version=3.14.1
+                  echo "%wix%"
+                  echo %wix%
+                  echo "WIX_PATH_CANDLE=%wix%\bin\candle.exe" >> $GITHUB_PATH
+                  echo "WIX_PATH_LIGHT=%wix%\bin\light.exe" >> $GITHUB_PATH
 
             # - name: Build Installer
             #   shell: bash
