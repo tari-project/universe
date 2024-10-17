@@ -112,7 +112,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             // x"https://monero.homeqloud.com:443",
             // x"http://monero1.com:18089",
             "http://node.c3pool.org:18081",
-            "http://xmr-full.p2pool.uk:18089",
+            // flaky x "http://xmr-full.p2pool.uk:18089",
             // x"https://monero.stackwallet.com:18081",
             // x "http://xmr.support:18081",
             //x "http://xmr.nthrow.nyc:18081",
