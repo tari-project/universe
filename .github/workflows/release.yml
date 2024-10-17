@@ -173,7 +173,7 @@ jobs:
               if: startsWith(runner.os,'Windows')
 
             - name: Install Wixsharp (windows)
-              run: dotnet ool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
+              run: dotnet tool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
               if: startsWith(runner.os,'Windows')
 
             - name: Install WiX (windows)
