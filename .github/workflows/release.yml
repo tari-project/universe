@@ -168,12 +168,23 @@ jobs:
               run: dotnet tool install --global wix
               if: startsWith(runner.os,'Windows')
 
+            - name: Add WiX Extensions ( Windows )
+              if: startsWith(runner.os,'Windows')
+              run: |
+                  wix extension add WixToolset.Util.wixext
+                  wix extension add WixToolset.Bal.wixext
+
+            - name: List WiX Extensions ( Windows )
+              if: startsWith(runner.os,'Windows')
+              run: |
+                  wix extension list
+
             - name: Build WiX on Windows
               if: runner.os == 'Windows'
               env:
                   TARI_UNIVERSE_INSTALLER_NAME: Tari Universe (Alpha)_0.5.13_x64_en-US.msi
                   TARI_UNIVERSE_APP_VERSION: 0.5.13
-              run: wix build .\tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext 	WixToolset.Bal.wixext
+              run: wix build .\tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext WixToolset.Bal.wixext
 
             - name: Set environment variables (windows)
               if: startsWith(runner.os,'Windows')
