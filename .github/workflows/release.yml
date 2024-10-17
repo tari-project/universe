@@ -48,6 +48,10 @@ jobs:
             #   with:
             #       dotnet-version: '3.1.x'
 
+            - name: tree ( windows )
+              if: startsWith(runner.os,'Windows')
+              run: tree /f
+
             - name: Checkout repository
               uses: actions/checkout@v4
 
@@ -191,8 +195,6 @@ jobs:
                   echo "WIX_PATH_CANDLE=%wix%\bin\candle.exe" >> $GITHUB_PATH
                   echo "WIX_PATH_LIGHT=%wix%\bin\light.exe" >> $GITHUB_PATH
 
-            - name: XDTesting Print Directory Structure
-              uses: FiorelaCiroku/XDTesting-Print-Directory-Structure@v1.0.2
             # - name: Build Installer
             #   shell: bash
             #   env:
