@@ -170,11 +170,11 @@ jobs:
 
             - name: Add WiX Extensions ( 1 / 2 ) ( Windows )
               if: startsWith(runner.os,'Windows')
-              run: wix extension add -g WixToolset.Util.wixext
+              run: wix extension add WixToolset.Util.wixext
 
             - name: Add WiX Extensions ( 2 / 2 ) ( Windows )
               if: startsWith(runner.os,'Windows')
-              run: wix extension add -g WixToolset.BootstrapperApplications.wixext
+              run: wix extension add WixToolset.BootstrapperApplications.wixext
 
             - name: List WiX Extensions ( Windows )
               if: startsWith(runner.os,'Windows')
