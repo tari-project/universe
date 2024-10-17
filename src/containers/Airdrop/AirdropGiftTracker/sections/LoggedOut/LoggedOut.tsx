@@ -3,7 +3,7 @@ import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
 import { useCallback, useEffect, useState } from 'react';
 import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
-import ClaimModal from '../../components/Claimmodal/ClaimModal';
+import ClaimModal from '../../components/ClaimModal/ClaimModal';
 import { useTranslation } from 'react-i18next';
 import gemImage from '../../images/gem.png';
 
