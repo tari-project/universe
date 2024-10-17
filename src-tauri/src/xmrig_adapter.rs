@@ -4,11 +4,12 @@ use log::warn;
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 
+use crate::network_utils::get_free_port;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
-use crate::xmrig;
 use crate::xmrig::http_api::XmrigHttpApiClient;
+use crate::{utils, xmrig};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -23,12 +24,8 @@ impl XmrigNodeConnection {
                 vec![
                     "--daemon".to_string(),
                     format!("--url={}:{}", host_name, port),
-                    "--daemon-poll-interval=10000".to_string(),
+                    // "--daemon-poll-interval=10000".to_string(),
                     "--coin=monero".to_string(),
-                    // TODO: Generate password
-                    "--http-port".to_string(),
-                    "9090".to_string(),
-                    "--http-access-token=pass".to_string(),
                 ]
             }
         }
@@ -45,7 +42,7 @@ pub struct XmrigAdapter {
 
 impl XmrigAdapter {
     pub fn new() -> Self {
-        let http_api_port = 9090;
+        let http_api_port = get_free_port().unwrap_or(18000);
         let http_api_token = "pass".to_string();
         Self {
             node_connection: None,
