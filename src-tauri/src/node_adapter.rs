@@ -337,6 +337,20 @@ impl MinotariNodeStatusMonitor {
                         "waiting-for-header-sync".to_string(),
                         Some(HashMap::from([
                             (
+                                "local_header_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_header_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            ("local_block_height".to_string(), "0".to_string()),
+                            (
+                                "tip_block_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            // Keep these fields for old translations that have not been updated
+                            (
                                 "local_height".to_string(),
                                 sync_progress.local_height.to_string(),
                             ),
@@ -359,6 +373,24 @@ impl MinotariNodeStatusMonitor {
                     .update(
                         "waiting-for-block-sync".to_string(),
                         Some(HashMap::from([
+                            // Assume the headers have already been synced
+                            (
+                                "local_header_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            (
+                                "tip_header_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            (
+                                "local_block_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_block_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            // Keep these fields for old translations that have not been updated
                             (
                                 "local_height".to_string(),
                                 sync_progress.local_height.to_string(),
