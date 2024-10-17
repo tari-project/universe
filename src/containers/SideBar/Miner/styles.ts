@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { m } from 'framer-motion';
-import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const MinerContainer = styled(m.div)`
     display: flex;

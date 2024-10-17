@@ -85,14 +85,17 @@ const darkPalette: ThemePalette = {
         },
         action: {
             background: {
-                default: c.grey[900],
+                default: c.lightAlpha[10],
                 accent: c.grey[850],
                 contrast: '#000',
                 secondary: c.brightGreen[500],
             },
             hover: {
-                default: c.grey[850],
+                default: c.lightAlpha[5],
                 accent: c.grey[800],
+            },
+            text: {
+                main: '#fff',
             },
         },
         component: {

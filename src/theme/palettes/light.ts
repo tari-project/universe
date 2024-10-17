@@ -95,6 +95,9 @@ const lightPalette: ThemePalette = {
                 default: c.grey[150],
                 accent: c.grey[100],
             },
+            text: {
+                main: c.tariPurple[600],
+            },
         },
         component: {
             main: '#000',

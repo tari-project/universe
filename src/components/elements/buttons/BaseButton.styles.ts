@@ -45,7 +45,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 return css`
                     box-shadow: 0 2px 20px -8px ${theme.palette.contrastAlpha};
                     background-color: ${theme.palette.background.paper};
-                    color: ${theme.palette.text[$color || 'main']};
+                    color: ${theme.palette.action.text.main};
                     &:hover {
                         background-color: ${theme.palette.action.hover.accent};
                         box-shadow: none;
@@ -54,9 +54,13 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             case 'primary':
             default:
                 return css`
-                    background-color: ${theme.palette.action.background.default};
+                    background-color: ${$color === 'transparent'
+                        ? 'transparent'
+                        : theme.palette.action.background.default};
                     &:hover {
-                        background-color: ${theme.palette.action.hover.accent};
+                        background-color: ${$color === 'transparent'
+                            ? theme.palette.action.hover.accent
+                            : theme.palette.action.hover.default};
                     }
                 `;
         }

@@ -50,5 +50,6 @@ export interface Palette {
     action: {
         hover: Colour;
         background: Colour;
+        text: Colour;
     };
 }
