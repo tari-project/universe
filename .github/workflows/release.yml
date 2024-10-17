@@ -1,4 +1,3 @@
----
 name: Release
 
 'on':
@@ -44,14 +43,6 @@ jobs:
 
         runs-on: ${{ matrix.platform }}
         steps:
-            # - uses: actions/setup-dotnet@v4
-            #   with:
-            #       dotnet-version: '3.1.x'
-
-            - name: tree ( windows )
-              if: startsWith(runner.os,'Windows')
-              run: tree /f
-
             - name: Checkout repository
               uses: actions/checkout@v4
 
@@ -59,13 +50,11 @@ jobs:
               if: ${{ startsWith(runner.os,'Windows') }}
               run: |
                   choco upgrade yq -y
-
             - name: beta builds - Install dependencies (linux) [yq]
               if: ${{ startsWith(runner.os,'Linux') }}
               shell: bash
               run: |
                   sudo bash ./scripts/check-get-yq.sh
-
             - name: Set environment variables for beta builds
               if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
               env:
@@ -99,7 +88,6 @@ jobs:
                     Cargo.toml
                   cat Cargo.toml
                   sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json
-
             - name: Set environment variables for RELEASE builds
               if: ${{ startsWith(github.ref, 'refs/heads/release') }}
               shell: bash
@@ -118,7 +106,6 @@ jobs:
                   yq eval ".tauri.bundle.identifier = \"com.tari.universe\"" -i tauri.conf.json
                   yq eval ".tauri.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\"]" \
                     -i tauri.conf.json
-
             - name: Node.js setup
               uses: actions/setup-node@v4
               with:
@@ -157,7 +144,6 @@ jobs:
                     patchelf \
                     libprotobuf-dev \
                     protobuf-compiler
-
             - name: Install dependencies (macOS)
               if: startsWith(runner.os,'macOS')
               run: |
@@ -169,51 +155,24 @@ jobs:
                   rustup target add aarch64-apple-darwin
                   rustup toolchain install stable-x86_64-apple-darwin --force-non-host
                   rustup toolchain install stable-aarch64-apple-darwin --force-non-host
-
             - name: Install dependencies (windows)
               if: startsWith(runner.os,'Windows')
               run: |
                   vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
                   choco upgrade protoc -y
-
             - name: Add msbuild to PATH (windows)
               uses: microsoft/setup-msbuild@v2
               if: startsWith(runner.os,'Windows')
 
-            # - name: Install Wixsharp (windows)
-            #   run: dotnet tool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
-            #   if: startsWith(runner.os,'Windows')
-
-            # - name: Install WiX (windows)
-            #   run: dotnet tool install --global wix --version 3.14.1 --allow-downgrade --create-manifest-if-needed
-            #   if: startsWith(runner.os,'Windows')
-
             - name: Install WiX (windows)
+              run: dotnet tool install --global wix
               if: startsWith(runner.os,'Windows')
-              run: |
-                  choco install wixtoolset -y -f --version=3.14.1
-
-            # - name: Build Installer
-            #   shell: bash
-            #   env:
-            #       WIX_PATH_CANDLE: 'C:/Program Files (x86)/WiX Toolset v3.11/bin/candle.exe'
-            #       WIX_PATH_LIGHT: 'C:/Program Files (x86)/WiX Toolset v3.11/bin/light.exe'
-            #   run: |
-            #       mkdir wixout
-            #       "$WIX_PATH_CANDLE" Product.wxs -o wixout/ -ext WixUtilExtension -ext WixUIExtension
-            #       "$WIX_PATH_LIGHT" wixout/*.wixobj -o Installer.msi -ext WixUtilExtension -ext WixUIExtension
-            #       git_hash=$(git rev-parse --short "$GITHUB_SHA")
-            #       mv Installer.msi MyApplication-$(date +'%Y-%m-%d')-${git_hash}.msi
-            #       ls
 
             - name: Set environment variables (windows)
               if: startsWith(runner.os,'Windows')
               shell: bash
               run: |
                   echo "SQLITE3_LIB_DIR=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
-                  echo "CANDLE_PATH=%wix%\bin\candle.exe" >> $GITHUB_ENV
-                  echo "LIGHT_PATH=%wix%\bin\light.exe" >> $GITHUB_ENV
-
             - name: Azure code-signing setup (windows only)
               if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
               shell: bash
@@ -227,12 +186,10 @@ jobs:
                       ./tauri.windows.conf.json
                   cat ./tauri.windows.conf.json
                   cargo install trusted-signing-cli
-
             - name: Install dependencies (node)
               run: |
                   npm --version
                   npm install
-
             - name: Build Tauri apps
               id: build
               uses: tauri-apps/tauri-action@v0.5.14
@@ -262,17 +219,11 @@ jobs:
                   args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
             - name: Build WiX on Windows
-              if: startsWith(runner.os,'Windows')
+              if: runner.os == 'Windows'
               env:
                   TARI_UNIVERSE_INSTALLER_NAME: Tari.Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
                   TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
-              run: |
-                  mkdir wixout
-                  "$WIX_PATH_CANDLE" ./tari-win-bundler/Bundle.wxs -o wixout/ -ext WixUtilExtension -ext WixBalExtension
-                  "$WIX_PATH_LIGHT" wixout/*.wixobj -o Installer.exe -ext WixUtilExtension -ext WixBalExtension
-                  git_hash=$(git rev-parse --short "$GITHUB_SHA")
-                  mv Installer.exe MyApplication-$(date +'%Y-%m-%d')-${git_hash}.exe
-                  ls
+              run: wix build .\tari-win-bundler\Bundle.wxs
 
             - name: Debug step {artifactPaths}
               if: ${{ true }}
