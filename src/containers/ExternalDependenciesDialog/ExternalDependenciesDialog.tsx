@@ -75,7 +75,7 @@ export const ExternalDependenciesDialog = () => {
                     ))}
                     <Stack direction="row" justifyContent="flex-end" gap={8}>
                         <SquaredButton
-                            color="secondary"
+                            color="grey"
                             size="medium"
                             onClick={handleContinue}
                             disabled={isRestarting || !shouldAllowContinue}

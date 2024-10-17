@@ -21,7 +21,8 @@
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import { ThemePalette } from '@app/theme/types.ts';
-import { colors as c } from '@app/theme/colors.ts';
+import { colors as c } from './colors.ts';
+import { colorsAlpha as alpha } from './colorsAlpha.ts';
 import { darkGradients } from '@app/theme/gradients.ts';
 
 const darkPalette: ThemePalette = {
@@ -29,20 +30,20 @@ const darkPalette: ThemePalette = {
     palette: {
         base: '#000',
         contrast: '#fff',
-        contrastAlpha: c.lightAlpha[5],
+        contrastAlpha: alpha.lightAlpha[5],
         primary: {
             main: c.tariPurple[900],
             dark: c.tariPurple[950],
             light: c.tariPurple[400],
-            shadow: c.tariPurpleAlpha[20],
-            wisp: c.tariPurpleAlpha[10],
+            shadow: alpha.tariPurpleAlpha[20],
+            wisp: alpha.tariPurpleAlpha[10],
             contrast: '#FFFFFF',
         },
         secondary: {
             main: c.green[600],
             dark: c.green[700],
             light: c.green[500],
-            wisp: c.tariPurpleAlpha[5],
+            wisp: alpha.tariPurpleAlpha[5],
         },
         divider: 'rgba(255,255,255,0.1)',
         text: {
@@ -69,30 +70,24 @@ const darkPalette: ThemePalette = {
             dark: c.orange[700],
             light: c.orange[400],
             contrast: c.orange[100],
-            wisp: c.warningDarkAlpha[5],
+            wisp: alpha.warningDarkAlpha[5],
         },
         error: {
-            main: c.error[200],
-            dark: c.error[300],
-            light: c.error[300],
+            main: c.error[400],
+            dark: c.error[950],
+            light: c.error[700],
             contrast: c.error[100],
-            wisp: c.errorDarkAlpha[5],
-        },
-        info: {
-            main: c.info[200],
-            dark: c.info[100],
-            light: c.info[300],
-            contrast: c.info[100],
+            wisp: alpha.errorDarkAlpha[5],
         },
         action: {
             background: {
-                default: c.lightAlpha[10],
+                default: alpha.lightAlpha[10],
                 accent: c.grey[850],
                 contrast: '#000',
                 secondary: c.brightGreen[500],
             },
             hover: {
-                default: c.lightAlpha[5],
+                default: alpha.lightAlpha[5],
                 accent: c.grey[800],
             },
             text: {
@@ -106,6 +101,7 @@ const darkPalette: ThemePalette = {
         },
     },
     colors: c,
+    colorsAlpha: alpha,
     gradients: darkGradients,
 };
 export default darkPalette;

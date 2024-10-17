@@ -1,6 +1,6 @@
 import styled, { css } from 'styled-components';
 
-import { ButtonStyleProps } from './button.types.ts';
+import { ButtonStyleProps, IconPosition } from './button.types.ts';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const StyledButton = styled.button<ButtonStyleProps>`
@@ -16,6 +16,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
     justify-content: center;
     cursor: pointer;
     display: flex;
+    position: relative;
     font-size: inherit;
     transition: all 0.25s ease-in-out;
     &:active {
@@ -30,9 +31,9 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         switch ($variant) {
             case 'outlined':
                 return css`
-                    color: ${({ theme }) => theme.colors.lightAlpha[90]};
-                    border: 1px solid ${({ theme }) => theme.colors.lightAlpha[20]};
-                    background-color: ${({ theme }) => theme.colors.lightAlpha[10]};
+                    color: ${({ theme }) => theme.colorsAlpha.lightAlpha[90]};
+                    border: 1px solid ${({ theme }) => theme.colorsAlpha.lightAlpha[20]};
+                    background-color: ${({ theme }) => theme.colorsAlpha.lightAlpha[10]};
                 `;
             case 'gradient':
                 return css`
@@ -93,4 +94,40 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 `;
         }
     }}
+`;
+
+const PADDING = '1rem';
+export const ChildrenWrapper = styled.div<{ $iconPosition?: IconPosition }>`
+    display: flex;
+    position: relative;
+    margin: 0 ${({ $iconPosition }) => ($iconPosition ? '1.5rem' : 0)};
+`;
+export const IconWrapper = styled.div<{ $position?: IconPosition }>`
+    display: flex;
+    position: absolute;
+
+    ${({ $position }) => {
+        switch ($position) {
+            case 'start': {
+                return css`
+                    left: ${PADDING};
+                `;
+            }
+            case 'hug': {
+                return css`
+                    position: relative;
+                `;
+            }
+            case 'end':
+            default: {
+                return css`
+                    right: ${PADDING};
+                `;
+            }
+        }
+    }}
+    svg {
+        max-width: 100%;
+        max-height: 100%;
+    }
 `;

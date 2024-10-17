@@ -1,4 +1,5 @@
-import { Colours } from '@app/theme/colors.ts';
+import { Colours } from '@app/theme/palettes/colors.ts';
+import { ColoursAlpha } from '@app/theme/palettes/colorsAlpha.ts';
 
 export const THEME_TYPES = ['light', 'dark'] as const;
 type ThemeTuple = typeof THEME_TYPES;
@@ -26,6 +27,7 @@ export interface ThemePalette {
     mode: Theme;
     palette: Palette;
     colors: Colours;
+    colorsAlpha: ColoursAlpha;
     gradients: Gradients;
 }
 
@@ -38,7 +40,6 @@ export interface Palette {
     success: Colour;
     warning: Colour;
     error: Colour;
-    info: Colour;
     text: Colour;
     component: Colour;
     divider: string;

@@ -20,29 +20,30 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { ThemePalette } from '@app/theme/types.ts';
-import { colors as c } from '@app/theme/colors.ts';
-import { lightGradients } from '@app/theme/gradients.ts';
+import { ThemePalette } from '../types.ts';
+import { lightGradients } from '../gradients.ts';
+import { colors as c } from './colors.ts';
+import { colorsAlpha } from './colorsAlpha.ts';
 
 const lightPalette: ThemePalette = {
     mode: 'light',
     palette: {
         base: '#fff',
         contrast: '#000000',
-        contrastAlpha: c.darkAlpha[5],
+        contrastAlpha: colorsAlpha.darkAlpha[5],
         primary: {
             main: c.tariPurple[600],
             dark: c.tariPurple[700],
             light: c.tariPurple[500],
-            shadow: c.tariPurpleAlpha[10],
-            wisp: c.tariPurpleAlpha[5],
+            shadow: colorsAlpha.tariPurpleAlpha[10],
+            wisp: colorsAlpha.tariPurpleAlpha[5],
             contrast: '#FFFFFF',
         },
         secondary: {
             main: c.grey[150],
             dark: c.grey[900],
             light: c.grey[50],
-            wisp: c.tariPurpleAlpha[5],
+            wisp: colorsAlpha.tariPurpleAlpha[5],
         },
         divider: 'rgba(0,0,0,0.06)',
         text: {
@@ -59,30 +60,24 @@ const lightPalette: ThemePalette = {
             accent: c.grey[100],
         },
         success: {
-            main: c.success[150],
-            dark: c.success[300],
+            main: c.success[300],
+            dark: c.success[950],
             light: c.success[100],
-            contrast: c.success[300],
+            contrast: c.success[900],
         },
         warning: {
-            main: c.warning[200],
-            dark: c.warning[300],
-            light: c.warning[100],
+            main: c.warning[400],
+            dark: c.warning[950],
+            light: c.warning[50],
             contrast: c.warning[300],
-            wisp: c.warningDarkAlpha[5],
+            wisp: colorsAlpha.warningDarkAlpha[5],
         },
         error: {
-            main: c.error[200],
-            dark: c.error[300],
+            main: c.error[400],
+            dark: c.error[900],
             light: c.error[100],
             contrast: c.error[300],
-            wisp: c.errorDarkAlpha[5],
-        },
-        info: {
-            main: c.info[200],
-            dark: c.info[300],
-            light: c.info[100],
-            contrast: c.info[300],
+            wisp: colorsAlpha.errorDarkAlpha[5],
         },
         action: {
             background: {
@@ -90,7 +85,7 @@ const lightPalette: ThemePalette = {
                 accent: c.grey[100],
                 contrast: c.brightGreen[500],
                 secondary: '#000',
-                shadow: c.lightAlpha[50],
+                shadow: colorsAlpha.lightAlpha[50],
             },
             hover: {
                 default: c.grey[150],
@@ -107,6 +102,7 @@ const lightPalette: ThemePalette = {
         },
     },
     colors: c,
+    colorsAlpha,
     gradients: lightGradients,
 };
 

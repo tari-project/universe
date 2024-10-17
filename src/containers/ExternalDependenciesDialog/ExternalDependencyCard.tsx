@@ -10,6 +10,7 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const ExternalDependencyCard = ({
     missingDependency,
@@ -69,17 +70,16 @@ export const ExternalDependencyCard = ({
                     <Typography variant="p">{display_description}</Typography>
                 </Stack>
                 {status === ExternalDependencyStatus.NotInstalled && (
-                    <SquaredButton
+                    <Button
                         onClick={handleDownload}
+                        color="secondary"
                         size="small"
-                        color="primary"
-                        style={{ height: 'unset', width: '256px' }}
                         icon={isInInstallationSlot ? <StyledIcon /> : <IoArrowDownCircleOutline size={16} />}
                         iconPosition="start"
                         disabled={isInstallationSlotOccupied}
                     >
                         {t('download-and-install')}
-                    </SquaredButton>
+                    </Button>
                 )}
             </Stack>
         </Stack>

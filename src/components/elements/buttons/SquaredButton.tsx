@@ -1,21 +1,12 @@
-import { BaseButton, IconWrapper, ChildrenWrapper } from './ExtendedButton.styles.ts';
-import { CommonButtonProps } from './button.types.ts';
+import { ButtonSquared } from './ExtendedButton.styles.ts';
+import { ExtendedButtonProps } from './button.types.ts';
 
-export type SquaredButtonProps = CommonButtonProps;
+export type SquaredButtonProps = ExtendedButtonProps;
 
-export const SquaredButton = ({
-    children,
-    variant,
-    iconPosition = 'end',
-    color = 'primary',
-    size = 'medium',
-    icon,
-    ...props
-}: SquaredButtonProps) => {
+export const SquaredButton = ({ children, variant, color = 'grey', size = 'medium', ...props }: SquaredButtonProps) => {
     return (
-        <BaseButton $color={color} $variant={variant} $size={size} {...props}>
-            <ChildrenWrapper>{children}</ChildrenWrapper>
-            {icon ? <IconWrapper $position={iconPosition}>{icon}</IconWrapper> : null}
-        </BaseButton>
+        <ButtonSquared $color={color} $variant={variant} $size={size} {...props}>
+            {children}
+        </ButtonSquared>
     );
 };

@@ -69,7 +69,7 @@ const Input = styled.input<{ $isSolid?: boolean }>`
         cursor: not-allowed;
     }
     &:disabled:not(:checked) + ${Switch} {
-        background: ${({ theme }) => theme.colors.darkAlpha[20]};
+        background: ${({ theme }) => theme.colorsAlpha.darkAlpha[20]};
     }
 
     &:checked + ${Switch} {

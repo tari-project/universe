@@ -7,7 +7,7 @@ export const Wrapper = styled(m.div)`
     gap: 10px;
 
     width: 100%;
-    padding: 15px 20px 20px 20px;
+    padding: 15px 15px 20px;
 
     border-radius: 10px;
     background-color: ${({ theme }) => theme.palette.background.paper};

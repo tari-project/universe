@@ -1,92 +1,50 @@
 import styled, { css } from 'styled-components';
-import { ButtonStyleProps, IconPosition } from '@app/components/elements/buttons/button.types.ts';
-import { ThemeColourGroup } from '@app/theme/colors.ts';
+import { ExtendedButtonStyleProps } from '@app/components/elements/buttons/button.types.ts';
 
 const PADDING = '1rem';
 
-const SQUARED_BASE_STYLES = css`
-    height: 36px;
-    border-style: solid;
-    border-radius: ${({ theme }) => theme.shape.borderRadius.buttonSquared};
-`;
+export const ButtonSquared = styled.button<ExtendedButtonStyleProps>`
+    ${({ theme, $color, $colorIntensity, $size }) => {
+        return css`
+            cursor: pointer;
+            display: inline-flex;
+            transition: all 0.2s ease-in-out;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-family: ${theme.typography.fontFamily};
+            line-height: ${theme.typography.h6.lineHeight};
+            letter-spacing: ${theme.typography.h6.letterSpacing};
+            font-weight: ${theme.typography.h6.fontWeight};
+            border-width: 1px;
+            white-space: nowrap;
 
-const BASE_STYLES = css`
-    cursor: pointer;
-    display: inline-flex;
-    transition: all 0.2s ease-in-out;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    font-family: ${({ theme }) => theme.typography.fontFamily};
-    line-height: ${({ theme }) => theme.typography.h6.lineHeight};
-    letter-spacing: ${({ theme }) => theme.typography.h6.letterSpacing};
-    font-weight: ${({ theme }) => theme.typography.h6.fontWeight};
-    border-width: 1px;
-    white-space: nowrap;
+            height: 36px;
+            border-style: solid;
+            border-radius: ${theme.shape.borderRadius.buttonSquared};
+            border-color: ${theme.colors[$color][theme.mode === 'dark' ? 950 : 100]};
+            background: ${theme.colors[$color][theme.mode === 'dark' ? 900 : 50]};
+            color: ${theme.colors[$color][$colorIntensity || theme.mode === 'dark' ? 50 : 800]};
+            font-size: ${$size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize};
+            padding: ${$size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`};
 
-    &:active {
-        opacity: 0.9;
-    }
-    &:disabled {
-        opacity: 0.5;
-        cursor: inherit;
-    }
-`;
-
-export const BaseButton = styled.button<ButtonStyleProps>`
-    ${BASE_STYLES}
-    ${SQUARED_BASE_STYLES}
-    border-color: ${({ theme, $color }) => theme.palette[$color || 'primary'].light};
-    background: ${({ theme, $color }) => theme.palette[$color || 'primary'].main};
-    color: ${({ theme, $color }) => theme.palette[$color || 'primary'].contrast};
-    font-size: ${({ theme, $size }) => ($size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize)};
-    padding:  ${({ $size }) => ($size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`)};
-
-    &:hover {
-        background: ${({ theme, $color }) => theme.palette[$color || 'primary'].dark};
-    }
+            &:hover {
+                background: ${theme.colors[$color][theme.mode === 'dark' ? 950 : 100]};
+            }
+            &:active {
+                opacity: 0.9;
+            }
+            &:disabled {
+                opacity: 0.5;
+                pointer-events: none;
+                cursor: inherit;
+            }
+        `;
+    }}}
    
 }`;
 
-export const ChildrenWrapper = styled.div`
-    display: flex;
-    position: relative;
-`;
-export const IconWrapper = styled.div<{ $position?: IconPosition }>`
-    display: flex;
-    position: absolute;
-    ${({ $position }) => {
-        switch ($position) {
-            case 'start': {
-                return css`
-                    left: ${PADDING};
-                `;
-            }
-            case 'hug': {
-                return css`
-                    position: relative;
-                `;
-            }
-            case 'end':
-            default: {
-                return css`
-                    right: ${PADDING};
-                `;
-            }
-        }
-    }}
-    svg {
-        max-width: 100%;
-        max-height: 100%;
-    }
-`;
-
-type TextButtonStyleProps = Omit<ButtonStyleProps, '$color'> & {
-    $color: ThemeColourGroup;
-    $colorIntensity?: number;
-};
-export const StyledTextButton = styled.button<TextButtonStyleProps>`
-    ${BASE_STYLES}
+export const StyledTextButton = styled.button<ExtendedButtonStyleProps>`
     ${({ theme, $color, $colorIntensity, $size }) => {
         return css`
             color: ${theme.colors[$color][$colorIntensity || 600]};

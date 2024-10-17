@@ -88,7 +88,7 @@ function AutoUpdateDialog() {
                             <SquaredButton onClick={handleClose} color="warning">
                                 {t('no')}
                             </SquaredButton>
-                            <SquaredButton onClick={handleUpdate} color="secondary">
+                            <SquaredButton onClick={handleUpdate} color="green">
                                 {t('yes')}
                             </SquaredButton>
                         </>

@@ -65,23 +65,24 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                     <Typography variant={'p'} color={'red'}>
                         {error}
                     </Typography>
-                    <Stack direction="row">
-                        {loading ? (
-                            <CircularProgress />
-                        ) : (
-                            <>
-                                <SquaredButton disabled={loading} onClick={setShowLogsDialog} color="warning">
-                                    {t('cancel')}
-                                </SquaredButton>
-                                <SquaredButton
-                                    disabled={loading || !feedback?.length || feedback?.trim() === ''}
-                                    onClick={sendLogs}
-                                >
-                                    {t('submit')}
-                                </SquaredButton>
-                            </>
-                        )}
-                    </Stack>
+                </Stack>
+                <Stack direction="row">
+                    {loading ? (
+                        <CircularProgress />
+                    ) : (
+                        <Stack direction="row" gap={10}>
+                            <SquaredButton disabled={loading} onClick={setShowLogsDialog} color="grey">
+                                {t('cancel')}
+                            </SquaredButton>
+                            <SquaredButton
+                                disabled={loading || !feedback?.length || feedback?.trim() === ''}
+                                onClick={sendLogs}
+                                color="success"
+                            >
+                                {t('submit')}
+                            </SquaredButton>
+                        </Stack>
+                    )}
                 </Stack>
             </DialogContent>
         </Dialog>

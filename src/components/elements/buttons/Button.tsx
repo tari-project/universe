@@ -1,6 +1,5 @@
-import { StyledButton } from './BaseButton.styles.ts';
+import { StyledButton, ChildrenWrapper, IconWrapper } from './BaseButton.styles.ts';
 import { CommonButtonProps } from './button.types.ts';
-import { IconWrapper } from '@app/components/elements/buttons/ExtendedButton.styles.ts';
 
 type ButtonProps = CommonButtonProps;
 export const Button = ({
@@ -14,7 +13,7 @@ export const Button = ({
 }: ButtonProps) => {
     return (
         <StyledButton $variant={variant} $color={color} $size={size} {...buttonProps}>
-            {children}
+            <ChildrenWrapper $iconPosition={iconPosition}>{children}</ChildrenWrapper>
             {icon ? <IconWrapper $position={iconPosition}>{icon}</IconWrapper> : null}
         </StyledButton>
     );

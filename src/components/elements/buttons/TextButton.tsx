@@ -1,11 +1,7 @@
-import { ChildrenWrapper, StyledTextButton } from './ExtendedButton.styles.ts';
-import { CommonButtonProps } from './button.types.ts';
-import { ThemeColourGroup } from '@app/theme/colors.ts';
+import { StyledTextButton } from './ExtendedButton.styles.ts';
+import { ExtendedButtonProps } from './button.types.ts';
 
-export type TextButtonProps = Omit<CommonButtonProps, 'icon' | 'iconPosition' | 'color'> & {
-    color?: ThemeColourGroup;
-    colorIntensity?: number;
-};
+export type TextButtonProps = ExtendedButtonProps;
 
 export const TextButton = ({
     children,
@@ -17,7 +13,7 @@ export const TextButton = ({
 }: TextButtonProps) => {
     return (
         <StyledTextButton $color={color} $colorIntensity={colorIntensity} $variant={variant} $size={size} {...props}>
-            <ChildrenWrapper>{children}</ChildrenWrapper>
+            {children}
         </StyledTextButton>
     );
 };
