@@ -168,11 +168,13 @@ jobs:
               run: dotnet tool install --global wix
               if: startsWith(runner.os,'Windows')
 
-            - name: Add WiX Extensions ( Windows )
+            - name: Add WiX Extensions ( 1 / 2 ) ( Windows )
               if: startsWith(runner.os,'Windows')
-              run: |
-                  wix extension add WixToolset.Util.wixext
-                  wix extension add WixToolset.Bal.wixext
+              run: wix extension add WixToolset.Util.wixext
+
+            - name: Add WiX Extensions ( 2 / 2 ) ( Windows )
+              if: startsWith(runner.os,'Windows')
+              run: wix extension add WixToolset.Bal.wixext
 
             - name: List WiX Extensions ( Windows )
               if: startsWith(runner.os,'Windows')
