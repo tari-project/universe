@@ -44,10 +44,6 @@ jobs:
 
         runs-on: ${{ matrix.platform }}
         steps:
-            - uses: actions/setup-dotnet@v4
-              with:
-                  dotnet-version: '3.1.x'
-
             - name: Checkout repository
               uses: actions/checkout@v4
 
@@ -177,7 +173,10 @@ jobs:
               if: startsWith(runner.os,'Windows')
 
             - name: Install Wixsharp (windows)
-              run: dotnet tool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
+              uses: actions/setup-dotnet@v4
+              with:
+                  dotnet-version: '3.1.x'
+            - run: dotnet tool install --global WixSharp.wix.bin --version 3.14.1 --allow-downgrade --create-manifest-if-needed
               if: startsWith(runner.os,'Windows')
 
             - name: Install WiX (windows)
