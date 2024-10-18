@@ -1,17 +1,20 @@
 import { useCallback } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { useUIStore } from '@app/store/useUIStore.ts';
-import ExperimentalWarning from './sections/experimental/ExperimentalWarning.tsx';
-import P2pMarkup from './sections/experimental/P2pMarkup.tsx';
-
-import DebugSettings from '@app/containers/Settings/sections/experimental/DebugSettings.tsx';
-import AppVersions from '@app/containers/Settings/sections/experimental/AppVersions.tsx';
-import VisualMode from '@app/containers/Dashboard/components/VisualMode.tsx';
-import { SettingsGroup, SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { useTranslation } from 'react-i18next';
-import GpuDevices from './sections/experimental/GpuDevices.tsx';
+import { AnimatePresence } from 'framer-motion';
+
+import { useUIStore } from '@app/store/useUIStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import VisualMode from '@app/containers/Dashboard/components/VisualMode.tsx';
+
+import { SettingsGroup, SettingsGroupWrapper } from '../../components/SettingsGroup.styles.ts';
+
+import AppVersions from './AppVersions.tsx';
+import DebugSettings from './DebugSettings.tsx';
+import ExperimentalWarning from './ExperimentalWarning.tsx';
+import GpuDevices from './GpuDevices.tsx';
+import P2pMarkup from './P2pMarkup.tsx';
 
 export const ExperimentalSettings = () => {
     const showExperimental = useUIStore((s) => s.showExperimental);
@@ -33,7 +36,6 @@ export const ExperimentalSettings = () => {
                 {showExperimental && (
                     <>
                         <P2pMarkup />
-                        {/* <P2poolStatsMarkup /> */}
                         <GpuDevices />
                         <DebugSettings />
                         <AppVersions />

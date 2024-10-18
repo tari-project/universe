@@ -4,12 +4,14 @@ import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 import { ThemeSwitch } from '@app/containers/Settings/components/ThemeSwitch.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { useTranslation } from 'react-i18next';
 
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
 }
 export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
+    const { t } = useTranslation('settings', { useSuspense: false });
     const v_e = useUIStore((s) => s.v_e);
     const very_e = useAppConfigStore((s) => s.very_e);
     const showExperimental = useUIStore((s) => s.showExperimental);
@@ -24,7 +26,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
             <ButtonContainer>
                 {tabsToShow.map((type: SettingsType) => {
                     const isActiveSection = activeSection === type;
-                    const name = type.split('_').join(' ');
+                    const name = t(`tabs.${type}`);
                     return (
                         <SectionButton
                             key={type}

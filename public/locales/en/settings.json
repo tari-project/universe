@@ -44,14 +44,14 @@
         "title": "Monero address",
         "placeholder": "Enter Monero address"
     },
-    
+
     "mine-on-app-start": {
         "title": "Mining on startup",
-      "description": "When enabled, the app will start mining automatically when it is launched."
+        "description": "When enabled, the app will start mining automatically when it is launched."
     },
     "should-auto-start": {
-      "title": "Auto-start on system boot",
-      "description": "When enabled, the app will start automatically when you log in to your computer."
+        "title": "Auto-start on system boot",
+        "description": "When enabled, the app will start automatically when you log in to your computer."
     },
 
     "not-connected-to-tari": "Not connected to the Tari Network",
@@ -83,8 +83,9 @@
         "airdrop": "Airdrop",
         "general": "General",
         "mining": "Mining",
+        "wallet": "Wallet",
         "experimental": "Experimental",
-        "wallet": "Wallet"
+        "very_experimental": "Very Experimental"
     },
     "tribe": "Squad",
     "tribe-earnings": "Squad earnings",
