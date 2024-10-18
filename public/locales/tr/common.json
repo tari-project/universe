@@ -1,6 +1,8 @@
 {
   "submit": "Onayla",
   "cancel": "İptal",
+  "connection": "Bağlan",
+  "disconnect": "Bağlantıyı Kes",
   "temperature": "Sıcaklık",
   "max-temperature": "Maks. Sıcaklık",
   "usage": "Kullanım",
@@ -21,7 +23,5 @@
   "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse, lütfen bizimle iletişime geçin.",
   "close-tari-universe": "Tari Evreni\"ni Kapat",
   "continue": "Devam Et",
-  "restart": "Yeniden Başlat",
-  "connection": "Bağlantı",
-  "disconnect": "Bağlantıyı Kes"
+  "restart": "Yeniden Başlat"
 }
