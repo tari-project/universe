@@ -72,9 +72,9 @@ impl CpuMiner {
         lock.adapter.node_connection = Some(xmrig_node_connection);
         lock.adapter.monero_address = Some(monero_address.clone());
         lock.adapter.cpu_max_percentage = Some(cpu_max_percentage);
-        lock.adapter.xmrig_extra_options = match mode {
-            MiningMode::Eco => cpu_miner_config.eco_xmrig_extra_options.clone(),
-            MiningMode::Ludicrous => cpu_miner_config.ludicrous_xmrig_extra_options.clone(),
+        lock.adapter.extra_options = match mode {
+            MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
+            MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
         };
 
         lock.start(
