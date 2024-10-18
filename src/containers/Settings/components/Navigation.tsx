@@ -2,12 +2,19 @@ import { ButtonContainer, Container, SectionButton } from './Navigation.styles.t
 
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 import { ThemeSwitch } from '@app/containers/Settings/components/ThemeSwitch.tsx';
+import { useUIStore } from '@app/store/useUIStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
 }
 export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
+    const v_e = useUIStore((s) => s.v_e);
+    const very_e = useAppConfigStore((s) => s.very_e);
+    const showExperimental = useUIStore((s) => s.showExperimental);
+    const tabsToShow =
+        showExperimental && v_e && very_e ? SETTINGS_TYPES : SETTINGS_TYPES.slice(0, SETTINGS_TYPES.length - 1);
     function handleClick(section: SettingsType) {
         onChangeActiveSection(section);
     }
@@ -15,9 +22,9 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
     return (
         <Container>
             <ButtonContainer>
-                {SETTINGS_TYPES.map((type) => {
+                {tabsToShow.map((type: SettingsType) => {
                     const isActiveSection = activeSection === type;
-
+                    const name = type.split('_').join(' ');
                     return (
                         <SectionButton
                             key={type}
@@ -26,7 +33,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                             variant={isActiveSection ? 'secondary' : 'primary'}
                             color="transparent"
                         >
-                            {type}
+                            {name}
                         </SectionButton>
                     );
                 })}

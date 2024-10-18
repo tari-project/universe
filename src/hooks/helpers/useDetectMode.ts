@@ -8,7 +8,6 @@ export function useDetectMode() {
 
     useEffect(() => {
         const listener = listen('tauri://theme-changed', async ({ payload }) => {
-            console.debug('wen2');
             if (payload) {
                 const themePayload = payload as Theme;
                 setSystemTheme(themePayload);
@@ -25,7 +24,6 @@ export function useInitSystemMode() {
     const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     return useCallback(() => {
-        console.debug('wen');
         setSystemTheme(prefersDarkMode() ? 'dark' : 'light');
     }, [setSystemTheme]);
 }

@@ -16,6 +16,7 @@ interface State {
     visualMode: boolean;
     sidebarOpen: boolean;
     showExperimental: boolean;
+    v_e: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
 }
@@ -28,6 +29,7 @@ interface Actions {
     toggleVisualMode: () => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setShowExperimental: (showExperimental: boolean) => void;
+    setVE: (v_e: boolean) => void;
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
     setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
 }
@@ -44,6 +46,7 @@ const initialState: State = {
     sidebarOpen: false,
     dialogToShow: null,
     showExperimental: false,
+    v_e: false,
     showExternalDependenciesDialog: false,
 };
 
@@ -62,6 +65,7 @@ export const useUIStore = create<UIStoreState>()(
             setShowExternalDependenciesDialog: (showExternalDependenciesDialog) =>
                 set({ showExternalDependenciesDialog }),
             setDialogToShow: (dialogToShow) => set({ dialogToShow }),
+            setVE: (v_e) => set({ v_e }),
         }),
         {
             name: 'ui',

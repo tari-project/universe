@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api';
 import { create } from './create';
 import { AppConfig } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
-import { modeType } from './types.ts';
+import { modeType, themeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
@@ -18,6 +18,7 @@ interface Actions {
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMineOnAppStart: (mineOnAppStart: boolean) => Promise<void>;
     setMode: (mode: modeType) => Promise<void>;
+    setTheme: (theme: themeType) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
     setUseTor: (useTor: boolean) => Promise<void>;
@@ -185,6 +186,16 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set mode', e);
             appStateStore.setError('Could not change mode');
             set({ mode: prevMode });
+        });
+    },
+    setTheme: async (theme) => {
+        const prevTheme = useAppConfigStore.getState().theme;
+        set({ theme });
+        invoke('set_theme', { theme }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set theme', e);
+            appStateStore.setError('Could not change theme');
+            set({ theme: prevTheme });
         });
     },
     setUseTor: async (useTor) => {
