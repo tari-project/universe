@@ -259,12 +259,16 @@ jobs:
               shell: bash
               run: echo "Artifact ID from previous job is $artifactPaths"
 
-            - name: Upload Wix installer
+            - name: upload windows artifact
               if: runner.os == 'Windows'
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-release-asset@v1
+              env:
+                  TARI_UNIVERSE_INSTALLER_NAME: Tari Universe (Beta)_${{ steps.build.outputs.appVersion }}_x64_en-US.exe
               with:
-                  name: tari-universe-beta_${{ steps.build.outputs.appVersion }}
-                  path: .\tari-win-bundler\bin\Debug\tari_win_bundler.exe
+                  upload_url: ${{ steps.build.outputs.releaseUploadUrl }}
+                  asset_path: .\tari-win-bundler\Bundle.exe
+                  asset_name: ${{ env.TARI_UNIVERSE_INSTALLER_NAME }}
+                  asset_content_type: application/vnd.microsoft.portable-executable
 
             - name: Upload none releases
               if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
