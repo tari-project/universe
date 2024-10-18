@@ -2,6 +2,7 @@ import { Language } from '@app/i18initializer';
 import { modeType } from '../store/types';
 
 export interface TorConfig {
+    control_port: number;
     use_bridges: boolean;
     bridges: string[];
 }

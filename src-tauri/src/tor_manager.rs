@@ -36,7 +36,10 @@ impl TorManager {
     ) -> Result<(), anyhow::Error> {
         {
             let mut process_watcher = self.watcher.write().await;
-            process_watcher.adapter.load_or_create_config(config_path.clone()).await?;
+            process_watcher
+                .adapter
+                .load_or_create_config(config_path.clone())
+                .await?;
             process_watcher
                 .start(
                     app_shutdown,
@@ -71,6 +74,15 @@ impl TorManager {
 
     pub async fn get_tor_config(&self) -> TorConfig {
         self.watcher.read().await.adapter.get_tor_config()
+    }
+
+    pub async fn set_tor_config(&self, config: TorConfig) -> Result<TorConfig, anyhow::Error> {
+        self.watcher
+            .write()
+            .await
+            .adapter
+            .set_tor_config(config)
+            .await
     }
 
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {

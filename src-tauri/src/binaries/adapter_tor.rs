@@ -18,7 +18,10 @@ pub(crate) struct TorReleaseAdapter {}
 impl LatestVersionApiAdapter for TorReleaseAdapter {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
         let platform = get_platform_name();
-        let cdn_tor_bundle_url = format!("https://cdn-universe.tari.com/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz", platform);
+        let cdn_tor_bundle_url = format!(
+            "https://cdn-universe.tari.com/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz",
+            platform
+        );
         let mut cdn_responded = false;
 
         for _ in 0..3 {

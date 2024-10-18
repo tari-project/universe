@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
-use anyhow::{Error, anyhow};
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{debug, info};
-use tari_shutdown::Shutdown;
-use tor_hash_passwd::EncryptedKey;
-use tokio::fs;
 use serde::{Deserialize, Serialize};
+use tari_shutdown::Shutdown;
+use tokio::fs;
+use tor_hash_passwd::EncryptedKey;
 
 use crate::{
     process_adapter::{
@@ -18,7 +18,6 @@ use crate::{
 const LOG_TARGET: &str = "tari::universe::tor_adapter";
 
 pub(crate) struct TorAdapter {
-    control_port: u16,
     socks_port: u16,
     password: String,
     config_file: Option<PathBuf>,
@@ -27,12 +26,10 @@ pub(crate) struct TorAdapter {
 
 impl TorAdapter {
     pub fn new() -> Self {
-        let control_port = 9051;
         let socks_port = 9050;
         let password = "tari is the best".to_string();
 
         Self {
-            control_port,
             socks_port,
             password,
             config_file: None,
@@ -40,7 +37,10 @@ impl TorAdapter {
         }
     }
 
-    pub async fn load_or_create_config(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
+    pub async fn load_or_create_config(
+        &mut self,
+        config_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
         let file: PathBuf = config_path.join("tor_config.json");
         self.config_file = Some(file.clone());
 
@@ -75,6 +75,50 @@ impl TorAdapter {
     pub fn get_tor_config(&self) -> TorConfig {
         self.config.clone()
     }
+
+    pub async fn set_tor_config(&mut self, config: TorConfig) -> Result<TorConfig, Error> {
+        self.config = config.clone();
+
+        // match self.apply_tor_config_changes(config.clone()).await {
+        //     Ok(_) => println!("4.XXXXXXXTor config changes applied successfully"),
+        //     Err(e) => {
+        //         warn!(target: LOG_TARGET, "Failed to apply Tor config changes: {:?}", e);
+        //         return Err(e);
+        //     }
+        // }
+
+        self.update_config_file().await?;
+        Ok(config)
+    }
+
+    // pub async fn apply_tor_config_changes(&self, config: TorConfig) -> Result<(), Error> {
+    //     let mut setconf_commands: Vec<String> = vec![];
+    //     let control_port_address = "127.0.0.1:9051";
+
+    //     // Establish a TCP connection
+    //     let mut stream = TcpStream::connect(control_port_address)?;
+    //     println!("Connected to Tor control port.");
+
+    //     // Authenticate
+    //     setconf_commands.push(format!("AUTHENTICATE \"{}\"\n", self.password.clone()));
+
+    //     setconf_commands.push("SETCONF".to_string());
+
+    //     // Set Bridge instances
+    //     if config.use_bridges {
+    //         for bridge in config.bridges {
+    //             setconf_commands.push(format!("Bridge=\"{}\"", bridge))
+    //         }
+    //     }
+    //     // Set UseBridges
+    //     setconf_commands.push(format!("UseBridges={}", config.use_bridges as u8));
+    //     // Set ControlPort
+    //     setconf_commands.push(format!("ControlPort=127.0.0.1:{}", config.control_port));
+
+    //     stream.write_all(setconf_commands.join(" ").as_bytes())?;
+
+    //     Ok(())
+    // }
 }
 
 impl ProcessAdapter for TorAdapter {
@@ -84,7 +128,7 @@ impl ProcessAdapter for TorAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-        config_dir: PathBuf,
+        _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
@@ -96,6 +140,13 @@ impl ProcessAdapter for TorAdapter {
 
         let working_dir_string = convert_to_string(working_dir)?;
         let log_dir_string = convert_to_string(log_dir.join("tor.log"))?;
+        let mut lyrebird_path = binary_version_path.clone();
+        lyrebird_path.pop();
+        lyrebird_path.push("pluggable_transports");
+        lyrebird_path.push("lyrebird");
+        if cfg!(target_os = "windows") {
+            lyrebird_path.set_extension(".exe");
+        }
 
         let mut args: Vec<String> = vec![
             "--allow-missing-torrc".to_string(),
@@ -105,7 +156,7 @@ impl ProcessAdapter for TorAdapter {
             "--socksport".to_string(),
             self.socks_port.to_string(),
             "--controlport".to_string(),
-            format!("127.0.0.1:{}", self.control_port),
+            format!("127.0.0.1:{}", self.config.control_port),
             "--HashedControlPassword".to_string(),
             EncryptedKey::hash_password(&self.password).to_string(),
             "--clientuseipv6".to_string(),
@@ -114,27 +165,22 @@ impl ProcessAdapter for TorAdapter {
             working_dir_string,
             "--Log".to_string(),
             format!("notice file {}", log_dir_string),
+            // Used by tor bridges
+            // TODO: This does not work when path has space on windows.
+            // Consider running lyrebird binary manually
+            "--ClientTransportPlugin".to_string(),
+            format!("obfs4 exec {} managed", convert_to_string(lyrebird_path)?),
         ];
 
         if self.config.use_bridges {
-            let mut lyrebird_path = binary_version_path.clone();
-            lyrebird_path.pop();
-            lyrebird_path.push("pluggable_transports");
-            lyrebird_path.push("lyrebird");
-
-            args.push("--ClientTransportPlugin".to_string());
-            args.push(format!("obfs4 exec {} -enableLogging managed", convert_to_string(lyrebird_path)?));
-
-            args.push("--Bridge".to_string());
-            args.push("obfs4 177.235.180.145:8668 3AC17E97D18ADF92E9662D00EDE3B8FCCA6A6D80 cert=/WbHxF7lntn60mpieMRQ17YF88WfezgIzU0U+vQ3GMyCQUesVWtRkowZStfTO9cv6FutPw iat-mode=0".to_string());
-            args.push("--Bridge".to_string());
-            args.push("obfs4 217.62.239.211:9449 628B95EEAE48758CBAA2812AE99E1AB5B3BE44D4 cert=i7tmgWvq4X2rncJz4FQsQWwkXiEWVE7Nvm1gffYn5ZlVsA0kBF6c/8041dTB4mi0TSShWA iat-mode=0".to_string());
+            for bridge in &self.config.bridges {
+                args.push("--Bridge".to_string());
+                args.push(bridge.clone());
+            }
 
             args.push("--UseBridges".to_string());
             args.push("1".to_string());
         }
-        info!(target: LOG_TARGET, "Starting tor with args: {:?}", args);
-        println!("XXXXXXXXXXXXXXXXXXXXXXXXXX Starting tor with args: {:?}", args);
 
         Ok((
             ProcessInstance {
@@ -175,6 +221,7 @@ impl StatusMonitor for TorStatusMonitor {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TorConfig {
+    control_port: u16,
     use_bridges: bool,
     bridges: Vec<String>,
 }
@@ -182,6 +229,7 @@ pub struct TorConfig {
 impl Default for TorConfig {
     fn default() -> Self {
         TorConfig {
+            control_port: 9051,
             use_bridges: false,
             bridges: Vec::new(),
         }

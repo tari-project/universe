@@ -3,6 +3,7 @@
     "private": true,
     "version": "0.5.31",
     "type": "module",
+    "proxy": "http://localhost:8080",
     "scripts": {
         "dev": "vite dev --mode development",
         "build": "tsc && vite build",
@@ -14,6 +15,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.26.25",
         "@tauri-apps/api": "^1",
+        "cross-fetch": "^4.0.0",
         "emoji-regex": "^10.4.0",
         "framer-motion": "^11.11.8",
         "globals": "^15.11.0",

@@ -5,10 +5,10 @@ use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
+use regex::Regex;
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
 use serde::Serialize;
-use tor_adapter::TorConfig;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -21,6 +21,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use tor_adapter::TorConfig;
 use wallet_adapter::TransactionInfo;
 
 use app_config::AppConfig;
@@ -307,6 +308,26 @@ async fn get_tor_config(
     let tor_config = state.tor_manager.get_tor_config().await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_tor_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(tor_config)
+}
+
+#[tauri::command]
+async fn set_tor_config(
+    config: TorConfig,
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<TorConfig, String> {
+    let timer = Instant::now();
+    let tor_config = state
+        .tor_manager
+        .set_tor_config(config)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_tor_config took too long: {:?}", timer.elapsed());
     }
     Ok(tor_config)
 }
@@ -1146,6 +1167,28 @@ async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<()
 }
 
 #[tauri::command]
+async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+    let res_html = reqwest::get("https://bridges.torproject.org/bridges?transport=obfs4")
+        .await
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let re = Regex::new(r"obfs4.*?<br\/>").unwrap();
+    let bridges: Vec<String> = re
+        .find_iter(&res_html)
+        .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
+        .collect();
+    info!(target: LOG_TARGET, "Fetched default bridges: {:?}", bridges);
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
+    }
+    Ok(bridges)
+}
+
+#[tauri::command]
 fn open_log_dir(app: tauri::AppHandle) {
     let log_dir = app
         .path_resolver()
@@ -1946,7 +1989,9 @@ fn main() {
             set_use_tor,
             get_transaction_history,
             import_seed_words,
-            get_tor_config
+            get_tor_config,
+            set_tor_config,
+            fetch_tor_bridges
         ])
         .build(tauri::generate_context!())
         .inspect_err(
