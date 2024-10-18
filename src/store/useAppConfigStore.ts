@@ -46,12 +46,17 @@ const initialState: State = {
     use_tor: true,
 };
 
-export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
+export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
     ...initialState,
     fetchAppConfig: async () => {
         try {
             const appConfig = await invoke('get_app_config');
             set(appConfig);
+            const configTheme = appConfig.theme?.toLowerCase();
+
+            if (configTheme) {
+                await getState().setTheme(configTheme as themeType);
+            }
         } catch (e) {
             console.error('Could not get app config: ', e);
         }
@@ -189,7 +194,8 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             set({ mode: prevMode });
         });
     },
-    setTheme: async (theme) => {
+    setTheme: async (themeArg) => {
+        const theme = themeArg?.toLowerCase() as themeType;
         const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
 
         const prevTheme = useAppConfigStore.getState().theme;

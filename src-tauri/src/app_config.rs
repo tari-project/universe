@@ -465,7 +465,7 @@ fn default_mode() -> String {
 }
 
 fn default_theme() -> String {
-    "System".to_string()
+    "system".to_string()
 }
 
 fn default_false() -> bool {

@@ -1,9 +1,4 @@
-import { useUIStore } from '@app/store/useUIStore.ts';
-import { useCallback } from 'react';
-import { setAnimationProperties } from '@app/visuals.ts';
-import { Theme } from '@app/theme/types.ts';
-
-const animationLightBg = [
+export const animationLightBg = [
     { property: 'bgColor1', value: '#F6F6F6' },
     { property: 'bgColor2', value: '#EEEEEE' },
     { property: 'neutralColor', value: '#FFFFFF' },
@@ -12,7 +7,7 @@ const animationLightBg = [
     { property: 'goboIntensity', value: 0.4 },
 ];
 
-const animationDarkBg = [
+export const animationDarkBg = [
     { property: 'bgColor1', value: '#2E2E2E' },
     { property: 'bgColor2', value: '#2E2E2E' },
     { property: 'neutralColor', value: '#000000' },
@@ -20,23 +15,3 @@ const animationDarkBg = [
     { property: 'successColor', value: '#00c881' },
     { property: 'goboIntensity', value: 0.7 },
 ];
-
-export function useSwitchTheme() {
-    const setTheme = useUIStore((s) => s.setTheme);
-
-    return useCallback(
-        (themeName: Theme) => {
-            const isDarkMode = themeName === 'dark';
-            setTheme(themeName);
-            setAnimationProperties(isDarkMode ? animationLightBg : animationDarkBg);
-        },
-        [setTheme]
-    );
-}
-
-export function useThemeSetup() {
-    const theme = useUIStore((s) => s.theme);
-    return useCallback(() => {
-        setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
-    }, [theme]);
-}

@@ -11,8 +11,6 @@ import { setAnimationState } from '@app/visuals.ts';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
 import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
-import { useThemeSetup } from '@app/hooks/useTheming.ts';
-import { useInitSystemMode } from '@app/hooks/helpers/useDetectMode.ts';
 
 export function useSetUp() {
     const [isInitializing, setIsInitializing] = useState(false);
@@ -28,8 +26,7 @@ export function useSetUp() {
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const { backendInMemoryConfig } = useAirdropStore();
     const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
-    const setupThemeBg = useThemeSetup();
-    const initTheme = useInitSystemMode();
+
     const { loadExternalDependencies } = useAppStateStore();
 
     useEffect(() => {
@@ -46,7 +43,6 @@ export function useSetUp() {
 
     useEffect(() => {
         async function initialize() {
-            initTheme();
             await fetchAppConfig();
         }
         initialize();
@@ -63,13 +59,9 @@ export function useSetUp() {
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
         const airdropStorage = localStorage.getItem('airdrop-store');
-        const uiStorage = localStorage.getItem('ui');
         localStorage.clear();
         if (airdropStorage) {
             localStorage.setItem('airdrop-store', airdropStorage);
-        }
-        if (uiStorage) {
-            localStorage.setItem('ui', uiStorage);
         }
     }, []);
 
@@ -83,7 +75,6 @@ export function useSetUp() {
                         fetchApplicationsVersionsWithRetry();
                         setView('mining');
                         setAnimationState('showVisual');
-                        setupThemeBg();
 
                         setSeenPermissions(true);
                     }
@@ -120,7 +111,6 @@ export function useSetUp() {
         setSeenPermissions,
         backendInMemoryConfig?.airdropApiUrl,
         handleRefreshAirdropTokens,
-        setupThemeBg,
         isInitializing,
     ]);
 }

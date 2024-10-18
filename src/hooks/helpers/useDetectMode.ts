@@ -1,29 +1,25 @@
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { Theme } from '@app/theme/types.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export function useDetectMode() {
-    const setSystemTheme = useUIStore((s) => s.setSystemTheme);
+    const setTheme = useUIStore((s) => s.setTheme);
+    const configTheme = useAppConfigStore((s) => s.theme);
 
     useEffect(() => {
+        if (configTheme !== 'system') return;
         const listener = listen('tauri://theme-changed', async ({ payload }) => {
+            console.debug(payload);
             if (payload) {
                 const themePayload = payload as Theme;
-                setSystemTheme(themePayload);
+                console.debug(`themePayload= ${themePayload}`);
+                setTheme(themePayload);
             }
         });
         return () => {
             listener.then((unlisten) => unlisten());
         };
-    }, [setSystemTheme]);
-}
-
-export function useInitSystemMode() {
-    const setSystemTheme = useUIStore((s) => s.setSystemTheme);
-    const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    return useCallback(() => {
-        setSystemTheme(prefersDarkMode() ? 'dark' : 'light');
-    }, [setSystemTheme]);
+    }, [setTheme, configTheme]);
 }

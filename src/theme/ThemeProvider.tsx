@@ -9,6 +9,7 @@ const themes = {
 };
 export default function ThemeProvider({ children }: { children: ReactNode }) {
     const storedTheme = useUIStore((s) => s.theme);
+
     const theme = themes[storedTheme] as DefaultTheme;
     return <SCThemeProvider theme={theme}>{children}</SCThemeProvider>;
 }
