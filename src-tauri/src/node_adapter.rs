@@ -189,7 +189,8 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
         &self,
-    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), MinotariNodeStatusMonitorError> {
+    ) -> Result<(u64, u64, MicroMinotari, u64, String, u64, bool), MinotariNodeStatusMonitorError>
+    {
         // TODO: use GRPC port returned from process
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
@@ -205,6 +206,7 @@ impl MinotariNodeStatusMonitor {
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
 
+        // let tst = res.miner_data.
         let reward = res
             .miner_data
             .ok_or_else(|| {
@@ -225,10 +227,14 @@ impl MinotariNodeStatusMonitor {
                 )));
             }
         };
-        let (sync_achieved, block_height, _hash, block_time) = (
+        let (sync_achieved, block_height, block_hash, block_time) = (
             res.initial_sync_achieved,
             metadata.best_block_height,
-            metadata.best_block_hash.clone(),
+            metadata
+                .best_block_hash
+                .iter()
+                .map(|x| format!("{:02x}", x))
+                .collect::<String>(),
             metadata.timestamp,
         );
         // First try with 10 blocks
@@ -267,6 +273,7 @@ impl MinotariNodeStatusMonitor {
                     last_randomx_estimated_hashrate,
                     MicroMinotari(reward),
                     block_height,
+                    block_hash.clone(),
                     block_time,
                     sync_achieved,
                 ));

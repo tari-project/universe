@@ -149,6 +149,7 @@ struct TelemetryDataResponseEvent {
 pub struct TelemetryData {
     pub app_id: String,
     pub block_height: u64,
+    pub block_hash: String,
     pub is_mining_active: bool,
     pub network: Option<TelemetryNetwork>,
     pub resource_used: TelemetryResource,
@@ -322,11 +323,18 @@ async fn get_telemetry_data(
     config: Arc<RwLock<AppConfig>>,
     network: Option<Network>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, _block_time, is_synced) =
-        node_manager
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
+    let (
+        sha_hash_rate,
+        randomx_hash_rate,
+        block_reward,
+        block_height,
+        block_hash,
+        _block_time,
+        is_synced,
+    ) = node_manager
+        .get_network_hash_rate_and_block_reward()
+        .await
+        .unwrap_or((0, 0, MicroMinotari(0), 0, "".to_string(), 0, false));
 
     let mut cpu_miner = cpu_miner.write().await;
     let cpu = match cpu_miner.status(randomx_hash_rate, block_reward).await {
@@ -424,6 +432,7 @@ async fn get_telemetry_data(
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
         block_height,
+        block_hash,
         is_mining_active,
         network: network.map(|n| n.into()),
         mode: config_guard.mode().into(),

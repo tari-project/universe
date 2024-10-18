@@ -46,6 +46,8 @@ use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
+use reqwest::get;
+use scraper::{Html, Selector};
 
 mod app_config;
 mod app_in_memory_config;
@@ -1384,6 +1386,34 @@ async fn get_app_config(
     Ok(state.config.read().await.clone())
 }
 
+async fn get_block_info_from_block_scan(_: Network) -> Result<(u64, String), String> {
+    let response = get("https://textexplore-esmeralda.tari.com/")
+        .await
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let document = Html::parse_document(&response);
+    let selector = Selector::parse("table tbody tr").map_err(|e| e.to_string())?;
+    let row = document
+        .select(&selector)
+        .next()
+        .ok_or("No table row found")?;
+
+    let cells = Selector::parse("td").map_err(|e| e.to_string())?;
+    let mut cells = row.select(&cells);
+    let chain_height = cells
+        .next()
+        .ok_or("No chain height cell found")?
+        .inner_html()
+        .parse::<u64>()
+        .unwrap();
+    let best_block = cells.next().ok_or("No best block cell found")?.inner_html();
+
+    Ok((chain_height, best_block))
+}
+
 #[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
@@ -1403,7 +1433,7 @@ async fn get_miner_metrics(
 
     let mut cpu_miner = state.cpu_miner.write().await;
     let mut gpu_miner = state.gpu_miner.write().await;
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_hash, block_time, is_synced) =
         state
             .node_manager
             .get_network_hash_rate_and_block_reward()
@@ -1412,8 +1442,15 @@ async fn get_miner_metrics(
                 if !matches!(e, NodeManagerError::NodeNotStarted) {
                     warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
                 }
-                (0, 0, MicroMinotari(0), 0, 0, false)
+                (0, 0, MicroMinotari(0), 0, "".to_string(), 0, false)
             });
+
+    let (block_scan_height, block_scan_hash) =
+        get_block_info_from_block_scan(Network::get_current_or_user_setting_or_default())
+            .await
+            .unwrap();
+
+    let is_on_orphan_chain = { block_height != block_scan_height || block_hash != block_scan_hash };
 
     let cpu_mining_status = match cpu_miner
         .status(randomx_hash_rate, block_reward)
@@ -1485,9 +1522,11 @@ async fn get_miner_metrics(
         },
         base_node: BaseNodeStatus {
             block_height,
+            block_hash,
             block_time,
             is_synced,
             is_connected: !connected_peers.is_empty(),
+            is_on_orphan_chain,
             connected_peers,
         },
     };
@@ -1656,9 +1695,11 @@ pub struct ApplicationsVersions {
 #[derive(Debug, Serialize, Clone)]
 pub struct BaseNodeStatus {
     block_height: u64,
+    block_hash: String,
     block_time: u64,
     is_synced: bool,
     is_connected: bool,
+    is_on_orphan_chain: bool,
     connected_peers: Vec<String>,
 }
 #[derive(Debug, Serialize, Clone)]

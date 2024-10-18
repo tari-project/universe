@@ -15,6 +15,9 @@ const useMiningMetricsUpdater = () => {
     return useCallback(async () => {
         try {
             const metrics = await invoke('get_miner_metrics');
+            console.log(`base_node.block_hash: ${metrics.base_node.block_hash}`);
+            console.log(`base_node.block_height: ${metrics.base_node.block_height}`);
+            console.log(`base_node.is_on_orphan_chain: ${metrics.base_node.is_on_orphan_chain}`);
             const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
             // Pause animation when lost connection to the Tari Network
             if (isMining && !metrics.base_node?.is_connected && baseNodeConnected) {
