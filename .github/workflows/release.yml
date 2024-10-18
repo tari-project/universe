@@ -235,9 +235,6 @@ jobs:
               if: startsWith(runner.os,'Windows')
               run: tree /f /a
 
-            - name: Checkout repository
-              uses: actions/checkout@v4
-
             - name: Build WiX on Windows
               working-directory: ${{ github.workspace }}
               if: runner.os == 'Windows'
