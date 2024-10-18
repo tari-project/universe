@@ -1682,6 +1682,10 @@ pub enum CpuMinerConnection {
 struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
+    eco_mode_xmrig_options: Vec<String>,
+    ludicrous_mode_xmrig_options: Vec<String>,
+    eco_mode_cpu_percentage: Option<i8>,
+    ludicrous_mode_cpu_percentage: Option<i8>,
 }
 
 #[derive(Clone)]
