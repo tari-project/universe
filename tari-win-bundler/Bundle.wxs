@@ -5,7 +5,7 @@
 		<!-- <Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" /> -->
 		
 		<BootstrapperApplication>
-			<bal:WixInternalUIBootstrapperApplication LogoFile="tari-win-bundler\resources\icon.png" LocalizationFile="tari-win-bundler\resources\license.rtf" />
+			<bal:WixInternalUIBootstrapperApplication LogoFile="tari-win-bundler\resources\icon.png" Theme="hyperlinkLicense" />
 		</BootstrapperApplication>
 
 
