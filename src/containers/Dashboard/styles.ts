@@ -18,16 +18,7 @@ export const ProgressWrapper = styled.div`
     display: flex;
     width: 100%;
 `;
-export const VisualModeContainer = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(255, 255, 255, 0.2);
-    padding: 10px;
-    pointer-events: auto;
-    border-radius: 24px;
-    gap: 10px;
-`;
+
 export const SetupDescription = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 15px;

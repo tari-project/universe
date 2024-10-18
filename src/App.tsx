@@ -63,7 +63,7 @@ export default function App() {
                     <SettingsModal />
                     <LayoutGroup id="app-content">
                         {shutDownMarkup}
-                        {!visualMode || view != 'mining' ? (
+                        {!visualMode || view !== 'mining' ? (
                             <BackgroundImage layout transition={{ duration: 0.3 }} />
                         ) : null}
                         {mainMarkup}

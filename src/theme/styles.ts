@@ -11,10 +11,11 @@ export const DashboardContainer = styled(m.div)`
     gap: 20px;
     padding: 20px;
     height: 100%;
+    filter: ${({ theme }) => (theme.mode === 'dark' ? 'brightness(0.85)' : 'none')};
 `;
 
 export const BackgroundImage = styled(m.div)`
-    background-color: ${(props) => props.theme.palette.background.default};
+    background-color: ${(props) => props.theme.palette.background.paper};
     background-size: cover;
     pointer-events: none;
     background-image: url(${clouds});
