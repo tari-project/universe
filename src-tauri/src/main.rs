@@ -1385,6 +1385,17 @@ async fn get_app_config(
 }
 
 #[tauri::command]
+async fn check_if_is_orphan_chain(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<bool, String> {
+    state
+        .node_manager
+        .check_if_is_orphan_chain()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -1403,7 +1414,7 @@ async fn get_miner_metrics(
 
     let mut cpu_miner = state.cpu_miner.write().await;
     let mut gpu_miner = state.gpu_miner.write().await;
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_hash, block_time, is_synced) =
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height,  block_time, is_synced) =
         state
             .node_manager
             .get_network_hash_rate_and_block_reward()
@@ -1412,14 +1423,8 @@ async fn get_miner_metrics(
                 if !matches!(e, NodeManagerError::NodeNotStarted) {
                     warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
                 }
-                (0, 0, MicroMinotari(0), 0, "".to_string(), 0, false)
+                (0, 0, MicroMinotari(0), 0, 0, false)
             });
-
-    let is_on_orphan_chain = state
-        .node_manager
-        .check_if_is_orphan_chain()
-        .await
-        .map_err(|e| e.to_string())?;
 
     let cpu_mining_status = match cpu_miner
         .status(randomx_hash_rate, block_reward)
@@ -1491,11 +1496,9 @@ async fn get_miner_metrics(
         },
         base_node: BaseNodeStatus {
             block_height,
-            block_hash,
             block_time,
             is_synced,
             is_connected: !connected_peers.is_empty(),
-            is_on_orphan_chain,
             connected_peers,
         },
     };
@@ -1664,11 +1667,9 @@ pub struct ApplicationsVersions {
 #[derive(Debug, Serialize, Clone)]
 pub struct BaseNodeStatus {
     block_height: u64,
-    block_hash: String,
     block_time: u64,
     is_synced: bool,
     is_connected: bool,
-    is_on_orphan_chain: bool,
     connected_peers: Vec<String>,
 }
 #[derive(Debug, Serialize, Clone)]
@@ -1940,6 +1941,7 @@ fn main() {
             get_external_dependencies,
             set_use_tor,
             get_transaction_history,
+            check_if_is_orphan_chain,
             import_seed_words
         ])
         .build(tauri::generate_context!())
