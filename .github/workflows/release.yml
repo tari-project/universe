@@ -264,6 +264,7 @@ jobs:
               uses: actions/upload-release-asset@v1
               env:
                   TARI_UNIVERSE_INSTALLER_NAME: Tari Universe (Beta)_${{ steps.build.outputs.appVersion }}_x64_en-US.exe
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                   upload_url: ${{ steps.build.outputs.releaseUploadUrl }}
                   asset_path: .\tari-win-bundler\Bundle.exe
