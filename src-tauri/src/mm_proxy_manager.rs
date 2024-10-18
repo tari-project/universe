@@ -25,46 +25,8 @@ pub(crate) struct StartConfig {
     pub coinbase_extra: String,
     pub p2pool_enabled: bool,
     pub p2pool_port: u16,
-}
-
-// impl PartialEq for StartConfig {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.base_path == other.base_path
-//             && self.config_path == other.config_path
-//             && self.log_path == other.log_path
-//             && self.tari_address == other.tari_address
-//             && self.base_node_grpc_port == other.base_node_grpc_port
-//             && self.coinbase_extra == other.coinbase_extra
-//             && self.p2pool_enabled == other.p2pool_enabled
-//             && self.p2pool_port == other.p2pool_port
-//     }
-// }
-
-impl StartConfig {
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        app_shutdown: ShutdownSignal,
-        base_path: PathBuf,
-        config_path: PathBuf,
-        log_path: PathBuf,
-        tari_address: TariAddress,
-        base_node_grpc_port: u16,
-        coinbase_extra: String,
-        p2pool_enabled: bool,
-        p2pool_port: u16,
-    ) -> Self {
-        Self {
-            app_shutdown,
-            base_path,
-            config_path,
-            log_path,
-            tari_address,
-            base_node_grpc_port,
-            coinbase_extra,
-            p2pool_enabled,
-            p2pool_port,
-        }
-    }
+    pub monero_nodes: Vec<String>,
+    pub use_monero_fail: bool,
 }
 
 pub struct MmProxyManager {
@@ -131,6 +93,8 @@ impl MmProxyManager {
             p2pool_enabled: config.p2pool_enabled,
             port: network_utils::get_free_port().expect("Failed to get free port"),
             p2pool_grpc_port: config.p2pool_port,
+            monero_nodes: config.monero_nodes.clone(),
+            use_monero_fail: config.use_monero_fail,
         };
         process_watcher.adapter.config = Some(new_config.clone());
         info!(target: LOG_TARGET, "Starting mmproxy");
