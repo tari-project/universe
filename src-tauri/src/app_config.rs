@@ -49,6 +49,10 @@ pub struct AppConfigFromFile {
     use_tor: bool,
     #[serde(default = "default_false")]
     paper_wallet_enabled: bool,
+    eco_mode_cpu_threads: Option<isize>,
+    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_options: Vec<String>,
+    ludicrous_mode_cpu_options: Vec<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -72,6 +76,10 @@ impl Default for AppConfigFromFile {
             airdrop_ui_enabled: true,
             paper_wallet_enabled: false,
             use_tor: true,
+            eco_mode_cpu_options: Vec::new(),
+            ludicrous_mode_cpu_options: Vec::new(),
+            eco_mode_cpu_threads: None,
+            ludicrous_mode_cpu_threads: None,
         }
     }
 }
@@ -121,6 +129,10 @@ pub(crate) struct AppConfig {
     airdrop_ui_enabled: bool,
     paper_wallet_enabled: bool,
     use_tor: bool,
+    eco_mode_cpu_threads: Option<isize>,
+    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_options: Vec<String>,
+    ludicrous_mode_cpu_options: Vec<String>,
 }
 
 impl AppConfig {
@@ -145,6 +157,10 @@ impl AppConfig {
             airdrop_ui_enabled: true,
             use_tor: true,
             paper_wallet_enabled: false,
+            eco_mode_cpu_options: Vec::new(),
+            ludicrous_mode_cpu_options: Vec::new(),
+            eco_mode_cpu_threads: None,
+            ludicrous_mode_cpu_threads: None,
         }
     }
 
@@ -185,6 +201,10 @@ impl AppConfig {
                 self.airdrop_ui_enabled = config.airdrop_ui_enabled;
                 self.use_tor = config.use_tor;
                 self.paper_wallet_enabled = config.paper_wallet_enabled;
+                self.eco_mode_cpu_options = config.eco_mode_cpu_options;
+                self.eco_mode_cpu_threads = config.eco_mode_cpu_threads;
+                self.ludicrous_mode_cpu_options = config.ludicrous_mode_cpu_options;
+                self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -205,6 +225,21 @@ impl AppConfig {
             self.config_version = 9;
             self.mine_on_app_start = true;
         }
+    }
+
+    pub fn eco_mode_cpu_options(&self) -> &Vec<String> {
+        &self.eco_mode_cpu_options
+    }
+
+    pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
+        &self.ludicrous_mode_cpu_options
+    }
+    pub fn eco_mode_cpu_threads(&self) -> Option<isize> {
+        self.eco_mode_cpu_threads
+    }
+
+    pub fn ludicrous_mode_cpu_threads(&self) -> Option<isize> {
+        self.ludicrous_mode_cpu_threads
     }
 
     pub fn anon_id(&self) -> &str {
@@ -396,6 +431,10 @@ impl AppConfig {
             airdrop_ui_enabled: self.airdrop_ui_enabled,
             paper_wallet_enabled: self.paper_wallet_enabled,
             use_tor: self.use_tor,
+            eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
+            ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
+            eco_mode_cpu_threads: self.eco_mode_cpu_threads,
+            ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
