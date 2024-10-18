@@ -284,7 +284,7 @@ impl BinaryManager {
         );
 
         if highest_version == Version::new(0, 0, 0) {
-            warn!(target: LOG_TARGET,"No version selected");
+            warn!(target: LOG_TARGET,"No version selected for binary: {:?}", self.binary_name);
             return None;
         }
 
@@ -364,8 +364,11 @@ impl BinaryManager {
         let version = match selected_version {
             Some(version) => version,
             None => {
-                warn!(target: LOG_TARGET, "No version selected");
-                return Err(anyhow!("No version selected"));
+                warn!(target: LOG_TARGET, "No version selected for binary: {:?}", self.binary_name);
+                return Err(anyhow!(format!(
+                    "No version selected for binary: {:?}",
+                    self.binary_name
+                )));
             }
         };
 
