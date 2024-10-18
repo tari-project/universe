@@ -12,7 +12,7 @@ export const Wrapper = styled(m.div)`
     border-radius: 10px;
 
     background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0px 4px 65px 0px rgba(90, 90, 90, 0.2);
+    box-shadow: 0 4px 65px 0 rgba(90, 90, 90, 0.2);
 
     flex-shrink: 0;
     flex-grow: 0;
@@ -54,7 +54,7 @@ export const InfoWrapper = styled.div`
     line-height: 1.3;
     letter-spacing: -0.26px;
     span {
-        color: ${({ theme }) => theme.palette.base};
+        color: #fff;
     }
     p {
         font-weight: 600;

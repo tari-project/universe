@@ -75,6 +75,7 @@ export function useSetUp() {
                         fetchApplicationsVersionsWithRetry();
                         setView('mining');
                         setAnimationState('showVisual');
+
                         setSeenPermissions(true);
                     }
                     break;

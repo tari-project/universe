@@ -2,10 +2,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import styled from 'styled-components';
 
-import { IconButton } from '@app/components/elements/Button.tsx';
 import { IoCopyOutline, IoCheckmarkOutline, IoPencil } from 'react-icons/io5';
 import { useCallback } from 'react';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export interface SeedWordsProps {
     showSeedWords: boolean;
@@ -27,7 +27,7 @@ export const HiddenContainer = styled.div`
     border-radius: 10px;
     align-items: center;
     height: 40px;
-    border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
     display: flex;
     padding: 6px 10px 0;
     color: ${({ theme }) => theme.palette.text.primary};
@@ -43,7 +43,7 @@ export const SeedWordsContainer = styled.div`
     background-color: ${({ theme }) => theme.palette.background.default};
     width: 100%;
     border-radius: 10px;
-    border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
     padding: 20px;
 `;
 

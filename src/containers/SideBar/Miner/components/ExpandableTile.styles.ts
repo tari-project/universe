@@ -1,15 +1,17 @@
 import styled from 'styled-components';
 
 import { m } from 'framer-motion';
+import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const TriggerWrapper = styled(m.div)`
     width: 14px;
     height: 14px;
-    background: ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 100%;
+    color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
 export const ExpandableTileItem = styled(m.div)`
@@ -39,8 +41,7 @@ export const ExpandedContentTile = styled.div`
     flex-direction: column;
     gap: 8px;
     border-radius: 10px;
-    background: ${({ theme }) => theme.palette.colors.darkAlpha[5]};
-
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.04)};
     font-size: 12px;
     font-weight: 500;
 `;

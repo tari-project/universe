@@ -33,6 +33,8 @@ export interface Properties extends Record<string, unknown> {
     lightPositionX: number;
     lightPositionY: number;
     lightPositionZ: number;
+    bgColor1: string;
+    bgColor2: string;
 }
 
 export interface StateManager extends Record<string, unknown> {

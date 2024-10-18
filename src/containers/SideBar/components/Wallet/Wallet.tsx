@@ -64,7 +64,7 @@ export default function Wallet() {
     return (
         <WalletContainer>
             {balance ? (
-                <ShowHistoryButton onClick={handleShowClick} style={{ minWidth: 80 }}>
+                <ShowHistoryButton onClick={handleShowClick} style={{ minWidth: 80 }} color="transparent">
                     {!showHistory ? 'Show' : 'Hide'} history
                 </ShowHistoryButton>
             ) : null}
