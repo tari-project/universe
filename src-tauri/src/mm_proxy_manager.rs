@@ -46,7 +46,9 @@ impl Clone for MmProxyManager {
 impl MmProxyManager {
     pub fn new() -> Self {
         let sidecar_adapter = MergeMiningProxyAdapter::new();
-        let process_watcher = ProcessWatcher::new(sidecar_adapter);
+        let mut process_watcher = ProcessWatcher::new(sidecar_adapter);
+        process_watcher.health_timeout = std::time::Duration::from_secs(28);
+        process_watcher.poll_time = std::time::Duration::from_secs(30);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),

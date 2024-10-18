@@ -6,13 +6,14 @@ use crate::process_adapter::{
 use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use log::warn;
 // use log::warn;
 use reqwest::Client;
 use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 
-// const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
+const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 
 #[derive(Clone, PartialEq, Default)]
 pub(crate) struct MergeMiningProxyConfig {
@@ -142,6 +143,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             },
             MergeMiningProxyStatusMonitor {
                 json_rpc_port: config.port,
+                start_time: std::time::Instant::now(),
             },
         ))
     }
@@ -158,29 +160,29 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 #[derive(Clone)]
 pub struct MergeMiningProxyStatusMonitor {
     json_rpc_port: u16,
-    // start_time: std::time::Instant,
+    start_time: std::time::Instant,
 }
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         // TODO: Monero calls are really slow, so temporarily changing to Healthy
-        HealthStatus::Healthy
-        // if self
-        //     .get_version()
-        //     .await
-        //     .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
-        //     .is_ok()
-        // {
-        //     HealthStatus::Healthy
-        // } else {
-        //     if self.start_time.elapsed().as_secs() < 10 {
-        //         return HealthStatus::Healthy;
-        //     }
-        //     // HealthStatus::Unhealthy
-        //     // This can return a bad error from time to time, especially on startup
-        //     HealthStatus::Warning
-        // }
+        // HealthStatus::Healthy
+        if self
+            .get_version()
+            .await
+            .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
+            .is_ok()
+        {
+            HealthStatus::Healthy
+        } else {
+            if self.start_time.elapsed().as_secs() <30 {
+                return HealthStatus::Healthy;
+            }
+            // HealthStatus::Unhealthy
+            // This can return a bad error from time to time, especially on startup
+            HealthStatus::Warning
+        }
     }
 }
 
