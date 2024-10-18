@@ -5,7 +5,7 @@ import { open } from '@tauri-apps/api/shell';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
 import gemImage from '../../images/gem.png';
-import ClaimModal from '../../components/ClaimModal/ClaimModal';
+import ClaimModal from '../../components/Claimmodal/ClaimModal';
 
 export default function LoggedOut() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
