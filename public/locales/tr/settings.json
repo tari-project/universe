@@ -1,75 +1,101 @@
 {
-  "settings": "Ayarlar",
-  "seed-words": "Seed Kelimeleri",
-  "send-logs": "Günlüğü gönder",
-  "change-language": "Dil Değiştir",
-  "logs": "Günlükler",
-  "open-logs-directory": "Günlükler dizinini açın",
-  "debug-info": "Hata Ayıklama",
-  "hardware-status": "Donanım durumu",
-  "update-versions": "Güncelleme sürümleri",
-  "refresh-versions": "Sürümleri yenileyin",
-  "idle-timeout": {
-    "title": "Makinenin boşta sayılacağı süre",
-    "placeholder": "Boşta kalma zaman aşımını saniye cinsinden girin",
-    "max": "Maks. 21600 saniye",
-    "min": "Min. 1 saniye"
-  },
-  "tabs": {
-    "general": "Genel",
-    "experimental": "Deneysel",
-    "mining": "Madencilik"
-  },
-  "monero-address": {
-    "title": "Monero Adresi",
-    "placeholder": "Monero adresini girin"
-  },
-  "last-block-added-time": "Zincir zamanına eklenen son blok",
-  "visual-mode": "Görsel mod",
-  "pool-mining": "Havuz Madenciliği",
-  "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
-  "cpu-mining-enabled": "CPU Madenciliği",
-  "gpu-mining-enabled": "GPU Madenciliği",
-  "p2pool-stats": "P2Pool İstatistikleri",
-  "tribe": "Kabile",
-  "miners": "Madenciler",
-  "tribe-earnings": "Kabile kazançları",
-  "tribe-pool-height": "Havuz yüksekliği",
-  "p2pool-hash-rate": "Havuz hash oranları",
-  "p2pool-total-earnings": "Toplam havuz kazançları",
-  "p2pool-chain-tip": "Zincir ucu",
-  "p2pool-user-total-earnings": "Toplam kazançlar",
-  "yes": "Evet",
+  "action-requires-restart": "Bu eylem, değişikliklerin uygulanması için yeniden başlatma gerektirir",
+  "applyInviteCode": "Davet Kodunu Uygula",
+
   "cancel": "İptal",
-  "reset-settings": "Ayarları sıfırla",
-  "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?",
-  "reset-wallet": "Cüzdanı Sıfırla",
+  "change-language": "Dil",
+  "connected-peers": "Bağlı eşler",
+  "connected-to-tari": "Tari Ağına Bağlandı",
+  "cpu-mining-enabled": "CPU Madenciliği",
+
+  "debug-info": "Hata Ayıklama",
+  "disconnect": "Airdrop ile bağlantıyı kes",
+
   "experimental-title": "Deneysel Özellikler",
-  "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatlice ilerleyin.",
+  "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatli bir şekilde ilerleyin.",
+
+  "feedback-required": "Geri bildirim gereklidir",
+
+  "gpu-device-enabled": "GPU Madencilik cihazları",
+  "gpu-device-enabled-description": "Belirli GPU cihazını etkinleştirin veya devre dışı bırakın.",
+  "gpu-device-no-found": "⚠️ GPU cihazı bulunamadı",
+  "gpu-mining-enabled": "GPU Madenciliği",
+  "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
+
+  "hardware-status": "Donanım durumu",
+
+  "idle-timeout": {
+      "max": "Maks. 21600 saniyedir",
+      "min": "Min. 1 saniyedir",
+      "placeholder": "Boşta kalma zaman aşımını saniye cinsinden girin",
+      "title": "Makinenin boşta sayılacağı süre"
+  },
+  "importing-wallet": "Cüzdanı içe aktarma",
+  "inviteCode": "Davet Kodu",
+  "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",
+
+  "last-block-added-time": "Zincir zamanına eklenen son blok",
+  "logs": "Günlükler",
+  "low-hash-rate-warning": "Hash oranınız çok düşük. Tari Universe dışındaki tüm uygulamaları kapatmayı deneyin",
+
+  "miners": "Madenciler",
+  "mining-toggle-warning": "Değişiklikler yürürlüğe girene kadar madencilik durdurulacaktır.",
+  "monero-address": {
+      "title": "Monero adresi",
+      "placeholder": "Monero adresini girin"
+  },
+  
   "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
+      "title": "Başlangıçta madencilik",
+    "description": "Etkinleştirildiğinde, uygulama başlatıldığında otomatik olarak madenciliğe başlayacaktır."
   },
   "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
+    "title": "Sistem açıldığında otomatik başlatma",
+    "description": "Etkinleştirildiğinde, bilgisayarınızda oturum açtığınızda uygulama otomatik olarak başlayacaktır."
   },
-  "connected-to-tari": "Tari Ağına Bağlı",
-  "not-connected-to-tari": "Tari Ağına Bağlı Değil",
-  "connected-peers": "Bağlı Eşler",
-  "should-use-system-language": "Sistem Dilini Kullan",
-  "your-feedback": "Lütfen sorununuzu açıklayın",
-  "feedback-required": "Geri bildirim gereklidir",
-  "your-reference": "Referansınız",
-  "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
-  "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak.",
-  "applyInviteCode": "Davet Kodunu Uygula",
-  "disconnect": "Airdrop\"tan Bağlantıyı Kes",
-  "inviteCode": "Davet Kodu",
-  "use-tor": "Tor Kullan",
-  "importing-wallet": "Cüzdan İçe Aktarılıyor",
-  "action-requires-restart": "Bu işlem değişikliklerin uygulanması için yeniden başlatma gerektirir",
-  "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",
-  "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",
-  "report-issue": "Bir sorunu bildir"
+
+  "not-connected-to-tari": "Tari Ağına bağlı değil",
+
+  "open-logs-directory": "Günlükler dizinini açın",
+
+  "p2pool-chain-tip": "Zincir ucu",
+  "p2pool-hash-rate": "Takım hash oranları",
+  "p2pool-stats": "Takım İstatistikleri",
+  "p2pool-total-earnings": "takım toplam kazançları",
+  "p2pool-user-total-earnings": "Toplam kazançlar",
+  "pool-mining": "Havuz madenciliği",
+  "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye katılacaksınız.",
+
+  "refresh-versions": "Sürümleri yenileyin",
+  "report-issue": "Bir sorun bildirin",
+  "restart-now": "Şimdi Yeniden Başlat",
+  "restart-universe": "Tari Evreni'ni yeniden başlat?",
+  "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?",
+  "reset-settings": "Ayarları Sıfırla",
+  "reset-wallet": "Cüzdanı sıfırla",
+
+  "seed-words": "Tohum kelimeleri",
+  "send-logs": "Sorun ve Günlükleri Gönderin",
+  "settings": "Ayarlar",
+  "should-use-system-language": "Sistem dilini kullan",
+
+  "tabs": {
+      "airdrop": "Airdrop",
+      "general": "Genel",
+      "mining": "Madencilik",
+      "experimental": "Deneysel",
+      "wallet": "Cüzdan"
+  },
+  "tribe": "Takım",
+  "tribe-earnings": "Takım kazançları",
+  "tribe-pool-height": "Takım yüksekliği",
+
+  "update-versions": "Sürümleri güncelle",
+  "use-tor": "Tor'u Kullan",
+
+  "visual-mode": "Görsel mod",
+
+  "yes": "Evet",
+  "your-feedback": "Güncellemeler için sizinle iletişime geçebilmemiz için sorununuzu, varsa Telegram kullanıcı adınızı da ekleyerek açıklayın.",
+  "your-reference": "Referansların:<br/><bold>{{logRef}}</bold>"
 }
