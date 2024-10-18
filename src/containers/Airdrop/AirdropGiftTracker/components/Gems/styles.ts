@@ -33,6 +33,7 @@ export const Label = styled('div')`
 export const GemImage = styled('img')`
     position: relative;
     z-index: 1;
+    width: 20px;
 `;
 
 export const GemsAnimation = styled(m.div)`
@@ -46,4 +47,5 @@ export const GemAnimatedImage = styled(m.img)`
     position: absolute;
     top: 0;
     left: 0;
+    width: 20px;
 `;
