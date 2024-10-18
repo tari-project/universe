@@ -144,7 +144,7 @@ impl ProcessAdapter for TorAdapter {
         lyrebird_path.push("pluggable_transports");
         lyrebird_path.push("lyrebird");
         if cfg!(target_os = "windows") {
-            lyrebird_path.set_extension(".exe");
+            lyrebird_path.set_extension("exe");
         }
 
         let mut args: Vec<String> = vec![
