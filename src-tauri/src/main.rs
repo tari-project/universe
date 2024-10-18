@@ -777,17 +777,19 @@ async fn setup_inner(
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
-        .start(StartConfig::new(
-            state.shutdown.to_signal().clone(),
-            data_dir.clone(),
-            config_dir.clone(),
-            log_dir.clone(),
-            cpu_miner_config.tari_address.clone(),
+        .start(StartConfig {
             base_node_grpc_port,
-            telemetry_id,
-            config.p2pool_enabled(),
             p2pool_port,
-        ))
+            app_shutdown: state.shutdown.to_signal().clone(),
+            base_path: data_dir.clone(),
+            config_path: config_dir.clone(),
+            log_path: log_dir.clone(),
+            tari_address: cpu_miner_config.tari_address.clone(),
+            coinbase_extra: telemetry_id,
+            p2pool_enabled: config.p2pool_enabled(),
+            monero_nodes: config.mmproxy_monero_nodes().clone(),
+            use_monero_fail: config.mmproxy_use_monero_fail(),
+        })
         .await?;
     mm_proxy_manager.wait_ready().await?;
     *state.is_setup_finished.write().await = true;
