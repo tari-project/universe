@@ -15,7 +15,7 @@ export const DashboardContainer = styled(m.div)`
 `;
 
 export const BackgroundImage = styled(m.div)`
-    background-color: ${(props) => props.theme.palette.background.paper};
+    background-color: ${(props) => props.theme.palette.background.main};
     background-size: cover;
     pointer-events: none;
     background-image: url(${clouds});

@@ -56,6 +56,7 @@ const lightPalette: ThemePalette = {
         },
         background: {
             default: c.grey[50],
+            main: c.grey[50],
             paper: '#fff',
             accent: c.grey[100],
         },
