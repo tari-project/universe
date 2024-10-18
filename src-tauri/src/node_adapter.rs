@@ -9,7 +9,8 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::info;
 use minotari_node_grpc_client::grpc::{
-    Empty, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo, SyncState,
+    BlockHeader, Empty, GetBlocksRequest, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo,
+    SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
@@ -85,7 +86,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 self.required_initial_peers
             ),
             "-p".to_string(),
-            "base_node.grpc_server_allow_methods=\"list_connected_peers\"".to_string(),
+            "base_node.grpc_server_allow_methods=\"list_connected_peers, get_blocks\"".to_string(),
             "-p".to_string(),
             "base_node.p2p.allow_test_addresses=true".to_string(),
         ];
@@ -284,6 +285,41 @@ impl MinotariNodeStatusMonitor {
         }
 
         Ok(result?)
+    }
+
+    pub async fn get_historical_blocks(&self) -> Result<Vec<(u64, String)>, Error> {
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
+        let local_tip_height = client
+            .get_tip_info(Empty {})
+            .await?
+            .into_inner()
+            .metadata
+            .unwrap()
+            .best_block_height;
+
+        let heights: Vec<u64> = vec![
+            local_tip_height.saturating_sub(1000),
+            local_tip_height.saturating_sub(2000),
+            local_tip_height.saturating_sub(3000),
+        ];
+        let mut res = client
+            .get_blocks(GetBlocksRequest { heights })
+            .await?
+            .into_inner();
+
+        let mut blocks: Vec<(u64, String)> = Vec::new();
+        while let Some(block) = res.message().await? {
+            let BlockHeader { height, hash, .. } = block.block.clone().unwrap().header.unwrap();
+            let hash: String = hash
+                .iter()
+                .map(|x| format!("{:02x}", x))
+                .collect::<String>();
+
+            blocks.push((height, hash));
+        }
+        Ok(blocks)
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {

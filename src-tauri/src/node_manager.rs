@@ -199,6 +199,17 @@ impl NodeManager {
         Ok(exit_code)
     }
 
+    pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
+        let status_monitor_lock = self.watcher.read().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+
+        let local_blocks = status_monitor.get_historical_blocks().await?;
+        Ok(true)
+    }
+
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
         let status_monitor_lock = self.watcher.read().await;
         let status_monitor = status_monitor_lock

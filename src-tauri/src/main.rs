@@ -1449,6 +1449,12 @@ async fn get_miner_metrics(
         get_block_info_from_block_scan(Network::get_current_or_user_setting_or_default())
             .await
             .unwrap();
+    match state.node_manager.check_if_is_orphan_chain().await {
+        Ok(_) => {}
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error checking if is orphan chain: {:?}", e);
+        }
+    }
 
     let is_on_orphan_chain = { block_height != block_scan_height || block_hash != block_scan_hash };
 
