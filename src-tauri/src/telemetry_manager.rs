@@ -350,9 +350,10 @@ async fn get_telemetry_data(
         .await
         .read_hardware_parameters();
 
-    let p2pool_stats = match p2pool_manager.get_stats().await.inspect_err(|e| {
+    let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
-    }) {
+    });
+    let p2pool_stats = match p2pool_stats {
         Ok(stats) => stats,
         Err(_) => None,
     };
@@ -571,7 +572,7 @@ where
                         e
                     ));
                 } else {
-                    warn!(target: LOG_TARGET, "Retrying {} as it failed due to failure: {:?}", operation_name, e);
+                    warn!(target: LOG_TARGET, "Retrying {} due to failure: {:?}", operation_name, e);
                 }
             }
         }

@@ -43,6 +43,7 @@ use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
+use crate::utils::auto_rollback::AutoRollback;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 
@@ -470,6 +471,13 @@ async fn setup_application(
     app: tauri::AppHandle,
 ) -> Result<bool, String> {
     let timer = Instant::now();
+    let rollback = state.setup_counter.write().await;
+    if rollback.get_value() {
+        warn!(target: LOG_TARGET, "setup_application has already been initialized, debouncing");
+        let res = state.config.read().await.auto_mining();
+        return Ok(res);
+    }
+    rollback.set_value(true, Duration::from_millis(1000)).await;
     setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         e.to_string()
@@ -1701,6 +1709,7 @@ struct UniverseAppState {
     cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
+    setup_counter: Arc<RwLock<AutoRollback<bool>>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -1792,6 +1801,7 @@ fn main() {
         cached_p2pool_stats: Arc::new(RwLock::new(None)),
         cached_wallet_details: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
+        setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
