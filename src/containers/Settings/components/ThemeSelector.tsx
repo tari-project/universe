@@ -11,9 +11,9 @@ const Wrapper = styled.fieldset`
 export default function ThemeSelector() {
     return (
         <Wrapper>
-            <RadioButton id="system" name="theme_select" value="system" label="system" disabled />
-            <RadioButton id="light" name="theme_select" value="light" label="light" />
-            <RadioButton id="dark" name="theme_select" value="dark" label="dark" />
+            <RadioButton id="system" name="theme_select" value="system" label="system" variant="neutral" />
+            <RadioButton id="light" name="theme_select" value="light" label="light" variant="light"  />
+            <RadioButton id="dark" name="theme_select" value="dark" label="dark" variant="dark" />
         </Wrapper>
     );
 }

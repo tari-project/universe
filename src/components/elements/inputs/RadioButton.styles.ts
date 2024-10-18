@@ -1,46 +1,107 @@
 import styled, { css } from 'styled-components';
-import { themeType } from '@app/store/types.ts';
 
 interface Props {
-    $variant: themeType;
+    $variant: 'dark' | 'light' | 'neutral';
     $disabled?: boolean;
 }
 
 export const RadioButtonWrapper = styled.div<Props>`
-    display: flex;
     gap: 6px;
+    display: flex;
     align-items: center;
     justify-content: stretch;
-    border-radius: 10px;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    background: rgba(0, 0, 0, 0.1);
-    height: 55px;
-    padding: 17px 25px;
     width: 100%;
+    padding: 0 25px;
+    height: 55px;
+    color: transparent;
+    border-radius: ${({ theme }) => theme.shape.borderRadius.app};
+    border-width: 1px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, ${({ $variant }) => ($variant === 'dark' ? 0.2 : 0.1)});
+    input:checked ~ span {
+        color: #fff;
+    }
+
+    ${({ theme, $variant }) => {
+        switch ($variant) {
+            case 'dark': {
+                return css`
+                    background-color: #000;
+                `;
+            }
+            case 'light': {
+                return css`
+                    background-color: #fff;
+                `;
+            }
+            case 'neutral':
+            default: {
+                return css`
+                    background-color: ${theme.colorsAlpha.darkAlpha[10]};
+                `;
+            }
+        }
+    }};
 `;
 
 export const StyledLabel = styled.label<Props>`
     color: ${({ theme }) => theme.palette.text.primary};
-    cursor: default;
     text-transform: capitalize;
     text-align: center;
     width: 100%;
+
+    ${({ $variant }) => {
+        switch ($variant) {
+            case 'dark': {
+                return css`
+                    color: #fff;
+                `;
+            }
+            case 'light': {
+                return css`
+                    color: #000;
+                `;
+            }
+            case 'neutral':
+            default: {
+                return css`
+                    color: #000;
+                `;
+            }
+        }
+    }};
+
     ${({ $disabled }) =>
         $disabled &&
         css`
-            color: ${({ theme }) => theme.palette.text.disabled};
+            opacity: 0.8;
             cursor: not-allowed;
         `}
 `;
 
+export const CheckWrapper = styled.span<{ $checked?: boolean }>`
+    position: absolute;
+    z-index: 2;
+    width: 20px;
+    height: 20px;
+    color: transparent;
+    svg {
+        max-width: 100%;
+    }
+`;
 export const StyledRadio = styled.input<Props>`
+    position: relative;
     appearance: none;
     margin: 0;
     width: 20px;
     height: 20px;
-    border: 2px solid ${({ theme }) => theme.palette.primary.dark};
+    border-width: 2px;
+    border-style: solid;
+    border-color: ${({ $variant }) => ($variant === 'dark' ? '#fff' : '#000')};
     border-radius: 50%;
     transition: all 0.1s ease-in-out;
+    color: transparent;
+
     &::after {
         content: '';
         display: block;
@@ -49,18 +110,22 @@ export const StyledRadio = styled.input<Props>`
         height: 12px;
         margin: 2px;
     }
+    &:active::after {
+        background-color: ${({ $variant }) => ($variant === 'dark' ? '#fff' : '#000')};
+    }
+    &:checked {
+        border-color: ${({ theme }) => theme.palette.success.main};
+        background-color: ${({ theme }) => theme.palette.success.main};
+    }
     &:checked::after {
-        background-color: ${({ theme }) => theme.palette.primary.main};
+        background-color: ${({ theme }) => theme.palette.success.main};
     }
     &:hover::after {
-        background-color: ${({ theme }) => theme.palette.primary.light};
+        background-color: ${({ $variant }) => ($variant === 'dark' ? '#fff' : '#000')};
+        opacity: 0.7;
     }
-    &:focus {
-        outline: 2px solid ${({ theme }) => theme.palette.primary.wisp};
-    }
-
     &:disabled {
-        cursor: not-allowed;
+        pointer-events: none;
         opacity: 0.5;
     }
 `;
