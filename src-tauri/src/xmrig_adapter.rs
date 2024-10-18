@@ -38,6 +38,7 @@ pub struct XmrigAdapter {
     pub http_api_token: String,
     pub http_api_port: u16,
     pub cpu_max_percentage: Option<isize>,
+    pub extra_options: Vec<String>,
 }
 
 impl XmrigAdapter {
@@ -50,6 +51,7 @@ impl XmrigAdapter {
             http_api_token: http_api_token.clone(),
             http_api_port,
             cpu_max_percentage: None,
+            extra_options: Vec::new(),
         }
     }
 }
@@ -107,6 +109,9 @@ impl ProcessAdapter for XmrigAdapter {
                 .ok_or(anyhow::anyhow!("CPU max percentage not set"))?
         ));
         args.push("--verbose".to_string());
+        for extra_option in &self.extra_options {
+            args.push(extra_option.clone());
+        }
 
         Ok((
             ProcessInstance {
