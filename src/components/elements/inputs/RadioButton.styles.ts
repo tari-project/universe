@@ -31,7 +31,7 @@ export const RadioButtonWrapper = styled.div<Props>`
             }
             case 'light': {
                 return css`
-                    background-color: #fff;
+                    background-color: rgba(255, 255, 255, 0.85);
                 `;
             }
             case 'neutral':
@@ -45,7 +45,6 @@ export const RadioButtonWrapper = styled.div<Props>`
 `;
 
 export const StyledLabel = styled.label<Props>`
-    color: ${({ theme }) => theme.palette.text.primary};
     text-transform: capitalize;
     text-align: center;
     width: 100%;
@@ -54,18 +53,18 @@ export const StyledLabel = styled.label<Props>`
         switch ($variant) {
             case 'dark': {
                 return css`
-                    color: #fff;
+                    color: ${({ theme }) => theme.palette.action.text.light};
                 `;
             }
             case 'light': {
                 return css`
-                    color: #000;
+                    color: ${({ theme }) => theme.palette.action.text.contrast};
                 `;
             }
             case 'neutral':
             default: {
                 return css`
-                    color: #000;
+                    color: ${({ theme }) => theme.palette.text.primary};
                 `;
             }
         }

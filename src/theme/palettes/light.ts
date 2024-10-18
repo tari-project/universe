@@ -92,7 +92,9 @@ const lightPalette: ThemePalette = {
                 accent: c.grey[100],
             },
             text: {
+                light: '#fff',
                 main: c.tariPurple[600],
+                contrast: '#000',
             },
         },
         component: {

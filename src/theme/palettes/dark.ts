@@ -92,6 +92,8 @@ const darkPalette: ThemePalette = {
             },
             text: {
                 main: '#fff',
+                light: '#fff',
+                contrast: '#000',
             },
         },
         component: {
