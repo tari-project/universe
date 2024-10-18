@@ -236,11 +236,12 @@ jobs:
               run: tree /f /a
 
             - name: Build WiX on Windows
+              working-directory: ./tari-win-bundler
               if: runner.os == 'Windows'
               env:
                   TARI_UNIVERSE_INSTALLER_NAME: Tari.Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
                   TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
-              run: wix build .\tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext -includepath ./tari-win-bundler -includepath ./tari-win-bunder/resources -includepath ./tari-win-bundler/executables -includepath wix
+              run: wix build .\tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext -includepath ./tari-win-bundler -includepath ./tari-win-bunder/resources -includepath ./tari-win-bundler/executables -includepath wix -bindpath ./tari-win-bundler -bindpath ./tari-win-bunder/resources -bindpath ./tari-win-bundler/executables -bindpath wix
 
             - name: Debug step {artifactPaths}
               if: ${{ true }}
