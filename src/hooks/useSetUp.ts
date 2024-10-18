@@ -12,6 +12,7 @@ import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
 import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 import { useThemeSetup } from '@app/hooks/useTheming.ts';
+import { useInitSystemMode } from '@app/hooks/helpers/useDetectMode.ts';
 
 export function useSetUp() {
     const [isInitializing, setIsInitializing] = useState(false);
@@ -28,6 +29,7 @@ export function useSetUp() {
     const { backendInMemoryConfig } = useAirdropStore();
     const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
     const setupThemeBg = useThemeSetup();
+    const initTheme = useInitSystemMode();
     const { loadExternalDependencies } = useAppStateStore();
 
     useEffect(() => {
@@ -44,6 +46,7 @@ export function useSetUp() {
 
     useEffect(() => {
         async function initialize() {
+            initTheme();
             await fetchAppConfig();
         }
         initialize();

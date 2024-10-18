@@ -9,6 +9,7 @@ export type DialogType = DialogTypeTuple[number];
 
 interface State {
     theme: Theme;
+    systemTheme: Theme;
     showSplash: boolean;
     background: backgroundType;
     view: viewType;
@@ -20,6 +21,7 @@ interface State {
 }
 interface Actions {
     setTheme: (theme: Theme) => void;
+    setSystemTheme: (theme: Theme) => void;
     setShowSplash: (showSplash: boolean) => void;
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
@@ -34,6 +36,7 @@ type UIStoreState = State & Actions;
 
 const initialState: State = {
     theme: 'light',
+    systemTheme: 'light',
     showSplash: true,
     background: 'onboarding',
     view: 'setup',
@@ -49,6 +52,7 @@ export const useUIStore = create<UIStoreState>()(
         (set) => ({
             ...initialState,
             setTheme: (theme) => set({ theme }),
+            setSystemTheme: (systemTheme) => set({ systemTheme }),
             setShowSplash: (showSplash) => set({ showSplash }),
             setBackground: (background) => set({ background }),
             setView: (view) => set({ view }),
@@ -61,7 +65,7 @@ export const useUIStore = create<UIStoreState>()(
         }),
         {
             name: 'ui',
-            partialize: (s) => ({ theme: s.theme }),
+            partialize: (s) => ({ theme: s.theme, systemTheme: s.systemTheme }),
         }
     )
 );

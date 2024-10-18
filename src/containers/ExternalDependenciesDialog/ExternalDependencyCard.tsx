@@ -3,7 +3,6 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { getChipStylingForStatus, mapStatusToText } from './ExternalDependenciesDialog.utils';
 import { ExternalDependency, ExternalDependencyStatus } from '@app/types/app-status';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { IoArrowDownCircleOutline } from 'react-icons/io5';
 import { StyledIcon } from '../Dashboard/MiningView/components/MiningButton.styles';
 import { useAppStateStore } from '@app/store/appStateStore';

@@ -1,9 +1,4 @@
-import {
-    ApplicationsVersions,
-    ExternalDependency,
-    ExternalDependencyStatus,
-    Manufacturer,
-} from '@app/types/app-status';
+import { ApplicationsVersions, ExternalDependency } from '@app/types/app-status';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api';
 import { useAppConfigStore } from './useAppConfigStore';
