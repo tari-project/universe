@@ -6,6 +6,7 @@ import { modeType, themeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 type State = Partial<AppConfig>;
 
@@ -189,7 +190,14 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         });
     },
     setTheme: async (theme) => {
+        const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+
         const prevTheme = useAppConfigStore.getState().theme;
+        const setUITheme = useUIStore.getState().setTheme;
+        const uiTheme = theme === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : theme;
+
+        setUITheme(uiTheme);
+
         set({ theme });
         invoke('set_theme', { theme }).catch((e) => {
             const appStateStore = useAppStateStore.getState();

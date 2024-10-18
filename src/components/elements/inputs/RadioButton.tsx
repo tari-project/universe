@@ -3,9 +3,11 @@ import { CheckWrapper, RadioButtonWrapper, StyledLabel, StyledRadio } from './Ra
 import { Typography } from '@app/components/elements/Typography.tsx';
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 
+export type RadioVariant = 'dark' | 'light' | 'neutral';
+
 interface RadioProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
-    variant?: 'dark' | 'light' | 'neutral';
+    variant?: RadioVariant;
 }
 export default function RadioButton({ label, variant = 'neutral', ...props }: RadioProps) {
     return (

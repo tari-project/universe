@@ -120,7 +120,8 @@ export const StyledRadio = styled.input<Props>`
     &:checked::after {
         background-color: ${({ theme }) => theme.palette.success.main};
     }
-    &:hover::after {
+
+    &:hover:not(:checked)::after {
         background-color: ${({ $variant }) => ($variant === 'dark' ? '#fff' : '#000')};
         opacity: 0.7;
     }

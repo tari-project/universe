@@ -1,6 +1,7 @@
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useCallback } from 'react';
 import { setAnimationProperties } from '@app/visuals.ts';
+import { Theme } from '@app/theme/types.ts';
 
 const animationLightBg = [
     { property: 'bgColor1', value: '#F6F6F6' },
@@ -21,14 +22,16 @@ const animationDarkBg = [
 ];
 
 export function useSwitchTheme() {
-    const theme = useUIStore((s) => s.theme);
     const setTheme = useUIStore((s) => s.setTheme);
-    const isDarkMode = theme === 'dark';
 
-    return useCallback(() => {
-        setTheme(isDarkMode ? 'light' : 'dark');
-        setAnimationProperties(isDarkMode ? animationLightBg : animationDarkBg);
-    }, [isDarkMode, setTheme]);
+    return useCallback(
+        (themeName: Theme) => {
+            const isDarkMode = themeName === 'dark';
+            setTheme(themeName);
+            setAnimationProperties(isDarkMode ? animationLightBg : animationDarkBg);
+        },
+        [setTheme]
+    );
 }
 
 export function useThemeSetup() {

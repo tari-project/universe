@@ -1,7 +1,6 @@
 import { ButtonContainer, Container, SectionButton } from './Navigation.styles.ts';
 
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
-import { ThemeSwitch } from '@app/containers/Settings/components/ThemeSwitch.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useTranslation } from 'react-i18next';
@@ -40,7 +39,6 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                     );
                 })}
             </ButtonContainer>
-            <ThemeSwitch />
         </Container>
     );
 }
