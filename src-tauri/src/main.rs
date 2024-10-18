@@ -46,8 +46,6 @@ use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
-use reqwest::get;
-use scraper::{Html, Selector};
 
 mod app_config;
 mod app_in_memory_config;
@@ -1386,34 +1384,6 @@ async fn get_app_config(
     Ok(state.config.read().await.clone())
 }
 
-async fn get_block_info_from_block_scan(_: Network) -> Result<(u64, String), String> {
-    let response = get("https://textexplore-esmeralda.tari.com/")
-        .await
-        .map_err(|e| e.to_string())?
-        .text()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let document = Html::parse_document(&response);
-    let selector = Selector::parse("table tbody tr").map_err(|e| e.to_string())?;
-    let row = document
-        .select(&selector)
-        .next()
-        .ok_or("No table row found")?;
-
-    let cells = Selector::parse("td").map_err(|e| e.to_string())?;
-    let mut cells = row.select(&cells);
-    let chain_height = cells
-        .next()
-        .ok_or("No chain height cell found")?
-        .inner_html()
-        .parse::<u64>()
-        .unwrap();
-    let best_block = cells.next().ok_or("No best block cell found")?.inner_html();
-
-    Ok((chain_height, best_block))
-}
-
 #[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
@@ -1445,18 +1415,11 @@ async fn get_miner_metrics(
                 (0, 0, MicroMinotari(0), 0, "".to_string(), 0, false)
             });
 
-    let (block_scan_height, block_scan_hash) =
-        get_block_info_from_block_scan(Network::get_current_or_user_setting_or_default())
-            .await
-            .unwrap();
-    match state.node_manager.check_if_is_orphan_chain().await {
-        Ok(_) => {}
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error checking if is orphan chain: {:?}", e);
-        }
-    }
-
-    let is_on_orphan_chain = { block_height != block_scan_height || block_hash != block_scan_hash };
+    let is_on_orphan_chain = state
+        .node_manager
+        .check_if_is_orphan_chain()
+        .await
+        .map_err(|e| e.to_string())?;
 
     let cpu_mining_status = match cpu_miner
         .status(randomx_hash_rate, block_reward)

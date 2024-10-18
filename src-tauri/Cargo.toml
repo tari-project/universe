@@ -45,7 +45,6 @@ rand = "0.8.5"
 regex = "1.10.5"
 reqwest = {version = "0.12.5", features = ["stream", "json", "multipart"] }
 sanitize-filename = "0.5"
-scraper = "0.20.0"
 semver = "1.0.23"
 sentry-tauri = "0.3.0"
 serde = {version = "1", features = ["derive"] }
