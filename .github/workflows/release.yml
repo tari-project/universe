@@ -235,11 +235,19 @@ jobs:
               if: startsWith(runner.os,'Windows')
               run: tree /f /a
 
-            - name: Build WiX on Windows
+            - name: Build WiX on Windows ( Release )
               working-directory: ${{ github.workspace }}
-              if: runner.os == 'Windows'
+              if: runner.os == 'Windows' && startsWith(github.ref, 'refs/heads/release')
               env:
-                  TARI_UNIVERSE_INSTALLER_NAME: Tari.Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
+                  TARI_UNIVERSE_INSTALLER_NAME: Tari Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
+                  TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+              run: wix build tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext -includepath tari-win-bundler -includepath tari-win-bundler\resources -includepath tari-win-bundler\executables -includepath wix -includepath src-tauri\target\release\bundle\msi
+
+            - name: Build WiX on Windows ( Beta )
+              working-directory: ${{ github.workspace }}
+              if: runner.os == 'Windows' && ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') )
+              env:
+                  TARI_UNIVERSE_INSTALLER_NAME: Tari Universe (Beta)_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
                   TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
               run: wix build tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext -includepath tari-win-bundler -includepath tari-win-bundler\resources -includepath tari-win-bundler\executables -includepath wix -includepath src-tauri\target\release\bundle\msi
 
@@ -255,7 +263,7 @@ jobs:
               if: runner.os == 'Windows'
               uses: actions/upload-artifact@v4
               with:
-                  name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_wix
+                  name: tari-universe-beta_${{ steps.build.outputs.appVersion }}
                   path: .\tari-win-bundler\bin\Debug\tari_win_bundler.exe
 
             - name: Upload none releases
