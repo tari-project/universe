@@ -16,6 +16,7 @@ export const GlobalReset = createGlobalStyle`
             outline: none;
         }
     }
+    fieldset,
     textarea,
     input {
         all: unset;

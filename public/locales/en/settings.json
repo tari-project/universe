@@ -87,6 +87,7 @@
         "experimental": "Experimental",
         "very_experimental": "Very Experimental"
     },
+    "theme": "Theme",
     "tribe": "Squad",
     "tribe-earnings": "Squad earnings",
     "tribe-pool-height": "Squad height",

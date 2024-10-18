@@ -18,7 +18,6 @@ import { WalletSettings } from './sections/wallet/WalletSettings.tsx';
 import { SETTINGS_TYPES, SettingsType } from './types.ts';
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
 import { AirdropSettings } from './sections/airdrop/AirdropSettings.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { TempSettings } from '@app/containers/Settings/sections/experimental/Temp.tsx';
