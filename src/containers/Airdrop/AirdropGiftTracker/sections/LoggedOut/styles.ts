@@ -34,7 +34,9 @@ export const ClaimButton = styled('button')`
     }
 `;
 
-export const Image = styled('img')``;
+export const Image = styled('img')`
+    width: 15px;
+`;
 
 export const Title = styled('div')`
     color: ${({ theme }) => theme.palette.base};

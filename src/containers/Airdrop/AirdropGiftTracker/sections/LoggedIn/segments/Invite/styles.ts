@@ -51,7 +51,9 @@ export const TextWrapper = styled('div')`
     width: 100%;
 `;
 
-export const Image = styled('img')``;
+export const Image = styled('img')`
+    width: 15px;
+`;
 
 export const Title = styled('div')`
     color: ${({ theme }) => theme.palette.base};
