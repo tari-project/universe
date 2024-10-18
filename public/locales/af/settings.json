@@ -71,5 +71,13 @@
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
   "yes": "Yes",
   "cancel": "Cancel",
-  "report-issue": "Rapporteer \"n probleem"
+  "report-issue": "Rapporteer \"n probleem",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }
