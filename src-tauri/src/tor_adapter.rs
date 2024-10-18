@@ -80,7 +80,7 @@ impl TorAdapter {
         self.config = config.clone();
 
         // match self.apply_tor_config_changes(config.clone()).await {
-        //     Ok(_) => println!("4.XXXXXXXTor config changes applied successfully"),
+        //     Ok(_) => info!(target: LOG_TARGET, "Tor config changes applied successfully"),
         //     Err(e) => {
         //         warn!(target: LOG_TARGET, "Failed to apply Tor config changes: {:?}", e);
         //         return Err(e);
@@ -97,7 +97,6 @@ impl TorAdapter {
 
     //     // Establish a TCP connection
     //     let mut stream = TcpStream::connect(control_port_address)?;
-    //     println!("Connected to Tor control port.");
 
     //     // Authenticate
     //     setconf_commands.push(format!("AUTHENTICATE \"{}\"\n", self.password.clone()));
