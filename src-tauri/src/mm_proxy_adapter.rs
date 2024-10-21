@@ -1,21 +1,19 @@
-use std::fs;
 use std::path::PathBuf;
 
-use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
-use crate::process_utils;
 use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, warn};
+use log::warn;
+// use log::warn;
+use reqwest::Client;
+use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
-use tokio::select;
 
-const LOG_TARGET: &str = "tari::universe::merge_mining_proxy_adapter";
+const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 
 #[derive(Clone, PartialEq, Default)]
 pub(crate) struct MergeMiningProxyConfig {
@@ -25,6 +23,8 @@ pub(crate) struct MergeMiningProxyConfig {
     pub p2pool_grpc_port: u16,
     pub coinbase_extra: String,
     pub tari_address: TariAddress,
+    pub use_monero_fail: bool,
+    pub monero_nodes: Vec<String>,
 }
 
 impl MergeMiningProxyConfig {
@@ -105,7 +105,17 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
+            "-p".to_string(),
+            format!(
+                "merge_mining_proxy.use_dynamic_fail_data={}",
+                config.use_monero_fail
+            ),
         ];
+
+        for node in &config.monero_nodes {
+            args.push("-p".to_string());
+            args.push(format!("merge_mining_proxy.monerod_url={}", node));
+        }
 
         // TODO: uncomment if p2pool is needed in CPU mining
         if config.p2pool_enabled {
@@ -131,7 +141,10 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     name: self.name().to_string(),
                 },
             },
-            MergeMiningProxyStatusMonitor {},
+            MergeMiningProxyStatusMonitor {
+                json_rpc_port: config.port,
+                start_time: std::time::Instant::now(),
+            },
         ))
     }
 
@@ -145,12 +158,71 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 }
 
 #[derive(Clone)]
-pub struct MergeMiningProxyStatusMonitor {}
+pub struct MergeMiningProxyStatusMonitor {
+    json_rpc_port: u16,
+    start_time: std::time::Instant,
+}
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        // TODO: Implement a call to the jsonrpc api to check the health of the mmproxy
-        HealthStatus::Healthy
+        // TODO: Monero calls are really slow, so temporarily changing to Healthy
+        // HealthStatus::Healthy
+        if self
+            .get_version()
+            .await
+            .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
+            .is_ok()
+        {
+            HealthStatus::Healthy
+        } else {
+            if self.start_time.elapsed().as_secs() <30 {
+                return HealthStatus::Healthy;
+            }
+            // HealthStatus::Unhealthy
+            // This can return a bad error from time to time, especially on startup
+            HealthStatus::Warning
+        }
+    }
+}
+
+impl MergeMiningProxyStatusMonitor {
+    #[allow(dead_code)]
+    pub async fn get_version(&self) -> Result<String, Error> {
+        let rpc_url = format!("http://127.0.0.1:{}/json_rpc", self.json_rpc_port);
+        let request_body = json!({
+            "jsonrpc": "2.0",
+            "id": "0",
+            "method": "get_version",
+            "params": {
+            }
+        });
+
+        // Create an HTTP client
+        let client = Client::new();
+
+        // Send the POST request
+        let response = client.post(rpc_url).json(&request_body).send().await?;
+
+        // Parse the response body
+        if response.status().is_success() {
+            let response_text = response.text().await?;
+            let response_json: serde_json::Value = serde_json::from_str(&response_text)?;
+            if response_json.get("error").is_some() {
+                return Err(anyhow!(
+                    "Failed to get block template Jsonrpc error: {}",
+                    response_text
+                ));
+            }
+            if response_json.get("result").is_none() {
+                return Err(anyhow!("Failed to get block template: {}", response_text));
+            }
+            Ok(response_text)
+        } else {
+            Err(anyhow!(
+                "Failed to get block template: {}",
+                response.status()
+            ))
+        }
     }
 }

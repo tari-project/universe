@@ -1,33 +1,26 @@
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
-use crate::process_utils;
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::atomic::AtomicU16;
-use std::sync::Arc;
+use std::path::PathBuf;
 use std::time::Instant;
-use std::{fs, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
-use tokio::runtime::Runtime;
-use tokio::select;
 
 use crate::{
     app_config::MiningMode,
-    binaries::{Binaries, BinaryResolver},
     network_utils::get_free_port,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
-pub const ECO_MODE_GPU_PERCENTAGE: u16 = 10;
+pub const ECO_MODE_GPU_PERCENTAGE: u16 = 2;
 pub const LUDICROUS_MODE_GPU_PERCENTAGE: u16 = 800; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
@@ -212,6 +205,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
 }
 
 impl GpuMinerStatusMonitor {
+    #[allow(clippy::cast_possible_truncation)]
     pub async fn status(&self) -> Result<GpuMinerStatus, anyhow::Error> {
         let client = reqwest::Client::new();
         let response = match client
@@ -261,12 +255,15 @@ impl GpuMinerStatusMonitor {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct XtrGpuminerHttpApiStatus {
+    #[allow(dead_code)]
     hashrate_per_device: HashMap<u32, AverageHashrate>,
     total_hashrate: AverageHashrate,
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub(crate) struct AverageHashrate {
     ten_seconds: Option<f64>,
     one_minute: Option<f64>,

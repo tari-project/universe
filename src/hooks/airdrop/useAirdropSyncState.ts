@@ -3,7 +3,6 @@ import { useAirdropUserPointsListener } from './stateHelpers/useAirdropUserPoint
 import { useGetAirdropUserDetails } from './stateHelpers/useGetAirdropUserDetails';
 import { useGetReferralQuestPoints } from './stateHelpers/useGetReferralQuestPoints';
 import { useGetRustInMemoryConfig } from './stateHelpers/useGetRustInMemoryConfig';
-import { useGetMiningPoints } from './stateHelpers/useGetMiningPoints.ts';
 
 export const useAirdropSyncState = () => {
     useGetRustInMemoryConfig();
@@ -11,5 +10,4 @@ export const useAirdropSyncState = () => {
     useGetAirdropUserDetails();
     useAirdropUserPointsListener();
     useGetReferralQuestPoints();
-    useGetMiningPoints();
 };

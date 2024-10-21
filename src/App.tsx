@@ -63,13 +63,13 @@ export default function App() {
                     <SettingsModal />
                     <StagedSecurity />
                     <LayoutGroup id="app-content">
-                        <SplashScreen />
                         {shutDownMarkup}
                         {!visualMode || view != 'mining' ? (
                             <BackgroundImage layout transition={{ duration: 0.3 }} />
                         ) : null}
                         {mainMarkup}
                         <ErrorSnackbar />
+                        <SplashScreen />
                     </LayoutGroup>
                 </MotionConfig>
             </LazyMotion>

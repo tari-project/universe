@@ -1,17 +1,15 @@
-use crate::binaries::{Binaries, BinaryResolver};
-use std::path::PathBuf;
-
 use anyhow::Error;
 use async_trait::async_trait;
 use log::warn;
+use std::path::PathBuf;
 use tari_shutdown::Shutdown;
-use tokio::runtime::Handle;
 
+use crate::network_utils::get_free_port;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::xmrig;
 use crate::xmrig::http_api::XmrigHttpApiClient;
-use crate::{process_utils, xmrig};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -26,12 +24,8 @@ impl XmrigNodeConnection {
                 vec![
                     "--daemon".to_string(),
                     format!("--url={}:{}", host_name, port),
-                    "--daemon-poll-interval=10000".to_string(),
+                    // "--daemon-poll-interval=10000".to_string(),
                     "--coin=monero".to_string(),
-                    // TODO: Generate password
-                    "--http-port".to_string(),
-                    "9090".to_string(),
-                    "--http-access-token=pass".to_string(),
                 ]
             }
         }
@@ -44,13 +38,12 @@ pub struct XmrigAdapter {
     pub http_api_token: String,
     pub http_api_port: u16,
     pub cpu_max_percentage: Option<isize>,
-    pub client: XmrigHttpApiClient,
-    // TODO: secure
+    pub extra_options: Vec<String>,
 }
 
 impl XmrigAdapter {
     pub fn new() -> Self {
-        let http_api_port = 9090;
+        let http_api_port = get_free_port().unwrap_or(18000);
         let http_api_token = "pass".to_string();
         Self {
             node_connection: None,
@@ -58,10 +51,7 @@ impl XmrigAdapter {
             http_api_token: http_api_token.clone(),
             http_api_port,
             cpu_max_percentage: None,
-            client: XmrigHttpApiClient::new(
-                format!("http://127.0.0.1:{}", http_api_port).clone(),
-                http_api_token.clone(),
-            ),
+            extra_options: Vec::new(),
         }
     }
 }
@@ -119,6 +109,9 @@ impl ProcessAdapter for XmrigAdapter {
                 .ok_or(anyhow::anyhow!("CPU max percentage not set"))?
         ));
         args.push("--verbose".to_string());
+        for extra_option in &self.extra_options {
+            args.push(extra_option.clone());
+        }
 
         Ok((
             ProcessInstance {

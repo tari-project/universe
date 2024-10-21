@@ -1,7 +1,7 @@
 use std::{fs, ops::Deref, path::PathBuf, sync::LazyLock};
 
 use anyhow::anyhow;
-use log::{debug, warn};
+use log::{debug, trace, warn};
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 use serde::{Deserialize, Serialize};
 use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
@@ -156,12 +156,10 @@ impl HardwareMonitor {
     pub fn load_status_file(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
         match self.current_implementation.load_status_file(config_path) {
             Ok(_) => {
-                debug!(target: LOG_TARGET, "Gpu status file loaded successfully");
+                trace!(target: LOG_TARGET, "Gpu status file loaded successfully");
                 Ok(())
             }
-            Err(e) => {
-                return Err(anyhow!("Fail to load gpu status file: {:?}", e));
-            }
+            Err(e) => Err(anyhow!("Fail to load gpu status file: {:?}", e)),
         }
     }
 }
@@ -305,7 +303,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
         let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
         if file.exists() {
             self.gpu_status_file = Some(file.clone());
-            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+            trace!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
         } else {
             debug!(target: LOG_TARGET, "Gpu status file does not exist or is corrupt");
         }
@@ -434,7 +432,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
                 .utilization_rates()
                 .map(|e| e.gpu)
                 .unwrap_or_default() as f32;
-            let label = current_gpu.name().unwrap_or_else(|e| "N/A".to_string());
+            let label = current_gpu.name().unwrap_or("N/A".to_string());
 
             let max_temperature = match current_parameters.get(i as usize) {
                 Some(current_parameters) => {
@@ -479,7 +477,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
         let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
         if file.exists() {
             self.gpu_status_file = Some(file.clone());
-            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+            trace!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
         } else {
             debug!(target: LOG_TARGET, "Gpu status file does not exist or is corrupt");
         }
@@ -637,7 +635,7 @@ impl HardwareMonitorImpl for MacOSHardwareMonitor {
         let file: PathBuf = config_path.join("gpuminer").join("gpu_status.json");
         if file.exists() {
             self.gpu_status_file = Some(file.clone());
-            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+            trace!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
         } else {
             debug!(target: LOG_TARGET, "Gpu status file does not exist or is corrupt");
         }

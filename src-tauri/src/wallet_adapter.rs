@@ -1,16 +1,14 @@
-use crate::binaries::{Binaries, BinaryResolver};
+use crate::network_utils::get_free_port;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
-use crate::process_utils;
 use crate::utils::file_utils::convert_to_string;
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{GetBalanceRequest, GetCompletedTransactionsRequest};
 use serde::Serialize;
-use std::fs;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
@@ -18,8 +16,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::runtime::Handle;
-use tokio::select;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -29,16 +25,22 @@ pub struct WalletAdapter {
     pub(crate) base_node_address: Option<String>,
     pub(crate) view_private_key: String,
     pub(crate) spend_key: String,
+    pub(crate) tcp_listener_port: u16,
+    pub(crate) grpc_port: u16,
 }
 
 impl WalletAdapter {
     pub fn new(use_tor: bool) -> Self {
+        let tcp_listener_port = get_free_port().unwrap_or(18188);
+        let grpc_port = get_free_port().unwrap_or(18141);
         Self {
             use_tor,
             base_node_address: None,
             base_node_public_key: None,
             view_private_key: "".to_string(),
             spend_key: "".to_string(),
+            tcp_listener_port,
+            grpc_port,
         }
     }
 }
@@ -56,7 +58,6 @@ impl ProcessAdapter for WalletAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting read only wallet");
         let working_dir = data_dir.join("wallet");
@@ -78,7 +79,7 @@ impl ProcessAdapter for WalletAdapter {
             format!("--log-path={}", formatted_log_dir),
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
-            "/ip4/127.0.0.1/tcp/18141".to_string(),
+            format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
             "-p".to_string(),
             "wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string(),
             "-p".to_string(),
@@ -108,11 +109,15 @@ impl ProcessAdapter for WalletAdapter {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
-            args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
+            args.push(format!(
+                "wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/{}",
+                self.tcp_listener_port
+            ));
             args.push("-p".to_string());
-            args.push(
-                "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
-            );
+            args.push(format!(
+                "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/{}",
+                self.tcp_listener_port
+            ));
 
             // todo!()
         }
@@ -139,7 +144,9 @@ impl ProcessAdapter for WalletAdapter {
                     name: self.name().to_string(),
                 },
             },
-            WalletStatusMonitor {},
+            WalletStatusMonitor {
+                grpc_port: self.grpc_port,
+            },
         ))
     }
 
@@ -163,7 +170,9 @@ pub enum WalletStatusMonitorError {
 }
 
 #[derive(Clone)]
-pub struct WalletStatusMonitor {}
+pub struct WalletStatusMonitor {
+    grpc_port: u16,
+}
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
@@ -202,7 +211,7 @@ pub struct TransactionInfo {
 
 impl WalletStatusMonitor {
     fn wallet_grpc_address(&self) -> String {
-        String::from("http://127.0.0.1:18141")
+        format!("http://127.0.0.1:{}", self.grpc_port)
     }
 
     pub async fn get_balance(&self) -> Result<WalletBalance, WalletStatusMonitorError> {

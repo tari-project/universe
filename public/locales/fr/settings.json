@@ -38,6 +38,14 @@
     "placeholder": "Entrez l\"adresse Monero",
     "title": "Adresse Monero"
   },
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
   "connected-to-tari": "Connecté au réseau Tari",
   "reset-settings": "Réinitialiser les paramètres",
   "visual-mode": "Mode visuel",
@@ -56,6 +64,12 @@
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
   "seed-words": "Mots de récupération",
   "feedback-required": "Les commentaires sont requis",
-  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-  "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?"
+  "low-hash-rate-warning": "Votre hashrate est très bas. Essayez de fermer toutes les applications sauf Tari Universe",
+  "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
+  "yes": "Yes",
+  "cancel": "Cancel",
+  "report-issue": "Signaler un problème",
+  "importing-wallet": "Importation du portefeuille",
+  "action-requires-restart": "Cette action nécessite un redémarrage pour appliquer les modifications",
+  "invalid-seed-words": "Entrez 24 mots séparés par des espaces"
 }

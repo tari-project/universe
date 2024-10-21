@@ -1,6 +1,6 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -14,8 +14,8 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
-    poll_time: tokio::time::Duration,
-    health_timeout: tokio::time::Duration,
+    pub poll_time: tokio::time::Duration,
+    pub health_timeout: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
 }
 
@@ -89,7 +89,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             let mut is_healthy = false;
 
                             if child.ping() {
-                                if let Ok(inner) = timeout(health_timeout, status_monitor2.check_health()).await.inspect_err(|e|
+                                if let Ok(inner) = timeout(health_timeout, status_monitor2.check_health()).await.inspect_err(|_|
                                 error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name)) {
                                             match inner {
                                                 HealthStatus::Healthy => {
@@ -98,9 +98,12 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                             },
                                             HealthStatus::Warning => {
                                                 warning_count += 1;
-                                                if warning_count > 20 {
+                                                if warning_count > 10 {
                                                     error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
                                                     warning_count = 0;
+                                                }
+                                                else {
+                                                   is_healthy = true;
                                                 }
                                             },
                                             HealthStatus::Unhealthy => {
@@ -116,7 +119,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                    Ok(exit_code) => {
                                       if exit_code != 0 {
                                           error!(target: LOG_TARGET, "{} exited with error code: {}", name, exit_code);
-                                          return Ok(exit_code);
+                                        //   return Ok(exit_code);
                                       }
                                       else {
                                         info!(target: LOG_TARGET, "{} exited successfully", name);
@@ -124,7 +127,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                    }
                                    Err(e) => {
                                       error!(target: LOG_TARGET, "{} exited with error: {}", name, e);
-                                      return Err(e);
+                                    //   return Err(e);
                                    }
                                }
                                // Restart dead app
