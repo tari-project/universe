@@ -231,7 +231,7 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
-                self.theme = Theme::from_str(&config.theme).unwrap_or(Theme::System);
+                self.theme = Theme::from_str(&config.theme).unwrap_or(Theme::Light);
                 self.auto_mining = config.auto_mining;
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
@@ -526,7 +526,7 @@ fn default_mode() -> String {
 }
 
 fn default_theme() -> String {
-    "system".to_string()
+    "light".to_string()
 }
 
 fn default_false() -> bool {
