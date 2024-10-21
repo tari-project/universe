@@ -1,10 +1,9 @@
 use anyhow::anyhow;
-use keyring::{Entry, Error as KeyringError};
 use log::{info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use std::fs::create_dir_all;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError, TariAddressFeatures};
@@ -26,7 +25,7 @@ use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
-use crate::APPLICATION_FOLDER_ID;
+use crate::credential_manager::{Credential, CredentialManager};
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -67,7 +66,7 @@ impl InternalWallet {
             }
         }
         info!(target: LOG_TARGET, "Wallet config does not exist or is corrupt. Creating new wallet");
-        let (wallet, config) = InternalWallet::create_new_wallet(None).await?;
+        let (wallet, config) = InternalWallet::create_new_wallet(None, file_parent).await?;
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
         Ok(wallet)
@@ -88,7 +87,7 @@ impl InternalWallet {
             warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
         });
 
-        let (wallet, config) = InternalWallet::create_new_wallet(Some(seed_words)).await?;
+        let (wallet, config) = InternalWallet::create_new_wallet(Some(seed_words), file_parent).await?;
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
         Ok(wallet)
@@ -99,13 +98,7 @@ impl InternalWallet {
     }
 
     pub async fn get_paper_wallet_details(&self) -> Result<PaperWalletConfig, anyhow::Error> {
-        let passphrase = match &self.config.passphrase {
-            Some(passphrase) => passphrase.clone(),
-            None => {
-                let entry = Entry::new(APPLICATION_FOLDER_ID, "internal_wallet")?;
-                SafePassword::from(entry.get_password()?)
-            }
-        };
+        let passphrase = CredentialManager::default_with_dir(self.config.config_path.clone()).get_credentials()?.seed_passphrase;
 
         let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
             .map_err(|e| anyhow!(e.to_string()))?;
@@ -135,41 +128,27 @@ impl InternalWallet {
 
     async fn create_new_wallet(
         seed_words: Option<Vec<String>>,
+        path: &Path,
     ) -> Result<(Self, WalletConfig), anyhow::Error> {
         let mut config = WalletConfig {
             tari_address_base58: "".to_string(),
             view_key_private_hex: "".to_string(),
             seed_words_encrypted_base58: "".to_string(),
             spend_public_key_hex: "".to_string(),
+            config_path: path.to_path_buf(),
             passphrase: None,
         };
 
-        let passphrase = match Entry::new(APPLICATION_FOLDER_ID, "internal_wallet") {
-            Ok(entry) => match entry.get_password() {
-                Ok(pass) => SafePassword::from(pass),
-                Err(_err @ KeyringError::PlatformFailure(_))
-                | Err(_err @ KeyringError::NoStorageAccess(_)) => {
-                    warn!(target: LOG_TARGET, "Failed to gain access to keyring storage. Storing generated passphrase insecurely");
-                    let passphrase = SafePassword::from(generate_password(32));
-                    config.passphrase = Some(passphrase.clone());
-                    passphrase
-                }
-                Err(_) => {
-                    let passphrase = SafePassword::from(generate_password(32));
-                    let _unused = entry.delete_credential();
-                    entry.set_password(&String::from_utf8(passphrase.reveal().clone())?)?;
-                    passphrase
-                }
+        let cm = CredentialManager::default_with_dir(path.to_path_buf());
+        let passphrase = match cm.get_credentials() {
+            Ok(creds) => creds.seed_passphrase,
+            Err(_) => {
+                let phrase = SafePassword::from(generate_password(32));
+                cm.set_credentials(&Credential { seed_passphrase: phrase.clone() })?;
+                phrase
             },
-            Err(_err @ KeyringError::PlatformFailure(_))
-            | Err(_err @ KeyringError::NoStorageAccess(_)) => {
-                warn!(target: LOG_TARGET, "Failed to gain access to keyring storage. Storing generated passphrase insecurely");
-                let passphrase = SafePassword::from(generate_password(32));
-                config.passphrase = Some(passphrase.clone());
-                passphrase
-            }
-            Err(e) => return Err(anyhow!(e.to_string())),
         };
+
         let seed = match seed_words {
             Some(sw) => {
                 let seed_words = SeedWords::from_str(&sw.join(" "))?;
@@ -220,13 +199,7 @@ impl InternalWallet {
     }
 
     pub fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
-        let passphrase = match &self.config.passphrase {
-            Some(passphrase) => passphrase.clone(),
-            None => {
-                let entry = Entry::new(APPLICATION_FOLDER_ID, "internal_wallet")?;
-                SafePassword::from(entry.get_password()?)
-            }
-        };
+        let passphrase = CredentialManager::default_with_dir(self.config.config_path.clone()).get_credentials()?.seed_passphrase;
 
         let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
             .map_err(|e| anyhow!(e.to_string()))?;
@@ -284,6 +257,7 @@ pub struct WalletConfig {
         note = "This is for Universe users < v0.5.20 who wouldn't be migrated yet. Once we're confident that all users have been migrated, we can remove this."
     )]
     pub(crate) passphrase: Option<SafePassword>,
+    config_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Serialize, Clone)]
