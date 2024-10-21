@@ -1,35 +1,92 @@
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+<Wix 
+	xmlns="http://wixtoolset.org/schemas/v4/wxs" 
+	xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal" 
+	xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
 	
-	<Bundle Name="Tari Universe (Alpha)" Version="$(env.TARI_UNIVERSE_APP_VERSION)" Manufacturer="Tari Labs, LLC" UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37">
+	<Bundle 
+		Name="Tari Universe (Alpha)" 
+		Version="$(env.TARI_UNIVERSE_APP_VERSION)" 
+		Manufacturer="Tari Labs, LLC" 
+		UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37">
 
 		<!-- <Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" /> -->
 		
 		<BootstrapperApplication>
-			<bal:WixStandardBootstrapperApplication LicenseUrl="https://www.example.com/license" Theme="hyperlinkLicense" LogoFile="tari-win-bundler/resources/icon.png" />
+			<bal:WixStandardBootstrapperApplication 
+        LicenseUrl="https://www.example.com/license" 
+        Theme="hyperlinkLicense" 
+        LogoFile="tari-win-bundler/resources/icon.png" />
 		</BootstrapperApplication>
 
 
 		<!-- processor architecture -->
-		<util:RegistrySearch Id="REG_ARCH" Root="HKLM" Key="SYSTEM\CurrentControlSet\Control\Session Manager\Environment" Value="PROCESSOR_ARCHITECTURE" Result="value" Variable="ARCH_NAME" />
+		<util:RegistrySearch 
+      Id="REG_ARCH" Root="HKLM" 
+      Key="SYSTEM\CurrentControlSet\Control\Session Manager\Environment" 
+      Value="PROCESSOR_ARCHITECTURE" 
+      Result="value" 
+      Variable="ARCH_NAME" />
 
 		<!-- Visual C++ 2015-2022 Redistributable (x86) runtime minimum msi package version -->
-		<util:ProductSearch Id="VCRUNTIME_X86" Result="version" Variable="VCRUNTIME_X86_VER" UpgradeCode="65E5BD06-6392-3027-8C26-853107D3CF1A" Condition="VersionNT" />
+		<util:ProductSearch 
+    Id="VCRUNTIME_X86" 
+    Result="version" 
+    Variable="VCRUNTIME_X86_VER" 
+    UpgradeCode="65E5BD06-6392-3027-8C26-853107D3CF1A" 
+    Condition="VersionNT" />
 
 		<!-- Visual C++ 2015-2022 Redistributable (x64) runtime minimum msi package version -->
-		<util:ProductSearch Id="VCRUNTIME_X64" Result="version" Variable="VCRUNTIME_X64_VER" UpgradeCode="36F68A90-239C-34DF-B58C-64B30153CE35" Condition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" After="REG_ARCH" />
+		<util:ProductSearch 
+      Id="VCRUNTIME_X64"
+      Result="version" 
+      Variable="VCRUNTIME_X64_VER" 
+      UpgradeCode="36F68A90-239C-34DF-B58C-64B30153CE35" 
+      Condition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" 
+      After="REG_ARCH" />
 
 		<!-- Visual C++ 2015-2022 Redistributable runtime msi package version -->
-		<Variable Name="VCRUNTIME_VER" Type="version" Value="14.40.33816.0" />
+		<Variable 
+      Name="VCRUNTIME_VER" 
+      Type="version" 
+      Value="14.40.33816.0" />
 		
 		<Chain>
 			<!-- Visual C++ 2015-2022 Redistributable (x86) - 14.40.33810 -->
-			<ExePackage Id="VC_REDIST_X86" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="VersionNT AND (ARCH_NAME = &quot;x86&quot;)" DetectCondition="(VCRUNTIME_X86_VER &gt;= VCRUNTIME_VER) AND VersionNT" SourceFile="tari-win-bundler\executables\VC_redist.x86.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
+			<ExePackage 
+        Id="VC_REDIST_X86" 
+        DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.40.33816" 
+        Cache="keep" 
+        PerMachine="yes" 
+        Permanent="yes" 
+        Protocol="burn" 
+        InstallCondition="VersionNT AND (ARCH_NAME = &quot;x86&quot;)" 
+        DetectCondition="(VCRUNTIME_X86_VER &gt;= VCRUNTIME_VER) AND VersionNT" 
+        SourceFile="tari-win-bundler\executables\VC_redist.x86.exe" 
+        InstallArguments="/install /quiet /norestart" 
+        RepairArguments="/repair /quiet /norestart" 
+        UninstallArguments="/uninstall /quiet /norestart" />
 			
 			<!-- Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816 -->
-			<ExePackage Id="VC_REDIST_X64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" DetectCondition="(VCRUNTIME_X64_VER &gt;= VCRUNTIME_VER) AND VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" SourceFile="tari-win-bundler\executables\VC_redist.x64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
+			<ExePackage 
+        Id="VC_REDIST_X64" 
+        DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816" 
+        Cache="keep" 
+        PerMachine="yes" 
+        Permanent="yes" 
+        Protocol="burn" 
+        InstallCondition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" 
+        DetectCondition="(VCRUNTIME_X64_VER &gt;= VCRUNTIME_VER) AND VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" 
+        SourceFile="tari-win-bundler\executables\VC_redist.x64.exe" 
+        InstallArguments="/install /quiet /norestart" 
+        RepairArguments="/repair /quiet /norestart" 
+        UninstallArguments="/uninstall /quiet /norestart" />
 
 			<!-- Tari Universe x64 -->
-			<MsiPackage SourceFile="src-tauri\target\release\bundle\msi\$(env.TARI_UNIVERSE_INSTALLER_NAME)" After="VC_REDIST_X64" InstallCondition="VersionNT64"  Vital="yes" />		
+			<MsiPackage 
+        SourceFile="src-tauri\target\release\bundle\msi\$(env.TARI_UNIVERSE_INSTALLER_NAME)" 
+        After="VC_REDIST_X64" 
+        InstallCondition="VersionNT64"  
+        Vital="yes" />		
 		</Chain>
 	</Bundle>
 </Wix>
