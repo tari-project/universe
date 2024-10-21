@@ -63,13 +63,19 @@ impl CpuMiner {
             }
         };
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => (30 * max_cpu_available) / 100isize,
-            MiningMode::Ludicrous => -1, // Use all
+            MiningMode::Eco => cpu_miner_config
+                .eco_mode_cpu_percentage
+                .unwrap_or((30 * max_cpu_available) / 100isize),
+            MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_cpu_percentage.unwrap_or(-1), // Use all
         };
 
         lock.adapter.node_connection = Some(xmrig_node_connection);
         lock.adapter.monero_address = Some(monero_address.clone());
         lock.adapter.cpu_max_percentage = Some(cpu_max_percentage);
+        lock.adapter.extra_options = match mode {
+            MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
+            MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
+        };
 
         lock.start(
             app_shutdown.clone(),

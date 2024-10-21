@@ -14,8 +14,8 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
-    poll_time: tokio::time::Duration,
-    health_timeout: tokio::time::Duration,
+    pub poll_time: tokio::time::Duration,
+    pub health_timeout: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
 }
 
