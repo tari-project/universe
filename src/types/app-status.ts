@@ -21,6 +21,7 @@ export interface AppConfig {
     airdrop_ui_enabled: boolean;
     paper_wallet_enabled: boolean;
     use_tor: boolean;
+    monero_address_is_provided?: boolean;
 }
 
 export enum ExternalDependencyStatus {
