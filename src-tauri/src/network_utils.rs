@@ -3,6 +3,22 @@ use std::net::TcpListener;
 use serde::Deserialize;
 use tari_common::configuration::Network;
 
+#[derive(Deserialize)]
+struct BlockHeader {
+    hash: HashData,
+    height: String,
+}
+
+#[derive(Deserialize)]
+struct HashData {
+    data: Vec<u8>,
+}
+
+#[derive(Deserialize)]
+struct BlockResponse {
+    header: BlockHeader,
+}
+
 pub(crate) fn get_free_port() -> Option<u16> {
     match TcpListener::bind("127.0.0.1:0") {
         Ok(listener) => listener.local_addr().ok().map(|addr| addr.port()),
@@ -35,22 +51,6 @@ pub(crate) async fn get_block_info_from_block_scan(
     network: Network,
     block_height: u64,
 ) -> Result<(u64, String), anyhow::Error> {
-    #[derive(Deserialize)]
-    struct BlockHeader {
-        hash: HashData,
-        height: String,
-    }
-
-    #[derive(Deserialize)]
-    struct HashData {
-        data: Vec<u8>,
-    }
-
-    #[derive(Deserialize)]
-    struct BlockResponse {
-        header: BlockHeader,
-    }
-
     let response = reqwest::get(&get_text_explore_url(network, block_height))
         .await?
         .json::<BlockResponse>()
@@ -64,8 +64,6 @@ pub(crate) async fn get_block_info_from_block_scan(
         .map(|x| format!("{:02x}", x))
         .collect::<String>();
     let height = response.header.height.parse::<u64>()?;
-
-    println!("Height: {}, Hash: {}", height, hash);
 
     Ok((height, hash))
 }

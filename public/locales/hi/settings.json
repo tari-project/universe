@@ -70,6 +70,7 @@
   "importing-wallet": "वॉलेट आयात किया जा रहा है",
   "action-requires-restart": "इस क्रिया के लिए परिवर्तनों को लागू करने हेतु पुनः आरंभ करना आवश्यक है",
   "low-hash-rate-warning": "आपकी हैश रेट बहुत कम है। Tari Universe के अलावा सभी ऐप्स को बंद करने का प्रयास करें",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
   "report-issue": "समस्या की रिपोर्ट करें"
 }

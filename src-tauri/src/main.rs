@@ -1393,13 +1393,13 @@ async fn get_app_config(
     Ok(state.config.read().await.clone())
 }
 
-async fn check_if_is_orphan_chain(app_handle: AppHandle) -> () {
+async fn check_if_is_orphan_chain(app_handle: AppHandle) {
     let state = app_handle.state::<UniverseAppState>().inner();
     let check_if_orphan = state.node_manager.check_if_is_orphan_chain().await;
     match check_if_orphan {
         Ok(is_stuck) => {
             if is_stuck {
-                warn!(target: LOG_TARGET, "is stuck");
+                error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
                 drop(app_handle.emit_all("is_stuck", is_stuck));
             }
         }

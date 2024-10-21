@@ -72,6 +72,7 @@
   "importing-wallet": "Importowanie portfela",
   "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
   "report-issue": "Zgłoś problem"
 }

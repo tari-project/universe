@@ -37,6 +37,7 @@
     "last-block-added-time": "Last block added to chain time",
     "logs": "Logs",
     "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
+    "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
 
     "miners": "Miners",
     "mining-toggle-warning": "Mining will be paused while the changes take effect.",
