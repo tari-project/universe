@@ -2,10 +2,11 @@ import { invoke } from '@tauri-apps/api';
 import { create } from './create';
 import { AppConfig } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
-import { modeType } from './types.ts';
+import { modeType, themeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 type State = Partial<AppConfig>;
 
@@ -18,6 +19,7 @@ interface Actions {
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMineOnAppStart: (mineOnAppStart: boolean) => Promise<void>;
     setMode: (mode: modeType) => Promise<void>;
+    setTheme: (theme: themeType) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
     setUseTor: (useTor: boolean) => Promise<void>;
@@ -44,12 +46,17 @@ const initialState: State = {
     use_tor: true,
 };
 
-export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
+export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
     ...initialState,
     fetchAppConfig: async () => {
         try {
             const appConfig = await invoke('get_app_config');
             set(appConfig);
+            const configTheme = appConfig.theme?.toLowerCase();
+
+            if (configTheme) {
+                await getState().setTheme(configTheme as themeType);
+            }
         } catch (e) {
             console.error('Could not get app config: ', e);
         }
@@ -185,6 +192,24 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set mode', e);
             appStateStore.setError('Could not change mode');
             set({ mode: prevMode });
+        });
+    },
+    setTheme: async (themeArg) => {
+        const theme = themeArg?.toLowerCase() as themeType;
+        const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        const prevTheme = useAppConfigStore.getState().theme;
+        const setUITheme = useUIStore.getState().setTheme;
+        const uiTheme = theme === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : theme;
+
+        setUITheme(uiTheme);
+
+        set({ theme });
+        invoke('set_theme', { theme }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set theme', e);
+            appStateStore.setError('Could not change theme');
+            set({ theme: prevTheme });
         });
     },
     setUseTor: async (useTor) => {

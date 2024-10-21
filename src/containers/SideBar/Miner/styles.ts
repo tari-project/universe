@@ -42,17 +42,15 @@ export const StatWrapper = styled(m.div)<{ $useLowerCase?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     min-height: 18px;
 
-    color: #000;
     font-size: 18px;
     font-style: normal;
     font-weight: 500;
-    line-height: normal;
     line-height: 100%;
     text-transform: ${({ $useLowerCase }) => ($useLowerCase ? 'lowercase' : 'uppercase')};
 `;
 
 export const Unit = styled(m.div)`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 10px;
     font-style: normal;
     font-weight: 500;

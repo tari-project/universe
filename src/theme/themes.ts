@@ -1,13 +1,15 @@
-import { light, dark, componentSettings } from './tokens';
 import { DefaultTheme } from 'styled-components';
+import { componentSettings } from './components.ts';
+import lightPalette from './palettes/light.ts';
+import darkPalette from './palettes/dark.ts';
 
 const lightTheme: DefaultTheme = {
-    ...light,
+    ...lightPalette,
     ...componentSettings,
 };
 
-const darkTheme: DefaultTheme = {
-    ...dark,
+const darkTheme = {
+    ...darkPalette,
     ...componentSettings,
 };
 

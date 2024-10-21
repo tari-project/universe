@@ -7,6 +7,7 @@ import { useUIStore } from '@app/store/useUIStore';
 const SplashScreen = () => {
     const showSplash = useUIStore((s) => s.showSplash);
     const setShowSplash = useUIStore((s) => s.setShowSplash);
+
     const options = {
         animationData: universeAnimation,
         loop: false,
