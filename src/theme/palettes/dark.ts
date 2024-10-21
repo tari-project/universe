@@ -59,6 +59,7 @@ const darkPalette: ThemePalette = {
             paper: c.grey[700],
             accent: c.grey[400],
             main: c.grey[800],
+            splash: '#2E2E2E',
         },
         success: {
             main: c.green[600],

@@ -4,7 +4,7 @@ export const Position = styled('div')`
     pointer-events: none;
 
     position: absolute;
-    bottom: 20px;
+    bottom: 0;
     left: 50%;
     z-index: 2;
     transform: translateX(-50%);
@@ -23,10 +23,11 @@ export const BoxWrapper = styled('div')`
     padding: 20px;
 
     border-radius: 10px;
-    background-color: ${({ theme }) => theme.palette.background.accent};
+    background-color: ${({ theme }) =>
+        theme.mode === 'dark' ? theme.colorsAlpha.lightAlpha[5] : theme.colorsAlpha.lightAlpha[80]};
     box-shadow:
         0 10px 25px -12.5px rgba(0, 0, 0, 0.07),
-        0 12.5px 33.33px -16.66px rgba(0, 0, 0, 0.05),
+        0 13px 33px -16.66px rgba(0, 0, 0, 0.05),
         0 15px 50px -25px rgba(0, 0, 0, 0.035);
 
     pointer-events: all;
@@ -44,14 +45,14 @@ export const TextWrapper = styled('div')`
 `;
 
 export const Title = styled('div')`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 14px;
     font-weight: 600;
     line-height: 110%;
 `;
 
 export const Text = styled('span')`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-weight: 500;
     line-height: 116.667%;

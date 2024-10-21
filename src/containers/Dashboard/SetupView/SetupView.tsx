@@ -30,7 +30,7 @@ function SetupView({
             </SetupDescription>
 
             <ProgressWrapper>
-                <LinearProgress value={progressPercentage} variant="secondary" />
+                <LinearProgress value={progressPercentage} />
             </ProgressWrapper>
             <SetupPercentage>{`${progressPercentage}%`}</SetupPercentage>
             <SetupDescription>{title ? t(`title.${title}`, titleParams) : ''}</SetupDescription>

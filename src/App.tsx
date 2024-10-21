@@ -1,5 +1,5 @@
 import { LayoutGroup, LazyMotion, domMax, MotionConfig } from 'framer-motion';
-import { BackgroundImage, DashboardContainer } from './theme/styles';
+import { DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
@@ -27,7 +27,6 @@ export default function App() {
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
     const view = useUIStore((s) => s.view);
-    const visualMode = useUIStore((s) => s.visualMode);
 
     const shutDownMarkup = useMemo(() => {
         return isShuttingDown ? <ShuttingDownScreen /> : null;
@@ -35,7 +34,7 @@ export default function App() {
     const mainMarkup = useMemo(() => {
         if (!isShuttingDown && !showSplash) {
             return (
-                <DashboardContainer>
+                <DashboardContainer $view={view}>
                     <SideBar />
                     <Dashboard status={view} />
                 </DashboardContainer>
@@ -63,9 +62,6 @@ export default function App() {
                     <SettingsModal />
                     <LayoutGroup id="app-content">
                         {shutDownMarkup}
-                        {!visualMode || view !== 'mining' ? (
-                            <BackgroundImage layout transition={{ duration: 0.3 }} />
-                        ) : null}
                         {mainMarkup}
                         <ErrorSnackbar />
                         <SplashScreen />

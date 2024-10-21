@@ -45,6 +45,7 @@ export interface Palette {
     divider: string;
     background: {
         default: string;
+        splash: string;
         paper: string;
         accent: string;
         main: string;

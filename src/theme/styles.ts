@@ -1,28 +1,16 @@
 import styled from 'styled-components';
 import { m } from 'framer-motion';
-import clouds from '@app/assets/backgrounds/clouds.png';
+
+import { viewType } from '@app/store/types.ts';
 
 export const sidebarWidth = '348px'; // if this is updated please update the value in init-visuals.js
 
-export const DashboardContainer = styled(m.div)`
+export const DashboardContainer = styled(m.div)<{ $view?: viewType }>`
     display: grid;
     grid-template-columns: ${sidebarWidth} auto;
     position: relative;
     gap: 20px;
     padding: 20px;
     height: 100%;
-    filter: ${({ theme }) => (theme.mode === 'dark' ? 'brightness(0.85)' : 'none')};
-`;
-
-export const BackgroundImage = styled(m.div)`
-    background-color: ${(props) => props.theme.palette.background.main};
-    background-size: cover;
-    pointer-events: none;
-    background-image: url(${clouds});
-    background-position: center;
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
+    background-color: ${(props) => (props.$view !== 'setup' ? 'none' : props.theme.palette.background.splash)};
 `;
