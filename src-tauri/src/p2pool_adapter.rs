@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::data_local_dir;
 use log::{info, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;

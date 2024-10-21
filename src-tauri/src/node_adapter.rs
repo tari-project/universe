@@ -9,10 +9,12 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::info;
 use minotari_node_grpc_client::grpc::{
-    Empty, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo, SyncState,
+    BlockHeader, Empty, GetBlocksRequest, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo,
+    SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -85,7 +87,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 self.required_initial_peers
             ),
             "-p".to_string(),
-            "base_node.grpc_server_allow_methods=\"list_connected_peers\"".to_string(),
+            "base_node.grpc_server_allow_methods=\"list_connected_peers, get_blocks\"".to_string(),
             "-p".to_string(),
             "base_node.p2p.allow_test_addresses=true".to_string(),
         ];
@@ -205,6 +207,7 @@ impl MinotariNodeStatusMonitor {
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
 
+        // let tst = res.miner_data.
         let reward = res
             .miner_data
             .ok_or_else(|| {
@@ -225,10 +228,9 @@ impl MinotariNodeStatusMonitor {
                 )));
             }
         };
-        let (sync_achieved, block_height, _hash, block_time) = (
+        let (sync_achieved, block_height, block_time) = (
             res.initial_sync_achieved,
             metadata.best_block_height,
-            metadata.best_block_hash.clone(),
             metadata.timestamp,
         );
         // First try with 10 blocks
@@ -277,6 +279,46 @@ impl MinotariNodeStatusMonitor {
         }
 
         Ok(result?)
+    }
+
+    pub async fn get_historical_blocks(&self) -> Result<Vec<(u64, String)>, Error> {
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
+        let local_tip_height = client
+            .get_tip_info(Empty {})
+            .await?
+            .into_inner()
+            .metadata
+            .expect("Node returned no metadata")
+            .best_block_height;
+
+        let heights: Vec<u64> = vec![
+            local_tip_height.saturating_sub(1000),
+            local_tip_height.saturating_sub(2000),
+            local_tip_height.saturating_sub(3000),
+        ];
+        let mut res = client
+            .get_blocks(GetBlocksRequest { heights })
+            .await?
+            .into_inner();
+
+        let mut blocks: Vec<(u64, String)> = Vec::new();
+        while let Some(block) = res.message().await? {
+            let BlockHeader { height, hash, .. } = block
+                .block
+                .clone()
+                .expect("Failed to get block data")
+                .header
+                .expect("Failed to get block header data");
+            let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
+                write!(acc, "{:02x}", x).expect("Unable to write");
+                acc
+            });
+
+            blocks.push((height, hash));
+        }
+        Ok(blocks)
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {

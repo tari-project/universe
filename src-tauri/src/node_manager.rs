@@ -5,6 +5,7 @@ use std::time::SystemTime;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{debug, error};
 use minotari_node_grpc_client::grpc::Peer;
+use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
@@ -12,6 +13,7 @@ use tari_utilities::hex::Hex;
 use tokio::fs;
 use tokio::sync::RwLock;
 
+use crate::network_utils::get_block_info_from_block_scan;
 use crate::node_adapter::{MinotariNodeAdapter, MinotariNodeStatusMonitorError};
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
@@ -197,6 +199,24 @@ impl NodeManager {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
         Ok(exit_code)
+    }
+
+    pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
+        let status_monitor_lock = self.watcher.read().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+        let network = Network::get_current_or_user_setting_or_default();
+
+        let local_blocks = status_monitor.get_historical_blocks().await?;
+        for block in &local_blocks {
+            let block_scan_blocks = get_block_info_from_block_scan(network, block.0).await?;
+            if block_scan_blocks.1 != block.1 {
+                return Ok(true);
+            }
+        }
+        Ok(false)
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {

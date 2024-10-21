@@ -65,6 +65,7 @@
   "seed-words": "Mots de récupération",
   "feedback-required": "Les commentaires sont requis",
   "low-hash-rate-warning": "Votre hashrate est très bas. Essayez de fermer toutes les applications sauf Tari Universe",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
   "yes": "Yes",
   "cancel": "Cancel",
