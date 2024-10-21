@@ -13,6 +13,7 @@ use tokio::sync::RwLock;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
+const ECO_MODE_CPU_USAGE: isize = 30;
 
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
@@ -38,6 +39,7 @@ impl CpuMiner {
         config_path: PathBuf,
         log_dir: PathBuf,
         mode: MiningMode,
+        custom_max_cpu_usage: Option<isize>,
     ) -> Result<(), anyhow::Error> {
         let mut lock = self.watcher.write().await;
 
@@ -63,7 +65,10 @@ impl CpuMiner {
             }
         };
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => (30 * max_cpu_available) / 100isize,
+            MiningMode::Eco => (ECO_MODE_CPU_USAGE * max_cpu_available) / 100isize,
+            MiningMode::Custom => {
+                (custom_max_cpu_usage.unwrap_or(ECO_MODE_CPU_USAGE) * max_cpu_available) / 100isize
+            },
             MiningMode::Ludicrous => -1, // Use all
         };
 

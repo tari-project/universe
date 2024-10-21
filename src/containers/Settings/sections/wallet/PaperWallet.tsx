@@ -10,7 +10,7 @@ import {
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+// import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
@@ -26,7 +26,7 @@ const StyledWrapper = styled.div`
 `;
 
 export default function PaperWallet() {
-    const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
+    const paperWalletEnabled = true; //useAppConfigStore((s) => s.paper_wallet_enabled);
     const showExperimental = useUIStore((s) => s.showExperimental);
     const [qrCodeValue, setValue] = useState('');
     const [password, setPassword] = useState('');

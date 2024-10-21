@@ -155,13 +155,18 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
 }
 
 #[tauri::command]
-async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+async fn set_mode(
+    mode: String,
+    custom_max_cpu_usage: Option<isize>,
+    custom_max_gpu_usage: Option<isize>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     let timer = Instant::now();
     state
         .config
         .write()
         .await
-        .set_mode(mode)
+        .set_mode(mode, custom_max_cpu_usage, custom_max_gpu_usage)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -993,6 +998,16 @@ async fn start_mining<'r>(
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
+    let custom_cpu_usage = config.custom_cpu_usage();
+    let custom_gpu_usage = if let Some(custom_gpu_usage) = config.custom_gpu_usage() {
+        if custom_gpu_usage > 0 && custom_gpu_usage < u16::MAX as isize {
+            Some(custom_gpu_usage as u16)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = config.monero_address().to_string();
@@ -1022,6 +1037,7 @@ async fn start_mining<'r>(
                     .app_log_dir()
                     .expect("Could not get log dir"),
                 mode,
+                custom_cpu_usage,
             )
             .await;
 
@@ -1087,6 +1103,7 @@ async fn start_mining<'r>(
                     .expect("Could not get log dir"),
                 mode,
                 telemetry_id,
+                custom_gpu_usage,
             )
             .await;
 

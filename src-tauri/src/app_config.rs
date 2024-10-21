@@ -49,6 +49,10 @@ pub struct AppConfigFromFile {
     use_tor: bool,
     #[serde(default = "default_false")]
     paper_wallet_enabled: bool,
+    #[serde(default = "default_custom_max_cpu_usage")]
+    custom_max_cpu_usage: Option<isize>,
+    #[serde(default = "default_custom_max_gpu_usage")]
+    custom_max_gpu_usage: Option<isize>,
 }
 
 impl Default for AppConfigFromFile {
@@ -69,6 +73,8 @@ impl Default for AppConfigFromFile {
             should_always_use_system_language: false,
             should_auto_launch: false,
             application_language: default_application_language(),
+            custom_max_cpu_usage: None,
+            custom_max_gpu_usage: None,
             airdrop_ui_enabled: true,
             paper_wallet_enabled: false,
             use_tor: true,
@@ -80,6 +86,7 @@ impl Default for AppConfigFromFile {
 pub enum MiningMode {
     Eco,
     Ludicrous,
+    Custom
 }
 
 impl MiningMode {
@@ -87,6 +94,7 @@ impl MiningMode {
         match s {
             "Eco" => Some(MiningMode::Eco),
             "Ludicrous" => Some(MiningMode::Ludicrous),
+            "Custom" => Some(MiningMode::Custom),
             _ => None,
         }
     }
@@ -95,6 +103,7 @@ impl MiningMode {
         match m {
             MiningMode::Eco => String::from("Eco"),
             MiningMode::Ludicrous => String::from("Ludicrous"),
+            MiningMode::Custom => String::from("Custom"),
         }
     }
 }
@@ -121,6 +130,8 @@ pub(crate) struct AppConfig {
     airdrop_ui_enabled: bool,
     paper_wallet_enabled: bool,
     use_tor: bool,
+    custom_max_cpu_usage: Option<isize>,
+    custom_max_gpu_usage: Option<isize>,
 }
 
 impl AppConfig {
@@ -144,6 +155,8 @@ impl AppConfig {
             application_language: default_application_language(),
             airdrop_ui_enabled: true,
             use_tor: true,
+            custom_max_cpu_usage: None,
+            custom_max_gpu_usage: None,
             paper_wallet_enabled: false,
         }
     }
@@ -185,6 +198,8 @@ impl AppConfig {
                 self.airdrop_ui_enabled = config.airdrop_ui_enabled;
                 self.use_tor = config.use_tor;
                 self.paper_wallet_enabled = config.paper_wallet_enabled;
+                self.custom_max_cpu_usage = config.custom_max_cpu_usage;
+                self.custom_max_gpu_usage = config.custom_max_gpu_usage;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -211,19 +226,46 @@ impl AppConfig {
         &self.anon_id
     }
 
-    pub async fn set_mode(&mut self, mode: String) -> Result<(), anyhow::Error> {
+    pub async fn set_mode(&mut self, mode: String, custom_max_cpu_usage: Option<isize>, custom_max_gpu_usage: Option<isize>) -> Result<(), anyhow::Error> {
         let new_mode = match mode.as_str() {
             "Eco" => MiningMode::Eco,
             "Ludicrous" => MiningMode::Ludicrous,
+            "Custom" => MiningMode::Custom,
             _ => return Err(anyhow!("Invalid mode")),
         };
         self.mode = new_mode;
         self.update_config_file().await?;
+        if let Some(custom_max_cpu_usage) = custom_max_cpu_usage {
+            self.set_max_cpu_usage(custom_max_cpu_usage).await?;
+        }
+        if let Some(custom_max_gpu_usage) = custom_max_gpu_usage {
+            self.set_max_gpu_usage(custom_max_gpu_usage).await?;
+        }
         Ok(())
     }
 
     pub fn mode(&self) -> MiningMode {
         self.mode
+    }
+
+    pub fn custom_gpu_usage(&self) -> Option<isize> {
+        self.custom_max_cpu_usage
+    }
+
+    pub async fn set_max_gpu_usage(&mut self, custom_max_gpu_usage: isize) -> Result<(), anyhow::Error> {
+        self.custom_max_gpu_usage = Some(custom_max_gpu_usage);
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn custom_cpu_usage(&self) -> Option<isize> {
+        self.custom_max_cpu_usage
+    }
+
+    pub async fn set_max_cpu_usage(&mut self, custom_max_cpu_usage: isize) -> Result<(), anyhow::Error> {
+        self.custom_max_cpu_usage = Some(custom_max_cpu_usage);
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
@@ -395,6 +437,8 @@ impl AppConfig {
             application_language: self.application_language.clone(),
             airdrop_ui_enabled: self.airdrop_ui_enabled,
             paper_wallet_enabled: self.paper_wallet_enabled,
+            custom_max_cpu_usage: self.custom_max_cpu_usage,
+            custom_max_gpu_usage: self.custom_max_gpu_usage,
             use_tor: self.use_tor,
         };
         let config = serde_json::to_string(config)?;
@@ -407,6 +451,14 @@ impl AppConfig {
 
 fn default_version() -> u32 {
     9
+}
+
+fn default_custom_max_cpu_usage() -> Option<isize> {
+    None
+}
+
+fn default_custom_max_gpu_usage() -> Option<isize> {
+    None
 }
 
 fn default_mode() -> String {
