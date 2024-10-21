@@ -1987,7 +1987,8 @@ fn main() {
             get_external_dependencies,
             set_use_tor,
             get_transaction_history,
-            import_seed_words
+            import_seed_words,
+            get_monero_seed_words
         ])
         .build(tauri::generate_context!())
         .inspect_err(

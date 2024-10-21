@@ -8,6 +8,7 @@ import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { SeedWordsView } from './SeedWordsView';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { SeedWordsEdit } from './SeedWordsEdit';
+import { SeedWords } from '@app/containers/Settings/components/SeedWords.tsx';
 
 const SeedWordsMarkup = () => {
     const [showSeedWords, setShowSeedWords] = useState(false);
@@ -48,13 +49,7 @@ const SeedWordsMarkup = () => {
             {isEditing ? (
                 <SeedWordsEdit seedWordsFetching={seedWordsFetching} seedWords={seedWords} toggleEdit={toggleEdit} />
             ) : (
-                <SeedWordsView
-                    showSeedWords={showSeedWords}
-                    seedWords={seedWords}
-                    toggleEdit={toggleEdit}
-                    getSeedWords={getSeedWords}
-                    seedWordsFetched={seedWordsFetched}
-                />
+                <SeedWords showSeedWords={showSeedWords} seedWords={seedWords} />
             )}
         </SettingsGroupWrapper>
     );
