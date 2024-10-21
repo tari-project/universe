@@ -1,16 +1,21 @@
-import { Wrapper, SeedWordsContainer, HiddenContainer } from './SeedWords.styles.ts';
+import { Wrapper, SeedWordsContainer, HiddenContainer, IconContainer } from './SeedWords.styles.ts';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { IconButton } from '@app/components/elements/Button.tsx';
+import { IoCheckmarkOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 
 interface SeedWordsProps {
     seedWords?: string[];
     showSeedWords?: boolean;
+    editable?: boolean;
+    onToggleEdit?: () => void;
 }
 
-export const SeedWords = ({ seedWords, showSeedWords = false }: SeedWordsProps) => {
+export const SeedWords = ({ seedWords, onToggleEdit, showSeedWords = false, editable = false }: SeedWordsProps) => {
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
     const wordMarkup = seedWords?.map((word, i) => {
         const count = i + 1;
-
         return (
             <Stack key={`seed-word-${word}`} direction="row" justifyContent="flex-start">
                 <Typography key={`seed-no-${i}`} variant="p" style={{ minWidth: 15 }}>
@@ -23,12 +28,35 @@ export const SeedWords = ({ seedWords, showSeedWords = false }: SeedWordsProps) 
         );
     });
 
+    const editCTAMarkup = editable ? (
+        <IconButton onClick={onToggleEdit}>
+            <IoPencil />
+        </IconButton>
+    ) : null;
+
+    const copyCTAMarkup = seedWords ? (
+        <IconButton onClick={() => copyToClipboard(seedWords.join(' '))}>
+            {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+        </IconButton>
+    ) : null;
+
     const hiddenMarkup = (
-        <HiddenContainer>
-            <Typography>****************************************************</Typography>
-        </HiddenContainer>
+        <>
+            <HiddenContainer>
+                <Typography>****************************************************</Typography>
+            </HiddenContainer>
+            {editCTAMarkup}
+        </>
     );
 
-    const visibleMarkup = <SeedWordsContainer>{wordMarkup}</SeedWordsContainer>;
+    const visibleMarkup = (
+        <>
+            <SeedWordsContainer>{wordMarkup}</SeedWordsContainer>
+            <IconContainer>
+                {copyCTAMarkup}
+                {editCTAMarkup}
+            </IconContainer>
+        </>
+    );
     return <Wrapper>{showSeedWords ? visibleMarkup : hiddenMarkup}</Wrapper>;
 };

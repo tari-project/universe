@@ -5,6 +5,7 @@ import PaperWallet from '@app/containers/Settings/sections/wallet/PaperWallet.ts
 import MoneroSeedWordSettings from '@app/containers/Settings/sections/wallet/MoneroSeedWords/MoneroSeedWordSettings.tsx';
 
 export const WalletSettings = () => {
+    const monero_address_is_provided = false; //emp
     return (
         <>
             <WalletAddressMarkup />
