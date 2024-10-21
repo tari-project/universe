@@ -1,8 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
+use futures_util::future::Join;
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
@@ -17,7 +19,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::async_runtime::block_on;
+use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use wallet_adapter::TransactionInfo;
@@ -485,6 +487,7 @@ async fn setup_application(
     rollback.set_value(true, Duration::from_millis(1000)).await;
     setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
+        capture_anyhow(&e);
         e.to_string()
     })?;
 
@@ -779,17 +782,19 @@ async fn setup_inner(
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
-        .start(StartConfig::new(
-            state.shutdown.to_signal().clone(),
-            data_dir.clone(),
-            config_dir.clone(),
-            log_dir.clone(),
-            cpu_miner_config.tari_address.clone(),
+        .start(StartConfig {
             base_node_grpc_port,
-            telemetry_id,
-            config.p2pool_enabled(),
             p2pool_port,
-        ))
+            app_shutdown: state.shutdown.to_signal().clone(),
+            base_path: data_dir.clone(),
+            config_path: config_dir.clone(),
+            log_path: log_dir.clone(),
+            tari_address: cpu_miner_config.tari_address.clone(),
+            coinbase_extra: telemetry_id,
+            p2pool_enabled: config.p2pool_enabled(),
+            monero_nodes: config.mmproxy_monero_nodes().clone(),
+            use_monero_fail: config.mmproxy_use_monero_fail(),
+        })
         .await?;
     mm_proxy_manager.wait_ready().await?;
     *state.is_setup_finished.write().await = true;
@@ -1699,6 +1704,10 @@ pub enum CpuMinerConnection {
 struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
+    eco_mode_xmrig_options: Vec<String>,
+    ludicrous_mode_xmrig_options: Vec<String>,
+    eco_mode_cpu_percentage: Option<isize>,
+    ludicrous_mode_cpu_percentage: Option<isize>,
 }
 
 #[derive(Clone)]
@@ -1761,6 +1770,10 @@ fn main() {
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
+        eco_mode_xmrig_options: vec![],
+        ludicrous_mode_xmrig_options: vec![],
+        eco_mode_cpu_percentage: None,
+        ludicrous_mode_cpu_percentage: None,
     }));
 
     let app_in_memory_config =
@@ -1856,9 +1869,20 @@ fn main() {
                 .path_resolver()
                 .app_config_dir()
                 .expect("Could not get config dir");
-            let thread_config = tauri::async_runtime::spawn(async move {
-                app_config.write().await.load_or_create(config_path).await
-            });
+            let cpu_config2 = cpu_config.clone();
+            let thread_config: JoinHandle<Result<(), anyhow::Error>> =
+                tauri::async_runtime::spawn(async move {
+                    let mut app_conf = app_config.write().await;
+                    app_conf.load_or_create(config_path).await?;
+
+                    let mut cpu_conf = cpu_config2.write().await;
+                    cpu_conf.eco_mode_cpu_percentage = app_conf.eco_mode_cpu_threads();
+                    cpu_conf.ludicrous_mode_cpu_percentage = app_conf.ludicrous_mode_cpu_threads();
+                    cpu_conf.eco_mode_xmrig_options = app_conf.eco_mode_cpu_options().clone();
+                    cpu_conf.ludicrous_mode_xmrig_options =
+                        app_conf.ludicrous_mode_cpu_options().clone();
+                    Ok(())
+                });
 
             match tauri::async_runtime::block_on(thread_config) {
                 Ok(_) => {}
