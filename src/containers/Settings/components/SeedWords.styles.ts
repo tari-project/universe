@@ -32,6 +32,6 @@ export const SeedWordsContainer = styled.div`
     padding: 20px;
 `;
 
-export const CopyIconContainer = styled.div`
+export const IconContainer = styled.div`
     color: ${({ theme }) => theme.palette.text.primary};
 `;

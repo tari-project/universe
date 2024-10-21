@@ -38,7 +38,7 @@ export default function MoneroSeedWordSettings() {
         setShowSeedWords((prev) => !prev);
     }, [getSeedWords]);
     return (
-        <SettingsGroupWrapper>
+        <SettingsGroupWrapper $subGroup>
             <SettingsGroupTitle>
                 <Stack direction="row" justifyContent="flex-start" alignItems="center" style={{ height: '34px' }}>
                     <Typography variant="h6">Monero Seed Words</Typography>
