@@ -333,6 +333,27 @@ async fn set_monero_address(
 }
 
 #[tauri::command]
+async fn set_auto_update(
+    auto_update: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_auto_update(auto_update)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn restart_application(
     _window: tauri::Window,
     _state: tauri::State<'_, UniverseAppState>,
@@ -1954,7 +1975,8 @@ fn main() {
             get_external_dependencies,
             set_use_tor,
             get_transaction_history,
-            import_seed_words
+            import_seed_words,
+            set_auto_update
         ])
         .build(tauri::generate_context!())
         .inspect_err(
