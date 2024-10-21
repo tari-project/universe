@@ -19,12 +19,15 @@ import qrMainImage from '../../images/qr-main.png';
 import { useEffect, useState } from 'react';
 import ShowIcon from '../../icons/ShowIcon';
 import HideIcon from '../../icons/HideIcon';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     onDoneClick: () => void;
 }
 
 export default function QRCodeSection({ onDoneClick }: Props) {
+    const { t } = useTranslation(['paper-wallet'], { useSuspense: false });
+
     const [showCode, setShowCode] = useState(false);
     const [copied, setCopied] = useState(false);
 
@@ -59,17 +62,14 @@ export default function QRCodeSection({ onDoneClick }: Props) {
                 </QRCodeWrapper>
 
                 <QRContentWrapper>
-                    <WarningText>❗ Do not share this QR code</WarningText>
+                    <WarningText>❗ {t('qrcode.warning')}</WarningText>
 
-                    <Title>Import to Tari Aurora</Title>
+                    <Title>{t('qrcode.title')}</Title>
 
-                    <Text>
-                        Scan the QR code within the Tari Aurora app to import your Tari Universe wallet. Use the 1-time
-                        code below to confirm your identity, then, follow the steps within the app.
-                    </Text>
+                    <Text>{t('qrcode.text')}</Text>
 
                     <InputWrapper>
-                        <InputLabel>{copied ? 'Copied!' : 'Identification Code'}</InputLabel>
+                        <InputLabel>{copied ? t('qrcode.copied') : t('qrcode.inputLabel')}</InputLabel>
                         <InputField
                             type={showCode ? 'text' : 'password'}
                             value={identificationCode}
@@ -87,10 +87,10 @@ export default function QRCodeSection({ onDoneClick }: Props) {
 
             <ButtonWrapper>
                 <BlackButton onClick={onDoneClick}>
-                    <span>Done</span>
+                    <span>{t('qrcode.blackButton')}</span>
                 </BlackButton>
 
-                <TextButton onClick={handleTextButtonClick}>I need help</TextButton>
+                <TextButton onClick={handleTextButtonClick}>{t('qrcode.textButton')}</TextButton>
             </ButtonWrapper>
         </Wrapper>
     );
