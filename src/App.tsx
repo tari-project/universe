@@ -27,6 +27,7 @@ export default function App() {
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
     const view = useUIStore((s) => s.view);
+    const visualMode = useUIStore((s) => s.visualMode);
 
     const shutDownMarkup = useMemo(() => {
         return isShuttingDown ? <ShuttingDownScreen /> : null;
@@ -34,7 +35,7 @@ export default function App() {
     const mainMarkup = useMemo(() => {
         if (!isShuttingDown && !showSplash) {
             return (
-                <DashboardContainer $view={view}>
+                <DashboardContainer $view={view} $visualModeOff={!visualMode}>
                     <SideBar />
                     <Dashboard status={view} />
                 </DashboardContainer>
@@ -42,7 +43,7 @@ export default function App() {
         } else {
             return null;
         }
-    }, [isShuttingDown, showSplash, view]);
+    }, [isShuttingDown, showSplash, view, visualMode]);
 
     return (
         <ThemeProvider>

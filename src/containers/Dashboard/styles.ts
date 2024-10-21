@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { m } from 'framer-motion';
 
-export const DashboardContainer = styled(m.div)`
+export const DashboardContentContainer = styled(m.div)`
     display: flex;
     align-items: center;
     flex-direction: column;
