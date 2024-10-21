@@ -14,6 +14,7 @@ use minotari_node_grpc_client::grpc::{
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -289,7 +290,7 @@ impl MinotariNodeStatusMonitor {
             .await?
             .into_inner()
             .metadata
-            .unwrap()
+            .expect("Node returned no metadata")
             .best_block_height;
 
         let heights: Vec<u64> = vec![
@@ -304,11 +305,16 @@ impl MinotariNodeStatusMonitor {
 
         let mut blocks: Vec<(u64, String)> = Vec::new();
         while let Some(block) = res.message().await? {
-            let BlockHeader { height, hash, .. } = block.block.clone().unwrap().header.unwrap();
-            let hash: String = hash
-                .iter()
-                .map(|x| format!("{:02x}", x))
-                .collect::<String>();
+            let BlockHeader { height, hash, .. } = block
+                .block
+                .clone()
+                .expect("Failed to get block data")
+                .header
+                .expect("Failed to get block header data");
+            let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
+                write!(acc, "{:02x}", x).expect("Unable to write");
+                acc
+            });
 
             blocks.push((height, hash));
         }

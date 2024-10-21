@@ -1,6 +1,7 @@
 use std::net::TcpListener;
 
 use serde::Deserialize;
+use std::fmt::Write as _;
 use tari_common::configuration::Network;
 
 #[derive(Deserialize)]
@@ -61,8 +62,10 @@ pub(crate) async fn get_block_info_from_block_scan(
         .hash
         .data
         .iter()
-        .map(|x| format!("{:02x}", x))
-        .collect::<String>();
+        .fold(String::new(), |mut acc, x| {
+            write!(acc, "{:02x}", x).expect("Unable to write");
+            acc
+        });
     let height = response.header.height.parse::<u64>()?;
 
     Ok((height, hash))
