@@ -5,12 +5,18 @@ import CloseIcon from './icons/CloseIcon';
 interface Props {
     onClose: () => void;
     children: React.ReactNode;
+    boxWidth?: number;
 }
 
-export default function GreenModal({ children, onClose }: Props) {
+export default function GreenModal({ children, boxWidth, onClose }: Props) {
     return (
         <Wrapper>
-            <BoxWrapper initial={{ opacity: 0, y: '100px' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <BoxWrapper
+                $boxWidth={boxWidth}
+                initial={{ opacity: 0, y: '100px' }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+            >
                 <CloseButton onClick={onClose}>
                     <CloseIcon />
                 </CloseButton>
