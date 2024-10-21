@@ -52,7 +52,6 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     ...initialState,
     setTheme: (theme) => {
         setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
-        console.debug(`theme= ${theme}`);
         set({ theme });
     },
     setShowSplash: (showSplash) => set({ showSplash }),

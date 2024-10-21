@@ -48,7 +48,7 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
     cursor: pointer;
     overflow: hidden;
     padding: 16px 0;
-    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.15)};
+    background-color: rgba(255, 255, 255, 0.5);
     background-image: ${({ $hasStarted }) =>
         $hasStarted
             ? 'linear-gradient(90deg, rgba(100, 100, 100, 0.6) 0%, rgba(0,0,0,0.7) 99.49%)'

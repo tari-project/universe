@@ -11,10 +11,9 @@ export function useDetectMode() {
     useEffect(() => {
         if (configTheme !== 'system') return;
         const listener = listen('tauri://theme-changed', async ({ payload }) => {
-            console.debug(payload);
             if (payload) {
                 const themePayload = payload as Theme;
-                console.debug(`themePayload= ${themePayload}`);
+
                 setTheme(themePayload);
             }
         });
