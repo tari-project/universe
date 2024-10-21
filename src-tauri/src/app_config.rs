@@ -100,7 +100,7 @@ impl Default for AppConfigFromFile {
 pub enum MiningMode {
     Eco,
     Ludicrous,
-    Custom
+    Custom,
 }
 
 impl MiningMode {
@@ -144,17 +144,14 @@ pub(crate) struct AppConfig {
     airdrop_ui_enabled: bool,
     paper_wallet_enabled: bool,
     use_tor: bool,
-<<<<<<< HEAD
-    custom_max_cpu_usage: Option<isize>,
-    custom_max_gpu_usage: Option<isize>,
-=======
     eco_mode_cpu_threads: Option<isize>,
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
->>>>>>> prod/main
+    custom_max_cpu_usage: Option<isize>,
+    custom_max_gpu_usage: Option<isize>,
 }
 
 impl AppConfig {
@@ -227,17 +224,14 @@ impl AppConfig {
                 self.airdrop_ui_enabled = config.airdrop_ui_enabled;
                 self.use_tor = config.use_tor;
                 self.paper_wallet_enabled = config.paper_wallet_enabled;
-<<<<<<< HEAD
-                self.custom_max_cpu_usage = config.custom_max_cpu_usage;
-                self.custom_max_gpu_usage = config.custom_max_gpu_usage;
-=======
                 self.eco_mode_cpu_options = config.eco_mode_cpu_options;
                 self.eco_mode_cpu_threads = config.eco_mode_cpu_threads;
                 self.ludicrous_mode_cpu_options = config.ludicrous_mode_cpu_options;
                 self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
->>>>>>> prod/main
+                self.custom_max_cpu_usage = config.custom_max_cpu_usage;
+                self.custom_max_gpu_usage = config.custom_max_gpu_usage;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -287,7 +281,12 @@ impl AppConfig {
         &self.anon_id
     }
 
-    pub async fn set_mode(&mut self, mode: String, custom_max_cpu_usage: Option<isize>, custom_max_gpu_usage: Option<isize>) -> Result<(), anyhow::Error> {
+    pub async fn set_mode(
+        &mut self,
+        mode: String,
+        custom_max_cpu_usage: Option<isize>,
+        custom_max_gpu_usage: Option<isize>,
+    ) -> Result<(), anyhow::Error> {
         let new_mode = match mode.as_str() {
             "Eco" => MiningMode::Eco,
             "Ludicrous" => MiningMode::Ludicrous,
@@ -313,7 +312,10 @@ impl AppConfig {
         self.custom_max_cpu_usage
     }
 
-    pub async fn set_max_gpu_usage(&mut self, custom_max_gpu_usage: isize) -> Result<(), anyhow::Error> {
+    pub async fn set_max_gpu_usage(
+        &mut self,
+        custom_max_gpu_usage: isize,
+    ) -> Result<(), anyhow::Error> {
         self.custom_max_gpu_usage = Some(custom_max_gpu_usage);
         self.update_config_file().await?;
         Ok(())
@@ -323,7 +325,10 @@ impl AppConfig {
         self.custom_max_cpu_usage
     }
 
-    pub async fn set_max_cpu_usage(&mut self, custom_max_cpu_usage: isize) -> Result<(), anyhow::Error> {
+    pub async fn set_max_cpu_usage(
+        &mut self,
+        custom_max_cpu_usage: isize,
+    ) -> Result<(), anyhow::Error> {
         self.custom_max_cpu_usage = Some(custom_max_cpu_usage);
         self.update_config_file().await?;
         Ok(())
