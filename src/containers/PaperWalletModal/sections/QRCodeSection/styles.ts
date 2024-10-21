@@ -4,6 +4,7 @@ export const Wrapper = styled('div')`
     display: flex;
     flex-direction: column;
     gap: 40px;
+    padding: 13px 25px 0 25px;
 `;
 
 export const Divider = styled('div')`
@@ -58,7 +59,7 @@ export const WarningText = styled('div')`
     border-radius: 100px;
     background: rgba(255, 107, 107, 0.25);
 
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 `;
 
 export const Title = styled('div')`
@@ -67,7 +68,7 @@ export const Title = styled('div')`
     font-weight: 600;
     line-height: 27px;
     letter-spacing: -0.4px;
-    margin-bottom: 10px;
+    margin-bottom: 3px;
 `;
 
 export const Text = styled('div')`

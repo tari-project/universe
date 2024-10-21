@@ -12,6 +12,7 @@ export default function PaperWalletModal() {
     const [boxWidth, setBoxWidth] = useState(618);
 
     const handleClose = () => {
+        setSection('Connect');
         setShowModal(false);
     };
 
@@ -24,23 +25,13 @@ export default function PaperWalletModal() {
     }, [section]);
 
     return (
-        <>
-            <button
-                onClick={() => setShowModal(true)}
-                style={{
-                    pointerEvents: 'all',
-                }}
-            >
-                Open Modal
-            </button>
-            <AnimatePresence>
-                {showModal && (
-                    <GreenModal onClose={handleClose} boxWidth={boxWidth}>
-                        {section === 'Connect' && <ConnectSection setSection={setSection} />}
-                        {section === 'QRCode' && <QRCodeSection />}
-                    </GreenModal>
-                )}
-            </AnimatePresence>
-        </>
+        <AnimatePresence>
+            {showModal && (
+                <GreenModal onClose={handleClose} boxWidth={boxWidth}>
+                    {section === 'Connect' && <ConnectSection setSection={setSection} />}
+                    {section === 'QRCode' && <QRCodeSection onDoneClick={handleClose} />}
+                </GreenModal>
+            )}
+        </AnimatePresence>
     );
 }

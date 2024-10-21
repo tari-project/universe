@@ -20,15 +20,15 @@ import { useEffect, useState } from 'react';
 import ShowIcon from '../../icons/ShowIcon';
 import HideIcon from '../../icons/HideIcon';
 
-export default function QRCodeSection() {
+interface Props {
+    onDoneClick: () => void;
+}
+
+export default function QRCodeSection({ onDoneClick }: Props) {
     const [showCode, setShowCode] = useState(false);
     const [copied, setCopied] = useState(false);
 
     const identificationCode = '123456';
-
-    const handleBlackButtonClick = () => {
-        console.log('Done');
-    };
 
     const handleTextButtonClick = () => {
         console.log('Help');
@@ -86,7 +86,7 @@ export default function QRCodeSection() {
             <Divider />
 
             <ButtonWrapper>
-                <BlackButton onClick={handleBlackButtonClick}>
+                <BlackButton onClick={onDoneClick}>
                     <span>Done</span>
                 </BlackButton>
 

@@ -17,7 +17,7 @@ export const ContentWrapper = styled('div')`
     align-items: center;
     width: 100%;
 
-    padding-top: 200px;
+    padding: 200px 25px 10px 25px;
 `;
 
 export const Title = styled('div')`

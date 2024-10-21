@@ -4,6 +4,8 @@ import AppleStoreIcon from '../../icons/AppleStoreIcon';
 import GoogleStoreIcon from '../../icons/GoogleStoreIcon';
 import { BlackButton, TextButton } from '../../styles';
 import { PaperWalletModalSectionType } from '../../PaperWalletModal';
+import QRTooltip from './QRTooltip/QRTooltip';
+import qrTooltipImage from '../../images/qr-tooltip.png';
 
 interface Props {
     setSection: (section: PaperWalletModalSectionType) => void;
@@ -31,9 +33,9 @@ export default function ConnectSection({ setSection }: Props) {
                 </Text>
 
                 <StoreWrapper>
-                    <AppleStoreIcon />
+                    <QRTooltip trigger={<AppleStoreIcon />} text={`Scan QR Code`} codeImage={qrTooltipImage} />
 
-                    <GoogleStoreIcon />
+                    <QRTooltip trigger={<GoogleStoreIcon />} text={`Scan QR Code`} codeImage={qrTooltipImage} />
                 </StoreWrapper>
 
                 <BlackButton onClick={handleBlackButtonClick}>
