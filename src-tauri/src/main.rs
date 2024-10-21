@@ -905,7 +905,7 @@ async fn set_gpu_mining_enabled(
 async fn import_seed_words(
     seed_words: Vec<String>,
     _window: tauri::Window,
-    _state: tauri::State<'_, UniverseAppState>,
+    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
@@ -917,6 +917,8 @@ async fn import_seed_words(
         .path_resolver()
         .app_local_data_dir()
         .expect("Could not get data dir");
+
+    stop_all_miners(state.inner().clone(), 5).await?;
 
     tauri::async_runtime::spawn(async move {
         match InternalWallet::create_from_seed(config_path, seed_words).await {
