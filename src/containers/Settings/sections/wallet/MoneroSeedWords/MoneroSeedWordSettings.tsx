@@ -26,7 +26,7 @@ export default function MoneroSeedWordSettings() {
                 hasFetched.current = true;
             }
         } catch (e) {
-            console.error('Could not get Mornero seed words', e);
+            console.error('Could not get Monero seed words', e);
         } finally {
             setIsFetching(false);
         }
@@ -37,6 +37,7 @@ export default function MoneroSeedWordSettings() {
         }
         setShowSeedWords((prev) => !prev);
     }, [getSeedWords]);
+
     return (
         <SettingsGroupWrapper $subGroup>
             <SettingsGroupTitle>

@@ -42,6 +42,7 @@ const initialState: State = {
     airdrop_ui_enabled: false,
     paper_wallet_enabled: false,
     use_tor: true,
+    monero_address_is_provided: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
