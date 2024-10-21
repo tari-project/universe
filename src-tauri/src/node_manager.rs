@@ -212,7 +212,7 @@ impl NodeManager {
         let local_blocks = status_monitor.get_historical_blocks().await?;
         for block in local_blocks.iter() {
             let block_scan_blocks = get_block_info_from_block_scan(network, block.0).await?;
-            if block_scan_blocks.0 != block.0 {
+            if block_scan_blocks.1 != block.1 {
                 return Ok(true);
             }
         }
