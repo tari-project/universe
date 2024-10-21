@@ -181,11 +181,9 @@ export interface GpuMinerStatus {
 
 export interface BaseNodeStatus {
     block_height: number;
-    block_hash: string;
     block_time: number;
     is_synced: boolean;
     is_connected: boolean;
-    is_on_orphan_chain: boolean;
     connected_peers: string[];
 }
 

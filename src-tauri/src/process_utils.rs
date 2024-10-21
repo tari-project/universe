@@ -1,4 +1,5 @@
-use std::path::Path;
+use std::{future::Future, path::Path, time::Duration};
+use tokio::time;
 
 pub fn launch_child_process(
     file_path: &Path,
@@ -27,6 +28,26 @@ pub fn launch_child_process(
             .creation_flags(PROCESS_CREATION_NO_WINDOW)
             .spawn()?)
     }
+}
+
+pub fn set_interval<F, Fut>(mut f: F, dur: Duration)
+where
+    F: Send + 'static + FnMut() -> Fut,
+    Fut: Future<Output = ()> + Send + 'static,
+{
+    // Create stream of intervals.
+    let mut interval = time::interval(dur);
+
+    tokio::spawn(async move {
+        // Skip the first tick at 0ms.
+        interval.tick().await;
+        loop {
+            // Wait until next tick.
+            interval.tick().await;
+            // Spawn a task for this tick.
+            tokio::spawn(f());
+        }
+    });
 }
 
 // pub async fn launch_and_get_outputs(

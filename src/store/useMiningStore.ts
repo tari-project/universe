@@ -56,11 +56,9 @@ const initialState: State = {
     },
     base_node: {
         block_height: 0,
-        block_hash: '',
         block_time: 0,
         is_synced: false,
         is_connected: false,
-        is_on_orphan_chain: false,
         connected_peers: [],
     },
 };

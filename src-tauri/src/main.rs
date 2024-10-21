@@ -5,6 +5,7 @@ use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
+use process_utils::set_interval;
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
 use serde::Serialize;
@@ -18,7 +19,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
-use tauri::{Manager, RunEvent, UpdaterEvent};
+use tauri::{AppHandle, Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use wallet_adapter::TransactionInfo;
 
@@ -802,6 +803,14 @@ async fn setup_inner(
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
+    let app_handle_clone: AppHandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        set_interval(
+            move || check_if_is_orphan_chain(app_handle_clone.clone()),
+            Duration::from_secs(30),
+        );
+    });
+
     Ok(())
 }
 
@@ -1384,15 +1393,18 @@ async fn get_app_config(
     Ok(state.config.read().await.clone())
 }
 
-#[tauri::command]
-async fn check_if_is_orphan_chain(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<bool, String> {
-    state
-        .node_manager
-        .check_if_is_orphan_chain()
-        .await
-        .map_err(|e| e.to_string())
+async fn check_if_is_orphan_chain(app_handle: AppHandle) -> () {
+    let state = app_handle.state::<UniverseAppState>().inner();
+    let check_if_orphan = state.node_manager.check_if_is_orphan_chain().await;
+    match check_if_orphan {
+        Ok(is_stuck) => {
+            if is_stuck {
+                warn!(target: LOG_TARGET, "is stuck");
+                drop(app_handle.emit_all("is_stuck", is_stuck));
+            }
+        }
+        Err(e) => error!(target: LOG_TARGET, "{}", e),
+    }
 }
 
 #[tauri::command]
@@ -1941,7 +1953,6 @@ fn main() {
             get_external_dependencies,
             set_use_tor,
             get_transaction_history,
-            check_if_is_orphan_chain,
             import_seed_words
         ])
         .build(tauri::generate_context!())
