@@ -80,6 +80,7 @@ impl CpuMiner {
         lock.adapter.extra_options = match mode {
             MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
             MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
+            MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
         };
 
         lock.start(

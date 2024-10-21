@@ -1706,6 +1706,7 @@ struct CpuMinerConfig {
     tari_address: TariAddress,
     eco_mode_xmrig_options: Vec<String>,
     ludicrous_mode_xmrig_options: Vec<String>,
+    custom_mode_xmrig_options: Vec<String>,
     eco_mode_cpu_percentage: Option<isize>,
     ludicrous_mode_cpu_percentage: Option<isize>,
 }
@@ -1772,6 +1773,7 @@ fn main() {
         tari_address: TariAddress::default(),
         eco_mode_xmrig_options: vec![],
         ludicrous_mode_xmrig_options: vec![],
+        custom_mode_xmrig_options: vec![],
         eco_mode_cpu_percentage: None,
         ludicrous_mode_cpu_percentage: None,
     }));
@@ -1881,6 +1883,7 @@ fn main() {
                     cpu_conf.eco_mode_xmrig_options = app_conf.eco_mode_cpu_options().clone();
                     cpu_conf.ludicrous_mode_xmrig_options =
                         app_conf.ludicrous_mode_cpu_options().clone();
+                    cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
                     Ok(())
                 });
 
