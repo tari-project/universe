@@ -68,9 +68,7 @@ impl CpuMiner {
             MiningMode::Eco => cpu_miner_config
                 .eco_mode_cpu_percentage
                 .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100isize),
-            MiningMode::Custom => {
-                (custom_max_cpu_usage.unwrap_or(ECO_MODE_CPU_USAGE) * max_cpu_available) / 100isize
-            },
+            MiningMode::Custom => (custom_max_cpu_usage.unwrap_or(ECO_MODE_CPU_USAGE) * max_cpu_available) / 100isize,
             MiningMode::Ludicrous => -1, // Use all
         };
 
