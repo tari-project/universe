@@ -19,6 +19,7 @@ import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
+import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
 
 export default function App() {
     useLangaugeResolver();
@@ -60,6 +61,7 @@ export default function App() {
                     <CriticalErrorDialog />
                     <ExternalDependenciesDialog />
                     <SettingsModal />
+                    <PaperWalletModal />
                     <LayoutGroup id="app-content">
                         {shutDownMarkup}
                         {!visualMode || view != 'mining' ? (
