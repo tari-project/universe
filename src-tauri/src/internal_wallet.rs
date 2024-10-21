@@ -54,7 +54,8 @@ impl InternalWallet {
             info!(target: LOG_TARGET, "Loading wallet from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
             match serde_json::from_str::<WalletConfig>(&config) {
-                Ok(config) => {
+                Ok(mut config) => {
+                    config.config_path = Some(file_parent.to_path_buf());
                     return Ok(Self {
                         tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
                         config,
@@ -98,7 +99,11 @@ impl InternalWallet {
     }
 
     pub async fn get_paper_wallet_details(&self) -> Result<PaperWalletConfig, anyhow::Error> {
-        let passphrase = CredentialManager::default_with_dir(self.config.config_path.clone()).get_credentials()?.seed_passphrase;
+        let path = match &self.config.config_path {
+            Some(p) => p.clone(),
+            None => return Err(anyhow!("No config path found")),
+        };
+        let passphrase = CredentialManager::default_with_dir(path).get_credentials()?.seed_passphrase;
 
         let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
             .map_err(|e| anyhow!(e.to_string()))?;
@@ -135,7 +140,7 @@ impl InternalWallet {
             view_key_private_hex: "".to_string(),
             seed_words_encrypted_base58: "".to_string(),
             spend_public_key_hex: "".to_string(),
-            config_path: path.to_path_buf(),
+            config_path: Some(path.to_path_buf()),
             passphrase: None,
         };
 
@@ -199,7 +204,11 @@ impl InternalWallet {
     }
 
     pub fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
-        let passphrase = CredentialManager::default_with_dir(self.config.config_path.clone()).get_credentials()?.seed_passphrase;
+        let path = match &self.config.config_path {
+            Some(p) => p.clone(),
+            None => return Err(anyhow!("No config path found")),
+        };
+        let passphrase = CredentialManager::default_with_dir(path).get_credentials()?.seed_passphrase;
 
         let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
             .map_err(|e| anyhow!(e.to_string()))?;
