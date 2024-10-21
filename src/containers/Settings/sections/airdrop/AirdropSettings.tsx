@@ -1,6 +1,6 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
-import AirdropLogout from '../Airdrop/Settings/Logout';
-import { ApplyInviteCode } from './sections/airdrop/ApplyInviteCode';
+import AirdropLogout from '@app/containers/Airdrop/Settings/Logout.tsx';
+import { ApplyInviteCode } from './ApplyInviteCode';
 
 export const AirdropSettings = () => {
     const { userDetails } = useAirdropStore();

@@ -1,4 +1,3 @@
-import { Button } from '@app/components/elements/Button';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroupContent,
@@ -8,6 +7,7 @@ import {
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { Trans, useTranslation } from 'react-i18next';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
 export default function AirdropLogout() {
     const { t } = useTranslation(['common', 'airdrop'], { useSuspense: false });
@@ -31,9 +31,9 @@ export default function AirdropLogout() {
                     />
                 </Typography>
                 <div style={{ maxWidth: 'fit-content', marginLeft: 'auto', padding: '20px' }}>
-                    <Button color="error" variant="text" size="medium" onClick={logout}>
+                    <TextButton color="error" colorIntensity={400} size="medium" onClick={logout}>
                         {t('disconnect')}
-                    </Button>
+                    </TextButton>
                 </div>
             </SettingsGroupContent>
         </SettingsGroupWrapper>

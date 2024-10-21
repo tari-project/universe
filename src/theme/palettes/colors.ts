@@ -20,33 +20,62 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+import { colorsAlpha } from './colorsAlpha.ts';
+
 const success = {
     50: '#E6FAF6',
     100: '#a1d2c1',
     200: '#06C983',
-    300: '#094E41',
+    300: '#15D811',
+    400: '#8DB5AD',
+    500: '#77A49B',
+    600: '#619289',
+    700: '#4B8177',
+    800: '#357065',
+    900: '#1F5F53',
+    950: '#094E41',
 };
 
 const info = {
-    100: '#ECF0FE',
-    200: '#4D6FE8',
-    300: '#04185F',
+    50: '#ECF0FE',
+    100: '#C4CFF8',
+    200: '#9CAFF3',
+    300: '#748FED',
+    400: '#4D6FE8',
+    500: '#4060D1',
+    600: '#3452BA',
+    700: '#2843A3',
+    800: '#1C358C',
+    900: '#102675',
+    950: '#04185F',
 };
 
 const warning = {
-    100: '#FFEED3',
-    200: '#D18A18',
-    300: '#9d6303',
+    50: '#FFEED3',
+    100: '#F3D5A4',
+    200: '#E8BC75',
+    300: '#DCA346',
+    400: '#D18A18',
+    500: '#C88314',
+    600: '#BF7D11',
+    700: '#B7760D',
+    800: '#AE700A',
+    900: '#A56906',
+    950: '#9D6303',
 };
 
 const error = {
-    100: '#F9E5E2',
-    200: '#D85240',
-    300: '#612820',
-};
-
-const backgrounds = {
-    medGrey: '#F2F2F2',
+    50: '#F9E5E2',
+    100: '#F0C0B9',
+    200: '#E89B91',
+    300: '#E07668',
+    400: '#D85240',
+    500: '#C44B3A',
+    600: '#B04435',
+    700: '#9C3D30',
+    800: '#88362A',
+    900: '#742F25',
+    950: '#612820',
 };
 
 const brightGreen = {
@@ -65,15 +94,16 @@ const brightGreen = {
 
 const grey = {
     50: '#fafafa',
-    100: '#f5f5f5',
+    100: '#f3f3f3',
+    150: '#f5f5f5',
     200: '#d8d9df',
     300: '#b6b7c3',
     400: '#8f91a1',
     500: '#717286',
-    600: '#5b5d6e',
-    700: '#4a4a5a',
-    800: '#28282E',
-    900: '#161617',
+    600: '#4a4a5a',
+    700: '#2E2E2E',
+    800: '#212121',
+    900: '#1B1B1B',
     950: '#0c0c0e',
 };
 
@@ -130,6 +160,7 @@ const blue = {
     700: '#195CDC',
     800: '#1B4BB2',
     900: '#1C428C',
+    950: '#16336c',
 };
 
 const orange = {
@@ -140,9 +171,10 @@ const orange = {
     400: '#E88F4F',
     500: '#E2712D',
     600: '#D35923',
-    700: '#AF441F',
-    800: '#8C3720',
-    900: '#712F1D',
+    700: '#bd4b24',
+    800: '#AF441F',
+    900: '#8C3720',
+    950: '#712F1D',
 };
 
 const green = {
@@ -173,70 +205,6 @@ const red = {
     950: '#450F0A',
 };
 
-const lightAlpha = {
-    5: 'rgba(255,255,255,0.05)',
-    10: 'rgba(255,255,255,0.1)',
-    20: 'rgba(255,255,255,0.2)',
-    30: 'rgba(255,255,255,0.3)',
-    40: 'rgba(255,255,255,0.4)',
-    50: 'rgba(255,255,255,0.5)',
-    60: 'rgba(255,255,255,0.6)',
-    70: 'rgba(255,255,255,0.7)',
-    80: 'rgba(255,255,255,0.8)',
-    90: 'rgba(255,255,255,0.9)',
-};
-
-const darkAlpha = {
-    5: 'rgba(0,0,0,0.05)',
-    10: 'rgba(0,0,0,0.1)',
-    20: 'rgba(0,0,0,0.2)',
-    30: 'rgba(0,0,0,0.3)',
-    40: 'rgba(0,0,0,0.4)',
-    50: 'rgba(0,0,0,0.5)',
-    60: 'rgba(0,0,0,0.6)',
-    70: 'rgba(0,0,0,0.7)',
-    80: 'rgba(0,0,0,0.8)',
-    90: 'rgba(0,0,0,0.9)',
-};
-
-const tariPurpleAlpha = {
-    5: 'rgba(147,48,255,0.05)',
-    10: 'rgba(147,48,255,0.1)',
-    20: 'rgba(147,48,255,0.2)',
-    30: 'rgba(147,48,255,0.3)',
-    40: 'rgba(147,48,255,0.4)',
-    50: 'rgba(147,48,255,0.5)',
-    60: 'rgba(147,48,255,0.6)',
-    70: 'rgba(147,48,255,0.7)',
-    80: 'rgba(147,48,255,0.8)',
-    90: 'rgba(147,48,255,0.9)',
-};
-const warningDarkAlpha = {
-    5: 'rgba(209,138,24,0.05)',
-    10: 'rgba(209,138,24,0.1)',
-    20: 'rgba(209,138,24,0.2)',
-    30: 'rgba(209,138,24,0.3)',
-    40: 'rgba(209,138,24,0.4)',
-    50: 'rgba(209,138,24,0.5)',
-    60: 'rgba(209,138,24,0.6)',
-    70: 'rgba(209,138,24,0.7)',
-    80: 'rgba(209,138,24,0.8)',
-    90: 'rgba(209,138,24,0.9)',
-};
-
-const errorDarkAlpha = {
-    5: 'rgba(97,40,32,0.05)',
-    10: 'rgba(97,40,32,0.1)',
-    20: 'rgba(97,40,32,0.2)',
-    30: 'rgba(97,40,32,0.3)',
-    40: 'rgba(97,40,32,0.4)',
-    50: 'rgba(97,40,32,0.5)',
-    60: 'rgba(97,40,32,0.6)',
-    70: 'rgba(97,40,32,0.7)',
-    80: 'rgba(97,40,32,0.8)',
-    90: 'rgba(97,40,32,0.9)',
-};
-
 const ramp = {
     1: '#1CCF31',
     2: '#50CC27',
@@ -249,13 +217,12 @@ const ramp = {
     9: '#FF4F00',
     10: '#FF3300',
 };
+
 export const colors = {
     blue,
     orange,
     green,
     red,
-    lightAlpha,
-    darkAlpha,
     teal,
     gothic,
     tariPurple,
@@ -264,12 +231,14 @@ export const colors = {
     info,
     warning,
     error,
-    backgrounds,
     brightGreen,
-    tariPurpleAlpha,
-    warningDarkAlpha,
-    errorDarkAlpha,
+};
+
+export const colorsAll = {
+    ...colorsAlpha,
+    ...colors,
     ramp,
 };
 
 export type Colours = typeof colors;
+export type ThemeColourGroup = keyof Colours;

@@ -1,9 +1,9 @@
 import { m } from 'framer-motion';
 import styled from 'styled-components';
 
-import { IconButton } from '@app/components/elements/Button';
 import cardBg from '../../../../assets/images/wallet-bg.png';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 // Wallet
 export const WalletContainer = styled(m.div)`
@@ -61,10 +61,9 @@ export const BalanceVisibilityButton = styled(IconButton)`
     width: 22px;
 `;
 
-export const ShowHistoryButton = styled(ButtonBase).attrs({
+export const ShowHistoryButton = styled(Button).attrs({
     size: 'xs',
     variant: 'outlined',
-    color: 'secondary',
 })`
     display: flex;
     align-self: flex-end;
@@ -92,7 +91,7 @@ export const HistoryContainer = styled(m.div)`
     width: 100%;
     position: relative;
 
-    color: ${({ theme }) => theme.palette.base};
+    color: #fff;
 `;
 
 export const HistoryPadding = styled('div')`

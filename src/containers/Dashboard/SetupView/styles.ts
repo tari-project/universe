@@ -22,4 +22,5 @@ export const Wrapper = styled('div')`
 export const SoonWrapper = styled.div`
     max-width: 260px;
     height: auto;
+    filter: ${({ theme }) => (theme.mode === 'dark' ? 'brightness(0.9)' : 'none')};
 `;
