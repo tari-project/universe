@@ -20,7 +20,7 @@ export const ProgressWrapper = styled.div`
 `;
 
 export const SetupDescription = styled(Typography)`
-    color: ${({ theme }) => theme.palette.text.primary};
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 15px;
     text-align: center;
     font-weight: 400;
