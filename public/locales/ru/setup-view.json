@@ -23,6 +23,7 @@
   },
   "new-tari-version-available": "Доступна новая версия Tari Universe!",
   "would-you-like-to-install": "Хотите установить Tari Universe {{version}} сейчас?",
+  "installing-latest-version": "Installing {{version}} version of Tari Universe",
   "yes": "Да",
   "no": "Нет"
 }

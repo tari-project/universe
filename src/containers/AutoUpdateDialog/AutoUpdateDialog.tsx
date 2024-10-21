@@ -12,15 +12,35 @@ import { ButtonsWrapper } from './AutoUpdateDialog.styles';
 import { useUpdateStatus } from '@app/hooks/useUpdateStatus';
 import { UpdatedStatus } from './UpdatedStatus';
 import { useInterval } from '@app/hooks/useInterval.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60; // 1 hour
 function AutoUpdateDialog() {
     const setIsAfterAutoUpdate = useAppStateStore((s) => s.setIsAfterAutoUpdate);
+    const auto_update = useAppConfigStore((s) => s.auto_update);
     const [latestVersion, setLatestVersion] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [open, setOpen] = useState(false);
     const { contentLength, downloaded } = useUpdateStatus();
     const { t } = useTranslation('setup-view', { useSuspense: false });
+
+    const handleClose = useCallback(() => {
+        setOpen(false);
+        setIsAfterAutoUpdate(true);
+    }, [setIsAfterAutoUpdate]);
+
+    const handleUpdate = useCallback(async () => {
+        setIsLoading(true);
+        await installUpdate();
+        console.info('Installing latest version of Tari Universe');
+        try {
+            console.info('Restarting application after update');
+            await invoke('restart_application');
+        } catch (e) {
+            console.error('Relaunch error', e);
+        }
+        handleClose();
+    }, [handleClose]);
 
     const checkUpdateTariUniverse = useCallback(async () => {
         try {
@@ -28,6 +48,10 @@ function AutoUpdateDialog() {
             if (shouldUpdate) {
                 console.info('New Tari Universe version available', manifest);
                 setLatestVersion(manifest?.version);
+                if (auto_update) {
+                    console.info('Proceed with auto-update');
+                    await handleUpdate();
+                }
                 setOpen(true);
             } else {
                 setIsAfterAutoUpdate(true);
@@ -36,27 +60,9 @@ function AutoUpdateDialog() {
             console.error('AutoUpdate error:', error);
             setIsAfterAutoUpdate(true);
         }
-    }, [setIsAfterAutoUpdate]);
+    }, [auto_update, handleUpdate, setIsAfterAutoUpdate]);
 
     useInterval(() => checkUpdateTariUniverse(), UPDATE_CHECK_INTERVAL);
-
-    const handleUpdate = async () => {
-        setIsLoading(true);
-        await installUpdate();
-        console.info('Installing latest version of Tari Universe');
-        try {
-            console.info('Restarting application after update');
-            await invoke('restart_application');
-            handleClose();
-        } catch (e) {
-            console.error('Relaunch error', e);
-        }
-    };
-
-    const handleClose = () => {
-        setOpen(false);
-        setIsAfterAutoUpdate(true);
-    };
 
     const onOpenChange = (open: boolean) => {
         if (!open) {
@@ -76,11 +82,13 @@ function AutoUpdateDialog() {
         };
     }, [checkUpdateTariUniverse]);
 
+    const subtitle = isLoading ? 'installing-latest-version' : 'would-you-like-to-install';
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
-                <Typography variant="p">{t('would-you-like-to-install', { version: latestVersion })}</Typography>
+                <Typography variant="p">{t(subtitle, { version: latestVersion })}</Typography>
                 {isLoading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
                 <ButtonsWrapper>
                     {!isLoading && (

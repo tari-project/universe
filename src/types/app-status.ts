@@ -21,6 +21,7 @@ export interface AppConfig {
     airdrop_ui_enabled: boolean;
     paper_wallet_enabled: boolean;
     use_tor: boolean;
+    auto_update: boolean;
 }
 
 export enum ExternalDependencyStatus {
