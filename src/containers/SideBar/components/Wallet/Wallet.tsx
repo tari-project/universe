@@ -19,6 +19,7 @@ import { AnimatePresence } from 'framer-motion';
 import History from './History.tsx';
 import useFetchTx from '@app/hooks/mining/useTransactions.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export default function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
@@ -27,6 +28,7 @@ export default function Wallet() {
     const transactions = useWalletStore((s) => s.transactions);
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
+    const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
 
     const fetchTx = useFetchTx();
     const formatted = formatBalance(balance || 0);
@@ -74,7 +76,9 @@ export default function Wallet() {
     return (
         <WalletContainer>
             <WalletCornerButtons>
-                <CornerButton onClick={handleSyncButtonClick}>{t('paper-wallet-button')}</CornerButton>
+                {paperWalletEnabled && (
+                    <CornerButton onClick={handleSyncButtonClick}>{t('paper-wallet-button')}</CornerButton>
+                )}
                 {balance ? (
                     <CornerButton onClick={handleShowClick}>
                         {!showHistory ? t('history-show-button') : t('history-hide-button')}
