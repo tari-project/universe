@@ -1,5 +1,3 @@
-import { m } from 'framer-motion';
-
 import styled, { css, keyframes } from 'styled-components';
 
 export const TextWrapper = styled('div')`
