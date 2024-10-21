@@ -53,6 +53,14 @@ pub struct AppConfigFromFile {
     paper_wallet_enabled: bool,
     #[serde(default = "default_false")]
     very_e: bool,
+    eco_mode_cpu_threads: Option<isize>,
+    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_options: Vec<String>,
+    ludicrous_mode_cpu_options: Vec<String>,
+    #[serde(default = "default_false")]
+    mmproxy_use_monero_fail: bool,
+    #[serde(default = "default_monero_nodes")]
+    mmproxy_monero_nodes: Vec<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -77,6 +85,12 @@ impl Default for AppConfigFromFile {
             airdrop_ui_enabled: true,
             paper_wallet_enabled: false,
             use_tor: true,
+            eco_mode_cpu_options: Vec::new(),
+            ludicrous_mode_cpu_options: Vec::new(),
+            eco_mode_cpu_threads: None,
+            ludicrous_mode_cpu_threads: None,
+            mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            mmproxy_use_monero_fail: false,
             very_e: false,
         }
     }
@@ -155,6 +169,12 @@ pub(crate) struct AppConfig {
     paper_wallet_enabled: bool,
     use_tor: bool,
     very_e: bool,
+    eco_mode_cpu_threads: Option<isize>,
+    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_options: Vec<String>,
+    ludicrous_mode_cpu_options: Vec<String>,
+    mmproxy_use_monero_fail: bool,
+    mmproxy_monero_nodes: Vec<String>,
 }
 
 impl AppConfig {
@@ -181,6 +201,12 @@ impl AppConfig {
             use_tor: true,
             paper_wallet_enabled: false,
             very_e: false,
+            eco_mode_cpu_options: Vec::new(),
+            ludicrous_mode_cpu_options: Vec::new(),
+            eco_mode_cpu_threads: None,
+            ludicrous_mode_cpu_threads: None,
+            mmproxy_use_monero_fail: false,
+            mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
         }
     }
 
@@ -222,6 +248,12 @@ impl AppConfig {
                 self.airdrop_ui_enabled = config.airdrop_ui_enabled;
                 self.use_tor = config.use_tor;
                 self.paper_wallet_enabled = config.paper_wallet_enabled;
+                self.eco_mode_cpu_options = config.eco_mode_cpu_options;
+                self.eco_mode_cpu_threads = config.eco_mode_cpu_threads;
+                self.ludicrous_mode_cpu_options = config.ludicrous_mode_cpu_options;
+                self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
+                self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
+                self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
                 self.very_e = config.very_e;
             }
             Err(e) => {
@@ -243,6 +275,29 @@ impl AppConfig {
             self.config_version = 9;
             self.mine_on_app_start = true;
         }
+    }
+
+    pub fn mmproxy_monero_nodes(&self) -> &Vec<String> {
+        &self.mmproxy_monero_nodes
+    }
+
+    pub fn mmproxy_use_monero_fail(&self) -> bool {
+        self.mmproxy_use_monero_fail
+    }
+
+    pub fn eco_mode_cpu_options(&self) -> &Vec<String> {
+        &self.eco_mode_cpu_options
+    }
+
+    pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
+        &self.ludicrous_mode_cpu_options
+    }
+    pub fn eco_mode_cpu_threads(&self) -> Option<isize> {
+        self.eco_mode_cpu_threads
+    }
+
+    pub fn ludicrous_mode_cpu_threads(&self) -> Option<isize> {
+        self.ludicrous_mode_cpu_threads
     }
 
     pub fn anon_id(&self) -> &str {
@@ -447,6 +502,12 @@ impl AppConfig {
             paper_wallet_enabled: self.paper_wallet_enabled,
             use_tor: self.use_tor,
             very_e: self.very_e,
+            eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
+            ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
+            eco_mode_cpu_threads: self.eco_mode_cpu_threads,
+            ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
+            mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
+            mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -490,4 +551,8 @@ fn default_monero_address() -> String {
 
 fn default_application_language() -> String {
     "en".to_string()
+}
+
+fn default_monero_nodes() -> Vec<String> {
+    vec!["https://xmr-01.tari.com".to_string()]
 }
