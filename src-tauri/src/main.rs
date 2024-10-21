@@ -4,7 +4,6 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
-use futures_util::future::Join;
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
