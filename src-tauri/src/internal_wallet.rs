@@ -25,7 +25,7 @@ use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
-use crate::credential_manager::{Credential, CredentialManager};
+use crate::credential_manager::{CredentialManager};
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -56,6 +56,12 @@ impl InternalWallet {
             match serde_json::from_str::<WalletConfig>(&config) {
                 Ok(mut config) => {
                     config.config_path = Some(file_parent.to_path_buf());
+
+                    let cm = CredentialManager::default_with_dir(file_parent.to_path_buf());
+                    if let Err(e) = cm.migrate(&config) {
+                        warn!(target: LOG_TARGET, "Failed to migrate wallet credentials: {}", e.to_string());
+                    }
+
                     return Ok(Self {
                         tari_address: TariAddress::from_base58(&config.tari_address_base58)?,
                         config,
@@ -103,11 +109,11 @@ impl InternalWallet {
             Some(p) => p.clone(),
             None => return Err(anyhow!("No config path found")),
         };
-        let passphrase = CredentialManager::default_with_dir(path).get_credentials()?.seed_passphrase;
+        let passphrase = CredentialManager::default_with_dir(path).get_credentials()?.tari_seed_passphrase;
 
         let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
             .map_err(|e| anyhow!(e.to_string()))?;
-        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, Some(passphrase))?;
+        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, passphrase)?;
 
         let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
         let seed_file = seed.encipher(Some(SafePassword::from(&raw_passphrase)))?;
@@ -146,11 +152,16 @@ impl InternalWallet {
 
         let cm = CredentialManager::default_with_dir(path.to_path_buf());
         let passphrase = match cm.get_credentials() {
-            Ok(creds) => creds.seed_passphrase,
+            Ok(mut creds) => match creds.tari_seed_passphrase {
+                Some(p) => Some(p),
+                None => {
+                    creds.tari_seed_passphrase = Some(SafePassword::from(generate_password(32)));
+                    cm.set_credentials(&creds)?;
+                    creds.tari_seed_passphrase
+                },
+            }
             Err(_) => {
-                let phrase = SafePassword::from(generate_password(32));
-                cm.set_credentials(&Credential { seed_passphrase: phrase.clone() })?;
-                phrase
+                return Err(anyhow!("Credentials didn't exist, and this shouldn't happen"));
             },
         };
 
@@ -165,7 +176,7 @@ impl InternalWallet {
             }
             None => CipherSeed::new(),
         };
-        let seed_file = seed.encipher(Some(passphrase))?;
+        let seed_file = seed.encipher(passphrase)?;
         config.seed_words_encrypted_base58 = seed_file.to_base58();
 
         let comms_key_manager = KeyManager::<RistrettoPublicKey, KeyDigest>::from(
@@ -208,11 +219,11 @@ impl InternalWallet {
             Some(p) => p.clone(),
             None => return Err(anyhow!("No config path found")),
         };
-        let passphrase = CredentialManager::default_with_dir(path).get_credentials()?.seed_passphrase;
+        let passphrase = CredentialManager::default_with_dir(path).get_credentials()?.tari_seed_passphrase;
 
         let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
             .map_err(|e| anyhow!(e.to_string()))?;
-        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, Some(passphrase))?;
+        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, passphrase)?;
         let seed_words = seed.to_mnemonic(MnemonicLanguage::English, None)?;
         Ok(seed_words)
     }

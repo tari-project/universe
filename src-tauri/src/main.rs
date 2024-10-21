@@ -4,18 +4,17 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
-use futures_util::future::Join;
 use log::trace;
 use log::{debug, error, info, warn};
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
+use monero_address_creator::Seed as MoneroSeed;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
-use keyring::Entry;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -38,6 +37,7 @@ use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
 
 use crate::cpu_miner::CpuMiner;
+use crate::credential_manager::CredentialManager;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
@@ -987,6 +987,37 @@ async fn get_seed_words(
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
+}
+
+#[tauri::command]
+async fn get_monero_seed_words(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    let network = Network::get_current_or_user_setting_or_default()
+        .to_string()
+        .to_lowercase();
+
+    let path = config_path.join(network);
+
+    let cm = CredentialManager::default_with_dir(path);
+    let seed = cm.get_credentials().expect("Could not get credentials").monero_seed.expect("Couldn't get seed from credentials");
+    let mut key = [0u8; 32];
+    key.copy_from_slice(&seed.reveal());
+    let seed = MoneroSeed::new(key);
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
+    }
+
+    seed.seed_words().map_err(|e| e.to_string())
 }
 
 #[allow(clippy::too_many_lines)]

@@ -6,7 +6,6 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use log::info;
-use tari_utilities::message_format::{MessageFormat};
 use tari_utilities::SafePassword;
 use thiserror::Error;
 use crate::internal_wallet::WalletConfig;
@@ -15,7 +14,8 @@ const LOG_TARGET: &str = "tari::universe::credential_manager";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Credential {
-    pub seed_passphrase: SafePassword,
+    pub tari_seed_passphrase: Option<SafePassword>,
+    pub monero_seed: Option<SafePassword>,
 }
 
 #[derive(Error, Debug)]
@@ -54,15 +54,18 @@ impl CredentialManager {
         CredentialManager::new(APPLICATION_FOLDER_ID.into(), KEYCHAIN_USERNAME.into(), fallback_dir)
     }
 
-    pub fn migrate(&self, wallet_config: WalletConfig) -> Result<(), CredentialError> {
+    pub fn migrate(&self, wallet_config: &WalletConfig) -> Result<(), CredentialError> {
         // Shortcut and do nothing if we already have new credential format
-        if self.get_credentials().is_ok() {
-            return Ok(());
+        let creds = self.get_credentials();
+        if let Ok(creds) = &creds {
+            if creds.tari_seed_passphrase.is_some() {
+                return Ok(());
+            }
         }
 
         let passphrase = if wallet_config.passphrase.is_some() {
             info!(target: LOG_TARGET, "Found wallet passphrase");
-            wallet_config.passphrase
+            wallet_config.passphrase.clone()
         } else if let Ok(legacy) = self.load_from_legacy() {
             info!(target: LOG_TARGET, "Found legacy keyring passphrase");
             Some(legacy)
@@ -73,8 +76,17 @@ impl CredentialManager {
 
         if let Some(safe_password) = passphrase {
             info!(target: LOG_TARGET, "Migrating passphrase to new credential format");
-            let credential = Credential {
-                seed_passphrase: safe_password,
+            let credential = match creds {
+                Ok(mut cred) => {
+                    cred.tari_seed_passphrase = Some(safe_password);
+                    cred
+                }
+                Err(_) => {
+                    Credential {
+                        tari_seed_passphrase: Some(safe_password),
+                        monero_seed: None,
+                    }
+                }
             };
 
             self.set_credentials(&credential)?;
