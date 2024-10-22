@@ -4,7 +4,6 @@ export const Wrapper = styled('div')`
     display: flex;
     flex-direction: column;
     gap: 40px;
-    padding: 13px 25px 0 25px;
 `;
 
 export const Divider = styled('div')`
@@ -31,6 +30,10 @@ export const QRCodeWrapper = styled('div')`
     background: #000;
     padding: 10px;
     min-width: 200px;
+
+    svg {
+        display: block;
+    }
 `;
 
 export const QRCodeImage = styled('img')`

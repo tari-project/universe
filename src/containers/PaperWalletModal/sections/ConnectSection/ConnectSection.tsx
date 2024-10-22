@@ -10,9 +10,10 @@ import { PaperWalletModalSectionType } from '../../PaperWalletModal';
 import QRTooltip from './QRTooltip/QRTooltip';
 import qrTooltipImage from '../../images/qr-tooltip.png';
 import { useTranslation } from 'react-i18next';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 import { invoke } from '@tauri-apps/api/tauri';
+import LoadingSvg from '@app/components/svgs/LoadingSvg';
 
 interface Props {
     setSection: (section: PaperWalletModalSectionType) => void;
@@ -20,30 +21,37 @@ interface Props {
 
 export default function ConnectSection({ setSection }: Props) {
     const { t } = useTranslation(['paper-wallet'], { useSuspense: false });
-    const { setIsLoading, setQrCodeValue, setIdentificationCode } = usePaperWalletStore();
+    const [isLoading, setIsLoading] = useState(false);
+    const { setQrCodeValue, setIdentificationCode } = usePaperWalletStore();
 
     // const handleTextButtonClick = () => {
     //     console.log('Learn more about Tari Aurora');
     // };
 
-    const loadPaperWalletData = useCallback(async () => {
-        setIsLoading(true);
-        const r = await invoke('get_paper_wallet_details');
-
-        if (r) {
-            const url = r.qr_link;
-            const password = r.password;
-
-            setQrCodeValue(url);
-            setIdentificationCode(password);
-        }
-        setIsLoading(false);
-    }, [setIdentificationCode, setIsLoading, setQrCodeValue]);
-
     const handleBlackButtonClick = () => {
         loadPaperWalletData();
-        setSection('QRCode');
     };
+
+    const loadPaperWalletData = useCallback(async () => {
+        setIsLoading(true);
+
+        try {
+            const r = await invoke('get_paper_wallet_details');
+
+            if (r) {
+                const url = r.qr_link;
+                const password = r.password;
+
+                setQrCodeValue(url);
+                setIdentificationCode(password);
+                setSection('QRCode');
+            }
+        } catch {
+            console.error('Failed to get paper wallet details');
+        }
+
+        setIsLoading(false);
+    }, [setIdentificationCode, setIsLoading, setQrCodeValue, setSection]);
 
     return (
         <Wrapper>
@@ -60,8 +68,8 @@ export default function ConnectSection({ setSection }: Props) {
                     <QRTooltip trigger={<GoogleStoreIcon />} text={t('connect.scan')} codeImage={qrTooltipImage} />
                 </StoreWrapper>
 
-                <BlackButton onClick={handleBlackButtonClick}>
-                    <span>{t('connect.blackButton')}</span>
+                <BlackButton onClick={handleBlackButtonClick} disabled={isLoading}>
+                    {isLoading ? <LoadingSvg /> : <span>{t('connect.blackButton')}</span>}
                 </BlackButton>
 
                 {/* <TextButton onClick={handleTextButtonClick}>{t('connect.textButton')}</TextButton> */}

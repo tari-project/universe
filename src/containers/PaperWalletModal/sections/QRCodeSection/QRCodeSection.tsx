@@ -18,7 +18,6 @@ import { useEffect, useState } from 'react';
 import ShowIcon from '../../icons/ShowIcon';
 import HideIcon from '../../icons/HideIcon';
 import { useTranslation } from 'react-i18next';
-import { CircularProgress } from '@app/components/elements/CircularProgress';
 import QRCode from 'react-qr-code';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 
@@ -28,7 +27,7 @@ interface Props {
 
 export default function QRCodeSection({ onDoneClick }: Props) {
     const { t } = useTranslation(['paper-wallet'], { useSuspense: false });
-    const { qrCodeValue, isLoading, identificationCode } = usePaperWalletStore();
+    const { qrCodeValue, identificationCode } = usePaperWalletStore();
 
     const [showCode, setShowCode] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -53,13 +52,6 @@ export default function QRCodeSection({ onDoneClick }: Props) {
             }, 2000);
         }
     }, [copied]);
-
-    if (isLoading)
-        return (
-            <Wrapper>
-                <CircularProgress />
-            </Wrapper>
-        );
 
     return (
         <Wrapper>

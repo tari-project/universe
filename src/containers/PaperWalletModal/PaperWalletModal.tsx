@@ -21,7 +21,7 @@ export default function PaperWalletModal() {
 
     useEffect(() => {
         if (section == 'QRCode') {
-            setBoxWidth(725);
+            setBoxWidth(780);
         } else {
             setBoxWidth(682);
         }
