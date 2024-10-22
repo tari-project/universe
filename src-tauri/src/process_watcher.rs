@@ -114,7 +114,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             }
                         }
 
-                            if !is_healthy && !child.shutdown.is_triggered() && !app_shutdown.is_triggered() && !inner_shutdown.is_triggered() {
+                            if !is_healthy && !child.shutdown.is_triggered() && !app_shutdown.is_triggered() && !inner_shutdown.is_triggered(){
                                match child.stop().await {
                                    Ok(exit_code) => {
                                       if exit_code != 0 {
@@ -131,12 +131,12 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                    }
                                }
                                // Restart dead app
-                                
                                 sleep(Duration::from_secs(2)).await;
                                 warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
                                 child.start().await?;
                                 // Wait for a bit before checking health again
                                 sleep(Duration::from_secs(10)).await;
+
                                }
                             //    break;
                       },
