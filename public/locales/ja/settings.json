@@ -71,5 +71,13 @@
   "action-requires-restart": "この操作には再起動が必要です。変更を適用します",
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
-  "report-issue": "問題を報告する"
+  "report-issue": "問題を報告する",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }
