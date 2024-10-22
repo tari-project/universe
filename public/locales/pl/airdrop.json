@@ -30,5 +30,9 @@
   "topTooltipTitle": "Nagrody Testnet",
   "claimModalFinePrint": "<strong>Uwaga:</strong> odbieranie klejnotów włącza analitykę, abyśmy mogli ulepszyć Universe",
   "inviteFriendsText": "Skopiuj link i udostępnij go",
-  "logged-in-as": "Zalogowany jako <strong>@{{twitter}}</strong>"
+  "logged-in-as": "Zalogowany jako <strong>@{{twitter}}</strong>",
+  "bonus-gems-earned": "Bonusowe klejnoty zdobyte",
+  "keep-mining-to-earn-rewards": "Kontynuuj wydobycie, aby zdobyć więcej nagród!",
+  "your-friend-accepted-gift": "Jeden z Twoich znajomych przyjął Twój prezent!",
+  "you-reached-your-giftinh-goal": "Osiągnąłeś swój cel prezentowy!"
 }
