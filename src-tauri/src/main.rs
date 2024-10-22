@@ -745,7 +745,7 @@ async fn setup_inner(
         .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
+    let mut tor_control_port = None;
     if use_tor {
         state
             .tor_manager
@@ -756,6 +756,7 @@ async fn setup_inner(
                 log_dir.clone(),
             )
             .await?;
+        tor_control_port = state.tor_manager.get_control_port().await?;
     }
     for _i in 0..2 {
         match state
@@ -766,6 +767,7 @@ async fn setup_inner(
                 config_dir.clone(),
                 log_dir.clone(),
                 use_tor,
+                tor_control_port,
             )
             .await
         {
