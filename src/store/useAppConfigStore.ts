@@ -40,7 +40,7 @@ const initialState: State = {
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
     airdrop_ui_enabled: false,
-    paper_wallet_enabled: true,
+    paper_wallet_enabled: false,
     use_tor: true,
 };
 
