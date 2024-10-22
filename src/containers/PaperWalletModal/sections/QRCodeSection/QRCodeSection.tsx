@@ -33,9 +33,9 @@ export default function QRCodeSection({ onDoneClick }: Props) {
     const [showCode, setShowCode] = useState(false);
     const [copied, setCopied] = useState(false);
 
-    const handleTextButtonClick = () => {
-        // TODO add help link
-    };
+    // const handleTextButtonClick = () => {
+    //     // TODO add help link
+    // };
 
     const handleVisibleToggleClick = () => {
         setShowCode((prev) => !prev);
