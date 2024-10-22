@@ -17,9 +17,11 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
 import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
+import { useTheme } from 'styled-components';
 import { Trans, useTranslation } from 'react-i18next';
 
 export default function Miner() {
+    const theme = useTheme();
     const { t } = useTranslation('mining-view', { useSuspense: false });
     useMiningStatesSync();
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
@@ -81,7 +83,7 @@ export default function Miner() {
                     isLoading={earningsLoading}
                     useLowerCase
                 >
-                    <Typography variant="h5" style={{ color: '#000' }}>
+                    <Typography variant="h5" style={{ color: theme.palette.text.primary }}>
                         {t('estimated-earnings')}
                     </Typography>
                     <Typography>{t('you-earn-rewards-separately')}</Typography>

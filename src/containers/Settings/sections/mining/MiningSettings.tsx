@@ -1,6 +1,6 @@
-import CpuMiningMarkup from './sections/mining/CpuMiningMarkup.tsx';
-import GpuMiningMarkup from './sections/mining/GpuMiningMarkup.tsx';
-import MineOnStartMarkup from './sections/mining/MineOnStartMarkup.tsx';
+import CpuMiningMarkup from './CpuMiningMarkup.tsx';
+import GpuMiningMarkup from './GpuMiningMarkup.tsx';
+import MineOnStartMarkup from './MineOnStartMarkup.tsx';
 import P2pMarkup from '@app/containers/Settings/sections/experimental/P2pMarkup.tsx';
 
 export const MiningSettings = () => {

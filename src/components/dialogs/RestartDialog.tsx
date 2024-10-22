@@ -4,11 +4,13 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { IconButton } from '@app/components/elements/Button.tsx';
+
 import { IoClose } from 'react-icons/io5';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export default function RestartDialog() {
     const dialogToShow = useUIStore((s) => s.dialogToShow);
@@ -48,17 +50,12 @@ export default function RestartDialog() {
                         </Stack>
 
                         <Stack direction="row" alignItems="center" justifyContent="space-between" gap={8}>
-                            <ButtonBase
-                                size="small"
-                                variant="secondary"
-                                color="secondary"
-                                onClick={setShowRestartModal}
-                            >
+                            <TextButton color="grey" colorIntensity={700} onClick={setShowRestartModal}>
                                 {t('restart-later')}
-                            </ButtonBase>
-                            <ButtonBase size="small" variant="outlined" onClick={handleRestart}>
+                            </TextButton>
+                            <Button size="small" variant="gradient" onClick={handleRestart}>
                                 {t('restart-now')}
-                            </ButtonBase>
+                            </Button>
                         </Stack>
                     </Stack>
                 </Stack>
