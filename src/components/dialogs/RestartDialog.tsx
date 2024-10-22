@@ -47,9 +47,19 @@ export default function RestartDialog() {
                             <Typography variant="p">{t('action-restart-copy')}</Typography>
                         </Stack>
 
-                        <ButtonBase size="small" variant="outlined" onClick={handleRestart}>
-                            {t('restart-now')}
-                        </ButtonBase>
+                        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={8}>
+                            <ButtonBase
+                                size="small"
+                                variant="secondary"
+                                color="secondary"
+                                onClick={setShowRestartModal}
+                            >
+                                {t('restart-later')}
+                            </ButtonBase>
+                            <ButtonBase size="small" variant="outlined" onClick={handleRestart}>
+                                {t('restart-now')}
+                            </ButtonBase>
+                        </Stack>
                     </Stack>
                 </Stack>
             </DialogContent>

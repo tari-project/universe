@@ -73,6 +73,7 @@
 
     "refresh-versions": "Refresh versions",
     "report-issue": "Report an issue",
+    "restart-later": "Restart Later",
     "restart-now": "Restart Now",
 
     "restart-universe": "Restart Tari Universe?",
@@ -93,6 +94,7 @@
         "experimental": "Experimental",
         "wallet": "Wallet"
     },
+    "tor-bridges": "Tor Bridges",
     "tribe": "Squad",
     "tribe-earnings": "Squad earnings",
     "tribe-pool-height": "Squad height",
