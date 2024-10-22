@@ -209,7 +209,6 @@ impl MinotariNodeStatusMonitor {
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
 
-        // let tst = res.miner_data.
         let reward = res
             .miner_data
             .ok_or_else(|| {
@@ -230,9 +229,10 @@ impl MinotariNodeStatusMonitor {
                 )));
             }
         };
-        let (sync_achieved, block_height, block_time) = (
+        let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
             metadata.best_block_height,
+            metadata.best_block_hash.clone(),
             metadata.timestamp,
         );
         // First try with 10 blocks
