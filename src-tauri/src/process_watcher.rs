@@ -62,7 +62,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         self.internal_shutdown = Shutdown::new();
         let mut inner_shutdown = self.internal_shutdown.to_signal();
         let is_stop_requested = self.stop_requested;
-        
+
         let poll_time = self.poll_time;
         let health_timeout = self.health_timeout;
 
