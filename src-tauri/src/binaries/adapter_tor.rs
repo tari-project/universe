@@ -26,7 +26,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
         let client = reqwest::Client::new();
         for _ in 0..3 {
-            let response = client.head(cdn_tor_bundle_url).send().await;
+            let response = client.head(&cdn_tor_bundle_url).send().await;
 
             if let Ok(resp) = response {
                 if resp.status().is_success() {
