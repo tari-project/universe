@@ -30,7 +30,7 @@ export const StyledButtonBase = styled.button<Props>`
         cursor: inherit;
     }
     &:hover {
-        opacity: 0.85;
+        opacity: 0.65;
     }
 
     ${({ $variant, $color }) => {
