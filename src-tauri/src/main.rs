@@ -1182,7 +1182,7 @@ async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r"obfs4.*?<br\/>").unwrap();
+    let re = Regex::new(r"obfs4.*?<br\/>").map_err(|e| e.to_string())?;
     let bridges: Vec<String> = re
         .find_iter(&res_html)
         .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())

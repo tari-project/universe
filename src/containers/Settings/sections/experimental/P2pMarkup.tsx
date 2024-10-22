@@ -38,7 +38,7 @@ const P2pMarkup = () => {
                     <SettingsGroupTitle>
                         <Typography variant="h6">
                             {t('pool-mining', { ns: 'settings' })}
-                            <b>&nbsp;(APP RESTART REQUIRED)</b>
+                            <b>&nbsp;({t('app-restart-required', { ns: 'settings' })})</b>
                         </Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('pool-mining-description', { ns: 'settings' })}</Typography>

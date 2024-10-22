@@ -8,5 +8,7 @@
   "mining-schedules-description": "अपनी माइनिंग गतिविधि का समय निर्धारित करें",
   "lost-connection": "Tari नेटवर्क से कनेक्शन खो गया। पुनः कनेक्ट हो रहा है..",
   "block": "ब्लॉक",
-  "recent-wins": "हाल की जीत"
+  "recent-wins": "हाल की जीत",
+  "show-history": "Show history",
+  "hide-history": "Hide history"
 }

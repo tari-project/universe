@@ -12,5 +12,8 @@
     "waiting-for-idle": "유휴 상태 대기 중",
     "started-auto-mining": "자동 채굴 시작됨",
     "stop-mining": "채굴 중지"
-  }
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }
