@@ -16,7 +16,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
     pub health_timeout: tokio::time::Duration,
-    pub(crate) status_monitor: Option<TAdapter::StatusMonitor>
+    pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -27,7 +27,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(5),
             health_timeout: tokio::time::Duration::from_secs(4),
-            status_monitor: None
+            status_monitor: None,
         }
     }
 }
