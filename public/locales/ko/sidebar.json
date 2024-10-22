@@ -8,5 +8,7 @@
   "mining-schedules-description": "채굴 활동을 예약하세요",
   "lost-connection": "Tari 네트워크와의 연결이 끊어졌습니다. 다시 연결 중..",
   "block": "블록",
-  "recent-wins": "최근 승리"
+  "recent-wins": "최근 승리",
+  "show-history": "Show history",
+  "hide-history": "Hide history"
 }

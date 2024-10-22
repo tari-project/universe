@@ -8,5 +8,7 @@
   "mining-schedules-description": "Plane deine Mining-Aktivitäten",
   "lost-connection": "Verbindung zum Tari-Netzwerk verloren. Versuche, wieder zu verbinden...",
   "block": "Block",
-  "recent-wins": "Kürzliche Gewinne"
+  "recent-wins": "Kürzliche Gewinne",
+  "show-history": "Show history",
+  "hide-history": "Hide history"
 }

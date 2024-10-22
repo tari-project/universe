@@ -4,7 +4,6 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
-use futures_util::future::Join;
 use log::trace;
 use log::{debug, error, info, warn};
 use regex::Regex;
@@ -1185,7 +1184,7 @@ async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r"obfs4.*?<br\/>").unwrap();
+    let re = Regex::new(r"obfs4.*?<br\/>").map_err(|e| e.to_string())?;
     let bridges: Vec<String> = re
         .find_iter(&res_html)
         .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())

@@ -9,7 +9,7 @@ import {
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
 import { Typography } from '@app/components/elements/Typography';
 import { TorConfig } from '@app/types/app-status';
@@ -113,7 +113,7 @@ export const TorMarkup = () => {
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">
-                            Tor
+                            <Trans>Tor</Trans>
                             <b>&nbsp;({t('app-restart-required').toUpperCase()})</b>
                         </Typography>
                     </SettingsGroupTitle>
