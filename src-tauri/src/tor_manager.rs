@@ -85,6 +85,14 @@ impl TorManager {
             .await
     }
 
+    pub async fn get_control_port(&self) -> Result<Option<u16>, anyhow::Error> {
+        let process_watcher = self.watcher.read().await;
+        Ok(process_watcher
+            .status_monitor
+            .as_ref()
+            .map(|m| m.control_port))
+    }
+
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
