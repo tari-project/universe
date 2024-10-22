@@ -208,7 +208,7 @@ export const StyledInput = styled('input')`
     }
 
     &:focus {
-        background: #fff;
+        background-color: ${({ theme }) => theme.palette.background.accent};
         border: 1px solid #b0b0b0;
     }
 `;
@@ -249,7 +249,7 @@ export const XLogo = styled('div')`
     align-items: center;
     justify-content: center;
 
-    background-color: #fff;
+    background-color: ${({ theme }) => theme.palette.background.accent};
     color: #000;
 
     position: absolute;

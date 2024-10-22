@@ -1,5 +1,5 @@
 import { LayoutGroup, LazyMotion, domMax, MotionConfig } from 'framer-motion';
-import { BackgroundImage, DashboardContainer } from './theme/styles';
+import { DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
@@ -23,7 +23,6 @@ import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx
 
 export default function App() {
     useLangaugeResolver();
-
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
     const view = useUIStore((s) => s.view);
@@ -35,7 +34,7 @@ export default function App() {
     const mainMarkup = useMemo(() => {
         if (!isShuttingDown && !showSplash) {
             return (
-                <DashboardContainer>
+                <DashboardContainer $view={view} $visualModeOff={!visualMode}>
                     <SideBar />
                     <Dashboard status={view} />
                 </DashboardContainer>
@@ -43,7 +42,7 @@ export default function App() {
         } else {
             return null;
         }
-    }, [isShuttingDown, showSplash, view]);
+    }, [isShuttingDown, showSplash, view, visualMode]);
 
     return (
         <ThemeProvider>
@@ -64,9 +63,6 @@ export default function App() {
                     <PaperWalletModal />
                     <LayoutGroup id="app-content">
                         {shutDownMarkup}
-                        {!visualMode || view != 'mining' ? (
-                            <BackgroundImage layout transition={{ duration: 0.3 }} />
-                        ) : null}
                         {mainMarkup}
                         <ErrorSnackbar />
                         <SplashScreen />

@@ -1,8 +1,8 @@
 import { m } from 'framer-motion';
 import styled from 'styled-components';
 
-import { IconButton } from '@app/components/elements/Button';
 import cardBg from '../../../../assets/images/wallet-bg.png';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 // Wallet
 export const WalletContainer = styled(m.div)`

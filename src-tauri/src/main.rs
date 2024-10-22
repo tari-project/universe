@@ -176,6 +176,24 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
+async fn set_theme(theme: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_theme(theme)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_theme {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_theme took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn set_use_tor(
     use_tor: bool,
     state: tauri::State<'_, UniverseAppState>,
@@ -2002,6 +2020,7 @@ fn main() {
             stop_mining,
             set_p2pool_enabled,
             set_mode,
+            set_theme,
             open_log_dir,
             get_seed_words,
             get_applications_versions,
