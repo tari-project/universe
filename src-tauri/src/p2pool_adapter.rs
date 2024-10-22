@@ -46,10 +46,7 @@ impl ProcessAdapter for P2poolAdapter {
 
         info!(target: LOG_TARGET, "Starting p2pool node");
 
-        let working_dir = data_local_dir()
-            .expect("Could not get local data directory")
-            .join("tari-universe")
-            .join("sha-p2pool");
+        let working_dir = data_dir.join("sha-p2pool");
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create p2pool working directory - {}", error);
         });
@@ -71,9 +68,12 @@ impl ProcessAdapter for P2poolAdapter {
             config.stats_server_port.to_string(),
             "--base-node-address".to_string(),
             config.base_node_address.clone(),
-            "--mdns-disabled".to_string(),
+            // "--mdns-disabled".to_string(),
             "-b".to_string(),
             log_path_string,
+            "--stable-peer".to_string(),
+            "--private-key-folder".to_string(),
+            working_dir.to_string_lossy().to_string(),
         ];
         let pid_file_name = self.pid_file_name().to_string();
 
