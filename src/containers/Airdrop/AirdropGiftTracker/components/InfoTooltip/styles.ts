@@ -16,7 +16,7 @@ export const Trigger = styled(m.div)`
 `;
 
 export const Menu = styled(m.div)`
-    z-index: 2;
+    z-index: 3;
     position: absolute;
     top: 0px;
     right: 0px;
