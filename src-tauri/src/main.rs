@@ -747,16 +747,20 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
     let mut tor_control_port = None;
     if use_tor {
-        state
-            .tor_manager
-            .ensure_started(
-                state.shutdown.to_signal(),
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-            )
-            .await?;
-        tor_control_port = state.tor_manager.get_control_port().await?;
+        if cfg!(target_os = "windows") {
+            state
+                .tor_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+            tor_control_port = state.tor_manager.get_control_port().await?;
+        } else {
+            tor_control_port = Some(9051);
+        }
     }
     for _i in 0..2 {
         match state
