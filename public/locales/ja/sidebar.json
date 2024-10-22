@@ -8,5 +8,7 @@
   "mining-schedules-description": "マイニング活動をスケジュールする",
   "lost-connection": "Tariネットワークへの接続が失われました。再接続中..",
   "block": "ブロック",
-  "recent-wins": "最近の勝利"
+  "recent-wins": "最近の勝利",
+  "show-history": "Show history",
+  "hide-history": "Hide history"
 }

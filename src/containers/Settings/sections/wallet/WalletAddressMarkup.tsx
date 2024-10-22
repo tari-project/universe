@@ -9,6 +9,7 @@ import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs
 import { useWalletStore } from '@app/store/useWalletStore';
 import { SettingsGroupTitle, SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { useTranslation } from 'react-i18next';
 
 const Dot = styled.div`
     width: 4px;
@@ -65,6 +66,7 @@ const CopyToClipboard = ({ text }: { text: string | undefined }) => {
 
 const WalletAddressMarkup = () => {
     const [isCondensed, setIsCondensed] = useState(true);
+    const { t } = useTranslation('settings', { useSuspense: false });
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
 
@@ -102,7 +104,7 @@ const WalletAddressMarkup = () => {
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
-                <Typography variant="h6">Tari Wallet Address</Typography>
+                <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
             <Stack direction="row" justifyContent="space-between" alignItems="center">
                 <AddressContainer>

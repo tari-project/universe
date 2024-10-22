@@ -12,5 +12,8 @@
     "waiting-for-idle": "Wag tot onaktief",
     "started-auto-mining": "Outomatiese myn het begin",
     "stop-mining": "Stop Mynbou"
-  }
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }
