@@ -86,6 +86,8 @@ thiserror = "1.0.26"
 tokio = {version = "1", features = ["full"] }
 tokio-util = {version = "0.7.11", features = ["compat"] }
 xz2 = {version = "0.1.7", features = ["static"] }# static bind lzma
+
+tor-hash-passwd = "1.0.1"
 zip = "2.2.0"
 
 [target.'cfg(windows)'.dependencies]

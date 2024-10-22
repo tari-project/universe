@@ -71,5 +71,13 @@
   "importing-wallet": "Wallet wird importiert",
   "action-requires-restart": "Diese Aktion erfordert einen Neustart, um Änderungen anzuwenden",
   "low-hash-rate-warning": "Ihre Hashrate ist sehr niedrig. Versuchen Sie, alle Apps außer Tari Universe zu schließen",
-  "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen"
+  "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }
