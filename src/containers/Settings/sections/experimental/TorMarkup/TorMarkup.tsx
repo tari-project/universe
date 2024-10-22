@@ -15,7 +15,8 @@ import { Typography } from '@app/components/elements/Typography';
 import { TorConfig } from '@app/types/app-status';
 import { Input } from '@app/components/elements/inputs/Input';
 import { Button } from '@app/components/elements/Button';
-import { ErrorTypography, StyledInput, SaveButtonWrapper } from './TorMarkup.styles';
+import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
+import { Stack } from '@app/components/elements/Stack.tsx';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
@@ -26,13 +27,11 @@ interface EditedTorConfig {
 
 const hasBridgeError = (bridge: string) => {
     // TODO: How should we validate the bridge? (IPv4, IPv6, different formats)
-    if (!bridge || bridge.trim().length === 0) return true;
-    return false;
+    return !bridge || bridge.trim().length === 0;
 };
 
 const hasControlPortError = (cp: number) => {
-    if (!cp || cp <= 0) return true;
-    return false;
+    return !cp || cp <= 0;
 };
 
 export const TorMarkup = () => {
@@ -83,14 +82,12 @@ export const TorMarkup = () => {
         if (editedUseTor !== defaultUseTor) return true;
 
         if (JSON.stringify(defaultTorConfig) === JSON.stringify(editedConfig)) return false;
-        if (
+        return !(
             (editedConfig?.use_bridges &&
                 (!editedConfig?.bridges?.length || editedConfig?.bridges.some((bridge) => hasBridgeError(bridge))) &&
                 !editedConfig?.control_port) ||
             Number(editedConfig?.control_port) <= 0
-        )
-            return false;
-        return true;
+        );
     }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor]);
 
     const toggleUseBridges = useCallback(async () => {
@@ -120,17 +117,20 @@ export const TorMarkup = () => {
                     <Typography>{t('setup-tor-settings')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={editedUseTor} onChange={() => setEditedUseTor((p) => !p)} />
+                    {isSaveButtonVisible ? (
+                        <Button onClick={onSave}>{t('save')}</Button>
+                    ) : (
+                        <ToggleSwitch checked={editedUseTor} onChange={() => setEditedUseTor((p) => !p)} />
+                    )}
                 </SettingsGroupAction>
             </SettingsGroup>
-            {editedUseTor && editedConfig && (
-                <SettingsGroup style={{ padding: '0 10px', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <SettingsGroupWrapper style={{ paddingLeft: '15px', paddingBottom: 0 }}>
-                        <SettingsGroupTitle>
-                            <Typography variant="h6">{t('control-port')}</Typography>
-                        </SettingsGroupTitle>
+
+            {editedUseTor && editedConfig ? (
+                <TorSettingsContainer>
+                    <Stack style={{ width: '100%' }} direction="column">
+                        <Typography variant="h6">{t('control-port')}</Typography>
                         <Input
-                            name="apply-invite-code"
+                            name="control-port"
                             value={editedConfig.control_port}
                             placeholder="9051"
                             hasError={hasControlPortError(+editedConfig.control_port)}
@@ -145,15 +145,20 @@ export const TorMarkup = () => {
                         <ErrorTypography variant="p">
                             {hasControlPortError(+editedConfig.control_port) && t('errors.invalid-control-port')}
                         </ErrorTypography>
-                    </SettingsGroupWrapper>
-                    <ToggleSwitch
-                        label={'Use Tor Bridges'}
-                        variant="gradient"
-                        checked={editedConfig.use_bridges}
-                        onChange={toggleUseBridges}
-                    />
+                    </Stack>
+
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="h6">{t('tor-bridges')}</Typography>
+                        <ToggleSwitch
+                            label={'Use Tor Bridges'}
+                            variant="gradient"
+                            checked={editedConfig.use_bridges}
+                            onChange={toggleUseBridges}
+                        />
+                    </Stack>
+
                     {editedConfig.use_bridges && (
-                        <>
+                        <Stack>
                             <StyledInput
                                 placeholder="obfs4 IP:PORT FINGERPRINT cert=CERT iat-mode=0"
                                 hasError={hasBridgeError(editedConfig.bridges[0])}
@@ -182,13 +187,10 @@ export const TorMarkup = () => {
                             <ErrorTypography variant="p">
                                 {hasBridgeError(editedConfig.bridges[1]) && t('errors.invalid-bridge')}
                             </ErrorTypography>
-                        </>
+                        </Stack>
                     )}
-                </SettingsGroup>
-            )}
-            <SaveButtonWrapper>
-                {isSaveButtonVisible && <Button onClick={onSave}>{t('save')}</Button>}
-            </SaveButtonWrapper>
+                </TorSettingsContainer>
+            ) : null}
         </SettingsGroupWrapper>
     );
 };
