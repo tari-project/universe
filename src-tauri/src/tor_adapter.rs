@@ -200,7 +200,6 @@ impl ProcessAdapter for TorAdapter {
             },
             TorStatusMonitor {
                 control_port: self.config.control_port,
-                socks_port: self.socks_port,
             },
         ))
     }
@@ -217,7 +216,6 @@ impl ProcessAdapter for TorAdapter {
 #[derive(Clone)]
 pub(crate) struct TorStatusMonitor {
     pub control_port: u16,
-    pub socks_port: u16,
 }
 
 #[async_trait]
