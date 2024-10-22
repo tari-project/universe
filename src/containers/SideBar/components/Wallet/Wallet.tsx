@@ -88,7 +88,7 @@ export default function Wallet() {
                 )}
                 {balance ? (
                     <CornerButton onClick={handleShowClick}>
-                        {!showHistory ? t('history-show-button') : t('history-hide-button')}
+                    {!showHistory ? t('show-history') : t('hide-history')}
                     </CornerButton>
                 ) : null}
             </WalletCornerButtons>

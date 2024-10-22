@@ -56,7 +56,7 @@ impl TorAdapter {
     }
 
     fn apply_loaded_config(&mut self, config: String) {
-        self.config = serde_json::from_str::<TorConfig>(&config).unwrap_or(TorConfig::default());
+        self.config = serde_json::from_str::<TorConfig>(&config).unwrap_or_default();
     }
 
     async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
