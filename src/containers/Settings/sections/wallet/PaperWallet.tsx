@@ -18,6 +18,7 @@ import { IconButton } from '@app/components/elements/Button.tsx';
 import { IoClose } from 'react-icons/io5';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { useTranslation } from 'react-i18next';
 
 const StyledWrapper = styled.div`
     display: flex;
@@ -26,6 +27,7 @@ const StyledWrapper = styled.div`
 `;
 
 export default function PaperWallet() {
+    const { t } = useTranslation('settings', { useSuspense: false });
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
     const showExperimental = useUIStore((s) => s.showExperimental);
     const [qrCodeValue, setValue] = useState('');
@@ -54,17 +56,17 @@ export default function PaperWallet() {
         <SettingsGroupWrapper>
             <SettingsGroupContent>
                 <SettingsGroupTitle>
-                    <Typography variant="h6">Link Tari Aurora</Typography>
+                    <Typography variant="h6">{t('paper-wallet.link-tari-aurora')}</Typography>
                 </SettingsGroupTitle>
                 <SettingsGroup>
-                    <Typography>Connect your Tari Universe wallet to your phone</Typography>
+                    <Typography>{t('connect-wallet-to-phone')}</Typography>
 
                     <Stack style={{ height: 40 }}>
                         {isLoading ? (
                             <CircularProgress />
                         ) : (
                             <ButtonBase onClick={load} size="small" disabled={isLoading}>
-                                Load QR code
+                                {t('load-qr-code')}
                             </ButtonBase>
                         )}
                     </Stack>
@@ -73,7 +75,7 @@ export default function PaperWallet() {
                     <DialogContent>
                         <Stack style={{ width: 400 }}>
                             <Stack justifyContent="space-between" direction="row" alignItems="center">
-                                <Typography variant="h6">Don&apos;t share this code with anyone</Typography>
+                                <Typography variant="h6">{t('do-not-share-this-code')}</Typography>
                                 <IconButton onClick={() => setShowCode(false)}>
                                     <IoClose size={18} />
                                 </IconButton>
@@ -90,7 +92,7 @@ export default function PaperWallet() {
                                     </StyledWrapper>
                                 ) : null}
                                 <Divider />
-                                <Typography variant="p">Passphrase:</Typography>
+                                <Typography variant="p">{t('passphrase')}:</Typography>
                                 <Typography
                                     variant="h4"
                                     fontFamily={`"AvenirMedium", sans-serif`}

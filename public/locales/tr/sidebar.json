@@ -8,5 +8,7 @@
   "mining-schedules-description": "Madencilik faaliyetinizi planlayın",
   "lost-connection": "Tari Ağı ile bağlantı kesildi. Yeniden bağlanılıyor..",
   "block": "Blok",
-  "recent-wins": "Son Kazançlar"
+  "recent-wins": "Son Kazançlar",
+  "show-history": "Show history",
+  "hide-history": "Hide history"
 }

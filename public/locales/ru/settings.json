@@ -1,5 +1,6 @@
 {
   "settings": "Настройки",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Секретные слова",
   "send-logs": "Отправить логи",
   "your-feedback": "Пожалуйста, опишите вашу проблему",
@@ -71,5 +72,13 @@
   "action-requires-restart": "Для применения изменений требуется перезапуск",
   "low-hash-rate-warning": "Ваш хешрейт очень низкий. Попробуйте закрыть все приложения, кроме Tari Universe",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
-  "report-issue": "Сообщить о проблеме"
+  "report-issue": "Сообщить о проблеме",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }
