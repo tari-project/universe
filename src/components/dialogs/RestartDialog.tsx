@@ -6,6 +6,9 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { IconButton } from '@app/components/elements/Button.tsx';
+import { IoClose } from 'react-icons/io5';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
 export default function RestartDialog() {
     const dialogToShow = useUIStore((s) => s.dialogToShow);
@@ -30,16 +33,20 @@ export default function RestartDialog() {
     return (
         <Dialog open={showRestartModal} onOpenChange={setShowRestartModal}>
             <DialogContent>
-                <Stack direction="column" alignItems="center" justifyContent="space-between" style={{ height: 120 }}>
-                    <Stack>
+                <Stack style={{ minWidth: 400 }}>
+                    <Stack justifyContent="space-between" direction="row" alignItems="center">
                         <Typography variant="h3">{t('restart-universe')}</Typography>
-                        <Typography variant="p">{t('action-requires-restart')}</Typography>
+                        <IconButton onClick={setShowRestartModal}>
+                            <IoClose size={18} />
+                        </IconButton>
                     </Stack>
+                    <Divider />
+                    <Stack direction="column" alignItems="center" justifyContent="space-between" gap={24}>
+                        <Stack gap={6}>
+                            <Typography variant="p">{t('action-requires-restart')}</Typography>
+                            <Typography variant="p">{t('action-restart-copy')}</Typography>
+                        </Stack>
 
-                    <Stack direction="row" gap={8}>
-                        <ButtonBase size="small" onClick={setShowRestartModal}>
-                            {t('cancel')}
-                        </ButtonBase>
                         <ButtonBase size="small" variant="outlined" onClick={handleRestart}>
                             {t('restart-now')}
                         </ButtonBase>
