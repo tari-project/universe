@@ -1,5 +1,6 @@
 {
   "settings": "Ustawienia",
+  "tari-wallet-address": "Adres porfela Tari",
   "seed-words": "Słowa kluczowe",
   "change-language": "Zmień język",
   "logs": "Logi",
@@ -77,5 +78,13 @@
   "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
-  "report-issue": "Zgłoś problem"
+  "report-issue": "Zgłoś problem",
+  "app-restart-required": "Wymagane ponowne uruchomienie",
+  "setup-tor-settings": "Skonfiguruj sieć Tor w celu prywatności połączenia",
+  "control-port": "Control Port",
+  "save": "Zapisz",
+  "errors": {
+      "invalid-control-port": "Konfiguracja Control Portu nieprawidłowa",
+      "invalid-bridge": "Konfiguracja Bridge nieprawidłowa"
+  }
 }

@@ -1,5 +1,6 @@
 {
   "settings": "설정",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "시드 단어",
   "send-logs": "로그 전송",
   "your-feedback": "문제를 설명해 주세요",
@@ -75,5 +76,13 @@
   "action-requires-restart": "이 작업은 변경 사항을 적용하기 위해 재시작이 필요합니다",
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
   "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",
-  "report-issue": "문제 보고"
+  "report-issue": "문제 보고",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }

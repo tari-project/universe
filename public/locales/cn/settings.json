@@ -1,5 +1,6 @@
 {
   "settings": "设置",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "种子词",
   "change-language": "更改语言",
   "logs": "日志",
@@ -75,5 +76,13 @@
   "action-requires-restart": "此操作需要重启以应用更改",
   "low-hash-rate-warning": "您的哈希率非常低。尝试关闭除Tari Universe以外的所有应用程序",
   "invalid-seed-words": "输入24个用空格分隔的单词",
-  "report-issue": "报告问题"
+  "report-issue": "报告问题",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }

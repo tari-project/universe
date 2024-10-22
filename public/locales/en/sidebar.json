@@ -8,5 +8,7 @@
     "mining-schedules-description": "Schedule your mining activity",
     "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
     "block": "Block",
-    "recent-wins": "Recent wins"
+    "recent-wins": "Recent wins",
+    "show-history": "Show history",
+    "hide-history": "Hide history"
 }
