@@ -1,8 +1,6 @@
 import { AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import ExperimentalWarning from './sections/experimental/ExperimentalWarning.tsx';
-import P2pMarkup from './sections/experimental/P2pMarkup.tsx';
-
 import DebugSettings from '@app/containers/Settings/sections/experimental/DebugSettings.tsx';
 import AppVersions from '@app/containers/Settings/sections/experimental/AppVersions.tsx';
 import VisualMode from '@app/containers/Dashboard/components/VisualMode.tsx';
@@ -19,8 +17,6 @@ export const ExperimentalSettings = () => {
             <AnimatePresence>
                 {showExperimental && (
                     <>
-                        <P2pMarkup />
-                        {/* <P2poolStatsMarkup /> */}
                         <GpuDevices />
                         <DebugSettings />
                         <AppVersions />
