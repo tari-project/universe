@@ -22,7 +22,7 @@ export const WalletContainer = styled(m.div)`
     max-height: 508px;
     min-height: 178px;
     z-index: 2;
-    overflow: hidden;
+
     justify-content: space-between;
 
     @media (max-height: 670px) {

@@ -20,6 +20,7 @@ import History from './History.tsx';
 import useFetchTx from '@app/hooks/mining/useTransactions.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
 
 export default function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
@@ -77,7 +78,13 @@ export default function Wallet() {
         <WalletContainer>
             <WalletCornerButtons>
                 {paperWalletEnabled && (
-                    <CornerButton onClick={handleSyncButtonClick}>{t('paper-wallet-button')}</CornerButton>
+                    <SyncTooltip
+                        trigger={
+                            <CornerButton onClick={handleSyncButtonClick}>{t('paper-wallet-button')}</CornerButton>
+                        }
+                        title={t('paper-wallet-tooltip-title')}
+                        text={t('paper-wallet-tooltip-message')}
+                    />
                 )}
                 {balance ? (
                     <CornerButton onClick={handleShowClick}>

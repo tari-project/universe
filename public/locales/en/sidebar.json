@@ -11,5 +11,7 @@
     "recent-wins": "Recent wins",
     "paper-wallet-button": "Sync with Phone",
     "history-show-button": "History",
-    "history-hide-button": "Hide History"
+    "history-hide-button": "Hide History",
+    "paper-wallet-tooltip-title": "Sync with Phone",
+    "paper-wallet-tooltip-message": "Track your XTM anywhere by syncing your Universe wallet to Tari Aurora."
 }
