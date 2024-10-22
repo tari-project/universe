@@ -30,5 +30,9 @@
   "claimModalFieldPlaceholder": "Gib den Einladungscode ein",
   "claimModalFinePrint": "<strong>Bitte beachten:</strong> Edelsteine beanspruchen aktiviert Analysen, damit wir das Universum verbessern können.",
   "topTooltipTitle": "Testnet Belohnungen",
-  "topTooltipText": "Erhalte einen Tari Airdrop, indem du Edelsteine sammelst. Je mehr Edelsteine du verdienst, desto größer ist dein Airdrop."
+  "topTooltipText": "Erhalte einen Tari Airdrop, indem du Edelsteine sammelst. Je mehr Edelsteine du verdienst, desto größer ist dein Airdrop.",
+  "bonus-gems-earned": "Bonus gems earned",
+  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
+  "your-friend-accepted-gift": "One of your friends accepted your gift!",
+  "you-reached-your-giftinh-goal": "You reached your gifting goal!"
 }

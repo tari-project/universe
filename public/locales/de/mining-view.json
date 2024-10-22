@@ -11,5 +11,8 @@
     "cancel-mining": "Mining abbrechen",
     "waiting-for-idle": "Warten auf Leerlauf",
     "started-auto-mining": "Auto Mining gestartet"
-  }
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }

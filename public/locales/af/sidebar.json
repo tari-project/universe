@@ -8,5 +8,7 @@
   "mining-schedules-description": "Skeduleer jou myn-aktiwiteit",
   "lost-connection": "Verbinding met die Tari Netwerk verloor. Herverbinding..",
   "block": "Blok",
-  "recent-wins": "Onlangse oorwinnings"
+  "recent-wins": "Onlangse oorwinnings",
+  "show-history": "Show history",
+  "hide-history": "Hide history"
 }

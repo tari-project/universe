@@ -17,8 +17,10 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
 import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
+import { Trans, useTranslation } from 'react-i18next';
 
 export default function Miner() {
+    const { t } = useTranslation('mining-view', { useSuspense: false });
     useMiningStatesSync();
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
@@ -80,11 +82,11 @@ export default function Miner() {
                     useLowerCase
                 >
                     <Typography variant="h5" style={{ color: '#000' }}>
-                        Estimated earnings
+                        {t('estimated-earnings')}
                     </Typography>
-                    <Typography>You earn rewards for mining CPU and GPU separately</Typography>
+                    <Typography>{t('you-earn-rewards-separately')}</Typography>
                     <ExpandedContentTile>
-                        <Typography>CPU Estimated earnings</Typography>
+                        <Typography>CPU {t('estimated-earnings')}</Typography>
                         <ExpandableTileItem>
                             <Typography
                                 variant="h5"
@@ -97,12 +99,15 @@ export default function Miner() {
                                 {isMiningInProgress && isCpuMiningEnabled ? formatBalance(cpu_estimated_earnings) : '-'}
                             </Typography>
                             <Unit>
-                                <Typography>tXTM/day</Typography>
+                                <Typography>
+                                    <Trans>tXTM/</Trans>
+                                    {t('day')}
+                                </Typography>
                             </Unit>
                         </ExpandableTileItem>
                     </ExpandedContentTile>
                     <ExpandedContentTile>
-                        <Typography>GPU Estimated earnings</Typography>
+                        <Typography>GPU {t('estimated-earnings')}</Typography>
                         <ExpandableTileItem>
                             <Typography
                                 variant="h5"
@@ -115,7 +120,10 @@ export default function Miner() {
                                 {isMiningInProgress && isGpuMiningEnabled ? formatBalance(gpu_estimated_earnings) : '-'}
                             </Typography>
                             <Unit>
-                                <Typography>tXTM/day</Typography>
+                                <Typography>
+                                    <Trans>tXTM/</Trans>
+                                    {t('day')}
+                                </Typography>
                             </Unit>
                         </ExpandableTileItem>
                     </ExpandedContentTile>
