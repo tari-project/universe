@@ -1,3 +1,4 @@
+import { Trans } from 'react-i18next';
 import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper, XTMWrapper } from './CharSpinner.styles.ts';
 import { LayoutGroup } from 'framer-motion';
 
@@ -103,7 +104,12 @@ export default function CharSpinner({
                         <LayoutGroup id="characters">{charMarkup}</LayoutGroup>
                     </CharacterWrapper>
                 </SpinnerWrapper>
-                {value === '-' ? null : <XTMWrapper>tXTM</XTMWrapper>}
+                {/* // eslint-disable-next-line i18next/no-literal-string */}
+                {value === '-' ? null : (
+                    <XTMWrapper>
+                        <Trans>tXTM</Trans>
+                    </XTMWrapper>
+                )}
             </LayoutGroup>
         </Wrapper>
     );
