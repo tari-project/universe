@@ -29,7 +29,8 @@ export const ButtonWrapper = styled('div')`
 export const QRCodeWrapper = styled('div')`
     border-radius: 15px;
     background: #000;
-    padding: 20px;
+    padding: 10px;
+    min-width: 200px;
 `;
 
 export const QRCodeImage = styled('img')`
@@ -92,7 +93,7 @@ export const InputField = styled('input')`
     padding: 18px 18px 0 18px;
 
     color: #000;
-    font-size: 32px;
+    font-size: 18px;
     font-weight: 600;
     text-align: center;
 

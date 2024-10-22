@@ -1,9 +1,10 @@
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import { AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ConnectSection from './sections/ConnectSection/ConnectSection';
 import QRCodeSection from './sections/QRCodeSection/QRCodeSection';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
+import { invoke } from '@tauri-apps/api/tauri';
 
 export type PaperWalletModalSectionType = 'Connect' | 'QRCode';
 

@@ -16,10 +16,13 @@ import {
     Wrapper,
 } from './styles';
 import qrMainImage from '../../images/qr-main.png';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ShowIcon from '../../icons/ShowIcon';
 import HideIcon from '../../icons/HideIcon';
 import { useTranslation } from 'react-i18next';
+import { invoke } from '@tauri-apps/api/tauri';
+import { CircularProgress } from '@app/components/elements/CircularProgress';
+import QRCode from 'react-qr-code';
 
 interface Props {
     onDoneClick: () => void;
@@ -31,10 +34,31 @@ export default function QRCodeSection({ onDoneClick }: Props) {
     const [showCode, setShowCode] = useState(false);
     const [copied, setCopied] = useState(false);
 
-    const identificationCode = '123456';
+    const [qrCodeValue, setValue] = useState('');
+    const [identificationCode, setIdentificationCode] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const load = useCallback(async () => {
+        setIsLoading(true);
+        const r = await invoke('get_paper_wallet_details');
+
+        if (r) {
+            const url = r.qr_link;
+            const password = r.password;
+
+            setValue(url);
+            setIdentificationCode(password);
+        }
+        setIsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        load();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleTextButtonClick = () => {
-        console.log('Help');
+        // TODO add help link
     };
 
     const handleVisibleToggleClick = () => {
@@ -54,11 +78,22 @@ export default function QRCodeSection({ onDoneClick }: Props) {
         }
     }, [copied]);
 
+    if (isLoading)
+        return (
+            <Wrapper>
+                <CircularProgress />
+            </Wrapper>
+        );
+
     return (
         <Wrapper>
             <CodeWrapper>
                 <QRCodeWrapper>
-                    <QRCodeImage src={qrMainImage} alt="" />
+                    <QRCode
+                        size={200}
+                        style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
+                        value={qrCodeValue}
+                    />
                 </QRCodeWrapper>
 
                 <QRContentWrapper>
@@ -90,7 +125,9 @@ export default function QRCodeSection({ onDoneClick }: Props) {
                     <span>{t('qrcode.blackButton')}</span>
                 </BlackButton>
 
-                <TextButton onClick={handleTextButtonClick}>{t('qrcode.textButton')}</TextButton>
+                {
+                    // <TextButton onClick={handleTextButtonClick}>{t('qrcode.textButton')}</TextButton>
+                }
             </ButtonWrapper>
         </Wrapper>
     );
