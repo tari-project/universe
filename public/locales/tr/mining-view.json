@@ -12,5 +12,8 @@
     "waiting-for-idle": "Boşta Bekliyor",
     "started-auto-mining": "Otomatik Madencilik Başladı",
     "stop-mining": "Madenciliği Durdur"
-  }
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }

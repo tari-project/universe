@@ -8,8 +8,10 @@ import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { SeedWordsView } from './SeedWordsView';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { SeedWordsEdit } from './SeedWordsEdit';
+import { useTranslation } from 'react-i18next';
 
 const SeedWordsMarkup = () => {
+    const { t } = useTranslation('settings', { useSuspense: false });
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
@@ -32,7 +34,7 @@ const SeedWordsMarkup = () => {
     return (
         <SettingsGroupWrapper>
             <Stack direction="row" justifyContent="flex-start" alignItems="center" style={{ height: '34px' }}>
-                <Typography variant="h6">Seed Words</Typography>
+                <Typography variant="h6">{t('seed-words')}</Typography>
                 {!isEditing && (
                     <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
                         {seedWordsFetching ? (
