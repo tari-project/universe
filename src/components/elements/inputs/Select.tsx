@@ -30,9 +30,18 @@ interface Props {
     variant?: SelectVariant;
     disabled?: boolean;
     loading?: boolean;
+    forceHeight?: number;
 }
 
-export function Select({ options, selectedValue, disabled, loading, onChange, variant = 'primary' }: Props) {
+export function Select({
+    options,
+    selectedValue,
+    disabled,
+    loading,
+    onChange,
+    variant = 'primary',
+    forceHeight,
+}: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const isBordered = variant === 'bordered';
 
@@ -72,7 +81,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, va
                 $disabled={disabled}
                 $isBordered={isBordered}
             >
-                <SelectedOption $isBordered={isBordered}>
+                <SelectedOption $isBordered={isBordered} $forceHeight={forceHeight}>
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
                 </SelectedOption>

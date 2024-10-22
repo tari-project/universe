@@ -1,0 +1,16 @@
+{
+  "floor": "Минимум",
+  "current-block-time": "Текущее время блока",
+  "your-reward-is": "Ваше вознаграждение",
+  "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",
+  "mining-button-text": {
+    "starting-mining": "Запуск майнинга",
+    "start-mining": "Начать майнинг",
+    "pause-mining": "Пауза майнинга",
+    "changing-mode": "Изменение режима",
+    "cancel-mining": "Отмена майнинга",
+    "waiting-for-idle": "Ожидание простоя",
+    "started-auto-mining": "Авто-майнинг запущен",
+    "stop-mining": "Остановить майнинг"
+  }
+}

@@ -1,6 +1,8 @@
-import { ApplicationsVersions } from '@app/types/app-status';
+import { ApplicationsVersions, ExternalDependency } from '@app/types/app-status';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api';
+import { useAppConfigStore } from './useAppConfigStore';
+import { useMiningStore } from './useMiningStore';
 
 interface AppState {
     isAfterAutoUpdate: boolean;
@@ -18,7 +20,10 @@ interface AppState {
     isSettingsOpen: boolean;
     setIsSettingsOpen: (value: boolean) => void;
     isSettingUp: boolean;
-    settingUpFinished: () => void;
+    settingUpFinished: () => Promise<void>;
+    externalDependencies: ExternalDependency[];
+    fetchExternalDependencies: () => Promise<void>;
+    loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
     applications_versions?: ApplicationsVersions;
     fetchApplicationsVersions: () => Promise<void>;
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
@@ -42,7 +47,16 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     isSettingsOpen: false,
     setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
     isSettingUp: true,
-    settingUpFinished: () => set({ isSettingUp: false }),
+    settingUpFinished: async () => {
+        set({ isSettingUp: false });
+
+        // Proceed with auto mining when enabled
+        const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
+        if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
+            const { startMining } = useMiningStore.getState();
+            await startMining();
+        }
+    },
     applications_versions: undefined,
     fetchApplicationsVersions: async () => {
         try {
@@ -78,4 +92,15 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             console.error('Error updating applications versions', error);
         }
     },
+    externalDependencies: [],
+    fetchExternalDependencies: async () => {
+        try {
+            const externalDependencies = await invoke('get_external_dependencies');
+            set({ externalDependencies });
+        } catch (error) {
+            console.error('Error loading missing external dependencies', error);
+        }
+    },
+    missingExternalDependencies: [],
+    loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
 }));

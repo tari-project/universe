@@ -16,7 +16,8 @@
   },
   "tabs": {
     "general": "常规",
-    "experimental": "实验性"
+    "experimental": "实验性",
+    "mining": "挖矿"
   },
   "monero-address": {
     "title": "Monero 地址",
@@ -41,11 +42,34 @@
   "cancel": "取消",
   "reset-settings": "重置设置",
   "reset-permanently": "您确定要永久重置所有设置吗？",
-  "reset-wallet": "Reset wallet",
+  "reset-wallet": "重置钱包",
   "experimental-title": "实验性功能",
   "experimental-warning": "⚠️ 警告：这些功能正在积极开发中，可能会表现得不可预测。请谨慎操作。",
-  "connected-to-tari": "Connected to the Tari Network",
-  "not-connected-to-tari": "Not connected to the Tari Network",
-  "connected-peers": "Connected Peers",
-  "should-use-system-language": "Use system language"
+  "mine-on-app-start": {
+    "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "connected-to-tari": "已连接到Tari网络",
+  "not-connected-to-tari": "未连接到Tari网络",
+  "connected-peers": "已连接的节点",
+  "should-use-system-language": "使用系统语言",
+  "send-logs": "发送日志",
+  "your-feedback": "请描述您的问题",
+  "feedback-required": "反馈是必需的",
+  "your-reference": "您的参考",
+  "gpu-unavailable": "⚠️ GPU已禁用，因为您的硬件不支持",
+  "mining-toggle-warning": "更改生效时，挖矿将暂停。",
+  "applyInviteCode": "应用邀请代码",
+  "disconnect": "断开与空投的连接",
+  "inviteCode": "邀请代码",
+  "use-tor": "使用Tor",
+  "importing-wallet": "正在导入钱包",
+  "action-requires-restart": "此操作需要重启以应用更改",
+  "low-hash-rate-warning": "您的哈希率非常低。尝试关闭除Tari Universe以外的所有应用程序",
+  "invalid-seed-words": "输入24个用空格分隔的单词",
+  "report-issue": "报告问题"
 }

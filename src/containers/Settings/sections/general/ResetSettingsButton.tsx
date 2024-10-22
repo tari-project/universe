@@ -35,6 +35,8 @@ export const ResetSettingsButton = () => {
             .catch((e) => {
                 console.error('Error when resetting settings: ', e);
                 setError('Resetting settings failed: ' + e);
+                setLoading(false);
+                setOpen(false);
             });
     };
 
@@ -43,7 +45,7 @@ export const ResetSettingsButton = () => {
     }, [setOpen]);
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={setOpen} disableClose={loading}>
             <SettingsGroupWrapper>
                 <SettingsGroup>
                     <SettingsGroupContent>
@@ -61,6 +63,7 @@ export const ResetSettingsButton = () => {
                     <Typography variant="h2">{t('reset-settings')}</Typography>
                     <ToggleSwitch
                         checked={resetWallet}
+                        disabled={loading}
                         onChange={() => setResetWallet((p) => !p)}
                         label={t('reset-wallet')}
                     />

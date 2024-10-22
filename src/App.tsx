@@ -4,12 +4,10 @@ import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
 import { useUIStore } from './store/useUIStore.ts';
-import { useSetUp } from './hooks/useSetUp.ts';
-import { useEnvironment } from './hooks/useEnvironment.ts';
+
 import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
-import AirdropLogin from './containers/Airdrop/AirdropLogin/AirdropLogin.tsx';
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
 import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
@@ -19,10 +17,11 @@ import { useMemo } from 'react';
 import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
+import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
+import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
 
 export default function App() {
     useLangaugeResolver();
-    useSetUp();
 
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
@@ -47,6 +46,7 @@ export default function App() {
 
     return (
         <ThemeProvider>
+            <GlobalFontFace />
             <GlobalReset />
             <GlobalStyle />
             <LazyMotion features={domMax} strict>
@@ -58,16 +58,16 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <AutoUpdateDialog />
                     <CriticalErrorDialog />
+                    <ExternalDependenciesDialog />
                     <SettingsModal />
                     <LayoutGroup id="app-content">
-                        <AirdropLogin />
-                        <SplashScreen />
                         {shutDownMarkup}
                         {!visualMode || view != 'mining' ? (
                             <BackgroundImage layout transition={{ duration: 0.3 }} />
                         ) : null}
                         {mainMarkup}
                         <ErrorSnackbar />
+                        <SplashScreen />
                     </LayoutGroup>
                 </MotionConfig>
             </LazyMotion>

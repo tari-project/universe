@@ -19,7 +19,7 @@ export const TimerWrapper = styled.div`
     box-shadow: 80px -20px 60px 20px rgba(255, 255, 255, 0.6);
 `;
 export const TimerTypography = styled.div`
-    font-family: Druk, sans-serif;
+    font-family: DrukWide, sans-serif;
     font-variant-numeric: tabular-nums;
     font-size: 18px;
     font-weight: 700;

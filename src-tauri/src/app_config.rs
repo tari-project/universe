@@ -20,6 +20,8 @@ pub struct AppConfigFromFile {
     #[serde(default = "default_true")]
     auto_mining: bool,
     #[serde(default = "default_true")]
+    mine_on_app_start: bool,
+    #[serde(default = "default_true")]
     p2pool_enabled: bool,
     #[serde(default = "default_system_time")]
     last_binaries_update_timestamp: SystemTime,
@@ -37,8 +39,24 @@ pub struct AppConfigFromFile {
     has_system_language_been_proposed: bool,
     #[serde(default = "default_false")]
     should_always_use_system_language: bool,
+    #[serde(default = "default_false")]
+    should_auto_launch: bool,
     #[serde(default = "default_application_language")]
     application_language: String,
+    #[serde(default = "default_true")]
+    airdrop_ui_enabled: bool,
+    #[serde(default = "default_true")]
+    use_tor: bool,
+    #[serde(default = "default_false")]
+    paper_wallet_enabled: bool,
+    eco_mode_cpu_threads: Option<isize>,
+    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_options: Vec<String>,
+    ludicrous_mode_cpu_options: Vec<String>,
+    #[serde(default = "default_false")]
+    mmproxy_use_monero_fail: bool,
+    #[serde(default = "default_monero_nodes")]
+    mmproxy_monero_nodes: Vec<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -47,6 +65,7 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             auto_mining: true,
+            mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: false,
@@ -56,7 +75,17 @@ impl Default for AppConfigFromFile {
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
+            should_auto_launch: false,
             application_language: default_application_language(),
+            airdrop_ui_enabled: true,
+            paper_wallet_enabled: false,
+            use_tor: true,
+            eco_mode_cpu_options: Vec::new(),
+            ludicrous_mode_cpu_options: Vec::new(),
+            eco_mode_cpu_threads: None,
+            ludicrous_mode_cpu_threads: None,
+            mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            mmproxy_use_monero_fail: false,
         }
     }
 }
@@ -91,6 +120,7 @@ pub(crate) struct AppConfig {
     config_file: Option<PathBuf>,
     mode: MiningMode,
     auto_mining: bool,
+    mine_on_app_start: bool,
     p2pool_enabled: bool,
     last_binaries_update_timestamp: SystemTime,
     allow_telemetry: bool,
@@ -100,7 +130,17 @@ pub(crate) struct AppConfig {
     cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
+    should_auto_launch: bool,
     application_language: String,
+    airdrop_ui_enabled: bool,
+    paper_wallet_enabled: bool,
+    use_tor: bool,
+    eco_mode_cpu_threads: Option<isize>,
+    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_options: Vec<String>,
+    ludicrous_mode_cpu_options: Vec<String>,
+    mmproxy_use_monero_fail: bool,
+    mmproxy_monero_nodes: Vec<String>,
 }
 
 impl AppConfig {
@@ -110,6 +150,7 @@ impl AppConfig {
             config_file: None,
             mode: MiningMode::Eco,
             auto_mining: true,
+            mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
@@ -119,7 +160,17 @@ impl AppConfig {
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
+            should_auto_launch: false,
             application_language: default_application_language(),
+            airdrop_ui_enabled: true,
+            use_tor: true,
+            paper_wallet_enabled: false,
+            eco_mode_cpu_options: Vec::new(),
+            ludicrous_mode_cpu_options: Vec::new(),
+            eco_mode_cpu_threads: None,
+            ludicrous_mode_cpu_threads: None,
+            mmproxy_use_monero_fail: false,
+            mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
         }
     }
 
@@ -145,6 +196,7 @@ impl AppConfig {
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                 self.auto_mining = config.auto_mining;
+                self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
                 self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
                 self.allow_telemetry = config.allow_telemetry;
@@ -154,7 +206,17 @@ impl AppConfig {
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
                 self.should_always_use_system_language = config.should_always_use_system_language;
+                self.should_auto_launch = config.should_auto_launch;
                 self.application_language = config.application_language;
+                self.airdrop_ui_enabled = config.airdrop_ui_enabled;
+                self.use_tor = config.use_tor;
+                self.paper_wallet_enabled = config.paper_wallet_enabled;
+                self.eco_mode_cpu_options = config.eco_mode_cpu_options;
+                self.eco_mode_cpu_threads = config.eco_mode_cpu_threads;
+                self.ludicrous_mode_cpu_options = config.ludicrous_mode_cpu_options;
+                self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
+                self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
+                self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -167,6 +229,37 @@ impl AppConfig {
             self.config_version = 7;
             self.p2pool_enabled = true;
         }
+        if self.config_version <= 7 {
+            self.config_version = 8;
+            self.airdrop_ui_enabled = true;
+        }
+        if self.config_version <= 8 {
+            self.config_version = 9;
+            self.mine_on_app_start = true;
+        }
+    }
+
+    pub fn mmproxy_monero_nodes(&self) -> &Vec<String> {
+        &self.mmproxy_monero_nodes
+    }
+
+    pub fn mmproxy_use_monero_fail(&self) -> bool {
+        self.mmproxy_use_monero_fail
+    }
+
+    pub fn eco_mode_cpu_options(&self) -> &Vec<String> {
+        &self.eco_mode_cpu_options
+    }
+
+    pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
+        &self.ludicrous_mode_cpu_options
+    }
+    pub fn eco_mode_cpu_threads(&self) -> Option<isize> {
+        self.eco_mode_cpu_threads
+    }
+
+    pub fn ludicrous_mode_cpu_threads(&self) -> Option<isize> {
+        self.ludicrous_mode_cpu_threads
     }
 
     pub fn anon_id(&self) -> &str {
@@ -220,6 +313,34 @@ impl AppConfig {
 
     pub fn auto_mining(&self) -> bool {
         self.auto_mining
+    }
+
+    // pub async fn set_airdrop_ui_enabled(&mut self, airdrop_ui_enabled: bool) -> Result<(), anyhow::Error> {
+    //     self.airdrop_ui_enabled = airdrop_ui_enabled;
+    //     self.update_config_file().await?;
+    //     Ok(())
+    // }
+
+    pub fn should_auto_launch(&self) -> bool {
+        self.should_auto_launch
+    }
+
+    pub async fn set_should_auto_launch(
+        &mut self,
+        should_auto_launch: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.should_auto_launch = should_auto_launch;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_mine_on_app_start(
+        &mut self,
+        mine_on_app_start: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.mine_on_app_start = mine_on_app_start;
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_allow_telemetry(
@@ -292,17 +413,30 @@ impl AppConfig {
         }
     }
 
+    pub fn use_tor(&self) -> bool {
+        self.use_tor
+    }
+
+    pub async fn set_use_tor(&mut self, use_tor: bool) -> Result<(), anyhow::Error> {
+        self.use_tor = use_tor;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
     pub async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
-        let file = self.config_file.clone().unwrap();
-        let default_config = AppConfigFromFile::default();
+        let file = self
+            .config_file
+            .clone()
+            .ok_or_else(|| anyhow!("Config file not set"))?;
 
         let config = &AppConfigFromFile {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
             auto_mining: self.auto_mining,
+            mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
             allow_telemetry: self.allow_telemetry,
@@ -312,8 +446,17 @@ impl AppConfig {
             cpu_mining_enabled: self.cpu_mining_enabled,
             has_system_language_been_proposed: self.has_system_language_been_proposed,
             should_always_use_system_language: self.should_always_use_system_language,
+            should_auto_launch: self.should_auto_launch,
             application_language: self.application_language.clone(),
-            ..default_config
+            airdrop_ui_enabled: self.airdrop_ui_enabled,
+            paper_wallet_enabled: self.paper_wallet_enabled,
+            use_tor: self.use_tor,
+            eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
+            ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
+            eco_mode_cpu_threads: self.eco_mode_cpu_threads,
+            ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
+            mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
+            mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -324,7 +467,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    7
+    9
 }
 
 fn default_mode() -> String {
@@ -353,4 +496,8 @@ fn default_monero_address() -> String {
 
 fn default_application_language() -> String {
     "en".to_string()
+}
+
+fn default_monero_nodes() -> Vec<String> {
+    vec!["https://xmr-01.tari.com".to_string()]
 }

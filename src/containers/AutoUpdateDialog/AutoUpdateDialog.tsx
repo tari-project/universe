@@ -13,7 +13,7 @@ import { useUpdateStatus } from '@app/hooks/useUpdateStatus';
 import { UpdatedStatus } from './UpdatedStatus';
 import { useInterval } from '@app/hooks/useInterval.ts';
 
-const UPDATE_CHECK_INTERVAL = 1000 * 60 * 5; // 5 min
+const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60; // 1 hour
 function AutoUpdateDialog() {
     const setIsAfterAutoUpdate = useAppStateStore((s) => s.setIsAfterAutoUpdate);
     const [latestVersion, setLatestVersion] = useState<string>();
@@ -33,7 +33,7 @@ function AutoUpdateDialog() {
                 setIsAfterAutoUpdate(true);
             }
         } catch (error) {
-            console.error(error);
+            console.error('AutoUpdate error:', error);
             setIsAfterAutoUpdate(true);
         }
     }, [setIsAfterAutoUpdate]);
