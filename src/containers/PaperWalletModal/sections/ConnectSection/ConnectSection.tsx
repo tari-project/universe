@@ -26,7 +26,7 @@ export default function ConnectSection({ setSection }: Props) {
     //     console.log('Learn more about Tari Aurora');
     // };
 
-    const loadLinkData = useCallback(async () => {
+    const loadPaperWalletData = useCallback(async () => {
         setIsLoading(true);
         const r = await invoke('get_paper_wallet_details');
 
@@ -41,7 +41,7 @@ export default function ConnectSection({ setSection }: Props) {
     }, [setIdentificationCode, setIsLoading, setQrCodeValue]);
 
     const handleBlackButtonClick = () => {
-        loadLinkData();
+        loadPaperWalletData();
         setSection('QRCode');
     };
 
