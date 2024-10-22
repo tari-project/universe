@@ -6,6 +6,7 @@ import {
     MinerMetrics,
     P2poolStatsResult,
     TariWalletDetails,
+    TorConfig,
     TransactionInfo,
 } from './app-status';
 import { Language } from '@app/i18initializer';
@@ -56,6 +57,9 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
+    function invoke(param: 'get_tor_config'): Promise<TorConfig>;
+    function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;
+    function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
