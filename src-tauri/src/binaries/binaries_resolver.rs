@@ -1,8 +1,10 @@
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use log::info;
 use regex::Regex;
 use semver::Version;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -15,16 +17,18 @@ use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
+pub const LOG_TARGET: &str = "tari::universe::binary_resolver";
+
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionDownloadInfo {
     pub(crate) version: Version,
     pub(crate) assets: Vec<VersionAsset>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionAsset {
     pub(crate) url: String,
     pub(crate) name: String,
@@ -78,6 +82,7 @@ impl BinaryResolver {
                 Box::new(XmrigVersionApiAdapter {}),
                 None,
                 true,
+                Some("xmrig".to_string()),
             ),
         );
 
@@ -93,6 +98,7 @@ impl BinaryResolver {
                 }),
                 None,
                 true,
+                Some("tarigpuminer".to_string()),
             ),
         );
 
@@ -108,6 +114,7 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
+                Some("tari-suite".to_string()),
             ),
         );
 
@@ -123,6 +130,7 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
+                Some("tari-suite".to_string()),
             ),
         );
 
@@ -138,6 +146,7 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
+                Some("tari-suite".to_string()),
             ),
         );
 
@@ -153,6 +162,7 @@ impl BinaryResolver {
                 }),
                 None,
                 true,
+                Some("sha-p2pool".to_string()),
             ),
         );
 
@@ -164,6 +174,7 @@ impl BinaryResolver {
                 Box::new(TorReleaseAdapter {}),
                 None,
                 true,
+               Some("tor".to_string()) ,
             ),
         );
 
@@ -208,6 +219,8 @@ impl BinaryResolver {
         progress_tracker: ProgressTracker,
         should_check_for_update: bool,
     ) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "Initializing binary: {} | should check for update: {}", binary.name(), should_check_for_update);
+
         let manager = self
             .managers
             .get_mut(&binary)
@@ -253,6 +266,14 @@ impl BinaryResolver {
             None => return Err(anyhow!("No version selected for binary {}", binary.name())),
         }
 
+        Ok(())
+    }
+
+
+    pub async fn remove_all_caches(&mut self) -> Result<(), Error> {
+        for manager in self.managers.values_mut() {
+            manager.remove_cached_releases()?;
+        }
         Ok(())
     }
 
