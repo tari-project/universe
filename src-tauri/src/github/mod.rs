@@ -107,7 +107,12 @@ async fn list_releases_from(
         ReleaseSource::Mirror => get_mirror_url(repo_owner, repo_name),
     };
 
-    let user_agent = format!("universe {}({}) | {}", env!("CARGO_PKG_VERSION"),std::env::consts::OS, repo_name);
+    let user_agent = format!(
+        "universe {}({}) | {}",
+        env!("CARGO_PKG_VERSION"),
+        std::env::consts::OS,
+        repo_name
+    );
 
     let response = client
         .get(&url)

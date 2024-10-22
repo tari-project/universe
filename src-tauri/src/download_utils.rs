@@ -26,7 +26,7 @@ pub async fn download_file_with_retries(
 ) -> Result<(), Error> {
     let mut retries = 0;
     loop {
-        match download_file(url, destination, progress_tracker.clone(),user_agent).await {
+        match download_file(url, destination, progress_tracker.clone(), user_agent).await {
             Ok(_) => return Ok(()),
             Err(err) => {
                 if retries >= 3 {
@@ -44,10 +44,14 @@ async fn download_file(
     url: &str,
     destination: &Path,
     progress_tracker: ProgressTracker,
-        user_agent: &str,
+    user_agent: &str,
 ) -> Result<(), anyhow::Error> {
     let client = reqwest::Client::new();
-    let response = client.get(url).header("User-Agent", user_agent).send().await?;
+    let response = client
+        .get(url)
+        .header("User-Agent", user_agent)
+        .send()
+        .await?;
 
     // Ensure the directory exists
     if let Some(parent) = destination.parent() {

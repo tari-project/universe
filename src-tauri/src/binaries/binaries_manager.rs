@@ -401,12 +401,17 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
-        let user_agent = format!("universe {}({}) | {}", env!("CARGO_PKG_VERSION"),std::env::consts::OS, self.binary_name);
+        let user_agent = format!(
+            "universe {}({}) | {}",
+            env!("CARGO_PKG_VERSION"),
+            std::env::consts::OS,
+            self.binary_name
+        );
         download_file_with_retries(
             asset.url.as_str(),
             &in_progress_file_zip,
             progress_tracker.clone(),
-            user_agent.as_str()
+            user_agent.as_str(),
         )
         .await
         .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
