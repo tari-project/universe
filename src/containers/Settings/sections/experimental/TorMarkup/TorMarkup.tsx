@@ -14,9 +14,10 @@ import { invoke } from '@tauri-apps/api/tauri';
 import { Typography } from '@app/components/elements/Typography';
 import { TorConfig } from '@app/types/app-status';
 import { Input } from '@app/components/elements/inputs/Input';
-import { Button } from '@app/components/elements/Button';
+
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 import { Stack } from '@app/components/elements/Stack.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value

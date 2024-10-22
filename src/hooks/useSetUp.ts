@@ -30,6 +30,14 @@ export function useSetUp() {
     const { loadExternalDependencies } = useAppStateStore();
 
     useEffect(() => {
+        async function initialize() {
+            await fetchAppConfig();
+        }
+        initialize();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
         const unlistenPromise = listen<ExternalDependency[]>('missing-applications', (event) => {
             const missingDependencies = event.payload;
             loadExternalDependencies(missingDependencies);
@@ -40,14 +48,6 @@ export function useSetUp() {
             unlistenPromise.then((unlisten) => unlisten());
         };
     }, [loadExternalDependencies, setShowExternalDependenciesDialog]);
-
-    useEffect(() => {
-        async function initialize() {
-            await fetchAppConfig();
-        }
-        initialize();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     useEffect(() => {
         if (backendInMemoryConfig?.airdropApiUrl) {
@@ -75,6 +75,7 @@ export function useSetUp() {
                         fetchApplicationsVersionsWithRetry();
                         setView('mining');
                         setAnimationState('showVisual');
+
                         setSeenPermissions(true);
                     }
                     break;

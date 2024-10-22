@@ -3,8 +3,7 @@ import { Typography } from '@app/components/elements/Typography';
 import styled from 'styled-components';
 
 export const StyledInput = styled(Input)<{ hasError?: boolean }>(({ theme, hasError }) => ({
-    borderColor: hasError ? theme.palette.error.main : theme.palette.colors.darkAlpha[10],
-    // marginLeft: '15px',
+    borderColor: hasError ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10],
 }));
 
 export const ErrorTypography = styled(Typography)(({ theme }) => ({
