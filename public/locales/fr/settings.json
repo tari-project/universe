@@ -62,6 +62,7 @@
   "send-logs": "Soumettre un problème et des journaux",
   "logs": "Journaux",
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Mots de récupération",
   "feedback-required": "Les commentaires sont requis",
   "low-hash-rate-warning": "Votre hashrate est très bas. Essayez de fermer toutes les applications sauf Tari Universe",

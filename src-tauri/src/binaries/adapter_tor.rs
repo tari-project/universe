@@ -26,7 +26,8 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
         let client = reqwest::Client::new();
         for _ in 0..3 {
-            let response = client.head(&cdn_tor_bundle_url).send().await;
+            let cloned_cdn_tor_bundle_url = cdn_tor_bundle_url.clone();
+            let response = client.head(cloned_cdn_tor_bundle_url).send().await;
 
             if let Ok(resp) = response {
                 if resp.status().is_success() {

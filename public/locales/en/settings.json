@@ -75,6 +75,7 @@
     "reset-settings": "Reset Settings",
     "reset-wallet": "Reset wallet",
 
+    "tari-wallet-address": "Tari Wallet Address",
     "seed-words": "Seed words",
     "send-logs": "Submit an Issue & Logs",
     "settings": "Settings",
@@ -106,5 +107,12 @@
     "errors": {
         "invalid-control-port": "Control Port configuration is invalid",
         "invalid-bridge": "Bridge configuration is invalid"
+    },
+    "paper-wallet": {
+        "link-tari-aurora": "Link Tari Aurora",
+        "connect-wallet-to-phone": "Connect your Tari Universe wallet to your phone",
+        "load-qr-code": "Load QR code",
+        "do-not-share-this-code": "Don&apos;t share this code with anyone",
+        "passphrase": "Passphrase"
     }
 }
