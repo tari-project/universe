@@ -105,6 +105,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
             //         .to_string(),
             // );
             args.push("-p".to_string());
+            args.push("use_libtor=false".to_string());
+            args.push("-p".to_string());
             args.push(format!(
                 "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/{0}",
                 self.tcp_listener_port
@@ -296,6 +298,7 @@ impl MinotariNodeStatusMonitor {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
 
+        let mut last_state: Option<i32> = None;
         loop {
             if self.shutdown_signal.is_triggered() {
                 break;
@@ -308,72 +311,77 @@ impl MinotariNodeStatusMonitor {
                 break;
             }
 
-            if sync_progress.state == SyncState::Startup as i32 {
-                progress_tracker
-                    .update(
-                        "preparing-for-initial-sync".to_string(),
-                        Some(HashMap::from([
-                            (
-                                "initial_connected_peers".to_string(),
-                                sync_progress.initial_connected_peers.to_string(),
-                            ),
-                            (
-                                "required_peers".to_string(),
-                                self.required_sync_peers.to_string(),
-                            ),
-                        ])),
-                        10,
-                    )
-                    .await;
-            } else if sync_progress.state == SyncState::Header as i32 {
-                let progress = if sync_progress.tip_height == 0 {
-                    10
-                } else {
-                    10 + (30 * sync_progress.local_height / sync_progress.tip_height)
-                };
+            let current_state = sync_progress.state;
+            if last_state.is_none() || last_state != Some(current_state) {
+                last_state = Some(current_state);
+                if sync_progress.state == SyncState::Startup as i32 {
+                    progress_tracker
+                        .update(
+                            "preparing-for-initial-sync".to_string(),
+                            Some(HashMap::from([
+                                (
+                                    "initial_connected_peers".to_string(),
+                                    sync_progress.initial_connected_peers.to_string(),
+                                ),
+                                (
+                                    "required_peers".to_string(),
+                                    self.required_sync_peers.to_string(),
+                                ),
+                            ])),
+                            10,
+                        )
+                        .await;
+                } else if sync_progress.state == SyncState::Header as i32 {
+                    let progress = if sync_progress.tip_height == 0 {
+                        10
+                    } else {
+                        10 + (30 * sync_progress.local_height / sync_progress.tip_height)
+                    };
 
-                progress_tracker
-                    .update(
-                        "waiting-for-header-sync".to_string(),
-                        Some(HashMap::from([
-                            (
-                                "local_height".to_string(),
-                                sync_progress.local_height.to_string(),
-                            ),
-                            (
-                                "tip_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                        ])),
-                        progress,
-                    )
-                    .await;
-            } else if sync_progress.state == SyncState::Block as i32 {
-                let progress = if sync_progress.tip_height == 0 {
-                    40
-                } else {
-                    40 + (60 * sync_progress.local_height / sync_progress.tip_height)
-                };
+                    progress_tracker
+                        .update(
+                            "waiting-for-header-sync".to_string(),
+                            Some(HashMap::from([
+                                (
+                                    "local_height".to_string(),
+                                    sync_progress.local_height.to_string(),
+                                ),
+                                (
+                                    "tip_height".to_string(),
+                                    sync_progress.tip_height.to_string(),
+                                ),
+                            ])),
+                            progress,
+                        )
+                        .await;
+                } else if sync_progress.state == SyncState::Block as i32 {
+                    let progress = if sync_progress.tip_height == 0 {
+                        40
+                    } else {
+                        40 + (60 * sync_progress.local_height / sync_progress.tip_height)
+                    };
 
-                progress_tracker
-                    .update(
-                        "waiting-for-block-sync".to_string(),
-                        Some(HashMap::from([
-                            (
-                                "local_height".to_string(),
-                                sync_progress.local_height.to_string(),
-                            ),
-                            (
-                                "tip_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                        ])),
-                        progress,
-                    )
-                    .await;
-            } else {
-                //do nothing
+                    progress_tracker
+                        .update(
+                            "waiting-for-block-sync".to_string(),
+                            Some(HashMap::from([
+                                (
+                                    "local_height".to_string(),
+                                    sync_progress.local_height.to_string(),
+                                ),
+                                (
+                                    "tip_height".to_string(),
+                                    sync_progress.tip_height.to_string(),
+                                ),
+                            ])),
+                            progress,
+                        )
+                        .await;
+                } else {
+                    //do nothing
+                }
             }
+
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Ok(())

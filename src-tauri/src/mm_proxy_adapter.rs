@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::time::Instant;
 
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -8,6 +7,7 @@ use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::warn;
+// use log::warn;
 use reqwest::Client;
 use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
@@ -23,6 +23,8 @@ pub(crate) struct MergeMiningProxyConfig {
     pub p2pool_grpc_port: u16,
     pub coinbase_extra: String,
     pub tari_address: TariAddress,
+    pub use_monero_fail: bool,
+    pub monero_nodes: Vec<String>,
 }
 
 impl MergeMiningProxyConfig {
@@ -103,7 +105,17 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
+            "-p".to_string(),
+            format!(
+                "merge_mining_proxy.use_dynamic_fail_data={}",
+                config.use_monero_fail
+            ),
         ];
+
+        for node in &config.monero_nodes {
+            args.push("-p".to_string());
+            args.push(format!("merge_mining_proxy.monerod_url={}", node));
+        }
 
         // TODO: uncomment if p2pool is needed in CPU mining
         if config.p2pool_enabled {
@@ -131,7 +143,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             },
             MergeMiningProxyStatusMonitor {
                 json_rpc_port: config.port,
-                start_time: Instant::now(),
+                start_time: std::time::Instant::now(),
             },
         ))
     }
@@ -154,17 +166,17 @@ pub struct MergeMiningProxyStatusMonitor {
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        let monero_donate_address = "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A";
-
+        // TODO: Monero calls are really slow, so temporarily changing to Healthy
+        // HealthStatus::Healthy
         if self
-            .get_block_template(monero_donate_address)
+            .get_version()
             .await
             .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
             .is_ok()
         {
             HealthStatus::Healthy
         } else {
-            if self.start_time.elapsed().as_secs() < 10 {
+            if self.start_time.elapsed().as_secs() <30 {
                 return HealthStatus::Healthy;
             }
             // HealthStatus::Unhealthy
@@ -175,14 +187,14 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
 }
 
 impl MergeMiningProxyStatusMonitor {
-    pub async fn get_block_template(&self, monero_address: &str) -> Result<String, Error> {
+    #[allow(dead_code)]
+    pub async fn get_version(&self) -> Result<String, Error> {
         let rpc_url = format!("http://127.0.0.1:{}/json_rpc", self.json_rpc_port);
         let request_body = json!({
             "jsonrpc": "2.0",
             "id": "0",
-            "method": "get_block_template",
+            "method": "get_version",
             "params": {
-                "wallet_address": monero_address,
             }
         });
 

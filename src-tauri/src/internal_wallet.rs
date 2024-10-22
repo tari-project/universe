@@ -22,6 +22,7 @@ use tari_core::transactions::key_manager::{
     TransactionKeyManagerInterface,
 };
 use tari_key_manager::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
@@ -95,6 +96,41 @@ impl InternalWallet {
 
     pub fn get_tari_address(&self) -> TariAddress {
         self.tari_address.clone()
+    }
+
+    pub async fn get_paper_wallet_details(&self) -> Result<PaperWalletConfig, anyhow::Error> {
+        let passphrase = match &self.config.passphrase {
+            Some(passphrase) => passphrase.clone(),
+            None => {
+                let entry = Entry::new(APPLICATION_FOLDER_ID, "internal_wallet")?;
+                SafePassword::from(entry.get_password()?)
+            }
+        };
+
+        let seed_binary = Vec::<u8>::from_base58(&self.config.seed_words_encrypted_base58)
+            .map_err(|e| anyhow!(e.to_string()))?;
+        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, Some(passphrase))?;
+
+        let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
+        let seed_file = seed.encipher(Some(SafePassword::from(&raw_passphrase)))?;
+        let seed_words_encrypted_base58 = seed_file.to_base58();
+
+        let network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .trim()
+            .to_lowercase();
+
+        let link = format!(
+            "tari://{}/paper_wallet?private_key={}",
+            network, seed_words_encrypted_base58,
+        );
+
+        let paper_wallet_details = PaperWalletConfig {
+            qr_link: link,
+            password: raw_passphrase,
+        };
+
+        Ok(paper_wallet_details)
     }
 
     async fn create_new_wallet(
@@ -245,4 +281,9 @@ pub struct WalletConfig {
     spend_public_key_hex: String,
     seed_words_encrypted_base58: String,
     passphrase: Option<SafePassword>,
+}
+#[derive(Debug, Serialize, Clone)]
+pub struct PaperWalletConfig {
+    qr_link: String,
+    password: String,
 }

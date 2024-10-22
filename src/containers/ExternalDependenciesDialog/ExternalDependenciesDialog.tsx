@@ -1,4 +1,4 @@
-import { Button } from '@app/components/elements/Button';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Divider } from '@app/components/elements/Divider';
 import { Stack } from '@app/components/elements/Stack';
@@ -19,6 +19,7 @@ export const ExternalDependenciesDialog = () => {
     const setView = useUIStore((s) => s.setView);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const [isRestarting, setIsRestarting] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(false);
 
     const [installationSlot, setInstallationSlot] = useState<number | null>(null);
 
@@ -34,18 +35,24 @@ export const ExternalDependenciesDialog = () => {
 
     const handleContinue = useCallback(() => {
         setShowExternalDependenciesDialog(false);
-        invoke('setup_application').catch((e) => {
-            setCriticalError(`Failed to setup application: ${e}`);
-            setView('mining');
-        });
-    }, [setCriticalError, setShowExternalDependenciesDialog, setView]);
+        if (isInitializing) return;
+        setIsInitializing(true);
+        invoke('setup_application')
+            .catch((e) => {
+                setCriticalError(`Failed to setup application: ${e}`);
+                setView('mining');
+            })
+            .then(() => {
+                setIsInitializing(false);
+            });
+    }, [setCriticalError, setShowExternalDependenciesDialog, setView, isInitializing]);
 
     const shouldAllowContinue = Object.values(externalDependencies).every(
         (missingDependency) => missingDependency.status === ExternalDependencyStatus.Installed
     );
 
     return (
-        <Dialog open={!!showExternalDependenciesDialog}>
+        <Dialog open={showExternalDependenciesDialog}>
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4}>
@@ -67,18 +74,16 @@ export const ExternalDependenciesDialog = () => {
                         </>
                     ))}
                     <Stack direction="row" justifyContent="flex-end" gap={8}>
-                        <Button
-                            variant="squared"
-                            color="secondary"
+                        <SquaredButton
+                            color="grey"
                             size="medium"
                             onClick={handleContinue}
                             disabled={isRestarting || !shouldAllowContinue}
                             style={{ width: '100px' }}
                         >
                             {t('continue')}
-                        </Button>
-                        <Button
-                            variant="squared"
+                        </SquaredButton>
+                        <SquaredButton
                             color="error"
                             size="medium"
                             onClick={handleRestart}
@@ -86,7 +91,7 @@ export const ExternalDependenciesDialog = () => {
                             style={{ width: '100px' }}
                         >
                             {t('restart')}
-                        </Button>
+                        </SquaredButton>
                     </Stack>
                 </Stack>
             </DialogContent>

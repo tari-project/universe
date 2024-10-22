@@ -1,5 +1,6 @@
 {
   "settings": "Instellings",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Saadwoorde",
   "change-language": "Verander taal",
   "logs": "Verslae",
@@ -20,6 +21,18 @@
   "reset-settings": "Stel Instellings Terug",
   "reset-permanently": "Is jy seker jy wil alle instellings permanent terugstel?",
   "reset-wallet": "Stel beursie terug",
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
+  },
   "connected-to-tari": "Gekoppel aan die Tari Netwerk",
   "not-connected-to-tari": "Nie aan die Tari Netwerk gekoppel nie",
   "connected-peers": "Gekoppelde Eweknieë",
@@ -63,5 +76,13 @@
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
   "yes": "Yes",
   "cancel": "Cancel",
-  "report-issue": "Rapporteer \"n probleem"
+  "report-issue": "Rapporteer \"n probleem",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }

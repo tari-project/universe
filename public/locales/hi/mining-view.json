@@ -12,5 +12,8 @@
     "waiting-for-idle": "निष्क्रिय होने की प्रतीक्षा",
     "started-auto-mining": "स्वचालित माइनिंग शुरू हुई",
     "stop-mining": "माइनिंग रोकें"
-  }
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }
