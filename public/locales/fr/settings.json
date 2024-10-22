@@ -72,5 +72,13 @@
   "report-issue": "Signaler un problème",
   "importing-wallet": "Importation du portefeuille",
   "action-requires-restart": "Cette action nécessite un redémarrage pour appliquer les modifications",
-  "invalid-seed-words": "Entrez 24 mots séparés par des espaces"
+  "invalid-seed-words": "Entrez 24 mots séparés par des espaces",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }

@@ -107,6 +107,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
             //         .to_string(),
             // );
             args.push("-p".to_string());
+            args.push("use_libtor=false".to_string());
+            args.push("-p".to_string());
             args.push(format!(
                 "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/{0}",
                 self.tcp_listener_port

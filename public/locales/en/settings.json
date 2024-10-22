@@ -98,5 +98,13 @@
 
     "yes": "Yes",
     "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
-    "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"
+    "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
+    "app-restart-required": "App restart required",
+    "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+    "control-port": "Control Port",
+    "save": "Save",
+    "errors": {
+        "invalid-control-port": "Control Port configuration is invalid",
+        "invalid-bridge": "Bridge configuration is invalid"
+    }
 }
