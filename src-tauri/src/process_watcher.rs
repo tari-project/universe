@@ -130,13 +130,15 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                     //   return Err(e);
                                    }
                                }
-                               // Restart dead app
-                               sleep(Duration::from_secs(2)).await;
-                               info!(target: LOG_TARGET, "Stop Requested: {}", child.shutdown.is_triggered());
-                               warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
-                               child.start().await?;
-                               // Wait for a bit before checking health again
-                               sleep(Duration::from_secs(10)).await;
+                               // Restart dead app if not shutting down
+                               
+                               if !app_shutdown.is_triggered() {
+                                    sleep(Duration::from_secs(2)).await;
+                                   warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
+                                   child.start().await?;
+                                   // Wait for a bit before checking health again
+                                   sleep(Duration::from_secs(10)).await;
+                               }
                             //    break;
                             }
                       },
