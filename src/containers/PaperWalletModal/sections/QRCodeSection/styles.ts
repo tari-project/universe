@@ -27,7 +27,7 @@ export const ButtonWrapper = styled('div')`
 
 export const QRCodeWrapper = styled('div')`
     border-radius: 15px;
-    background: #000;
+    background: transparent;
     padding: 10px;
     min-width: 200px;
 
