@@ -17,6 +17,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub poll_time: tokio::time::Duration,
     pub health_timeout: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
+    stop_requested: bool,
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -28,6 +29,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             poll_time: tokio::time::Duration::from_secs(5),
             health_timeout: tokio::time::Duration::from_secs(4),
             status_monitor: None,
+            stop_requested: false,
         }
     }
 }
@@ -59,7 +61,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         self.internal_shutdown = Shutdown::new();
         let mut inner_shutdown = self.internal_shutdown.to_signal();
-
+        let is_stop_requested = self.stop_requested;
+        
         let poll_time = self.poll_time;
         let health_timeout = self.health_timeout;
 
@@ -132,6 +135,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                }
                                // Restart dead app
                                sleep(Duration::from_secs(2)).await;
+                               info!(target: LOG_TARGET, "Stop Requested: {}", is_stop_requested);
                                warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
                                child.start().await?;
                                // Wait for a bit before checking health again
@@ -173,6 +177,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     }
 
     pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
+        self.stop_requested = true;
         self.internal_shutdown.trigger();
         if let Some(task) = self.watcher_task.take() {
             let exit_code = task.await??;
