@@ -6374,7 +6374,6 @@ dependencies = [
  "blake2",
  "chrono",
  "device_query",
- "dirs-next 2.0.0",
  "dunce",
  "flate2",
  "futures-lite 2.3.0",
