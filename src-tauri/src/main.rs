@@ -570,11 +570,10 @@ async fn setup_inner(
         .await?;
 
     let mut binary_resolver = BinaryResolver::current().write().await;
-    // let should_check_for_update = now
-    //     .duration_since(last_binaries_update_timestamp)
-    //     .unwrap_or(Duration::from_secs(0))
-    //     > Duration::from_secs(60 * 60 * 6);
-    let should_check_for_update = true;
+    let should_check_for_update = now
+        .duration_since(last_binaries_update_timestamp)
+        .unwrap_or(Duration::from_secs(0))
+        > Duration::from_secs(60 * 60 * 6);
 
     if use_tor && cfg!(target_os = "windows") {
         progress.set_max(5).await;

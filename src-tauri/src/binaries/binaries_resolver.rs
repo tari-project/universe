@@ -174,7 +174,7 @@ impl BinaryResolver {
                 Box::new(TorReleaseAdapter {}),
                 None,
                 true,
-               Some("tor".to_string()) ,
+                Some("tor".to_string()),
             ),
         );
 
@@ -268,7 +268,6 @@ impl BinaryResolver {
 
         Ok(())
     }
-
 
     pub async fn remove_all_caches(&mut self) -> Result<(), Error> {
         for manager in self.managers.values_mut() {

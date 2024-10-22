@@ -72,8 +72,10 @@ impl BinaryManager {
         self.binary_subfolder.as_ref()
     }
 
-    
-    fn create_file_with_cached_releases(&self, data: Vec<VersionDownloadInfo>) -> Result<(), Error> {
+    fn create_file_with_cached_releases(
+        &self,
+        data: Vec<VersionDownloadInfo>,
+    ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Creating file with cached releases");
         if self.releases_cache_id.is_none() {
             return Err(anyhow!("No cache id provided"));
@@ -95,7 +97,8 @@ impl BinaryManager {
         }
 
         let binary_folder = self.adapter.get_binary_folder().ok();
-        let cache_file = binary_folder.map(|path| path.join(self.releases_cache_id.as_ref().unwrap()));
+        let cache_file =
+            binary_folder.map(|path| path.join(self.releases_cache_id.as_ref().unwrap()));
 
         cache_file.map_or(false, |path| path.exists())
     }
