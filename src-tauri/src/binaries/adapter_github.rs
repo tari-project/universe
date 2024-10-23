@@ -41,7 +41,14 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .join(format!("{}.sha256", asset.name));
         let checksum_url = format!("{}.sha256", asset.url);
 
-        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
+        let user_agent = format!(
+            "universe {}({}) | {}",
+            env!("CARGO_PKG_VERSION"),
+            std::env::consts::OS,
+            "github adapter"
+        );
+
+        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker, user_agent.as_str()).await {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
