@@ -8,6 +8,7 @@ import {
     TariWalletDetails,
     TorConfig,
     TransactionInfo,
+    MaxConsumptionLevels,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -36,7 +37,11 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'set_auto_mining', payload: { autoMining: boolean }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
     function invoke(param: 'update_applications'): Promise<void>;
-    function invoke(param: 'set_mode', payload: { mode: modeType }): Promise<void>;
+    function invoke(
+        param: 'set_mode',
+        payload: { mode: modeType; customCpuUsage: number; customGpuUsage: number }
+    ): Promise<void>;
+    function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
     function invoke(param: 'set_theme', payload: { theme: themeType }): Promise<void>;
     function invoke(param: 'get_seed_words'): Promise<string[]>;
     function invoke(param: 'get_applications_versions'): Promise<ApplicationsVersions>;

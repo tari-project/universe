@@ -29,6 +29,8 @@ export interface AppConfig {
     paper_wallet_enabled: boolean;
     use_tor: boolean;
     auto_update: boolean;
+    custom_cpu_usage: number;
+    custom_gpu_usage: number;
 }
 
 export enum ExternalDependencyStatus {
@@ -214,4 +216,9 @@ export interface ApplicationsVersions {
 export interface PaperWalletDetails {
     qr_link: string;
     password: string;
+}
+
+export interface MaxConsumptionLevels {
+    max_cpu_available: number;
+    max_gpu_available: number;
 }

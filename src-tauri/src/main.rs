@@ -13,7 +13,8 @@ use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::sleep;
+use std::thread::{sleep, available_parallelism};
+use std::collections::HashMap;
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
@@ -160,16 +161,17 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
 #[tauri::command]
 async fn set_mode(
     mode: String,
-    custom_max_cpu_usage: Option<isize>,
-    custom_max_gpu_usage: Option<isize>,
+    custom_cpu_usage: Option<f64>,
+    custom_gpu_usage: Option<f64>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
     state
         .config
         .write()
         .await
-        .set_mode(mode, custom_max_cpu_usage, custom_max_gpu_usage)
+        .set_mode(mode, custom_cpu_usage.map(|val| val as isize), custom_gpu_usage.map(|val| val as isize))
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -178,6 +180,24 @@ async fn set_mode(
     }
 
     Ok(())
+}
+
+#[tauri::command]
+async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
+    let timer = Instant::now();
+    let max_cpu_available = available_parallelism().map(|cores| cores.get() as i32)  // Convert NonZeroUsize to i32
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
+    }
+    info!(target: LOG_TARGET, "CPU cores: {:?}", max_cpu_available);
+
+    let mut result = HashMap::new();
+    result.insert("max_cpu_available".to_string(), max_cpu_available);
+    result.insert("max_gpu_available".to_string(), 800);
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -2076,6 +2096,7 @@ fn main() {
             import_seed_words,
             set_auto_update,
             get_tor_config,
+            get_max_consumption_levels,
             set_tor_config,
             fetch_tor_bridges
         ])

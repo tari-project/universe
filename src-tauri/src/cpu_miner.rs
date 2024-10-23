@@ -64,11 +64,14 @@ impl CpuMiner {
                 1
             }
         };
-        let cpu_max_percentage = match mode {
-            MiningMode::Eco => cpu_miner_config
+
+        let eco_mode_isize = cpu_miner_config
                 .eco_mode_cpu_percentage
-                .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100isize),
-            MiningMode::Custom => (custom_max_cpu_usage.unwrap_or(ECO_MODE_CPU_USAGE) * max_cpu_available) / 100isize,
+                .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100isize);
+
+        let cpu_max_percentage = match mode {
+            MiningMode::Eco => eco_mode_isize,
+            MiningMode::Custom => custom_max_cpu_usage.unwrap_or(eco_mode_isize),
             MiningMode::Ludicrous => -1, // Use all
         };
 
