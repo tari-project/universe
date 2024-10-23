@@ -1,3 +1,4 @@
+use crate::credential_manager::Credential;
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
@@ -7,8 +8,6 @@ use monero_address_creator::network::Mainnet;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 use monero_address_creator::Seed as MoneroSeed;
-use tari_utilities::message_format::MessageFormat;
-use tari_utilities::SafePassword;
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 use crate::credential_manager::CredentialManager;
 
@@ -35,6 +34,7 @@ pub struct AppConfigFromFile {
     anon_id: String,
     #[serde(default = "default_monero_address")]
     monero_address: String,
+    #[serde(default = "default_false")]
     monero_address_is_provided: bool,
     #[serde(default = "default_true")]
     gpu_mining_enabled: bool,
@@ -508,25 +508,26 @@ fn default_system_time() -> SystemTime {
 }
 
 fn default_monero_address() -> String {
+    let cm = CredentialManager::default_with_dir(PathBuf::new());
+
+    if let Ok(cred) = cm.get_credentials() {
+        if let Some(seed) = cred.monero_seed {
+            info!(target: LOG_TARGET, "Found monero seed in credential manager");
+            let seed = MoneroSeed::new(seed);
+            return seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string())
+        }
+    }
+
     match MoneroSeed::generate() {
-        Ok(seed) => {
-            let cm = CredentialManager::default_with_dir(PathBuf::new());
-            match cm.get_credentials() {
-                Ok(mut cred) => {
-                    let monero_seed = match SafePassword::from_binary(seed.inner()) {
-                        Ok(seed) => {
-                            Some(seed)
-                        },
-                        Err(err) => {
-                            warn!(target: LOG_TARGET, "Failed to get contain monero seed in safe password: {}", err);
-                            None
-                        }
-                    };
-                    cred.monero_seed = monero_seed;
-                    seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string())
+        Ok(monero_seed) => {
+            let cred = Credential { tari_seed_passphrase: None, monero_seed: Some(monero_seed.inner().clone()) };
+            info!(target: LOG_TARGET, "Setting monero seed in credential manager");
+            match cm.set_credentials(&cred) {
+                Ok(_) => {
+                    monero_seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string())
                 },
-                Err(err_) => {
-                    warn!(target: LOG_TARGET, "Failed to get monero address from keyring: {}", err_);
+                Err(err) => {
+                    warn!(target: LOG_TARGET, "Failed to get set monero seed: {}", err);
                     DEFAULT_MONERO_ADDRESS.to_string()
                 }
             }

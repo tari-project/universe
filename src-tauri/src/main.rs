@@ -15,6 +15,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
+use keyring::Entry;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -997,7 +998,7 @@ async fn get_monero_seed_words(
 ) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    if state.config.read().await.monero_address_is_provided() {
+    if !state.config.read().await.monero_address_is_provided() {
         return Err("Monero seed words are not available when a Monero address is provided".to_string());
     }
 
@@ -1013,12 +1014,13 @@ async fn get_monero_seed_words(
     let path = config_path.join(network);
 
     let cm = CredentialManager::default_with_dir(path);
-    let seed = cm.get_credentials()
-        .expect("Could not get credentials")
+    let cred = cm.get_credentials()
+        .expect("Could not get credentials");
+
+    let seed = cred
         .monero_seed.expect("Couldn't get seed from credentials");
-    let mut key = [0u8; 32];
-    key.copy_from_slice(&seed.reveal());
-    let seed = MoneroSeed::new(key);
+
+    let seed = MoneroSeed::new(seed);
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
@@ -1655,6 +1657,12 @@ async fn reset_settings<'r>(
             }
         }
     }
+
+    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+        let _ = entry.delete_credential();
+    }
+
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 

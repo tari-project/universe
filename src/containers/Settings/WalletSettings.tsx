@@ -12,7 +12,7 @@ export const WalletSettings = () => {
             <WalletAddressMarkup />
             <SeedWordsMarkup />
             <MoneroAddressMarkup />
-            {!monero_address_is_provided ? <MoneroSeedWordSettings /> : null}
+            {monero_address_is_provided ? <MoneroSeedWordSettings /> : null}
             <PaperWallet />
         </>
     );

@@ -15,7 +15,7 @@ const LOG_TARGET: &str = "tari::universe::credential_manager";
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Credential {
     pub tari_seed_passphrase: Option<SafePassword>,
-    pub monero_seed: Option<SafePassword>,
+    pub monero_seed: Option<[u8; 32]>,
 }
 
 #[derive(Error, Debug)]
@@ -58,7 +58,9 @@ impl CredentialManager {
         // Shortcut and do nothing if we already have new credential format
         let creds = self.get_credentials();
         if let Ok(creds) = &creds {
+            info!(target: LOG_TARGET, "Found credentials");
             if creds.tari_seed_passphrase.is_some() {
+                info!(target: LOG_TARGET, "Credentials already migrated. Skipping.");
                 return Ok(());
             }
         }
@@ -141,6 +143,9 @@ impl CredentialManager {
 
     fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {
         let entry = Entry::new(&self.service_name, &self.username)?;
+
+        let _ = entry.delete_credential();
+
         let serialized = serde_cbor::to_vec(credential)?;
         entry.set_secret(&serialized)?;
         Ok(())
