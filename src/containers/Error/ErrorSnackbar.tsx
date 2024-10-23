@@ -2,7 +2,7 @@ import { IoClose } from 'react-icons/io5';
 import { useAppStateStore } from '../../store/appStateStore';
 import { ButtonWrapper, ContentWrapper, Wrapper } from './ErrorSnackbar.styles.ts';
 import { AnimatePresence, easeIn, Variants } from 'framer-motion';
-import { IconButton } from '@app/components/elements/Button.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { useCallback, useEffect, useState } from 'react';

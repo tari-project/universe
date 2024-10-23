@@ -12,7 +12,7 @@ export const SideBarContainer = styled(m.div)`
     justify-content: space-between;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     border-radius: 20px;
-    background: ${({ theme }) => theme.palette.background.paper};
+    background: ${({ theme }) => theme.palette.background.default};
     position: relative;
     height: 100%;
     overflow: hidden;
@@ -26,7 +26,7 @@ export const Scroll = styled(m.div)`
     overflow-y: auto;
     gap: 8px;
     height: 100%;
-    padding: 0px 10px 12px 10px;
+    padding: 0 10px 12px 10px;
 `;
 
 export const Top = styled(m.div)`
