@@ -35,6 +35,7 @@ pub struct AppConfigFromFile {
     anon_id: String,
     #[serde(default = "default_monero_address")]
     monero_address: String,
+    monero_address_is_provided: bool,
     #[serde(default = "default_true")]
     gpu_mining_enabled: bool,
     #[serde(default = "default_true")]
@@ -75,6 +76,7 @@ impl Default for AppConfigFromFile {
             allow_telemetry: false,
             anon_id: default_anon_id(),
             monero_address: default_monero_address(),
+            monero_address_is_provided: true,
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -130,6 +132,7 @@ pub(crate) struct AppConfig {
     allow_telemetry: bool,
     anon_id: String,
     monero_address: String,
+    monero_address_is_provided: bool,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
@@ -160,6 +163,7 @@ impl AppConfig {
             allow_telemetry: true,
             anon_id: generate_password(20),
             monero_address: default_monero_address(),
+            monero_address_is_provided: true,
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -206,6 +210,7 @@ impl AppConfig {
                 self.allow_telemetry = config.allow_telemetry;
                 self.anon_id = config.anon_id;
                 self.monero_address = config.monero_address;
+                self.monero_address_is_provided = config.monero_address_is_provided;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
@@ -359,15 +364,22 @@ impl AppConfig {
     pub fn allow_telemetry(&self) -> bool {
         self.allow_telemetry
     }
+
     pub fn monero_address(&self) -> &str {
         &self.monero_address
     }
 
     pub async fn set_monero_address(&mut self, address: String) -> Result<(), anyhow::Error> {
+        self.monero_address_is_provided = false;
         self.monero_address = address;
         self.update_config_file().await?;
         Ok(())
     }
+
+    pub fn monero_address_is_provided(&self) -> bool {
+        self.monero_address_is_provided
+    }
+
 
     pub fn last_binaries_update_timestamp(&self) -> SystemTime {
         self.last_binaries_update_timestamp
@@ -446,6 +458,7 @@ impl AppConfig {
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
             monero_address: self.monero_address.clone(),
+            monero_address_is_provided: self.monero_address_is_provided,
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
             has_system_language_been_proposed: self.has_system_language_been_proposed,

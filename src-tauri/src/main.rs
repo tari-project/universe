@@ -992,10 +992,15 @@ async fn get_seed_words(
 #[tauri::command]
 async fn get_monero_seed_words(
     _window: tauri::Window,
-    _state: tauri::State<'_, UniverseAppState>,
+    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<Vec<String>, String> {
     let timer = Instant::now();
+
+    if state.config.read().await.monero_address_is_provided() {
+        return Err("Monero seed words are not available when a Monero address is provided".to_string());
+    }
+
     let config_path = app
         .path_resolver()
         .app_config_dir()
@@ -1008,7 +1013,9 @@ async fn get_monero_seed_words(
     let path = config_path.join(network);
 
     let cm = CredentialManager::default_with_dir(path);
-    let seed = cm.get_credentials().expect("Could not get credentials").monero_seed.expect("Couldn't get seed from credentials");
+    let seed = cm.get_credentials()
+        .expect("Could not get credentials")
+        .monero_seed.expect("Couldn't get seed from credentials");
     let mut key = [0u8; 32];
     key.copy_from_slice(&seed.reveal());
     let seed = MoneroSeed::new(key);

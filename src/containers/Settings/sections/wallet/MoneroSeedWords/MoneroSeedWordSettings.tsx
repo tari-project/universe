@@ -19,8 +19,7 @@ export default function MoneroSeedWordSettings() {
     const getSeedWords = useCallback(async () => {
         setIsFetching(true);
         try {
-            // const mSeedWords = await invoke('get_monero_seed_words');
-            const mSeedWords = await invoke('get_seed_words'); // temp
+            const mSeedWords = await invoke('get_monero_seed_words');
             if (mSeedWords) {
                 setSeedWords(mSeedWords);
                 hasFetched.current = true;
