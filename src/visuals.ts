@@ -7,7 +7,7 @@ export const animationLightBg = [
     { property: 'mainColor', value: '#0096ff' },
     { property: 'successColor', value: '#00c881' },
     { property: 'failColor', value: '#ca0101' },
-    { property: 'goboIntensity', value: 0.4 },
+    { property: 'goboIntensity', value: 0.45 },
 ];
 
 export const animationDarkBg = [
@@ -17,7 +17,7 @@ export const animationDarkBg = [
     { property: 'successColor', value: '#c9eb00' },
     { property: 'mainColor', value: '#813bf5' },
     { property: 'failColor', value: '#fe2c3f' },
-    { property: 'goboIntensity', value: 0.7 },
+    { property: 'goboIntensity', value: 0.75 },
 ];
 
 export function setAnimationState(state: GlAppState) {
