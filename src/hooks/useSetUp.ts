@@ -5,7 +5,7 @@ import { TauriEvent } from '../types.ts';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '../store/useUIStore.ts';
 import { useAppStateStore } from '../store/appStateStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+
 import { setAnimationState } from '@app/visuals.ts';
 
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
@@ -20,7 +20,7 @@ export function useSetUp() {
     const { setShowExternalDependenciesDialog } = useUIStore();
     const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
-    const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
+
     const settingUpFinished = useAppStateStore((s) => s.settingUpFinished);
     const setSeenPermissions = useAirdropStore((s) => s.setSeenPermissions);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
@@ -28,14 +28,6 @@ export function useSetUp() {
     const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
 
     const { loadExternalDependencies } = useAppStateStore();
-
-    useEffect(() => {
-        async function initialize() {
-            await fetchAppConfig();
-        }
-        initialize();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     useEffect(() => {
         const unlistenPromise = listen<ExternalDependency[]>('missing-applications', (event) => {

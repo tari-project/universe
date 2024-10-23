@@ -5,7 +5,6 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import eslintPlugin from '@nabla/vite-plugin-eslint';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import packageInfo from './package.json';
-import { invoke } from '@tauri-apps/api';
 
 const plugins: UserConfig['plugins'] = [
     react({
@@ -35,10 +34,7 @@ const devOptions: UserConfig = {
     },
 };
 
-export default defineConfig(async ({ command, mode }) => {
-    const appConfig: { allow_telemetry?: boolean } = await invoke('get_app_config');
-    const allowTelemetry = appConfig?.allow_telemetry ?? false;
-
+export default defineConfig(({ command, mode }) => {
     if (command === 'serve') {
         return { ...devOptions, ...baseOptions };
     }
@@ -54,7 +50,7 @@ export default defineConfig(async ({ command, mode }) => {
                 },
                 reactComponentAnnotation: { enabled: true },
                 authToken: process.env.SENTRY_AUTH_TOKEN,
-                disable: mode === 'development' || !allowTelemetry,
+                disable: mode === 'development',
                 telemetry: false,
             }),
         ],
