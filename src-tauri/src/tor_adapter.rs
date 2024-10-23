@@ -6,7 +6,6 @@ use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
-use tor_hash_passwd::EncryptedKey;
 
 use crate::{
     process_adapter::{
@@ -19,7 +18,6 @@ const LOG_TARGET: &str = "tari::universe::tor_adapter";
 
 pub(crate) struct TorAdapter {
     socks_port: u16,
-    password: String,
     config_file: Option<PathBuf>,
     config: TorConfig,
 }
@@ -27,11 +25,9 @@ pub(crate) struct TorAdapter {
 impl TorAdapter {
     pub fn new() -> Self {
         let socks_port = 9050;
-        let password = "tari is the best".to_string();
 
         Self {
             socks_port,
-            password,
             config_file: None,
             config: TorConfig::default(),
         }
