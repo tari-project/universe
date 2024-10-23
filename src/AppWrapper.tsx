@@ -31,7 +31,6 @@ export default function AppWrapper() {
 
     useEffect(() => {
         async function initialize() {
-            console.debug(`how many times`);
             await fetchAppConfig();
         }
         return () => {
