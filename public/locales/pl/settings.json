@@ -89,5 +89,7 @@
   "errors": {
       "invalid-control-port": "Konfiguracja Control Portu nieprawidłowa",
       "invalid-bridge": "Konfiguracja Bridge nieprawidłowa"
-  }
+  },
+  "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
+  "set-dynamic-fail-data": "Ustaw niestandardowe adresy URL dla węzłów Monero"
 }
