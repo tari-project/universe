@@ -28,6 +28,7 @@ pub(crate) struct MinotariNodeAdapter {
     pub(crate) grpc_port: u16,
     pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
+    pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
 }
 
@@ -41,6 +42,7 @@ impl MinotariNodeAdapter {
             use_pruned_mode: false,
             required_initial_peers: 3,
             use_tor: false,
+            tor_control_port: None,
         }
     }
 }
@@ -106,15 +108,26 @@ impl ProcessAdapter for MinotariNodeAdapter {
             //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
             //         .to_string(),
             // );
-            args.push("-p".to_string());
-            args.push("use_libtor=false".to_string());
+            // if cfg!(target_os = "windows") {
+            //     // No need
+            // } else {
+            //     args.push("-p".to_string());
+            //     args.push("use_libtor=false".to_string());
+            // }
             args.push("-p".to_string());
             args.push(format!(
                 "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/{0}",
                 self.tcp_listener_port
             ));
             args.push("-p".to_string());
-            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
+            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
+            if let Some(tor_control_port) = self.tor_control_port {
+                args.push("-p".to_string());
+                args.push(format!(
+                    "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{}",
+                    tor_control_port
+                ));
+            }
         } else {
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());

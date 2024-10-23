@@ -15,9 +15,6 @@ export const TitleTypography = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
-export const TimerWrapper = styled.div`
-    box-shadow: 80px -20px 60px 20px rgba(255, 255, 255, 0.6);
-`;
 export const TimerTypography = styled.div`
     font-family: DrukWide, sans-serif;
     font-variant-numeric: tabular-nums;

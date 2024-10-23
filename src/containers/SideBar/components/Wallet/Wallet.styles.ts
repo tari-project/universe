@@ -1,9 +1,8 @@
 import { m } from 'framer-motion';
 import styled from 'styled-components';
 
-import { IconButton } from '@app/components/elements/Button';
 import cardBg from '../../../../assets/images/wallet-bg.png';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 // Wallet
 export const WalletContainer = styled(m.div)`
@@ -23,7 +22,7 @@ export const WalletContainer = styled(m.div)`
     max-height: 508px;
     min-height: 178px;
     z-index: 2;
-    overflow: hidden;
+
     justify-content: space-between;
 
     @media (max-height: 670px) {
@@ -47,10 +46,10 @@ export const WalletBalanceContainer = styled(m.div)`
     width: 100%;
     color: ${({ theme }) => theme.palette.text.secondary};
     padding: 10px 5px 5px;
-    height: 140px;
+    height: 160px;
 
     @media (max-height: 670px) {
-        height: 90px;
+        height: 120px;
     }
 `;
 
@@ -59,19 +58,6 @@ export const BalanceVisibilityButton = styled(IconButton)`
     background: rgba(255, 255, 255, 0.2) !important;
     height: 22px;
     width: 22px;
-`;
-
-export const ShowHistoryButton = styled(ButtonBase).attrs({
-    size: 'xs',
-    variant: 'outlined',
-    color: 'secondary',
-})`
-    display: flex;
-    align-self: flex-end;
-
-    &:hover {
-        border-color: rgba(255, 255, 255, 0.4);
-    }
 `;
 
 export const ScrollMask = styled(m.div)`
@@ -101,4 +87,42 @@ export const HistoryPadding = styled('div')`
     gap: 6px;
     width: 100%;
     padding: 0 5px 60px 5px;
+`;
+
+export const WalletCornerButtons = styled('div')`
+    position: absolute;
+    top: 10px;
+    right: 13px;
+    z-index: 2;
+
+    display: flex;
+    gap: 3px;
+`;
+
+export const CornerButton = styled('button')`
+    color: #fff;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+
+    border-radius: 43px;
+    border: 1px solid rgba(156, 156, 156, 0.18);
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(7px);
+
+    padding: 0 8px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+    pointer-events: all;
+
+    &:hover {
+        border: 1px solid rgba(156, 156, 156, 0.18);
+        background: rgba(255, 255, 255, 0.3);
+    }
 `;

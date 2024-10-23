@@ -36,6 +36,10 @@
     "title": "Auto-start on system boot",
     "description": "When enabled, the app will start automatically when you log in to your computer."
   },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
+  },
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
   "visual-mode": "Mode visual",
   "pool-mining": "Penambangan Pool",

@@ -73,10 +73,12 @@ impl NodeManager {
         config_path: PathBuf,
         log_path: PathBuf,
         use_tor: bool,
+        tor_control_port: Option<u16>,
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
             process_watcher.adapter.use_tor = use_tor;
+            process_watcher.adapter.tor_control_port = tor_control_port;
             process_watcher
                 .start(
                     app_shutdown,
