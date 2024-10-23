@@ -735,6 +735,8 @@ async fn setup_inner(
             .await?;
     }
 
+    binary_resolver.remove_all_caches().await?;
+
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
