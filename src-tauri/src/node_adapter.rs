@@ -296,23 +296,13 @@ impl MinotariNodeStatusMonitor {
         Ok(result?)
     }
 
-    pub async fn get_historical_blocks(&self) -> Result<Vec<(u64, String)>, Error> {
+    pub async fn get_historical_blocks(
+        &self,
+        heights: Vec<u64>,
+    ) -> Result<Vec<(u64, String)>, Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
 
-        let local_tip_height = client
-            .get_tip_info(Empty {})
-            .await?
-            .into_inner()
-            .metadata
-            .expect("Node returned no metadata")
-            .best_block_height;
-
-        let heights: Vec<u64> = vec![
-            local_tip_height.saturating_sub(1000),
-            local_tip_height.saturating_sub(2000),
-            local_tip_height.saturating_sub(3000),
-        ];
         let mut res = client
             .get_blocks(GetBlocksRequest { heights })
             .await?

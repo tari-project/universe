@@ -1512,7 +1512,10 @@ async fn check_if_is_orphan_chain(app_handle: AppHandle) {
                 drop(app_handle.emit_all("is_stuck", is_stuck));
             }
         }
-        Err(e) => error!(target: LOG_TARGET, "{}", e),
+        Err(e) => {
+            error!(target: LOG_TARGET, "{}", e);
+            drop(app_handle.emit_all("is_stuck", true));
+        }
     }
 }
 

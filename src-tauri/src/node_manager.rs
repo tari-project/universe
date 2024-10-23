@@ -13,7 +13,7 @@ use tari_utilities::hex::Hex;
 use tokio::fs;
 use tokio::sync::RwLock;
 
-use crate::network_utils::get_block_info_from_block_scan;
+use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 use crate::node_adapter::{MinotariNodeAdapter, MinotariNodeStatusMonitorError};
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
@@ -210,11 +210,25 @@ impl NodeManager {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
         let network = Network::get_current_or_user_setting_or_default();
+        let block_scan_tip = get_best_block_from_block_scan(network).await?;
+        let heights: Vec<u64> = vec![
+            block_scan_tip.saturating_sub(50),
+            block_scan_tip.saturating_sub(100),
+            block_scan_tip.saturating_sub(200),
+        ];
+        let mut block_scan_blocks: Vec<(u64, String)> = vec![];
 
-        let local_blocks = status_monitor.get_historical_blocks().await?;
-        for block in &local_blocks {
-            let block_scan_blocks = get_block_info_from_block_scan(network, block.0).await?;
-            if block_scan_blocks.1 != block.1 {
+        for height in &heights {
+            let block_scan_block = get_block_info_from_block_scan(network, height).await?;
+            block_scan_blocks.push(block_scan_block);
+        }
+
+        let local_blocks = status_monitor.get_historical_blocks(heights).await?;
+        for local_block in &local_blocks {
+            if !block_scan_blocks
+                .iter()
+                .any(|block_scan_block| local_block.1 == block_scan_block.1)
+            {
                 return Ok(true);
             }
         }
