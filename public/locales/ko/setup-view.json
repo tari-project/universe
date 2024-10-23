@@ -23,6 +23,7 @@
   },
   "new-tari-version-available": "Tari Universe의 새 버전이 출시되었습니다!",
   "would-you-like-to-install": "지금 Tari Universe {{version}}을(를) 설치하시겠습니까?",
+  "installing-latest-version": "Installing {{version}} version of Tari Universe",
   "yes": "예",
   "no": "아니요"
 }

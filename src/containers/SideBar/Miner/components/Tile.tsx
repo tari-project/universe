@@ -4,7 +4,7 @@ import { StyledIcon } from '@app/containers/Dashboard/MiningView/components/Mini
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Chip } from '@app/components/elements/Chip.tsx';
 import { formatPercent } from '@app/utils/formatNumber.ts';
-import { colors } from '@app/theme/colors.ts';
+import { colorsAll } from '@app/theme/palettes/colors.ts';
 
 export interface TileProps {
     title: string;
@@ -17,7 +17,7 @@ export interface TileProps {
 
 function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCase = false }: TileProps) {
     const chipRange = Math.ceil(chipValue / 10);
-    const chipColor = colors.ramp[chipRange];
+    const chipColor = colorsAll.ramp[chipRange];
     const chipText = formatPercent(chipValue);
 
     return (

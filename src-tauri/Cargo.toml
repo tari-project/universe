@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.5.42"
+version = "0.5.44"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -81,10 +81,10 @@ tauri = {version = "1.8.0", features = [
 ] }
 tauri-plugin-single-instance = {git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1"}
 thiserror = "1.0.26"
-tokio = {version = "1", features = ["full"]}
-tokio-util = {version = "0.7.11", features = ["compat"]}
+tokio = {version = "1", features = ["full"] }
+tokio-util = {version = "0.7.11", features = ["compat"] }
 tor-hash-passwd = "1.0.1"
-xz2 = {version = "0.1.7", features = ["static"]}# static bind lzma
+xz2 = {version = "0.1.7", features = ["static"] }# static bind lzma
 zip = "2.2.0"
 
 [target.'cfg(windows)'.dependencies]
