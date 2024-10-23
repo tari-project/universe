@@ -13,6 +13,7 @@ export const Wrapper = styled(m.div)`
 
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
     gap: 8px;
 
     padding: 20px;

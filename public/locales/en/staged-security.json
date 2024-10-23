@@ -27,5 +27,8 @@
     "completedTip": {
         "title": "Seed phrase",
         "text": "Your seed phrase can be found again in your settings"
+    },
+    "common": {
+        "got-it": "Got it"
     }
 }
