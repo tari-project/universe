@@ -224,10 +224,10 @@ impl NodeManager {
         }
 
         let local_blocks = status_monitor.get_historical_blocks(heights).await?;
-        for local_block in &local_blocks {
-            if !block_scan_blocks
+        for block_scan_block in &block_scan_blocks {
+            if !local_blocks
                 .iter()
-                .any(|block_scan_block| local_block.1 == block_scan_block.1)
+                .any(|local_block| block_scan_block.1 == local_block.1)
             {
                 return Ok(true);
             }
