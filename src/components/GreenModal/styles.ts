@@ -54,7 +54,6 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number }>`
     flex-direction: column;
     justify-content: flex-end;
     gap: 40px;
-
     ${({ $boxWidth }) =>
         $boxWidth &&
         css`
@@ -67,13 +66,11 @@ export const CloseButton = styled('button')`
     top: -20px;
     left: 100%;
     margin-left: 5px;
-
     transition: transform 0.2s ease;
     color: rgba(255, 255, 255, 0.5);
     transition:
         color 0.2s ease,
         transform 0.2s ease;
-
     &:hover {
         color: #fff;
         transform: scale(1.1);

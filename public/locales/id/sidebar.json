@@ -8,5 +8,7 @@
   "mining-schedules-description": "Jadwalkan aktivitas penambangan Anda",
   "lost-connection": "Koneksi ke Jaringan Tari terputus. Menyambung kembali..",
   "block": "Blok",
-  "recent-wins": "Kemenangan terbaru"
+  "recent-wins": "Kemenangan terbaru",
+  "show-history": "Show history",
+  "hide-history": "Hide history"
 }

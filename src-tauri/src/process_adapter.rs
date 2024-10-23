@@ -114,7 +114,7 @@ impl ProcessInstance {
             warn!(target: LOG_TARGET, "Process is already running");
             return Ok(());
         }
-        info!(target: LOG_TARGET, "Starting {} node", self.startup_spec.name);
+        info!(target: LOG_TARGET, "Starting {} process with args: {}", self.startup_spec.name, self.startup_spec.args.join(" "));
         let spec = self.startup_spec.clone();
         // Reset the shutdown each time.
         self.shutdown = Shutdown::new();

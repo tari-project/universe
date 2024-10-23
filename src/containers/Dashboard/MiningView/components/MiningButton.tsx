@@ -54,7 +54,7 @@ export default function MiningButton() {
     return (
         <ButtonWrapper>
             <StyledButton
-                variant="rounded"
+                size="large"
                 $hasStarted={isMining}
                 onClick={handleClick}
                 icon={!isAppLoading ? iconFinal : null}

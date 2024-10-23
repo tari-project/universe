@@ -1,5 +1,6 @@
 {
   "settings": "Ustawienia",
+  "tari-wallet-address": "Adres porfela Tari",
   "seed-words": "Słowa kluczowe",
   "change-language": "Zmień język",
   "logs": "Logi",
@@ -29,12 +30,16 @@
   "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
   "reset-wallet": "Resetuj porfel",
   "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
+    "title": "Kopanie po starcie aplikacji",
+    "description": "Kiedy zaznaczone, aplikacja zacznie kopać automatycznie po uruchomieniu."
   },
   "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
+    "title": "Uruchomienie po starcie systemu",
+    "description": "Kiedy zaznaczone, aplikacja uruchomi się automatycznie po włączeniu komputera."
+  },
+  "use-auto-update": {
+    "title": "Automatycznie aktualizuj Tari Universe",
+    "description": "Kiedy zaznaczone, aplikacja zostanie automatycznie zaktualizowana po znalezieniu nowszej wersji."
   },
   "connected-to-tari-network": null,
   "not-connected-to-tari-network": null,
@@ -73,5 +78,13 @@
   "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
-  "report-issue": "Zgłoś problem"
+  "report-issue": "Zgłoś problem",
+  "app-restart-required": "Wymagane ponowne uruchomienie",
+  "setup-tor-settings": "Skonfiguruj sieć Tor w celu prywatności połączenia",
+  "control-port": "Control Port",
+  "save": "Zapisz",
+  "errors": {
+      "invalid-control-port": "Konfiguracja Control Portu nieprawidłowa",
+      "invalid-bridge": "Konfiguracja Bridge nieprawidłowa"
+  }
 }

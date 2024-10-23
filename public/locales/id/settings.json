@@ -1,5 +1,6 @@
 {
   "settings": "Pengaturan",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Kata-kata benih",
   "send-logs": "Kirim log",
   "your-feedback": "Silakan jelaskan masalah Anda",
@@ -34,6 +35,10 @@
   "should-auto-start": {
     "title": "Auto-start on system boot",
     "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
   "visual-mode": "Mode visual",
@@ -71,5 +76,13 @@
   "action-requires-restart": "Tindakan ini memerlukan restart untuk menerapkan perubahan",
   "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
-  "report-issue": "Laporkan masalah"
+  "report-issue": "Laporkan masalah",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }
