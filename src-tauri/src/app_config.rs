@@ -1,15 +1,15 @@
-use crate::credential_manager::Credential;
+use crate::credential_manager::{Credential, KEYRING_ACCESSED};
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
+use crate::credential_manager::CredentialManager;
+use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 use anyhow::anyhow;
 use log::{debug, info, warn};
 use monero_address_creator::network::Mainnet;
+use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
-use monero_address_creator::Seed as MoneroSeed;
-use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
-use crate::credential_manager::CredentialManager;
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -62,6 +62,8 @@ pub struct AppConfigFromFile {
     mmproxy_use_monero_fail: bool,
     #[serde(default = "default_monero_nodes")]
     mmproxy_monero_nodes: Vec<String>,
+    #[serde(default = "default_false")]
+    keyring_accessed: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -92,6 +94,7 @@ impl Default for AppConfigFromFile {
             ludicrous_mode_cpu_threads: None,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
+            keyring_accessed: false,
         }
     }
 }
@@ -148,6 +151,7 @@ pub(crate) struct AppConfig {
     ludicrous_mode_cpu_options: Vec<String>,
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
+    keyring_accessed: bool,
 }
 
 impl AppConfig {
@@ -179,6 +183,7 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            keyring_accessed: false,
         }
     }
 
@@ -192,7 +197,7 @@ impl AppConfig {
             self.apply_loaded_config(config);
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
-            if let Ok(address) = create_monereo_address(config_path) {
+            if let Ok(address) = create_monereo_address(config_path).await {
                 self.monero_address = address;
                 self.monero_address_is_provided = true;
             }
@@ -230,6 +235,11 @@ impl AppConfig {
                 self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
+
+                KEYRING_ACCESSED.store(
+                    config.keyring_accessed,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -384,7 +394,6 @@ impl AppConfig {
         self.monero_address_is_provided
     }
 
-
     pub fn last_binaries_update_timestamp(&self) -> SystemTime {
         self.last_binaries_update_timestamp
     }
@@ -478,6 +487,7 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
+            keyring_accessed: KEYRING_ACCESSED.load(std::sync::atomic::Ordering::Relaxed),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -515,24 +525,31 @@ fn default_monero_address() -> String {
     DEFAULT_MONERO_ADDRESS.to_string()
 }
 
-fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {
+async fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {
     let cm = CredentialManager::default_with_dir(path);
 
     if let Ok(cred) = cm.get_credentials() {
         if let Some(seed) = cred.monero_seed {
             info!(target: LOG_TARGET, "Found monero seed in credential manager");
             let seed = MoneroSeed::new(seed);
-            return Ok(seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
+            return Ok(seed
+                .to_address::<Mainnet>()
+                .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()));
         }
     }
 
     let monero_seed = MoneroSeed::generate()?;
-    let cred = Credential { tari_seed_passphrase: None, monero_seed: Some(monero_seed.inner().clone()) };
+    let cred = Credential {
+        tari_seed_passphrase: None,
+        monero_seed: Some(*monero_seed.inner()),
+    };
 
     info!(target: LOG_TARGET, "Setting monero seed in credential manager");
     cm.set_credentials(&cred)?;
 
-    Ok(monero_seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
+    Ok(monero_seed
+        .to_address::<Mainnet>()
+        .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
 }
 fn default_application_language() -> String {
     "en".to_string()

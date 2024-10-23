@@ -1,14 +1,14 @@
+use crate::internal_wallet::WalletConfig;
 use crate::APPLICATION_FOLDER_ID;
 use keyring::{Entry, Error as KeyringError};
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
-use log::info;
 use tari_utilities::SafePassword;
 use thiserror::Error;
-use crate::internal_wallet::WalletConfig;
 
 const LOG_TARGET: &str = "tari::universe::credential_manager";
 
@@ -28,14 +28,16 @@ pub enum CredentialError {
     Serialization(#[from] serde_cbor::Error),
     #[error("Keyring had no entry for: {0}")]
     NoEntry(String),
-    #[error("Failed to decode safe password: {0}")]
-    MessageFormat(String),
+    #[error("Data previously stored in Keychain. Keychain access is now required to continue")]
+    PreviouslyUsedKeyring,
 }
 
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
 
 const KEYCHAIN_USERNAME_LEGACY: &str = "internal_wallet";
 const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
+
+pub static KEYRING_ACCESSED: AtomicBool = AtomicBool::new(false);
 
 pub struct CredentialManager {
     service_name: String,
@@ -47,11 +49,20 @@ pub struct CredentialManager {
 impl CredentialManager {
     fn new(service_name: String, username: String, fallback_dir: PathBuf) -> Self {
         let fallback_mode = AtomicBool::new(Self::fallback_exists());
-        CredentialManager { service_name, username, fallback_mode, fallback_dir }
+        CredentialManager {
+            service_name,
+            username,
+            fallback_mode,
+            fallback_dir,
+        }
     }
 
     pub fn default_with_dir(fallback_dir: PathBuf) -> Self {
-        CredentialManager::new(APPLICATION_FOLDER_ID.into(), KEYCHAIN_USERNAME.into(), fallback_dir)
+        CredentialManager::new(
+            APPLICATION_FOLDER_ID.into(),
+            KEYCHAIN_USERNAME.into(),
+            fallback_dir,
+        )
     }
 
     pub fn migrate(&self, wallet_config: &WalletConfig) -> Result<(), CredentialError> {
@@ -83,12 +94,10 @@ impl CredentialManager {
                     cred.tari_seed_passphrase = Some(safe_password);
                     cred
                 }
-                Err(_) => {
-                    Credential {
-                        tari_seed_passphrase: Some(safe_password),
-                        monero_seed: None,
-                    }
-                }
+                Err(_) => Credential {
+                    tari_seed_passphrase: Some(safe_password),
+                    monero_seed: None,
+                },
             };
 
             self.set_credentials(&credential)?;
@@ -105,8 +114,23 @@ impl CredentialManager {
         self.fallback_mode.load(Ordering::SeqCst) || Self::fallback_exists()
     }
 
-    fn set_fallback_mode(&self) {
-        self.fallback_mode.store(true, Ordering::SeqCst);
+    fn set_fallback_mode(&self) -> bool {
+        // Only allow shifting to fallback mode if the keyring hasn't been successfully stored to.
+        // If it already contains data, the user must provide access to the existing data.
+        if !Self::has_keyring_been_accessed() {
+            self.fallback_mode.store(true, Ordering::SeqCst);
+            return true;
+        }
+
+        false
+    }
+
+    fn has_keyring_been_accessed() -> bool {
+        KEYRING_ACCESSED.load(Ordering::SeqCst)
+    }
+
+    fn set_keyring_accessed() {
+        KEYRING_ACCESSED.store(true, Ordering::SeqCst);
     }
 
     pub fn set_credentials(&self, credential: &Credential) -> Result<(), CredentialError> {
@@ -116,11 +140,17 @@ impl CredentialManager {
         }
 
         match self.save_to_keyring(credential) {
-            Ok(_) => Ok(()),
-            Err(CredentialError::Keyring(_)) => {
-                self.set_fallback_mode();
-                self.save_to_file(credential)?;
+            Ok(_) => {
+                Self::set_keyring_accessed();
                 Ok(())
+            }
+            Err(CredentialError::Keyring(e)) => {
+                if self.set_fallback_mode() {
+                    self.save_to_file(credential)?;
+                    Ok(())
+                } else {
+                    Err(e.into())
+                }
             }
             Err(err) => Err(err),
         }
@@ -132,10 +162,16 @@ impl CredentialManager {
         }
 
         match self.load_from_keyring() {
-            Ok(credential) => Ok(credential),
+            Ok(credential) => {
+                Self::set_keyring_accessed();
+                Ok(credential)
+            }
             Err(CredentialError::Keyring(_)) => {
-                self.set_fallback_mode();
-                self.load_from_file()
+                if self.set_fallback_mode() {
+                    self.load_from_file()
+                } else {
+                    Err(CredentialError::PreviouslyUsedKeyring)
+                }
             }
             Err(err) => Err(err),
         }
@@ -144,7 +180,7 @@ impl CredentialManager {
     fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {
         let entry = Entry::new(&self.service_name, &self.username)?;
 
-        let _ = entry.delete_credential();
+        let _unused = entry.delete_credential();
 
         let serialized = serde_cbor::to_vec(credential)?;
         entry.set_secret(&serialized)?;
@@ -155,8 +191,10 @@ impl CredentialManager {
         let entry = Entry::new(&self.service_name, &self.username)?;
         let encoded = match entry.get_secret() {
             Ok(secret) => secret,
-            Err(_e @ KeyringError::NoEntry) => return Err(CredentialError::NoEntry(self.username.clone())),
-            Err(e) => return Err(e.into())
+            Err(_e @ KeyringError::NoEntry) => {
+                return Err(CredentialError::NoEntry(self.username.clone()))
+            }
+            Err(e) => return Err(e.into()),
         };
         let credential: Credential = serde_cbor::from_slice(&encoded)?;
         Ok(credential)
@@ -174,7 +212,9 @@ impl CredentialManager {
     }
 
     fn load_from_file(&self) -> Result<Credential, CredentialError> {
-        let mut file = OpenOptions::new().read(true).open(self.fallback_dir.join(FALLBACK_FILE_PATH))?;
+        let mut file = OpenOptions::new()
+            .read(true)
+            .open(self.fallback_dir.join(FALLBACK_FILE_PATH))?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
         let credential: Credential = serde_cbor::from_slice(&buffer)?;
@@ -188,83 +228,9 @@ impl CredentialManager {
     }
 }
 
-//#[cfg(test)]
-//mod tests {
-//    use super::*;
-//    use std::fs;
-//    use keyring::{set_default_credential_builder, mock};
-//
-//    const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials_test";
-//
-//    #[test]
-//    fn test_create_new_credentials() {
-//        set_default_credential_builder(mock::default_credential_builder());
-//        let manager = CredentialManager::new(APPLICATION_FOLDER_ID.into(), KEYCHAIN_USERNAME.into());
-//
-//        let credential = Credential {
-//            seed_passphrase: "tari_pass".to_string(),
-//        };
-//
-//        let result = manager.set_credentials(&credential);
-//        assert!(result.is_ok(), "Failed to create new credentials");
-//
-//        let saved_credential = manager.get_credentials().expect("Failed to get saved credentials");
-//        assert_eq!(saved_credential.seed_passphrase, "tari_pass");
-//    }
-//
-//    #[test]
-//    fn test_load_existing_credentials_from_keyring() {
-//        set_default_credential_builder(mock::default_credential_builder());
-//        let manager = CredentialManager::new(APPLICATION_FOLDER_ID.into(), KEYCHAIN_USERNAME.into());
-//
-//        let credential = Credential {
-//            seed_passphrase: "tari_pass".to_string(),
-//        };
-//        manager.set_credentials(&credential).expect("Failed to set credentials");
-//
-//        let result = manager.get_credentials();
-//        assert!(result.is_ok(), "Failed to load credentials from keyring");
-//
-//        let creds = result.unwrap();
-//        assert_eq!(creds.seed_passphrase, "tari_pass");
-//    }
-//
-//    #[test]
-//    fn test_save_and_load_credentials_from_fallback_file() {
-//        set_default_credential_builder(mock::default_credential_builder());
-//        let manager = CredentialManager::new(APPLICATION_FOLDER_ID.into(), KEYCHAIN_USERNAME.into());
-//        manager.set_fallback_mode();
-//
-//        let credential = Credential {
-//            seed_passphrase: "tari_fallback_pass".to_string(),
-//        };
-//        manager.set_credentials(&credential).expect("Failed to set credentials");
-//
-//        let result = manager.get_credentials();
-//        assert!(result.is_ok(), "Failed to load credentials from fallback file");
-//
-//        let creds = result.unwrap();
-//        assert_eq!(creds.seed_passphrase, "tari_fallback_pass");
-//
-//        fs::remove_file(FALLBACK_FILE_PATH).unwrap();
-//    }
-//
-//    //#[test]
-//    //fn test_migrate_from_legacy() {
-//    //    let manager = CredentialManager::new(APPLICATION_FOLDER_ID.into(), KEYCHAIN_USERNAME.into());
-//    //    let mut wallet_config = WalletConfig::default();
-//
-//    //    let legacy_passphrase = "legacy_pass";
-//    //    wallet_config.passphrase = Some(SafePassword::from(legacy_passphrase.to_string()));
-//
-//    //    let result = manager.migrate(wallet_config);
-//    //    assert!(result.is_ok(), "Migration failed");
-//
-//    //    let result = manager.get_credentials();
-//    //    assert!(result.is_ok(), "Failed to load migrated credentials");
-//
-//    //    let creds = result.unwrap();
-//    //    assert_eq!(creds.tari_seed_passphrase, legacy_passphrase);
-//    //    assert_eq!(creds.monero_seed_passphrase, "");
-//    //}
-//}
+#[derive(Debug, Serialize, Clone)]
+pub struct KeyringErrorEvent {
+    pub event_type: String,
+    pub title: String,
+    pub message: String,
+}

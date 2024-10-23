@@ -4,18 +4,18 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
+use keyring::Entry;
 use log::trace;
 use log::{debug, error, info, warn};
+use monero_address_creator::Seed as MoneroSeed;
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
-use monero_address_creator::Seed as MoneroSeed;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
-use keyring::Entry;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -38,7 +38,7 @@ use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
 
 use crate::cpu_miner::CpuMiner;
-use crate::credential_manager::CredentialManager;
+use crate::credential_manager::{CredentialError, CredentialManager, KeyringErrorEvent};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
@@ -57,6 +57,7 @@ mod auto_launcher;
 mod binaries;
 mod consts;
 mod cpu_miner;
+mod credential_manager;
 mod download_utils;
 mod external_dependencies;
 mod feedback;
@@ -91,7 +92,6 @@ mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
-mod credential_manager;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
@@ -992,14 +992,16 @@ async fn get_seed_words(
 
 #[tauri::command]
 async fn get_monero_seed_words(
-    _window: tauri::Window,
+    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
     if !state.config.read().await.monero_address_is_provided() {
-        return Err("Monero seed words are not available when a Monero address is provided".to_string());
+        return Err(
+            "Monero seed words are not available when a Monero address is provided".to_string(),
+        );
     }
 
     let config_path = app
@@ -1014,11 +1016,34 @@ async fn get_monero_seed_words(
     let path = config_path.join(network);
 
     let cm = CredentialManager::default_with_dir(path);
-    let cred = cm.get_credentials()
-        .expect("Could not get credentials");
+    let cred = match cm.get_credentials() {
+        Ok(cred) => cred,
+        Err(e @ CredentialError::PreviouslyUsedKeyring) => {
+            window
+                .emit(
+                    "message",
+                    KeyringErrorEvent {
+                        event_type: "keyring_previously_used".to_string(),
+                        title: "keyring access error".to_string(),
+                        message: e.to_string(),
+                    },
+                )
+                .inspect_err(
+                    |e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e),
+                )
+                .map_err(|e| e.to_string())?;
+
+            return Err(e.to_string());
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Could not get credentials: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
 
     let seed = cred
-        .monero_seed.expect("Couldn't get seed from credentials");
+        .monero_seed
+        .expect("Couldn't get seed from credentials");
 
     let seed = MoneroSeed::new(seed);
 
@@ -1660,7 +1685,7 @@ async fn reset_settings<'r>(
 
     debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
     if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
-        let _ = entry.delete_credential();
+        let _unused = entry.delete_credential();
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
@@ -1894,7 +1919,7 @@ fn main() {
                     .expect("Could not get log dir"),
                 include_str!("../log4rs_sample.yml"),
             )
-                .expect("Could not set up logging");
+            .expect("Could not set up logging");
 
             let config_path = app
                 .path_resolver()
