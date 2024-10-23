@@ -29,6 +29,8 @@ export interface AppConfig {
     paper_wallet_enabled: boolean;
     use_tor: boolean;
     auto_update: boolean;
+    mmproxy_use_monero_fail: boolean;
+    mmproxy_monero_nodes: string[];
 }
 
 export enum ExternalDependencyStatus {
