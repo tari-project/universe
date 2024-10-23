@@ -11,6 +11,7 @@ import { setAnimationState } from '@app/visuals.ts';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { ExternalDependency } from '@app/types/app-status.ts';
 import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
+import * as Sentry from '@sentry/react';
 
 export function useSetUp() {
     const [isInitializing, setIsInitializing] = useState(false);
@@ -81,6 +82,7 @@ export function useSetUp() {
             clearStorage();
             invoke('setup_application')
                 .catch((e) => {
+                    Sentry.captureException(e);
                     setCriticalError(`Failed to setup application: ${e}`);
                     setView('mining');
                 })

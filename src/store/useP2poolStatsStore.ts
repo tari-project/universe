@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create';
 import { P2poolStats, P2poolStatsResult } from '../types/app-status.ts';
+import * as Sentry from '@sentry/react';
 
 type State = Partial<P2poolStatsResult>;
 
@@ -40,6 +41,7 @@ export const useP2poolStatsStore = create<P2poolStatsStoreState>()((set) => ({
             const stats = await invoke('get_p2pool_stats');
             set(stats);
         } catch (e) {
+            Sentry.captureException(e);
             console.error('Could not get p2p stats: ', e);
         }
     },
