@@ -11,7 +11,7 @@ pub(crate) fn get_free_port() -> Option<u16> {
     }
 }
 
-fn get_text_explore_blocks_url(network: Network, block_height: &u64) -> String {
+fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
     match network {
         Network::StageNet => format!(
             "https://textexplore-stagenet.tari.com/blocks/{}?json",
@@ -92,7 +92,7 @@ pub(crate) async fn get_block_info_from_block_scan(
         header: BlockHeader,
     }
 
-    let response = reqwest::get(&get_text_explore_blocks_url(network, block_height))
+    let response = reqwest::get(&get_text_explore_blocks_url(network, *block_height))
         .await?
         .json::<BlockResponse>()
         .await?;
