@@ -19,9 +19,7 @@ const Wrapper = styled(m.div)`
 `;
 
 export default function LanguageDropdown() {
-    const { setApplicationLanguage } = useAppConfigStore((s) => ({
-        setApplicationLanguage: s.setApplicationLanguage,
-    }));
+    const setApplicationLanguage = useAppConfigStore((s) => s.setApplicationLanguage);
 
     return (
         <Wrapper>
