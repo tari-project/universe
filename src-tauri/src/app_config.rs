@@ -76,7 +76,7 @@ impl Default for AppConfigFromFile {
             allow_telemetry: false,
             anon_id: default_anon_id(),
             monero_address: default_monero_address(),
-            monero_address_is_provided: true,
+            monero_address_is_provided: false,
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -163,7 +163,7 @@ impl AppConfig {
             allow_telemetry: true,
             anon_id: generate_password(20),
             monero_address: default_monero_address(),
-            monero_address_is_provided: true,
+            monero_address_is_provided: false,
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -192,6 +192,10 @@ impl AppConfig {
             self.apply_loaded_config(config);
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
+            if let Ok(address) = create_monereo_address(config_path) {
+                self.monero_address = address;
+                self.monero_address_is_provided = true;
+            }
         }
         self.update_config_file().await?;
         Ok(())
@@ -508,32 +512,27 @@ fn default_system_time() -> SystemTime {
 }
 
 fn default_monero_address() -> String {
-    let cm = CredentialManager::default_with_dir(PathBuf::new());
+    DEFAULT_MONERO_ADDRESS.to_string()
+}
+
+fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {
+    let cm = CredentialManager::default_with_dir(path);
 
     if let Ok(cred) = cm.get_credentials() {
         if let Some(seed) = cred.monero_seed {
             info!(target: LOG_TARGET, "Found monero seed in credential manager");
             let seed = MoneroSeed::new(seed);
-            return seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string())
+            return Ok(seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
         }
     }
 
-    match MoneroSeed::generate() {
-        Ok(monero_seed) => {
-            let cred = Credential { tari_seed_passphrase: None, monero_seed: Some(monero_seed.inner().clone()) };
-            info!(target: LOG_TARGET, "Setting monero seed in credential manager");
-            match cm.set_credentials(&cred) {
-                Ok(_) => {
-                    monero_seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string())
-                },
-                Err(err) => {
-                    warn!(target: LOG_TARGET, "Failed to get set monero seed: {}", err);
-                    DEFAULT_MONERO_ADDRESS.to_string()
-                }
-            }
-        }
-        Err(_) => DEFAULT_MONERO_ADDRESS.to_string(),
-    }
+    let monero_seed = MoneroSeed::generate()?;
+    let cred = Credential { tari_seed_passphrase: None, monero_seed: Some(monero_seed.inner().clone()) };
+
+    info!(target: LOG_TARGET, "Setting monero seed in credential manager");
+    cm.set_credentials(&cred)?;
+
+    Ok(monero_seed.to_address::<Mainnet>().unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
 }
 fn default_application_language() -> String {
     "en".to_string()

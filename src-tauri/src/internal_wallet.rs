@@ -73,7 +73,7 @@ impl InternalWallet {
             }
         }
         info!(target: LOG_TARGET, "Wallet config does not exist or is corrupt. Creating new wallet");
-        let (wallet, config) = InternalWallet::create_new_wallet(None, file_parent).await?;
+        let (wallet, config) = InternalWallet::create_new_wallet(None, config_path).await?;
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
         Ok(wallet)
@@ -94,7 +94,7 @@ impl InternalWallet {
             warn!(target: LOG_TARGET, "Could not create wallet config file parent directory - {}", error);
         });
 
-        let (wallet, config) = InternalWallet::create_new_wallet(Some(seed_words), file_parent).await?;
+        let (wallet, config) = InternalWallet::create_new_wallet(Some(seed_words), config_path).await?;
         let config = serde_json::to_string(&config)?;
         fs::write(file, config).await?;
         Ok(wallet)
@@ -139,7 +139,7 @@ impl InternalWallet {
 
     async fn create_new_wallet(
         seed_words: Option<Vec<String>>,
-        path: &Path,
+        path: PathBuf,
     ) -> Result<(Self, WalletConfig), anyhow::Error> {
         let mut config = WalletConfig {
             tari_address_base58: "".to_string(),
@@ -150,7 +150,7 @@ impl InternalWallet {
             passphrase: None,
         };
 
-        let cm = CredentialManager::default_with_dir(path.to_path_buf());
+        let cm = CredentialManager::default_with_dir(path);
         let passphrase = match cm.get_credentials() {
             Ok(mut creds) => match creds.tari_seed_passphrase {
                 Some(p) => Some(p),

@@ -111,7 +111,7 @@ impl CredentialManager {
 
     pub fn set_credentials(&self, credential: &Credential) -> Result<(), CredentialError> {
         if self.use_fallback() {
-            Self::save_to_file(credential)?;
+            self.save_to_file(credential)?;
             return Ok(());
         }
 
@@ -119,7 +119,7 @@ impl CredentialManager {
             Ok(_) => Ok(()),
             Err(CredentialError::Keyring(_)) => {
                 self.set_fallback_mode();
-                Self::save_to_file(credential)?;
+                self.save_to_file(credential)?;
                 Ok(())
             }
             Err(err) => Err(err),
@@ -128,14 +128,14 @@ impl CredentialManager {
 
     pub fn get_credentials(&self) -> Result<Credential, CredentialError> {
         if self.use_fallback() {
-            return Self::load_from_file();
+            return self.load_from_file();
         }
 
         match self.load_from_keyring() {
             Ok(credential) => Ok(credential),
             Err(CredentialError::Keyring(_)) => {
                 self.set_fallback_mode();
-                Self::load_from_file()
+                self.load_from_file()
             }
             Err(err) => Err(err),
         }
@@ -162,19 +162,19 @@ impl CredentialManager {
         Ok(credential)
     }
 
-    fn save_to_file(credential: &Credential) -> Result<(), CredentialError> {
+    fn save_to_file(&self, credential: &Credential) -> Result<(), CredentialError> {
         let serialized = serde_cbor::to_vec(credential)?;
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
-            .open(FALLBACK_FILE_PATH)?;
+            .open(self.fallback_dir.join(FALLBACK_FILE_PATH))?;
         file.write_all(&serialized)?;
         Ok(())
     }
 
-    fn load_from_file() -> Result<Credential, CredentialError> {
-        let mut file = OpenOptions::new().read(true).open(FALLBACK_FILE_PATH)?;
+    fn load_from_file(&self) -> Result<Credential, CredentialError> {
+        let mut file = OpenOptions::new().read(true).open(self.fallback_dir.join(FALLBACK_FILE_PATH))?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
         let credential: Credential = serde_cbor::from_slice(&buffer)?;
