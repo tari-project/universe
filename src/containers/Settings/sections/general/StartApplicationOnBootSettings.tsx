@@ -1,4 +1,3 @@
-import { useShallow } from 'zustand/shallow';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
@@ -14,13 +13,10 @@ import {
 export default function StartApplicationOnBootSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
 
-    const { shouldAutoLaunch, setShouldAutoLaunch } = useAppConfigStore(
-        // https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#requiring-stable-selector-outputs
-        useShallow((s) => ({
-            shouldAutoLaunch: s.should_auto_launch,
-            setShouldAutoLaunch: s.setShouldAutoLaunch,
-        }))
-    );
+    const { shouldAutoLaunch, setShouldAutoLaunch } = useAppConfigStore((s) => ({
+        shouldAutoLaunch: s.should_auto_launch,
+        setShouldAutoLaunch: s.setShouldAutoLaunch,
+    }));
 
     return (
         <SettingsGroupWrapper>
