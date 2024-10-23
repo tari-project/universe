@@ -20,8 +20,10 @@ import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
 import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
+import { useDetectMode } from '@app/hooks/helpers/useDetectMode.ts';
 
 export default function App() {
+    useDetectMode();
     useLangaugeResolver();
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
