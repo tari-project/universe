@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import GemsAnimation from '../GemsAnimation/GemsAnimation';
 import { Background, Wrapper } from './styles';
 import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     gems: number;
@@ -9,6 +10,8 @@ interface Props {
 }
 
 export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
+    const { t } = useTranslation('airdrop', { useSuspense: false });
+
     useEffect(() => {
         const timer = setTimeout(() => {
             onAnimationComplete();
@@ -34,7 +37,7 @@ export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ delay: 0.85 }}
             >
-                Bonus gems earned
+                {t('bonus-gems-earned')}
             </Text>
 
             <TextBottomPosition>
@@ -44,7 +47,7 @@ export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
                     exit={{ opacity: 0, y: -20 }}
                     transition={{ delay: 1 }}
                 >
-                    One of your friends accepted your gift!
+                    {t('your-friend-accepted-gift')}
                 </TextBottom>
             </TextBottomPosition>
 

@@ -6,6 +6,7 @@ import { Number, Text } from '../styles';
 import giftBoxImage from '../images/gold_gift_box.png';
 import giftBoxLidImage from '../images/gold_gift_box_lid.png';
 import giftBoxShineImage from '../images/gift_box_shine.png';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     gems: number;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
+    const { t } = useTranslation('airdrop', { useSuspense: false });
     const [showIntro, setShowIntro] = useState(true);
     const [showGiftBox, setShowGiftBox] = useState(true);
 
@@ -78,8 +80,8 @@ export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ delay: 0.85 }}
                     >
-                        Bonus gems earned
-                        <br /> You reached your gifting goal!
+                        {t('bonus-gems-earned')}
+                        <br /> {t('you-reached-your-giftinh-goal')}
                     </Text>
 
                     <GemsAnimation delay={1} />

@@ -30,5 +30,9 @@
   "topTooltipTitle": "테스트넷 보상",
   "claimModalFinePrint": "<strong>참고:</strong> 보석을 수령하면 분석 기능이 활성화되어 Universe를 개선할 수 있습니다",
   "inviteFriendsText": "링크를 복사하여 공유하세요",
-  "logged-in-as": "<strong>@{{twitter}}</strong>으로 로그인됨"
+  "logged-in-as": "<strong>@{{twitter}}</strong>으로 로그인됨",
+  "bonus-gems-earned": "Bonus gems earned",
+  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
+  "your-friend-accepted-gift": "One of your friends accepted your gift!",
+  "you-reached-your-giftinh-goal": "You reached your gifting goal!"
 }

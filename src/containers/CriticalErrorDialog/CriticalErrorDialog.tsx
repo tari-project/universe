@@ -1,5 +1,5 @@
 import Linkify from 'linkify-react';
-import { Button, IconButton } from '@app/components/elements/Button';
+
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
@@ -12,6 +12,9 @@ import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
 const CriticalErrorDialog = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -46,14 +49,9 @@ const CriticalErrorDialog = () => {
                     <Typography variant="p">{t('please-try-again-later')}</Typography>
 
                     {!logsReference ? (
-                        <Button
-                            color="warning"
-                            variant="text"
-                            styleVariant="simple"
-                            onClick={() => setDialogToShow('logs')}
-                        >
+                        <TextButton color="warning" colorIntensity={200} onClick={() => setDialogToShow('logs')}>
                             {t('send-logs', { ns: 'settings' })}
-                        </Button>
+                        </TextButton>
                     ) : (
                         <Stack direction="row" alignItems="center" justifyContent="space-between">
                             <Typography variant="p">
@@ -72,9 +70,9 @@ const CriticalErrorDialog = () => {
                     )}
 
                     {!isExiting ? (
-                        <Button color="error" onClick={handleExit}>
+                        <SquaredButton color="error" onClick={handleExit}>
                             {t('close-tari-universe')}
-                        </Button>
+                        </SquaredButton>
                     ) : (
                         <CircularProgress />
                     )}

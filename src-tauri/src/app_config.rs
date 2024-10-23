@@ -17,6 +17,8 @@ pub struct AppConfigFromFile {
     version: u32,
     #[serde(default = "default_mode")]
     mode: String,
+    #[serde(default = "default_theme")]
+    theme: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
     #[serde(default = "default_true")]
@@ -49,6 +51,8 @@ pub struct AppConfigFromFile {
     use_tor: bool,
     #[serde(default = "default_false")]
     paper_wallet_enabled: bool,
+    #[serde(default = "default_false")]
+    reset_earnings: bool,
     eco_mode_cpu_threads: Option<isize>,
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
@@ -62,6 +66,8 @@ pub struct AppConfigFromFile {
     custom_max_cpu_usage: Option<isize>,
     #[serde(default = "default_custom_max_gpu_usage")]
     custom_max_gpu_usage: Option<isize>,
+    #[serde(default = "default_false")]
+    auto_update: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -69,6 +75,7 @@ impl Default for AppConfigFromFile {
         Self {
             version: default_version(),
             mode: default_mode(),
+            theme: default_theme(),
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -94,6 +101,34 @@ impl Default for AppConfigFromFile {
             ludicrous_mode_cpu_threads: None,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
+            auto_update: false,
+            reset_earnings: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum Theme {
+    System,
+    Dark,
+    Light,
+}
+
+impl Theme {
+    pub fn from_str(s: &str) -> Option<Theme> {
+        match s {
+            "system" => Some(Theme::System),
+            "dark" => Some(Theme::Dark),
+            "light" => Some(Theme::Light),
+            _ => None,
+        }
+    }
+
+    pub fn to_str(t: Theme) -> String {
+        match t {
+            Theme::System => String::from("system"),
+            Theme::Dark => String::from("dark"),
+            Theme::Light => String::from("light"),
         }
     }
 }
@@ -130,6 +165,7 @@ pub(crate) struct AppConfig {
     config_version: u32,
     config_file: Option<PathBuf>,
     mode: MiningMode,
+    theme: Theme,
     auto_mining: bool,
     mine_on_app_start: bool,
     p2pool_enabled: bool,
@@ -146,6 +182,7 @@ pub(crate) struct AppConfig {
     airdrop_ui_enabled: bool,
     paper_wallet_enabled: bool,
     use_tor: bool,
+    reset_earnings: bool,
     eco_mode_cpu_threads: Option<isize>,
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
@@ -155,6 +192,7 @@ pub(crate) struct AppConfig {
     mmproxy_monero_nodes: Vec<String>,
     custom_max_cpu_usage: Option<isize>,
     custom_max_gpu_usage: Option<isize>,
+    auto_update: bool,
 }
 
 impl AppConfig {
@@ -163,6 +201,7 @@ impl AppConfig {
             config_version: default_version(),
             config_file: None,
             mode: MiningMode::Eco,
+            theme: Theme::System,
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -181,6 +220,7 @@ impl AppConfig {
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: None,
             paper_wallet_enabled: false,
+            reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
             custom_mode_cpu_options: Vec::new(),
@@ -188,6 +228,7 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            auto_update: false,
         }
     }
 
@@ -212,6 +253,7 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
+                self.theme = Theme::from_str(&config.theme).unwrap_or(Theme::Light);
                 self.auto_mining = config.auto_mining;
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
@@ -237,6 +279,8 @@ impl AppConfig {
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
                 self.custom_max_cpu_usage = config.custom_max_cpu_usage;
                 self.custom_max_gpu_usage = config.custom_max_gpu_usage;
+                self.auto_update = config.auto_update;
+                self.reset_earnings = config.reset_earnings;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -311,6 +355,17 @@ impl AppConfig {
         if let Some(custom_max_gpu_usage) = custom_max_gpu_usage {
             self.set_max_gpu_usage(custom_max_gpu_usage).await?;
         }
+        Ok(())
+    }
+    pub async fn set_theme(&mut self, theme: String) -> Result<(), anyhow::Error> {
+        let new_theme = match theme.as_str() {
+            "system" => Theme::Light,
+            "dark" => Theme::Light,
+            "light" => Theme::Light,
+            _ => return Err(anyhow!("Invalid theme")),
+        };
+        self.theme = new_theme;
+        self.update_config_file().await?;
         Ok(())
     }
 
@@ -486,6 +541,12 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_auto_update(&mut self, auto_update: bool) -> Result<(), anyhow::Error> {
+        self.auto_update = auto_update;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -498,6 +559,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
+            theme: Theme::to_str(self.theme),
             auto_mining: self.auto_mining,
             mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
@@ -516,6 +578,7 @@ impl AppConfig {
             custom_max_cpu_usage: self.custom_max_cpu_usage,
             custom_max_gpu_usage: self.custom_max_gpu_usage,
             use_tor: self.use_tor,
+            reset_earnings: self.reset_earnings,
             eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
             ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
             custom_mode_cpu_options: self.custom_mode_cpu_options.clone(),
@@ -523,6 +586,7 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
+            auto_update: self.auto_update,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -546,6 +610,10 @@ fn default_custom_max_gpu_usage() -> Option<isize> {
 
 fn default_mode() -> String {
     "Eco".to_string()
+}
+
+fn default_theme() -> String {
+    "light".to_string()
 }
 
 fn default_false() -> bool {
