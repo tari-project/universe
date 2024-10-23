@@ -64,10 +64,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
             </LeftContent>
             <EarningsWrapper>
                 <Typography variant="h5" style={{ color: theme.palette.success.main }}>{`+ `}</Typography>
-                <Typography
-                    variant="h5"
-                    style={{ color: theme.palette.base }}
-                >{`${earningsFormatted} tXTM`}</Typography>
+                <Typography variant="h5" style={{ color: '#fff' }}>{`${earningsFormatted} tXTM`}</Typography>
             </EarningsWrapper>
         </Wrapper>
     );

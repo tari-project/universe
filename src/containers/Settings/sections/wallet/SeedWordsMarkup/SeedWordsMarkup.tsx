@@ -2,13 +2,14 @@ import { useCallback, useState } from 'react';
 import { useGetSeedWords } from './useGetSeedWords';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
+
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { SeedWordsView } from './SeedWordsView';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { SeedWordsEdit } from './SeedWordsEdit';
 import { useTranslation } from 'react-i18next';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 const SeedWordsMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });

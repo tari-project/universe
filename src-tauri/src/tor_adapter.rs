@@ -156,22 +156,26 @@ impl ProcessAdapter for TorAdapter {
             self.socks_port.to_string(),
             "--controlport".to_string(),
             format!("127.0.0.1:{}", self.config.control_port),
-            "--HashedControlPassword".to_string(),
-            EncryptedKey::hash_password(&self.password).to_string(),
+            // TODO: Put hashed password back
+            // "--HashedControlPassword".to_string(),
+            // EncryptedKey::hash_password(&self.password).to_string(),
             "--clientuseipv6".to_string(),
             "1".to_string(),
             "--DataDirectory".to_string(),
             working_dir_string,
             "--Log".to_string(),
             format!("notice file {}", log_dir_string),
-            // Used by tor bridges
-            // TODO: This does not work when path has space on windows.
-            // Consider running lyrebird binary manually
-            "--ClientTransportPlugin".to_string(),
-            format!("obfs4 exec {} managed", convert_to_string(lyrebird_path)?),
         ];
 
         if self.config.use_bridges {
+            // Used by tor bridges
+            // TODO: This does not work when path has space on windows.
+            // Consider running lyrebird binary manually
+            args.push("--ClientTransportPlugin".to_string());
+            args.push(format!(
+                "obfs4 exec {} managed",
+                convert_to_string(lyrebird_path)?
+            ));
             for bridge in &self.config.bridges {
                 args.push("--Bridge".to_string());
                 args.push(bridge.clone());
@@ -194,7 +198,9 @@ impl ProcessAdapter for TorAdapter {
                     name: self.name().to_string(),
                 },
             },
-            TorStatusMonitor {},
+            TorStatusMonitor {
+                control_port: self.config.control_port,
+            },
         ))
     }
 
@@ -208,7 +214,9 @@ impl ProcessAdapter for TorAdapter {
 }
 
 #[derive(Clone)]
-pub(crate) struct TorStatusMonitor {}
+pub(crate) struct TorStatusMonitor {
+    pub control_port: u16,
+}
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
