@@ -1073,7 +1073,6 @@ async fn get_seed_words(
 
 #[tauri::command]
 async fn get_monero_seed_words(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<Vec<String>, String> {
