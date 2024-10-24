@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "title": "Tari Universeウォレットを電話に接続",
+    "text": "Tari Auroraをダウンロードして、どこでもXTMを追跡しましょう。今すぐApp StoreまたはGoogle Play Storeで入手できます。",
+    "blackButton": "アプリを持っています",
+    "textButton": "Tari Auroraについて詳しく知る",
+    "scan": "QRコードをスキャン"
+  },
+  "qrcode": {
+    "warning": "このQRコードを共有しないでください",
+    "title": "Tari Auroraにインポート",
+    "text": "Tari Auroraアプリ内でQRコードをスキャンして、Tari Universeウォレットをインポートします。以下の1回限りのコードを使用して本人確認を行い、アプリ内の手順に従ってください。",
+    "blackButton": "完了",
+    "textButton": "助けが必要です",
+    "inputLabel": "識別コード",
+    "copied": "コピーしました！"
+  }
+}

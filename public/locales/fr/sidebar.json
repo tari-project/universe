@@ -9,6 +9,11 @@
   "mining-schedules-description": "Planifiez votre activité de minage",
   "setup-scheduler": "Configurer le planificateur",
   "lost-connection": "Connexion perdue au réseau Tari. Reconnexion..",
-  "show-history": "Show history",
-  "hide-history": "Hide history"
+  "paper-wallet-button": "Synchroniser avec le téléphone",
+  "history-show-button": "Historique",
+  "history-hide-button": "Masquer l\"historique",
+  "paper-wallet-tooltip-title": "Synchroniser avec le téléphone",
+  "paper-wallet-tooltip-message": "Suivez votre XTM partout en synchronisant votre portefeuille Universe avec Tari Aurora.",
+  "show-history": "Afficher l\"historique",
+  "hide-history": "Masquer l\"historique"
 }

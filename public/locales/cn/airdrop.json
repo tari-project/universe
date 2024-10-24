@@ -31,8 +31,8 @@
   "claimModalFinePrint": "<strong>请注意：</strong> 领取宝石会开启分析功能，以便我们改进 Universe",
   "inviteFriendsText": "复制链接并分享",
   "logged-in-as": "登录为 <strong>@{{twitter}}</strong>",
-  "bonus-gems-earned": "Bonus gems earned",
-  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
-  "your-friend-accepted-gift": "One of your friends accepted your gift!",
-  "you-reached-your-giftinh-goal": "You reached your gifting goal!"
+  "bonus-gems-earned": "获得的奖励宝石",
+  "keep-mining-to-earn-rewards": "继续挖矿以获得更多奖励！",
+  "your-friend-accepted-gift": "您的朋友之一接受了您的礼物！",
+  "you-reached-your-giftinh-goal": "您达到了赠送目标！"
 }

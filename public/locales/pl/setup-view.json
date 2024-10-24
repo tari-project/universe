@@ -23,7 +23,7 @@
   },
   "new-tari-version-available": "Nowa wersja Tari Universe jest dostępna!",
   "would-you-like-to-install": "Czy chciałbys zainstalować Tari Universe {{version}} teraz?",
-  "installing-latest-version": "Instalowanie wersji {{version}} Tari Universe",
   "yes": "Tak",
-  "no": "Nie"
+  "no": "Nie",
+  "installing-latest-version": "Instalowanie wersji {{version}} Tari Universe"
 }

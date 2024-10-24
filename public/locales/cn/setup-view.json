@@ -23,7 +23,7 @@
   },
   "new-tari-version-available": "有新版本的 Tari Universe 可用！",
   "would-you-like-to-install": "您想现在安装 Tari Universe {{version}} 吗？",
-  "installing-latest-version": "Installing {{version}} version of Tari Universe",
   "yes": "是",
-  "no": "否"
+  "no": "否",
+  "installing-latest-version": "正在安装 Tari 宇宙的 {{version}} 版本"
 }

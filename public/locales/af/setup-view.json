@@ -23,7 +23,7 @@
   },
   "new-tari-version-available": "'n Nuwe weergawe van Tari Universe is beskikbaar",
   "would-you-like-to-install": "Wil jy nou Tari Universe {{version}} installeer?",
-  "installing-latest-version": "Installing {{version}} version of Tari Universe",
   "yes": "Ja",
-  "no": "Nee"
+  "no": "Nee",
+  "installing-latest-version": "Installeer {{version}} weergawe van Tari Universe"
 }

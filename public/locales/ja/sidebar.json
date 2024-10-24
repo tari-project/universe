@@ -9,6 +9,11 @@
   "lost-connection": "Tariネットワークへの接続が失われました。再接続中..",
   "block": "ブロック",
   "recent-wins": "最近の勝利",
-  "show-history": "Show history",
-  "hide-history": "Hide history"
+  "paper-wallet-button": "電話と同期",
+  "history-show-button": "履歴",
+  "history-hide-button": "履歴を隠す",
+  "paper-wallet-tooltip-title": "電話と同期",
+  "paper-wallet-tooltip-message": "Tari AuroraにUniverseウォレットを同期して、どこでもXTMを追跡できます。",
+  "show-history": "履歴を表示",
+  "hide-history": "履歴を隠す"
 }

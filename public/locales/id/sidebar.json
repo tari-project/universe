@@ -9,6 +9,11 @@
   "lost-connection": "Koneksi ke Jaringan Tari terputus. Menyambung kembali..",
   "block": "Blok",
   "recent-wins": "Kemenangan terbaru",
-  "show-history": "Show history",
-  "hide-history": "Hide history"
+  "paper-wallet-button": "Sinkronkan dengan Ponsel",
+  "history-show-button": "Riwayat",
+  "history-hide-button": "Sembunyikan Riwayat",
+  "paper-wallet-tooltip-title": "Sinkronkan dengan Ponsel",
+  "paper-wallet-tooltip-message": "Lacak XTM Anda di mana saja dengan menyinkronkan dompet Universe Anda ke Tari Aurora.",
+  "show-history": "Tampilkan riwayat",
+  "hide-history": "Sembunyikan riwayat"
 }

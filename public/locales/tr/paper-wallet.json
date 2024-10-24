@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "title": "Tari Universe cüzdanınızı telefonunuza bağlayın",
+    "text": "Tari Aurora\"yı indir ve XTM\"ini her yerde takip et. Şimdi App Store veya Google Play Store\"dan edinin.",
+    "blackButton": "Uygulamam var",
+    "textButton": "Tari Aurora hakkında daha fazla bilgi edinin",
+    "scan": "QR Kodunu Tara"
+  },
+  "qrcode": {
+    "warning": "Bu QR kodunu paylaşmayın",
+    "title": "Tari Aurora\"ya İçe Aktar",
+    "text": "Tari Aurora uygulamasında QR kodunu tarayarak Tari Universe cüzdanınızı içe aktarın. Kimliğinizi doğrulamak için aşağıdaki tek seferlik kodu kullanın ve ardından uygulamadaki adımları izleyin.",
+    "blackButton": "Tamam",
+    "textButton": "Yardıma ihtiyacım var",
+    "inputLabel": "Kimlik Kodu",
+    "copied": "Kopyalandı!"
+  }
+}

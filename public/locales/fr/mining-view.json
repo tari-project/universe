@@ -12,7 +12,8 @@
     "waiting-for-idle": "En attente d'inactivité",
     "started-auto-mining": "Démarrage du minage automatique"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>Vous avez gagné {{ blocks }}</span> pendant votre absence",
+  "estimated-earnings": "Gains estimés",
+  "you-earn-rewards-separately": "Vous gagnez des récompenses pour le minage CPU et GPU séparément",
   "day": "day"
 }

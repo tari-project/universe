@@ -13,7 +13,8 @@
     "started-auto-mining": "自动挖矿开始",
     "stop-mining": "停止挖矿"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>您在离开时赢得了 {{ blocks }}</span>",
+  "estimated-earnings": "预计收益",
+  "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
   "day": "day"
 }

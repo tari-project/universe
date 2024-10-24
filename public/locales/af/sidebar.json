@@ -9,6 +9,11 @@
   "lost-connection": "Verbinding met die Tari Netwerk verloor. Herverbinding..",
   "block": "Blok",
   "recent-wins": "Onlangse oorwinnings",
-  "show-history": "Show history",
-  "hide-history": "Hide history"
+  "paper-wallet-button": "Sinkroniseer met Foon",
+  "history-show-button": "Geskiedenis",
+  "history-hide-button": "Versteek Geskiedenis",
+  "paper-wallet-tooltip-title": "Sinkroniseer met Foon",
+  "paper-wallet-tooltip-message": "Volg jou XTM oral deur jou Universe beursie met Tari Aurora te sinkroniseer.",
+  "show-history": "Wys geskiedenis",
+  "hide-history": "Versteek geskiedenis"
 }

@@ -13,7 +13,8 @@
     "started-auto-mining": "Automatyczne kopanie uruchomione",
     "stop-mining": "Zatrzymaj kopanie"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>Wygrałeś {{ blocks }}</span> podczas swojej nieobecności",
+  "estimated-earnings": "Szacowane zarobki",
+  "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
   "day": "day"
 }

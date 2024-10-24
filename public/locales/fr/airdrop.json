@@ -31,8 +31,8 @@
   "topTooltipTitle": "Récompenses du Testnet",
   "topTooltipText": "Obtenez un Airdrop Tari en collectant des gemmes. Plus vous gagnez de gemmes, plus votre Airdrop est important.",
   "logged-in-as": "Connecté en tant que <strong>@{{twitter}}</strong>",
-  "bonus-gems-earned": "Bonus gems earned",
-  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
-  "your-friend-accepted-gift": "One of your friends accepted your gift!",
-  "you-reached-your-giftinh-goal": "You reached your gifting goal!"
+  "bonus-gems-earned": "Gemmes bonus gagnées",
+  "keep-mining-to-earn-rewards": "Continuez à miner pour gagner plus de récompenses !",
+  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !",
+  "you-reached-your-giftinh-goal": "Vous avez atteint votre objectif de cadeau !"
 }

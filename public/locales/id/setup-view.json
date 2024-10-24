@@ -23,7 +23,7 @@
   },
   "new-tari-version-available": "Versi baru dari Tari Universe tersedia!",
   "would-you-like-to-install": "Apakah Anda ingin menginstal Tari Universe {{version}} sekarang?",
-  "installing-latest-version": "Installing {{version}} version of Tari Universe",
   "yes": "Ya",
-  "no": "Tidak"
+  "no": "Tidak",
+  "installing-latest-version": "Menginstal versi {{version}} dari Tari Universe"
 }
