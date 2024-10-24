@@ -24,11 +24,9 @@ const parseArgument = (a?: ParseArgs) => {
     }
 };
 
-const isDevelopment = import.meta.env.DEV || import.meta.env.MODE == 'development';
-
 const getOptions = (args, level) => {
     void invoke('log_web_message', {
-        level: isDevelopment ? `info` : level, // so it isn't logged to sentry if error
+        level,
         message: args.map(parseArgument),
     });
     return originalConsole[level](...args);
