@@ -76,6 +76,8 @@ tauri = {version = "1.8.0", features = [
   "macos-private-api",
   "isolation",
   "shell-open",
+  "icon-ico",
+  "icon-png",
   "process-command-api",
 ]}
 tauri-plugin-single-instance = {git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1"}
