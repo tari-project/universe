@@ -59,10 +59,10 @@ tari_common_types = {git = "https://github.com/tari-project/tari.git", branch = 
 tari_core = {git = "https://github.com/tari-project/tari.git", branch = "development", features = [
   "transactions",
 ] }
-tari_crypto = "0.20.3"
+tari_crypto = "0.21.0"
 tari_key_manager = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_shutdown = {git = "https://github.com/tari-project/tari.git", branch = "development"}
-tari_utilities = "0.7.0"
+tari_utilities = "0.8.0"
 tauri = {version = "1.8.0", features = [
   "system-tray",
   "updater",
