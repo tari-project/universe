@@ -1,4 +1,3 @@
-// Use union type
 interface TauriEventPayload {
     event_type: 'setup_status' | 'user_idle' | 'user_active' | 'current_timeout_duration';
     title: string;

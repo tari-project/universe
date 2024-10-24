@@ -1,7 +1,8 @@
-mod models;
+pub mod models;
 use log::{debug, error};
 const LOG_TARGET: &str = "tari::universe::xmrig::http_api";
 
+#[derive(Debug, Clone)]
 pub struct XmrigHttpApiClient {
     url: String,
     access_token: String,

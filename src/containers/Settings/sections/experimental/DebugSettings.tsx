@@ -9,15 +9,21 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { useMemo } from 'react';
 
 export default function DebugSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const lastBlockTime = useMiningStore((state) => state.displayBlockTime);
+    const lastBlockTime = useBlockchainVisualisationStore((state) => state.debugBlockTime);
     const isConnectedToTariNetwork = useMiningStore((s) => s.base_node?.is_connected);
     const connectedPeers = useMiningStore((state) => state.base_node?.connected_peers || []);
 
-    const { daysString, hoursString, minutes, seconds } = lastBlockTime || {};
-    const displayTime = `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
+    const displayTime = useMemo(() => {
+        if (!lastBlockTime) return '-';
+
+        const { daysString, hoursString, minutes, seconds } = lastBlockTime;
+        return `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
+    }, [lastBlockTime]);
 
     return (
         <>
@@ -49,11 +55,13 @@ export default function DebugSettings() {
                 </SettingsGroupTitle>
                 <SettingsGroup>
                     <SettingsGroupContent style={{ fontSize: '11px' }}>
-                        {connectedPeers.map((peer, i) => (
-                            <Typography key={peer}>
-                                {i + 1}. {peer}
-                            </Typography>
-                        ))}
+                        {connectedPeers?.length
+                            ? connectedPeers.map((peer, i) => (
+                                  <Typography key={`peer-${peer}:${i}`}>
+                                      {i + 1}. {peer}
+                                  </Typography>
+                              ))
+                            : null}
                     </SettingsGroupContent>
                 </SettingsGroup>
             </SettingsGroupWrapper>

@@ -1,15 +1,19 @@
 {
-    "floor": "Vloer",
-    "current-block-time": "Huidige bloktyd",
-    "your-reward-is": "Jou beloning is",
-    "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
-    "mining-button-text": {
-        "starting-mining": "Myn begin",
-        "start-mining": "Begin myn",
-        "pause-mining": "Onderbreek myn",
-        "changing-mode": "Verander modus",
-        "cancel-mining": "Kanselleer myn",
-        "waiting-for-idle": "Wag tot onaktief",
-        "started-auto-mining": "Outomatiese myn het begin"
-    }
+  "floor": "Vloer",
+  "current-block-time": "Huidige bloktyd",
+  "your-reward-is": "Jou beloning is",
+  "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
+  "mining-button-text": {
+    "starting-mining": "Myn begin",
+    "start-mining": "Begin myn",
+    "pause-mining": "Onderbreek myn",
+    "changing-mode": "Verander modus",
+    "cancel-mining": "Kanselleer myn",
+    "waiting-for-idle": "Wag tot onaktief",
+    "started-auto-mining": "Outomatiese myn het begin",
+    "stop-mining": "Stop Mynbou"
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }

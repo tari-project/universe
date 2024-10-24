@@ -1,91 +1,73 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { Button } from '@app/components/elements/Button.tsx';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
-import { Stack } from '@app/components/elements/Stack.tsx';
-import { useCallback, useState } from 'react';
-import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { useState } from 'react';
 import {
     SettingsGroup,
     SettingsGroupAction,
     SettingsGroupContent,
-    SettingsGroupTextAction,
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
+import { useUIStore } from '@app/store/useUIStore.ts';
+
+import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { Stack } from '@app/components/elements/Stack.tsx';
+
+import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const [loading, setLoading] = useState(false);
-    const [open, setOpen] = useState(false);
-    const [feedback, _setFeedback] = useState('App feedback');
-    const [error, setError] = useState('');
-    const sendLogs = useCallback(() => {
-        setLoading(true);
-        setError('');
-        invoke('send_feedback', { feedback, includeLogs: true })
-            .then(() => {
-                setOpen(false);
-            })
-            .catch((error) => {
-                setError(error.toString());
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-    }, [feedback]);
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
+    const { isCopied, copyToClipboard } = useCopyToClipboard();
+
+    const [reference, setReference] = useState('');
+
     const openLogsDirectory = () => {
         invoke('open_log_dir')
             .then(() => {
                 console.info('Opening logs directory');
             })
             .catch((error) => {
-                console.error(error);
+                console.error('Error opening logs directory: ', error);
             });
     };
-
-    const handleClose = useCallback(() => {
-        setOpen(false);
-    }, [setOpen]);
 
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{t('logs', { ns: 'settings' })}</Typography>
+                        <Typography variant="h6">{t('report-issue', { ns: 'settings' })}</Typography>
                     </SettingsGroupTitle>
-                    <SettingsGroupTextAction onClick={() => setOpen(true)}>
-                        {t('send-logs', { ns: 'settings' })}
-                    </SettingsGroupTextAction>
+                    {reference && (
+                        <Stack direction="row" alignItems="center" justifyContent="flex-start" gap={5}>
+                            {/* TODO: consider moving reference to dialog?*/}
+                            <Typography>
+                                <Trans
+                                    t={t}
+                                    i18nKey="your-reference"
+                                    ns="settings"
+                                    values={{ logRef: reference }}
+                                    components={{ bold: <strong />, br: <br /> }}
+                                />
+                            </Typography>
+                            <IconButton onClick={() => copyToClipboard(reference)} size="small">
+                                {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+                            </IconButton>
+                        </Stack>
+                    )}
                 </SettingsGroupContent>
 
                 <SettingsGroupAction>
-                    <ButtonBase onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</ButtonBase>
+                    <Button onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</Button>
+                    <Button onClick={() => setDialogToShow('logs')}>{t('send-logs', { ns: 'settings' })}</Button>
                 </SettingsGroupAction>
+                <SendLogsDialog onSetReference={setReference} />
             </SettingsGroup>
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent>
-                    <Stack direction="column" alignItems="center" justifyContent="space-between">
-                        <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
-                        <Typography variant={'p'}>{error}</Typography>
-                        <Stack direction="row">
-                            <Button disabled={loading} onClick={handleClose} color="warning">
-                                {t('cancel')}
-                            </Button>
-                            {loading ? (
-                                <CircularProgress />
-                            ) : (
-                                <Button disabled={loading} onClick={sendLogs}>
-                                    {t('submit')}
-                                </Button>
-                            )}
-                        </Stack>
-                    </Stack>
-                </DialogContent>
-            </Dialog>
         </SettingsGroupWrapper>
     );
 }

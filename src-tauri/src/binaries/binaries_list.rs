@@ -10,6 +10,7 @@ pub enum Binaries {
     Wallet,
     ShaP2pool,
     GpuMiner,
+    Tor,
 }
 
 impl Binaries {
@@ -21,18 +22,20 @@ impl Binaries {
             Binaries::Wallet => "wallet",
             Binaries::ShaP2pool => "sha-p2pool",
             Binaries::GpuMiner => "xtrgpuminer",
+            Binaries::Tor => "tor",
         }
     }
 
-    pub fn from_name(name: &str) -> Option<Self> {
+    pub fn from_name(name: &str) -> Self {
         match name {
-            "xmrig" => Some(Binaries::Xmrig),
-            "mmproxy" => Some(Binaries::MergeMiningProxy),
-            "minotari_node" => Some(Binaries::MinotariNode),
-            "wallet" => Some(Binaries::Wallet),
-            "sha-p2pool" => Some(Binaries::ShaP2pool),
-            "xtrgpuminer" => Some(Binaries::GpuMiner),
-            _ => None,
+            "xmrig" => Binaries::Xmrig,
+            "mmproxy" => Binaries::MergeMiningProxy,
+            "minotari_node" => Binaries::MinotariNode,
+            "wallet" => Binaries::Wallet,
+            "sha-p2pool" => Binaries::ShaP2pool,
+            "xtrgpuminer" => Binaries::GpuMiner,
+            "tor" => Binaries::Tor,
+            _ => panic!("Unknown binary name: {}", name),
         }
     }
 
@@ -40,7 +43,7 @@ impl Binaries {
         match self {
             Binaries::Xmrig => {
                 let file_name = format!("xmrig-{}", version);
-                PathBuf::from(file_name)
+                PathBuf::from(file_name).join("xmrig")
             }
             Binaries::MergeMiningProxy => {
                 let file_name = "minotari_merge_mining_proxy";
@@ -62,6 +65,10 @@ impl Binaries {
                 let file_name = "xtrgpuminer";
                 PathBuf::from(file_name)
             }
+            Binaries::Tor => {
+                let file_name = "tor";
+                PathBuf::from(file_name)
+            }
         }
     }
 
@@ -73,6 +80,7 @@ impl Binaries {
             Binaries::Wallet,
             Binaries::ShaP2pool,
             Binaries::GpuMiner,
+            Binaries::Tor,
         ]
         .iter()
         .copied()

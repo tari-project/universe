@@ -1,8 +1,7 @@
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
 import { Language, LanguageList, resolveI18nLanguage } from '@app/i18initializer.ts';
 import styled from 'styled-components';
-import { useCallback } from 'react';
-import i18n, { changeLanguage } from 'i18next';
+import i18n from 'i18next';
 import { m } from 'framer-motion';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
@@ -20,25 +19,16 @@ const Wrapper = styled(m.div)`
 `;
 
 export default function LanguageDropdown() {
-    const { setApplicationLanguage } = useAppConfigStore((s) => ({
-        setApplicationLanguage: s.setApplicationLanguage,
-    }));
-
-    const handleLanguageChange = useCallback(
-        (value: LanguageOption['value']) => {
-            changeLanguage(value);
-            setApplicationLanguage(value as Language);
-        },
-        [setApplicationLanguage, changeLanguage]
-    );
+    const setApplicationLanguage = useAppConfigStore((s) => s.setApplicationLanguage);
 
     return (
         <Wrapper>
             <Select
                 options={languageOptions}
-                onChange={handleLanguageChange}
+                onChange={(value) => setApplicationLanguage(value as Language)}
                 selectedValue={resolveI18nLanguage(i18n.language)}
                 variant="bordered"
+                forceHeight={36}
             />
         </Wrapper>
     );

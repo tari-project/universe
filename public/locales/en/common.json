@@ -1,6 +1,8 @@
 {
     "submit": "Submit",
     "cancel": "Cancel",
+    "connection": "Connection",
+    "disconnect": "Disconnect",
     "temperature": "Temperature",
     "max-temperature": "Max temperature",
     "usage": "Usage",
@@ -19,5 +21,7 @@
     "testnet": "Testnet",
     "critical-error": "Critical error",
     "please-try-again-later": "Please try again later. If the problem persists, please contact us.",
-    "close-tari-universe": "Close Tari Universe"
+    "close-tari-universe": "Close Tari Universe",
+    "continue": "Continue",
+    "restart": "Restart"
 }

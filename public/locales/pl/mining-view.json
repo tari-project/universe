@@ -10,6 +10,10 @@
     "changing-mode": "Zmiana trybu",
     "cancel-mining": "Anuluj kopanie",
     "waiting-for-idle": "Oczekiwanie na bezczynność",
-    "started-auto-mining": "Automatyczne kopanie uruchomione"
-  }
+    "started-auto-mining": "Automatyczne kopanie uruchomione",
+    "stop-mining": "Zatrzymaj kopanie"
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }

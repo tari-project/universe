@@ -6,8 +6,8 @@
         "distDir": "../dist"
     },
     "package": {
-        "productName": "Tari Universe",
-        "version": "0.4.0-rc.0"
+        "productName": "Tari Universe (Alpha)",
+        "version": "0.5.44"
     },
     "tauri": {
         "systemTray": {
@@ -17,7 +17,7 @@
         "updater": {
             "active": true,
             "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
             ],
             "dialog": false,
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
@@ -49,16 +49,17 @@
         },
         "windows": [
             {
-                "title": "Tari Universe | Testnet",
+                "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
-                "minWidth": 997,
-                "minHeight": 620,
+                "minWidth": 1144,
+                "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
                 "decorations": true,
-                "transparent": false
+                "transparent": false,
+                "additionalBrowserArgs": "--enable-features=ignore-gpu-blocklist, --disable=features=disable-accelerated-2d-canvas"
             }
         ],
         "security": {
@@ -67,7 +68,7 @@
         "bundle": {
             "active": true,
             "targets": "all",
-            "identifier": "com.tari.universe",
+            "identifier": "com.tari.universe.alpha",
             "icon": [
                 "icons/icon.icns",
                 "icons/icon.ico",
@@ -80,8 +81,7 @@
             "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
             "publisher": "Tari Labs, LLC",
             "macOS": {
-                "providerShortName": "Tari Labs, LLC",
-                "license": "../LICENSE.md"
+                "providerShortName": "Tari Labs, LLC"
             }
         },
         "macOSPrivateApi": true

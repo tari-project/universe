@@ -2,7 +2,7 @@ import { useAppStateStore } from '@app/store/appStateStore';
 
 import { invoke } from '@tauri-apps/api';
 import { useCallback, useState } from 'react';
-import { Button } from '@app/components/elements/Button.tsx';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
@@ -16,7 +16,9 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
 export const ResetSettingsButton = () => {
     const [open, setOpen] = useState(false);
@@ -35,6 +37,8 @@ export const ResetSettingsButton = () => {
             .catch((e) => {
                 console.error('Error when resetting settings: ', e);
                 setError('Resetting settings failed: ' + e);
+                setLoading(false);
+                setOpen(false);
             });
     };
 
@@ -43,7 +47,7 @@ export const ResetSettingsButton = () => {
     }, [setOpen]);
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={setOpen} disableClose={loading}>
             <SettingsGroupWrapper>
                 <SettingsGroup>
                     <SettingsGroupContent>
@@ -52,30 +56,40 @@ export const ResetSettingsButton = () => {
                         </SettingsGroupTitle>
                     </SettingsGroupContent>
                     <SettingsGroupAction>
-                        <ButtonBase onClick={() => setOpen(true)}>{t('reset-settings')}</ButtonBase>
+                        <Button onClick={() => setOpen(true)}>{t('reset-settings')}</Button>
                     </SettingsGroupAction>
                 </SettingsGroup>
             </SettingsGroupWrapper>
             <DialogContent>
-                <Stack direction="column" alignItems="center" justifyContent="space-between">
+                <Stack
+                    direction="column"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    gap={12}
+                    style={{ width: 500 }}
+                >
                     <Typography variant="h2">{t('reset-settings')}</Typography>
+                    <Typography variant="p">{t('reset-permanently')}</Typography>
+
                     <ToggleSwitch
                         checked={resetWallet}
+                        disabled={loading}
                         onChange={() => setResetWallet((p) => !p)}
                         label={t('reset-wallet')}
                     />
-                    <Typography variant="p">{t('reset-permanently')}</Typography>
-                    <Stack direction="row" justifyContent="space-between" style={{ marginTop: '8px' }}>
-                        <Button disabled={loading} onClick={handleClose} color="warning">
+                    <Divider />
+
+                    <Stack direction="row" justifyContent="space-between" gap={8}>
+                        <SquaredButton disabled={loading} onClick={handleClose}>
                             {t('cancel')}
-                        </Button>
+                        </SquaredButton>
 
                         {loading ? (
                             <CircularProgress />
                         ) : (
-                            <Button disabled={loading} onClick={resetSettings}>
+                            <SquaredButton disabled={loading} onClick={resetSettings} color="orange">
                                 {t('yes')}
-                            </Button>
+                            </SquaredButton>
                         )}
                     </Stack>
                 </Stack>
