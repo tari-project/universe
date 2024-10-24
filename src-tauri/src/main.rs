@@ -1104,7 +1104,7 @@ async fn get_monero_seed_words(
         Err(e @ CredentialError::PreviouslyUsedKeyring) => {
             window
                 .emit(
-                    "message",
+                    "keyring_message",
                     KeyringErrorEvent {
                         event_type: "keyring_previously_used".to_string(),
                         title: "keyring access error".to_string(),

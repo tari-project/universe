@@ -18,7 +18,7 @@ const variants: Variants = {
         ...transition,
     },
     visible: {
-        y: 0,
+        y: 10,
         opacity: 1,
         ...transition,
     },
@@ -38,22 +38,31 @@ export default function ErrorSnackbar() {
         setShow(Boolean(error && error?.length));
     }, [error]);
 
-    useEffect(() => {
-        if (show) {
-            const closeTimeout = setTimeout(() => {
-                handleClose();
-            }, AUTO_CLOSE_TIMEOUT);
-
-            return () => {
-                clearTimeout(closeTimeout);
-            };
-        }
-    }, [handleClose, show]);
+    // useEffect(() => {
+    //     if (show) {
+    //         const closeTimeout = setTimeout(() => {
+    //             handleClose();
+    //         }, AUTO_CLOSE_TIMEOUT);
+    //
+    //         return () => {
+    //             clearTimeout(closeTimeout);
+    //         };
+    //     }
+    // }, [handleClose, show]);
 
     return (
         <AnimatePresence>
             {show && (
-                <Wrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
+                <Wrapper
+                    variants={variants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="hidden"
+                    style={{
+                        left: 'calc(50% - 200px)',
+                        bottom: 20,
+                    }}
+                >
                     <ButtonWrapper>
                         <IconButton aria-label="close" onClick={handleClose}>
                             <IoClose />

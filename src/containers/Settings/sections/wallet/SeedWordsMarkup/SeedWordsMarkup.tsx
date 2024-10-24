@@ -51,7 +51,12 @@ const SeedWordsMarkup = () => {
             {isEditing ? (
                 <SeedWordsEdit seedWordsFetching={seedWordsFetching} seedWords={seedWords} toggleEdit={toggleEdit} />
             ) : (
-                <SeedWords showSeedWords={showSeedWords} seedWords={seedWords} editable onToggleEdit={toggleEdit} />
+                <SeedWords
+                    showSeedWords={showSeedWords && !!seedWords?.length}
+                    seedWords={seedWords}
+                    editable
+                    onToggleEdit={toggleEdit}
+                />
             )}
         </SettingsGroupWrapper>
     );

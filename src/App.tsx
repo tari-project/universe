@@ -20,8 +20,10 @@ import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
 import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
+import useKeyringListener from '@app/hooks/useKeyringListener.ts';
 
 export default function App() {
+    useKeyringListener();
     useLangaugeResolver();
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
@@ -64,9 +66,9 @@ export default function App() {
                     <LayoutGroup id="app-content">
                         {shutDownMarkup}
                         {mainMarkup}
-                        <ErrorSnackbar />
                         <SplashScreen />
                     </LayoutGroup>
+                    <ErrorSnackbar />
                 </MotionConfig>
             </LazyMotion>
         </ThemeProvider>
