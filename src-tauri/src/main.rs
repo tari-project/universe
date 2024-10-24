@@ -1556,7 +1556,6 @@ async fn get_miner_metrics(
         .write()
         .await
         .load_status_file(config_path);
-
     let hardware_status = HardwareMonitor::current()
         .write()
         .await
@@ -1602,7 +1601,6 @@ async fn get_miner_metrics(
     };
     let mut lock = state.cached_miner_metrics.write().await;
     *lock = Some(ret.clone());
-
     state
         .is_getting_miner_metrics
         .store(false, Ordering::SeqCst);
