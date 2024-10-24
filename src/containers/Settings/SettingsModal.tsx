@@ -14,6 +14,7 @@ import { MiningSettings } from './sections/mining/MiningSettings.tsx';
 import { GeneralSettings } from './sections/general/GeneralSettings.tsx';
 import { ExperimentalSettings } from './sections/experimental/ExperimentalSettings.tsx';
 import { WalletSettings } from './sections/wallet/WalletSettings.tsx';
+import TempSettings from './sections/experimental/TempSettings.tsx';
 
 import { SETTINGS_TYPES, SettingsType } from './types.ts';
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
@@ -27,6 +28,7 @@ const markups = {
     wallet: <WalletSettings />,
     airdrop: <AirdropSettings />,
     experimental: <ExperimentalSettings />,
+    very_experimental: <TempSettings />,
 };
 
 export default function SettingsModal() {

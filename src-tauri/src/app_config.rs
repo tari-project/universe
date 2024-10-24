@@ -322,8 +322,8 @@ impl AppConfig {
     }
     pub async fn set_theme(&mut self, theme: String) -> Result<(), anyhow::Error> {
         let new_theme = match theme.as_str() {
-            "system" => Theme::Light,
-            "dark" => Theme::Light,
+            "system" => Theme::System,
+            "dark" => Theme::Dark,
             "light" => Theme::Light,
             _ => return Err(anyhow!("Invalid theme")),
         };

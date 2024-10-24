@@ -16,6 +16,7 @@ export type GlAppState =
 
 export interface GlApp {
     setState(e: GlAppState): void;
+    init(): void;
     properties: Properties;
     stateManager: StateManager;
 }

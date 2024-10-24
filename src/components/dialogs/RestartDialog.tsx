@@ -12,6 +12,7 @@ import { IoClose } from 'react-icons/io5';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { useTheme } from 'styled-components';
 
 export default function RestartDialog() {
     const dialogToShow = useUIStore((s) => s.dialogToShow);
@@ -19,6 +20,7 @@ export default function RestartDialog() {
     const { t } = useTranslation('settings', { useSuspense: false });
 
     const showRestartModal = dialogToShow === 'restart';
+    const theme = useTheme();
 
     const setShowRestartModal = useCallback(() => {
         setDialogToShow(showRestartModal ? null : 'restart');
@@ -52,7 +54,11 @@ export default function RestartDialog() {
                         </Stack>
 
                         <Stack direction="row" alignItems="center" justifyContent="space-between" gap={8}>
-                            <TextButton color="grey" colorIntensity={700} onClick={setShowRestartModal}>
+                            <TextButton
+                                color="grey"
+                                colorIntensity={theme.mode === 'light' ? 700 : 200}
+                                onClick={setShowRestartModal}
+                            >
                                 {t('restart-later')}
                             </TextButton>
                             <Button size="small" variant="gradient" onClick={handleRestart}>
