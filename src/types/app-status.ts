@@ -68,6 +68,8 @@ export interface GpuMinerMetrics {
 }
 
 export interface MinerMetrics {
+    sha_network_hash_rate: number;
+    randomx_network_hash_rate: number;
     cpu: CpuMinerMetrics;
     gpu: GpuMinerMetrics;
     base_node: BaseNodeStatus;

@@ -1544,6 +1544,7 @@ async fn get_app_config(
     Ok(state.config.read().await.clone())
 }
 
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
@@ -1609,7 +1610,6 @@ async fn get_miner_metrics(
         .write()
         .await
         .load_status_file(config_path);
-
     let hardware_status = HardwareMonitor::current()
         .write()
         .await
@@ -1635,6 +1635,8 @@ async fn get_miner_metrics(
     }
 
     let ret = MinerMetrics {
+        sha_network_hash_rate: sha_hash_rate,
+        randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
             hardware: hardware_status.cpu,
             mining: cpu_mining_status,
@@ -1653,7 +1655,6 @@ async fn get_miner_metrics(
     };
     let mut lock = state.cached_miner_metrics.write().await;
     *lock = Some(ret.clone());
-
     state
         .is_getting_miner_metrics
         .store(false, Ordering::SeqCst);
@@ -1789,6 +1790,8 @@ pub struct GpuMinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct MinerMetrics {
+    sha_network_hash_rate: u64,
+    randomx_network_hash_rate: u64,
     cpu: CpuMinerMetrics,
     gpu: GpuMinerMetrics,
     base_node: BaseNodeStatus,
