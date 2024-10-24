@@ -66,7 +66,7 @@ impl CacheJsonFile {
     }
 
 
-    pub fn update_cache_entry(&mut self, repo_owner: &str, repo_name: &str, github_etag: Option<String>, mirror_etag: Option<String>, file_path: PathBuf) -> Result<(), Error> {
+    pub fn update_cache_entry(&mut self, repo_owner: &str, repo_name: &str,file_path: PathBuf, github_etag: Option<String>, mirror_etag: Option<String> ) -> Result<(), Error> {
         let cache_entry = self.cache_entries.get_mut(&Self::create_cache_entry_identifier(repo_owner, repo_name)).ok_or_else(|| anyhow!("Cache entry not found"))?;
         cache_entry.github_etag = github_etag;
         cache_entry.mirror_etag = mirror_etag;
@@ -79,7 +79,7 @@ impl CacheJsonFile {
         let is_cache_entry_exists = self.cache_entries.contains_key(&Self::create_cache_entry_identifier(repo_owner, repo_name));
 
         if is_cache_entry_exists {
-            self.update_cache_entry(repo_owner, repo_name, github_etag, mirror_etag, file_path)?;
+            self.update_cache_entry(repo_owner, repo_name, file_path,github_etag, mirror_etag)?;
         } else {
             let cache_entry = CacheEntry {
                 repo_owner: repo_owner.to_string(),
@@ -103,12 +103,12 @@ impl CacheJsonFile {
         }
     }
 
-    pub fn save_file_content(&self, repo_owner: &str, repo_name: &str, content: Vec<VersionDownloadInfo>) -> Result<(), Error> {
+    pub fn save_file_content(&self, repo_owner: &str, repo_name: &str, content: Vec<VersionDownloadInfo>) -> Result<PathBuf, Error> {
         let cache_entry = self.get_cache_entry(repo_owner, repo_name).ok_or_else(|| anyhow!("Cache entry not found"))?;
         let file_path = cache_entry.file_path.clone();
         let json = serde_json::to_string_pretty(&content)?;
         std::fs::write(&file_path, json)?;
-        Ok(())
+        Ok(file_path)
     }
         
 

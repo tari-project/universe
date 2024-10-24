@@ -5,8 +5,7 @@ use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 
 use crate::{
-    download_utils::{download_file_with_retries, extract, validate_checksum},
-    progress_tracker::ProgressTracker,
+    download_utils::{download_file_with_retries, extract, validate_checksum}, github::ReleaseSource, progress_tracker::ProgressTracker
 };
 
 use super::{
@@ -273,7 +272,7 @@ impl BinaryManager {
         info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
-            assets: vec![asset.clone()],
+            assets: vec![asset.clone()]
         };
         let checksum_file = self
             .adapter

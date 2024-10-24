@@ -1,9 +1,10 @@
 use std::sync::LazyLock;
 
+use log::warn;
 use reqwest::{ Client, Response };
 use anyhow::anyhow;
 
-use crate::binaries::binaries_resolver::VersionDownloadInfo;
+use super::Release;
 const LOG_TARGET: &str = "tari::universe::request_client";
 
 
@@ -97,12 +98,34 @@ impl RequestClient {
         Ok(CloudFlareCacheStatus::from_str(head_response.headers().get("cf-cache-status").map_or("", |v| v.to_str().unwrap_or_default())))
     }
 
-    pub async fn fetch_get_versions_download_info(&self, url: &str) -> Result<(Vec<VersionDownloadInfo>, String), anyhow::Error> {
+    pub async fn fetch_get_versions_download_info(&self, url: &str) -> Result<(Vec<Release>, String), anyhow::Error> {
         let get_response = self.send_get_request(url).await.map_err(|e| anyhow!(e))?;
         let etag = get_response.headers().get("etag").map_or("", |v| v.to_str().unwrap_or_default()).to_string();
         let body = get_response.text().await.map_err(|e| anyhow!(e))?;
 
         Ok((serde_json::from_str(&body)?, etag))
+    }
+
+    pub async fn check_if_cache_hits(&self, url: &str) -> Result<bool, anyhow::Error> {
+        const MAX_RETRIES: u8 = 5;
+        let mut retries = 0;
+
+        loop {
+            if retries >= MAX_RETRIES {
+                return Ok(false);
+            }
+
+            let head_response = self.fetch_head_cf_cache_status(&url).await?;
+            if head_response.is_hit() {
+                break;
+            }
+
+            warn!(target: LOG_TARGET, "Cache miss. Retrying in 3 seconds. Try {}/{}", retries, MAX_RETRIES);
+            retries += 1;
+            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+        }
+
+        Ok(true)
     }
 
     pub fn current() -> &'static LazyLock<RequestClient> {
