@@ -11,10 +11,14 @@ import {
 } from 'react';
 import {
     FloatingFocusManager,
+    FloatingNode,
     FloatingPortal,
+    FloatingTree,
     useClick,
     useDismiss,
     useFloating,
+    useFloatingNodeId,
+    useFloatingParentNodeId,
     useInteractions,
     useMergeRefs,
     useRole,
@@ -34,11 +38,14 @@ export function useDialog({
 }: DialogOptions) {
     const [labelId, setLabelId] = useState<string | undefined>();
     const [descriptionId, setDescriptionId] = useState<string | undefined>();
+    const parentId = useFloatingParentNodeId();
 
+    const nodeId = useFloatingNodeId(parentId ?? undefined);
     const open = controlledOpen;
     const setOpen = setControlledOpen;
 
     const data = useFloating({
+        nodeId,
         open,
         onOpenChange: setOpen,
     });
@@ -48,7 +55,7 @@ export function useDialog({
     const click = useClick(context, {
         enabled: controlledOpen == null,
     });
-    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: !disableClose });
+    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: !disableClose, bubbles: false });
     const role = useRole(context);
 
     const interactions = useInteractions([click, dismiss, role]);
@@ -62,9 +69,11 @@ export function useDialog({
             labelId,
             descriptionId,
             setLabelId,
+            parentId,
             setDescriptionId,
+            nodeId,
         }),
-        [open, setOpen, interactions, data, labelId, descriptionId]
+        [open, setOpen, interactions, data, labelId, descriptionId, nodeId, parentId]
     );
 }
 
@@ -102,24 +111,32 @@ export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement
         const context = useDialogContext();
         const ref = useMergeRefs([context.refs.setFloating, propRef]);
 
-        if (!context.open) return null;
-
-        return (
-            <FloatingPortal id="portal-root">
-                <Overlay lockScroll>
-                    <FloatingFocusManager context={context.context}>
-                        <ContentWrapper
-                            ref={ref}
-                            aria-labelledby={context.labelId}
-                            aria-describedby={context.descriptionId}
-                            {...context.getFloatingProps(props)}
-                            $unPadded={props.$unPadded}
-                        >
-                            {props.children}
-                        </ContentWrapper>
-                    </FloatingFocusManager>
-                </Overlay>
-            </FloatingPortal>
+        const dialog = (
+            <FloatingNode id={context.nodeId}>
+                {context.open ? (
+                    <FloatingPortal>
+                        <Overlay lockScroll>
+                            <FloatingFocusManager context={context.context}>
+                                <ContentWrapper
+                                    ref={ref}
+                                    aria-labelledby={context.labelId}
+                                    aria-describedby={context.descriptionId}
+                                    {...context.getFloatingProps(props)}
+                                    $unPadded={props.$unPadded}
+                                >
+                                    {props.children}
+                                </ContentWrapper>
+                            </FloatingFocusManager>
+                        </Overlay>
+                    </FloatingPortal>
+                ) : null}
+            </FloatingNode>
         );
+
+        if (context.parentId === null) {
+            return <FloatingTree>{dialog}</FloatingTree>;
+        }
+
+        return dialog;
     }
 );

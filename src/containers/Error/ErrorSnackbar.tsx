@@ -6,6 +6,15 @@ import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { useCallback, useEffect, useState } from 'react';
+import {
+    FloatingNode,
+    FloatingPortal,
+    FloatingTree,
+    useDismiss,
+    useFloating,
+    useInteractions,
+    useRole,
+} from '@floating-ui/react';
 
 const transition = {
     duration: 0.3,
@@ -30,6 +39,16 @@ export default function ErrorSnackbar() {
     const error = useAppStateStore((s) => s.error);
     const setError = useAppStateStore((s) => s.setError);
 
+    const { context, refs } = useFloating({
+        open: show,
+        onOpenChange: setShow,
+    });
+
+    const dismiss = useDismiss(context, { outsidePress: false, bubbles: false });
+    const role = useRole(context, { role: 'alertdialog' });
+
+    const { getFloatingProps } = useInteractions([dismiss, role]);
+
     const handleClose = useCallback(() => {
         setError(undefined);
     }, [setError]);
@@ -38,32 +57,43 @@ export default function ErrorSnackbar() {
         setShow(Boolean(error && error?.length));
     }, [error]);
 
-    useEffect(() => {
-        if (show) {
-            const closeTimeout = setTimeout(() => {
-                handleClose();
-            }, AUTO_CLOSE_TIMEOUT);
-
-            return () => {
-                clearTimeout(closeTimeout);
-            };
-        }
-    }, [handleClose, show]);
+    // useEffect(() => {
+    //     if (show) {
+    //         const closeTimeout = setTimeout(() => {
+    //             handleClose();
+    //         }, AUTO_CLOSE_TIMEOUT);
+    //
+    //         return () => {
+    //             clearTimeout(closeTimeout);
+    //         };
+    //     }
+    // }, [handleClose, show]);
 
     return (
-        <AnimatePresence>
-            {show && (
-                <Wrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
-                    <ButtonWrapper>
-                        <IconButton aria-label="close" onClick={handleClose}>
-                            <IoClose />
-                        </IconButton>
-                    </ButtonWrapper>
-                    <ContentWrapper>
-                        <Typography>{error}</Typography>
-                    </ContentWrapper>
-                </Wrapper>
-            )}
-        </AnimatePresence>
+        <FloatingNode id="snack">
+            <AnimatePresence>
+                {show && (
+                    <FloatingPortal>
+                        <Wrapper
+                            variants={variants}
+                            initial="hidden"
+                            animate="visible"
+                            exit="hidden"
+                            ref={refs.setFloating}
+                            {...getFloatingProps()}
+                        >
+                            <ButtonWrapper>
+                                <IconButton aria-label="close" onClick={handleClose}>
+                                    <IoClose />
+                                </IconButton>
+                            </ButtonWrapper>
+                            <ContentWrapper>
+                                <Typography>{error}</Typography>
+                            </ContentWrapper>
+                        </Wrapper>
+                    </FloatingPortal>
+                )}
+            </AnimatePresence>
+        </FloatingNode>
     );
 }
