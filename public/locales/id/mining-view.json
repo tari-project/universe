@@ -13,7 +13,8 @@
     "started-auto-mining": "Penambangan Otomatis Dimulai",
     "stop-mining": "Hentikan Penambangan"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>Anda memenangkan {{ blocks }}</span> saat Anda pergi",
+  "estimated-earnings": "Perkiraan penghasilan",
+  "you-earn-rewards-separately": "Anda mendapatkan hadiah untuk menambang CPU dan GPU secara terpisah",
   "day": "day"
 }

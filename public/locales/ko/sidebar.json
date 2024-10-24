@@ -9,6 +9,11 @@
   "lost-connection": "Tari 네트워크와의 연결이 끊어졌습니다. 다시 연결 중..",
   "block": "블록",
   "recent-wins": "최근 승리",
-  "show-history": "Show history",
-  "hide-history": "Hide history"
+  "paper-wallet-button": "휴대폰과 동기화",
+  "history-show-button": "기록",
+  "history-hide-button": "기록 숨기기",
+  "paper-wallet-tooltip-title": "휴대폰과 동기화",
+  "paper-wallet-tooltip-message": "Universe 지갑을 Tari Aurora에 동기화하여 어디서든 XTM을 추적하세요.",
+  "show-history": "기록 보기",
+  "hide-history": "기록 숨기기"
 }

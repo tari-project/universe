@@ -23,7 +23,10 @@
   "tabs": {
     "mining": "Minage",
     "general": "Général",
-    "experimental": "Expérimental"
+    "experimental": "Expérimental",
+    "very_experimental": "Très Expérimental",
+    "airdrop": "Airdrop",
+    "wallet": "Portefeuille"
   },
   "open-logs-directory": "Ouvrir le répertoire des journaux",
   "tribe-earnings": "Gains de l\"équipe",
@@ -37,18 +40,6 @@
   "monero-address": {
     "placeholder": "Entrez l\"adresse Monero",
     "title": "Adresse Monero"
-  },
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "connected-to-tari": "Connecté au réseau Tari",
   "reset-settings": "Réinitialiser les paramètres",
@@ -66,26 +57,54 @@
   "send-logs": "Soumettre un problème et des journaux",
   "logs": "Journaux",
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Mots de récupération",
   "feedback-required": "Les commentaires sont requis",
-  "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
-  "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network",
   "low-hash-rate-warning": "Votre hashrate est très bas. Essayez de fermer toutes les applications sauf Tari Universe",
+  "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
   "yes": "Yes",
   "cancel": "Cancel",
   "report-issue": "Signaler un problème",
   "importing-wallet": "Importation du portefeuille",
   "action-requires-restart": "Cette action nécessite un redémarrage pour appliquer les modifications",
   "invalid-seed-words": "Entrez 24 mots séparés par des espaces",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "Votre préférence sera enregistrée et appliquée lors du prochain démarrage de Tari Universe.",
+  "gpu-device-enabled": "Appareils de minage GPU",
+  "gpu-device-enabled-description": "Activer ou désactiver un appareil GPU spécifique.",
+  "gpu-device-no-found": "⚠️ Aucun appareil GPU trouvé",
+  "mine-on-app-start": {
+    "title": "Minage au démarrage",
+    "description": "Lorsqu\"elle est activée, l\"application commencera à miner automatiquement à son lancement."
+  },
+  "should-auto-start": {
+    "title": "Démarrage automatique au démarrage du système",
+    "description": "Lorsqu\"elle est activée, l\"application démarrera automatiquement lorsque vous vous connecterez à votre ordinateur."
+  },
+  "use-auto-update": {
+    "title": "Mettre à jour Tari Universe automatiquement",
+    "description": "Lorsqu\"elle est activée, l\"application vérifiera les mises à jour et les installera automatiquement."
+  },
+  "restart-later": "Redémarrer plus tard",
+  "restart-now": "Redémarrer maintenant",
+  "restart-universe": "Redémarrer Tari Universe ?",
+  "tari-wallet-address": "Adresse du portefeuille Tari",
+  "tor-bridges": "Ponts Tor",
+  "theme": "Thème",
+  "sha-network-hash-rate": "Taux de hachage du réseau Sha3",
+  "randomx-network-hash-rate": "Taux de hachage du réseau Randomx",
+  "network": "Réseau",
+  "app-restart-required": "Redémarrage de l\"application requis",
+  "setup-tor-settings": "Configurer les paramètres Tor pour le contrôle de la confidentialité et la connectivité",
+  "control-port": "Port de contrôle",
+  "save": "Enregistrer",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
+    "invalid-control-port": "La configuration du port de contrôle est invalide",
+    "invalid-bridge": "La configuration du pont est invalide"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "Lier Tari Aurora",
+    "connect-wallet-to-phone": "Connectez votre portefeuille Tari Universe à votre téléphone",
+    "load-qr-code": "Charger le code QR",
+    "do-not-share-this-code": "Ne partagez ce code avec personne",
+    "passphrase": "Phrase de passe"
   }
 }

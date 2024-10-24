@@ -13,7 +13,8 @@
     "started-auto-mining": "Otomatik Madencilik Başladı",
     "stop-mining": "Madenciliği Durdur"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>Uzakta olduğunuzda {{ blocks }} kazandınız</span>",
+  "estimated-earnings": "Tahmini kazançlar",
+  "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
   "day": "day"
 }
