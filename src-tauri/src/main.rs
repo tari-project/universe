@@ -6,6 +6,7 @@ use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
+use process_utils::set_interval;
 use regex::Regex;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
@@ -18,7 +19,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Manager, RunEvent, UpdaterEvent};
+use tauri::{AppHandle, Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tor_adapter::TorConfig;
 use wallet_adapter::TransactionInfo;
@@ -885,6 +886,14 @@ async fn setup_inner(
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
+    let app_handle_clone: AppHandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        set_interval(
+            move || check_if_is_orphan_chain(app_handle_clone.clone()),
+            Duration::from_secs(30),
+        );
+    });
+
     Ok(())
 }
 
@@ -1491,6 +1500,23 @@ async fn get_app_config(
     Ok(state.config.read().await.clone())
 }
 
+async fn check_if_is_orphan_chain(app_handle: AppHandle) {
+    let state = app_handle.state::<UniverseAppState>().inner();
+    let check_if_orphan = state.node_manager.check_if_is_orphan_chain().await;
+    match check_if_orphan {
+        Ok(is_stuck) => {
+            if is_stuck {
+                error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+                drop(app_handle.emit_all("is_stuck", is_stuck));
+            }
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "{}", e);
+            drop(app_handle.emit_all("is_stuck", true));
+        }
+    }
+}
+
 #[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
@@ -1510,7 +1536,7 @@ async fn get_miner_metrics(
 
     let mut cpu_miner = state.cpu_miner.write().await;
     let mut gpu_miner = state.gpu_miner.write().await;
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height,  block_time, is_synced) =
         state
             .node_manager
             .get_network_hash_rate_and_block_reward()
