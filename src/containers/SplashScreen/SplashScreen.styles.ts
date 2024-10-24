@@ -1,4 +1,3 @@
-import loading from '@app/assets/backgrounds/white-bg.jpg';
 import styled from 'styled-components';
 import { m } from 'framer-motion';
 
@@ -12,7 +11,8 @@ export const SplashScreenWrapper = styled(m.div)`
 `;
 export const SplashScreenContainer = styled.div`
     position: absolute;
-    background: url(${loading}) no-repeat center center fixed;
+    background-color: #fff;
+    filter: ${({ theme }) => (theme.mode == 'dark' ? 'invert()' : 'none')};
     background-size: cover;
     width: 100%;
     height: 100vh;

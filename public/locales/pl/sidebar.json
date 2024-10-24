@@ -1,8 +1,14 @@
 {
-    "auto-miner": "Automatyczne kopanie",
-    "auto-miner-description": "Automatyczne kopanie włączy koparkę, gdy twoje urządzenie będzie bezczynne",
-    "next-milestone": "Następny kamień milowy",
-    "wallet-balance": "Saldo portfela",
-    "setup-scheduler": "Ustawienia harmonogramu",
-    "mining-schedules": "Ustaw twój harmonogram kopania"
+  "auto-miner": "Automatyczne kopanie",
+  "auto-miner-description": "Automatyczne kopanie włączy koparkę, gdy twoje urządzenie będzie bezczynne",
+  "next-milestone": "Następny kamień milowy",
+  "wallet-balance": "Saldo portfela",
+  "setup-scheduler": "Ustawienia harmonogramu",
+  "mining-schedules": "Ustaw twój harmonogram kopania",
+  "lost-connection": "Utracono połączenie z siecią Tari. Łączenie..",
+  "mining-schedules-description": "Zaplanuj swoją aktywność wydobywczą",
+  "block": "Blok",
+  "recent-wins": "Ostanie wygrane",
+  "show-history": "Pokaż historię",
+  "hide-history": "Schowaj historię"
 }
