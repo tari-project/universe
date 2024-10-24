@@ -484,6 +484,17 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_monerod_config(
+        &mut self,
+        use_monero_fail: bool,
+        monero_nodes: Vec<String>,
+    ) -> Result<(), anyhow::Error> {
+        self.mmproxy_use_monero_fail = use_monero_fail;
+        self.mmproxy_monero_nodes = monero_nodes;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
