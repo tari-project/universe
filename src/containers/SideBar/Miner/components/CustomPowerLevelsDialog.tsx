@@ -76,7 +76,7 @@ export function CustomPowerLevelsDialog() {
 
     useEffect(() => {
         // Update config with a slight delay
-        if (!initialised || !customLevelsDialogOpen || (!configCpuLevels && !configGpuLevels)) return;
+        if (!initialised || !customLevelsDialogOpen) return;
 
         if (saved) {
             setSaved(false);

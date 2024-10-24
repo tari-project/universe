@@ -6,13 +6,14 @@ use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
+use ocl::{Device, Platform};
 use regex::Regex;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::{sleep, available_parallelism};
-use std::collections::HashMap;
+use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
@@ -23,7 +24,6 @@ use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tor_adapter::TorConfig;
 use wallet_adapter::TransactionInfo;
-use ocl::{Platform, Device};
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
@@ -170,7 +170,11 @@ async fn set_mode(
         .config
         .write()
         .await
-        .set_mode(mode, custom_cpu_usage.map(|val| val as isize), custom_gpu_usage.map(|val| val as isize))
+        .set_mode(
+            mode,
+            custom_cpu_usage.map(|val| val as isize),
+            custom_gpu_usage.map(|val| val as isize),
+        )
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -184,20 +188,19 @@ async fn set_mode(
 #[tauri::command]
 async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
     let timer = Instant::now();
-    let max_cpu_available = available_parallelism().map(|cores| cores.get() as i32)  // Convert NonZeroUsize to i32
+    let max_cpu_available = available_parallelism()
+        .map(|cores| cores.get() as i32) // Convert NonZeroUsize to i32
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
     }
 
-
     let mut result = HashMap::new();
     result.insert("max_cpu_available".to_string(), max_cpu_available);
 
     let platform = Platform::default();
     let device = Device::first(platform).unwrap();
-
 
     let max_threads = device.max_wg_size().unwrap_or(800);
     result.insert("max_gpu_available".to_string(), max_threads as i32);

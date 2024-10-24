@@ -66,8 +66,8 @@ impl CpuMiner {
         };
 
         let eco_mode_isize = cpu_miner_config
-                .eco_mode_cpu_percentage
-                .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100isize);
+            .eco_mode_cpu_percentage
+            .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100isize);
 
         let cpu_max_percentage = match mode {
             MiningMode::Eco => eco_mode_isize,
