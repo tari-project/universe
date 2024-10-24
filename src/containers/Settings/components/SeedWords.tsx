@@ -49,9 +49,12 @@ export const SeedWords = ({ seedWords, onToggleEdit, showSeedWords = false, edit
         </>
     );
 
+    const wordAmount = seedWords?.length || 0;
+    const rowCount = wordAmount % 5 === 0 ? 5 : 6;
+
     const visibleMarkup = (
         <>
-            <SeedWordsContainer>{wordMarkup}</SeedWordsContainer>
+            <SeedWordsContainer $rows={rowCount}>{wordMarkup}</SeedWordsContainer>
             <IconContainer>
                 {copyCTAMarkup}
                 {editCTAMarkup}

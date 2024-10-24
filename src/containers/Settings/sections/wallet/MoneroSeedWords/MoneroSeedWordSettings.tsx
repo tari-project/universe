@@ -9,9 +9,11 @@ import { useTranslation } from 'react-i18next';
 
 import { SeedWords } from '@app/containers/Settings/components/SeedWords.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 export default function MoneroSeedWordSettings() {
     const { t } = useTranslation('settings', { useSuspense: false });
+    const setError = useAppStateStore((s) => s.setError);
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [seedWords, setSeedWords] = useState<string[]>([]);
@@ -27,11 +29,15 @@ export default function MoneroSeedWordSettings() {
                 hasFetched.current = true;
             }
         } catch (e) {
+            const errorMessage = e as unknown as string;
+            if (errorMessage && errorMessage.includes('Keychain access')) {
+                setError(errorMessage);
+            }
             console.error('Could not get Monero seed words', e);
         } finally {
             setIsFetching(false);
         }
-    }, []);
+    }, [setError]);
     const toggleSeedWordsVisibility = useCallback(async () => {
         if (!hasFetched.current) {
             await getSeedWords();
@@ -57,7 +63,7 @@ export default function MoneroSeedWordSettings() {
                 </Stack>
             </SettingsGroupTitle>
 
-            <SeedWords seedWords={seedWords} showSeedWords={showSeedWords} />
+            <SeedWords seedWords={seedWords} showSeedWords={showSeedWords && !!seedWords?.length} />
         </SettingsGroupWrapper>
     );
 }

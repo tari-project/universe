@@ -40,7 +40,7 @@ use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
 
 use crate::cpu_miner::CpuMiner;
-use crate::credential_manager::{CredentialError, CredentialManager, KeyringErrorEvent};
+use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
@@ -1102,20 +1102,6 @@ async fn get_monero_seed_words(
     let cred = match cm.get_credentials() {
         Ok(cred) => cred,
         Err(e @ CredentialError::PreviouslyUsedKeyring) => {
-            window
-                .emit(
-                    "keyring_message",
-                    KeyringErrorEvent {
-                        event_type: "keyring_previously_used".to_string(),
-                        title: "keyring access error".to_string(),
-                        message: e.to_string(),
-                    },
-                )
-                .inspect_err(
-                    |e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e),
-                )
-                .map_err(|e| e.to_string())?;
-
             return Err(e.to_string());
         }
         Err(e) => {

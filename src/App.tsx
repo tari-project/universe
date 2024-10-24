@@ -20,10 +20,8 @@ import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
 import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
-import useKeyringListener from '@app/hooks/useKeyringListener.ts';
 
 export default function App() {
-    useKeyringListener();
     useLangaugeResolver();
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);

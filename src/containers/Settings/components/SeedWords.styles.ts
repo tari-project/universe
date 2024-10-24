@@ -19,10 +19,10 @@ export const HiddenContainer = styled.div`
     font-size: 18px;
     font-weight: 500;
 `;
-export const SeedWordsContainer = styled.div`
+export const SeedWordsContainer = styled.div<{ $rows?: number }>`
     position: relative;
     display: grid;
-    grid-template-rows: repeat(6, 1fr);
+    grid-template-rows: ${({ $rows = 6 }) => `repeat(${$rows}, 1fr)`};
     grid-auto-flow: column;
     gap: 15px;
     background-color: ${({ theme }) => theme.palette.background.default};

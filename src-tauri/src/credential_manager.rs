@@ -28,7 +28,7 @@ pub enum CredentialError {
     Serialization(#[from] serde_cbor::Error),
     #[error("Keyring had no entry for: {0}")]
     NoEntry(String),
-    #[error("Data previously stored in Keychain. Keychain access is now required to continue")]
+    #[error("Data previously stored in Keychain.\nKeychain access is now required to continue")]
     PreviouslyUsedKeyring,
 }
 
@@ -226,11 +226,4 @@ impl CredentialManager {
         let pw = SafePassword::from(entry.get_password()?);
         Ok(pw)
     }
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct KeyringErrorEvent {
-    pub event_type: String,
-    pub title: String,
-    pub message: String,
 }

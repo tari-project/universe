@@ -2,15 +2,25 @@ import styled from 'styled-components';
 import { m } from 'framer-motion';
 
 export const Wrapper = styled(m.div)`
+    position: absolute;
+    bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    z-index: 1000;
+`;
+
+export const SnackWrapper = styled.div`
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     background-color: ${({ theme }) => theme.palette.error.main};
-    width: 400px;
+    max-width: 420px;
+    min-width: 300px;
+    width: auto;
     max-height: 90px;
-    position: absolute;
+    position: relative;
     padding: 20px;
     display: flex;
-    z-index: 100;
-    border: 1px solid deeppink;
 `;
 export const ContentWrapper = styled.div`
     display: flex;
