@@ -19,6 +19,7 @@ import {
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import * as Sentry from '@sentry/react';
 
 export const ResetSettingsButton = () => {
     const [open, setOpen] = useState(false);
@@ -35,6 +36,7 @@ export const ResetSettingsButton = () => {
                 setOpen(false);
             })
             .catch((e) => {
+                Sentry.captureException(e);
                 console.error('Error when resetting settings: ', e);
                 setError('Resetting settings failed: ' + e);
                 setLoading(false);

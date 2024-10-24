@@ -10,6 +10,7 @@ import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import * as Sentry from '@sentry/react';
 
 export const ExternalDependencyCard = ({
     missingDependency,
@@ -37,9 +38,11 @@ export const ExternalDependencyCard = ({
                     await fetchExternalDependencies();
                 })
                 .catch((e) => {
+                    Sentry.captureException(e);
                     setError(`Failed to download and start installer: ${e} Please try again.`);
                 });
         } catch (e) {
+            Sentry.captureException(e);
             console.error('Error downloading installer: ', e);
         }
 

@@ -1,6 +1,7 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
+import * as Sentry from '@sentry/react';
 
 export function useHandleAirdropTokensRefresh() {
     const { airdropTokens, setAirdropTokens } = useAirdropStore();
@@ -47,6 +48,7 @@ export function useAirdropTokensRefresh() {
     useEffect(() => {
         if (!airdropTokens) return;
         invoke('set_airdrop_access_token', { token: airdropTokens?.token }).catch((error) => {
+            Sentry.captureException(error);
             console.error('Error getting airdrop tokens', error);
         });
     }, [airdropTokens]);
