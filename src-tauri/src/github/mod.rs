@@ -1,9 +1,16 @@
+mod cache;
+mod request_client;
+
+use std::path::{Path, PathBuf};
+
+use request_client::{ CloudFlareCacheStatus, RequestClient };
+use cache::CacheJsonFile;
 use anyhow::anyhow;
 use log::{debug, info, warn};
 use reqwest::Client;
 use serde::Deserialize;
 
-use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
+use crate::{binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo}, APPLICATION_FOLDER_ID};
 
 const LOG_TARGET: &str = "tari::universe::github";
 
@@ -21,7 +28,7 @@ struct Asset {
     browser_download_url: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 enum ReleaseSource {
     Github,
     Mirror,
@@ -59,6 +66,9 @@ pub async fn list_releases(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
+
+    CacheJsonFile::current().write().await.read_version_releases_responses_cache_file()?;
+
     let mut attempts = 0;
     let mut releases = loop {
         match list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await {
@@ -101,27 +111,101 @@ async fn list_releases_from(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
+    let cache_json_file_lock = CacheJsonFile::current().write().await;
+
     let client = Client::new();
-    let url = match source {
+    let url: String = match source {
         ReleaseSource::Github => get_gh_url(repo_owner, repo_name),
         ReleaseSource::Mirror => get_mirror_url(repo_owner, repo_name),
     };
 
-    let response = client
-        .get(&url)
-        .header("User-Agent", "request")
-        .send()
-        .await?;
-    if response.status() != 200 {
-        return Err(anyhow!(
-            "Failed to fetch releases for {}:{}: {} - ",
-            repo_owner,
-            repo_name,
-            response.status()
-        ));
+    let cache_entry = cache_json_file_lock.get_cache_entry(repo_owner, repo_name);
+    let was_content_downloaded = false;
+
+    let (releases, etag) = match cache_entry {
+        Some( cache_entry ) => {
+            let remote_etag = RequestClient::current().fetch_head_etag(&url).await?;
+            let local_etag = match source {
+                ReleaseSource::Mirror => cache_entry.mirror_etag.clone(),
+                ReleaseSource::Github => cache_entry.github_etag.clone(),
+            };
+
+            if remote_etag.eq(&local_etag.unwrap_or("".to_string())) {
+                match cache_json_file_lock.get_file_content(repo_owner, repo_name) {
+                    Ok(content) => (content, remote_etag),
+                    Err(e) => {
+                        was_content_downloaded = true;
+                        RequestClient::current().fetch_get_versions_download_info(&url).await?
+                    }
+                }
+            } else {
+                was_content_downloaded = true;
+                RequestClient::current().fetch_get_versions_download_info(&url).await?
+            }
+        },
+        None => {
+            was_content_downloaded = true;
+            RequestClient::current().fetch_get_versions_download_info(&url).await?
+        }
+    };
+
+
+    if was_content_downloaded {
+        cache_json_file_lock.save_file_content(repo_owner, repo_name, releases.clone())?;
     }
-    let data = response.text().await?;
-    let releases: Vec<Release> = serde_json::from_str(&data)?;
+
+
+    // let head_response = client
+    //     .head(&url)
+    //     .header("User-Agent", "request")
+    //     .send()
+    //     .await?;
+
+    // let response_etag = head_response
+    //     .headers()
+    //     .get("etag")
+    //     .map(|v| v.to_str().unwrap_or_default())
+    //     .unwrap_or_default();
+
+    
+    // let is_cache_valid = entry.map_or(false, |e| e.e_tag == response_etag);
+    
+    // info!(
+    //     target: LOG_TARGET,
+    //     "Cache for {}/{} is valid: {}",
+    //     repo_owner,
+    //     repo_name,
+    //     is_cache_valid
+    // );
+
+    // let releases = if is_cache_valid {
+    //     // return stored content
+    //     vec![]
+    // } else {
+    //     // fetch new content
+    //     let response = client
+    //         .get(&url)
+    //         .header("User-Agent", "request")
+    //         .send()
+    //         .await?;
+
+
+    //     if response.status() != 200 {
+    //         return Err(anyhow!(
+    //             "Failed to fetch releases for {}:{}: {} - ",
+    //             repo_owner,
+    //             repo_name,
+    //             response.status()
+    //         ));
+    //     }
+    //     let data = response.text().await?;
+    //     let releases: Vec<Release> = serde_json::from_str(&data)?;
+
+    //     releases
+    // };
+
+
+    // CacheJsonFile::current().write().await.set_entry(repo_owner, repo_name, source.clone(), response_etag.to_string())?;
 
     debug!(target: LOG_TARGET, "Releases for {}/{}:", repo_owner, repo_name);
     let mut res = vec![];
@@ -161,6 +245,8 @@ async fn list_releases_from(
             }
         }
     }
+
+    // save res to cache
 
     Ok(res)
 }
