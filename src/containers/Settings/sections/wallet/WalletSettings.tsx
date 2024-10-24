@@ -5,14 +5,14 @@ import SeedWordsMarkup from './SeedWordsMarkup/SeedWordsMarkup.tsx';
 import MoneroSeedWordSettings from './MoneroSeedWords/MoneroSeedWordSettings.tsx';
 
 export const WalletSettings = () => {
-    const monero_address_is_provided = useAppConfigStore((s) => s.monero_address_is_provided);
+    const monero_address_is_generated = useAppConfigStore((s) => s.monero_address_is_generated);
 
     return (
         <>
             <WalletAddressMarkup />
             <SeedWordsMarkup />
             <MoneroAddressMarkup />
-            {monero_address_is_provided ? <MoneroSeedWordSettings /> : null}
+            {monero_address_is_generated ? <MoneroSeedWordSettings /> : null}
         </>
     );
 };

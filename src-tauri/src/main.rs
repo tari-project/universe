@@ -1078,7 +1078,7 @@ async fn get_monero_seed_words(
 ) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    if !state.config.read().await.monero_address_is_provided() {
+    if !state.config.read().await.monero_address_is_generated() {
         return Err(
             "Monero seed words are not available when a Monero address is provided".to_string(),
         );

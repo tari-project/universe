@@ -29,7 +29,7 @@ export interface AppConfig {
     paper_wallet_enabled: boolean;
     use_tor: boolean;
     auto_update: boolean;
-    monero_address_is_provided?: boolean;
+    monero_address_is_generated?: boolean;
 }
 
 export enum ExternalDependencyStatus {
