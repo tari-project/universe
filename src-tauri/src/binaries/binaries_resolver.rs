@@ -73,6 +73,7 @@ impl BinaryResolver {
             Binaries::Xmrig,
             BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
+                // Some("xmrig-6.22.0".to_string()),
                 None,
                 Box::new(XmrigVersionApiAdapter {}),
                 None,
@@ -175,7 +176,7 @@ impl BinaryResolver {
         &INSTANCE
     }
 
-    pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
+    pub fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
         let manager = self
             .managers
             .get(&binary)

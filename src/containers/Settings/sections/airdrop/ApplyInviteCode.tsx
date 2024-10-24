@@ -9,13 +9,15 @@ import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
 import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@app/components/elements/inputs/Input';
-import { Button } from '@app/components/elements/Button';
+
 import { v4 as uuidv4 } from 'uuid';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { open } from '@tauri-apps/api/shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
+import * as Sentry from '@sentry/react';
 
 export const ApplyInviteCode = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -54,7 +56,8 @@ export const ApplyInviteCode = () => {
                         return true;
                     }
                 })
-                .catch(() => {
+                .catch((e) => {
+                    Sentry.captureException(e);
                     return false;
                 });
 
@@ -104,9 +107,9 @@ export const ApplyInviteCode = () => {
                     {loading ? (
                         <CircularProgress />
                     ) : (
-                        <Button variant="text" size="medium" onClick={() => handleAuth()} disabled={loading}>
+                        <TextButton size="medium" onClick={() => handleAuth()} disabled={loading}>
                             {t('applyInviteCode')}
-                        </Button>
+                        </TextButton>
                     )}
                 </SettingsGroupAction>
             </SettingsGroup>

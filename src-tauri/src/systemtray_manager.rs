@@ -132,7 +132,7 @@ impl SystemtrayManager {
 
         match current_os {
             CurrentOperatingSystem::Windows => {
-                return systray.with_tooltip(tooltip.clone().as_str())
+                return systray.with_tooltip(tooltip.clone().as_str());
             }
             CurrentOperatingSystem::Linux => systray.with_menu(tray_menu),
             CurrentOperatingSystem::MacOS => {
@@ -317,7 +317,11 @@ impl SystemtrayManager {
             cpu_hashrate,
             gpu_hashrate,
             cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
-            gpu_usage: f64::from(hardware_status.gpu.unwrap_or_default().usage_percentage),
+            gpu_usage: hardware_status
+                .gpu
+                .iter()
+                .map(|hp| f64::from(hp.usage_percentage))
+                .sum::<f64>(),
             estimated_earning,
         }
     }

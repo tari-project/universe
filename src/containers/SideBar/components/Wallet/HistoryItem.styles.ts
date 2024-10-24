@@ -10,8 +10,10 @@ export const Wrapper = styled(m.div)`
     justify-content: space-between;
     align-items: center;
     border-radius: 10px;
-    background: ${({ theme }) => theme.palette.colors.gothic[950]};
+
+    background: rgba(255, 255, 255, 0.07);
     box-shadow: 0 4px 65px 0 rgba(90, 90, 90, 0.2);
+
     flex-shrink: 0;
     flex-grow: 0;
     max-height: 269px;
@@ -52,7 +54,7 @@ export const InfoWrapper = styled.div`
     line-height: 1.3;
     letter-spacing: -0.26px;
     span {
-        color: ${({ theme }) => theme.palette.base};
+        color: #fff;
     }
     p {
         font-weight: 600;
@@ -66,4 +68,12 @@ export const EarningsWrapper = styled.div`
     flex-shrink: 0;
     font-weight: 600;
     font-size: 16px;
+`;
+
+export const ListLabel = styled.div`
+    color: #fff;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
 `;

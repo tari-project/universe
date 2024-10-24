@@ -7,11 +7,11 @@
     },
     "package": {
         "productName": "Tari Universe (Alpha)",
-        "version": "0.5.13"
+        "version": "0.5.45"
     },
     "tauri": {
         "systemTray": {
-            "iconPath": "icons/icon.ico",
+            "iconPath": "icons/systray_icon.ico",
             "menuOnLeftClick": true
         },
         "updater": {
@@ -53,12 +53,13 @@
                 "label": "main",
                 "width": 1380,
                 "height": 780,
-                "minWidth": 997,
-                "minHeight": 620,
+                "minWidth": 1144,
+                "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
                 "decorations": true,
-                "transparent": false
+                "transparent": false,
+                "additionalBrowserArgs": "--enable-features=ignore-gpu-blocklist, --disable=features=disable-accelerated-2d-canvas"
             }
         ],
         "security": {
@@ -69,11 +70,16 @@
             "targets": "all",
             "identifier": "com.tari.universe.alpha",
             "icon": [
+                "icons/32x32.png",
+                "icons/128x128.png",
+                "icons/128x128@2x.png",
                 "icons/icon.icns",
                 "icons/icon.ico",
                 "icons/icon.png",
                 "icons/StoreLogo.png",
-                "icons/tari.png"
+                "icons/systray_icon.icns",
+                "icons/systray_icon.ico",
+                "icons/systray_icon.png"
             ],
             "copyright": "Copyright (c) 2024 Tari Labs, LLC",
             "shortDescription": "Tari Universe is a mining app for Tari.",

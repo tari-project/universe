@@ -29,5 +29,10 @@
   "topTooltipText": "ジェムを集めてTariのエアドロップを獲得しましょう。ジェムを多く集めるほど、エアドロップが大きくなります。",
   "topTooltipTitle": "テストネット報酬",
   "claimModalFinePrint": "<strong>ご注意ください:</strong> ジェムを請求すると、Universeを改善するために分析が有効になります",
-  "inviteFriendsText": "リンクをコピーして共有する"
+  "inviteFriendsText": "リンクをコピーして共有する",
+  "logged-in-as": "<strong>@{{twitter}}</strong> としてログイン中",
+  "bonus-gems-earned": "Bonus gems earned",
+  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
+  "your-friend-accepted-gift": "One of your friends accepted your gift!",
+  "you-reached-your-giftinh-goal": "You reached your gifting goal!"
 }

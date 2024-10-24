@@ -17,11 +17,18 @@ pub(crate) struct TorReleaseAdapter {}
 #[async_trait]
 impl LatestVersionApiAdapter for TorReleaseAdapter {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
-        let cdn_tor_bundle_url = "https://cdn-universe.tari.com/torbrowser/13.5.6/tor-expert-bundle-windows-x86_64-13.5.6.tar.gz";
+        let platform = get_platform_name();
+        let cdn_tor_bundle_url = format!(
+            "https://cdn-universe.tari.com/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz",
+            platform
+        );
         let mut cdn_responded = false;
 
+        let client = reqwest::Client::new();
         for _ in 0..3 {
-            let response = reqwest::get(cdn_tor_bundle_url).await;
+            let cloned_cdn_tor_bundle_url = cdn_tor_bundle_url.clone();
+            let response = client.head(cloned_cdn_tor_bundle_url).send().await;
+
             if let Ok(resp) = response {
                 if resp.status().is_success() {
                     cdn_responded = true;
@@ -32,10 +39,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
         if cdn_responded {
             let version = VersionDownloadInfo {
-                version: "13.5.6".parse().expect("Bad tor version"),
+                version: "13.5.7".parse().expect("Bad tor version"),
                 assets: vec![VersionAsset {
                     url: cdn_tor_bundle_url.to_string(),
-                    name: "tor-expert-bundle-windows-x86_64-13.5.6.tar.gz".to_string(),
+                    name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
                 }],
             };
             return Ok(vec![version]);
@@ -43,10 +50,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
         // Tor doesn't have a nice API for this so just return specific ones
         let version = VersionDownloadInfo {
-            version: "13.5.6".parse().expect("Bad tor version"),
+            version: "13.5.7".parse().expect("Bad tor version"),
             assets: vec![VersionAsset {
-                url: "https://dist.torproject.org/torbrowser/13.5.6/tor-expert-bundle-windows-x86_64-13.5.6.tar.gz".to_string(),
-                name: "tor-expert-bundle-windows-x86_64-13.5.6.tar.gz".to_string(),
+                url: format!("https://dist.torproject.org/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz", platform),
+                name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
             }]
         };
         Ok(vec![version])
@@ -106,14 +113,14 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-            panic!("Unsupported OS");
+            name_suffix = r"macos-x86_64.*\.gz";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            panic!("Unsupported OS");
+            name_suffix = r"macos-aarch64.*\.gz";
         }
         if cfg!(target_os = "linux") {
-            panic!("Unsupported OS");
+            name_suffix = r"linux-x86_64.*\.gz";
         }
         if name_suffix.is_empty() {
             panic!("Unsupported OS");
@@ -132,4 +139,20 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         info!(target: LOG_TARGET, "Found platform: {:?}", platform);
         Ok(platform.clone())
     }
+}
+
+fn get_platform_name() -> String {
+    if cfg!(target_os = "windows") {
+        return "windows-x86_64".to_string();
+    }
+    if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
+        return "macos-x86_64".to_string();
+    }
+    if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+        return "macos-aarch64".to_string();
+    }
+    if cfg!(target_os = "linux") {
+        return "linux-x86_64".to_string();
+    }
+    panic!("Unsupported OS");
 }

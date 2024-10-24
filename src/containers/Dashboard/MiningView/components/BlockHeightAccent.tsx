@@ -9,7 +9,7 @@ import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisuali
 
 export function BlockHeightAccent() {
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
-    const heightString = height?.toLocaleString();
+    const heightString = height?.toString();
 
     const [windowHeight, setWindowHeight] = useState(window.innerHeight - 80);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -42,7 +42,7 @@ export function BlockHeightAccent() {
     }, []);
 
     return (
-        <AccentWrapper layoutId="accent-wrapper" style={{ width: deferredFontSize, top: 0, right: `-25px` }}>
+        <AccentWrapper layoutId="accent-wrapper" style={{ width: deferredFontSize }}>
             <AnimatePresence>
                 {height && height > 0 ? (
                     <LayoutGroup id="accent-content">

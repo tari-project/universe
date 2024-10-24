@@ -11,8 +11,8 @@ export const SideBarContainer = styled(m.div)`
     flex-direction: column;
     justify-content: space-between;
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
-    border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    background: ${({ theme }) => theme.palette.background.paper};
+    border-radius: 20px;
+    background: ${({ theme }) => theme.palette.background.default};
     position: relative;
     height: 100%;
     overflow: hidden;
@@ -26,11 +26,26 @@ export const Scroll = styled(m.div)`
     overflow-y: auto;
     gap: 8px;
     height: 100%;
+    padding: 0 10px 12px 10px;
 `;
+
 export const Top = styled(m.div)`
     display: flex;
     flex-direction: column;
+    width: 100%;
 `;
+
+export const SidebarTop = styled('div')`
+    display: flex;
+    flex-direction: column;
+    padding: 0 10px 10px 10px;
+    gap: 20px;
+
+    @media (max-height: 670px) {
+        gap: 5px;
+    }
+`;
+
 export const Bottom = styled(m.div)`
     display: flex;
     flex-direction: column;

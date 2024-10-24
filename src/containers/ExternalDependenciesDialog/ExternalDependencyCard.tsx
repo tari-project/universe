@@ -3,13 +3,14 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { getChipStylingForStatus, mapStatusToText } from './ExternalDependenciesDialog.utils';
 import { ExternalDependency, ExternalDependencyStatus } from '@app/types/app-status';
-import { Button } from '@app/components/elements/Button';
 import { IoArrowDownCircleOutline } from 'react-icons/io5';
 import { StyledIcon } from '../Dashboard/MiningView/components/MiningButton.styles';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import * as Sentry from '@sentry/react';
 
 export const ExternalDependencyCard = ({
     missingDependency,
@@ -37,10 +38,12 @@ export const ExternalDependencyCard = ({
                     await fetchExternalDependencies();
                 })
                 .catch((e) => {
+                    Sentry.captureException(e);
                     setError(`Failed to download and start installer: ${e} Please try again.`);
                 });
         } catch (e) {
-            console.error(e);
+            Sentry.captureException(e);
+            console.error('Error downloading installer: ', e);
         }
 
         freeInstallationSlot();
@@ -71,10 +74,8 @@ export const ExternalDependencyCard = ({
                 {status === ExternalDependencyStatus.NotInstalled && (
                     <Button
                         onClick={handleDownload}
+                        color="secondary"
                         size="small"
-                        variant="squared"
-                        color="primary"
-                        style={{ height: 'unset', width: '256px' }}
                         icon={isInInstallationSlot ? <StyledIcon /> : <IoArrowDownCircleOutline size={16} />}
                         iconPosition="start"
                         disabled={isInstallationSlotOccupied}

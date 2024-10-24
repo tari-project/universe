@@ -19,9 +19,7 @@ const Wrapper = styled(m.div)`
 `;
 
 export default function LanguageDropdown() {
-    const { setApplicationLanguage } = useAppConfigStore((s) => ({
-        setApplicationLanguage: s.setApplicationLanguage,
-    }));
+    const setApplicationLanguage = useAppConfigStore((s) => s.setApplicationLanguage);
 
     return (
         <Wrapper>
@@ -30,6 +28,7 @@ export default function LanguageDropdown() {
                 onChange={(value) => setApplicationLanguage(value as Language)}
                 selectedValue={resolveI18nLanguage(i18n.language)}
                 variant="bordered"
+                forceHeight={36}
             />
         </Wrapper>
     );

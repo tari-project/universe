@@ -16,11 +16,14 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
-import useMiningMetricsUpdater from '@app/hooks/useMiningMetricsUpdater.ts';
-import useMining from '@app/hooks/mining/useMining.ts';
-import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachine.ts';
+import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
+import { useTheme } from 'styled-components';
+import { Trans, useTranslation } from 'react-i18next';
 
 export default function Miner() {
+    const theme = useTheme();
+    const { t } = useTranslation('mining-view', { useSuspense: false });
+    useMiningStatesSync();
     const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
@@ -40,10 +43,6 @@ export default function Miner() {
         }))
     );
 
-    useMiningMetricsUpdater();
-    useMining();
-    useUiMiningStateMachine();
-
     const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 
     const isWaitingForCPUHashRate = isCpuMiningEnabled && cpu_is_mining && cpu_hash_rate <= 0;
@@ -52,6 +51,11 @@ export default function Miner() {
 
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
+
+    const gpuChipValue = gpuHardwareStats
+        ? gpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
+          (gpuHardwareStats?.length || 1)
+        : 0;
 
     return (
         <MinerContainer>
@@ -68,7 +72,7 @@ export default function Miner() {
                     title="GPU Power"
                     stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
                     isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
-                    chipValue={gpuHardwareStats?.usage_percentage}
+                    chipValue={gpuChipValue}
                     unit="H/s"
                     useLowerCase
                 />
@@ -79,12 +83,12 @@ export default function Miner() {
                     isLoading={earningsLoading}
                     useLowerCase
                 >
-                    <Typography variant="h5" style={{ color: '#000' }}>
-                        Estimated earnings
+                    <Typography variant="h5" style={{ color: theme.palette.text.primary }}>
+                        {t('estimated-earnings')}
                     </Typography>
-                    <Typography>You earn rewards for mining CPU and GPU separately</Typography>
+                    <Typography>{t('you-earn-rewards-separately')}</Typography>
                     <ExpandedContentTile>
-                        <Typography>CPU Estimated earnings</Typography>
+                        <Typography>CPU {t('estimated-earnings')}</Typography>
                         <ExpandableTileItem>
                             <Typography
                                 variant="h5"
@@ -97,12 +101,15 @@ export default function Miner() {
                                 {isMiningInProgress && isCpuMiningEnabled ? formatBalance(cpu_estimated_earnings) : '-'}
                             </Typography>
                             <Unit>
-                                <Typography>tXTM/day</Typography>
+                                <Typography>
+                                    <Trans>tXTM/</Trans>
+                                    {t('day')}
+                                </Typography>
                             </Unit>
                         </ExpandableTileItem>
                     </ExpandedContentTile>
                     <ExpandedContentTile>
-                        <Typography>GPU Estimated earnings</Typography>
+                        <Typography>GPU {t('estimated-earnings')}</Typography>
                         <ExpandableTileItem>
                             <Typography
                                 variant="h5"
@@ -115,7 +122,10 @@ export default function Miner() {
                                 {isMiningInProgress && isGpuMiningEnabled ? formatBalance(gpu_estimated_earnings) : '-'}
                             </Typography>
                             <Unit>
-                                <Typography>tXTM/day</Typography>
+                                <Typography>
+                                    <Trans>tXTM/</Trans>
+                                    {t('day')}
+                                </Typography>
                             </Unit>
                         </ExpandableTileItem>
                     </ExpandedContentTile>
