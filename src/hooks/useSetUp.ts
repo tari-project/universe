@@ -31,14 +31,6 @@ export function useSetUp() {
     const { loadExternalDependencies } = useAppStateStore();
 
     useEffect(() => {
-        async function initialize() {
-            await fetchAppConfig();
-        }
-        initialize();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
         const unlistenPromise = listen<ExternalDependency[]>('missing-applications', (event) => {
             const missingDependencies = event.payload;
             loadExternalDependencies(missingDependencies);
