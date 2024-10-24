@@ -18,6 +18,7 @@ import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorD
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
+import StagedSecurity from './containers/StagedSecurity/StagedSecurity.tsx';
 import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
 
 export default function App() {
@@ -58,6 +59,7 @@ export default function App() {
                     <CriticalErrorDialog />
                     <ExternalDependenciesDialog />
                     <SettingsModal />
+                    <StagedSecurity />
                     <PaperWalletModal />
                     <LayoutGroup id="app-content">
                         {shutDownMarkup}
