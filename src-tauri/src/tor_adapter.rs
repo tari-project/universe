@@ -1,34 +1,119 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::{debug, info};
+use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
-use tokio::select;
+use tokio::fs;
 
 use crate::{
-    binaries::{Binaries, BinaryResolver},
-    process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
-    process_utils,
+    process_adapter::{
+        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+    },
     utils::file_utils::convert_to_string,
 };
 
 const LOG_TARGET: &str = "tari::universe::tor_adapter";
 
 pub(crate) struct TorAdapter {
-    control_port: u16,
     socks_port: u16,
+    config_file: Option<PathBuf>,
+    config: TorConfig,
 }
 
 impl TorAdapter {
     pub fn new() -> Self {
-        let control_port = 9051;
         let socks_port = 9050;
+
         Self {
-            control_port,
             socks_port,
+            config_file: None,
+            config: TorConfig::default(),
         }
     }
+
+    pub async fn load_or_create_config(
+        &mut self,
+        config_path: PathBuf,
+    ) -> Result<(), anyhow::Error> {
+        let file: PathBuf = config_path.join("tor_config.json");
+        self.config_file = Some(file.clone());
+
+        if file.exists() {
+            debug!(target: LOG_TARGET, "Loading tor config from file: {:?}", file);
+            let config = fs::read_to_string(&file).await?;
+            self.apply_loaded_config(config);
+        } else {
+            info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
+        }
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    fn apply_loaded_config(&mut self, config: String) {
+        self.config = serde_json::from_str::<TorConfig>(&config).unwrap_or_default();
+    }
+
+    async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
+        let file = self
+            .config_file
+            .clone()
+            .ok_or_else(|| anyhow!("Tor config file not set"))?;
+
+        let config = serde_json::to_string(&self.config)?;
+        debug!(target: LOG_TARGET, "Updating tor config file: {:?} {:?}", file, self.config.clone());
+        fs::write(file, config).await?;
+
+        Ok(())
+    }
+
+    pub fn get_tor_config(&self) -> TorConfig {
+        self.config.clone()
+    }
+
+    pub async fn set_tor_config(&mut self, config: TorConfig) -> Result<TorConfig, Error> {
+        self.config = config.clone();
+
+        // match self.apply_tor_config_changes(config.clone()).await {
+        //     Ok(_) => info!(target: LOG_TARGET, "Tor config changes applied successfully"),
+        //     Err(e) => {
+        //         warn!(target: LOG_TARGET, "Failed to apply Tor config changes: {:?}", e);
+        //         return Err(e);
+        //     }
+        // }
+
+        self.update_config_file().await?;
+        Ok(config)
+    }
+
+    // pub async fn apply_tor_config_changes(&self, config: TorConfig) -> Result<(), Error> {
+    //     let mut setconf_commands: Vec<String> = vec![];
+    //     let control_port_address = "127.0.0.1:9051";
+
+    //     // Establish a TCP connection
+    //     let mut stream = TcpStream::connect(control_port_address)?;
+
+    //     // Authenticate
+    //     setconf_commands.push(format!("AUTHENTICATE \"{}\"\n", self.password.clone()));
+
+    //     setconf_commands.push("SETCONF".to_string());
+
+    //     // Set Bridge instances
+    //     if config.use_bridges {
+    //         for bridge in config.bridges {
+    //             setconf_commands.push(format!("Bridge=\"{}\"", bridge))
+    //         }
+    //     }
+    //     // Set UseBridges
+    //     setconf_commands.push(format!("UseBridges={}", config.use_bridges as u8));
+    //     // Set ControlPort
+    //     setconf_commands.push(format!("ControlPort=127.0.0.1:{}", config.control_port));
+
+    //     stream.write_all(setconf_commands.join(" ").as_bytes())?;
+
+    //     Ok(())
+    // }
 }
 
 impl ProcessAdapter for TorAdapter {
@@ -40,9 +125,9 @@ impl ProcessAdapter for TorAdapter {
         data_dir: PathBuf,
         _config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting tor");
         let working_dir: PathBuf = data_dir.join("tor-data");
@@ -50,15 +135,26 @@ impl ProcessAdapter for TorAdapter {
 
         let working_dir_string = convert_to_string(working_dir)?;
         let log_dir_string = convert_to_string(log_dir.join("tor.log"))?;
+        let mut lyrebird_path = binary_version_path.clone();
+        lyrebird_path.pop();
+        lyrebird_path.push("pluggable_transports");
+        lyrebird_path.push("lyrebird");
+        if cfg!(target_os = "windows") {
+            lyrebird_path.set_extension("exe");
+        }
 
-        let args: Vec<String> = vec![
+        let mut args: Vec<String> = vec![
             "--allow-missing-torrc".to_string(),
+            "--ignore-missing-torrc".to_string(),
             "--clientonly".to_string(),
             "1".to_string(),
             "--socksport".to_string(),
             self.socks_port.to_string(),
             "--controlport".to_string(),
-            format!("127.0.0.1:{}", self.control_port),
+            format!("127.0.0.1:{}", self.config.control_port),
+            // TODO: Put hashed password back
+            // "--HashedControlPassword".to_string(),
+            // EncryptedKey::hash_password(&self.password).to_string(),
             "--clientuseipv6".to_string(),
             "1".to_string(),
             "--DataDirectory".to_string(),
@@ -66,56 +162,41 @@ impl ProcessAdapter for TorAdapter {
             "--Log".to_string(),
             format!("notice file {}", log_dir_string),
         ];
-        info!(target: LOG_TARGET, "Starting tor with args: {:?}", args);
+
+        if self.config.use_bridges {
+            // Used by tor bridges
+            // TODO: This does not work when path has space on windows.
+            // Consider running lyrebird binary manually
+            args.push("--ClientTransportPlugin".to_string());
+            args.push(format!(
+                "obfs4 exec {} managed",
+                convert_to_string(lyrebird_path)?
+            ));
+            for bridge in &self.config.bridges {
+                args.push("--Bridge".to_string());
+                args.push(bridge.clone());
+            }
+
+            args.push("--UseBridges".to_string());
+            args.push("1".to_string());
+        }
+
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .read()
-                        .await
-                        .resolve_path_to_binary_files(Binaries::Tor)
-                        .await?;
-
-                    crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
-
-                    if let Some(id) = child.id() {
-                        fs::write(data_dir.join("tor_pid"), id.to_string())?;
-                    }
-
-                    let exit_code;
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                        res2 = child.wait() => {
-                            match res2
-                             {
-                                Ok(res) => {
-                                    exit_code = res.code().unwrap_or(0)
-                                    },
-                                Err(e) => {
-                                    warn!(target: LOG_TARGET, "Error in tor: {}", e);
-                                    return Err(e.into());
-                                }
-                            }
-
-                        },
-                    }
-
-                    match fs::remove_file(data_dir.join("tor_pid")) {
-                        Ok(_) => {}
-                        Err(_e) => {
-                            debug!(target: LOG_TARGET, "Could not clear tor's pid file");
-                        }
-                    }
-                    Ok(exit_code)
-                })),
+                handle: None,
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_version_path,
+                    envs: None,
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
             },
-            TorStatusMonitor {},
+            TorStatusMonitor {
+                control_port: self.config.control_port,
+            },
         ))
     }
 
@@ -128,13 +209,32 @@ impl ProcessAdapter for TorAdapter {
     }
 }
 
-pub(crate) struct TorStatusMonitor {}
+#[derive(Clone)]
+pub(crate) struct TorStatusMonitor {
+    pub control_port: u16,
+}
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
-    type Status = ();
+    async fn check_health(&self) -> HealthStatus {
+        // TODO: Implement health check
+        HealthStatus::Healthy
+    }
+}
 
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TorConfig {
+    control_port: u16,
+    use_bridges: bool,
+    bridges: Vec<String>,
+}
+
+impl Default for TorConfig {
+    fn default() -> Self {
+        TorConfig {
+            control_port: 9051,
+            use_bridges: false,
+            bridges: Vec::new(),
+        }
     }
 }

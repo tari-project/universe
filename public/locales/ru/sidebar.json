@@ -7,6 +7,8 @@
   "mining-schedules": "Графики майнинга",
   "mining-schedules-description": "Запланируйте вашу майнинговую активность",
   "lost-connection": "Потеряно соединение с сетью Tari. Переподключение..",
-  "block": "Block",
-  "recent-wins": "Recent wins"
+  "block": "Блок",
+  "recent-wins": "Последние выигрыши",
+  "show-history": "Show history",
+  "hide-history": "Hide history"
 }

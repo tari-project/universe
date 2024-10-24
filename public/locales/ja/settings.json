@@ -1,5 +1,6 @@
 {
   "settings": "設定",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "シードワード",
   "send-logs": "ログを送信",
   "your-feedback": "問題を説明してください",
@@ -26,6 +27,18 @@
   "monero-address": {
     "title": "Moneroアドレス",
     "placeholder": "Moneroアドレスを入力"
+  },
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
   "visual-mode": "ビジュアルモード",
@@ -61,5 +74,18 @@
   "use-tor": "Torを使用する",
   "sha-network-hash-rate": "Sha3 network hashrate",
   "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network"
+  "network": "Network",
+  "importing-wallet": "ウォレットのインポート",
+  "action-requires-restart": "この操作には再起動が必要です。変更を適用します",
+  "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",
+  "invalid-seed-words": "スペースで区切って24の単語を入力してください",
+  "report-issue": "問題を報告する",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }

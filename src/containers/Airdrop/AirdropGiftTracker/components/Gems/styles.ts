@@ -5,7 +5,7 @@ export const Wrapper = styled('div')`
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 0px;
+    gap: 0;
     position: relative;
     z-index: 1;
 `;
@@ -15,20 +15,25 @@ export const Number = styled('div')`
     align-items: center;
     gap: 2px;
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 18px;
     font-weight: 600;
+    line-height: 100%;
+
+    font-variant-numeric: tabular-nums;
 `;
 
 export const Label = styled('div')`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-weight: 500;
+    line-height: 100%;
 `;
 
 export const GemImage = styled('img')`
     position: relative;
     z-index: 1;
+    width: 20px;
 `;
 
 export const GemsAnimation = styled(m.div)`
@@ -42,4 +47,5 @@ export const GemAnimatedImage = styled(m.img)`
     position: absolute;
     top: 0;
     left: 0;
+    width: 20px;
 `;

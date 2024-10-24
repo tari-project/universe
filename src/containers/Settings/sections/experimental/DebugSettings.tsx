@@ -15,7 +15,7 @@ import { formatHashrate } from '@app/utils/formatHashrate';
 
 export default function DebugSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const lastBlockTime = useBlockchainVisualisationStore((state) => state.displayBlockTime);
+    const lastBlockTime = useBlockchainVisualisationStore((state) => state.debugBlockTime);
     const isConnectedToTariNetwork = useMiningStore((s) => s.base_node?.is_connected);
     const connectedPeers = useMiningStore((state) => state.base_node?.connected_peers || []);
     const sha_network_hash_rate = useMiningStore((state) => state?.sha_network_hash_rate);
@@ -77,13 +77,13 @@ export default function DebugSettings() {
                         <Typography variant="p">{t('connected-peers', { ns: 'settings' })}</Typography>
                     </SettingsGroupContent>
                     <SettingsGroupContent style={{ fontSize: '11px', textAlign: 'right' }}>
-                        {connectedPeers.length
+                        {connectedPeers?.length
                             ? connectedPeers.map((peer, i) => (
-                                  <Typography key={peer}>
+                                  <Typography key={`peer-${peer}:${i}`}>
                                       {i + 1}. {peer}
                                   </Typography>
                               ))
-                            : '-'}
+                            : null}
                     </SettingsGroupContent>
                 </SettingsGroup>
             </SettingsGroupWrapper>

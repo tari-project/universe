@@ -1,5 +1,6 @@
 {
   "settings": "Ustawienia",
+  "tari-wallet-address": "Adres porfela Tari",
   "seed-words": "Słowa kluczowe",
   "change-language": "Zmień język",
   "logs": "Logi",
@@ -20,7 +21,7 @@
   },
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
   "visual-mode": "Tryb wizualny",
-  "pool-mining": "Pool Mining",
+  "pool-mining": "Kopanie w puli",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
   "yes": "Tak",
   "cancel": "Anuluj",
@@ -28,10 +29,22 @@
   "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
   "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
   "reset-wallet": "Resetuj porfel",
+  "mine-on-app-start": {
+    "title": "Kopanie po starcie aplikacji",
+    "description": "Kiedy zaznaczone, aplikacja zacznie kopać automatycznie po uruchomieniu."
+  },
+  "should-auto-start": {
+    "title": "Uruchomienie po starcie systemu",
+    "description": "Kiedy zaznaczone, aplikacja uruchomi się automatycznie po włączeniu komputera."
+  },
+  "use-auto-update": {
+    "title": "Automatycznie aktualizuj Tari Universe",
+    "description": "Kiedy zaznaczone, aplikacja zostanie automatycznie zaktualizowana po znalezieniu nowszej wersji."
+  },
   "connected-to-tari-network": null,
   "not-connected-to-tari-network": null,
   "connected-peers": "Połączone węzły",
-  "should-use-system-language": "Use system language",
+  "should-use-system-language": "Użyj języka systemowego",
   "send-logs": "Wyślij logi",
   "your-feedback": "Proszę opisać swój problem",
   "feedback-required": "Wymagana jest opinia",
@@ -63,5 +76,19 @@
   "use-tor": "Użyj Tor",
   "sha-network-hash-rate": "Sha3 network hashrate",
   "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network"
+  "network": "Network",
+  "use-tor": "Używaj Tor",
+  "importing-wallet": "Importowanie portfela",
+  "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
+  "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
+  "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
+  "report-issue": "Zgłoś problem",
+  "app-restart-required": "Wymagane ponowne uruchomienie",
+  "setup-tor-settings": "Skonfiguruj sieć Tor w celu prywatności połączenia",
+  "control-port": "Control Port",
+  "save": "Zapisz",
+  "errors": {
+      "invalid-control-port": "Konfiguracja Control Portu nieprawidłowa",
+      "invalid-bridge": "Konfiguracja Bridge nieprawidłowa"
+  }
 }

@@ -2,6 +2,7 @@ import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import react from 'eslint-plugin-react';
 import hooksPlugin from 'eslint-plugin-react-hooks';
+import i18next from 'eslint-plugin-i18next';
 
 import prettierConfig from 'eslint-config-prettier';
 import prettierPluginConfig from 'eslint-plugin-prettier/recommended';
@@ -30,7 +31,7 @@ export default [
         },
         files: ['src/**/*.{js,ts,jsx,tsx}'],
         ignores: ['./**/*.config.{js,ts}'],
-        plugins: { react, 'react-hooks': hooksPlugin },
+        plugins: { react, 'react-hooks': hooksPlugin, i18next },
         rules: {
             ...react.configs.recommended.rules,
             ...hooksPlugin.configs.recommended.rules,
@@ -51,6 +52,7 @@ export default [
             'react/prop-types': 'off',
             'react/jsx-uses-react': 'off',
             'react/react-in-jsx-scope': 'off',
+            'i18next/no-literal-string': ['error', { markupOnly: true }],
         },
     },
 ];
