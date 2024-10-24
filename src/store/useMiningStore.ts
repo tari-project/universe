@@ -7,6 +7,7 @@ import { useAppConfigStore } from './useAppConfigStore';
 import { modeType } from './types';
 
 import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
+import * as Sentry from '@sentry/react';
 
 interface State extends MinerMetrics {
     hashrateReady?: boolean;
@@ -80,6 +81,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             await invoke('start_mining', {});
             console.info('Mining started.');
         } catch (e) {
+            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Failed to start mining: ', e);
             appStateStore.setError(e as string);
@@ -93,6 +95,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             await invoke('stop_mining', {});
             console.info('Mining stopped.');
         } catch (e) {
+            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Failed to stop mining: ', e);
             appStateStore.setError(e as string);
@@ -105,6 +108,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             await invoke('stop_mining', {});
             console.info('Mining paused.');
         } catch (e) {
+            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Failed to pause (stop) mining: ', e);
             appStateStore.setError(e as string);
@@ -130,6 +134,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.info(`Mode changed to ${mode}`);
             set({ isChangingMode: false });
         } catch (e) {
+            Sentry.captureException(e);
             console.error('Failed to change mode: ', e);
             set({ isChangingMode: false });
         }
@@ -141,6 +146,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         try {
             await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
         } catch (e) {
+            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set excluded gpu device: ', e);
             appStateStore.setError(e as string);
