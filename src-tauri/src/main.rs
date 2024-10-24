@@ -7,8 +7,6 @@ use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredEx
 use log::trace;
 use log::{debug, error, info, warn};
 use regex::Regex;
-use sentry::protocol::Event;
-use sentry_tauri::sentry;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -170,6 +168,24 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_theme(theme: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_theme(theme)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_theme {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_theme took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -727,17 +743,22 @@ async fn setup_inner(
         .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
+    let mut tor_control_port = None;
     if use_tor {
-        state
-            .tor_manager
-            .ensure_started(
-                state.shutdown.to_signal(),
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-            )
-            .await?;
+        if cfg!(target_os = "windows") {
+            state
+                .tor_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+            tor_control_port = state.tor_manager.get_control_port().await?;
+        } else {
+            tor_control_port = Some(9051);
+        }
     }
     for _i in 0..2 {
         match state
@@ -748,6 +769,7 @@ async fn setup_inner(
                 config_dir.clone(),
                 log_dir.clone(),
                 use_tor,
+                tor_control_port,
             )
             .await
         {
@@ -1588,19 +1610,12 @@ async fn get_miner_metrics(
 
 #[tauri::command]
 fn log_web_message(level: String, message: Vec<String>) {
+    let joined_message = message.join(" ");
     match level.as_str() {
         "error" => {
-            let joined_message = message.join(" ");
-            sentry::capture_event(Event {
-                message: Some(joined_message.clone()),
-                level: sentry::Level::Error,
-                culprit: Some("universe-web".to_string()),
-                ..Default::default()
-            });
-
             error!(target: LOG_TARGET_WEB, "{}", joined_message)
         }
-        _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
+        _ => info!(target: LOG_TARGET_WEB, "{}", joined_message),
     }
 }
 
@@ -2002,6 +2017,7 @@ fn main() {
             stop_mining,
             set_p2pool_enabled,
             set_mode,
+            set_theme,
             open_log_dir,
             get_seed_words,
             get_applications_versions,

@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'framer-motion';
 
-import { EarningsContainer, EarningsWrapper, RecapText, ShinyWrapper, WinText, WinWrapper } from './Earnings.styles.ts';
+import { EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
 import formatBalance from '@app/utils/formatBalance.ts';
 
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
@@ -56,9 +56,7 @@ export default function Earnings() {
                         ) : null}
                         <WinWrapper>
                             <WinText>{t('your-reward-is')}</WinText>
-                            <ShinyWrapper>
-                                <CharSpinner value={formatted.toString()} fontSize={76} XTMAlignment="center" />
-                            </ShinyWrapper>
+                            <CharSpinner value={formatted.toString()} fontSize={76} XTMAlignment="center" />
                         </WinWrapper>
                     </EarningsWrapper>
                 ) : null}

@@ -1,10 +1,12 @@
+import * as Sentry from '@sentry/react';
+
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
 
 import { invoke } from '@tauri-apps/api/tauri';
-import { Button } from '@app/components/elements/Button';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { Typography } from '@app/components/elements/Typography';
@@ -37,6 +39,7 @@ function AutoUpdateDialog() {
             console.info('Restarting application after update');
             await invoke('restart_application');
         } catch (e) {
+            Sentry.captureException(e);
             console.error('Relaunch error', e);
         }
         handleClose();
@@ -57,6 +60,7 @@ function AutoUpdateDialog() {
                 setIsAfterAutoUpdate(true);
             }
         } catch (error) {
+            Sentry.captureException(error);
             console.error('AutoUpdate error:', error);
             setIsAfterAutoUpdate(true);
         }
@@ -93,8 +97,12 @@ function AutoUpdateDialog() {
                 <ButtonsWrapper>
                     {!isLoading && (
                         <>
-                            <Button onClick={handleUpdate}>{t('yes')}</Button>
-                            <Button onClick={handleClose}>{t('no')}</Button>
+                            <SquaredButton onClick={handleClose} color="warning">
+                                {t('no')}
+                            </SquaredButton>
+                            <SquaredButton onClick={handleUpdate} color="green">
+                                {t('yes')}
+                            </SquaredButton>
                         </>
                     )}
                 </ButtonsWrapper>

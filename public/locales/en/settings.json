@@ -91,10 +91,12 @@
         "airdrop": "Airdrop",
         "general": "General",
         "mining": "Mining",
+        "wallet": "Wallet",
         "experimental": "Experimental",
-        "wallet": "Wallet"
+        "very_experimental": "Very Experimental"
     },
     "tor-bridges": "Tor Bridges",
+    "theme": "Theme",
     "tribe": "Squad",
     "tribe-earnings": "Squad earnings",
     "tribe-pool-height": "Squad height",
