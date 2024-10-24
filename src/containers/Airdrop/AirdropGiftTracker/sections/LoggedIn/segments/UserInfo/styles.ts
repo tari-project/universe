@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -17,7 +18,7 @@ export const Avatar = styled('div')<{ $image?: string }>`
     background-image: url(${({ $image }) => $image});
     background-size: cover;
     background-position: center;
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -32,11 +33,11 @@ export const Info = styled('div')`
 `;
 
 export const Name = styled('div')`
-    color: #090719;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 18px;
     font-style: normal;
     font-weight: 700;
-    line-height: 100%;
+    line-height: 1.15;
     letter-spacing: -0.36px;
 
     white-space: nowrap;
@@ -44,17 +45,3 @@ export const Name = styled('div')`
     text-overflow: ellipsis;
     display: block;
 `;
-
-export const Rank = styled('div')`
-    color: rgba(79, 79, 79, 0.75);
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 100%;
-    letter-spacing: -0.24px;
-
-    display: flex;
-    align-items: center;
-    gap: 4px;
-`;
-
-export const TrophyImage = styled('img')``;

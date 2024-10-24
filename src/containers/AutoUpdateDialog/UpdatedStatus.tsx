@@ -16,12 +16,16 @@ export function UpdatedStatus({ contentLength, downloaded }: UpdatedStatusProps)
         return `${parseFloat((bytes / Math.pow(1024, i)).toFixed(2))} ${sizes[i]}`;
     };
 
+    const shouldShowProgress = contentLength > 0;
+
     return (
         <Stack alignItems="center">
             <ProgressWrapper>
-                <LinearProgress value={(downloaded / contentLength) * 100} variant="secondary" />
+                <LinearProgress value={(downloaded / contentLength) * 100} />
             </ProgressWrapper>
-            <Typography variant="p">{`${formatSize(downloaded)} / ${formatSize(contentLength)}`}</Typography>
+            {shouldShowProgress && (
+                <Typography variant="p">{`${formatSize(downloaded)} / ${formatSize(contentLength)}`}</Typography>
+            )}
         </Stack>
     );
 }

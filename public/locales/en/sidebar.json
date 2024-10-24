@@ -6,5 +6,14 @@
     "setup-scheduler": "Setup Scheduler",
     "mining-schedules": "Mining Schedules",
     "mining-schedules-description": "Schedule your mining activity",
-    "lost-connection": "Lost connection to the Tari Network. Reconnecting.."
+    "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
+    "block": "Block",
+    "recent-wins": "Recent wins",
+    "paper-wallet-button": "Sync with Phone",
+    "history-show-button": "History",
+    "history-hide-button": "Hide History",
+    "paper-wallet-tooltip-title": "Sync with Phone",
+    "paper-wallet-tooltip-message": "Track your XTM anywhere by syncing your Universe wallet to Tari Aurora.",
+    "show-history": "Show history",
+    "hide-history": "Hide history"
 }

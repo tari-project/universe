@@ -26,7 +26,7 @@ function ModeSelect() {
 
     const handleChange = useCallback(
         async (mode: string) => {
-            changeMiningMode(mode as modeType);
+            await changeMiningMode(mode as modeType);
         },
         [changeMiningMode]
     );
@@ -44,6 +44,7 @@ function ModeSelect() {
                         { label: 'ECO', value: 'Eco', iconSrc: eco },
                         { label: 'Ludicrous', value: 'Ludicrous', iconSrc: fire },
                     ]}
+                    forceHeight={21}
                 />
             </ModeSelectWrapper>
         </TileItem>

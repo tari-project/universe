@@ -15,7 +15,7 @@ appenders:
   stdout:
     kind: console
     encoder:
-      pattern: "{d(%H:%M)} {h({l}):5} {m}{n}"
+      pattern: "{d(%H:%M:%S)} {h({l}):5} {m}{n}"
     filters:
       - kind: threshold
         level: info

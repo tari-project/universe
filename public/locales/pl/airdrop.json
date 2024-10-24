@@ -1,9 +1,9 @@
 {
-  "loginButton": "Log in to claim gems",
-  "logout": "Logout",
+  "loginButton": "Zaloguj się, aby odebrać klejnoty",
+  "logout": "Wyloguj się",
   "permission": {
-    "title": "Earn Gems & make Tari Universe better",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining."
+    "title": "Zarabiaj klejnoty i ulepszaj Tari Universe",
+    "text": "Tari Universe chciałby używać analityki, aby poprawić Twoje doświadczenia i nagrodzić Cię klejnotami za kopanie."
   },
   "airdropGame": "Gra Airdrop",
   "referral": "Zaproś znajomego",
@@ -25,5 +25,14 @@
   "claimModalTitle": "Zarabiaj nagrody za wydobycie na Testnecie",
   "claimModalText": "Zarabiaj klejnoty poprzez wydobycie i polecanie znajomych, aby zwiększyć swoją nagrodę airdrop podczas testnetu! Masz kod polecający? Wpisz go poniżej i zdobądź dodatkowe <strong>{{gems}}</strong> klejnotów dla siebie i swojego znajomego!",
   "claimModalFieldLabel": "Opcjonalne",
-  "claimModalFieldPlaceholder": "Wpisz kod polecający"
+  "claimModalFieldPlaceholder": "Wpisz kod polecający",
+  "topTooltipText": "Zdobądź Airdrop Tari, zbierając klejnoty. Im więcej klejnotów zdobędziesz, tym większy będzie twój airdrop.",
+  "topTooltipTitle": "Nagrody Testnet",
+  "claimModalFinePrint": "<strong>Uwaga:</strong> odbieranie klejnotów włącza analitykę, abyśmy mogli ulepszyć Universe",
+  "inviteFriendsText": "Skopiuj link i udostępnij go",
+  "logged-in-as": "Zalogowany jako <strong>@{{twitter}}</strong>",
+  "bonus-gems-earned": "Bonusowe klejnoty zdobyte",
+  "keep-mining-to-earn-rewards": "Kontynuuj wydobycie, aby zdobyć więcej nagród!",
+  "your-friend-accepted-gift": "Jeden z Twoich znajomych przyjął Twój prezent!",
+  "you-reached-your-giftinh-goal": "Osiągnąłeś swój cel prezentowy!"
 }

@@ -77,22 +77,7 @@ export function ExpandableTile({
                 )}
 
                 {!expanded &&
-                    (isLoading ? (
-                        <StyledIcon />
-                    ) : (
-                        <StatWrapper $useLowerCase={useLowerCase}>
-                            <Typography
-                                variant="h5"
-                                title={stats}
-                                style={{
-                                    textTransform: useLowerCase ? 'lowercase' : 'inherit',
-                                    lineHeight: '1.02',
-                                }}
-                            >
-                                {stats}
-                            </Typography>
-                        </StatWrapper>
-                    ))}
+                    (isLoading ? <StyledIcon /> : <StatWrapper $useLowerCase={useLowerCase}>{stats}</StatWrapper>)}
             </AnimatePresence>
         </TileItem>
     );

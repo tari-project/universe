@@ -2,8 +2,8 @@ import { m } from 'framer-motion';
 import styled from 'styled-components';
 
 const Wrapper = styled.div`
-    width: 100%;
-    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;

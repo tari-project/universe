@@ -5,34 +5,42 @@ import { IoClose } from 'react-icons/io5';
 
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import SettingsNavigation from './components/Navigation.tsx';
 
-import { MiningSettings } from './MiningSettings.tsx';
-import { GeneralSettings } from './GeneralSettings.tsx';
-import { ExperimentalSettings } from './ExperimentalSettings.tsx';
-import { WalletSettings } from './WalletSettings.tsx';
+import { MiningSettings } from './sections/mining/MiningSettings.tsx';
+import { GeneralSettings } from './sections/general/GeneralSettings.tsx';
+import { ExperimentalSettings } from './sections/experimental/ExperimentalSettings.tsx';
+import { WalletSettings } from './sections/wallet/WalletSettings.tsx';
 
-import { SettingsType } from './types.ts';
+import { SETTINGS_TYPES, SettingsType } from './types.ts';
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
+import { AirdropSettings } from './sections/airdrop/AirdropSettings.tsx';
+import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+
+const markups = {
+    general: <GeneralSettings />,
+    mining: <MiningSettings />,
+    wallet: <WalletSettings />,
+    airdrop: <AirdropSettings />,
+    experimental: <ExperimentalSettings />,
+};
 
 export default function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
 
-    const [activeSection, setActiveSection] = useState<SettingsType>('mining');
+    const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
 
-    const miningMarkup = activeSection === 'mining' ? <MiningSettings /> : null;
-    const generalMarkup = activeSection === 'general' ? <GeneralSettings /> : null;
-    const walletMarkup = activeSection === 'wallet' ? <WalletSettings /> : null;
-    const experimentalMarkup = activeSection === 'experimental' ? <ExperimentalSettings /> : null;
+    const sectionMarkup = markups[activeSection];
 
     function onOpenChange() {
         if (isSettingsOpen) {
-            setActiveSection('mining');
+            setActiveSection(SETTINGS_TYPES[0]);
         }
         setIsSettingsOpen(!isSettingsOpen);
     }
@@ -44,7 +52,7 @@ export default function SettingsModal() {
                     <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
                     <ContentContainer>
                         <HeaderContainer>
-                            <Typography variant="h4">{`${t(activeSection)} ${t('settings')}`}</Typography>
+                            <Typography variant="h4">{`${t(`tabs.${activeSection}`)} ${t('settings')}`}</Typography>
                             <IconButton onClick={() => onOpenChange()}>
                                 <IoClose size={18} />
                             </IconButton>
@@ -52,14 +60,12 @@ export default function SettingsModal() {
 
                         <AnimatePresence mode="wait">
                             <SectionWrapper variants={variants} key={activeSection}>
-                                {miningMarkup}
-                                {generalMarkup}
-                                {walletMarkup}
-                                {experimentalMarkup}
+                                {sectionMarkup}
                             </SectionWrapper>
                         </AnimatePresence>
                     </ContentContainer>
                 </Container>
+                <RestartDialog />
             </DialogContent>
         </Dialog>
     );

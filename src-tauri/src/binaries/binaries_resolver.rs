@@ -10,6 +10,7 @@ use tari_common::configuration::Network;
 use tokio::sync::RwLock;
 
 use super::adapter_github::GithubReleasesAdapter;
+use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
@@ -40,7 +41,7 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
         progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error>;
 
-    fn get_binary_folder(&self) -> PathBuf;
+    fn get_binary_folder(&self) -> Result<PathBuf, Error>;
 
     fn find_version_for_platform(
         &self,
@@ -53,13 +54,18 @@ pub struct BinaryResolver {
 }
 
 impl BinaryResolver {
+    #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
 
+        let gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
+
+        let gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
+
         let (tari_prerelease_prefix, gpuminer_specific_nanme) =
             match Network::get_current_or_user_setting_or_default() {
-                Network::NextNet => ("rc", Some(Regex::new(r"opencl.*nextnet").unwrap())),
-                Network::Esmeralda => ("pre", Some(Regex::new(r"opencl.*testnet").unwrap())),
+                Network::NextNet => ("rc", gpu_miner_nextnet_regex),
+                Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
                 _ => panic!("Unsupported network"),
             };
 
@@ -67,6 +73,8 @@ impl BinaryResolver {
             Binaries::Xmrig,
             BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
+                // Some("xmrig-6.22.0".to_string()),
+                None,
                 Box::new(XmrigVersionApiAdapter {}),
                 None,
                 true,
@@ -77,6 +85,7 @@ impl BinaryResolver {
             Binaries::GpuMiner,
             BinaryManager::new(
                 Binaries::GpuMiner.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tarigpuminer".to_string(),
                     owner: "stringhandler".to_string(),
@@ -91,6 +100,7 @@ impl BinaryResolver {
             Binaries::MergeMiningProxy,
             BinaryManager::new(
                 Binaries::MergeMiningProxy.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
@@ -105,6 +115,7 @@ impl BinaryResolver {
             Binaries::MinotariNode,
             BinaryManager::new(
                 Binaries::MinotariNode.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
@@ -119,6 +130,7 @@ impl BinaryResolver {
             Binaries::Wallet,
             BinaryManager::new(
                 Binaries::Wallet.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
@@ -133,11 +145,23 @@ impl BinaryResolver {
             Binaries::ShaP2pool,
             BinaryManager::new(
                 Binaries::ShaP2pool.name().to_string(),
+                None,
                 Box::new(GithubReleasesAdapter {
                     repo: "sha-p2pool".to_string(),
                     owner: "tari-project".to_string(),
                     specific_name: None,
                 }),
+                None,
+                true,
+            ),
+        );
+
+        binary_manager.insert(
+            Binaries::Tor,
+            BinaryManager::new(
+                Binaries::Tor.name().to_string(),
+                Some("tor".to_string()),
+                Box::new(TorReleaseAdapter {}),
                 None,
                 true,
             ),
@@ -152,7 +176,7 @@ impl BinaryResolver {
         &INSTANCE
     }
 
-    pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
+    pub fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
         let manager = self
             .managers
             .get(&binary)
@@ -161,7 +185,20 @@ impl BinaryResolver {
         let version = manager
             .get_used_version()
             .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
-        let base_dir = manager.get_base_dir();
+
+        let base_dir = manager.get_base_dir().map_err(|error| {
+            anyhow!(
+                "No base directory for binary {}, Error: {}",
+                binary.name(),
+                error
+            )
+        })?;
+
+        if let Some(sub_folder) = manager.binary_subfolder() {
+            return Ok(base_dir
+                .join(sub_folder)
+                .join(binary.binary_file_name(version)));
+        }
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
@@ -171,7 +208,10 @@ impl BinaryResolver {
         progress_tracker: ProgressTracker,
         should_check_for_update: bool,
     ) -> Result<(), Error> {
-        let manager = self.managers.get_mut(&binary).unwrap();
+        let manager = self
+            .managers
+            .get_mut(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
 
         manager.read_local_versions().await;
 
@@ -189,7 +229,7 @@ impl BinaryResolver {
             highest_version = manager.select_highest_version();
             manager
                 .download_selected_version(highest_version.clone(), progress_tracker.clone())
-                .await;
+                .await?;
         }
 
         // Check if the files exist after download
@@ -198,7 +238,7 @@ impl BinaryResolver {
         if !check_if_files_exist {
             manager
                 .download_selected_version(highest_version.clone(), progress_tracker.clone())
-                .await;
+                .await?;
         }
 
         // Throw error if files still do not exist
@@ -208,7 +248,10 @@ impl BinaryResolver {
             return Err(anyhow!("Failed to download binaries"));
         }
 
-        manager.set_used_version(highest_version.clone().unwrap());
+        match highest_version {
+            Some(version) => manager.set_used_version(version),
+            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
+        }
 
         Ok(())
     }
@@ -218,7 +261,10 @@ impl BinaryResolver {
         binary: Binaries,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        let manager = self.managers.get_mut(&binary).unwrap();
+        let manager = self
+            .managers
+            .get_mut(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
 
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
@@ -228,7 +274,7 @@ impl BinaryResolver {
         if !check_if_files_exist {
             manager
                 .download_selected_version(highest_version.clone(), progress_tracker.clone())
-                .await;
+                .await?;
         }
 
         let check_if_files_exist =
@@ -237,18 +283,22 @@ impl BinaryResolver {
             return Err(anyhow!("Failed to download binaries"));
         }
 
-        manager.set_used_version(highest_version.clone().unwrap());
+        match highest_version {
+            Some(version) => manager.set_used_version(version),
+            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
+        }
 
         Ok(())
     }
 
-    pub async fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
-        let manager = self.managers.get(&binary).unwrap();
-        manager.get_used_version()
+    pub fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
+        self.managers
+            .get(&binary)
+            .and_then(|manager| manager.get_used_version())
     }
 
     pub async fn get_binary_version_string(&self, binary: Binaries) -> String {
-        let version = self.get_binary_version(binary).await;
+        let version = self.get_binary_version(binary);
         version
             .map(|v| v.to_string())
             .unwrap_or_else(|| "Not Installed".to_string())

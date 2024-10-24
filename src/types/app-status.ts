@@ -1,15 +1,24 @@
 import { Language } from '@app/i18initializer';
-import { modeType } from '../store/types';
+import { modeType, themeType } from '../store/types';
+
+export interface TorConfig {
+    control_port: number;
+    use_bridges: boolean;
+    bridges: string[];
+}
 
 export interface AppConfig {
     config_version: number;
     config_file?: string;
     mode: modeType;
+    theme: themeType;
     auto_mining: boolean;
+    mine_on_app_start: boolean;
     p2pool_enabled: boolean;
     last_binaries_update_timestamp: string;
     has_system_language_been_proposed: boolean;
     should_always_use_system_language: boolean;
+    should_auto_launch: boolean;
     application_language: Language;
     allow_telemetry: boolean;
     anon_id: string;
@@ -17,15 +26,43 @@ export interface AppConfig {
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
     airdrop_ui_enabled: boolean;
+    paper_wallet_enabled: boolean;
+    use_tor: boolean;
+    auto_update: boolean;
 }
 
+export enum ExternalDependencyStatus {
+    Installed = 'Installed',
+    NotInstalled = 'NotInstalled',
+    Unknown = 'Unknown',
+}
+
+export interface Manufacturer {
+    name: string;
+    logo: string;
+    url: string;
+}
+export interface ExternalDependency {
+    required_version_names: string[];
+    display_name: string;
+    display_description: string;
+    download_url: string;
+    version?: string;
+    manufacturer: Manufacturer;
+    status: ExternalDependencyStatus;
+}
+
+export interface ExternalDependencies {
+    additional_runtime: ExternalDependency;
+    minimum_runtime: ExternalDependency;
+}
 export interface CpuMinerMetrics {
     hardware?: HardwareParameters;
     mining: CpuMinerStatus;
 }
 
 export interface GpuMinerMetrics {
-    hardware?: HardwareParameters;
+    hardware: HardwareParameters[];
     mining: GpuMinerStatus;
 }
 
@@ -41,24 +78,52 @@ export interface TariWalletDetails {
     tari_address_emoji: string;
 }
 
+export interface TransactionInfo {
+    tx_id: number;
+    source_address: string;
+    dest_address: string;
+    status: number;
+    direction: number;
+    amount: number;
+    fee: number;
+    is_cancelled: boolean;
+    excess_sig: string;
+    timestamp: number;
+    message: string;
+    payment_id: string;
+}
+
 export interface P2poolStatsResult {
-    randomx: P2poolStats;
-    sha3: P2poolStats;
+    connected: boolean;
+    peer_count: number;
+    connection_info: P2poolConnectionInfo;
+    connected_since?: number;
+    randomx_stats: P2poolStats;
+    sha3x_stats: P2poolStats;
+}
+
+export interface P2poolConnectionInfo {
+    listener_addresses: string[];
+    connected_peers: number;
+    network_info: P2poolNetworkInfo;
+}
+
+export interface P2poolNetworkInfo {
+    num_peers: number;
+    connection_counters: P2poolConnectionCounters;
+}
+
+export interface P2poolConnectionCounters {
+    pending_incoming: number;
+    pending_outgoing: number;
+    established_incoming: number;
+    established_outgoing: number;
 }
 
 export interface P2poolStats {
-    connected: boolean;
-    connected_since?: number;
     squad: P2poolSquadDetails;
     num_of_miners: number;
-    last_block_won?: P2poolStatsBlock;
     share_chain_height: number;
-    pool_hash_rate: number;
-    pool_total_earnings: number;
-    pool_total_estimated_earnings: P2poolEstimatedEarnings;
-    total_earnings: Record<string, number>;
-    estimated_earnings: Map<string, P2poolEstimatedEarnings>;
-    miner_block_stats: P2poolBlockStats;
     p2pool_block_stats: P2poolBlockStats;
 }
 
@@ -97,7 +162,7 @@ export interface HardwareParameters {
 
 export interface HardwareStatus {
     cpu: HardwareParameters;
-    gpu: HardwareParameters;
+    gpu: HardwareParameters[];
 }
 
 export interface CpuMinerStatus {
@@ -144,4 +209,9 @@ export interface ApplicationsVersions {
     mm_proxy: string;
     wallet: string;
     sha_p2pool: string;
+}
+
+export interface PaperWalletDetails {
+    qr_link: string;
+    password: string;
 }

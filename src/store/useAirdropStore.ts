@@ -1,9 +1,9 @@
-import { create } from 'zustand';
+import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 
-export const INSTALL_BONUS_GEMS = 5000;
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
+export const MAX_GEMS = 10000;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
@@ -117,6 +117,11 @@ export interface ReferralQuestPoints {
 
 //////////////////////////////////////////
 
+interface MiningPoint {
+    blockHeight: string;
+    reward: number;
+}
+
 interface AirdropState {
     authUuid: string;
     airdropTokens?: AirdropTokens;
@@ -127,11 +132,13 @@ interface AirdropState {
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
+    miningRewardPoints?: MiningPoint;
+    seenPermissions?: boolean;
 }
 
 interface AirdropStore extends AirdropState {
     setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
-
+    setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
     setAirdropTokens: (airdropToken: AirdropTokens) => void;
     setUserDetails: (userDetails?: UserDetails) => void;
@@ -140,25 +147,32 @@ interface AirdropStore extends AirdropState {
     setReferralCount: (referralCount: ReferralCount) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
+    setSeenPermissions: (seenPermissions: boolean) => void;
+    setUserGems: (userGems: number) => void;
     logout: () => void;
 }
+
+const initialState: AirdropState = {
+    authUuid: '',
+    seenPermissions: false,
+};
 
 const clearState: AirdropState = {
     authUuid: '',
     airdropTokens: undefined,
+    miningRewardPoints: undefined,
+    seenPermissions: false,
     userDetails: undefined,
     userPoints: undefined,
 };
 
-const NOT_PERSISTED_KEYS = ['userPoints', 'backendInMemoryConfig', 'userDetails', 'authUuid', 'referralCount'];
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
-            authUuid: '',
+            ...initialState,
             setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
             setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
-            logout: () => set(clearState),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
             setAirdropTokens: (airdropTokens) =>
@@ -170,12 +184,31 @@ export const useAirdropStore = create<AirdropStore>()(
                 }),
             setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints }),
+            setUserGems: (userGems: number) =>
+                set((state) => {
+                    const userPointsFormatted = {
+                        ...state.userPoints,
+                        base: { ...state.userPoints?.base, gems: userGems },
+                    } as UserPoints;
+
+                    return {
+                        userPoints: userPointsFormatted,
+                    };
+                }),
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
+            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
+            setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
+            logout: () => set(clearState),
         }),
         {
             name: 'airdrop-store',
-            partialize: (state) =>
-                Object.fromEntries(Object.entries(state).filter(([key]) => !NOT_PERSISTED_KEYS.includes(key))),
+            partialize: (s) => ({
+                airdropTokens: s.airdropTokens,
+                miningRewardPoints: s.miningRewardPoints,
+                referralQuestPoints: s.referralQuestPoints,
+                seenPermissions: s.seenPermissions,
+            }),
         }
     )
 );
+useAirdropStore.setState({ authUuid: '' }); // https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#persist-middlware-no-longer-stores-item-at-store-creation
