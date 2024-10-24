@@ -1565,7 +1565,7 @@ async fn get_miner_metrics(
         cpu_mining_status.hash_rate,
         gpu_mining_status.hash_rate as f64,
         hardware_status.clone(),
-        cpu_mining_status.estimated_earnings as f64,
+        (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
     );
 
     SystemtrayManager::current().update_systray(app, new_systemtray_data);

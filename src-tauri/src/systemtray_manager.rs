@@ -34,13 +34,25 @@ impl SystrayItemId {
 
     pub fn get_title(&self, value: f64) -> String {
         match self {
-            SystrayItemId::CpuHashrate => format!("CPU Hashrate: {:.2} H/s", value),
-            SystrayItemId::GpuHashrate => format!("GPU Hashrate: {:.2} H/s", value),
+            SystrayItemId::CpuHashrate => format!(
+                "CPU Hashrate: {} H/s",
+                Formatter::new()
+                    .with_decimals(2)
+                    .with_separator("")
+                    .format(value)
+            ),
+            SystrayItemId::GpuHashrate => format!(
+                "GPU Hashrate: {} H/s",
+                Formatter::new()
+                    .with_decimals(2)
+                    .with_separator("")
+                    .format(value)
+            ),
             SystrayItemId::CpuUsage => format!("CPU Usage: {:.2}%", value),
             SystrayItemId::GpuUsage => format!("GPU Usage: {:.2}%", value),
             SystrayItemId::EstimatedEarning => {
                 format!(
-                    "Est earning: {:?} tXTM/day",
+                    "Est earning: {} tXTM/day",
                     Formatter::new()
                         .with_decimals(2)
                         .with_separator("")
