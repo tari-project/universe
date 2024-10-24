@@ -13,6 +13,7 @@ use tokio::sync::RwLock;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
+const ECO_MODE_CPU_USAGE: isize = 30;
 
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
@@ -38,6 +39,7 @@ impl CpuMiner {
         config_path: PathBuf,
         log_dir: PathBuf,
         mode: MiningMode,
+        custom_max_cpu_usage: Option<isize>,
     ) -> Result<(), anyhow::Error> {
         let mut lock = self.watcher.write().await;
 
@@ -62,11 +64,15 @@ impl CpuMiner {
                 1
             }
         };
+
+        let eco_mode_isize = cpu_miner_config
+            .eco_mode_cpu_percentage
+            .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100isize);
+
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => cpu_miner_config
-                .eco_mode_cpu_percentage
-                .unwrap_or((30 * max_cpu_available) / 100isize),
-            MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_cpu_percentage.unwrap_or(-1), // Use all
+            MiningMode::Eco => eco_mode_isize,
+            MiningMode::Custom => custom_max_cpu_usage.unwrap_or(eco_mode_isize),
+            MiningMode::Ludicrous => -1, // Use all
         };
 
         lock.adapter.node_connection = Some(xmrig_node_connection);
@@ -75,6 +81,7 @@ impl CpuMiner {
         lock.adapter.extra_options = match mode {
             MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
             MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
+            MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
         };
 
         lock.start(

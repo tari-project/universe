@@ -48,10 +48,13 @@ impl GpuMinerAdapter {
         }
     }
 
-    pub fn set_mode(&mut self, mode: MiningMode) {
+    pub fn set_mode(&mut self, mode: MiningMode, custom_max_gpu_usage: Option<u16>) {
         match mode {
             MiningMode::Eco => self.gpu_percentage = ECO_MODE_GPU_PERCENTAGE,
             MiningMode::Ludicrous => self.gpu_percentage = LUDICROUS_MODE_GPU_PERCENTAGE,
+            MiningMode::Custom => {
+                self.gpu_percentage = custom_max_gpu_usage.unwrap_or(ECO_MODE_GPU_PERCENTAGE)
+            }
         }
     }
 

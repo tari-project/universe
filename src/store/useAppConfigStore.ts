@@ -9,6 +9,11 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
 
 type State = Partial<AppConfig>;
+interface SetModeProps {
+    mode: modeType;
+    customGpuLevels?: number;
+    customCpuLevels?: number;
+}
 
 interface Actions {
     fetchAppConfig: () => Promise<void>;
@@ -18,7 +23,7 @@ interface Actions {
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMineOnAppStart: (mineOnAppStart: boolean) => Promise<void>;
-    setMode: (mode: modeType) => Promise<void>;
+    setMode: (params: SetModeProps) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
     setUseTor: (useTor: boolean) => Promise<void>;
@@ -52,6 +57,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     fetchAppConfig: async () => {
         try {
             const appConfig = await invoke('get_app_config');
+            console.log('appConfig', appConfig);
             set(appConfig);
         } catch (e) {
             Sentry.captureException(e);
@@ -190,10 +196,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             set({ monero_address: prevMoneroAddress });
         });
     },
-    setMode: async (mode) => {
+    setMode: async (params) => {
+        const { mode, customGpuLevels, customCpuLevels } = params;
         const prevMode = useAppConfigStore.getState().mode;
-        set({ mode });
-        invoke('set_mode', { mode }).catch((e) => {
+        set({ mode, custom_max_cpu_usage: customCpuLevels, custom_max_gpu_usage: customGpuLevels });
+        invoke('set_mode', {
+            mode,
+            customCpuUsage: customCpuLevels,
+            customGpuUsage: customGpuLevels,
+        }).catch((e) => {
             Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set mode', e);
