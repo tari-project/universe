@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
@@ -13,6 +14,7 @@ export function useGetSeedWords() {
             const seedWords = await invoke('get_seed_words');
             setSeedWords(seedWords);
         } catch (e) {
+            Sentry.captureException(e);
             const errorMessage = e as unknown as string;
             if (errorMessage && errorMessage.includes('Keychain access')) {
                 setError(errorMessage);

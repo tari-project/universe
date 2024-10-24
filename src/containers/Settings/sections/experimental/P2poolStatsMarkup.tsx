@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { CardContainer } from '@app/containers/Settings/components/Settings.styles.tsx';
 import { CardComponent } from '@app/containers/Settings/components/Card.component.tsx';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import * as Sentry from '@sentry/react';
 
 const P2PoolStats = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -27,6 +28,7 @@ const P2PoolStats = () => {
             try {
                 await fetchP2pStats();
             } catch (error) {
+                Sentry.captureException(error);
                 console.error('Error fetching p2pool stats:', error);
             }
         }, 5000);

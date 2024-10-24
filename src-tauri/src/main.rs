@@ -9,8 +9,6 @@ use log::trace;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
-use sentry::protocol::Event;
-use sentry_tauri::sentry;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -1666,19 +1664,12 @@ async fn get_miner_metrics(
 
 #[tauri::command]
 fn log_web_message(level: String, message: Vec<String>) {
+    let joined_message = message.join(" ");
     match level.as_str() {
         "error" => {
-            let joined_message = message.join(" ");
-            sentry::capture_event(Event {
-                message: Some(joined_message.clone()),
-                level: sentry::Level::Error,
-                culprit: Some("universe-web".to_string()),
-                ..Default::default()
-            });
-
             error!(target: LOG_TARGET_WEB, "{}", joined_message)
         }
-        _ => info!(target: LOG_TARGET_WEB, "{}", message.join(" ")),
+        _ => info!(target: LOG_TARGET_WEB, "{}", joined_message),
     }
 }
 
