@@ -19,7 +19,6 @@ auto-launch = "0.5.0"
 blake2 = "0.10"
 chrono = "0.4.38"
 device_query = "2.1.0"
-dirs-next = "2.0.0"
 dunce = "1.0.5"
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
@@ -83,7 +82,6 @@ tauri-plugin-single-instance = {git = "https://github.com/tauri-apps/plugins-wor
 thiserror = "1.0.26"
 tokio = {version = "1", features = ["full"]}
 tokio-util = {version = "0.7.11", features = ["compat"]}
-tor-hash-passwd = "1.0.1"
 xz2 = {version = "0.1.7", features = ["static"]}# static bind lzma
 zip = "2.2.0"
 
