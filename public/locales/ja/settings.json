@@ -1,5 +1,6 @@
 {
   "settings": "設定",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "シードワード",
   "send-logs": "ログを送信",
   "your-feedback": "問題を説明してください",
@@ -34,6 +35,10 @@
   "should-auto-start": {
     "title": "Auto-start on system boot",
     "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
   "visual-mode": "ビジュアルモード",

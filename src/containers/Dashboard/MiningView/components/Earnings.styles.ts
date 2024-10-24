@@ -52,20 +52,6 @@ export const WinWrapper = styled(m.div)`
     }
 `;
 
-export const ShinyWrapper = styled.div`
-    display: flex;
-    position: relative;
-
-    &:after {
-        content: '';
-        position: absolute;
-        width: 50%;
-        height: 80%;
-        top: 0;
-        left: 35%;
-        background-image: linear-gradient(135deg, transparent 45%, rgba(255, 255, 255, 0.25) 50%, transparent 55%);
-    }
-`;
 export const EarningsWrapper = styled(m.div)`
     display: flex;
     align-items: center;

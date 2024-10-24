@@ -1,5 +1,6 @@
 {
   "settings": "설정",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "시드 단어",
   "send-logs": "로그 전송",
   "your-feedback": "문제를 설명해 주세요",
@@ -34,6 +35,10 @@
   "should-auto-start": {
     "title": "Auto-start on system boot",
     "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "마지막 블록 체인 추가 시간",
   "visual-mode": "시각 모드",

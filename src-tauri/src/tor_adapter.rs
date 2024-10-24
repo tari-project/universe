@@ -6,7 +6,6 @@ use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
-use tor_hash_passwd::EncryptedKey;
 
 use crate::{
     process_adapter::{
@@ -19,7 +18,6 @@ const LOG_TARGET: &str = "tari::universe::tor_adapter";
 
 pub(crate) struct TorAdapter {
     socks_port: u16,
-    password: String,
     config_file: Option<PathBuf>,
     config: TorConfig,
 }
@@ -27,11 +25,9 @@ pub(crate) struct TorAdapter {
 impl TorAdapter {
     pub fn new() -> Self {
         let socks_port = 9050;
-        let password = "tari is the best".to_string();
 
         Self {
             socks_port,
-            password,
             config_file: None,
             config: TorConfig::default(),
         }
@@ -56,7 +52,7 @@ impl TorAdapter {
     }
 
     fn apply_loaded_config(&mut self, config: String) {
-        self.config = serde_json::from_str::<TorConfig>(&config).unwrap_or(TorConfig::default());
+        self.config = serde_json::from_str::<TorConfig>(&config).unwrap_or_default();
     }
 
     async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
@@ -156,22 +152,26 @@ impl ProcessAdapter for TorAdapter {
             self.socks_port.to_string(),
             "--controlport".to_string(),
             format!("127.0.0.1:{}", self.config.control_port),
-            "--HashedControlPassword".to_string(),
-            EncryptedKey::hash_password(&self.password).to_string(),
+            // TODO: Put hashed password back
+            // "--HashedControlPassword".to_string(),
+            // EncryptedKey::hash_password(&self.password).to_string(),
             "--clientuseipv6".to_string(),
             "1".to_string(),
             "--DataDirectory".to_string(),
             working_dir_string,
             "--Log".to_string(),
             format!("notice file {}", log_dir_string),
-            // Used by tor bridges
-            // TODO: This does not work when path has space on windows.
-            // Consider running lyrebird binary manually
-            "--ClientTransportPlugin".to_string(),
-            format!("obfs4 exec {} managed", convert_to_string(lyrebird_path)?),
         ];
 
         if self.config.use_bridges {
+            // Used by tor bridges
+            // TODO: This does not work when path has space on windows.
+            // Consider running lyrebird binary manually
+            args.push("--ClientTransportPlugin".to_string());
+            args.push(format!(
+                "obfs4 exec {} managed",
+                convert_to_string(lyrebird_path)?
+            ));
             for bridge in &self.config.bridges {
                 args.push("--Bridge".to_string());
                 args.push(bridge.clone());
@@ -194,7 +194,9 @@ impl ProcessAdapter for TorAdapter {
                     name: self.name().to_string(),
                 },
             },
-            TorStatusMonitor {},
+            TorStatusMonitor {
+                control_port: self.config.control_port,
+            },
         ))
     }
 
@@ -208,7 +210,9 @@ impl ProcessAdapter for TorAdapter {
 }
 
 #[derive(Clone)]
-pub(crate) struct TorStatusMonitor {}
+pub(crate) struct TorStatusMonitor {
+    pub control_port: u16,
+}
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {

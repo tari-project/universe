@@ -2,10 +2,10 @@ import { useEffect, useCallback } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
 import { Input } from '@app/components/elements/inputs/Input';
 import styled from 'styled-components';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 const moneroAddressRegex = /^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/;
 interface MoneroAddressEditorProps {
@@ -91,7 +91,7 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
                         </IconButton>
                     </>
                 ) : (
-                    <IconButton onClick={() => copyToClipboard(address)}>
+                    <IconButton type={'button'} onClick={() => copyToClipboard(address)}>
                         {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                     </IconButton>
                 )}

@@ -1,5 +1,6 @@
 {
   "settings": "Ayarlar",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Seed Kelimeleri",
   "send-logs": "Günlüğü gönder",
   "change-language": "Dil Değiştir",
@@ -53,6 +54,10 @@
   "should-auto-start": {
     "title": "Auto-start on system boot",
     "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "connected-to-tari": "Tari Ağına Bağlı",
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",

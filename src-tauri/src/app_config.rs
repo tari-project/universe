@@ -1,12 +1,15 @@
+use crate::credential_manager::{Credential, KEYRING_ACCESSED};
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
+use crate::credential_manager::CredentialManager;
+use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 use anyhow::anyhow;
 use log::{debug, info, warn};
+use monero_address_creator::network::Mainnet;
+use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
 use tokio::fs;
-
-use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -17,6 +20,8 @@ pub struct AppConfigFromFile {
     version: u32,
     #[serde(default = "default_mode")]
     mode: String,
+    #[serde(default = "default_theme")]
+    theme: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
     #[serde(default = "default_true")]
@@ -31,6 +36,8 @@ pub struct AppConfigFromFile {
     anon_id: String,
     #[serde(default = "default_monero_address")]
     monero_address: String,
+    #[serde(default = "default_false")]
+    monero_address_is_provided: bool,
     #[serde(default = "default_true")]
     gpu_mining_enabled: bool,
     #[serde(default = "default_true")]
@@ -49,6 +56,8 @@ pub struct AppConfigFromFile {
     use_tor: bool,
     #[serde(default = "default_false")]
     paper_wallet_enabled: bool,
+    #[serde(default = "default_false")]
+    reset_earnings: bool,
     eco_mode_cpu_threads: Option<isize>,
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
@@ -57,6 +66,10 @@ pub struct AppConfigFromFile {
     mmproxy_use_monero_fail: bool,
     #[serde(default = "default_monero_nodes")]
     mmproxy_monero_nodes: Vec<String>,
+    #[serde(default = "default_false")]
+    auto_update: bool,
+    #[serde(default = "default_false")]
+    keyring_accessed: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -64,6 +77,7 @@ impl Default for AppConfigFromFile {
         Self {
             version: default_version(),
             mode: default_mode(),
+            theme: default_theme(),
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -71,6 +85,7 @@ impl Default for AppConfigFromFile {
             allow_telemetry: false,
             anon_id: default_anon_id(),
             monero_address: default_monero_address(),
+            monero_address_is_provided: false,
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -86,6 +101,35 @@ impl Default for AppConfigFromFile {
             ludicrous_mode_cpu_threads: None,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
+            keyring_accessed: false,
+            auto_update: false,
+            reset_earnings: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum Theme {
+    System,
+    Dark,
+    Light,
+}
+
+impl Theme {
+    pub fn from_str(s: &str) -> Option<Theme> {
+        match s {
+            "system" => Some(Theme::System),
+            "dark" => Some(Theme::Dark),
+            "light" => Some(Theme::Light),
+            _ => None,
+        }
+    }
+
+    pub fn to_str(t: Theme) -> String {
+        match t {
+            Theme::System => String::from("system"),
+            Theme::Dark => String::from("dark"),
+            Theme::Light => String::from("light"),
         }
     }
 }
@@ -119,6 +163,7 @@ pub(crate) struct AppConfig {
     config_version: u32,
     config_file: Option<PathBuf>,
     mode: MiningMode,
+    theme: Theme,
     auto_mining: bool,
     mine_on_app_start: bool,
     p2pool_enabled: bool,
@@ -126,6 +171,7 @@ pub(crate) struct AppConfig {
     allow_telemetry: bool,
     anon_id: String,
     monero_address: String,
+    monero_address_is_provided: bool,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
@@ -135,12 +181,15 @@ pub(crate) struct AppConfig {
     airdrop_ui_enabled: bool,
     paper_wallet_enabled: bool,
     use_tor: bool,
+    reset_earnings: bool,
     eco_mode_cpu_threads: Option<isize>,
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
+    auto_update: bool,
+    keyring_accessed: bool,
 }
 
 impl AppConfig {
@@ -149,13 +198,15 @@ impl AppConfig {
             config_version: default_version(),
             config_file: None,
             mode: MiningMode::Eco,
+            theme: Theme::System,
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
-            monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
+            monero_address: default_monero_address(),
+            monero_address_is_provided: false,
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -165,12 +216,15 @@ impl AppConfig {
             airdrop_ui_enabled: true,
             use_tor: true,
             paper_wallet_enabled: false,
+            reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
             eco_mode_cpu_threads: None,
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            auto_update: false,
+            keyring_accessed: false,
         }
     }
 
@@ -184,6 +238,10 @@ impl AppConfig {
             self.apply_loaded_config(config);
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
+            if let Ok(address) = create_monereo_address(config_path).await {
+                self.monero_address = address;
+                self.monero_address_is_provided = true;
+            }
         }
         self.update_config_file().await?;
         Ok(())
@@ -195,6 +253,7 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
+                self.theme = Theme::from_str(&config.theme).unwrap_or(Theme::Light);
                 self.auto_mining = config.auto_mining;
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
@@ -202,6 +261,7 @@ impl AppConfig {
                 self.allow_telemetry = config.allow_telemetry;
                 self.anon_id = config.anon_id;
                 self.monero_address = config.monero_address;
+                self.monero_address_is_provided = config.monero_address_is_provided;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
@@ -217,6 +277,13 @@ impl AppConfig {
                 self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
+                self.auto_update = config.auto_update;
+                self.reset_earnings = config.reset_earnings;
+
+                KEYRING_ACCESSED.store(
+                    config.keyring_accessed,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -273,6 +340,17 @@ impl AppConfig {
             _ => return Err(anyhow!("Invalid mode")),
         };
         self.mode = new_mode;
+        self.update_config_file().await?;
+        Ok(())
+    }
+    pub async fn set_theme(&mut self, theme: String) -> Result<(), anyhow::Error> {
+        let new_theme = match theme.as_str() {
+            "system" => Theme::Light,
+            "dark" => Theme::Light,
+            "light" => Theme::Light,
+            _ => return Err(anyhow!("Invalid theme")),
+        };
+        self.theme = new_theme;
         self.update_config_file().await?;
         Ok(())
     }
@@ -355,14 +433,20 @@ impl AppConfig {
     pub fn allow_telemetry(&self) -> bool {
         self.allow_telemetry
     }
+
     pub fn monero_address(&self) -> &str {
         &self.monero_address
     }
 
     pub async fn set_monero_address(&mut self, address: String) -> Result<(), anyhow::Error> {
+        self.monero_address_is_provided = false;
         self.monero_address = address;
         self.update_config_file().await?;
         Ok(())
+    }
+
+    pub fn monero_address_is_provided(&self) -> bool {
+        self.monero_address_is_provided
     }
 
     pub fn last_binaries_update_timestamp(&self) -> SystemTime {
@@ -423,6 +507,12 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_auto_update(&mut self, auto_update: bool) -> Result<(), anyhow::Error> {
+        self.auto_update = auto_update;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -435,6 +525,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
+            theme: Theme::to_str(self.theme),
             auto_mining: self.auto_mining,
             mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
@@ -442,6 +533,7 @@ impl AppConfig {
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
             monero_address: self.monero_address.clone(),
+            monero_address_is_provided: self.monero_address_is_provided,
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
             has_system_language_been_proposed: self.has_system_language_been_proposed,
@@ -451,12 +543,15 @@ impl AppConfig {
             airdrop_ui_enabled: self.airdrop_ui_enabled,
             paper_wallet_enabled: self.paper_wallet_enabled,
             use_tor: self.use_tor,
+            reset_earnings: self.reset_earnings,
             eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
             ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
             eco_mode_cpu_threads: self.eco_mode_cpu_threads,
             ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
+            keyring_accessed: KEYRING_ACCESSED.load(std::sync::atomic::Ordering::Relaxed),
+            auto_update: self.auto_update,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -472,6 +567,10 @@ fn default_version() -> u32 {
 
 fn default_mode() -> String {
     "Eco".to_string()
+}
+
+fn default_theme() -> String {
+    "light".to_string()
 }
 
 fn default_false() -> bool {
@@ -494,6 +593,32 @@ fn default_monero_address() -> String {
     DEFAULT_MONERO_ADDRESS.to_string()
 }
 
+async fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {
+    let cm = CredentialManager::default_with_dir(path);
+
+    if let Ok(cred) = cm.get_credentials() {
+        if let Some(seed) = cred.monero_seed {
+            info!(target: LOG_TARGET, "Found monero seed in credential manager");
+            let seed = MoneroSeed::new(seed);
+            return Ok(seed
+                .to_address::<Mainnet>()
+                .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()));
+        }
+    }
+
+    let monero_seed = MoneroSeed::generate()?;
+    let cred = Credential {
+        tari_seed_passphrase: None,
+        monero_seed: Some(*monero_seed.inner()),
+    };
+
+    info!(target: LOG_TARGET, "Setting monero seed in credential manager");
+    cm.set_credentials(&cred)?;
+
+    Ok(monero_seed
+        .to_address::<Mainnet>()
+        .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
+}
 fn default_application_language() -> String {
     "en".to_string()
 }

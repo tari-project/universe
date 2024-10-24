@@ -4,9 +4,10 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
-use futures_util::future::Join;
+use keyring::Entry;
 use log::trace;
 use log::{debug, error, info, warn};
+use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
@@ -39,6 +40,7 @@ use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
 
 use crate::cpu_miner::CpuMiner;
+use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
@@ -57,6 +59,7 @@ mod auto_launcher;
 mod binaries;
 mod consts;
 mod cpu_miner;
+mod credential_manager;
 mod download_utils;
 mod external_dependencies;
 mod feedback;
@@ -171,6 +174,24 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_theme(theme: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_theme(theme)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_theme {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_theme took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -365,6 +386,27 @@ async fn set_monero_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_auto_update(
+    auto_update: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_auto_update(auto_update)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
 
@@ -707,17 +749,22 @@ async fn setup_inner(
         .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
+    let mut tor_control_port = None;
     if use_tor {
-        state
-            .tor_manager
-            .ensure_started(
-                state.shutdown.to_signal(),
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-            )
-            .await?;
+        if cfg!(target_os = "windows") {
+            state
+                .tor_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+            tor_control_port = state.tor_manager.get_control_port().await?;
+        } else {
+            tor_control_port = Some(9051);
+        }
     }
     for _i in 0..2 {
         match state
@@ -728,6 +775,7 @@ async fn setup_inner(
                 config_dir.clone(),
                 log_dir.clone(),
                 use_tor,
+                tor_control_port,
             )
             .await
         {
@@ -1025,6 +1073,56 @@ async fn get_seed_words(
     Ok(res)
 }
 
+#[tauri::command]
+async fn get_monero_seed_words(
+    window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+
+    if !state.config.read().await.monero_address_is_provided() {
+        return Err(
+            "Monero seed words are not available when a Monero address is provided".to_string(),
+        );
+    }
+
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    let network = Network::get_current_or_user_setting_or_default()
+        .to_string()
+        .to_lowercase();
+
+    let path = config_path.join(network);
+
+    let cm = CredentialManager::default_with_dir(path);
+    let cred = match cm.get_credentials() {
+        Ok(cred) => cred,
+        Err(e @ CredentialError::PreviouslyUsedKeyring) => {
+            return Err(e.to_string());
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Could not get credentials: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
+
+    let seed = cred
+        .monero_seed
+        .expect("Couldn't get seed from credentials");
+
+    let seed = MoneroSeed::new(seed);
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
+    }
+
+    seed.seed_words().map_err(|e| e.to_string())
+}
+
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 async fn start_mining<'r>(
@@ -1183,7 +1281,7 @@ async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r"obfs4.*?<br\/>").unwrap();
+    let re = Regex::new(r"obfs4.*?<br\/>").map_err(|e| e.to_string())?;
     let bridges: Vec<String> = re
         .find_iter(&res_html)
         .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
@@ -1675,6 +1773,12 @@ async fn reset_settings<'r>(
             }
         }
     }
+
+    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+        let _unused = entry.delete_credential();
+    }
+
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 
@@ -1982,6 +2086,7 @@ fn main() {
             stop_mining,
             set_p2pool_enabled,
             set_mode,
+            set_theme,
             open_log_dir,
             get_seed_words,
             get_applications_versions,
@@ -2015,9 +2120,11 @@ fn main() {
             set_use_tor,
             get_transaction_history,
             import_seed_words,
+            set_auto_update,
             get_tor_config,
             set_tor_config,
-            fetch_tor_bridges
+            fetch_tor_bridges,
+            get_monero_seed_words
         ])
         .build(tauri::generate_context!())
         .inspect_err(

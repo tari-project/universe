@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::data_local_dir;
 use log::{info, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -135,7 +134,10 @@ impl StatusMonitor for P2poolStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         match self.stats_client.stats().await {
             Ok(_) => HealthStatus::Healthy,
-            Err(_) => HealthStatus::Unhealthy,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
+                HealthStatus::Unhealthy
+            }
         }
     }
 }

@@ -2,14 +2,17 @@ import { useCallback, useState } from 'react';
 import { useGetSeedWords } from './useGetSeedWords';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
+
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
-import { SeedWordsView } from './SeedWordsView';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import { SeedWordsEdit } from './SeedWordsEdit';
+import { useTranslation } from 'react-i18next';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { SeedWords } from '@app/containers/Settings/components/SeedWords.tsx';
 
 const SeedWordsMarkup = () => {
+    const { t } = useTranslation('settings', { useSuspense: false });
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
@@ -30,9 +33,9 @@ const SeedWordsMarkup = () => {
     }, [getSeedWords, seedWordsFetched]);
 
     return (
-        <SettingsGroupWrapper>
+        <SettingsGroupWrapper $subGroup>
             <Stack direction="row" justifyContent="flex-start" alignItems="center" style={{ height: '34px' }}>
-                <Typography variant="h6">Seed Words</Typography>
+                <Typography variant="h6">{t('seed-words')}</Typography>
                 {!isEditing && (
                     <IconButton onClick={toggleSeedWordsVisibility} disabled={seedWordsFetching}>
                         {seedWordsFetching ? (
@@ -48,12 +51,11 @@ const SeedWordsMarkup = () => {
             {isEditing ? (
                 <SeedWordsEdit seedWordsFetching={seedWordsFetching} seedWords={seedWords} toggleEdit={toggleEdit} />
             ) : (
-                <SeedWordsView
-                    showSeedWords={showSeedWords}
+                <SeedWords
+                    showSeedWords={showSeedWords && !!seedWords?.length}
                     seedWords={seedWords}
-                    toggleEdit={toggleEdit}
-                    getSeedWords={getSeedWords}
-                    seedWordsFetched={seedWordsFetched}
+                    editable
+                    onToggleEdit={toggleEdit}
                 />
             )}
         </SettingsGroupWrapper>

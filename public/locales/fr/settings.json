@@ -46,6 +46,10 @@
     "title": "Auto-start on system boot",
     "description": "When enabled, the app will start automatically when you log in to your computer."
   },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
+  },
   "connected-to-tari": "Connecté au réseau Tari",
   "reset-settings": "Réinitialiser les paramètres",
   "visual-mode": "Mode visuel",
@@ -62,6 +66,7 @@
   "send-logs": "Soumettre un problème et des journaux",
   "logs": "Journaux",
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Mots de récupération",
   "feedback-required": "Les commentaires sont requis",
   "low-hash-rate-warning": "Votre hashrate est très bas. Essayez de fermer toutes les applications sauf Tari Universe",

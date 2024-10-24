@@ -22,6 +22,7 @@ interface Actions {
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
     setUseTor: (useTor: boolean) => Promise<void>;
     setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
+    setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -42,6 +43,8 @@ const initialState: State = {
     airdrop_ui_enabled: false,
     paper_wallet_enabled: false,
     use_tor: true,
+    auto_update: false,
+    monero_address_is_provided: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
@@ -194,6 +197,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set use Tor', e);
             appStateStore.setError('Could not change Tor usage');
             set({ use_tor: !useTor });
+        });
+    },
+    setAutoUpdate: async (autoUpdate) => {
+        set({ auto_update: autoUpdate });
+        invoke('set_auto_update', { autoUpdate }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set auto update', e);
+            appStateStore.setError('Could not change auto update');
+            set({ auto_update: !autoUpdate });
         });
     },
 }));

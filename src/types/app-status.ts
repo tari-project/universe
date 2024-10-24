@@ -1,5 +1,5 @@
 import { Language } from '@app/i18initializer';
-import { modeType } from '../store/types';
+import { modeType, themeType } from '../store/types';
 
 export interface TorConfig {
     control_port: number;
@@ -11,6 +11,7 @@ export interface AppConfig {
     config_version: number;
     config_file?: string;
     mode: modeType;
+    theme: themeType;
     auto_mining: boolean;
     mine_on_app_start: boolean;
     p2pool_enabled: boolean;
@@ -27,6 +28,8 @@ export interface AppConfig {
     airdrop_ui_enabled: boolean;
     paper_wallet_enabled: boolean;
     use_tor: boolean;
+    auto_update: boolean;
+    monero_address_is_provided?: boolean;
 }
 
 export enum ExternalDependencyStatus {

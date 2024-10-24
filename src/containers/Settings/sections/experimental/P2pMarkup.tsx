@@ -19,7 +19,7 @@ const P2pMarkup = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const isP2poolEnabled = useAppConfigStore((state) => state.p2pool_enabled);
     const setP2poolEnabled = useAppConfigStore((state) => state.setP2poolEnabled);
-    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const miningAllowed = useAppStateStore((s) => !s.isSettingUp);
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const isDisabled = !miningAllowed;
 
@@ -38,7 +38,7 @@ const P2pMarkup = () => {
                     <SettingsGroupTitle>
                         <Typography variant="h6">
                             {t('pool-mining', { ns: 'settings' })}
-                            <b>&nbsp;(APP RESTART REQUIRED)</b>
+                            <b>&nbsp;({t('app-restart-required', { ns: 'settings' })})</b>
                         </Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('pool-mining-description', { ns: 'settings' })}</Typography>
