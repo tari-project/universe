@@ -182,9 +182,8 @@ impl InternalWallet {
             None => CipherSeed::new(),
         };
 
-        let seed_file = seed.encipher(Some(passphrase))?;
+        let seed_file = seed.encipher(passphrase)?;
         config.seed_words_encrypted_base58 = seed_file.to_monero_base58();
-
 
         let comms_key_manager = KeyManager::<RistrettoPublicKey, KeyDigest>::from(
             seed.clone(),

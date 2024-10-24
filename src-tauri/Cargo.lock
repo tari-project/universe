@@ -3756,7 +3756,7 @@ name = "monero-address-creator"
 version = "0.1.0"
 source = "git+https://github.com/tari-project/monero-address-creator.git?rev=6129ca0#6129ca045cfa09fa2c8ddb57895fb1cda1a9fe79"
 dependencies = [
- "base58-monero 2.0.0",
+ "base58-monero",
  "crc 1.8.1",
  "curve25519-dalek",
  "rand 0.8.5",
