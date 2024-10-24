@@ -7,7 +7,6 @@ use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredEx
 use log::trace;
 use log::{debug, error, info, warn};
 use regex::Regex;
-use sentry_tauri::sentry;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
