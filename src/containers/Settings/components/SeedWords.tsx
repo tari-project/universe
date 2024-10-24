@@ -1,9 +1,9 @@
 import { Wrapper, SeedWordsContainer, HiddenContainer, IconContainer } from './SeedWords.styles.ts';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
 import { IoCheckmarkOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 interface SeedWordsProps {
     seedWords?: string[];

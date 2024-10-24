@@ -1,5 +1,6 @@
 {
   "settings": "सेटिंग्स",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "बीज शब्द",
   "send-logs": "लॉग्स भेजें",
   "your-feedback": "कृपया अपनी समस्या का वर्णन करें",
@@ -34,6 +35,10 @@
   "should-auto-start": {
     "title": "Auto-start on system boot",
     "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
   "visual-mode": "दृश्य मोड",
@@ -71,5 +76,13 @@
   "action-requires-restart": "इस क्रिया के लिए परिवर्तनों को लागू करने हेतु पुनः आरंभ करना आवश्यक है",
   "low-hash-rate-warning": "आपकी हैश रेट बहुत कम है। Tari Universe के अलावा सभी ऐप्स को बंद करने का प्रयास करें",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
-  "report-issue": "समस्या की रिपोर्ट करें"
+  "report-issue": "समस्या की रिपोर्ट करें",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }

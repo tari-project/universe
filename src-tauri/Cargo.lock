@@ -2436,6 +2436,12 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hex-literal"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ebdb29d2ea9ed0083cd8cece49bbd968021bd99b0849edb4a9a7ee0fdf6a4e0"
+
+[[package]]
+name = "hex-literal"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fe2267d4ed49bc07b63801559be28c718ea06c4738b7a03c94df7386d2cde46"
@@ -3634,7 +3640,7 @@ dependencies = [
  "curve25519-dalek",
  "fixed-hash",
  "hex",
- "hex-literal",
+ "hex-literal 0.4.1",
  "sealed",
  "serde",
  "thiserror",
@@ -5819,12 +5825,9 @@ dependencies = [
 
 [[package]]
 name = "sha1"
-version = "0.6.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1da05c97445caa12d05e848c4a4fcbbea29e748ac28f7e80e9b010392063770"
-dependencies = [
- "sha1_smol",
-]
+checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
 
 [[package]]
 name = "sha1"
@@ -5836,12 +5839,6 @@ dependencies = [
  "cpufeatures",
  "digest",
 ]
-
-[[package]]
-name = "sha1_smol"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbfa15b3dddfee50a0fff136974b3e1bde555604ba463834a7eb7deb6417705d"
 
 [[package]]
 name = "sha2"
@@ -6409,7 +6406,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.5.41"
+version = "0.5.45"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6461,6 +6458,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-util 0.7.12",
+ "tor-hash-passwd",
  "winreg 0.52.0",
  "xz2",
  "zip 2.2.0",
@@ -7518,6 +7516,19 @@ dependencies = [
  "prost-build",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "tor-hash-passwd"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b83cd43a176c0c19d5db4401283e8f5c296b9c6c7fa29029de15cc445f26e12"
+dependencies = [
+ "hex",
+ "hex-literal 0.3.4",
+ "rand 0.8.5",
+ "sha1 0.6.0",
+ "thiserror",
 ]
 
 [[package]]
@@ -8848,7 +8859,7 @@ dependencies = [
  "rand 0.8.5",
  "serde",
  "serde_repr",
- "sha1 0.6.1",
+ "sha1 0.6.0",
  "static_assertions",
  "tracing",
  "uds_windows",

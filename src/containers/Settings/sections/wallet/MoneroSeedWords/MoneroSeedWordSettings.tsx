@@ -2,14 +2,16 @@ import { SettingsGroupTitle, SettingsGroupWrapper } from '@app/containers/Settin
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useCallback, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import { IconButton } from '@app/components/elements/Button.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
+import { useTranslation } from 'react-i18next';
 
 import { SeedWords } from '@app/containers/Settings/components/SeedWords.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export default function MoneroSeedWordSettings() {
+    const { t } = useTranslation('settings', { useSuspense: false });
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [seedWords, setSeedWords] = useState<string[]>([]);
@@ -41,7 +43,8 @@ export default function MoneroSeedWordSettings() {
         <SettingsGroupWrapper $subGroup>
             <SettingsGroupTitle>
                 <Stack direction="row" justifyContent="flex-start" alignItems="center" style={{ height: '34px' }}>
-                    <Typography variant="h6">Monero Seed Words</Typography>
+                    <Typography variant="h6">{t('monero-seed-words')}</Typography>
+
                     <IconButton onClick={toggleSeedWordsVisibility} disabled={isFetching}>
                         {isFetching ? (
                             <CircularProgress />

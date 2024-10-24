@@ -8,6 +8,7 @@ use keyring::Entry;
 use log::trace;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
+use regex::Regex;
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
 use serde::Serialize;
@@ -23,6 +24,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
+use tor_adapter::TorConfig;
 use wallet_adapter::TransactionInfo;
 
 use app_config::AppConfig;
@@ -178,6 +180,24 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
+async fn set_theme(theme: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_theme(theme)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_theme {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_theme took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn set_use_tor(
     use_tor: bool,
     state: tauri::State<'_, UniverseAppState>,
@@ -302,6 +322,40 @@ async fn set_airdrop_access_token(
 }
 
 #[tauri::command]
+async fn get_tor_config(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<TorConfig, String> {
+    let timer = Instant::now();
+    let tor_config = state.tor_manager.get_tor_config().await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_tor_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(tor_config)
+}
+
+#[tauri::command]
+async fn set_tor_config(
+    config: TorConfig,
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<TorConfig, String> {
+    let timer = Instant::now();
+    let tor_config = state
+        .tor_manager
+        .set_tor_config(config)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_tor_config took too long: {:?}", timer.elapsed());
+    }
+    Ok(tor_config)
+}
+
+#[tauri::command]
 async fn get_app_in_memory_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -332,6 +386,27 @@ async fn set_monero_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_auto_update(
+    auto_update: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_auto_update(auto_update)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
 
@@ -578,7 +653,7 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
-    if use_tor && cfg!(target_os = "windows") {
+    if use_tor {
         progress.set_max(5).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
@@ -674,17 +749,22 @@ async fn setup_inner(
         .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
-    if use_tor && cfg!(target_os = "windows") {
-        state
-            .tor_manager
-            .ensure_started(
-                state.shutdown.to_signal(),
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-            )
-            .await?;
+    let mut tor_control_port = None;
+    if use_tor {
+        if cfg!(target_os = "windows") {
+            state
+                .tor_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+            tor_control_port = state.tor_manager.get_control_port().await?;
+        } else {
+            tor_control_port = Some(9051);
+        }
     }
     for _i in 0..2 {
         match state
@@ -695,6 +775,7 @@ async fn setup_inner(
                 config_dir.clone(),
                 log_dir.clone(),
                 use_tor,
+                tor_control_port,
             )
             .await
         {
@@ -910,7 +991,7 @@ async fn set_gpu_mining_enabled(
 async fn import_seed_words(
     seed_words: Vec<String>,
     _window: tauri::Window,
-    _state: tauri::State<'_, UniverseAppState>,
+    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
@@ -922,6 +1003,8 @@ async fn import_seed_words(
         .path_resolver()
         .app_local_data_dir()
         .expect("Could not get data dir");
+
+    stop_all_miners(state.inner().clone(), 5).await?;
 
     tauri::async_runtime::spawn(async move {
         match InternalWallet::create_from_seed(config_path, seed_words).await {
@@ -1200,6 +1283,28 @@ async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<()
         warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
     }
     Ok(())
+}
+
+#[tauri::command]
+async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+    let res_html = reqwest::get("https://bridges.torproject.org/bridges?transport=obfs4")
+        .await
+        .map_err(|e| e.to_string())?
+        .text()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let re = Regex::new(r"obfs4.*?<br\/>").map_err(|e| e.to_string())?;
+    let bridges: Vec<String> = re
+        .find_iter(&res_html)
+        .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
+        .collect();
+    info!(target: LOG_TARGET, "Fetched default bridges: {:?}", bridges);
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
+    }
+    Ok(bridges)
 }
 
 #[tauri::command]
@@ -1995,6 +2100,7 @@ fn main() {
             stop_mining,
             set_p2pool_enabled,
             set_mode,
+            set_theme,
             open_log_dir,
             get_seed_words,
             get_applications_versions,
@@ -2028,6 +2134,10 @@ fn main() {
             set_use_tor,
             get_transaction_history,
             import_seed_words,
+            set_auto_update,
+            get_tor_config,
+            set_tor_config,
+            fetch_tor_bridges,
             get_monero_seed_words
         ])
         .build(tauri::generate_context!())

@@ -20,6 +20,8 @@ pub struct AppConfigFromFile {
     version: u32,
     #[serde(default = "default_mode")]
     mode: String,
+    #[serde(default = "default_theme")]
+    theme: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
     #[serde(default = "default_true")]
@@ -54,6 +56,8 @@ pub struct AppConfigFromFile {
     use_tor: bool,
     #[serde(default = "default_false")]
     paper_wallet_enabled: bool,
+    #[serde(default = "default_false")]
+    reset_earnings: bool,
     eco_mode_cpu_threads: Option<isize>,
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
@@ -63,6 +67,8 @@ pub struct AppConfigFromFile {
     #[serde(default = "default_monero_nodes")]
     mmproxy_monero_nodes: Vec<String>,
     #[serde(default = "default_false")]
+    auto_update: bool,
+    #[serde(default = "default_false")]
     keyring_accessed: bool,
 }
 
@@ -71,6 +77,7 @@ impl Default for AppConfigFromFile {
         Self {
             version: default_version(),
             mode: default_mode(),
+            theme: default_theme(),
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -95,6 +102,34 @@ impl Default for AppConfigFromFile {
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
             keyring_accessed: false,
+            auto_update: false,
+            reset_earnings: false,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum Theme {
+    System,
+    Dark,
+    Light,
+}
+
+impl Theme {
+    pub fn from_str(s: &str) -> Option<Theme> {
+        match s {
+            "system" => Some(Theme::System),
+            "dark" => Some(Theme::Dark),
+            "light" => Some(Theme::Light),
+            _ => None,
+        }
+    }
+
+    pub fn to_str(t: Theme) -> String {
+        match t {
+            Theme::System => String::from("system"),
+            Theme::Dark => String::from("dark"),
+            Theme::Light => String::from("light"),
         }
     }
 }
@@ -128,6 +163,7 @@ pub(crate) struct AppConfig {
     config_version: u32,
     config_file: Option<PathBuf>,
     mode: MiningMode,
+    theme: Theme,
     auto_mining: bool,
     mine_on_app_start: bool,
     p2pool_enabled: bool,
@@ -145,12 +181,14 @@ pub(crate) struct AppConfig {
     airdrop_ui_enabled: bool,
     paper_wallet_enabled: bool,
     use_tor: bool,
+    reset_earnings: bool,
     eco_mode_cpu_threads: Option<isize>,
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
+    auto_update: bool,
     keyring_accessed: bool,
 }
 
@@ -160,6 +198,7 @@ impl AppConfig {
             config_version: default_version(),
             config_file: None,
             mode: MiningMode::Eco,
+            theme: Theme::System,
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -177,12 +216,14 @@ impl AppConfig {
             airdrop_ui_enabled: true,
             use_tor: true,
             paper_wallet_enabled: false,
+            reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
             eco_mode_cpu_threads: None,
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            auto_update: false,
             keyring_accessed: false,
         }
     }
@@ -212,6 +253,7 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
+                self.theme = Theme::from_str(&config.theme).unwrap_or(Theme::Light);
                 self.auto_mining = config.auto_mining;
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
@@ -235,6 +277,8 @@ impl AppConfig {
                 self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
+                self.auto_update = config.auto_update;
+                self.reset_earnings = config.reset_earnings;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -296,6 +340,17 @@ impl AppConfig {
             _ => return Err(anyhow!("Invalid mode")),
         };
         self.mode = new_mode;
+        self.update_config_file().await?;
+        Ok(())
+    }
+    pub async fn set_theme(&mut self, theme: String) -> Result<(), anyhow::Error> {
+        let new_theme = match theme.as_str() {
+            "system" => Theme::Light,
+            "dark" => Theme::Light,
+            "light" => Theme::Light,
+            _ => return Err(anyhow!("Invalid theme")),
+        };
+        self.theme = new_theme;
         self.update_config_file().await?;
         Ok(())
     }
@@ -452,6 +507,12 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_auto_update(&mut self, auto_update: bool) -> Result<(), anyhow::Error> {
+        self.auto_update = auto_update;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -464,6 +525,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
+            theme: Theme::to_str(self.theme),
             auto_mining: self.auto_mining,
             mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
@@ -481,6 +543,7 @@ impl AppConfig {
             airdrop_ui_enabled: self.airdrop_ui_enabled,
             paper_wallet_enabled: self.paper_wallet_enabled,
             use_tor: self.use_tor,
+            reset_earnings: self.reset_earnings,
             eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
             ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
             eco_mode_cpu_threads: self.eco_mode_cpu_threads,
@@ -488,6 +551,7 @@ impl AppConfig {
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
             keyring_accessed: KEYRING_ACCESSED.load(std::sync::atomic::Ordering::Relaxed),
+            auto_update: self.auto_update,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -503,6 +567,10 @@ fn default_version() -> u32 {
 
 fn default_mode() -> String {
     "Eco".to_string()
+}
+
+fn default_theme() -> String {
+    "light".to_string()
 }
 
 fn default_false() -> bool {
