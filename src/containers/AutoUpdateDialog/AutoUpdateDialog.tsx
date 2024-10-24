@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/react';
+
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -37,6 +39,7 @@ function AutoUpdateDialog() {
             console.info('Restarting application after update');
             await invoke('restart_application');
         } catch (e) {
+            Sentry.captureException(e);
             console.error('Relaunch error', e);
         }
         handleClose();
@@ -57,6 +60,7 @@ function AutoUpdateDialog() {
                 setIsAfterAutoUpdate(true);
             }
         } catch (error) {
+            Sentry.captureException(error);
             console.error('AutoUpdate error:', error);
             setIsAfterAutoUpdate(true);
         }
