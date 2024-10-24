@@ -21,7 +21,7 @@ use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_utilities::encoding::Base58;
+use tari_utilities::encoding::MBase58;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
@@ -217,7 +217,7 @@ impl TelemetryManager {
             .expect("Failed to finalize hasher variable");
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
-        let unique_string = format!("v2,{},{}", buf.to_base58(), version,);
+        let unique_string = format!("v2,{},{}", buf.to_monero_base58(), version,);
         unique_string
     }
 
@@ -313,6 +313,7 @@ async fn validate_jwt(airdrop_access_token: Arc<RwLock<Option<String>>>) -> Opti
     })
 }
 
+#[allow(clippy::too_many_lines)]
 async fn get_telemetry_data(
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -349,9 +350,10 @@ async fn get_telemetry_data(
         .await
         .read_hardware_parameters();
 
-    let p2pool_stats = match p2pool_manager.get_stats().await.inspect_err(|e| {
+    let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
-    }) {
+    });
+    let p2pool_stats = match p2pool_stats {
         Ok(stats) => stats,
         Err(_) => None,
     };
@@ -362,8 +364,21 @@ async fn get_telemetry_data(
     let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
     let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
     let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
-    let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
-    let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
+    let gpu_utilization = Some(
+        hardware_status
+            .gpu
+            .clone()
+            .into_iter()
+            .map(|c| c.usage_percentage)
+            .sum::<f32>(),
+    );
+    let gpu_makes: Vec<_> = hardware_status
+        .gpu
+        .clone()
+        .into_iter()
+        .map(|c| c.label.clone())
+        .collect();
+    let gpu_make = Some(gpu_makes.into_iter().collect::<Vec<_>>().join(", ")); //TODO refactor - now is JUST WIP to meet the String type
     let version = env!("CARGO_PKG_VERSION").to_string();
     let gpu_mining_used =
         config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
@@ -557,7 +572,7 @@ where
                         e
                     ));
                 } else {
-                    warn!(target: LOG_TARGET, "Retrying {} as it failed due to failure: {:?}", operation_name, e);
+                    warn!(target: LOG_TARGET, "Retrying {} due to failure: {:?}", operation_name, e);
                 }
             }
         }

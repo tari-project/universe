@@ -9,18 +9,20 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
-import { SendLogsDialog } from '@app/components/feedback/SendLogsDialog.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
 
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { IconButton } from '@app/components/elements/Button.tsx';
+
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import * as Sentry from '@sentry/react';
 
 export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const setShowLogsDialog = useUIStore((s) => s.setShowLogsDialog);
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const { isCopied, copyToClipboard } = useCopyToClipboard();
 
     const [reference, setReference] = useState('');
@@ -31,6 +33,7 @@ export default function LogsSettings() {
                 console.info('Opening logs directory');
             })
             .catch((error) => {
+                Sentry.captureException(error);
                 console.error('Error opening logs directory: ', error);
             });
     };
@@ -62,10 +65,8 @@ export default function LogsSettings() {
                 </SettingsGroupContent>
 
                 <SettingsGroupAction>
-                    <ButtonBase onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</ButtonBase>
-                    <ButtonBase onClick={() => setShowLogsDialog(true)}>
-                        {t('send-logs', { ns: 'settings' })}
-                    </ButtonBase>
+                    <Button onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</Button>
+                    <Button onClick={() => setDialogToShow('logs')}>{t('send-logs', { ns: 'settings' })}</Button>
                 </SettingsGroupAction>
                 <SendLogsDialog onSetReference={setReference} />
             </SettingsGroup>

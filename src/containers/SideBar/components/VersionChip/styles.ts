@@ -10,9 +10,10 @@ export const Wrapper = styled('div')`
     padding: 0 10px 0 8px;
 
     border-radius: 20px;
-    background: #000;
+    background: ${({ theme }) => theme.palette.component.main};
 
-    color: #fff;
+    color: ${({ theme }) => theme.palette.component.contrast};
+
     font-size: 11px;
     font-weight: 600;
     line-height: 100%;
@@ -21,7 +22,7 @@ export const Wrapper = styled('div')`
     transform: translateY(1px);
 
     span {
-        color: #afafaf;
+        color: ${({ theme }) => theme.palette.component.accent};
     }
 `;
 

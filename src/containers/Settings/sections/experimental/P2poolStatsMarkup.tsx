@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { CardContainer } from '@app/containers/Settings/components/Settings.styles.tsx';
 import { CardComponent } from '@app/containers/Settings/components/Card.component.tsx';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
+import * as Sentry from '@sentry/react';
 
 const P2PoolStats = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -23,20 +24,19 @@ const P2PoolStats = () => {
     const p2poolRandomxChainTip = p2poolRandomXStats?.share_chain_height;
 
     useEffect(() => {
-        if (isP2poolEnabled) {
-            const fetchP2pStatsInterval = setInterval(async () => {
-                try {
-                    await fetchP2pStats();
-                } catch (error) {
-                    console.error('Error fetching p2pool stats:', error);
-                }
-            }, 5000);
+        const fetchP2pStatsInterval = setInterval(async () => {
+            try {
+                await fetchP2pStats();
+            } catch (error) {
+                Sentry.captureException(error);
+                console.error('Error fetching p2pool stats:', error);
+            }
+        }, 5000);
 
-            return () => {
-                clearInterval(fetchP2pStatsInterval);
-            };
-        }
-    }, [fetchP2pStats, isP2poolEnabled]);
+        return () => {
+            clearInterval(fetchP2pStatsInterval);
+        };
+    }, [fetchP2pStats]);
 
     return isP2poolEnabled ? (
         <SettingsGroupWrapper>
@@ -48,11 +48,11 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'Address',
-                                labelValue: p2poolStats.connection_info?.listener_addresses.join(', ') || '',
+                                labelValue: p2poolStats?.connection_info?.listener_addresses.join(', ') || '',
                             },
                             {
                                 labelText: 'Connected peers',
-                                labelValue: '' + (p2poolStats.connection_info?.connected_peers ?? 0),
+                                labelValue: '' + (p2poolStats?.connection_info?.connected_peers ?? 0),
                             },
                         ]}
                     />
@@ -63,7 +63,7 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'Connected',
-                                labelValue: p2poolStats.connected ? 'Yes' : 'No',
+                                labelValue: p2poolStats?.connected ? 'Yes' : 'No',
                             },
                         ]}
                     />
@@ -72,34 +72,34 @@ const P2PoolStats = () => {
                         labels={[
                             {
                                 labelText: 'Num Peers',
-                                labelValue: '' + (p2poolStats.connection_info?.network_info.num_peers ?? 0),
+                                labelValue: '' + (p2poolStats?.connection_info?.network_info.num_peers ?? 0),
                             },
                             {
                                 labelText: 'Pending incoming',
                                 labelValue:
                                     '' +
-                                    (p2poolStats.connection_info?.network_info.connection_counters.pending_incoming ??
+                                    (p2poolStats?.connection_info?.network_info.connection_counters.pending_incoming ??
                                         0),
                             },
                             {
                                 labelText: 'Pending outgoing',
                                 labelValue:
                                     '' +
-                                    (p2poolStats.connection_info?.network_info.connection_counters.pending_outgoing ??
+                                    (p2poolStats?.connection_info?.network_info.connection_counters.pending_outgoing ??
                                         0),
                             },
                             {
                                 labelText: 'Established incoming',
                                 labelValue:
                                     '' +
-                                    (p2poolStats.connection_info?.network_info.connection_counters
+                                    (p2poolStats?.connection_info?.network_info.connection_counters
                                         .established_incoming ?? 0),
                             },
                             {
                                 labelText: 'Established outgoing',
                                 labelValue:
                                     '' +
-                                    (p2poolStats.connection_info?.network_info.connection_counters
+                                    (p2poolStats?.connection_info?.network_info.connection_counters
                                         .established_outgoing ?? 0),
                             },
                         ]}

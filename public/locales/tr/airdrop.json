@@ -29,5 +29,10 @@
   "topTooltipText": "Mücevher toplayarak bir Tari Airdrop kazanın. Ne kadar çok mücevher kazanırsanız, airdrop\"unuz o kadar büyük olur.",
   "topTooltipTitle": "Testnet Ödülleri",
   "claimModalFinePrint": "<strong>Lütfen dikkat:</strong> mücevher talep etmek, Universe\"i geliştirebilmemiz için analitiği etkinleştirir",
-  "inviteFriendsText": "Bağlantıyı kopyalayın ve paylaşın"
+  "inviteFriendsText": "Bağlantıyı kopyalayın ve paylaşın",
+  "logged-in-as": "<strong>@{{twitter}}</strong> olarak giriş yapıldı",
+  "bonus-gems-earned": "Bonus gems earned",
+  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
+  "your-friend-accepted-gift": "One of your friends accepted your gift!",
+  "you-reached-your-giftinh-goal": "You reached your gifting goal!"
 }

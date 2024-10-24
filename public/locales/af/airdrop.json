@@ -29,5 +29,10 @@
   "topTooltipText": "Kry \"n Tari Airdrop deur edelstene in te samel. Hoe meer edelstene jy verdien, hoe groter is jou airdrop.",
   "topTooltipTitle": "Testnet Belonings",
   "claimModalFinePrint": "<strong>Neem asseblief kennis:</strong> die eis van edelstene skakel analise aan sodat ons Universe kan verbeter",
-  "inviteFriendsText": "Kopieer skakel en deel dit"
+  "inviteFriendsText": "Kopieer skakel en deel dit",
+  "logged-in-as": "Aangemeld as <strong>@{{twitter}}</strong>",
+  "bonus-gems-earned": "Bonus gems earned",
+  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
+  "your-friend-accepted-gift": "One of your friends accepted your gift!",
+  "you-reached-your-giftinh-goal": "You reached your gifting goal!"
 }

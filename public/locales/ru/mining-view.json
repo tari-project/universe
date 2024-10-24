@@ -12,5 +12,8 @@
     "waiting-for-idle": "Ожидание простоя",
     "started-auto-mining": "Авто-майнинг запущен",
     "stop-mining": "Остановить майнинг"
-  }
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }

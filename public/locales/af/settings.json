@@ -1,5 +1,6 @@
 {
   "settings": "Instellings",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Saadwoorde",
   "change-language": "Verander taal",
   "logs": "Verslae",
@@ -17,13 +18,25 @@
   "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
   "visual-mode": "Visuele modus",
   "gpu-unavailable": "⚠️ GPU gedeaktiveer omdat jou hardeware dit nie ondersteun nie",
-  "reset-settings": "Reset Settings",
-  "reset-permanently": "Are you sure you want to reset all settings permanently?",
-  "reset-wallet": "Reset wallet",
-  "connected-to-tari": "Connected to the Tari Network",
-  "not-connected-to-tari": "Not connected to the Tari Network",
-  "connected-peers": "Connected Peers",
-  "should-use-system-language": "Use system language",
+  "reset-settings": "Stel Instellings Terug",
+  "reset-permanently": "Is jy seker jy wil alle instellings permanent terugstel?",
+  "reset-wallet": "Stel beursie terug",
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
+  },
+  "connected-to-tari": "Gekoppel aan die Tari Netwerk",
+  "not-connected-to-tari": "Nie aan die Tari Netwerk gekoppel nie",
+  "connected-peers": "Gekoppelde Eweknieë",
+  "should-use-system-language": "Gebruik stelsel taal",
   "send-logs": "Stuur logs",
   "your-feedback": "Beskryf asseblief u probleem",
   "feedback-required": "Terugvoer is vereis",
@@ -57,8 +70,22 @@
   "disconnect": "Ontkoppel van Airdrop",
   "inviteCode": "Uitnodigingskode",
   "use-tor": "Gebruik Tor",
-  "importing-wallet": "Importing wallet",
-  "action-requires-restart": "This action requires restart to apply changes",
-  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-  "invalid-seed-words": "Enter 24 words separated by spaces"
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network",
+  "importing-wallet": "Beursie invoer",
+  "action-requires-restart": "Hierdie aksie vereis \"n herbegin om veranderinge toe te pas",
+  "low-hash-rate-warning": "Jou hash rate is baie laag. Probeer om alle toepassings behalwe Tari Universe te sluit",
+  "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
+  "yes": "Yes",
+  "cancel": "Cancel",
+  "report-issue": "Rapporteer \"n probleem",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }

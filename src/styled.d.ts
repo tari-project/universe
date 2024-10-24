@@ -1,12 +1,11 @@
-// import original module declarations
 import 'styled-components';
-import { Palette, ThemeComponents } from '@app/theme/tokens.ts';
-import { Colours } from '@app/theme/colors.ts';
+import { ThemePalette } from '@app/theme/types.ts';
+import { ThemeComponents } from '@app/theme/components.ts';
 
-// and extend them!
 declare module 'styled-components' {
     export interface DefaultTheme extends ThemeComponents {
-        palette: Palette;
-        colors?: Colours;
+        mode: ThemePalette['mode'];
+        palette: ThemePalette['palette'];
+        colors: ThemePalette['colors'];
     }
 }

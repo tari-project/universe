@@ -1,5 +1,6 @@
 {
   "settings": "Pengaturan",
+  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Kata-kata benih",
   "send-logs": "Kirim log",
   "your-feedback": "Silakan jelaskan masalah Anda",
@@ -27,6 +28,18 @@
     "title": "Alamat Monero",
     "placeholder": "Masukkan alamat Monero"
   },
+  "mine-on-app-start": {
+      "title": "Mining on startup",
+    "description": "When enabled, the app will start mining automatically when it is launched."
+  },
+  "should-auto-start": {
+    "title": "Auto-start on system boot",
+    "description": "When enabled, the app will start automatically when you log in to your computer."
+  },
+  "use-auto-update": {
+    "title": "Update Tari Universe automatically",
+    "description": "When enabled, the app will check for updates and install them automatically."
+  },
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
   "visual-mode": "Mode visual",
   "pool-mining": "Penambangan Pool",
@@ -35,7 +48,7 @@
   "gpu-mining-enabled": "Penambangan GPU",
   "gpu-unavailable": "⚠️ GPU dinonaktifkan karena perangkat keras Anda tidak mendukungnya",
   "p2pool-stats": "Statistik Squad",
-  "tribe": "Squad",
+  "tribe": "Tim",
   "miners": "Penambang",
   "mining-toggle-warning": "Penambangan akan dijeda saat perubahan diterapkan.",
   "tribe-earnings": "Pendapatan Squad",
@@ -59,8 +72,20 @@
   "disconnect": "Putuskan dari Airdrop",
   "inviteCode": "Kode Undangan",
   "use-tor": "Gunakan Tor",
-  "importing-wallet": "Importing wallet",
-  "action-requires-restart": "This action requires restart to apply changes",
-  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-  "invalid-seed-words": "Enter 24 words separated by spaces"
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "network": "Network",
+  "importing-wallet": "Mengimpor dompet",
+  "action-requires-restart": "Tindakan ini memerlukan restart untuk menerapkan perubahan",
+  "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",
+  "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
+  "report-issue": "Laporkan masalah",
+  "app-restart-required": "App restart required",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "control-port": "Control Port",
+  "save": "Save",
+  "errors": {
+      "invalid-control-port": "Control Port configuration is invalid",
+      "invalid-bridge": "Bridge configuration is invalid"
+  }
 }

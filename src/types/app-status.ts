@@ -1,15 +1,24 @@
 import { Language } from '@app/i18initializer';
-import { modeType } from '../store/types';
+import { modeType, themeType } from '../store/types';
+
+export interface TorConfig {
+    control_port: number;
+    use_bridges: boolean;
+    bridges: string[];
+}
 
 export interface AppConfig {
     config_version: number;
     config_file?: string;
     mode: modeType;
+    theme: themeType;
     auto_mining: boolean;
+    mine_on_app_start: boolean;
     p2pool_enabled: boolean;
     last_binaries_update_timestamp: string;
     has_system_language_been_proposed: boolean;
     should_always_use_system_language: boolean;
+    should_auto_launch: boolean;
     application_language: Language;
     allow_telemetry: boolean;
     anon_id: string;
@@ -17,7 +26,9 @@ export interface AppConfig {
     gpu_mining_enabled: boolean;
     cpu_mining_enabled: boolean;
     airdrop_ui_enabled: boolean;
+    paper_wallet_enabled: boolean;
     use_tor: boolean;
+    auto_update: boolean;
 }
 
 export enum ExternalDependencyStatus {
@@ -51,11 +62,13 @@ export interface CpuMinerMetrics {
 }
 
 export interface GpuMinerMetrics {
-    hardware?: HardwareParameters;
+    hardware: HardwareParameters[];
     mining: GpuMinerStatus;
 }
 
 export interface MinerMetrics {
+    sha_network_hash_rate: number;
+    randomx_network_hash_rate: number;
     cpu: CpuMinerMetrics;
     gpu: GpuMinerMetrics;
     base_node: BaseNodeStatus;
@@ -151,7 +164,7 @@ export interface HardwareParameters {
 
 export interface HardwareStatus {
     cpu: HardwareParameters;
-    gpu: HardwareParameters;
+    gpu: HardwareParameters[];
 }
 
 export interface CpuMinerStatus {
@@ -198,4 +211,9 @@ export interface ApplicationsVersions {
     mm_proxy: string;
     wallet: string;
     sha_p2pool: string;
+}
+
+export interface PaperWalletDetails {
+    qr_link: string;
+    password: string;
 }

@@ -29,5 +29,10 @@
   "claimModalFieldPlaceholder": "Entre le code d'invitation",
   "claimModalFinePrint": "<strong>Remarque :</strong> la réclamation de gemmes active les outils d'analyses afin que nous puissions améliorer Universe",
   "topTooltipTitle": "Récompenses du Testnet",
-  "topTooltipText": "Obtenez un Airdrop Tari en collectant des gemmes. Plus vous gagnez de gemmes, plus votre Airdrop est important."
+  "topTooltipText": "Obtenez un Airdrop Tari en collectant des gemmes. Plus vous gagnez de gemmes, plus votre Airdrop est important.",
+  "logged-in-as": "Connecté en tant que <strong>@{{twitter}}</strong>",
+  "bonus-gems-earned": "Bonus gems earned",
+  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
+  "your-friend-accepted-gift": "One of your friends accepted your gift!",
+  "you-reached-your-giftinh-goal": "You reached your gifting goal!"
 }
