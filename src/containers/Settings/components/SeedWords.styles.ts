@@ -12,7 +12,7 @@ export const HiddenContainer = styled.div`
     border-radius: 10px;
     align-items: center;
     height: 40px;
-    border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
     display: flex;
     padding: 6px 10px 0;
     color: ${({ theme }) => theme.palette.text.primary};
@@ -28,7 +28,7 @@ export const SeedWordsContainer = styled.div`
     background-color: ${({ theme }) => theme.palette.background.default};
     width: 100%;
     border-radius: 10px;
-    border: 1px solid ${({ theme }) => theme.palette.colors.darkAlpha[10]};
+    border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
     padding: 20px;
 `;
 
