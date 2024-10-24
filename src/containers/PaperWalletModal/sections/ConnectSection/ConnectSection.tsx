@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 import { invoke } from '@tauri-apps/api/tauri';
 import LoadingSvg from '@app/components/svgs/LoadingSvg';
+import * as Sentry from '@sentry/react';
 
 interface Props {
     setSection: (section: PaperWalletModalSectionType) => void;
@@ -46,7 +47,8 @@ export default function ConnectSection({ setSection }: Props) {
                 setIdentificationCode(password);
                 setSection('QRCode');
             }
-        } catch {
+        } catch (e) {
+            Sentry.captureException(e);
             console.error('Failed to get paper wallet details');
         }
 

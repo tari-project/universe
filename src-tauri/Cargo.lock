@@ -2415,12 +2415,6 @@ checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
 name = "hex-literal"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ebdb29d2ea9ed0083cd8cece49bbd968021bd99b0849edb4a9a7ee0fdf6a4e0"
-
-[[package]]
-name = "hex-literal"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fe2267d4ed49bc07b63801559be28c718ea06c4738b7a03c94df7386d2cde46"
@@ -3619,7 +3613,7 @@ dependencies = [
  "curve25519-dalek",
  "fixed-hash",
  "hex",
- "hex-literal 0.4.1",
+ "hex-literal",
  "sealed",
  "serde",
  "thiserror",
@@ -6362,7 +6356,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.5.44"
+version = "0.5.45"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6371,7 +6365,6 @@ dependencies = [
  "blake2",
  "chrono",
  "device_query",
- "dirs-next 2.0.0",
  "dunce",
  "flate2",
  "futures-lite 2.3.0",
@@ -6413,7 +6406,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-util 0.7.12",
- "tor-hash-passwd",
  "winreg 0.52.0",
  "xz2",
  "zip 2.2.0",
@@ -6894,6 +6886,7 @@ dependencies = [
  "gtk",
  "heck 0.5.0",
  "http 0.2.12",
+ "ico",
  "ignore",
  "indexmap 1.9.3",
  "infer",
@@ -6905,6 +6898,7 @@ dependencies = [
  "os_pipe",
  "percent-encoding",
  "plist",
+ "png",
  "rand 0.8.5",
  "raw-window-handle",
  "regex",
@@ -7471,19 +7465,6 @@ dependencies = [
  "prost-build",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "tor-hash-passwd"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b83cd43a176c0c19d5db4401283e8f5c296b9c6c7fa29029de15cc445f26e12"
-dependencies = [
- "hex",
- "hex-literal 0.3.4",
- "rand 0.8.5",
- "sha1 0.6.0",
- "thiserror",
 ]
 
 [[package]]

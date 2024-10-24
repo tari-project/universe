@@ -18,6 +18,7 @@ import { Input } from '@app/components/elements/inputs/Input';
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import * as Sentry from '@sentry/react';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
@@ -51,7 +52,10 @@ export const TorMarkup = () => {
                 setEditedConfig(torConfig);
                 setDefaultTorConfig(torConfig);
             })
-            .catch((e) => console.error(e));
+            .catch((e) => {
+                Sentry.captureException(e);
+                console.error(e);
+            });
     }, []);
 
     const onSave = useCallback(async () => {
@@ -73,7 +77,8 @@ export const TorMarkup = () => {
                 });
                 setDefaultTorConfig(updatedConfig);
             } catch (error) {
-                console.error(error);
+                Sentry.captureException(error);
+                console.error('Update Tor config error:', error);
             }
         }
         setDialogToShow('restart');
