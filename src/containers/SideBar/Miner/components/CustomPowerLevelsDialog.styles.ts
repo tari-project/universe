@@ -150,3 +150,29 @@ export const WarningContainer = styled.div<{ $visible: boolean }>`
             height: 50px;
         `}
 `;
+
+export const SuccessContainer = styled.div<{ $visible: boolean }>`
+    overflow: hidden;
+    padding: 15px;
+    font-size: 12px;
+    font-family: Poppins, sans-serif;
+    color: #188750;
+    border: 1px solid #188750;
+    border-radius: 5px;
+    background: rgba(24, 135, 80, 0.1);
+    font-size: 12px;
+    opacity: 0;
+    transition: all 0.3s ease-in-out;
+    ${({ $visible }) =>
+        $visible &&
+        css`
+            opacity: 1;
+        `}
+`;
+
+export const TopRightContainer = styled.div`
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+`;

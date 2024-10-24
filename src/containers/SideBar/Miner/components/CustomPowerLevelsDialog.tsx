@@ -17,15 +17,20 @@ import {
     RangeValueHolder,
     RangeInputHolder,
     WarningContainer,
+    SuccessContainer,
+    TopRightContainer,
 } from './CustomPowerLevelsDialog.styles.ts';
 import { useTranslation } from 'react-i18next';
 import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { IoClose } from 'react-icons/io5';
 
 export function CustomPowerLevelsDialog() {
     const { t } = useTranslation('settings', { useSuspense: false });
     const [initialised, setInitialised] = useState(false);
+    const [saved, setSaved] = useState(false);
 
     const configCpuLevels = useAppConfigStore((s) => s.custom_max_cpu_usage);
     const configGpuLevels = useAppConfigStore((s) => s.custom_max_gpu_usage);
@@ -43,7 +48,8 @@ export function CustomPowerLevelsDialog() {
     });
 
     useEffect(() => {
-        if (!customLevelsDialogOpen || initialised || configCpuLevels === undefined) return;
+        // Set saved values
+        if (!customLevelsDialogOpen || initialised) return;
 
         if (configCpuLevels) {
             setCustomCpuLevel(configCpuLevels);
@@ -58,6 +64,7 @@ export function CustomPowerLevelsDialog() {
     }, [configCpuLevels, configGpuLevels, customLevelsDialogOpen]);
 
     useEffect(() => {
+        // Get max CPU and GPU values
         const getMaxConsumptionLevels = async () => {
             const res = await invoke('get_max_consumption_levels');
             setMaxLevels(res);
@@ -68,20 +75,47 @@ export function CustomPowerLevelsDialog() {
     }, [customLevelsDialogOpen, maxLevels.max_cpu_available]);
 
     useEffect(() => {
+        // Update config with a slight delay
         if (!initialised || !customLevelsDialogOpen || (!configCpuLevels && !configGpuLevels)) return;
+
+        if (saved) {
+            setSaved(false);
+        }
+
         if (customCpuLevel !== configCpuLevels || customGpuLevel !== configGpuLevels) {
             const timeout = setTimeout(() => {
-                changeMiningMode({ mode: 'Custom', customCpuLevels: customCpuLevel, customGpuLevels: customGpuLevel });
-            }, 500);
+                changeMiningMode({
+                    mode: 'Custom',
+                    customCpuLevels: customCpuLevel,
+                    customGpuLevels: customGpuLevel,
+                }).then(() => setSaved(true));
+            }, 800);
             return () => clearTimeout(timeout);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [customCpuLevel, customGpuLevel]);
 
+    useEffect(() => {
+        // Remove save animation
+        if (saved) {
+            const timeout = setTimeout(() => setSaved(false), 3000);
+            return () => clearTimeout(timeout);
+        }
+    }, [saved]);
+
     return (
         <Dialog open={customLevelsDialogOpen} onOpenChange={setCustomLevelsDialogOpen}>
             <DialogContent>
-                <CustomLelvelsHeader>{t('custom-power-levels.title')}</CustomLelvelsHeader>
+                <CustomLelvelsHeader>
+                    {t('custom-power-levels.title')}
+                    <TopRightContainer>
+                        <SuccessContainer $visible={saved}>{t('custom-power-levels.saved')}</SuccessContainer>
+
+                        <IconButton onClick={() => setCustomLevelsDialogOpen(false)}>
+                            <IoClose size={18} />
+                        </IconButton>
+                    </TopRightContainer>
+                </CustomLelvelsHeader>
                 <CustomLevelsContent>
                     <RangeInputComponent
                         label={t('custom-power-levels.cpu-power-level')}
@@ -118,10 +152,13 @@ interface RangeInputProps {
 const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning, min = 1 }: RangeInputProps) => {
     const { t } = useTranslation('settings', { useSuspense: true });
     const getPosition = (value: number, max: number) => {
+        // Position the value bubble in the range input thumb
         return 15 + ((value - min) / (max - min)) * (600 - 30);
     };
 
+    // Check if the value is over 75% of the max level
     const hasWarning = (value * 100) / (maxLevel - min) > 75;
+
     if (!maxLevel) return null;
     return (
         <div>
