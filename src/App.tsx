@@ -16,14 +16,12 @@ import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx
 import { useMemo } from 'react';
 import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
-import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
 import StagedSecurity from './containers/StagedSecurity/StagedSecurity.tsx';
 import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
 
 export default function App() {
-    useLangaugeResolver();
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
     const view = useUIStore((s) => s.view);
@@ -47,8 +45,8 @@ export default function App() {
 
     return (
         <ThemeProvider>
-            <GlobalFontFace />
             <GlobalReset />
+            <GlobalFontFace />
             <GlobalStyle />
             <LazyMotion features={domMax} strict>
                 {/*

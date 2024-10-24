@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api';
 import { setAnimationState } from '@app/visuals.ts';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import useFetchTx from '@app/hooks/mining/useTransactions.ts';
+import * as Sentry from '@sentry/react';
 
 const useMiningMetricsUpdater = () => {
     const fetchTx = useFetchTx();
@@ -32,6 +33,7 @@ const useMiningMetricsUpdater = () => {
 
             setMiningMetrics(metrics);
         } catch (e) {
+            Sentry.captureException(e);
             console.error('Fetch mining metrics error: ', e);
         }
     }, [baseNodeConnected, currentBlockHeight, fetchTx, handleNewBlock, setMiningMetrics]);
