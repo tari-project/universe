@@ -11,7 +11,7 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { modeType } from '@app/store/types';
-import { CustomPowerLevelsDialog } from '@app/components/dialogs/CustomPowerLevelsDialog';
+import { CustomPowerLevelsDialog } from './CustomPowerLevelsDialog';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });

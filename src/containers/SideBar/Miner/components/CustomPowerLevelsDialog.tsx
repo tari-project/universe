@@ -21,20 +21,21 @@ import {
 import { useTranslation } from 'react-i18next';
 import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
-import { Divider } from '../elements/Divider.tsx';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
 export function CustomPowerLevelsDialog() {
-    const { t } = useTranslation('settings', { useSuspense: true });
+    const { t } = useTranslation('settings', { useSuspense: false });
+    const [initialised, setInitialised] = useState(false);
 
-    const configCpuLevels = useAppConfigStore((s) => s.custom_cpu_usage);
-    const configGpuLevels = useAppConfigStore((s) => s.custom_gpu_usage);
+    const configCpuLevels = useAppConfigStore((s) => s.custom_max_cpu_usage);
+    const configGpuLevels = useAppConfigStore((s) => s.custom_max_gpu_usage);
     const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
 
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
     const setCustomLevelsDialogOpen = useMiningStore((s) => s.setCustomLevelsDialogOpen);
 
-    const [customGpuLevel, setCustomGpuLevel] = useState(0);
-    const [customCpuLevel, setCustomCpuLevel] = useState(0);
+    const [customGpuLevel, setCustomGpuLevel] = useState(1);
+    const [customCpuLevel, setCustomCpuLevel] = useState(1);
 
     const [maxLevels, setMaxLevels] = useState<MaxConsumptionLevels>({
         max_cpu_available: 0,
@@ -42,6 +43,8 @@ export function CustomPowerLevelsDialog() {
     });
 
     useEffect(() => {
+        if (!customLevelsDialogOpen || initialised || configCpuLevels === undefined) return;
+
         if (configCpuLevels) {
             setCustomCpuLevel(configCpuLevels);
         }
@@ -49,17 +52,23 @@ export function CustomPowerLevelsDialog() {
         if (configGpuLevels) {
             setCustomGpuLevel(configGpuLevels);
         }
-    }, [configCpuLevels, configGpuLevels]);
+
+        setInitialised(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [configCpuLevels, configGpuLevels, customLevelsDialogOpen]);
 
     useEffect(() => {
         const getMaxConsumptionLevels = async () => {
             const res = await invoke('get_max_consumption_levels');
             setMaxLevels(res);
         };
-        getMaxConsumptionLevels();
-    }, []);
+        if (customLevelsDialogOpen && !maxLevels.max_cpu_available) {
+            getMaxConsumptionLevels();
+        }
+    }, [customLevelsDialogOpen, maxLevels.max_cpu_available]);
 
     useEffect(() => {
+        if (!initialised || !customLevelsDialogOpen || (!configCpuLevels && !configGpuLevels)) return;
         if (customCpuLevel !== configCpuLevels || customGpuLevel !== configGpuLevels) {
             const timeout = setTimeout(() => {
                 changeMiningMode({ mode: 'Custom', customCpuLevels: customCpuLevel, customGpuLevels: customGpuLevel });
@@ -67,7 +76,7 @@ export function CustomPowerLevelsDialog() {
             return () => clearTimeout(timeout);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [customCpuLevel, configCpuLevels]);
+    }, [customCpuLevel, customGpuLevel]);
 
     return (
         <Dialog open={customLevelsDialogOpen} onOpenChange={setCustomLevelsDialogOpen}>
@@ -102,23 +111,24 @@ interface RangeInputProps {
     maxLevel: number;
     value: number;
     desc: string;
+    min?: number;
     warning?: string;
     onChange: (value: number) => void;
 }
-const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }: RangeInputProps) => {
+const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning, min = 1 }: RangeInputProps) => {
     const { t } = useTranslation('settings', { useSuspense: true });
     const getPosition = (value: number, max: number) => {
-        return 15 + (value / max) * (600 - 30);
+        return 15 + ((value - min) / (max - min)) * (600 - 30);
     };
 
-    const hasWarning = (value * 100) / maxLevel > 75;
+    const hasWarning = (value * 100) / (maxLevel - min) > 75;
     if (!maxLevel) return null;
     return (
         <div>
             <InputContainer>
                 <RangeLabel> {label}</RangeLabel>
                 <RangeIntputWrapper>
-                    <RangeLimits>0%</RangeLimits>
+                    <RangeLimits>{min}</RangeLimits>
                     <RangeInputHolder>
                         <IconImage src={eco} alt="eco" $left={15} />
                         <IconImage src={fire} alt="ludicrous" $left={75} />
@@ -133,11 +143,11 @@ const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }
                             type="range"
                             value={value}
                             max={maxLevel}
-                            min={0}
+                            min={min}
                             onChange={(e) => onChange(parseInt(e.target.value))}
                         />
                     </RangeInputHolder>
-                    <RangeLimits>100%</RangeLimits>
+                    <RangeLimits>{maxLevel}</RangeLimits>
                 </RangeIntputWrapper>
                 <InputDescription>{desc}</InputDescription>
             </InputContainer>

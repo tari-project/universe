@@ -191,7 +191,6 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
     }
-    info!(target: LOG_TARGET, "CPU cores: {:?}", max_cpu_available);
 
     let mut result = HashMap::new();
     result.insert("max_cpu_available".to_string(), max_cpu_available);

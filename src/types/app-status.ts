@@ -29,8 +29,8 @@ export interface AppConfig {
     paper_wallet_enabled: boolean;
     use_tor: boolean;
     auto_update: boolean;
-    custom_cpu_usage: number;
-    custom_gpu_usage: number;
+    custom_max_cpu_usage: number;
+    custom_max_gpu_usage: number;
 }
 
 export enum ExternalDependencyStatus {
