@@ -20,6 +20,7 @@ import {
     useRole,
 } from '@floating-ui/react';
 import { ContentWrapper, Overlay } from '@app/components/elements/dialog/Dialog.styles.ts';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 interface DialogOptions {
     open: boolean;
@@ -34,6 +35,7 @@ export function useDialog({
 }: DialogOptions) {
     const [labelId, setLabelId] = useState<string | undefined>();
     const [descriptionId, setDescriptionId] = useState<string | undefined>();
+    const error = useAppStateStore((s) => s.error);
 
     const open = controlledOpen;
     const setOpen = setControlledOpen;
@@ -48,7 +50,7 @@ export function useDialog({
     const click = useClick(context, {
         enabled: controlledOpen == null,
     });
-    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: !disableClose });
+    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: !disableClose && !error?.length });
     const role = useRole(context);
 
     const interactions = useInteractions([click, dismiss, role]);

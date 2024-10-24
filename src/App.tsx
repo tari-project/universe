@@ -62,9 +62,9 @@ export default function App() {
                     <LayoutGroup id="app-content">
                         {shutDownMarkup}
                         {mainMarkup}
-                        <ErrorSnackbar />
                         <SplashScreen />
                     </LayoutGroup>
+                    <ErrorSnackbar />
                 </MotionConfig>
             </LazyMotion>
         </ThemeProvider>

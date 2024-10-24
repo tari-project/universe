@@ -45,6 +45,7 @@
         "title": "Monero address",
         "placeholder": "Enter Monero address"
     },
+    "monero-seed-words": "Monero Seed Words",
 
     "mine-on-app-start": {
         "title": "Mining on startup",

@@ -45,6 +45,7 @@ const initialState: State = {
     paper_wallet_enabled: false,
     use_tor: true,
     auto_update: false,
+    monero_address_is_generated: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
