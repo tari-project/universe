@@ -1491,6 +1491,7 @@ async fn get_app_config(
     Ok(state.config.read().await.clone())
 }
 
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
