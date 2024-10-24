@@ -23,6 +23,7 @@ use tauri::{Manager, RunEvent, UpdaterEvent};
 use tokio::sync::RwLock;
 use tor_adapter::TorConfig;
 use wallet_adapter::TransactionInfo;
+use ocl::{Platform, Device};
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
@@ -190,9 +191,16 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
         warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
     }
 
+
     let mut result = HashMap::new();
     result.insert("max_cpu_available".to_string(), max_cpu_available);
-    result.insert("max_gpu_available".to_string(), 800);
+
+    let platform = Platform::default();
+    let device = Device::first(platform).unwrap();
+
+
+    let max_threads = device.max_wg_size().unwrap_or(800);
+    result.insert("max_gpu_available".to_string(), max_threads as i32);
 
     Ok(result)
 }
