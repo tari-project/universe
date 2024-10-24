@@ -163,9 +163,6 @@ impl BinaryManager {
             }
         }
 
-        info!(target: LOG_TARGET,"Creating in progress folder: {:?}", in_progress_folder);
-        std::fs::create_dir_all(&in_progress_folder)?;
-
         Ok(())
     }
 
