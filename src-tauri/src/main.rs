@@ -165,14 +165,25 @@ async fn set_mode(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
+
+    fn f64_to_isize_safe(_value: Option<f64>) -> Option<isize> {
+        let value = _value.unwrap_or(-1.0);
+        if value.is_finite() && value >= isize::MIN as f64 && value <= isize::MAX as f64 {
+            Some(value as isize)
+        } else {
+            warn!(target: LOG_TARGET, "Invalid value for custom_cpu_usage or custom_gpu_usage: {:?}", _value);
+            None
+        }
+    }
+
     state
         .config
         .write()
         .await
         .set_mode(
             mode,
-            custom_cpu_usage.map(|val| val as isize),
-            custom_gpu_usage.map(|val| val as isize),
+            f64_to_isize_safe(custom_cpu_usage),
+            f64_to_isize_safe(custom_gpu_usage),
         )
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
@@ -188,7 +199,7 @@ async fn set_mode(
 async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
     let timer = Instant::now();
     let max_cpu_available = available_parallelism()
-        .map(|cores| cores.get() as i32) // Convert NonZeroUsize to i32
+        .map(|cores| i32::try_from(cores.get()).unwrap_or(1))
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
@@ -199,10 +210,13 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
     result.insert("max_cpu_available".to_string(), max_cpu_available);
 
     let platform = Platform::default();
-    let device = Device::first(platform).unwrap();
+    let device = Device::first(platform).expect("Failed to get device info");
 
     let max_threads = device.max_wg_size().unwrap_or(800);
-    result.insert("max_gpu_available".to_string(), max_threads as i32);
+    result.insert(
+        "max_gpu_available".to_string(),
+        i32::try_from(max_threads).unwrap_or(0),
+    );
 
     Ok(result)
 }
@@ -1113,15 +1127,9 @@ async fn start_mining<'r>(
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
     let custom_cpu_usage = config.custom_cpu_usage();
-    let custom_gpu_usage = if let Some(custom_gpu_usage) = config.custom_gpu_usage() {
-        if custom_gpu_usage > 0 && custom_gpu_usage < u16::MAX as isize {
-            Some(custom_gpu_usage as u16)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
+    let custom_gpu_usage = config.custom_gpu_usage().map(|custom_gpu_usage| {
+        u16::try_from(custom_gpu_usage).expect("Failed to convert custom_gpu_usage to u16")
+    });
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = config.monero_address().to_string();
