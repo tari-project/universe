@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use log::{debug, error};
+use log::error;
 use minotari_node_grpc_client::grpc::Peer;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -222,7 +222,7 @@ impl NodeManager {
                     "%Y-%m-%d %H:%M:%S%.f",
                 ) {
                     Ok(datetime) => datetime,
-                    Err(e) => {
+                    Err(_e) => {
                         // debug!(target: LOG_TARGET, "Error parsing datetime: {}", e);
                         return false;
                     }
