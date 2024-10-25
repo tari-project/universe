@@ -9,6 +9,11 @@
   "lost-connection": "Verbindung zum Tari-Netzwerk verloren. Versuche, wieder zu verbinden...",
   "block": "Block",
   "recent-wins": "Kürzliche Gewinne",
-  "show-history": "Show history",
-  "hide-history": "Hide history"
+  "paper-wallet-button": "Mit Telefon synchronisieren",
+  "history-show-button": "Verlauf",
+  "history-hide-button": "Verlauf ausblenden",
+  "paper-wallet-tooltip-title": "Mit Telefon synchronisieren",
+  "paper-wallet-tooltip-message": "Verfolgen Sie Ihr XTM überall, indem Sie Ihr Universum-Wallet mit Tari Aurora synchronisieren.",
+  "show-history": "Verlauf anzeigen",
+  "hide-history": "Verlauf ausblenden"
 }

@@ -1,6 +1,5 @@
 {
   "settings": "Pengaturan",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Kata-kata benih",
   "send-logs": "Kirim log",
   "your-feedback": "Silakan jelaskan masalah Anda",
@@ -22,23 +21,14 @@
   "tabs": {
     "general": "Umum",
     "mining": "Penambangan",
-    "experimental": "Eksperimental"
+    "experimental": "Eksperimental",
+    "airdrop": "Airdrop",
+    "wallet": "Dompet",
+    "very_experimental": "Sangat Eksperimental"
   },
   "monero-address": {
     "title": "Alamat Monero",
     "placeholder": "Masukkan alamat Monero"
-  },
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
   "visual-mode": "Mode visual",
@@ -72,21 +62,50 @@
   "disconnect": "Putuskan dari Airdrop",
   "inviteCode": "Kode Undangan",
   "use-tor": "Gunakan Tor",
-  "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network",
   "importing-wallet": "Mengimpor dompet",
   "action-requires-restart": "Tindakan ini memerlukan restart untuk menerapkan perubahan",
   "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
   "report-issue": "Laporkan masalah",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "Preferensi Anda akan disimpan dan diterapkan saat Tari Universe dimulai berikutnya.",
+  "gpu-device-enabled": "Perangkat Penambangan GPU",
+  "gpu-device-enabled-description": "Aktifkan atau nonaktifkan perangkat GPU tertentu.",
+  "gpu-device-no-found": "⚠️ Tidak ada perangkat GPU yang ditemukan",
+  "mine-on-app-start": {
+    "title": "Menambang saat startup",
+    "description": "Ketika diaktifkan, aplikasi akan mulai menambang secara otomatis saat diluncurkan."
+  },
+  "should-auto-start": {
+    "title": "Mulai otomatis saat boot sistem",
+    "description": "Ketika diaktifkan, aplikasi akan mulai secara otomatis saat Anda masuk ke komputer Anda."
+  },
+  "use-auto-update": {
+    "title": "Perbarui Tari Universe secara otomatis",
+    "description": "Ketika diaktifkan, aplikasi akan memeriksa pembaruan dan menginstalnya secara otomatis."
+  },
+  "restart-later": "Mulai Ulang Nanti",
+  "restart-now": "Mulai Ulang Sekarang",
+  "restart-universe": "Mulai Ulang Tari Universe?",
+  "tari-wallet-address": "Alamat Dompet Tari",
+  "tor-bridges": "Jembatan Tor",
+  "theme": "Tema",
+  "sha-network-hash-rate": "Hashrate jaringan Sha3",
+  "randomx-network-hash-rate": "Hashrate jaringan Randomx",
+  "network": "Jaringan",
+  "app-restart-required": "Diperlukan restart aplikasi",
+  "setup-tor-settings": "Atur Pengaturan Tor untuk Kontrol Privasi dan Konektivitas",
+  "control-port": "Port Kontrol",
+  "save": "Simpan",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
+    "invalid-control-port": "Konfigurasi Port Kontrol tidak valid",
+    "invalid-bridge": "Konfigurasi jembatan tidak valid"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "Hubungkan Tari Aurora",
+    "connect-wallet-to-phone": "Hubungkan dompet Tari Universe Anda ke ponsel Anda",
+    "load-qr-code": "Muat Kode QR",
+    "do-not-share-this-code": "Jangan bagikan kode ini kepada siapa pun",
+    "passphrase": "Kata Sandi"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
   "set-dynamic-fail-data": "Set custom urls for monero nodes"

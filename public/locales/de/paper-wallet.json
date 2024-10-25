@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "title": "Verbinden Sie Ihr Tari-Universum-Wallet mit Ihrem Telefon",
+    "text": "Laden Sie Tari Aurora herunter und verfolgen Sie Ihr XTM überall. Jetzt im App Store oder Google Play Store erhältlich.",
+    "blackButton": "Ich habe die App",
+    "textButton": "Erfahren Sie mehr über Tari Aurora",
+    "scan": "QR-Code scannen"
+  },
+  "qrcode": {
+    "warning": "Diesen QR-Code nicht teilen",
+    "title": "In Tari Aurora importieren",
+    "text": "Scannen Sie den QR-Code in der Tari Aurora-App, um Ihr Tari-Universum-Wallet zu importieren. Verwenden Sie den einmaligen Code unten, um Ihre Identität zu bestätigen, und folgen Sie dann den Schritten in der App.",
+    "blackButton": "Fertig",
+    "textButton": "Ich brauche Hilfe",
+    "inputLabel": "Identifikationscode",
+    "copied": "Kopiert!"
+  }
+}
