@@ -4,6 +4,7 @@ pub mod request_client;
 use cache::CacheJsonFile;
 use log::{debug, info, warn};
 use request_client::RequestClient;
+use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -127,13 +128,17 @@ async fn list_mirror_releases(
     let mut cache_json_file_lock = CacheJsonFile::current().write().await;
     let url = get_mirror_url(repo_owner, repo_name);
 
-    let (need_to_download, cache_entry_present) =
+    let (need_to_download, cache_entry_present,response) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Mirror).await?;
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
-    let mut does_hit = false;
+    let mut does_hit = response.and_then(|res| {
+        Some(RequestClient::current().get_cf_cache_status_from_head_response(&res).is_hit())
+    }).unwrap_or(false);
 
-    if need_to_download {
+
+
+    if need_to_download && !does_hit {
         does_hit = RequestClient::current().check_if_cache_hits(&url).await?;
     }
 
@@ -170,7 +175,7 @@ async fn list_github_releases(
     let mut cache_json_file_lock = CacheJsonFile::current().write().await;
     let url = get_gh_url(repo_owner, repo_name);
 
-    let (need_to_download, cache_entry_present) =
+    let (need_to_download, cache_entry_present,response) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Github).await?;
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
@@ -206,7 +211,7 @@ async fn check_if_need_download(
     repo_name: &str,
     url: &str,
     source: ReleaseSource,
-) -> Result<(bool, bool), anyhow::Error> {
+) -> Result<(bool, bool, Option<Response>), anyhow::Error> {
     let cache_json_file_lock = CacheJsonFile::current().write().await;
     let cache_entry = cache_json_file_lock.get_cache_entry(repo_owner, repo_name);
     let mut need_to_download = false;
@@ -218,7 +223,8 @@ async fn check_if_need_download(
                 need_to_download = true;
             }
 
-            let remote_etag = RequestClient::current().fetch_head_etag(&url).await?;
+            let response = RequestClient::current().send_head_request(&url).await?;
+            let remote_etag = RequestClient::current().get_etag_from_head_response(&response);
             let local_etag = match source {
                 ReleaseSource::Mirror => cache_entry.mirror_etag.clone(),
                 ReleaseSource::Github => cache_entry.github_etag.clone(),
@@ -227,13 +233,15 @@ async fn check_if_need_download(
             if !remote_etag.eq(&local_etag.unwrap_or("".to_string())) {
                 need_to_download = true
             };
+
+                Ok((need_to_download, cache_entry_present,Some(response)))
         }
         None => {
             need_to_download = true;
+                Ok((need_to_download, cache_entry_present,None))
         }
-    };
+    }
 
-    Ok((need_to_download, cache_entry_present))
 }
 
 async fn extract_versions_from_release(

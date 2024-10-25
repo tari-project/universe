@@ -17,6 +17,7 @@ pub enum CloudFlareCacheStatus {
     Revalidated,
     Updating,
     Dynamic,
+    NonExistent,
 }
 
 impl CloudFlareCacheStatus {
@@ -33,6 +34,7 @@ impl CloudFlareCacheStatus {
             "UNKNOWN" => Self::Unknown,
             "NONE" => Self::Unknown,
             "NONE/UNKNOWN" => Self::Unknown,
+            "" => Self::NonExistent,
             _ => Self::Unknown,
         }
     }
@@ -47,15 +49,30 @@ impl CloudFlareCacheStatus {
             Self::Revalidated => "REVALIDATED",
             Self::Updating => "UPDATING",
             Self::Dynamic => "DYNAMIC",
+            Self::NonExistent => "NONEXISTENT",
         }
     }
 
+    pub fn is_non_existent(&self) -> bool {
+        matches!(self, Self::NonExistent)
+    }
+
     pub fn is_hit(&self) -> bool {
-        matches!(self, Self::Hit)
+        matches!(self, Self::Hit) || matches!(self, Self::Revalidated)
     }
 
     pub fn is_miss(&self) -> bool {
         matches!(self, Self::Miss)
+    }
+
+    pub fn should_log_warning(&self) -> bool {
+        matches!(self, Self::Unknown) || matches!(self, Self::NonExistent) || matches!(self, Self::Dynamic) || matches!(self, Self::Bypass)
+    }
+
+    pub fn log_warning(&self) {
+        if self.should_log_warning() {
+            warn!(target: LOG_TARGET, "Cloudflare cache status: {}", self.to_str());
+        }
     }
 }
 
@@ -93,6 +110,26 @@ impl RequestClient {
             .header("User-Agent", self.user_agent.clone())
             .send()
             .await
+    }
+
+    pub fn get_etag_from_head_response(&self, response: &Response) -> String {
+        response
+            .headers()
+            .get("etag")
+            .map_or("", |v| v.to_str().unwrap_or_default())
+            .to_string()
+    }
+
+    pub fn get_cf_cache_status_from_head_response(&self, response: &Response) -> CloudFlareCacheStatus {
+        let cache_status = CloudFlareCacheStatus::from_str(
+            response
+                .headers()
+                .get("cf-cache-status")
+                .map_or("", |v| v.to_str().unwrap_or_default()),
+        );
+
+        cache_status.log_warning();
+        cache_status
     }
 
     pub async fn fetch_head_etag(&self, url: &str) -> Result<String, anyhow::Error> {
@@ -142,6 +179,7 @@ impl RequestClient {
             }
 
             let head_response = self.fetch_head_cf_cache_status(&url).await?;
+            head_response.log_warning();
             if head_response.is_hit() {
                 break;
             }
