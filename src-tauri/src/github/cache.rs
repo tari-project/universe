@@ -30,15 +30,7 @@ pub struct CacheJsonFile {
 
 impl CacheJsonFile {
     fn new() -> Self {
-        let cache_file_path = PathBuf::new()
-            .join(APPLICATION_FOLDER_ID)
-            .join("cache")
-            .join("binaries_versions")
-            .join("versions_releases_responses.json");
-        let versions_cache_folder_path = PathBuf::new()
-            .join(APPLICATION_FOLDER_ID)
-            .join("cache")
-            .join("binaries_versions");
+        let (cache_file_path, versions_cache_folder_path) = Self::initialize_paths();
 
         Self {
             cache_entries: HashMap::new(),
@@ -47,12 +39,18 @@ impl CacheJsonFile {
         }
     }
 
+    fn initialize_paths() -> (PathBuf, PathBuf) {
+        let base_path = PathBuf::from(APPLICATION_FOLDER_ID).join("cache").join("binaries_versions");
+        let cache_file_path = base_path.join("versions_releases_responses.json");
+        (cache_file_path, base_path)
+    }
+
     fn create_cache_entry_identifier(repo_owner: &str, repo_name: &str) -> String {
         format!("{}-{}", repo_owner, repo_name)
     }
 
     fn get_version_releases_responses_cache_file_path(&self) -> Result<PathBuf, Error> {
-        let cache_path = cache_dir().ok_or_else(|| anyhow!("Failed to get cache directory"))?;
+        let cache_path = cache_dir().ok_or_else(|| anyhow!("Failed to get cache path"))?;
         Ok(cache_path.join(self.cache_file_path.clone()))
     }
 
@@ -64,7 +62,7 @@ impl CacheJsonFile {
             self.cache_entries = serde_json::from_str(&json)?;
         }
 
-        info!(target: LOG_TARGET, "Cache file read successfully");
+        info!(target: LOG_TARGET, "Version releases cache file read successfully");
         Ok(())
     }
 
@@ -79,6 +77,8 @@ impl CacheJsonFile {
         }
         let json = serde_json::to_string_pretty(&self.cache_entries)?;
         std::fs::write(&cache_file_path, json)?;
+
+        info!(target: LOG_TARGET, "Version releases cache file saved successfully");
         Ok(())
     }
 
@@ -115,11 +115,9 @@ impl CacheJsonFile {
         github_etag: Option<String>,
         mirror_etag: Option<String>,
     ) -> Result<(), Error> {
-        let is_cache_entry_exists = self
-            .cache_entries
-            .contains_key(&Self::create_cache_entry_identifier(repo_owner, repo_name));
+        let identifier = Self::create_cache_entry_identifier(repo_owner, repo_name);
 
-        if is_cache_entry_exists {
+        if self.cache_entries.contains_key(&identifier) {
             self.update_cache_entry(repo_owner, repo_name, github_etag, mirror_etag)?;
         } else {
             let cache_entry = CacheEntry {
@@ -131,10 +129,7 @@ impl CacheJsonFile {
                     .versions_cache_folder_path
                     .join(format!("{}-{}.json", repo_owner, repo_name)),
             };
-            self.cache_entries.insert(
-                Self::create_cache_entry_identifier(repo_owner, repo_name),
-                cache_entry,
-            );
+            self.cache_entries.insert(identifier,cache_entry);
             self.save_version_releases_responses_cache_file()?;
         };
 
@@ -142,11 +137,16 @@ impl CacheJsonFile {
     }
 
     pub fn chech_if_content_file_exist(&self, repo_owner: &str, repo_name: &str) -> bool {
-        let cache_entry = self.get_cache_entry(repo_owner, repo_name);
-        match cache_entry {
-            Some(cache_entry) => cache_entry.file_path.exists(),
-            None => false,
-        }
+        self.get_cache_entry(repo_owner, repo_name)
+            .map_or(false, |cache_entry| cache_entry.file_path.exists())
+    }
+
+    fn get_file_content_path(&self, repo_owner: &str, repo_name: &str) -> Result<PathBuf, Error> {
+        let cache_path = cache_dir().ok_or_else(|| anyhow!("Failed to get file content path"))?;
+        let cache_entry = self.get_cache_entry(repo_owner, repo_name).ok_or_else(|| {
+            anyhow!("File content not found for repo_owner: {}, repo_name: {}", repo_owner, repo_name)
+        })?;
+        Ok(cache_path.join(cache_entry.file_path.clone()))
     }
 
     pub fn save_file_content(
@@ -155,11 +155,7 @@ impl CacheJsonFile {
         repo_name: &str,
         content: Vec<VersionDownloadInfo>,
     ) -> Result<(), Error> {
-        let cache_path = cache_dir().ok_or_else(|| anyhow!("Failed to get cache directory"))?;
-        let cache_entry = self
-            .get_cache_entry(repo_owner, repo_name)
-            .ok_or_else(|| anyhow!("Cache entry not found"))?;
-        let file_path = cache_path.join(cache_entry.file_path.clone());
+        let file_path = self.get_file_content_path(repo_owner, repo_name)?;
 
         if !file_path.exists() {
             std::fs::create_dir_all(
@@ -171,9 +167,8 @@ impl CacheJsonFile {
 
         let json = serde_json::to_string_pretty(&content)?;
         std::fs::write(&file_path, json)?;
-
+        
         info!(target: LOG_TARGET, "File content saved successfully");
-
         Ok(())
     }
 
@@ -182,13 +177,11 @@ impl CacheJsonFile {
         repo_owner: &str,
         repo_name: &str,
     ) -> Result<Vec<VersionDownloadInfo>, Error> {
-        let cache_path = cache_dir().ok_or_else(|| anyhow!("Failed to get cache directory"))?;
-        let cache_entry = self
-            .get_cache_entry(repo_owner, repo_name)
-            .ok_or_else(|| anyhow!("Cache entry not found"))?;
-        let file_path = cache_path.join(cache_entry.file_path.clone());
+        let file_path = self.get_file_content_path(repo_owner, repo_name)?;
         let json = std::fs::read_to_string(&file_path)?;
         let content: Vec<VersionDownloadInfo> = serde_json::from_str(&json)?;
+
+        info!(target: LOG_TARGET, "File content read successfully");
         Ok(content)
     }
 

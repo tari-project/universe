@@ -100,6 +100,10 @@ impl RequestClient {
         }
     }
 
+    fn convert_content_length_to_mb(&self, content_length: u64) -> f64 {
+        (content_length as f64) / 1024.0 / 1024.0
+    }
+
     pub async fn send_head_request(&self, url: &str) -> Result<Response, reqwest::Error> {
         self.client
             .head(url)
@@ -160,28 +164,6 @@ impl RequestClient {
         cache_status
     }
 
-    pub async fn fetch_head_etag(&self, url: &str) -> Result<String, anyhow::Error> {
-        let head_response = self.send_head_request(url).await.map_err(|e| anyhow!(e))?;
-        Ok(head_response
-            .headers()
-            .get("etag")
-            .map_or("", |v| v.to_str().unwrap_or_default())
-            .to_string())
-    }
-
-    pub async fn fetch_head_cf_cache_status(
-        &self,
-        url: &str,
-    ) -> Result<CloudFlareCacheStatus, anyhow::Error> {
-        let head_response = self.send_head_request(url).await.map_err(|e| anyhow!(e))?;
-        Ok(CloudFlareCacheStatus::from_str(
-            head_response
-                .headers()
-                .get("cf-cache-status")
-                .map_or("", |v| v.to_str().unwrap_or_default()),
-        ))
-    }
-
     pub async fn fetch_get_versions_download_info(
         &self,
         url: &str,
@@ -237,10 +219,6 @@ impl RequestClient {
         }
 
         Ok(true)
-    }
-
-    fn convert_content_length_to_mb(&self, content_length: u64) -> f64 {
-        (content_length as f64) / 1024.0 / 1024.0
     }
 
     pub fn current() -> &'static LazyLock<RequestClient> {

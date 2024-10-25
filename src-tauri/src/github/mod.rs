@@ -7,10 +7,8 @@ use request_client::RequestClient;
 use reqwest::Response;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo},
-    APPLICATION_FOLDER_ID,
-};
+use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
+
 
 const LOG_TARGET: &str = "tari::universe::github";
 
@@ -94,7 +92,7 @@ pub async fn list_releases(
         .await
         .read_version_releases_responses_cache_file()?;
 
-    info!(target: LOG_TARGET, "Fetching releases for {}/{}", repo_owner, repo_name);
+    info!(target: LOG_TARGET, "Fetching mirror releases for {}/{}", repo_owner, repo_name);
 
     let mut mirror_releases = list_mirror_releases(repo_owner, repo_name)
         .await
@@ -104,7 +102,9 @@ pub async fn list_releases(
         .unwrap_or_default();
 
     info!(target: LOG_TARGET, "Found {} releases from mirror", mirror_releases.len());
-    // Add any missing releases from github
+
+    info!(target: LOG_TARGET, "Fetching github releases for {}/{}", repo_owner, repo_name);
+
     let github_releases = list_github_releases(repo_owner, repo_name)
         .await
         .inspect_err(|e| {
@@ -114,6 +114,7 @@ pub async fn list_releases(
 
     info!(target: LOG_TARGET, "Found {} releases from Github", github_releases.len());
 
+    // Add any missing releases from github
     for release in &github_releases {
         if !mirror_releases.iter().any(|r| r.version == release.version) {
             mirror_releases.push(release.clone());
@@ -133,8 +134,7 @@ async fn list_mirror_releases(
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let url = get_mirror_url(repo_owner, repo_name);
-
-    info!(target: LOG_TARGET, "i'm here");
+    info!(target: LOG_TARGET, "Mirror releases url: {}", url);
 
     let (need_to_download, cache_entry_present, response) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Mirror).await?;
@@ -169,11 +169,10 @@ async fn list_mirror_releases(
             extract_versions_from_release(repo_owner, repo_name, response, ReleaseSource::Mirror)
                 .await?;
 
-        let args = (repo_owner, repo_name, None, Some(etag));
         if cache_entry_present {
-            cache_json_file_lock.update_cache_entry(args.0, args.1, args.2, args.3)?;
+            cache_json_file_lock.update_cache_entry(repo_owner, repo_name, None, Some(etag))?;
         } else {
-            cache_json_file_lock.create_cache_entry(args.0, args.1, args.2, args.3)?;
+            cache_json_file_lock.create_cache_entry(repo_owner, repo_name, None, Some(etag))?;
         };
         versions_list.extend(remote_versions_list);
         cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
@@ -181,8 +180,6 @@ async fn list_mirror_releases(
         let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
         versions_list.extend(content);
     }
-
-    drop(cache_json_file_lock);
 
     Ok(versions_list)
 }
@@ -192,9 +189,13 @@ async fn list_github_releases(
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let url = get_gh_url(repo_owner, repo_name);
+        info!(target: LOG_TARGET, "Github releases url: {}", url);
 
     let (need_to_download, cache_entry_present, _) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Github).await?;
+
+    info!(target: LOG_TARGET, "Github releases need to download: {}", need_to_download);
+    info!(target: LOG_TARGET, "Github releases cache entry present: {}", cache_entry_present);
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
 
@@ -208,11 +209,10 @@ async fn list_github_releases(
             extract_versions_from_release(repo_owner, repo_name, response, ReleaseSource::Github)
                 .await?;
 
-        let args = (repo_owner, repo_name, Some(etag), None);
         if cache_entry_present {
-            cache_json_file_lock.update_cache_entry(args.0, args.1, args.2, args.3)?;
+            cache_json_file_lock.update_cache_entry(repo_owner, repo_name, Some(etag), None)?;
         } else {
-            cache_json_file_lock.create_cache_entry(args.0, args.1, args.2, args.3)?;
+            cache_json_file_lock.create_cache_entry(repo_owner, repo_name, Some(etag), None)?;
         };
 
         versions_list.extend(remote_versions_list);
@@ -249,6 +249,9 @@ async fn check_if_need_download(
                 ReleaseSource::Github => cache_entry.github_etag.clone(),
             };
 
+            info!(target: LOG_TARGET, "Remote etag: {}", remote_etag);
+            info!(target: LOG_TARGET, "Local etag: {:?}", cache_entry);
+
             if !remote_etag.eq(&local_etag.unwrap_or("".to_string())) {
                 need_to_download = true
             };
@@ -280,7 +283,6 @@ async fn extract_versions_from_release(
         // Remove any v prefix
         let release_name = release.tag_name.trim_start_matches('v').to_string();
         debug!(target: LOG_TARGET, " - release: {}", release_name);
-        // res.push(semver::Version::parse(&tag_name)?);
         let mut assets = vec![];
         for asset in release.assets {
             let url = match source {
