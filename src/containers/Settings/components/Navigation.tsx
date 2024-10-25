@@ -21,7 +21,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                     return (
                         <SectionButton
                             key={type}
-                            size="large"
+                            size="small"
                             onClick={() => handleClick(type)}
                             variant={isActiveSection ? 'secondary' : 'primary'}
                             color="transparent"
