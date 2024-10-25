@@ -6,7 +6,6 @@ import { SettingsGroup, SettingsGroupAction } from '../../components/SettingsGro
 import AppVersions from './AppVersions.tsx';
 import DebugSettings from './DebugSettings.tsx';
 import ExperimentalWarning from './ExperimentalWarning.tsx';
-import GpuDevices from './GpuDevices.tsx';
 
 import { TorMarkup } from './TorMarkup';
 
@@ -19,7 +18,6 @@ export const ExperimentalSettings = () => {
             <AnimatePresence>
                 {showExperimental && (
                     <>
-                        <GpuDevices />
                         <DebugSettings />
                         <AppVersions />
                         <TorMarkup />
