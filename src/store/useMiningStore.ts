@@ -31,6 +31,8 @@ interface Actions {
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
+    sha_network_hash_rate: 0,
+    randomx_network_hash_rate: 0,
     counter: 0,
     hashrateReady: false,
     miningInitiated: false,
