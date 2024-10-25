@@ -120,6 +120,8 @@ impl P2poolManager {
             return Ok(());
         }
         process_watcher.adapter.config = Some(config);
+        process_watcher.health_timeout = Duration::from_secs(28);
+        process_watcher.poll_time = Duration::from_secs(30);
         process_watcher
             .start(
                 app_shutdown,
