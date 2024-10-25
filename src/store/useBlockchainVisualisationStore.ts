@@ -6,6 +6,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { useAppStateStore } from './appStateStore.ts';
 
 interface Recap {
     count: number;
@@ -57,6 +58,13 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         const blockHeight = Number(latestTx.message?.split(': ')[1]);
         const earnings = latestTx.amount;
         console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
+
+        useAppStateStore
+            .getState()
+            .triggerNotification(
+                'Congratulations!',
+                `You won a block! We are sending you rewards of ${earnings} tXTM!`
+            );
 
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);

@@ -38,6 +38,7 @@ log4rs = "1.3.0"
 minotari_node_grpc_client = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 minotari_wallet_grpc_client = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 nix = {version = "0.29.0", features = ["signal"]}
+notify-rust = "4.11.3"
 nvml-wrapper = "0.10.0"
 open = "5"
 phraze = "0.3.15"

@@ -4,10 +4,11 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
+use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use log::trace;
 use log::{debug, error, info, warn};
-use regex::Regex;
 use notification_manager::NotificationManager;
+use regex::Regex;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
