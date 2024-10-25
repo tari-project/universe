@@ -45,9 +45,6 @@ export default defineConfig(({ command, mode }) => {
             sentryVitePlugin({
                 org: 'tari-labs',
                 project: packageInfo.name,
-                release: {
-                    name: packageInfo.version,
-                },
                 reactComponentAnnotation: { enabled: true },
                 authToken: process.env.SENTRY_AUTH_TOKEN,
                 disable: mode === 'development',
