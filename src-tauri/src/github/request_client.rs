@@ -3,6 +3,7 @@ use std::{ops::Div, sync::LazyLock};
 use anyhow::anyhow;
 use log::warn;
 use reqwest::{Client, Response};
+use log::info;
 
 use super::Release;
 const LOG_TARGET: &str = "tari::universe::request_client";
@@ -208,6 +209,8 @@ impl RequestClient {
             cf_cache_status.log_warning_if_present();
 
             let content_length = self.get_content_length_from_head_response(&head_response);
+            info!(target: LOG_TARGET, "Content length: {}", content_length);
+            info!(target: LOG_TARGET, "Content length in MB: {}", self.convert_content_length_to_mb(content_length));
 
             let mut sleep_time = std::time::Duration::from_secs(DEFAULT_WAIT_TIME);
 

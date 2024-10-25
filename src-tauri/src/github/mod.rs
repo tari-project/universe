@@ -88,17 +88,22 @@ pub async fn list_releases(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
+    info!(target: LOG_TARGET, "Reading cache releases for {}/{}", repo_owner, repo_name);
     CacheJsonFile::current()
         .write()
         .await
         .read_version_releases_responses_cache_file()?;
 
+    info!(target: LOG_TARGET, "Fetching releases for {}/{}", repo_owner, repo_name);
+
     let mut mirror_releases = list_mirror_releases(repo_owner, repo_name)
         .await
         .inspect_err(|e| {
-            warn!(target: LOG_TARGET, "Failed to fetch releases from Github: {}", e);
+            warn!(target: LOG_TARGET, "Failed to fetch releases from Mirror: {}", e);
         })
         .unwrap_or_default();
+
+    info!(target: LOG_TARGET, "Found {} releases from mirror", mirror_releases.len());
     // Add any missing releases from github
     let github_releases = list_github_releases(repo_owner, repo_name)
         .await
@@ -106,6 +111,8 @@ pub async fn list_releases(
             warn!(target: LOG_TARGET, "Failed to fetch releases from Github: {}", e);
         })
         .unwrap_or_default();
+
+    info!(target: LOG_TARGET, "Found {} releases from Github", github_releases.len());
 
     for release in &github_releases {
         if !mirror_releases.iter().any(|r| r.version == release.version) {
@@ -125,11 +132,15 @@ async fn list_mirror_releases(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
-    let mut cache_json_file_lock = CacheJsonFile::current().write().await;
     let url = get_mirror_url(repo_owner, repo_name);
+
+    info!(target: LOG_TARGET, "i'm here");
 
     let (need_to_download, cache_entry_present, response) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Mirror).await?;
+
+    info!(target: LOG_TARGET, "Mirror releases need to download: {}", need_to_download);
+    info!(target: LOG_TARGET, "Mirror releases cache entry present: {}", cache_entry_present);
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
     let mut does_hit = response
@@ -142,9 +153,13 @@ async fn list_mirror_releases(
         })
         .unwrap_or(false);
 
+    info!(target: LOG_TARGET, "Mirror releases cache hit: {}", does_hit);
+
     if need_to_download && !does_hit {
         does_hit = RequestClient::current().check_if_cache_hits(&url).await?;
     }
+
+    let mut cache_json_file_lock = CacheJsonFile::current().write().await;
 
     if does_hit {
         let (response, etag) = RequestClient::current()
@@ -153,16 +168,14 @@ async fn list_mirror_releases(
         let remote_versions_list =
             extract_versions_from_release(repo_owner, repo_name, response, ReleaseSource::Mirror)
                 .await?;
-        let content_path =
-            cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
 
-        let args = (repo_owner, repo_name, content_path, Some(etag), None);
+        let args = (repo_owner, repo_name, Some(etag), None);
         if cache_entry_present {
-            cache_json_file_lock.update_cache_entry(args.0, args.1, args.2, args.3, args.4)?;
+            cache_json_file_lock.update_cache_entry(args.0, args.1, args.2, args.3)?;
         } else {
-            cache_json_file_lock.create_cache_entry(args.0, args.1, args.2, args.3, args.4)?;
+            cache_json_file_lock.create_cache_entry(args.0, args.1, args.2, args.3)?;
         };
-
+        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
         versions_list.extend(remote_versions_list);
     } else {
         let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
@@ -176,13 +189,14 @@ async fn list_github_releases(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
-    let mut cache_json_file_lock = CacheJsonFile::current().write().await;
     let url = get_gh_url(repo_owner, repo_name);
 
-    let (need_to_download, cache_entry_present, response) =
+    let (need_to_download, cache_entry_present, _) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Github).await?;
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
+
+    let mut cache_json_file_lock = CacheJsonFile::current().write().await;
 
     if need_to_download {
         let (response, etag) = RequestClient::current()
@@ -191,16 +205,15 @@ async fn list_github_releases(
         let remote_versions_list =
             extract_versions_from_release(repo_owner, repo_name, response, ReleaseSource::Github)
                 .await?;
-        let content_path =
-            cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
 
-        let args = (repo_owner, repo_name, content_path, Some(etag), None);
+        let args = (repo_owner, repo_name, Some(etag), None);
         if cache_entry_present {
-            cache_json_file_lock.update_cache_entry(args.0, args.1, args.2, args.3, args.4)?;
+            cache_json_file_lock.update_cache_entry(args.0, args.1, args.2, args.3)?;
         } else {
-            cache_json_file_lock.create_cache_entry(args.0, args.1, args.2, args.3, args.4)?;
+            cache_json_file_lock.create_cache_entry(args.0, args.1, args.2, args.3)?;
         };
 
+        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
         versions_list.extend(remote_versions_list);
     } else {
         let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
