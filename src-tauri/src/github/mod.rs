@@ -161,7 +161,7 @@ async fn list_mirror_releases(
 
     let mut cache_json_file_lock = CacheJsonFile::current().write().await;
 
-    if does_hit {
+    if does_hit && need_to_download {
         let (response, etag) = RequestClient::current()
             .fetch_get_versions_download_info(&url)
             .await?;
