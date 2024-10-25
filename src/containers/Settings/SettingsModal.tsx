@@ -14,17 +14,19 @@ import SettingsNavigation from './components/Navigation.tsx';
 import { SETTINGS_TYPES, SettingsType } from './types.ts';
 import {
     AirdropSettings,
-    MiningSettings,
-    GeneralSettings,
+    ConnectionsSettings,
     ExperimentalSettings,
-    WalletSettings,
+    GeneralSettings,
+    MiningSettings,
     PoolMiningSettings,
+    WalletSettings,
 } from './sections';
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
 
 const markups = {
     general: <GeneralSettings />,
     mining: <MiningSettings />,
+    connections: <ConnectionsSettings />,
     p2p: <PoolMiningSettings />,
     wallet: <WalletSettings />,
     airdrop: <AirdropSettings />,

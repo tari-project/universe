@@ -42,6 +42,7 @@ export const SettingsGroup = styled.div`
 export const SettingsGroupTitle = styled.div`
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};
+    justify-content: space-between;
 `;
 export const SettingsGroupContent = styled.div`
     display: flex;
