@@ -766,20 +766,16 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
     let mut tor_control_port = None;
     if use_tor {
-        if cfg!(target_os = "windows") {
-            state
-                .tor_manager
-                .ensure_started(
-                    state.shutdown.to_signal(),
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
-                .await?;
-            tor_control_port = state.tor_manager.get_control_port().await?;
-        } else {
-            tor_control_port = Some(9051);
-        }
+        state
+            .tor_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+        tor_control_port = state.tor_manager.get_control_port().await?;
     }
     for _i in 0..2 {
         match state
@@ -1514,6 +1510,22 @@ async fn get_app_config(
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
+async fn get_tor_entry_guards(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+    let res = state
+        .tor_manager
+        .get_entry_guards()
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_tor_entry_guards took too long: {:?}", timer.elapsed());
+    }
+    Ok(res)
+}
+
+#[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -2080,7 +2092,8 @@ fn main() {
             get_tor_config,
             set_tor_config,
             fetch_tor_bridges,
-            set_monerod_config
+            set_monerod_config,
+            get_tor_entry_guards
         ])
         .build(tauri::generate_context!())
         .inspect_err(
