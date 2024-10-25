@@ -1,15 +1,19 @@
 {
-    "floor": "Zemin",
-    "current-block-time": "Geçerli blok zamanı",
-    "your-reward-is": "Ödülünüz",
-    "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
-    "mining-button-text": {
-        "starting-mining": "Madenci Başlatılıyor",
-        "start-mining": "Madenciyi Başlat",
-        "pause-mining": "Madenciyi Durdur",
-        "changing-mode": "Mod değiştirme",
-        "cancel-mining": "Madenciyi İptal Et",
-        "waiting-for-idle": "Boşta Bekliyor",
-        "started-auto-mining": "Otomatik Madencilik Başladı"
-    }
+  "floor": "Zemin",
+  "current-block-time": "Geçerli blok zamanı",
+  "your-reward-is": "Ödülünüz",
+  "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
+  "mining-button-text": {
+    "starting-mining": "Madenci Başlatılıyor",
+    "start-mining": "Madenciyi Başlat",
+    "pause-mining": "Madenciyi Durdur",
+    "changing-mode": "Mod değiştirme",
+    "cancel-mining": "Madenciyi İptal Et",
+    "waiting-for-idle": "Boşta Bekliyor",
+    "started-auto-mining": "Otomatik Madencilik Başladı",
+    "stop-mining": "Madenciliği Durdur"
+  },
+  "estimated-earnings": "Estimated earnings",
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "day": "day"
 }

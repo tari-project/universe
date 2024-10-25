@@ -1,28 +1,29 @@
 import Miner from './Miner/Miner';
-import Wallet from './components/Wallet';
+import Wallet from './components/Wallet/Wallet.tsx';
 import Heading from './components/Heading';
-import { SideBarContainer, SideBarInner, BottomContainer, TopContainer } from './styles';
+import { Bottom, Scroll, SideBarContainer, SidebarTop, Top } from './styles';
 
 import MiningButton from '@app/containers/Dashboard/MiningView/components/MiningButton.tsx';
-import { Divider } from '@app/components/elements/Divider.tsx';
-import { LayoutGroup } from 'framer-motion';
+import AirdropGiftTracker from '@app/containers/Airdrop/AirdropGiftTracker/AirdropGiftTracker';
+import LostConnectionAlert from './components/LostConnectionAlert';
 
 function SideBar() {
     return (
-        <SideBarContainer layout style={{ height: '100%' }} transition={{ duration: 200 }} layoutId="sidebar">
-            <LayoutGroup id="sidebar-content">
-                <TopContainer>
-                    <Heading />
-                    <MiningButton />
-                </TopContainer>
-                <Divider />
-                <SideBarInner>
+        <SideBarContainer>
+            <SidebarTop>
+                <Heading />
+                <MiningButton />
+                <LostConnectionAlert />
+            </SidebarTop>
+            <Scroll>
+                <Top>
                     <Miner />
-                </SideBarInner>
-                <BottomContainer>
+                </Top>
+                <Bottom>
+                    <AirdropGiftTracker />
                     <Wallet />
-                </BottomContainer>
-            </LayoutGroup>
+                </Bottom>
+            </Scroll>
         </SideBarContainer>
     );
 }

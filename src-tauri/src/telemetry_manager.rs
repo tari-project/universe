@@ -1,3 +1,12 @@
+use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::p2pool_manager::{self, P2poolManager};
+use crate::{
+    app_config::{AppConfig, MiningMode},
+    cpu_miner::CpuMiner,
+    gpu_miner::GpuMiner,
+    hardware_monitor::HardwareMonitor,
+    node_manager::NodeManager,
+};
 use anyhow::Result;
 use blake2::digest::Update;
 use blake2::digest::VariableOutput;
@@ -12,18 +21,9 @@ use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_utilities::encoding::Base58;
+use tari_utilities::encoding::MBase58;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
-
-use crate::app_in_memory_config::AppInMemoryConfig;
-use crate::{
-    app_config::{AppConfig, MiningMode},
-    cpu_miner::CpuMiner,
-    gpu_miner::GpuMiner,
-    hardware_monitor::HardwareMonitor,
-    node_manager::NodeManager,
-};
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
@@ -58,6 +58,7 @@ pub enum TelemetryResource {
     Gpu,
     #[serde(rename(serialize = "cpu-gpu"))]
     CpuGpu,
+    None,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -118,6 +119,14 @@ struct UserPoints {
     pub gems: f64,
     pub shells: f64,
     pub hammers: f64,
+    pub rank: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ReferralCount {
+    pub gems: f64,
+    pub count: i64,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -125,6 +134,14 @@ struct UserPoints {
 struct TelemetryDataResponse {
     pub success: bool,
     pub user_points: Option<UserPoints>,
+    pub referral_count: Option<ReferralCount>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct TelemetryDataResponseEvent {
+    pub base: UserPoints,
+    pub referral_count: ReferralCount,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -143,6 +160,11 @@ pub struct TelemetryData {
     pub gpu_make: Option<String>,
     pub mode: TelemetryMiningMode,
     pub version: String,
+    pub p2pool_enabled: bool,
+    pub cpu_tribe_name: Option<String>,
+    pub cpu_tribe_id: Option<String>,
+    pub gpu_tribe_name: Option<String>,
+    pub gpu_tribe_id: Option<String>,
 }
 
 pub struct TelemetryManager {
@@ -153,6 +175,7 @@ pub struct TelemetryManager {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     pub cancellation_token: CancellationToken,
     node_network: Option<Network>,
+    p2pool_manager: P2poolManager,
 }
 
 impl TelemetryManager {
@@ -163,6 +186,7 @@ impl TelemetryManager {
         config: Arc<RwLock<AppConfig>>,
         in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         network: Option<Network>,
+        p2pool_manager: P2poolManager,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
         Self {
@@ -173,6 +197,7 @@ impl TelemetryManager {
             cancellation_token,
             node_network: network,
             in_memory_config,
+            p2pool_manager,
         }
     }
 
@@ -184,13 +209,15 @@ impl TelemetryManager {
         }
         // let os = std::env::consts::OS;
         let anon_id = config.anon_id();
-        let mut hasher = Blake2bVar::new(20).unwrap();
+        let mut hasher = Blake2bVar::new(20).expect("Failed to create hasher");
         hasher.update(anon_id.as_bytes());
         let mut buf = [0u8; 20];
-        hasher.finalize_variable(&mut buf).unwrap();
+        hasher
+            .finalize_variable(&mut buf)
+            .expect("Failed to finalize hasher variable");
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
-        let unique_string = format!("v2,{},{}", buf.to_base58(), version,);
+        let unique_string = format!("v2,{},{}", buf.to_monero_base58(), version,);
         unique_string
     }
 
@@ -227,15 +254,16 @@ impl TelemetryManager {
         let network = self.node_network;
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
+        let p2pool_manager_cloned = self.p2pool_manager.clone();
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
-                    info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
-                            let telemetry_data = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), config.clone(), network).await;
+                            let telemetry_data = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), p2pool_manager_cloned.clone(), config.clone(), network).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, window.clone()).await;
                         }
@@ -243,7 +271,7 @@ impl TelemetryManager {
                     }
                 } => {},
                 _ = cancellation_token.cancelled() => {
-                    info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
+                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
                 }
             }
         });
@@ -285,10 +313,12 @@ async fn validate_jwt(airdrop_access_token: Arc<RwLock<Option<String>>>) -> Opti
     })
 }
 
+#[allow(clippy::too_many_lines)]
 async fn get_telemetry_data(
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
     node_manager: NodeManager,
+    p2pool_manager: p2pool_manager::P2poolManager,
     config: Arc<RwLock<AppConfig>>,
     network: Option<Network>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
@@ -320,15 +350,76 @@ async fn get_telemetry_data(
         .await
         .read_hardware_parameters();
 
+    let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
+        warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
+    });
+    let p2pool_stats = match p2pool_stats {
+        Ok(stats) => stats,
+        Err(_) => None,
+    };
+
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
     let cpu_hash_rate = Some(cpu.hash_rate);
     let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
     let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
     let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
-    let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
-    let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
+    let gpu_utilization = Some(
+        hardware_status
+            .gpu
+            .clone()
+            .into_iter()
+            .map(|c| c.usage_percentage)
+            .sum::<f32>(),
+    );
+    let gpu_makes: Vec<_> = hardware_status
+        .gpu
+        .clone()
+        .into_iter()
+        .map(|c| c.label.clone())
+        .collect();
+    let gpu_make = Some(gpu_makes.into_iter().collect::<Vec<_>>().join(", ")); //TODO refactor - now is JUST WIP to meet the String type
     let version = env!("CARGO_PKG_VERSION").to_string();
+    let gpu_mining_used =
+        config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
+    let cpu_resource_used =
+        config_guard.cpu_mining_enabled() && cpu_make.is_some() && cpu_hash_rate.is_some();
+    let resource_used = match (gpu_mining_used, cpu_resource_used) {
+        (true, true) => TelemetryResource::CpuGpu,
+        (true, false) => TelemetryResource::Gpu,
+        (false, true) => TelemetryResource::Cpu,
+        (false, false) => TelemetryResource::None,
+    };
+
+    let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
+    let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
+    let p2pool_enabled =
+        config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
+    let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
+        if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
+            (
+                Some(randomx_stats.squad.name.clone()),
+                Some(randomx_stats.squad.id.clone()),
+            )
+        } else {
+            (None, None)
+        }
+    } else {
+        (None, None)
+    };
+
+    let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
+        if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
+            (
+                Some(sha3_stats.squad.name.clone()),
+                Some(sha3_stats.squad.id.clone()),
+            )
+        } else {
+            (None, None)
+        }
+    } else {
+        (None, None)
+    };
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
@@ -342,8 +433,13 @@ async fn get_telemetry_data(
         gpu_make,
         gpu_hash_rate,
         gpu_utilization,
-        resource_used: TelemetryResource::Cpu,
+        resource_used,
         version,
+        p2pool_enabled,
+        cpu_tribe_name,
+        cpu_tribe_id,
+        gpu_tribe_name,
+        gpu_tribe_id,
     })
 }
 
@@ -373,9 +469,19 @@ async fn handle_telemetry_data(
                 Ok(response) => {
                     if let Some(response_inner) = response {
                         if let Some(user_points) = response_inner.user_points {
-                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}",user_points);
+                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
+                            let response_inner =
+                                response_inner.referral_count.unwrap_or(ReferralCount {
+                                    gems: 0.0,
+                                    count: 0,
+                                });
+                            let emit_data = TelemetryDataResponseEvent {
+                                base: user_points,
+                                referral_count: response_inner,
+                            };
+
                             window
-                                .emit("UserPoints", user_points)
+                                .emit("UserPoints", emit_data)
                                 .map_err(|e| {
                                     error!("could not send user points as an event: {:?}", e)
                                 })
@@ -415,7 +521,7 @@ async fn send_telemetry_data(
     let response = request_builder.send().await?;
 
     if response.status() == 429 {
-        info!(target: LOG_TARGET,"Telemetry data rate limited by http {:?}", response.status());
+        warn!(target: LOG_TARGET,"Telemetry data rate limited by http {:?}", response.status());
         return Ok(None);
     }
 
@@ -431,7 +537,7 @@ async fn send_telemetry_data(
         .into());
     }
 
-    info!(target: LOG_TARGET,"Telemetry data sent");
+    debug!(target: LOG_TARGET,"Telemetry data sent");
 
     if airdrop_access_token.is_some() {
         let data: TelemetryDataResponse = response.json().await?;
@@ -466,7 +572,7 @@ where
                         e
                     ));
                 } else {
-                    warn!(target: LOG_TARGET, "Retrying {} as it failed due to failure: {:?}", operation_name, e);
+                    warn!(target: LOG_TARGET, "Retrying {} due to failure: {:?}", operation_name, e);
                 }
             }
         }

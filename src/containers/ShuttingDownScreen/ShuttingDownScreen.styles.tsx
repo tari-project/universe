@@ -1,9 +1,8 @@
-import loading from '@app/assets/backgrounds/white-bg.jpg';
 import styled from 'styled-components';
 
 export const ShuttingDownScreenContainer = styled.div`
     position: absolute;
-    background: url(${loading}) no-repeat center center fixed;
+    background-color: ${({ theme }) => theme.palette.background.main};
     background-size: cover;
     z-index: 100;
     width: 100%;
