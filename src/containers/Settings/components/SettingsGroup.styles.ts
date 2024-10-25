@@ -40,10 +40,15 @@ export const SettingsGroup = styled.div`
 
     ol,
     ul {
+        max-width: 100%;
         padding-inline-start: 30px;
-        line-height: 1.2;
-        li::marker {
-            font-weight: 500;
+        line-height: 1.3;
+
+        li {
+            word-wrap: anywhere;
+            &::marker {
+                font-weight: 500;
+            }
         }
     }
 `;
