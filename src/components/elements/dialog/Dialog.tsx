@@ -13,17 +13,16 @@ import {
     FloatingFocusManager,
     FloatingNode,
     FloatingPortal,
-    FloatingTree,
     useClick,
     useDismiss,
     useFloating,
     useFloatingNodeId,
-    useFloatingParentNodeId,
     useInteractions,
     useMergeRefs,
     useRole,
 } from '@floating-ui/react';
 import { ContentWrapper, Overlay } from '@app/components/elements/dialog/Dialog.styles.ts';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 interface DialogOptions {
     open: boolean;
@@ -38,9 +37,11 @@ export function useDialog({
 }: DialogOptions) {
     const [labelId, setLabelId] = useState<string | undefined>();
     const [descriptionId, setDescriptionId] = useState<string | undefined>();
-    const parentId = useFloatingParentNodeId();
+    const nodeId = useFloatingNodeId();
+    const hasError = useAppStateStore((s) => !!s.error);
 
-    const nodeId = useFloatingNodeId(parentId ?? undefined);
+    const dismissEnabled = !hasError && !disableClose;
+
     const open = controlledOpen;
     const setOpen = setControlledOpen;
 
@@ -55,7 +56,7 @@ export function useDialog({
     const click = useClick(context, {
         enabled: controlledOpen == null,
     });
-    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: !disableClose, bubbles: false });
+    const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', enabled: dismissEnabled, bubbles: false });
     const role = useRole(context);
 
     const interactions = useInteractions([click, dismiss, role]);
@@ -69,11 +70,10 @@ export function useDialog({
             labelId,
             descriptionId,
             setLabelId,
-            parentId,
-            setDescriptionId,
             nodeId,
+            setDescriptionId,
         }),
-        [open, setOpen, interactions, data, labelId, descriptionId, nodeId, parentId]
+        [open, setOpen, interactions, data, labelId, descriptionId, nodeId]
     );
 }
 
@@ -110,13 +110,12 @@ export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement
     function DialogContent(props, propRef) {
         const context = useDialogContext();
         const ref = useMergeRefs([context.refs.setFloating, propRef]);
-
-        const dialog = (
+        return (
             <FloatingNode id={context.nodeId}>
                 {context.open ? (
                     <FloatingPortal>
                         <Overlay lockScroll>
-                            <FloatingFocusManager context={context.context}>
+                            <FloatingFocusManager context={context.context} modal={false}>
                                 <ContentWrapper
                                     ref={ref}
                                     aria-labelledby={context.labelId}
@@ -132,11 +131,5 @@ export const DialogContent = forwardRef<HTMLDivElement, HTMLProps<HTMLDivElement
                 ) : null}
             </FloatingNode>
         );
-
-        if (context.parentId === null) {
-            return <FloatingTree>{dialog}</FloatingTree>;
-        }
-
-        return dialog;
     }
 );

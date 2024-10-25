@@ -56,12 +56,14 @@ export default function App() {
                  */}
                 <MotionConfig reducedMotion="user">
                     <FloatingTree>
+                        {/*dialogs*/}
                         <SettingsModal />
                         <AutoUpdateDialog />
                         <CriticalErrorDialog />
                         <ExternalDependenciesDialog />
                         <PaperWalletModal />
                         <ErrorSnackbar />
+                        {/*dialogs end*/}
                         <LayoutGroup id="app-content">
                             {shutDownMarkup}
                             {mainMarkup}
