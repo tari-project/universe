@@ -1,16 +1,16 @@
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { useTranslation } from 'react-i18next';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
-import { useEffect } from 'react';
 import { CardContainer } from '@app/containers/Settings/components/Settings.styles.tsx';
 import { CardComponent } from '@app/containers/Settings/components/Card.component.tsx';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import * as Sentry from '@sentry/react';
 
 const P2PoolStats = () => {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const { t } = useTranslation('p2p', { useSuspense: false });
     const isP2poolEnabled = useAppConfigStore((s) => s.p2pool_enabled);
     const p2poolStats = useP2poolStatsStore((s) => s);
     const p2poolSha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
@@ -41,10 +41,10 @@ const P2PoolStats = () => {
     return isP2poolEnabled ? (
         <SettingsGroupWrapper>
             <Stack>
-                <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
+                <Typography variant="h6">{t('p2pool-stats')}</Typography>
                 <CardContainer>
                     <CardComponent
-                        heading={`${t('p2pool-connection-info', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-connection-info')}`}
                         labels={[
                             {
                                 labelText: 'Address',
@@ -59,7 +59,7 @@ const P2PoolStats = () => {
                 </CardContainer>
                 <CardContainer>
                     <CardComponent
-                        heading={`${t('p2pool-connected', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-connected')}`}
                         labels={[
                             {
                                 labelText: 'Connected',
@@ -68,7 +68,7 @@ const P2PoolStats = () => {
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('p2pool-connection-info-more', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-connection-info-more')}`}
                         labels={[
                             {
                                 labelText: 'Num Peers',
@@ -105,7 +105,7 @@ const P2PoolStats = () => {
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('tribe', { ns: 'settings' })}`}
+                        heading={`${t('tribe')}`}
                         labels={[
                             {
                                 labelText: 'Current',
@@ -114,7 +114,7 @@ const P2PoolStats = () => {
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('miners', { ns: 'settings' })}`}
+                        heading={`${t('miners')}`}
                         labels={[
                             {
                                 labelText: 'SHA-3',
@@ -127,7 +127,7 @@ const P2PoolStats = () => {
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('p2pool-chain-tip', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-chain-tip')}`}
                         labels={[
                             {
                                 labelText: 'SHA-3',
