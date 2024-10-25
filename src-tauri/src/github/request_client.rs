@@ -113,6 +113,9 @@ impl RequestClient {
     }
 
     pub fn get_etag_from_head_response(&self, response: &Response) -> String {
+        if response.status().is_server_error() || response.status().is_client_error() {
+            return "".to_string();
+        };
         response
             .headers()
             .get("etag")
@@ -121,6 +124,9 @@ impl RequestClient {
     }
 
     pub fn get_content_length_from_head_response(&self, response: &Response) -> u64 {
+        if response.status().is_server_error() || response.status().is_client_error() {
+            return 0;
+        };
         response
             .headers()
             .get("content-length")
@@ -128,6 +134,9 @@ impl RequestClient {
     }
 
     pub fn get_cf_cache_status_from_head_response(&self, response: &Response) -> CloudFlareCacheStatus {
+        if response.status().is_server_error() || response.status().is_client_error() {
+            return CloudFlareCacheStatus::Unknown;
+        };
         let cache_status = CloudFlareCacheStatus::from_str(
             response
                 .headers()
@@ -179,6 +188,7 @@ impl RequestClient {
     pub async fn check_if_cache_hits(&self, url: &str) -> Result<bool, anyhow::Error> {
         const MAX_RETRIES: u8 = 5;
         const MAX_WAIT_TIME: u64 = 30;
+        const DEFAULT_WAIT_TIME: u64 = 5;
         let mut retries = 0;
 
         loop {
@@ -193,9 +203,11 @@ impl RequestClient {
 
             let content_length = self.get_content_length_from_head_response(&head_response);
             
-            let sleep_time = std::time::Duration::from_secs((self.convert_content_length_to_mb(content_length).div(10.0) as u64).max(MAX_WAIT_TIME));
+            let mut sleep_time = std::time::Duration::from_secs(DEFAULT_WAIT_TIME);
 
-            
+            if !content_length.eq(&0) {
+                sleep_time = std::time::Duration::from_secs((self.convert_content_length_to_mb(content_length).div(10.0) as u64).max(MAX_WAIT_TIME));
+            }
 
             if cf_cache_status.is_hit() {
                 break;

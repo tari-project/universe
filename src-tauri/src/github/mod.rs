@@ -15,7 +15,7 @@ use crate::{
 const LOG_TARGET: &str = "tari::universe::github";
 
 #[derive(Deserialize)]
-struct Release {
+pub struct Release {
     name: String,
     tag_name: String,
     draft: bool,
