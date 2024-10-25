@@ -31,6 +31,7 @@ export interface AppConfig {
     auto_update: boolean;
     custom_max_cpu_usage: number;
     custom_max_gpu_usage: number;
+    custom_power_levels_enabled: boolean;
 }
 
 export enum ExternalDependencyStatus {

@@ -169,6 +169,7 @@ async fn set_mode(
     fn f64_to_isize_safe(_value: Option<f64>) -> Option<isize> {
         let value = _value.unwrap_or(-1.0);
         if value.is_finite() && value >= isize::MIN as f64 && value <= isize::MAX as f64 {
+            #[allow(clippy::cast_possible_truncation)]
             Some(value.round() as isize)
         } else {
             warn!(target: LOG_TARGET, "Invalid value for custom_cpu_usage or custom_gpu_usage: {:?}", _value);
