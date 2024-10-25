@@ -1,17 +1,15 @@
 export function formatHashrate(hashrate: number, joinUnit = true): string {
-    let formattedHashrate = '';
     if (hashrate < 1000) {
-        formattedHashrate = hashrate.toFixed(2);
+        return joinUnit ? hashrate + ' H/s' : hashrate.toFixed(2);
     } else if (hashrate < 1000000) {
-        formattedHashrate = (hashrate / 1000).toFixed(2) + ' k';
+        return (hashrate / 1000).toFixed(2) + (joinUnit ? ' kH/s' : 'k');
     } else if (hashrate < 1000000000) {
-        formattedHashrate = (hashrate / 1000000).toFixed(2) + ' M';
+        return (hashrate / 1000000).toFixed(2) + (joinUnit ? ' MH/s' : 'm');
     } else if (hashrate < 1000000000000) {
-        formattedHashrate = (hashrate / 1000000000).toFixed(2) + ' G';
+        return (hashrate / 1000000000).toFixed(2) + (joinUnit ? ' GH/s' : 'G');
     } else if (hashrate < 1000000000000000) {
-        formattedHashrate = (hashrate / 1000000000000).toFixed(2) + ' T';
+        return (hashrate / 1000000000000).toFixed(2) + (joinUnit ? ' TH/s' : 'T');
     } else {
-        formattedHashrate = (hashrate / 1000000000000000).toFixed(2) + ' P';
+        return (hashrate / 1000000000000000).toFixed(2) + (joinUnit ? ' PH/s' : 'P');
     }
-    return joinUnit ? formattedHashrate + 'H/s' : formattedHashrate;
 }
