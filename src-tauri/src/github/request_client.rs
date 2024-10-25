@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::{ops::Div, sync::LazyLock};
 
 use anyhow::anyhow;
 use log::warn;
@@ -69,7 +69,7 @@ impl CloudFlareCacheStatus {
         matches!(self, Self::Unknown) || matches!(self, Self::NonExistent) || matches!(self, Self::Dynamic) || matches!(self, Self::Bypass)
     }
 
-    pub fn log_warning(&self) {
+    pub fn log_warning_if_present(&self) {
         if self.should_log_warning() {
             warn!(target: LOG_TARGET, "Cloudflare cache status: {}", self.to_str());
         }
@@ -120,6 +120,13 @@ impl RequestClient {
             .to_string()
     }
 
+    pub fn get_content_length_from_head_response(&self, response: &Response) -> u64 {
+        response
+            .headers()
+            .get("content-length")
+            .map_or(0, |v| v.to_str().unwrap_or_default().parse().unwrap_or(0))
+    }
+
     pub fn get_cf_cache_status_from_head_response(&self, response: &Response) -> CloudFlareCacheStatus {
         let cache_status = CloudFlareCacheStatus::from_str(
             response
@@ -128,7 +135,7 @@ impl RequestClient {
                 .map_or("", |v| v.to_str().unwrap_or_default()),
         );
 
-        cache_status.log_warning();
+        cache_status.log_warning_if_present();
         cache_status
     }
 
@@ -171,6 +178,7 @@ impl RequestClient {
 
     pub async fn check_if_cache_hits(&self, url: &str) -> Result<bool, anyhow::Error> {
         const MAX_RETRIES: u8 = 5;
+        const MAX_WAIT_TIME: u64 = 30;
         let mut retries = 0;
 
         loop {
@@ -178,18 +186,32 @@ impl RequestClient {
                 return Ok(false);
             }
 
-            let head_response = self.fetch_head_cf_cache_status(&url).await?;
-            head_response.log_warning();
-            if head_response.is_hit() {
+            let head_response = self.send_head_request(&url).await?;
+
+            let cf_cache_status = self.get_cf_cache_status_from_head_response(&head_response);
+            cf_cache_status.log_warning_if_present();
+
+            let content_length = self.get_content_length_from_head_response(&head_response);
+            
+            let sleep_time = std::time::Duration::from_secs((self.convert_content_length_to_mb(content_length).div(10.0) as u64).max(MAX_WAIT_TIME));
+
+            
+
+            if cf_cache_status.is_hit() {
                 break;
             }
 
-            warn!(target: LOG_TARGET, "Cache miss. Retrying in 3 seconds. Try {}/{}", retries, MAX_RETRIES);
             retries += 1;
-            tokio::time::sleep(std::time::Duration::from_secs(3)).await;
+            warn!(target: LOG_TARGET, "Cache miss. Retrying in {} seconds. Try {}/{}", sleep_time.as_secs().to_string() ,retries, MAX_RETRIES);
+            tokio::time::sleep(sleep_time).await;
         }
 
         Ok(true)
+    }
+
+    
+    fn convert_content_length_to_mb(&self, content_length: u64) -> f64 {
+        (content_length as f64) / 1024.0 / 1024.0
     }
 
     pub fn current() -> &'static LazyLock<RequestClient> {
