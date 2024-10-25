@@ -1,22 +1,30 @@
 import styled from 'styled-components';
-import { ButtonBase } from '@app/components/elements/buttons/ButtonBase.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const Container = styled.div`
-    padding: 30px;
+    padding: 32px 15px;
     display: flex;
     background: ${({ theme }) => theme.palette.background.default};
     flex-direction: column;
-    align-items: center;
+    justify-content: space-between;
     height: 100%;
-    width: 250px;
-    gap: 10px;
+    width: 230px;
 
-    @media (max-width: 1110px) {
-        width: 220px;
+    @media (max-width: 1200px) {
+        width: 200px;
     }
 `;
 
-export const SectionButton = styled(ButtonBase)`
+export const ButtonContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    width: 100%;
+    gap: 10px;
+`;
+
+export const SectionButton = styled(Button)`
     display: flex;
     text-transform: capitalize;
+    cursor: pointer;
 `;

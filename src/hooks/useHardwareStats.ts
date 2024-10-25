@@ -26,12 +26,12 @@ export const useHardwareStats = () => {
 
     const gpu = useMemo(() => {
         if (gpuHardwareStats) {
-            return {
-                label: gpuHardwareStats.label,
-                usage_percentage: roundTo(gpuHardwareStats.usage_percentage),
-                current_temperature: roundTo(gpuHardwareStats.current_temperature),
-                max_temperature: roundTo(gpuHardwareStats.max_temperature),
-            } as HardwareParameters;
+            return gpuHardwareStats.map((stats) => ({
+                label: stats.label,
+                usage_percentage: roundTo(stats.usage_percentage),
+                current_temperature: roundTo(stats.current_temperature),
+                max_temperature: roundTo(stats.max_temperature),
+            })) as HardwareParameters[];
         }
         return undefined;
     }, [gpuHardwareStats]);

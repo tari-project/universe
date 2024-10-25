@@ -1,4 +1,5 @@
-import { BlockTimeContainer, SpacedNum, TimerTypography, TimerWrapper, TitleTypography } from './BlockTime.styles';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { BlockTimeContainer, SpacedNum, TimerTypography, TitleTypography } from './BlockTime.styles';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +9,7 @@ function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
-    const blockTime = useMiningStore(useShallow((s) => s.displayBlockTime));
+    const blockTime = useBlockchainVisualisationStore(useShallow((s) => s.displayBlockTime));
     const isConnectedToTari = useMiningStore((s) => s.base_node?.is_connected);
     const isMining = isCPUMining || isGPUMining;
 
@@ -23,14 +24,12 @@ function BlockTime() {
 
     return blockTime && isMining && isConnectedToTari ? (
         <BlockTimeContainer layout layoutId="block-time">
-            <TimerWrapper>
-                <TimerTypography>
-                    {daysMarkup}
-                    {hourMarkup}
-                    {minutes?.split('').map((c, i) => <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>)}:
-                    {seconds?.split('').map((c, i) => <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>)}
-                </TimerTypography>
-            </TimerWrapper>
+            <TimerTypography>
+                {daysMarkup}
+                {hourMarkup}
+                {minutes?.split('').map((c, i) => <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>)}:
+                {seconds?.split('').map((c, i) => <SpacedNum key={`sec-${i}-${c}`}>{c}</SpacedNum>)}
+            </TimerTypography>
             <TitleTypography>{t('current-block-time')}</TitleTypography>
         </BlockTimeContainer>
     ) : null;

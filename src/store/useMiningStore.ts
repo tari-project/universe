@@ -1,50 +1,44 @@
 import { MinerMetrics } from '@app/types/app-status';
 import { create } from './create';
 
-import { BlockTimeData } from '@app/types/mining.ts';
 import { invoke } from '@tauri-apps/api';
 import { useAppStateStore } from './appStateStore';
 import { useAppConfigStore } from './useAppConfigStore';
 import { modeType } from './types';
-import { setAnimationState } from '@app/visuals';
+
+import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
+import * as Sentry from '@sentry/react';
 
 interface State extends MinerMetrics {
-    displayBlockTime?: BlockTimeData;
-    earnings?: number;
-    postBlockAnimation?: boolean;
-    timerPaused?: boolean;
-    displayBlockHeight?: number;
     hashrateReady?: boolean;
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
+    excludedGpuDevices: number[];
+    counter: number;
 }
 
 interface Actions {
-    fetchMiningMetrics: () => Promise<void>;
+    setMiningMetrics: (metrics: MinerMetrics, isNewBlock?: boolean) => void;
     startMining: () => Promise<void>;
     stopMining: () => Promise<void>;
     pauseMining: () => Promise<void>;
     changeMiningMode: (mode: modeType) => Promise<void>;
-    handleBlockMined: () => void;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
-    setPostBlockAnimation: (postBlockAnimation: boolean) => void;
-    setEarnings: (earnings?: number) => void;
-    setTimerPaused: (timerPaused: boolean) => void;
-    setDisplayBlockHeight: (displayBlockHeight: number) => void;
-    setDisplayBlockTime: (displayBlockHeight: BlockTimeData) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
+    setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
 }
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
-    displayBlockHeight: undefined,
-    timerPaused: false,
-    postBlockAnimation: false,
+    sha_network_hash_rate: 0,
+    randomx_network_hash_rate: 0,
+    counter: 0,
     hashrateReady: false,
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
+    excludedGpuDevices: [],
     cpu: {
         hardware: undefined,
         mining: {
@@ -55,12 +49,12 @@ const initialState: State = {
         },
     },
     gpu: {
-        hardware: undefined,
+        hardware: [],
         mining: {
             is_mining: false,
             hash_rate: 0,
             estimated_earnings: 0,
-            is_available: false,
+            is_available: true,
         },
     },
     base_node: {
@@ -74,37 +68,20 @@ const initialState: State = {
 
 export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     ...initialState,
-    fetchMiningMetrics: async () => {
-        try {
-            const metrics = await invoke('get_miner_metrics');
-            const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
-            // Pause animation when lost connection to the Tari Network
-            if (isMining && !metrics.base_node?.is_connected && getState().base_node?.is_connected) {
-                setAnimationState('pause');
-            } else if (isMining && metrics.base_node?.is_connected && !getState().base_node?.is_connected) {
-                setAnimationState('resume');
-            }
-
-            set(metrics);
-        } catch (e) {
-            console.error(e);
-        }
-    },
-    handleBlockMined: () => {
-        set({
-            postBlockAnimation: true,
-            timerPaused: false,
-            earnings: undefined,
-        });
-    },
+    setMiningMetrics: (metrics) => set({ ...metrics }),
     startMining: async () => {
         console.info('Mining starting....');
         set({ miningInitiated: true });
+        useBlockchainVisualisationStore
+            .getState()
+            .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
         try {
             await invoke('start_mining', {});
+            console.info('Mining started.');
         } catch (e) {
+            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to start mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: false });
         }
@@ -114,9 +91,11 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         set({ miningInitiated: false });
         try {
             await invoke('stop_mining', {});
+            console.info('Mining stopped.');
         } catch (e) {
+            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to stop mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: true });
         }
@@ -125,9 +104,11 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         console.info('Mining pausing...');
         try {
             await invoke('stop_mining', {});
+            console.info('Mining paused.');
         } catch (e) {
+            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
-            console.error(e);
+            console.error('Failed to pause (stop) mining: ', e);
             appStateStore.setError(e as string);
             set({ miningInitiated: true });
         }
@@ -146,16 +127,27 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             if (state.miningInitiated) {
                 await state.startMining();
             }
+
+            console.info(`Mode changed to ${mode}`);
+            set({ isChangingMode: false });
         } catch (e) {
-            console.error(e);
+            Sentry.captureException(e);
+            console.error('Failed to change mode: ', e);
             set({ isChangingMode: false });
         }
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
-    setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
-    setEarnings: (earnings) => set({ earnings }),
-    setTimerPaused: (timerPaused) => set({ timerPaused }),
-    setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
-    setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
+    setExcludedGpuDevice: async (excludedGpuDevices) => {
+        set({ excludedGpuDevices });
+        try {
+            await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
+        } catch (e) {
+            Sentry.captureException(e);
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set excluded gpu device: ', e);
+            appStateStore.setError(e as string);
+            set({ excludedGpuDevices: undefined });
+        }
+    },
 }));

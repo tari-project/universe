@@ -1,11 +1,9 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::anyhow;
 use log::warn;
-use tari_core::proof_of_work::PowAlgorithm;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -13,7 +11,6 @@ use tokio::time::sleep;
 use crate::network_utils;
 use crate::p2pool::models::Stats;
 use crate::p2pool_adapter::P2poolAdapter;
-use crate::process_adapter::StatusMonitor;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
@@ -93,32 +90,21 @@ impl P2poolManager {
         }
     }
 
-    fn default_stats(&self) -> HashMap<String, Stats> {
-        let mut p2pool_stats = HashMap::with_capacity(2);
-        p2pool_stats.insert(
-            PowAlgorithm::Sha3x.to_string().to_lowercase(),
-            Stats::default(),
-        );
-        p2pool_stats.insert(
-            PowAlgorithm::RandomX.to_string().to_lowercase(),
-            Stats::default(),
-        );
-        p2pool_stats
-    }
-
-    pub async fn stats(&self) -> HashMap<String, Stats> {
-        match self.get_stats().await {
-            Ok(stats) => stats,
-            Err(_) => self.default_stats(),
-        }
-    }
-
-    async fn get_stats(&self) -> Result<HashMap<String, Stats>, anyhow::Error> {
+    pub async fn get_stats(&self) -> Result<Option<Stats>, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
-            return status_monitor.status().await;
+            Ok(Some(status_monitor.status().await?))
+        } else {
+            Ok(None)
         }
-        Err(anyhow!("Failed to get stats"))
+    }
+
+    pub async fn is_running(&self) -> Result<bool, anyhow::Error> {
+        let process_watcher = self.watcher.read().await;
+        if process_watcher.is_running() {
+            return Ok(true);
+        }
+        Ok(false)
     }
 
     pub async fn ensure_started(
@@ -134,8 +120,16 @@ impl P2poolManager {
             return Ok(());
         }
         process_watcher.adapter.config = Some(config);
+        process_watcher.health_timeout = Duration::from_secs(28);
+        process_watcher.poll_time = Duration::from_secs(30);
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(
+                app_shutdown,
+                base_path,
+                config_path,
+                log_path,
+                crate::binaries::Binaries::ShaP2pool,
+            )
             .await?;
         process_watcher.wait_ready().await?;
         if let Some(status_monitor) = &process_watcher.status_monitor {
@@ -143,6 +137,8 @@ impl P2poolManager {
                 sleep(Duration::from_secs(5)).await;
                 if let Ok(_stats) = status_monitor.status().await {
                     break;
+                } else {
+                    warn!(target: LOG_TARGET, "P2pool stats not available yet");
                 }
             } // wait until we have stats from p2pool, so its started
         }

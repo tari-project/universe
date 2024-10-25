@@ -1,3 +1,4 @@
+use human_format::Formatter;
 use log::{error, info};
 use std::sync::LazyLock;
 use tauri::{
@@ -5,7 +6,6 @@ use tauri::{
     SystemTrayMenuItem,
 };
 
-use crate::format_utils::format_balance;
 use crate::hardware_monitor::HardwareStatus;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
@@ -34,12 +34,30 @@ impl SystrayItemId {
 
     pub fn get_title(&self, value: f64) -> String {
         match self {
-            SystrayItemId::CpuHashrate => format!("CPU Hashrate: {:.2} H/s", value),
-            SystrayItemId::GpuHashrate => format!("GPU Hashrate: {:.2} H/s", value),
+            SystrayItemId::CpuHashrate => format!(
+                "CPU Hashrate: {} H/s",
+                Formatter::new()
+                    .with_decimals(2)
+                    .with_separator("")
+                    .format(value)
+            ),
+            SystrayItemId::GpuHashrate => format!(
+                "GPU Hashrate: {} H/s",
+                Formatter::new()
+                    .with_decimals(2)
+                    .with_separator("")
+                    .format(value)
+            ),
             SystrayItemId::CpuUsage => format!("CPU Usage: {:.2}%", value),
             SystrayItemId::GpuUsage => format!("GPU Usage: {:.2}%", value),
             SystrayItemId::EstimatedEarning => {
-                format!("Est earning: {} tXTM/day", format_balance(value))
+                format!(
+                    "Est earning: {} tXTM/day",
+                    Formatter::new()
+                        .with_decimals(2)
+                        .with_separator("")
+                        .format(value / 1_000_000.0)
+                )
             }
             SystrayItemId::UnMinimize => "Unminimize".to_string(),
         }
@@ -132,7 +150,7 @@ impl SystemtrayManager {
 
         match current_os {
             CurrentOperatingSystem::Windows => {
-                return systray.with_tooltip(tooltip.clone().as_str())
+                return systray.with_tooltip(tooltip.clone().as_str());
             }
             CurrentOperatingSystem::Linux => systray.with_menu(tray_menu),
             CurrentOperatingSystem::MacOS => {
@@ -149,19 +167,23 @@ impl SystemtrayManager {
         match current_os {
             CurrentOperatingSystem::Windows => {
                 format!(
-                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEst. earning: {} tXTM/day",
-                    data.cpu_hashrate,
+                    "Hashrate | Usage\nCPU: {} H/s | {:.0}%\nGPU: {} H/s | {:.0}%\nEst. earning: {} tXTM/day",
+                    Formatter::new().with_decimals(2).with_separator("").format(data.cpu_hashrate),
                     data.cpu_usage,
-                    data.gpu_hashrate,
+                    Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
                     data.gpu_usage,
-                    format_balance(data.estimated_earning)
+                    Formatter::new().with_decimals(2).with_separator("").format(data.estimated_earning / 1_000_000.0)
                 )
             }
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             CurrentOperatingSystem::MacOS => {
                 format!(
-                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
-                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, format_balance(data.estimated_earning)
+                    "CPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
+                    Formatter::new().with_decimals(0).with_separator("").format(data.cpu_hashrate),
+                    data.cpu_usage,
+                    Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
+                    data.gpu_usage,
+                    Formatter::new().with_decimals(2).with_separator("").format(data.estimated_earning / 1_000_000.0)
                 )
             }
         }
@@ -186,10 +208,19 @@ impl SystemtrayManager {
             SystrayItemId::EstimatedEarning,
             data.estimated_earning,
         );
+        self.update_minimize(app.clone());
     }
 
     pub fn create_tooltip_from_data(&self, data: SystrayData) -> String {
         SystemtrayManager::internal_create_tooltip_from_data(data)
+    }
+
+    pub fn update_minimize(&self, app: AppHandle) {
+        let window = app.get_window("main").expect("Could not get window");
+        let _unused = app
+            .tray_handle()
+            .get_item(SystrayItemId::UnMinimize.to_str())
+            .set_enabled(window.is_minimized().expect("Could not get is_minimized"));
     }
 
     fn detect_current_os() -> CurrentOperatingSystem {
@@ -232,11 +263,21 @@ impl SystemtrayManager {
     }
 
     pub fn handle_system_tray_event(&self, app: AppHandle, event: SystemTrayEvent) {
-        let window = app.get_window("main").unwrap();
+        let window = match app.get_window("main") {
+            Some(window) => window,
+            None => {
+                error!(target: LOG_TARGET, "Failed to get main window");
+                return;
+            }
+        };
         match event {
             SystemTrayEvent::DoubleClick { .. } => {
-                window.unminimize().unwrap();
-                window.set_focus().unwrap();
+                window.unminimize().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                });
+                window.set_focus().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                });
             }
             SystemTrayEvent::MenuItemClick { id, .. } => {
                 info!(target: LOG_TARGET, "System tray menu item click event: {}", id);
@@ -245,18 +286,33 @@ impl SystemtrayManager {
                         info!(target: LOG_TARGET, "Unminimizing window");
                         match SystemtrayManager::detect_current_os() {
                             CurrentOperatingSystem::Linux => {
-                                if window.is_minimized().unwrap() | !window.is_visible().unwrap() {
+                                let is_minimized = window.is_minimized().unwrap_or(false);
+                                let is_visible = window.is_visible().unwrap_or(false);
+
+                                if is_minimized | !is_visible {
                                     // Ony soultion to unminimize and show the window on Linux
                                     // At least one that I found
-                                    window.hide().unwrap();
-                                    window.unminimize().unwrap();
-                                    window.show().unwrap();
-                                    window.set_focus().unwrap();
+                                    window.hide().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed hide window: {}", error);
+                                    });
+                                    window.unminimize().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                                    });
+                                    window.show().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed to show window: {}", error);
+                                    });
+                                    window.set_focus().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                                    });
                                 }
                             }
                             CurrentOperatingSystem::MacOS => {
-                                window.unminimize().unwrap();
-                                window.set_focus().unwrap();
+                                window.unminimize().unwrap_or_else(|error| {
+                                    error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                                });
+                                window.set_focus().unwrap_or_else(|error| {
+                                    error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                                });
                             }
                             _ => {}
                         }
@@ -283,7 +339,11 @@ impl SystemtrayManager {
             cpu_hashrate,
             gpu_hashrate,
             cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
-            gpu_usage: f64::from(hardware_status.gpu.unwrap_or_default().usage_percentage),
+            gpu_usage: hardware_status
+                .gpu
+                .iter()
+                .map(|hp| f64::from(hp.usage_percentage))
+                .sum::<f64>(),
             estimated_earning,
         }
     }

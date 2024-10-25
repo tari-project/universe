@@ -34,13 +34,29 @@ export const SettingsGroup = styled.div`
     justify-content: space-between;
     align-items: center;
     font-size: 12px;
+    gap: 6px;
     position: relative;
     color: ${({ theme }) => theme.palette.text.secondary};
+
+    ol,
+    ul {
+        max-width: 100%;
+        padding-inline-start: 30px;
+        line-height: 1.3;
+
+        li {
+            word-wrap: anywhere;
+            &::marker {
+                font-weight: 500;
+            }
+        }
+    }
 `;
 
 export const SettingsGroupTitle = styled.div`
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};
+    justify-content: space-between;
 `;
 export const SettingsGroupContent = styled.div`
     display: flex;
@@ -51,15 +67,5 @@ export const SettingsGroupContent = styled.div`
 export const SettingsGroupAction = styled.div`
     display: flex;
     font-size: 12px;
-`;
-
-export const SettingsGroupTextAction = styled.div`
-    display: flex;
-    font-size: 12px;
-    font-weight: 500;
-    color: ${({ theme }) => theme.palette.text.secondary};
-    cursor: pointer;
-    &:hover {
-        text-decoration: underline;
-    }
+    gap: 6px;
 `;

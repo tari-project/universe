@@ -1,15 +1,13 @@
 import { LayoutGroup, LazyMotion, domMax, MotionConfig } from 'framer-motion';
-import { BackgroundImage, DashboardContainer } from './theme/styles';
+import { DashboardContainer } from './theme/styles';
 import { SideBar } from './containers/SideBar';
 import { Dashboard } from './containers/Dashboard';
 
 import { useUIStore } from './store/useUIStore.ts';
-import { useSetUp } from './hooks/useSetUp.ts';
-import { useEnvironment } from './hooks/useEnvironment.ts';
+
 import { SplashScreen } from './containers/SplashScreen';
 import ThemeProvider from './theme/ThemeProvider.tsx';
 import { GlobalReset, GlobalStyle } from '@app/theme/GlobalStyle.ts';
-import AirdropLogin from './containers/Airdrop/AirdropLogin/AirdropLogin.tsx';
 import ErrorSnackbar from '@app/containers/Error/ErrorSnackbar.tsx';
 import { useShuttingDown } from './hooks/useShuttingDown.ts';
 import ShuttingDownScreen from './containers/ShuttingDownScreen/ShuttingDownScreen.tsx';
@@ -18,12 +16,13 @@ import AutoUpdateDialog from './containers/AutoUpdateDialog/AutoUpdateDialog.tsx
 import { useMemo } from 'react';
 import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorDialog.tsx';
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
-import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
+import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
+import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
+import StagedSecurity from './containers/StagedSecurity/StagedSecurity.tsx';
+import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
+import { FloatingTree } from '@floating-ui/react';
 
 export default function App() {
-    useLangaugeResolver();
-    useSetUp();
-
     const isShuttingDown = useShuttingDown();
     const showSplash = useUIStore((s) => s.showSplash);
     const view = useUIStore((s) => s.view);
@@ -35,7 +34,7 @@ export default function App() {
     const mainMarkup = useMemo(() => {
         if (!isShuttingDown && !showSplash) {
             return (
-                <DashboardContainer>
+                <DashboardContainer $view={view} $visualModeOff={!visualMode}>
                     <SideBar />
                     <Dashboard status={view} />
                 </DashboardContainer>
@@ -43,11 +42,12 @@ export default function App() {
         } else {
             return null;
         }
-    }, [isShuttingDown, showSplash, view]);
+    }, [isShuttingDown, showSplash, view, visualMode]);
 
     return (
         <ThemeProvider>
             <GlobalReset />
+            <GlobalFontFace />
             <GlobalStyle />
             <LazyMotion features={domMax} strict>
                 {/*
@@ -56,19 +56,22 @@ export default function App() {
                  * strict prop for using `m` instead of `motion`- see https://www.framer.com/motion/guide-reduce-bundle-size/#how-to-reduce-the-size-of-the-motion-component
                  */}
                 <MotionConfig reducedMotion="user">
-                    <AutoUpdateDialog />
-                    <CriticalErrorDialog />
-                    <SettingsModal />
-                    <LayoutGroup id="app-content">
-                        <AirdropLogin />
-                        <SplashScreen />
-                        {shutDownMarkup}
-                        {!visualMode || view != 'mining' ? (
-                            <BackgroundImage layout transition={{ duration: 0.3 }} />
-                        ) : null}
-                        {mainMarkup}
+                    <FloatingTree>
+                        {/*dialogs*/}
+                        <SettingsModal />
+                        <StagedSecurity />
+                        <AutoUpdateDialog />
+                        <CriticalErrorDialog />
+                        <ExternalDependenciesDialog />
+                        <PaperWalletModal />
                         <ErrorSnackbar />
-                    </LayoutGroup>
+                        {/*dialogs end*/}
+                        <LayoutGroup id="app-content">
+                            {shutDownMarkup}
+                            {mainMarkup}
+                            <SplashScreen />
+                        </LayoutGroup>
+                    </FloatingTree>
                 </MotionConfig>
             </LazyMotion>
         </ThemeProvider>

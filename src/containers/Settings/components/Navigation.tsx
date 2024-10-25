@@ -1,31 +1,36 @@
-import { Container, SectionButton } from './Navigation.styles.ts';
-
-import { SETTINGS_TYPES, SettingsType } from '@app/containers/Settings/SettingsModal.tsx';
+import { ButtonContainer, Container, SectionButton } from './Navigation.styles.ts';
+import { SETTINGS_TYPES, SettingsType } from '../types.ts';
+import { useTranslation } from 'react-i18next';
 
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
 }
 export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
+    const { t } = useTranslation('settings', { useSuspense: false });
     function handleClick(section: SettingsType) {
         onChangeActiveSection(section);
     }
+
     return (
         <Container>
-            {SETTINGS_TYPES.map((type) => {
-                const isActive = activeSection === type;
-                return (
-                    <SectionButton
-                        key={type}
-                        size="large"
-                        color="secondary"
-                        variant={isActive ? 'secondary' : 'primary'}
-                        onClick={() => handleClick(type)}
-                    >
-                        {type}
-                    </SectionButton>
-                );
-            })}
+            <ButtonContainer>
+                {SETTINGS_TYPES.map((type: SettingsType) => {
+                    const isActiveSection = activeSection === type;
+                    const name = t(`tabs.${type}`);
+                    return (
+                        <SectionButton
+                            key={type}
+                            size="small"
+                            onClick={() => handleClick(type)}
+                            variant={isActiveSection ? 'secondary' : 'primary'}
+                            color="transparent"
+                        >
+                            {name}
+                        </SectionButton>
+                    );
+                })}
+            </ButtonContainer>
         </Container>
     );
 }
