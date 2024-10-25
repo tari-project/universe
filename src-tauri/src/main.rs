@@ -59,7 +59,6 @@ mod cpu_miner;
 mod download_utils;
 mod external_dependencies;
 mod feedback;
-mod format_utils;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
@@ -1613,7 +1612,7 @@ async fn get_miner_metrics(
         cpu_mining_status.hash_rate,
         gpu_mining_status.hash_rate as f64,
         hardware_status.clone(),
-        cpu_mining_status.estimated_earnings as f64,
+        (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
     );
 
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
