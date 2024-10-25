@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 
-
 const LOG_TARGET: &str = "tari::universe::github";
 
 #[derive(Deserialize)]
@@ -189,7 +188,7 @@ async fn list_github_releases(
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let url = get_gh_url(repo_owner, repo_name);
-        info!(target: LOG_TARGET, "Github releases url: {}", url);
+    info!(target: LOG_TARGET, "Github releases url: {}", url);
 
     let (need_to_download, cache_entry_present, _) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Github).await?;

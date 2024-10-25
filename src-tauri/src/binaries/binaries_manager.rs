@@ -5,7 +5,7 @@ use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 
 use crate::{
-    download_utils::{download_file, download_file_with_retries, extract, validate_checksum},
+    download_utils::{download_file_with_retries, extract, validate_checksum},
     github::request_client::RequestClient,
     progress_tracker::ProgressTracker,
 };

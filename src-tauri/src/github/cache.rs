@@ -40,7 +40,9 @@ impl CacheJsonFile {
     }
 
     fn initialize_paths() -> (PathBuf, PathBuf) {
-        let base_path = PathBuf::from(APPLICATION_FOLDER_ID).join("cache").join("binaries_versions");
+        let base_path = PathBuf::from(APPLICATION_FOLDER_ID)
+            .join("cache")
+            .join("binaries_versions");
         let cache_file_path = base_path.join("versions_releases_responses.json");
         (cache_file_path, base_path)
     }
@@ -129,7 +131,7 @@ impl CacheJsonFile {
                     .versions_cache_folder_path
                     .join(format!("{}-{}.json", repo_owner, repo_name)),
             };
-            self.cache_entries.insert(identifier,cache_entry);
+            self.cache_entries.insert(identifier, cache_entry);
             self.save_version_releases_responses_cache_file()?;
         };
 
@@ -144,7 +146,11 @@ impl CacheJsonFile {
     fn get_file_content_path(&self, repo_owner: &str, repo_name: &str) -> Result<PathBuf, Error> {
         let cache_path = cache_dir().ok_or_else(|| anyhow!("Failed to get file content path"))?;
         let cache_entry = self.get_cache_entry(repo_owner, repo_name).ok_or_else(|| {
-            anyhow!("File content not found for repo_owner: {}, repo_name: {}", repo_owner, repo_name)
+            anyhow!(
+                "File content not found for repo_owner: {}, repo_name: {}",
+                repo_owner,
+                repo_name
+            )
         })?;
         Ok(cache_path.join(cache_entry.file_path.clone()))
     }
@@ -167,7 +173,7 @@ impl CacheJsonFile {
 
         let json = serde_json::to_string_pretty(&content)?;
         std::fs::write(&file_path, json)?;
-        
+
         info!(target: LOG_TARGET, "File content saved successfully");
         Ok(())
     }
