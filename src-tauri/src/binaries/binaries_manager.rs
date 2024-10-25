@@ -141,6 +141,31 @@ impl BinaryManager {
         Ok(in_progress_folder)
     }
 
+    fn delete_in_progress_folder_for_selected_version(
+        &self,
+        selected_version: Version,
+    ) -> Result<(), Error> {
+        info!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", selected_version);
+
+        let binary_folder = self.adapter.get_binary_folder().map_err(|error| {
+            error!(target: LOG_TARGET, "Error getting binary folder. Error: {:?}", error);
+            anyhow!("Error getting binary folder: {:?}", error)
+        })?;
+
+        let in_progress_folder = binary_folder
+            .join(selected_version.to_string())
+            .join("in_progress");
+
+        if in_progress_folder.exists() {
+            info!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
+            if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
+                error!(target: LOG_TARGET, "Error removing in progress folder: {:?}. Error: {:?}", in_progress_folder, error);
+            }
+        }
+
+        Ok(())
+    }
+
     fn get_asset_for_selected_version(
         &self,
         selected_version: Version,
@@ -426,6 +451,7 @@ impl BinaryManager {
             .await?;
         }
 
+        self.delete_in_progress_folder_for_selected_version(version.clone())?;
         Ok(())
     }
 
