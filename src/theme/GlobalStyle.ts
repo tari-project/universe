@@ -91,7 +91,6 @@ export const GlobalStyle = createGlobalStyle`
 
     #root {
         pointer-events: none;
-        
     }
 
 `;
