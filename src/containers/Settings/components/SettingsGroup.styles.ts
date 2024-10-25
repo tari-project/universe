@@ -37,6 +37,15 @@ export const SettingsGroup = styled.div`
     gap: 6px;
     position: relative;
     color: ${({ theme }) => theme.palette.text.secondary};
+
+    ol,
+    ul {
+        padding-inline-start: 30px;
+        line-height: 1.2;
+        li::marker {
+            font-weight: 500;
+        }
+    }
 `;
 
 export const SettingsGroupTitle = styled.div`

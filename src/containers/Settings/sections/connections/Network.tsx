@@ -17,29 +17,31 @@ export default function Network() {
     const randomx_network_hash_rate = useMiningStore((state) => state?.randomx_network_hash_rate);
     return (
         <SettingsGroupWrapper>
-            <SettingsGroupContent>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{t('network')}</Typography>
-                    <ConnectionStatus />
-                </SettingsGroupTitle>
-                <br />
-                <SettingsGroup>
-                    <Stack direction="column" alignItems="flex-start">
-                        <Stack direction="row">
-                            <Typography variant="p">{t('sha-network-hash-rate')}</Typography>
-                            <Typography>
-                                <b>{formatHashrate(sha_network_hash_rate || 0)}</b>
-                            </Typography>
+            <SettingsGroup>
+                <SettingsGroupContent>
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">{t('network')}</Typography>
+                        <ConnectionStatus />
+                    </SettingsGroupTitle>
+                    <SettingsGroupContent>
+                        <Stack direction="column" alignItems="flex-start">
+                            <span />
+                            <Stack direction="row">
+                                <Typography>{t('sha-network-hash-rate')}</Typography>
+                                <Typography>
+                                    <b>{formatHashrate(sha_network_hash_rate || 0)}</b>
+                                </Typography>
+                            </Stack>
+                            <Stack direction="row">
+                                <Typography>{t('randomx-network-hash-rate')}</Typography>
+                                <Typography>
+                                    <b>{formatHashrate(randomx_network_hash_rate || 0)}</b>
+                                </Typography>
+                            </Stack>
                         </Stack>
-                        <Stack direction="row">
-                            <Typography variant="p">{t('randomx-network-hash-rate')}</Typography>
-                            <Typography>
-                                <b>{formatHashrate(randomx_network_hash_rate || 0)}</b>
-                            </Typography>
-                        </Stack>
-                    </Stack>
-                </SettingsGroup>
-            </SettingsGroupContent>
+                    </SettingsGroupContent>
+                </SettingsGroupContent>
+            </SettingsGroup>
         </SettingsGroupWrapper>
     );
 }

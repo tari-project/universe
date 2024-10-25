@@ -14,11 +14,7 @@ export default function Peers() {
     const connectedPeers = useMiningStore((state) => state.base_node?.connected_peers || []);
 
     const listMarkup = connectedPeers?.length
-        ? connectedPeers.map((peer, i) => (
-              <Typography key={`peer-${peer}:${i}`}>
-                  {i + 1}. {peer}
-              </Typography>
-          ))
+        ? connectedPeers.map((peer, i) => <li key={`peer-${peer}:${i}`}>{peer}</li>)
         : null;
     return (
         <SettingsGroupWrapper>
@@ -28,8 +24,8 @@ export default function Peers() {
                         <Typography variant="h6">{t('connected-peers')}</Typography>
                     </SettingsGroupTitle>
 
-                    <Stack style={{ padding: 10, fontSize: '11px', maxHeight: 200, overflowY: 'auto' }}>
-                        {listMarkup}
+                    <Stack style={{ fontSize: '12px' }}>
+                        <ol>{listMarkup}</ol>
                     </Stack>
                 </SettingsGroupContent>
             </SettingsGroup>
