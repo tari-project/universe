@@ -26,14 +26,14 @@ static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionDownloadInfo {
     pub(crate) version: Version,
-    pub(crate) assets: Vec<VersionAsset>
+    pub(crate) assets: Vec<VersionAsset>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionAsset {
     pub(crate) url: String,
     pub(crate) name: String,
-    pub(crate) source: ReleaseSource
+    pub(crate) source: ReleaseSource,
 }
 
 #[async_trait]

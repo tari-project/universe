@@ -2,6 +2,8 @@ use crate::binaries::binaries_resolver::{
     LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo,
 };
 use crate::download_utils::download_file_with_retries;
+use crate::github::request_client::RequestClient;
+use crate::github::ReleaseSource;
 use crate::progress_tracker::ProgressTracker;
 use crate::APPLICATION_FOLDER_ID;
 use anyhow::Error;
@@ -22,20 +24,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             "https://cdn-universe.tari.com/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz",
             platform
         );
-        let mut cdn_responded = false;
 
-        let client = reqwest::Client::new();
-        for _ in 0..3 {
-            let cloned_cdn_tor_bundle_url = cdn_tor_bundle_url.clone();
-            let response = client.head(cloned_cdn_tor_bundle_url).send().await;
-
-            if let Ok(resp) = response {
-                if resp.status().is_success() {
-                    cdn_responded = true;
-                    break;
-                }
-            }
-        }
+        let cdn_responded = RequestClient::current()
+            .check_if_cache_hits(cdn_tor_bundle_url.as_str())
+            .await?;
 
         if cdn_responded {
             let version = VersionDownloadInfo {
@@ -43,6 +35,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
                 assets: vec![VersionAsset {
                     url: cdn_tor_bundle_url.to_string(),
                     name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
+                    source: ReleaseSource::Github,
                 }],
             };
             return Ok(vec![version]);
@@ -54,6 +47,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             assets: vec![VersionAsset {
                 url: format!("https://dist.torproject.org/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz", platform),
                 name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
+                source: ReleaseSource::Github
             }]
         };
         Ok(vec![version])

@@ -8,7 +8,9 @@ use tari_common::configuration::Network;
 use tauri::api::path::cache_dir;
 
 use crate::{
-    download_utils::download_file_with_retries, github, progress_tracker::ProgressTracker,
+    download_utils::download_file_with_retries,
+    github::{self, request_client::RequestClient},
+    progress_tracker::ProgressTracker,
     APPLICATION_FOLDER_ID,
 };
 
@@ -40,6 +42,12 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .join("in_progress")
             .join(format!("{}.sha256", asset.name));
         let checksum_url = format!("{}.sha256", asset.url);
+
+        if asset.source.is_mirror() {
+            RequestClient::current()
+                .check_if_cache_hits(checksum_url.as_str())
+                .await?;
+        }
 
         match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
             Ok(_) => Ok(checksum_path),

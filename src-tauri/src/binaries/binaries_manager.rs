@@ -5,7 +5,9 @@ use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 
 use crate::{
-    download_utils::{download_file_with_retries, extract, validate_checksum}, github::ReleaseSource, progress_tracker::ProgressTracker
+    download_utils::{download_file, download_file_with_retries, extract, validate_checksum},
+    github::{request_client::RequestClient, ReleaseSource},
+    progress_tracker::ProgressTracker,
 };
 
 use super::{
@@ -272,7 +274,7 @@ impl BinaryManager {
         info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
-            assets: vec![asset.clone()]
+            assets: vec![asset.clone()],
         };
         let checksum_file = self
             .adapter
@@ -488,13 +490,27 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
-        download_file_with_retries(
-            asset.url.as_str(),
-            &in_progress_file_zip,
-            progress_tracker.clone(),
-        )
-        .await
-        .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
+        if asset.source.is_github() {
+            download_file_with_retries(
+                asset.url.as_str(),
+                &in_progress_file_zip,
+                progress_tracker.clone(),
+            )
+            .await
+            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
+        }
+
+        if asset.source.is_mirror() {
+            RequestClient::current()
+                .check_if_cache_hits(asset.url.as_str())
+                .await?;
+            download_file(
+                asset.url.as_str(),
+                &in_progress_file_zip,
+                progress_tracker.clone(),
+            )
+            .await?;
+        }
 
         info!(target: LOG_TARGET, "Downloaded version: {:?}", version);
 

@@ -1,14 +1,15 @@
 use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
 
-use serde::{Deserialize, Serialize};
+use crate::{binaries::binaries_resolver::VersionDownloadInfo, APPLICATION_FOLDER_ID};
 use anyhow::{anyhow, Error, Ok};
+use serde::{Deserialize, Serialize};
 use tauri::api::path::cache_dir;
 use tokio::sync::RwLock;
-use crate::{binaries::binaries_resolver::VersionDownloadInfo, APPLICATION_FOLDER_ID};
 
 const LOG_TARGET: &str = "tari::universe::github_cache";
 
-static INSTANCE: LazyLock<RwLock<CacheJsonFile>> = LazyLock::new(|| RwLock::new(CacheJsonFile::new()));
+static INSTANCE: LazyLock<RwLock<CacheJsonFile>> =
+    LazyLock::new(|| RwLock::new(CacheJsonFile::new()));
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CacheEntry {
@@ -27,7 +28,11 @@ pub struct CacheJsonFile {
 
 impl CacheJsonFile {
     fn new() -> Self {
-        let cache_file_path = PathBuf::new().join(APPLICATION_FOLDER_ID).join("cache").join("binaries_versions").join("versions_releases_responses.json");
+        let cache_file_path = PathBuf::new()
+            .join(APPLICATION_FOLDER_ID)
+            .join("cache")
+            .join("binaries_versions")
+            .join("versions_releases_responses.json");
 
         Self {
             cache_entries: HashMap::new(),
@@ -62,12 +67,22 @@ impl CacheJsonFile {
     }
 
     pub fn get_cache_entry(&self, repo_owner: &str, repo_name: &str) -> Option<&CacheEntry> {
-        self.cache_entries.get(&Self::create_cache_entry_identifier(repo_owner, repo_name))
+        self.cache_entries
+            .get(&Self::create_cache_entry_identifier(repo_owner, repo_name))
     }
 
-
-    pub fn update_cache_entry(&mut self, repo_owner: &str, repo_name: &str,file_path: PathBuf, github_etag: Option<String>, mirror_etag: Option<String> ) -> Result<(), Error> {
-        let cache_entry = self.cache_entries.get_mut(&Self::create_cache_entry_identifier(repo_owner, repo_name)).ok_or_else(|| anyhow!("Cache entry not found"))?;
+    pub fn update_cache_entry(
+        &mut self,
+        repo_owner: &str,
+        repo_name: &str,
+        file_path: PathBuf,
+        github_etag: Option<String>,
+        mirror_etag: Option<String>,
+    ) -> Result<(), Error> {
+        let cache_entry = self
+            .cache_entries
+            .get_mut(&Self::create_cache_entry_identifier(repo_owner, repo_name))
+            .ok_or_else(|| anyhow!("Cache entry not found"))?;
         cache_entry.github_etag = github_etag;
         cache_entry.mirror_etag = mirror_etag;
         cache_entry.file_path = file_path;
@@ -75,11 +90,20 @@ impl CacheJsonFile {
         Ok(())
     }
 
-    pub fn create_cache_entry(&mut self, repo_owner: &str, repo_name: &str, file_path: PathBuf, github_etag: Option<String>, mirror_etag: Option<String>) -> Result<(), Error> {
-        let is_cache_entry_exists = self.cache_entries.contains_key(&Self::create_cache_entry_identifier(repo_owner, repo_name));
+    pub fn create_cache_entry(
+        &mut self,
+        repo_owner: &str,
+        repo_name: &str,
+        file_path: PathBuf,
+        github_etag: Option<String>,
+        mirror_etag: Option<String>,
+    ) -> Result<(), Error> {
+        let is_cache_entry_exists = self
+            .cache_entries
+            .contains_key(&Self::create_cache_entry_identifier(repo_owner, repo_name));
 
         if is_cache_entry_exists {
-            self.update_cache_entry(repo_owner, repo_name, file_path,github_etag, mirror_etag)?;
+            self.update_cache_entry(repo_owner, repo_name, file_path, github_etag, mirror_etag)?;
         } else {
             let cache_entry = CacheEntry {
                 repo_owner: repo_owner.to_string(),
@@ -88,14 +112,17 @@ impl CacheJsonFile {
                 mirror_etag,
                 file_path,
             };
-            self.cache_entries.insert(Self::create_cache_entry_identifier(repo_owner, repo_name), cache_entry);
+            self.cache_entries.insert(
+                Self::create_cache_entry_identifier(repo_owner, repo_name),
+                cache_entry,
+            );
             self.save_version_releases_responses_cache_file()?;
         };
 
         Ok(())
     }
 
-    pub fn chech_if_content_file_exist(&self, repo_owner: &str, repo_name: &str) -> bool{
+    pub fn chech_if_content_file_exist(&self, repo_owner: &str, repo_name: &str) -> bool {
         let cache_entry = self.get_cache_entry(repo_owner, repo_name);
         match cache_entry {
             Some(cache_entry) => cache_entry.file_path.exists(),
@@ -103,17 +130,29 @@ impl CacheJsonFile {
         }
     }
 
-    pub fn save_file_content(&self, repo_owner: &str, repo_name: &str, content: Vec<VersionDownloadInfo>) -> Result<PathBuf, Error> {
-        let cache_entry = self.get_cache_entry(repo_owner, repo_name).ok_or_else(|| anyhow!("Cache entry not found"))?;
+    pub fn save_file_content(
+        &self,
+        repo_owner: &str,
+        repo_name: &str,
+        content: Vec<VersionDownloadInfo>,
+    ) -> Result<PathBuf, Error> {
+        let cache_entry = self
+            .get_cache_entry(repo_owner, repo_name)
+            .ok_or_else(|| anyhow!("Cache entry not found"))?;
         let file_path = cache_entry.file_path.clone();
         let json = serde_json::to_string_pretty(&content)?;
         std::fs::write(&file_path, json)?;
         Ok(file_path)
     }
-        
 
-    pub fn get_file_content(&self, repo_owner: &str, repo_name: &str) -> Result<Vec<VersionDownloadInfo>, Error> {
-        let cache_entry = self.get_cache_entry(repo_owner, repo_name).ok_or_else(|| anyhow!("Cache entry not found"))?;
+    pub fn get_file_content(
+        &self,
+        repo_owner: &str,
+        repo_name: &str,
+    ) -> Result<Vec<VersionDownloadInfo>, Error> {
+        let cache_entry = self
+            .get_cache_entry(repo_owner, repo_name)
+            .ok_or_else(|| anyhow!("Cache entry not found"))?;
         let file_path = cache_entry.file_path.clone();
         let json = std::fs::read_to_string(&file_path)?;
         let content: Vec<VersionDownloadInfo> = serde_json::from_str(&json)?;
@@ -123,5 +162,4 @@ impl CacheJsonFile {
     pub fn current() -> &'static RwLock<CacheJsonFile> {
         &INSTANCE
     }
-    
 }
