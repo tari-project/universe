@@ -233,7 +233,7 @@ impl AppConfig {
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             auto_update: false,
-            custom_power_levels_enabled: false
+            custom_power_levels_enabled: false,
         }
     }
 
