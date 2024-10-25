@@ -19,6 +19,7 @@ docker run -it --rm \
 
 # Install some basic utils
 ```bash
+apt-get update
 apt-get install --no-install-recommends --assume-yes \
   apt-transport-https \
   ca-certificates \
