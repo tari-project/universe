@@ -19,6 +19,14 @@ function SideBar() {
                 <Top>
                     <Miner />
                 </Top>
+                <button
+                    type="button"
+                    onClick={() => {
+                        throw new Error('Sentry Test Error with release');
+                    }}
+                >
+                    test
+                </button>
                 <Bottom>
                     <AirdropGiftTracker />
                     <Wallet />
