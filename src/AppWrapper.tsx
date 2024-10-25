@@ -21,15 +21,43 @@ const sentryOptions = {
     tracesSampleRate: 1.0,
     attachStacktrace: true,
     autoSessionTracking: false,
+    enabled: environment !== 'development',
 };
 
 setupLogger();
 
+const useDisableRefresh = () => {
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'development') {
+            return;
+        }
+        const keydownListener = function (event: KeyboardEvent) {
+            // Prevent F5 or Ctrl+R (Windows/Linux) and Command+R (Mac) from refreshing the page
+            if (event.key === 'F5' || (event.ctrlKey && event.key === 'r') || (event.metaKey && event.key === 'r')) {
+                event.preventDefault();
+            }
+        };
+
+        const contextmenuListener = function (event: MouseEvent) {
+            event.preventDefault();
+        };
+
+        document.addEventListener('keydown', keydownListener);
+        document.addEventListener('contextmenu', contextmenuListener);
+
+        return () => {
+            document.removeEventListener('keydown', keydownListener);
+            document.removeEventListener('contextmenu', contextmenuListener);
+        };
+    }, []);
+};
+
 export default function AppWrapper() {
     useDetectMode();
-    useLangaugeResolver();
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
+    useLangaugeResolver();
+    useDisableRefresh();
 
     useEffect(() => {
         async function initialize() {
@@ -42,7 +70,7 @@ export default function AppWrapper() {
     }, []);
 
     useEffect(() => {
-        if (allowTelemetry) {
+        if (allowTelemetry && environment !== 'development') {
             Sentry.init(sentryOptions);
         } else {
             Sentry.close();
