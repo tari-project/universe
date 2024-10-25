@@ -106,5 +106,7 @@
     "load-qr-code": "加载二维码",
     "do-not-share-this-code": "不要与任何人分享此代码",
     "passphrase": "密码短语"
-  }
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }

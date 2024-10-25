@@ -106,5 +106,7 @@
     "load-qr-code": "Muat Kode QR",
     "do-not-share-this-code": "Jangan bagikan kode ini kepada siapa pun",
     "passphrase": "Kata Sandi"
-  }
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }

@@ -2,7 +2,7 @@ import Tile from './components/Tile.tsx';
 import { MinerContainer, TileContainer, Unit } from './styles.ts';
 
 import ModeSelect from './components/ModeSelect.tsx';
-import { formatNumber } from '@app/utils/formatNumber.ts';
+import { formatHashrate } from '@app/utils/formatHashrate.ts';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { ExpandableTile } from '@app/containers/SideBar/Miner/components/ExpandableTile.tsx';
@@ -57,7 +57,7 @@ export default function Miner() {
             <TileContainer>
                 <Tile
                     title="CPU Power"
-                    stats={isCpuMiningEnabled && cpu_is_mining ? formatNumber(cpu_hash_rate) : '-'}
+                    stats={isCpuMiningEnabled && cpu_is_mining ? formatHashrate(cpu_hash_rate, false) : '-'}
                     isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
                     chipValue={cpu_is_mining ? cpuHardwareStats?.usage_percentage : undefined}
                     unit="H/s"
@@ -65,7 +65,7 @@ export default function Miner() {
                 />
                 <Tile
                     title="GPU Power"
-                    stats={isGpuMiningEnabled && gpu_is_mining ? formatNumber(gpu_hash_rate) : '-'}
+                    stats={isGpuMiningEnabled && gpu_is_mining ? formatHashrate(gpu_hash_rate, false) : '-'}
                     isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
                     chipValue={gpu_is_mining ? gpuChipValue : undefined}
                     unit="H/s"

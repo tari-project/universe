@@ -106,5 +106,7 @@
     "load-qr-code": "QR 코드 불러오기",
     "do-not-share-this-code": "이 코드를 누구와도 공유하지 마세요",
     "passphrase": "암호 구문"
-  }
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }

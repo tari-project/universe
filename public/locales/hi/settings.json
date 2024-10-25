@@ -106,5 +106,7 @@
     "load-qr-code": "QR कोड लोड करें",
     "do-not-share-this-code": "इस कोड को किसी के साथ साझा न करें",
     "passphrase": "पासफ्रेज़"
-  }
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }

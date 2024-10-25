@@ -108,5 +108,7 @@
     "load-qr-code": "Załaduj kod QR",
     "do-not-share-this-code": "Nie udostępniaj tego kodu nikomu",
     "passphrase": "Hasło"
-  }
+  },
+  "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
+  "set-dynamic-fail-data": "Ustaw niestandardowe adresy URL dla węzłów Monero"
 }

@@ -106,5 +106,7 @@
     "load-qr-code": "QRコードを読み込む",
     "do-not-share-this-code": "このコードを誰とも共有しないでください",
     "passphrase": "パスフレーズ"
-  }
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }

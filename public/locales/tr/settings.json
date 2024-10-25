@@ -106,5 +106,7 @@
     "load-qr-code": "QR kodunu yükle",
     "do-not-share-this-code": "Bu kodu kimseyle paylaşmayın",
     "passphrase": "Parola"
-  }
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }

@@ -1,16 +1,16 @@
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { useTranslation } from 'react-i18next';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
-import { useEffect } from 'react';
 import { CardContainer } from '@app/containers/Settings/components/Settings.styles.tsx';
 import { CardComponent } from '@app/containers/Settings/components/Card.component.tsx';
 import { SettingsGroupWrapper } from '@app/containers/Settings/components/SettingsGroup.styles.ts';
 import * as Sentry from '@sentry/react';
 
 const P2PoolStats = () => {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const { t } = useTranslation('p2p', { useSuspense: false });
     const isP2poolEnabled = useAppConfigStore((s) => s.p2pool_enabled);
     const p2poolStats = useP2poolStatsStore((s) => s);
     const p2poolSha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
@@ -41,14 +41,15 @@ const P2PoolStats = () => {
     return isP2poolEnabled ? (
         <SettingsGroupWrapper>
             <Stack>
-                <Typography variant="h6">{t('p2pool-stats', { ns: 'settings' })}</Typography>
+                <Typography variant="h6">{t('p2pool-stats')}</Typography>
+
                 <CardContainer>
                     <CardComponent
-                        heading={`${t('p2pool-connection-info', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-connection-info')}`}
                         labels={[
                             {
-                                labelText: 'Address',
-                                labelValue: p2poolStats?.connection_info?.listener_addresses.join(', ') || '',
+                                labelText: t('p2pool-connected'),
+                                labelValue: p2poolStats?.connected ? 'Yes' : 'No',
                             },
                             {
                                 labelText: 'Connected peers',
@@ -56,24 +57,45 @@ const P2PoolStats = () => {
                             },
                         ]}
                     />
-                </CardContainer>
-                <CardContainer>
                     <CardComponent
-                        heading={`${t('p2pool-connected', { ns: 'settings' })}`}
+                        heading={`${t('tribe')}`}
                         labels={[
                             {
-                                labelText: 'Connected',
-                                labelValue: p2poolStats?.connected ? 'Yes' : 'No',
+                                labelText: 'Current',
+                                labelValue: p2poolSquad ? p2poolSquad : '',
+                            },
+                        ]}
+                    />
+
+                    <CardComponent
+                        heading={`${t('miners')}`}
+                        labels={[
+                            {
+                                labelText: 'SHA-3',
+                                labelValue: '' + (p2poolSha3MinersCount ?? 0),
+                            },
+                            {
+                                labelText: 'RandomX',
+                                labelValue: '' + (p2poolRandomxMinersCount ?? 0),
                             },
                         ]}
                     />
                     <CardComponent
-                        heading={`${t('p2pool-connection-info-more', { ns: 'settings' })}`}
+                        heading={`${t('p2pool-chain-tip')}`}
                         labels={[
                             {
-                                labelText: 'Num Peers',
-                                labelValue: '' + (p2poolStats?.connection_info?.network_info.num_peers ?? 0),
+                                labelText: 'SHA-3',
+                                labelValue: '#' + (p2poolSha3ChainTip ?? 0),
                             },
+                            {
+                                labelText: 'RandomX',
+                                labelValue: '#' + (p2poolRandomxChainTip ?? 0),
+                            },
+                        ]}
+                    />
+                    <CardComponent
+                        heading={`${t('p2pool-connection-info-more')}`}
+                        labels={[
                             {
                                 labelText: 'Pending incoming',
                                 labelValue:
@@ -104,38 +126,14 @@ const P2PoolStats = () => {
                             },
                         ]}
                     />
+                </CardContainer>
+                <CardContainer>
                     <CardComponent
-                        heading={`${t('tribe', { ns: 'settings' })}`}
+                        heading="Listener Addresses"
                         labels={[
                             {
-                                labelText: 'Current',
-                                labelValue: p2poolSquad ? p2poolSquad : '',
-                            },
-                        ]}
-                    />
-                    <CardComponent
-                        heading={`${t('miners', { ns: 'settings' })}`}
-                        labels={[
-                            {
-                                labelText: 'SHA-3',
-                                labelValue: '' + (p2poolSha3MinersCount ?? 0),
-                            },
-                            {
-                                labelText: 'RandomX',
-                                labelValue: '' + (p2poolRandomxMinersCount ?? 0),
-                            },
-                        ]}
-                    />
-                    <CardComponent
-                        heading={`${t('p2pool-chain-tip', { ns: 'settings' })}`}
-                        labels={[
-                            {
-                                labelText: 'SHA-3',
-                                labelValue: '#' + (p2poolSha3ChainTip ?? 0),
-                            },
-                            {
-                                labelText: 'RandomX',
-                                labelValue: '#' + (p2poolRandomxChainTip ?? 0),
+                                labelText: 'Address',
+                                labelValue: p2poolStats?.connection_info?.listener_addresses.join(', ') || '',
                             },
                         ]}
                     />

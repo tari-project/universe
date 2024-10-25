@@ -89,10 +89,12 @@
 
     "tabs": {
         "airdrop": "Airdrop",
+        "experimental": "Experimental",
+        "connections": "Connections",
         "general": "General",
         "mining": "Mining",
+        "p2p": "Pool Mining",
         "wallet": "Wallet",
-        "experimental": "Experimental",
         "very_experimental": "Very Experimental"
     },
     "tor-bridges": "Tor Bridges",
@@ -124,5 +126,7 @@
         "load-qr-code": "Load QR code",
         "do-not-share-this-code": "Don&apos;t share this code with anyone",
         "passphrase": "Passphrase"
-    }
+    },
+    "use-dynamic-fail-data": "Use dynamic fail data",
+    "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }
