@@ -20,7 +20,6 @@ import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants 
 import { AirdropSettings } from './sections/airdrop/AirdropSettings.tsx';
 import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 const markups = {
     general: <GeneralSettings />,
@@ -34,7 +33,6 @@ export default function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
-    const setError = useAppStateStore((s) => s.setError);
 
     const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
 
@@ -52,9 +50,6 @@ export default function SettingsModal() {
             <DialogContent $unPadded>
                 <Container>
                     <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
-                    <Button size="large" onClick={() => setError('hi!')}>
-                        Click for error!!
-                    </Button>
                     <ContentContainer>
                         <HeaderContainer>
                             <Typography variant="h4">{`${t(`tabs.${activeSection}`)} ${t('settings')}`}</Typography>

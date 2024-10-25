@@ -4,7 +4,6 @@ import { invoke } from '@tauri-apps/api';
 import { useAppConfigStore } from './useAppConfigStore';
 import { useMiningStore } from './useMiningStore';
 import * as Sentry from '@sentry/react';
-import { useUIStore } from '@app/store/useUIStore.ts';
 
 interface AppState {
     isAfterAutoUpdate: boolean;
@@ -38,10 +37,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     criticalError: undefined,
     setCriticalError: (criticalError) => set({ criticalError }),
     error: undefined,
-    setError: (error) => {
-        set({ error });
-        useUIStore.getState().setRenderPortal(!!error);
-    },
+    setError: (error) => set({ error }),
     topStatus: 'Not mining',
     setTopStatus: (value) => set({ topStatus: value }),
     setupTitle: '',

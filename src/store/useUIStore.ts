@@ -13,7 +13,6 @@ interface State {
     view: viewType;
     visualMode: boolean;
     sidebarOpen: boolean;
-    renderPortal: boolean;
     showExperimental: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
@@ -21,7 +20,6 @@ interface State {
 interface Actions {
     setTheme: (theme: Theme) => void;
     setShowSplash: (showSplash: boolean) => void;
-    setRenderPortal: (renderPortal: boolean) => void;
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
     toggleVisualMode: () => void;
@@ -40,7 +38,6 @@ const initialState: State = {
     view: 'setup',
     visualMode: true,
     sidebarOpen: false,
-    renderPortal: false,
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
@@ -56,6 +53,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setShowExperimental: (showExperimental) => set({ showExperimental }),
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
-    setDialogToShow: (dialogToShow) => set({ dialogToShow, renderPortal: dialogToShow !== null }),
-    setRenderPortal: (renderPortal) => set({ renderPortal }),
+    setDialogToShow: (dialogToShow) => set({ dialogToShow }),
 }));

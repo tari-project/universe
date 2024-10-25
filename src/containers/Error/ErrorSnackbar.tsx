@@ -7,7 +7,6 @@ import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import {
-    FloatingFocusManager,
     FloatingNode,
     FloatingPortal,
     useDismiss,
@@ -64,17 +63,17 @@ export default function ErrorSnackbar() {
         setShow(Boolean(error && error?.length));
     }, [error]);
 
-    // useEffect(() => {
-    //     if (show) {
-    //         const closeTimeout = setTimeout(() => {
-    //             handleClose();
-    //         }, AUTO_CLOSE_TIMEOUT);
-    //
-    //         return () => {
-    //             clearTimeout(closeTimeout);
-    //         };
-    //     }
-    // }, [handleClose, show]);
+    useEffect(() => {
+        if (show) {
+            const closeTimeout = setTimeout(() => {
+                handleClose();
+            }, AUTO_CLOSE_TIMEOUT);
+
+            return () => {
+                clearTimeout(closeTimeout);
+            };
+        }
+    }, [handleClose, show]);
 
     return (
         <FloatingNode id={nodeId}>
