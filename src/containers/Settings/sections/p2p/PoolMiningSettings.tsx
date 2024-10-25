@@ -5,7 +5,7 @@ export const PoolMiningSettings = () => {
     return (
         <>
             <P2pMarkup />
-            <P2PoolStats />
+            {/*<P2PoolStats />*/}
         </>
     );
 };
