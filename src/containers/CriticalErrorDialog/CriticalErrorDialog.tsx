@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import Linkify from 'linkify-react';
 
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
@@ -30,6 +31,7 @@ const CriticalErrorDialog = () => {
             setIsExiting(true);
             await invoke('exit_application');
         } catch (e) {
+            Sentry.captureException(e, { data: 'handleExit in CriticalErrorDialog' });
             console.error('Error closing application: ', e);
         }
         setIsExiting(false);

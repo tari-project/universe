@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { BackendInMemoryConfig, useAirdropStore } from '@app/store/useAirdropStore';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useEffect } from 'react';
@@ -10,6 +11,9 @@ export function useGetRustInMemoryConfig() {
             .then((result) => {
                 setBackendInMemoryConfig(result as BackendInMemoryConfig);
             })
-            .catch(console.error);
+            .catch((e) => {
+                Sentry.captureException(e);
+                console.error('get_app_in_memory_config error:', e);
+            });
     }, [setBackendInMemoryConfig]);
 }

@@ -3,6 +3,7 @@ import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api';
 import { TransactionInfo } from '@app/types/app-status.ts';
+import * as Sentry from '@sentry/react';
 
 export default function useFetchTx() {
     const transactions = useWalletStore((s) => s.transactions);
@@ -36,6 +37,7 @@ export default function useFetchTx() {
                 await setItems(sortedTransactions);
             }
         } catch (error) {
+            Sentry.captureException(error);
             setError('Could not get transaction history');
             console.error('Could not get transaction history: ', error);
         } finally {
