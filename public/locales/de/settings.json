@@ -84,5 +84,7 @@
   "errors": {
       "invalid-control-port": "Control Port configuration is invalid",
       "invalid-bridge": "Bridge configuration is invalid"
-  }
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }
