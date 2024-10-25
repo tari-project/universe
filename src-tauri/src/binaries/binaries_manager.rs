@@ -427,28 +427,19 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
-        if asset.source.is_github() {
-            download_file_with_retries(
-                asset.url.as_str(),
-                &in_progress_file_zip,
-                progress_tracker.clone(),
-            )
-            .await
-            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
-        }
-
         if asset.source.is_mirror() {
             RequestClient::current()
                 .check_if_cache_hits(asset.url.as_str())
                 .await?;
-            download_file_with_retries(
-                asset.url.as_str(),
-                &in_progress_file_zip,
-                progress_tracker.clone(),
-            )
-            .await
-            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
         }
+
+        download_file_with_retries(
+            asset.url.as_str(),
+            &in_progress_file_zip,
+            progress_tracker.clone(),
+        )
+        .await
+        .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
 
         info!(target: LOG_TARGET, "Downloaded version: {:?}", version);
 
