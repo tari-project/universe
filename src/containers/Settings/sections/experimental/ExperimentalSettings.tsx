@@ -8,6 +8,7 @@ import DebugSettings from './DebugSettings.tsx';
 import ExperimentalWarning from './ExperimentalWarning.tsx';
 import { TorMarkup } from './TorMarkup';
 import { SettingsGroup, SettingsGroupAction } from '../../components/SettingsGroup.styles.ts';
+import MonerodMarkup from './MonerodMarkup';
 
 export const ExperimentalSettings = () => {
     const showExperimental = useUIStore((s) => s.showExperimental);
@@ -21,6 +22,7 @@ export const ExperimentalSettings = () => {
                         <DebugSettings />
                         <AppVersions />
                         <TorMarkup />
+                        <MonerodMarkup />
                         <br />
                         <SettingsGroup>
                             <div />
