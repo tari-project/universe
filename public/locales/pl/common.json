@@ -23,7 +23,5 @@
   "continue": "Kontynuuj",
   "restart": "Uruchom ponownie",
   "connection": "Połączenie",
-  "disconnect": "Odłącz",
-  "byte": "B",
-  "byte-symbol": "B"
+  "disconnect": "Odłącz"
 }

@@ -23,7 +23,5 @@
   "continue": "Gaan voort",
   "restart": "Herbegin",
   "connection": "Verbinding",
-  "disconnect": "Ontkoppel",
-  "byte": "greep",
-  "byte-symbol": "B",
+  "disconnect": "Ontkoppel"
 }

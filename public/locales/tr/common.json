@@ -23,7 +23,5 @@
   "continue": "Devam Et",
   "restart": "Yeniden Başlat",
   "connection": "Bağlantı",
-  "disconnect": "Bağlantıyı Kes",
-  "byte": "bayt",
-  "byte-symbol": "B",
+  "disconnect": "Bağlantıyı Kes"
 }
