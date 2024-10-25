@@ -20,6 +20,7 @@ const sentryOptions = {
     tracesSampleRate: 1.0,
     attachStacktrace: true,
     autoSessionTracking: false,
+    enabled: environment !== 'development',
 };
 
 setupLogger();
@@ -28,7 +29,6 @@ export default function AppWrapper() {
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
     useLangaugeResolver();
-
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
@@ -40,7 +40,7 @@ export default function AppWrapper() {
     }, []);
 
     useEffect(() => {
-        if (allowTelemetry) {
+        if (allowTelemetry && environment !== 'development') {
             Sentry.init(sentryOptions);
         } else {
             Sentry.close();
