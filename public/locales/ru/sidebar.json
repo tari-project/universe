@@ -9,6 +9,11 @@
   "lost-connection": "Потеряно соединение с сетью Tari. Переподключение..",
   "block": "Блок",
   "recent-wins": "Последние выигрыши",
-  "show-history": "Show history",
-  "hide-history": "Hide history"
+  "paper-wallet-button": "Синхронизировать с телефоном",
+  "history-show-button": "История",
+  "history-hide-button": "Скрыть историю",
+  "paper-wallet-tooltip-title": "Синхронизировать с телефоном",
+  "paper-wallet-tooltip-message": "Отслеживайте свои XTM в любом месте, синхронизируя кошелек Universe с Tari Aurora.",
+  "show-history": "Показать историю",
+  "hide-history": "Скрыть историю"
 }

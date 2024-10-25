@@ -12,7 +12,8 @@
     "waiting-for-idle": "Warten auf Leerlauf",
     "started-auto-mining": "Auto Mining gestartet"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>Sie haben {{ blocks }} gewonnen</span>, während Sie weg waren",
+  "estimated-earnings": "Geschätzte Einnahmen",
+  "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
   "day": "day"
 }

@@ -1,7 +1,6 @@
 {
   "applyInviteCode": "Einladungscode anwenden",
   "settings": "Einstellungen",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Seed-Wörter",
   "send-logs": "Ein Problem & Protokolle einreichen",
   "your-feedback": "Beschreibe dein Problem, einschließlich deines Telegram-Namens, falls vorhanden, damit wir dich mit Updates kontaktieren können.",
@@ -24,23 +23,14 @@
   "tabs": {
     "general": "Allgemein",
     "mining": "Mining",
-    "experimental": "Experimentell"
+    "experimental": "Experimentell",
+    "very_experimental": "Sehr experimentell",
+    "airdrop": "Airdrop",
+    "wallet": "Wallet"
   },
   "monero-address": {
     "title": "Monero-Adresse",
     "placeholder": "Gib die Monero-Adresse ein"
-  },
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",
   "visual-mode": "Visueller Modus",
@@ -77,13 +67,45 @@
   "action-requires-restart": "Diese Aktion erfordert einen Neustart, um Änderungen anzuwenden",
   "low-hash-rate-warning": "Ihre Hashrate ist sehr niedrig. Versuchen Sie, alle Apps außer Tari Universe zu schließen",
   "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "Ihre Einstellungen werden gespeichert und beim nächsten Start des Tari-Universums angewendet.",
+  "gpu-device-enabled": "GPU-Mining-Geräte",
+  "gpu-device-enabled-description": "Bestimmtes GPU-Gerät aktivieren oder deaktivieren.",
+  "gpu-device-no-found": "⚠️ Keine GPU-Geräte gefunden",
+  "mine-on-app-start": {
+    "title": "Mining beim Start",
+    "description": "Wenn aktiviert, beginnt die App automatisch mit dem Mining, sobald sie gestartet wird."
+  },
+  "should-auto-start": {
+    "title": "Automatischer Start beim Systemstart",
+    "description": "Wenn aktiviert, startet die App automatisch, wenn Sie sich an Ihrem Computer anmelden."
+  },
+  "use-auto-update": {
+    "title": "Tari-Universum automatisch aktualisieren",
+    "description": "Wenn aktiviert, sucht die App nach Updates und installiert diese automatisch."
+  },
+  "restart-later": "Später neu starten",
+  "restart-now": "Jetzt neu starten",
+  "restart-universe": "Tari-Universum neu starten?",
+  "tari-wallet-address": "Tari-Wallet-Adresse",
+  "tor-bridges": "Tor-Brücken",
+  "theme": "Thema",
+  "sha-network-hash-rate": "Sha3-Netzwerk-Hashrate",
+  "randomx-network-hash-rate": "Randomx-Netzwerk-Hashrate",
+  "network": "Netzwerk",
+  "app-restart-required": "App-Neustart erforderlich",
+  "setup-tor-settings": "Tor-Einstellungen für Datenschutzkontrolle und Konnektivität einrichten",
+  "control-port": "Steuerport",
+  "save": "Speichern",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
+    "invalid-control-port": "Steuerport-Konfiguration ist ungültig",
+    "invalid-bridge": "Bridge-Konfiguration ist ungültig"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "Tari Aurora verknüpfen",
+    "connect-wallet-to-phone": "Verbinden Sie Ihr Tari-Universum-Wallet mit Ihrem Telefon",
+    "load-qr-code": "QR-Code laden",
+    "do-not-share-this-code": "Teilen Sie diesen Code mit niemandem",
+    "passphrase": "Passphrase"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
   "set-dynamic-fail-data": "Set custom urls for monero nodes"
