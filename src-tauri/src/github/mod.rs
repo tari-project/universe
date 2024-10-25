@@ -31,25 +31,12 @@ pub enum ReleaseSource {
 }
 
 impl ReleaseSource {
-    pub fn to_string(&self) -> String {
-        match self {
-            ReleaseSource::Github => "Github".to_string(),
-            ReleaseSource::Mirror => "Mirror".to_string(),
-        }
-    }
-
     pub fn is_github(&self) -> bool {
-        match self {
-            ReleaseSource::Github => true,
-            _ => false,
-        }
+        matches!(self, ReleaseSource::Github)
     }
 
     pub fn is_mirror(&self) -> bool {
-        match self {
-            ReleaseSource::Mirror => true,
-            _ => false,
-        }
+        matches!(self, ReleaseSource::Mirror)
     }
 }
 
@@ -241,7 +228,7 @@ async fn check_if_need_download(
                 need_to_download = true;
             }
 
-            let response = RequestClient::current().send_head_request(&url).await?;
+            let response = RequestClient::current().send_head_request(url).await?;
             let remote_etag = RequestClient::current().get_etag_from_head_response(&response);
             let local_etag = match source {
                 ReleaseSource::Mirror => cache_entry.mirror_etag.clone(),

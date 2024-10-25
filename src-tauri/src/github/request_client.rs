@@ -190,7 +190,7 @@ impl RequestClient {
                 return Ok(false);
             }
 
-            let head_response = self.send_head_request(&url).await?;
+            let head_response = self.send_head_request(url).await?;
 
             let cf_cache_status = self.get_cf_cache_status_from_head_response(&head_response);
             cf_cache_status.log_warning_if_present();
@@ -203,9 +203,12 @@ impl RequestClient {
 
             if !content_length.eq(&0) {
                 sleep_time = std::time::Duration::from_secs(
-                    (self.convert_content_length_to_mb(content_length).div(10.0) as u64)
-                        .min(MAX_WAIT_TIME)
-                        .max(2),
+                    (self
+                        .convert_content_length_to_mb(content_length)
+                        .div(10.0)
+                        .to_bits())
+                    .min(MAX_WAIT_TIME)
+                    .max(2),
                 );
             }
 
