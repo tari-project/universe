@@ -5,7 +5,9 @@ use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 
 use crate::{
-    download_utils::{download_file, download_file_with_retries, extract, validate_checksum}, github::{request_client::RequestClient}, progress_tracker::ProgressTracker
+    download_utils::{download_file, download_file_with_retries, extract, validate_checksum},
+    github::request_client::RequestClient,
+    progress_tracker::ProgressTracker,
 };
 
 use super::{
@@ -30,7 +32,7 @@ pub(crate) struct BinaryManager {
     online_versions_list: Vec<VersionDownloadInfo>,
     local_aviailable_versions_list: Vec<Version>,
     used_version: Option<Version>,
-    adapter: Box<dyn LatestVersionApiAdapter>
+    adapter: Box<dyn LatestVersionApiAdapter>,
 }
 
 impl BinaryManager {
@@ -39,7 +41,7 @@ impl BinaryManager {
         binary_subfolder: Option<String>,
         adapter: Box<dyn LatestVersionApiAdapter>,
         network_prerelease_prefix: Option<String>,
-        should_validate_checksum: bool
+        should_validate_checksum: bool,
     ) -> Self {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => include_str!("../../binaries_versions_nextnet.json"),
@@ -60,14 +62,13 @@ impl BinaryManager {
             online_versions_list: Vec::new(),
             local_aviailable_versions_list: Vec::new(),
             used_version: None,
-            adapter
+            adapter,
         }
     }
 
     pub fn binary_subfolder(&self) -> Option<&String> {
         self.binary_subfolder.as_ref()
     }
-
 
     fn read_version_requirements(binary_name: String, data_str: &str) -> VersionReq {
         let json_content: BinaryVersionsJsonContent =
@@ -229,7 +230,7 @@ impl BinaryManager {
         info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
-            assets: vec![asset.clone()]
+            assets: vec![asset.clone()],
         };
         let checksum_file = self
             .adapter
@@ -437,11 +438,16 @@ impl BinaryManager {
         }
 
         if asset.source.is_mirror() {
-            RequestClient::current().check_if_cache_hits(asset.url.as_str()).await?;
-            download_file(asset.url.as_str(), &in_progress_file_zip, progress_tracker.clone()).await?;
+            RequestClient::current()
+                .check_if_cache_hits(asset.url.as_str())
+                .await?;
+            download_file(
+                asset.url.as_str(),
+                &in_progress_file_zip,
+                progress_tracker.clone(),
+            )
+            .await?;
         }
-
-
 
         info!(target: LOG_TARGET, "Downloaded version: {:?}", version);
 

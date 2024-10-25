@@ -128,15 +128,19 @@ async fn list_mirror_releases(
     let mut cache_json_file_lock = CacheJsonFile::current().write().await;
     let url = get_mirror_url(repo_owner, repo_name);
 
-    let (need_to_download, cache_entry_present,response) =
+    let (need_to_download, cache_entry_present, response) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Mirror).await?;
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
-    let mut does_hit = response.and_then(|res| {
-        Some(RequestClient::current().get_cf_cache_status_from_head_response(&res).is_hit())
-    }).unwrap_or(false);
-
-
+    let mut does_hit = response
+        .and_then(|res| {
+            Some(
+                RequestClient::current()
+                    .get_cf_cache_status_from_head_response(&res)
+                    .is_hit(),
+            )
+        })
+        .unwrap_or(false);
 
     if need_to_download && !does_hit {
         does_hit = RequestClient::current().check_if_cache_hits(&url).await?;
@@ -175,7 +179,7 @@ async fn list_github_releases(
     let mut cache_json_file_lock = CacheJsonFile::current().write().await;
     let url = get_gh_url(repo_owner, repo_name);
 
-    let (need_to_download, cache_entry_present,response) =
+    let (need_to_download, cache_entry_present, response) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Github).await?;
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
@@ -234,14 +238,13 @@ async fn check_if_need_download(
                 need_to_download = true
             };
 
-                Ok((need_to_download, cache_entry_present,Some(response)))
+            Ok((need_to_download, cache_entry_present, Some(response)))
         }
         None => {
             need_to_download = true;
-                Ok((need_to_download, cache_entry_present,None))
+            Ok((need_to_download, cache_entry_present, None))
         }
     }
-
 }
 
 async fn extract_versions_from_release(

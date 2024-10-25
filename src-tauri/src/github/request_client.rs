@@ -66,7 +66,10 @@ impl CloudFlareCacheStatus {
     }
 
     pub fn should_log_warning(&self) -> bool {
-        matches!(self, Self::Unknown) || matches!(self, Self::NonExistent) || matches!(self, Self::Dynamic) || matches!(self, Self::Bypass)
+        matches!(self, Self::Unknown)
+            || matches!(self, Self::NonExistent)
+            || matches!(self, Self::Dynamic)
+            || matches!(self, Self::Bypass)
     }
 
     pub fn log_warning_if_present(&self) {
@@ -133,7 +136,10 @@ impl RequestClient {
             .map_or(0, |v| v.to_str().unwrap_or_default().parse().unwrap_or(0))
     }
 
-    pub fn get_cf_cache_status_from_head_response(&self, response: &Response) -> CloudFlareCacheStatus {
+    pub fn get_cf_cache_status_from_head_response(
+        &self,
+        response: &Response,
+    ) -> CloudFlareCacheStatus {
         if response.status().is_server_error() || response.status().is_client_error() {
             return CloudFlareCacheStatus::Unknown;
         };
@@ -202,11 +208,14 @@ impl RequestClient {
             cf_cache_status.log_warning_if_present();
 
             let content_length = self.get_content_length_from_head_response(&head_response);
-            
+
             let mut sleep_time = std::time::Duration::from_secs(DEFAULT_WAIT_TIME);
 
             if !content_length.eq(&0) {
-                sleep_time = std::time::Duration::from_secs((self.convert_content_length_to_mb(content_length).div(10.0) as u64).max(MAX_WAIT_TIME));
+                sleep_time = std::time::Duration::from_secs(
+                    (self.convert_content_length_to_mb(content_length).div(10.0) as u64)
+                        .max(MAX_WAIT_TIME),
+                );
             }
 
             if cf_cache_status.is_hit() {
@@ -221,7 +230,6 @@ impl RequestClient {
         Ok(true)
     }
 
-    
     fn convert_content_length_to_mb(&self, content_length: u64) -> f64 {
         (content_length as f64) / 1024.0 / 1024.0
     }

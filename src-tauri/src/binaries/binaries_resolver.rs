@@ -83,7 +83,7 @@ impl BinaryResolver {
                 None,
                 Box::new(XmrigVersionApiAdapter {}),
                 None,
-                true
+                true,
             ),
         );
 
@@ -98,7 +98,7 @@ impl BinaryResolver {
                     specific_name: gpuminer_specific_nanme,
                 }),
                 None,
-                true
+                true,
             ),
         );
 
@@ -113,7 +113,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 Some(tari_prerelease_prefix.to_string()),
-                true
+                true,
             ),
         );
 
@@ -128,7 +128,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 Some(tari_prerelease_prefix.to_string()),
-                true
+                true,
             ),
         );
 
@@ -143,7 +143,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 Some(tari_prerelease_prefix.to_string()),
-                true
+                true,
             ),
         );
 
@@ -158,7 +158,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 None,
-                true
+                true,
             ),
         );
 
@@ -169,7 +169,7 @@ impl BinaryResolver {
                 Some("tor".to_string()),
                 Box::new(TorReleaseAdapter {}),
                 None,
-                true
+                true,
             ),
         );
 
