@@ -83,8 +83,7 @@ impl BinaryResolver {
                 None,
                 Box::new(XmrigVersionApiAdapter {}),
                 None,
-                true,
-                Some("xmrig".to_string()),
+                true
             ),
         );
 
@@ -99,8 +98,7 @@ impl BinaryResolver {
                     specific_name: gpuminer_specific_nanme,
                 }),
                 None,
-                true,
-                Some("tarigpuminer".to_string()),
+                true
             ),
         );
 
@@ -115,8 +113,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 Some(tari_prerelease_prefix.to_string()),
-                true,
-                Some("tari-suite".to_string()),
+                true
             ),
         );
 
@@ -131,8 +128,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 Some(tari_prerelease_prefix.to_string()),
-                true,
-                Some("tari-suite".to_string()),
+                true
             ),
         );
 
@@ -147,8 +143,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 Some(tari_prerelease_prefix.to_string()),
-                true,
-                Some("tari-suite".to_string()),
+                true
             ),
         );
 
@@ -163,8 +158,7 @@ impl BinaryResolver {
                     specific_name: None,
                 }),
                 None,
-                true,
-                Some("sha-p2pool".to_string()),
+                true
             ),
         );
 
@@ -175,8 +169,7 @@ impl BinaryResolver {
                 Some("tor".to_string()),
                 Box::new(TorReleaseAdapter {}),
                 None,
-                true,
-                Some("tor".to_string()),
+                true
             ),
         );
 
@@ -268,13 +261,6 @@ impl BinaryResolver {
             None => return Err(anyhow!("No version selected for binary {}", binary.name())),
         }
 
-        Ok(())
-    }
-
-    pub async fn remove_all_caches(&mut self) -> Result<(), Error> {
-        for manager in self.managers.values_mut() {
-            manager.remove_cached_releases()?;
-        }
         Ok(())
     }
 

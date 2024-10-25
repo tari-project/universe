@@ -5,9 +5,7 @@ use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 
 use crate::{
-    download_utils::{download_file, download_file_with_retries, extract, validate_checksum},
-    github::{request_client::RequestClient, ReleaseSource},
-    progress_tracker::ProgressTracker,
+    download_utils::{download_file, download_file_with_retries, extract, validate_checksum}, github::{request_client::RequestClient}, progress_tracker::ProgressTracker
 };
 
 use super::{
@@ -32,8 +30,7 @@ pub(crate) struct BinaryManager {
     online_versions_list: Vec<VersionDownloadInfo>,
     local_aviailable_versions_list: Vec<Version>,
     used_version: Option<Version>,
-    adapter: Box<dyn LatestVersionApiAdapter>,
-    releases_cache_id: Option<String>,
+    adapter: Box<dyn LatestVersionApiAdapter>
 }
 
 impl BinaryManager {
@@ -42,8 +39,7 @@ impl BinaryManager {
         binary_subfolder: Option<String>,
         adapter: Box<dyn LatestVersionApiAdapter>,
         network_prerelease_prefix: Option<String>,
-        should_validate_checksum: bool,
-        releases_cache_id: Option<String>,
+        should_validate_checksum: bool
     ) -> Self {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => include_str!("../../binaries_versions_nextnet.json"),
@@ -64,8 +60,7 @@ impl BinaryManager {
             online_versions_list: Vec::new(),
             local_aviailable_versions_list: Vec::new(),
             used_version: None,
-            adapter,
-            releases_cache_id,
+            adapter
         }
     }
 
@@ -73,71 +68,6 @@ impl BinaryManager {
         self.binary_subfolder.as_ref()
     }
 
-    fn create_file_with_cached_releases(
-        &self,
-        data: Vec<VersionDownloadInfo>,
-    ) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "Creating file with cached releases");
-        if self.releases_cache_id.is_none() {
-            return Err(anyhow!("No cache id provided"));
-        }
-
-        let binary_folder = self.adapter.get_binary_folder()?;
-        let cache_file = binary_folder.join(self.releases_cache_id.as_ref().unwrap());
-
-        let json_content = serde_json::to_string(&data)?;
-        std::fs::write(cache_file, json_content)?;
-
-        Ok(())
-    }
-
-    fn check_if_cached_releases_exist(&self) -> bool {
-        info!(target: LOG_TARGET, "Checking if cached releases exist");
-        if self.releases_cache_id.is_none() {
-            return false;
-        }
-
-        let binary_folder = self.adapter.get_binary_folder().ok();
-        let cache_file =
-            binary_folder.map(|path| path.join(self.releases_cache_id.as_ref().unwrap()));
-
-        cache_file.map_or(false, |path| path.exists())
-    }
-
-    fn read_cached_releases(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
-        info!(target: LOG_TARGET, "Reading cached releases");
-        if self.releases_cache_id.is_none() {
-            return Err(anyhow!("No cache id provided"));
-        }
-
-        let binary_folder = self.adapter.get_binary_folder()?;
-        let cache_file = binary_folder.join(self.releases_cache_id.as_ref().unwrap());
-
-        let json_content = std::fs::read_to_string(cache_file)?;
-        let releases: Vec<VersionDownloadInfo> = serde_json::from_str(&json_content)?;
-
-        for release in &releases {
-            info!(target: LOG_TARGET, "Cached release: {:?}", release.version);
-        }
-
-        Ok(releases)
-    }
-
-    pub fn remove_cached_releases(&self) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "Removing cached releases");
-        if self.releases_cache_id.is_none() {
-            return Err(anyhow!("No cache id provided"));
-        }
-
-        let binary_folder = self.adapter.get_binary_folder()?;
-        let cache_file = binary_folder.join(self.releases_cache_id.as_ref().unwrap());
-
-        if cache_file.exists() {
-            std::fs::remove_file(cache_file)?;
-        }
-
-        Ok(())
-    }
 
     fn read_version_requirements(binary_name: String, data_str: &str) -> VersionReq {
         let json_content: BinaryVersionsJsonContent =
@@ -299,7 +229,7 @@ impl BinaryManager {
         info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
-            assets: vec![asset.clone()],
+            assets: vec![asset.clone()]
         };
         let checksum_file = self
             .adapter
@@ -424,26 +354,7 @@ impl BinaryManager {
     pub async fn check_for_updates(&mut self) {
         info!(target: LOG_TARGET,"Checking for updates for binary: {:?}", self.binary_name);
 
-        let versions_info = match self.releases_cache_id {
-            Some(_) => {
-                info!(target: LOG_TARGET, "Reading cached releases");
-                if self.check_if_cached_releases_exist() {
-                    self.read_cached_releases().unwrap_or_default()
-                } else {
-                    let data = self.adapter.fetch_releases_list().await.unwrap_or_default();
-                    let _ = self.create_file_with_cached_releases(data.clone());
-
-                    data
-                }
-            }
-            None => {
-                info!(target: LOG_TARGET, "Fetching releases list");
-                let data = self.adapter.fetch_releases_list().await.unwrap_or_default();
-                let _ = self.create_file_with_cached_releases(data.clone());
-
-                data
-            }
-        };
+        let versions_info = self.adapter.fetch_releases_list().await.unwrap_or_default();
 
         info!(target: LOG_TARGET,
             "Found {:?} versions for binary: {:?}",
@@ -526,16 +437,11 @@ impl BinaryManager {
         }
 
         if asset.source.is_mirror() {
-            RequestClient::current()
-                .check_if_cache_hits(asset.url.as_str())
-                .await?;
-            download_file(
-                asset.url.as_str(),
-                &in_progress_file_zip,
-                progress_tracker.clone(),
-            )
-            .await?;
+            RequestClient::current().check_if_cache_hits(asset.url.as_str()).await?;
+            download_file(asset.url.as_str(), &in_progress_file_zip, progress_tracker.clone()).await?;
         }
+
+
 
         info!(target: LOG_TARGET, "Downloaded version: {:?}", version);
 
