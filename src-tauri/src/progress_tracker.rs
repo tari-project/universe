@@ -69,7 +69,7 @@ impl ProgressTrackerInner {
         title_params: Option<HashMap<String, String>>,
         progress: u64,
     ) {
-        debug!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
+        //  debug!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
         self.window
             .emit(
                 "message",
