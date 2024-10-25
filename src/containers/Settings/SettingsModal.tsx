@@ -7,23 +7,27 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
 
 import SettingsNavigation from './components/Navigation.tsx';
-
-import { MiningSettings } from './sections/mining/MiningSettings.tsx';
-import { GeneralSettings } from './sections/general/GeneralSettings.tsx';
-import { ExperimentalSettings } from './sections/experimental/ExperimentalSettings.tsx';
-import { WalletSettings } from './sections/wallet/WalletSettings.tsx';
-
 import { SETTINGS_TYPES, SettingsType } from './types.ts';
+import {
+    AirdropSettings,
+    ConnectionsSettings,
+    ExperimentalSettings,
+    GeneralSettings,
+    MiningSettings,
+    PoolMiningSettings,
+    WalletSettings,
+} from './sections';
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
-import { AirdropSettings } from './sections/airdrop/AirdropSettings.tsx';
-import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
-import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 const markups = {
     general: <GeneralSettings />,
     mining: <MiningSettings />,
+    connections: <ConnectionsSettings />,
+    p2p: <PoolMiningSettings />,
     wallet: <WalletSettings />,
     airdrop: <AirdropSettings />,
     experimental: <ExperimentalSettings />,
