@@ -1,6 +1,7 @@
 import { useAirdropStore, UserPoints } from '@app/store/useAirdropStore';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
+import * as Sentry from '@sentry/react';
 
 export const useAirdropUserPointsListener = () => {
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
@@ -39,7 +40,10 @@ export const useAirdropUserPointsListener = () => {
             .then((unListenFunction) => {
                 unListen = unListenFunction;
             })
-            .catch(console.error);
+            .catch((e) => {
+                Sentry.captureException(e);
+                console.error(e);
+            });
 
         return () => {
             unListen();

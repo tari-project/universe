@@ -104,9 +104,10 @@
 
     "update-versions": "Update versions",
     "use-tor": "Use Tor",
-
+    "sha-network-hash-rate": "Sha3 network hashrate",
+    "randomx-network-hash-rate": "Randomx network hashrate",
+    "network": "Network",
     "visual-mode": "Visual mode",
-
     "yes": "Yes",
     "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
     "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
