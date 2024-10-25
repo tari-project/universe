@@ -223,7 +223,7 @@ impl BinaryResolver {
 
         manager.read_local_versions().await;
 
-        if should_check_for_update {
+        if true {
             // Will populate Vec of downloaded versions that meet the requirements
             manager.check_for_updates().await;
         }

@@ -1,4 +1,4 @@
-use std::{ops::Div, sync::LazyLock};
+use std::sync::LazyLock;
 
 use anyhow::anyhow;
 use log::info;
@@ -182,7 +182,7 @@ impl RequestClient {
     pub async fn check_if_cache_hits(&self, url: &str) -> Result<bool, anyhow::Error> {
         const MAX_RETRIES: u8 = 3;
         const MAX_WAIT_TIME: u64 = 30;
-        const DEFAULT_WAIT_TIME: u64 = 2;
+        const MIN_WAIT_TIME: u64 = 2;
         let mut retries = 0;
 
         loop {
@@ -199,16 +199,14 @@ impl RequestClient {
             info!(target: LOG_TARGET, "Content length: {}", content_length);
             info!(target: LOG_TARGET, "Content length in mb: {}", self.convert_content_length_to_mb(content_length));
 
-            let mut sleep_time = std::time::Duration::from_secs(DEFAULT_WAIT_TIME);
+            let mut sleep_time = std::time::Duration::from_secs(MIN_WAIT_TIME);
 
             if !content_length.eq(&0) {
                 sleep_time = std::time::Duration::from_secs(
-                    (self
-                        .convert_content_length_to_mb(content_length)
-                        .div(10.0)
-                        .to_bits())
-                    .min(MAX_WAIT_TIME)
-                    .max(2),
+                    #[allow(clippy::cast_possible_truncation)]
+                    ((self.convert_content_length_to_mb(content_length) / 10.0).trunc() as u64)
+                        .min(MAX_WAIT_TIME)
+                        .max(MIN_WAIT_TIME),
                 );
             }
 
