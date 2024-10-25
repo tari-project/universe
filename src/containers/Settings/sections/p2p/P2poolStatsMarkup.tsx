@@ -42,28 +42,18 @@ const P2PoolStats = () => {
         <SettingsGroupWrapper>
             <Stack>
                 <Typography variant="h6">{t('p2pool-stats')}</Typography>
+
                 <CardContainer>
                     <CardComponent
                         heading={`${t('p2pool-connection-info')}`}
                         labels={[
                             {
+                                labelText: t('p2pool-connected'),
+                                labelValue: p2poolStats?.connected ? 'Yes' : 'No',
+                            },
+                            {
                                 labelText: 'Connected peers',
                                 labelValue: '' + (p2poolStats?.connection_info?.connected_peers ?? 0),
-                            },
-                            {
-                                labelText: 'Address',
-                                labelValue: p2poolStats?.connection_info?.listener_addresses.join(', ') || '',
-                            },
-                        ]}
-                    />
-                </CardContainer>
-                <CardContainer>
-                    <CardComponent
-                        heading={`${t('p2pool-connected')}`}
-                        labels={[
-                            {
-                                labelText: 'Connected',
-                                labelValue: p2poolStats?.connected ? 'Yes' : 'No',
                             },
                         ]}
                     />
@@ -133,6 +123,17 @@ const P2PoolStats = () => {
                                     '' +
                                     (p2poolStats?.connection_info?.network_info.connection_counters
                                         .established_outgoing ?? 0),
+                            },
+                        ]}
+                    />
+                </CardContainer>
+                <CardContainer>
+                    <CardComponent
+                        heading="Listener Addresses"
+                        labels={[
+                            {
+                                labelText: 'Address',
+                                labelValue: p2poolStats?.connection_info?.listener_addresses.join(', ') || '',
                             },
                         ]}
                     />

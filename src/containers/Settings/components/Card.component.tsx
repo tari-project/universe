@@ -9,7 +9,6 @@ export const CardComponent = ({ heading, labels }: CardComponentProps) => {
     return (
         <CardItem>
             <CardItemTitle>{heading}</CardItemTitle>
-
             {labels.map(({ labelText, labelValue }) => (
                 <CardItemLabelWrapper key={`label-${labelText}`}>
                     <CardItemLabel>{labelText}:</CardItemLabel>
