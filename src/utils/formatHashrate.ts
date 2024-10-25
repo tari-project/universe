@@ -4,7 +4,7 @@ export function formatHashrate(hashrate: number, joinUnit = true): string {
     } else if (hashrate < 1000000) {
         return (hashrate / 1000).toFixed(2) + (joinUnit ? ' kH/s' : 'k');
     } else if (hashrate < 1000000000) {
-        return (hashrate / 1000000).toFixed(2) + (joinUnit ? ' MH/s' : 'm');
+        return (hashrate / 1000000).toFixed(2) + (joinUnit ? ' MH/s' : 'M');
     } else if (hashrate < 1000000000000) {
         return (hashrate / 1000000000).toFixed(2) + (joinUnit ? ' GH/s' : 'G');
     } else if (hashrate < 1000000000000000) {
