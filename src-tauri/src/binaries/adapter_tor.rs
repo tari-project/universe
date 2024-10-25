@@ -35,7 +35,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
                 assets: vec![VersionAsset {
                     url: cdn_tor_bundle_url.to_string(),
                     name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
-                    source: ReleaseSource::Github,
+                    source: ReleaseSource::Mirror,
                 }],
             };
             return Ok(vec![version]);

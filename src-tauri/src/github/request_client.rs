@@ -1,9 +1,9 @@
 use std::{ops::Div, sync::LazyLock};
 
 use anyhow::anyhow;
+use log::info;
 use log::warn;
 use reqwest::{Client, Response};
-use log::info;
 
 use super::Release;
 const LOG_TARGET: &str = "tari::universe::request_client";
@@ -141,7 +141,9 @@ impl RequestClient {
         &self,
         response: &Response,
     ) -> CloudFlareCacheStatus {
+        info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, response status: {}, url: {}", response.status(), response.url());
         if response.status().is_server_error() || response.status().is_client_error() {
+            info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, error");
             return CloudFlareCacheStatus::Unknown;
         };
         let cache_status = CloudFlareCacheStatus::from_str(
@@ -150,6 +152,9 @@ impl RequestClient {
                 .get("cf-cache-status")
                 .map_or("", |v| v.to_str().unwrap_or_default()),
         );
+
+        info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, cache status: {:?}", cache_status.to_str());
+        info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response_raw, cache status: {:?}", response.headers().get("cf-cache-status"));
 
         cache_status.log_warning_if_present();
         cache_status
@@ -193,9 +198,9 @@ impl RequestClient {
     }
 
     pub async fn check_if_cache_hits(&self, url: &str) -> Result<bool, anyhow::Error> {
-        const MAX_RETRIES: u8 = 5;
+        const MAX_RETRIES: u8 = 3;
         const MAX_WAIT_TIME: u64 = 30;
-        const DEFAULT_WAIT_TIME: u64 = 5;
+        const DEFAULT_WAIT_TIME: u64 = 2;
         let mut retries = 0;
 
         loop {
@@ -210,14 +215,15 @@ impl RequestClient {
 
             let content_length = self.get_content_length_from_head_response(&head_response);
             info!(target: LOG_TARGET, "Content length: {}", content_length);
-            info!(target: LOG_TARGET, "Content length in MB: {}", self.convert_content_length_to_mb(content_length));
+            info!(target: LOG_TARGET, "Content length in mb: {}", self.convert_content_length_to_mb(content_length));
 
             let mut sleep_time = std::time::Duration::from_secs(DEFAULT_WAIT_TIME);
 
             if !content_length.eq(&0) {
                 sleep_time = std::time::Duration::from_secs(
                     (self.convert_content_length_to_mb(content_length).div(10.0) as u64)
-                        .max(MAX_WAIT_TIME),
+                        .min(MAX_WAIT_TIME)
+                        .max(2),
                 );
             }
 

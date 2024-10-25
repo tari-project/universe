@@ -441,12 +441,13 @@ impl BinaryManager {
             RequestClient::current()
                 .check_if_cache_hits(asset.url.as_str())
                 .await?;
-            download_file(
+            download_file_with_retries(
                 asset.url.as_str(),
                 &in_progress_file_zip,
                 progress_tracker.clone(),
             )
-            .await?;
+            .await
+            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
         }
 
         info!(target: LOG_TARGET, "Downloaded version: {:?}", version);

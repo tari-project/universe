@@ -646,16 +646,16 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
-    if use_tor {
-        progress.set_max(5).await;
-        progress
-            .update("checking-latest-version-tor".to_string(), None, 0)
-            .await;
-        binary_resolver
-            .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
-            .await?;
-        sleep(Duration::from_secs(1));
-    }
+    // if use_tor {
+    //     progress.set_max(5).await;
+    //     progress
+    //         .update("checking-latest-version-tor".to_string(), None, 0)
+    //         .await;
+    //     binary_resolver
+    //         .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+    //         .await?;
+    //     sleep(Duration::from_secs(1));
+    // }
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)

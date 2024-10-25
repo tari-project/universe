@@ -169,18 +169,20 @@ async fn list_mirror_releases(
             extract_versions_from_release(repo_owner, repo_name, response, ReleaseSource::Mirror)
                 .await?;
 
-        let args = (repo_owner, repo_name, Some(etag), None);
+        let args = (repo_owner, repo_name, None, Some(etag));
         if cache_entry_present {
             cache_json_file_lock.update_cache_entry(args.0, args.1, args.2, args.3)?;
         } else {
             cache_json_file_lock.create_cache_entry(args.0, args.1, args.2, args.3)?;
         };
-        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
         versions_list.extend(remote_versions_list);
+        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
     } else {
         let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
         versions_list.extend(content);
     }
+
+    drop(cache_json_file_lock);
 
     Ok(versions_list)
 }
@@ -213,8 +215,8 @@ async fn list_github_releases(
             cache_json_file_lock.create_cache_entry(args.0, args.1, args.2, args.3)?;
         };
 
-        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
         versions_list.extend(remote_versions_list);
+        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
     } else {
         let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
         versions_list.extend(content);
