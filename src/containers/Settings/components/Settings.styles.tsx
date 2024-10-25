@@ -5,7 +5,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const CardContainer = styled.div`
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 10px;
 `;
 
@@ -40,7 +40,8 @@ export const CardItemLabelWrapper = styled.div`
 export const CardItemLabel = styled(Typography)``;
 export const CardItemLabelValue = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
-    word-wrap: anywhere;
+    text-wrap: pretty;
+    word-break: break-all;
 `;
 
 export const ConnectionIcon = styled(IoCheckmarkCircle)<{ $isConnected?: boolean }>(({ theme, $isConnected }) => ({
