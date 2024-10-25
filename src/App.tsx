@@ -18,6 +18,7 @@ import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorD
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
+import StagedSecurity from './containers/StagedSecurity/StagedSecurity.tsx';
 import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
 import { FloatingTree } from '@floating-ui/react';
 
@@ -58,6 +59,7 @@ export default function App() {
                     <FloatingTree>
                         {/*dialogs*/}
                         <SettingsModal />
+                        <StagedSecurity />
                         <AutoUpdateDialog />
                         <CriticalErrorDialog />
                         <ExternalDependenciesDialog />
