@@ -21,7 +21,7 @@ use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_utilities::encoding::Base58;
+use tari_utilities::encoding::MBase58;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
@@ -217,7 +217,7 @@ impl TelemetryManager {
             .expect("Failed to finalize hasher variable");
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
-        let unique_string = format!("v2,{},{}", buf.to_base58(), version,);
+        let unique_string = format!("v2,{},{}", buf.to_monero_base58(), version,);
         unique_string
     }
 
