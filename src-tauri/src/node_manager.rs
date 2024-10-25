@@ -223,7 +223,7 @@ impl NodeManager {
                 ) {
                     Ok(datetime) => datetime,
                     Err(e) => {
-                        debug!(target: LOG_TARGET, "Error parsing datetime: {}", e);
+                        // debug!(target: LOG_TARGET, "Error parsing datetime: {}", e);
                         return false;
                     }
                 };
