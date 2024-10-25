@@ -58,7 +58,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     fetchAppConfig: async () => {
         try {
             const appConfig = await invoke('get_app_config');
-            console.log('appConfig', appConfig);
             set(appConfig);
         } catch (e) {
             Sentry.captureException(e);
