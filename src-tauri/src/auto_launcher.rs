@@ -7,15 +7,11 @@ use log::{info, warn};
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
 
+use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+
 const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
-
-pub enum CurrentOperatingSystem {
-    Windows,
-    Linux,
-    MacOS,
-}
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -28,22 +24,10 @@ impl AutoLauncher {
         }
     }
 
-    fn detect_current_os() -> CurrentOperatingSystem {
-        if cfg!(target_os = "windows") {
-            CurrentOperatingSystem::Windows
-        } else if cfg!(target_os = "linux") {
-            CurrentOperatingSystem::Linux
-        } else if cfg!(target_os = "macos") {
-            CurrentOperatingSystem::MacOS
-        } else {
-            panic!("Unsupported OS");
-        }
-    }
-
     fn build_auto_launcher(app_name: &str, app_path: &str) -> Result<AutoLaunch, anyhow::Error> {
         info!(target: LOG_TARGET, "Building auto-launcher with app_name: {} and app_path: {}", app_name, app_path);
 
-        match AutoLauncher::detect_current_os() {
+        match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Windows => {
                 return AutoLaunchBuilder::new()
                     .set_app_name(app_name)
@@ -79,7 +63,7 @@ impl AutoLauncher {
 
         if config_is_auto_launcher_enabled && !is_auto_launcher_enabled {
             info!(target: LOG_TARGET, "Enabling auto-launcher");
-            match AutoLauncher::detect_current_os() {
+            match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::MacOS => {
                     // This for some reason fixes the issue where macOS starts two instances of the app
                     // when auto-launcher is enabled and when during shutdown user selects to reopen the apps after restart

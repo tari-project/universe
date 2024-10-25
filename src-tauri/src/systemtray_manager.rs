@@ -6,7 +6,10 @@ use tauri::{
     SystemTrayMenuItem,
 };
 
-use crate::hardware_monitor::HardwareStatus;
+use crate::{
+    hardware_monitor::HardwareStatus,
+    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
+};
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 static INSTANCE: LazyLock<SystemtrayManager> = LazyLock::new(SystemtrayManager::new);
@@ -62,12 +65,6 @@ impl SystrayItemId {
             SystrayItemId::UnMinimize => "Unminimize".to_string(),
         }
     }
-}
-
-pub enum CurrentOperatingSystem {
-    Windows,
-    Linux,
-    MacOS,
 }
 
 #[derive(Debug, Clone)]
@@ -135,7 +132,7 @@ impl SystemtrayManager {
 
     fn initialize_systray() -> SystemTray {
         info!(target: LOG_TARGET, "Initializing system tray");
-        let current_os = SystemtrayManager::detect_current_os();
+        let current_os = PlatformUtils::detect_current_os();
         let systray = SystemTray::new();
 
         let empty_data = SystrayData {
@@ -162,7 +159,7 @@ impl SystemtrayManager {
     }
 
     fn internal_create_tooltip_from_data(data: SystrayData) -> String {
-        let current_os = SystemtrayManager::detect_current_os();
+        let current_os = PlatformUtils::detect_current_os();
 
         match current_os {
             CurrentOperatingSystem::Windows => {
@@ -223,20 +220,8 @@ impl SystemtrayManager {
             .set_enabled(window.is_minimized().expect("Could not get is_minimized"));
     }
 
-    fn detect_current_os() -> CurrentOperatingSystem {
-        if cfg!(target_os = "windows") {
-            CurrentOperatingSystem::Windows
-        } else if cfg!(target_os = "linux") {
-            CurrentOperatingSystem::Linux
-        } else if cfg!(target_os = "macos") {
-            CurrentOperatingSystem::MacOS
-        } else {
-            panic!("Unsupported OS");
-        }
-    }
-
     pub fn update_systray(&self, app: AppHandle, data: SystrayData) {
-        let current_os = SystemtrayManager::detect_current_os();
+        let current_os = PlatformUtils::detect_current_os();
         let tooltip = SystemtrayManager::internal_create_tooltip_from_data(data.clone());
 
         match current_os {
@@ -284,7 +269,7 @@ impl SystemtrayManager {
                 match id.as_str() {
                     "unminimize" => {
                         info!(target: LOG_TARGET, "Unminimizing window");
-                        match SystemtrayManager::detect_current_os() {
+                        match PlatformUtils::detect_current_os() {
                             CurrentOperatingSystem::Linux => {
                                 let is_minimized = window.is_minimized().unwrap_or(false);
                                 let is_visible = window.is_visible().unwrap_or(false);

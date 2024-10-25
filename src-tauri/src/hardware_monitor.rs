@@ -7,15 +7,11 @@ use serde::{Deserialize, Serialize};
 use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
 use tokio::sync::RwLock;
 
+use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+
 const LOG_TARGET: &str = "tari::universe::hardware_monitor";
 static INSTANCE: LazyLock<RwLock<HardwareMonitor>> =
     LazyLock::new(|| RwLock::new(HardwareMonitor::new()));
-
-enum CurrentOperatingSystem {
-    Windows,
-    Linux,
-    MacOS,
-}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct HardwareParameters {
@@ -80,8 +76,8 @@ pub struct HardwareMonitor {
 impl HardwareMonitor {
     pub fn new() -> Self {
         HardwareMonitor {
-            current_os: HardwareMonitor::detect_current_os(),
-            current_implementation: match HardwareMonitor::detect_current_os() {
+            current_os: PlatformUtils::detect_current_os(),
+            current_implementation: match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => Box::new(WindowsHardwareMonitor {
                     nvml: HardwareMonitor::initialize_nvml(),
                     gpu_status_file: None,
@@ -115,18 +111,6 @@ impl HardwareMonitor {
                 warn!(target: LOG_TARGET, "Failed to initialize NVML: {}", e);
                 None
             }
-        }
-    }
-
-    fn detect_current_os() -> CurrentOperatingSystem {
-        if cfg!(target_os = "windows") {
-            CurrentOperatingSystem::Windows
-        } else if cfg!(target_os = "linux") {
-            CurrentOperatingSystem::Linux
-        } else if cfg!(target_os = "macos") {
-            CurrentOperatingSystem::MacOS
-        } else {
-            panic!("Unsupported OS");
         }
     }
 
