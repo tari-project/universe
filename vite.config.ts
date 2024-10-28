@@ -40,6 +40,9 @@ export default defineConfig(({ command, mode }) => {
     }
     return {
         ...baseOptions,
+        build: {
+            sourcemap: true,
+        },
         plugins: [
             ...plugins,
             sentryVitePlugin({
@@ -52,6 +55,11 @@ export default defineConfig(({ command, mode }) => {
                 authToken: process.env.SENTRY_AUTH_TOKEN,
                 disable: mode === 'development',
                 telemetry: false,
+                debug: true,
+                sourcemaps: {
+                    assets: ['dist/assets'],
+                    ignore: ['node_modules'],
+                },
             }),
         ],
     };
