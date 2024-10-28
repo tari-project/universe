@@ -20,7 +20,6 @@ export default function History() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const transactions = useWalletStore((s) => s.transactions);
-
     const txMarkup = useMemo(() => transactions.map((tx) => <HistoryItem key={tx.tx_id} item={tx} />), [transactions]);
 
     return (

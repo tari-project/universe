@@ -38,11 +38,14 @@ function getRandomInt(max: number) {
 export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
     const { t } = useTranslation('sidebar');
-    const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
-    const isSent = !item.blockHeight;
     const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
+    const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
 
-    const itemTitle = !isSent ? `${t('block')} #${item.blockHeight}` : `${t('sent')} tXTM`;
+    if (!item.blockHeight || item.payment_id?.length > 0) {
+        return null;
+    }
+    
+    const itemTitle = `${t('block')} #${item.blockHeight}`;
 
     return (
         <Wrapper variants={listItem}>
@@ -64,11 +67,8 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                 </InfoWrapper>
             </LeftContent>
             <EarningsWrapper>
-                <Typography
-                    variant="h5"
-                    style={{ color: isSent ? theme.palette.error.main : theme.palette.success.main }}
-                >
-                    {isSent ? `- ` : `+ `}
+                <Typography variant="h5" style={{ color: theme.palette.success.main }}>
+                    {`+ `}
                 </Typography>
                 <Typography variant="h5" style={{ color: '#fff' }}>{`${earningsFormatted} tXTM`}</Typography>
             </EarningsWrapper>

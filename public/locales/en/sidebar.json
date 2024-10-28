@@ -15,6 +15,5 @@
     "paper-wallet-tooltip-title": "Sync with Phone",
     "paper-wallet-tooltip-message": "Track your tXTM anywhere by syncing your Universe wallet to Tari Aurora.",
     "show-history": "Show history",
-    "hide-history": "Hide history",
-    "sent": "Sent"
+    "hide-history": "Hide history"
 }

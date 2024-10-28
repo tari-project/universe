@@ -36,11 +36,11 @@ export default function useFetchTx() {
             const mapped = sortedTransactions?.map((tx) => {
                 const blockHeight = tx.message.split(': ')[1];
 
-                if (!blockHeight) {
-                    return { ...tx, type: 'sent' as Transaction['type'] };
-                } else {
-                    return { ...tx, blockHeight, type: 'won' as Transaction['type'] };
+                if (!!blockHeight) {
+                    return { ...tx, blockHeight };
                 }
+
+                return tx;
             }) as Transaction[];
 
             if (mapped?.length) {
