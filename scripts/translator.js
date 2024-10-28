@@ -3,6 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import process from 'process';
 
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const BASE_PATH = path.join(__dirname, '..', 'public', 'locales');
+
 /**
  * Recursively merges properties of two objects.
  *
@@ -58,16 +61,14 @@ function setNestedValue(obj, key, value) {
  * @returns {Promise<string[]>} - A promise that resolves to an array of file paths.
  */
 async function getLocalesFilePaths(scopeFileName) {
-    const __dirname = path.dirname(new URL(import.meta.url).pathname);
-    const basePath = path.join(__dirname, '..', 'public', 'locales');
     let fileNames = [];
 
     try {
-        const localesDirs = await fs.promises.readdir(basePath, { withFileTypes: true });
+        const localesDirs = await fs.promises.readdir(BASE_PATH, { withFileTypes: true });
 
         localesDirs.forEach((dir) => {
             if (dir.isDirectory()) {
-                const fileNamePath = path.join(basePath, dir.name, `${scopeFileName}.json`);
+                const fileNamePath = path.join(BASE_PATH, dir.name, `${scopeFileName}.json`);
                 fileNames.push(fileNamePath);
             }
         });
@@ -79,51 +80,86 @@ async function getLocalesFilePaths(scopeFileName) {
 }
 
 /**
+ * Sorts the keys of an object alphabetically.
+ *
+ * @param {Object} obj - The object to sort.
+ * @returns {Object} - The sorted object.
+ */
+function sortObjectKeys(obj) {
+    if (typeof obj !== 'object' || obj === null) return obj;
+    if (Array.isArray(obj)) return obj.map(sortObjectKeys);
+
+    const sortedObj = {};
+    Object.keys(obj)
+        .sort()
+        .forEach((key) => {
+            sortedObj[key] = sortObjectKeys(obj[key]);
+        });
+
+    return sortedObj;
+}
+
+/**
  * Updates translation files by setting a nested value in JSON files
- * located in the 'public/locales' directory. It takes a file name and a key-value
- * pair as arguments, where the key is a dot-separated string representing the
- * nested property to update, and the value is the new value to set.
+ * located in the 'public/locales' directory. It takes a file name and an optional key-value
+ * pair as arguments. The key is a dot-separated string representing the nested property to update,
+ * and the value is the new value to set.
+ *
+ * If only the file name is provided, the script will clean up and format the translation files
+ * by merging them with the default English translations and sorting the keys.
  *
  * Usage:
- *   `npm run translate <fileName> <key="value">`
+ *   `npm run translate <fileName> [<key="value">]`
  *
  * Arguments:
  *   *fileName* - The name of the scope file to search for (without extension).
- *   *key="value"* - The key-value pair to set in the translation files.
+ *   *key="value"* (optional) - The key-value pair to set in the translation files.
  *
- * Example:
- *   `npm run translate common greeting.hello="Hello, world!"`
+ * Examples:
+ *   `npm run translate common` - Cleans up and formats the translation files for the 'common' scope.
+ *   `npm run translate common greeting.hello="Hello, world!"` - Sets the value of 'greeting.hello' to "Hello, world!" in the 'common' scope.
  */
 async function main() {
     const args = process.argv.slice(2);
-
-    if (args.length < 2) {
-        console.error('Usage: npm run translate <fileName> <key="value">');
-        process.exit(1);
-    }
-
     const fileName = args[0];
-    const translation = args[1].split('=');
 
-    if (translation.length !== 2) {
-        console.error('Translation argument must be in the format key=value');
-        process.exit(1);
+    if (args.length === 1) {
+        console.log(`Cleaning up locales files for "${fileName}"...`);
     }
 
+    if (!args.length) {
+        console.error(`
+            Usage:
+            npm run translate <fileName> - to prettify and create english templates for all locales
+            npm run translate <fileName> <key="value"> - create translations template based on en
+        `);
+        process.exit(1);
+    }
     const localesFilesPaths = await getLocalesFilePaths(fileName);
+
+    const enTranslationFile = path.join(BASE_PATH, 'en', `${fileName}.json`);
+    const enTranslations = await fs.promises.readFile(enTranslationFile);
 
     for (const filePath of localesFilesPaths) {
         try {
             const file = await fs.promises.readFile(filePath);
             const translations = JSON.parse(file);
+            const translationsWithDefaults = mergeDeep(JSON.parse(enTranslations), translations);
 
-            setNestedValue(translations, translation[0], translation[1]);
+            if (args > 1) {
+                const translation = args[1].split('=');
+                setNestedValue(translationsWithDefaults, translation[0], translation[1]);
+            }
 
-            await fs.promises.writeFile(filePath, JSON.stringify(translations, null, 2));
+            const sortedTranslations = sortObjectKeys(translationsWithDefaults);
+
+            await fs.promises.writeFile(filePath, JSON.stringify(sortedTranslations, null, 2));
         } catch (err) {
             console.error('Error processing file:', filePath, err);
         }
     }
+
+    console.log('Translation update complete!');
 }
 
 main();
