@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite dev --mode development",
-        "build": "tsc && vite build",
+        "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
         "lint": "eslint src/",
