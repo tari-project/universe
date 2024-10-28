@@ -108,5 +108,7 @@
     "passphrase": "पासफ्रेज़"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
-  "set-dynamic-fail-data": "Set custom urls for monero nodes"
+  "set-dynamic-fail-data": "Set custom urls for monero nodes",
+  "tor-entry-guards": "Tor Entry Guards",
+  "no-entry-guard": "No Entry Guard connected!"
 }

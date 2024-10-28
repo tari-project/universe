@@ -1,13 +1,15 @@
 import { create } from './create';
-import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api';
 import * as Sentry from '@sentry/react';
+import { Transaction } from '@app/types/wallet.ts';
 
 interface State extends WalletBalance {
     tari_address_base58: string;
     tari_address_emoji: string;
+    tari_address?: string;
     balance: number | null;
-    transactions: TransactionInfo[];
+    transactions: Transaction[];
     isTransactionLoading: boolean;
     is_wallet_importing: boolean;
 }
@@ -15,7 +17,7 @@ interface State extends WalletBalance {
 interface Actions {
     fetchWalletDetails: () => Promise<void>;
     setTransactionsLoading: (isTransactionLoading: boolean) => void;
-    setTransactions: (transactions?: TransactionInfo[]) => void;
+    setTransactions: (transactions?: Transaction[]) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
 }
 
@@ -46,6 +48,7 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
             } = tari_wallet_details.wallet_balance || {};
             // Q: Should we subtract pending_outgoing_balance here?
             const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
+
             set({
                 ...tari_wallet_details.wallet_balance,
                 tari_address_base58: tari_wallet_details.tari_address_base58,

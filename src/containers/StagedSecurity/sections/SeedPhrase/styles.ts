@@ -87,6 +87,7 @@ export const CopyButton = styled('button')`
     max-width: 566px;
     width: 100%;
     margin: auto;
+    cursor: pointer;
 
     &:hover {
         background: rgba(255, 255, 255, 0.5);

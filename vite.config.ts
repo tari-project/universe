@@ -40,6 +40,9 @@ export default defineConfig(({ command, mode }) => {
     }
     return {
         ...baseOptions,
+        build: {
+            sourcemap: true,
+        },
         plugins: [
             ...plugins,
             sentryVitePlugin({
