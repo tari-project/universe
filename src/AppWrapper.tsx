@@ -6,6 +6,7 @@ import { useLangaugeResolver } from './hooks/useLanguageResolver.ts';
 import { useAppConfigStore } from './store/useAppConfigStore.ts';
 import { setupLogger } from './utils/shared-logger.ts';
 import App from './App.tsx';
+import { useDetectMode } from '@app/hooks/helpers/useDetectMode.ts';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
 
@@ -52,6 +53,7 @@ const useDisableRefresh = () => {
 };
 
 export default function AppWrapper() {
+    useDetectMode();
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
     useLangaugeResolver();

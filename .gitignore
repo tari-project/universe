@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 src-tauri/gpu_status.json
+
+# Sentry Config File
+.env.sentry-build-plugin
