@@ -93,6 +93,10 @@ impl TorManager {
             .map(|m| m.control_port))
     }
 
+    pub async fn get_entry_guards(&self) -> Result<Vec<String>, anyhow::Error> {
+        self.watcher.read().await.adapter.get_entry_guards().await
+    }
+
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;

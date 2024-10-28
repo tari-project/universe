@@ -19,6 +19,7 @@ import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import * as Sentry from '@sentry/react';
+import { TorDebug } from './TorDebug';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
@@ -111,92 +112,95 @@ export const TorMarkup = () => {
     }, [editedConfig?.bridges, editedConfig?.use_bridges]);
 
     return (
-        <SettingsGroupWrapper>
-            <SettingsGroup>
-                <SettingsGroupContent>
-                    <SettingsGroupTitle>
-                        <Typography variant="h6">
-                            <Trans>Tor</Trans>
-                            <b>&nbsp;({t('app-restart-required').toUpperCase()})</b>
-                        </Typography>
-                    </SettingsGroupTitle>
-                    <Typography>{t('setup-tor-settings')}</Typography>
-                </SettingsGroupContent>
-                <SettingsGroupAction>
-                    {isSaveButtonVisible ? (
-                        <Button onClick={onSave}>{t('save')}</Button>
-                    ) : (
-                        <ToggleSwitch checked={editedUseTor} onChange={() => setEditedUseTor((p) => !p)} />
-                    )}
-                </SettingsGroupAction>
-            </SettingsGroup>
+        <>
+            <SettingsGroupWrapper>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <SettingsGroupTitle>
+                            <Typography variant="h6">
+                                <Trans>Tor</Trans>
+                                <b>&nbsp;({t('app-restart-required').toUpperCase()})</b>
+                            </Typography>
+                        </SettingsGroupTitle>
+                        <Typography>{t('setup-tor-settings')}</Typography>
+                    </SettingsGroupContent>
+                    <SettingsGroupAction>
+                        {isSaveButtonVisible ? (
+                            <Button onClick={onSave}>{t('save')}</Button>
+                        ) : (
+                            <ToggleSwitch checked={editedUseTor} onChange={() => setEditedUseTor((p) => !p)} />
+                        )}
+                    </SettingsGroupAction>
+                </SettingsGroup>
 
-            {editedUseTor && editedConfig ? (
-                <TorSettingsContainer>
-                    <Stack style={{ width: '100%' }} direction="column">
-                        <Typography variant="h6">{t('control-port')}</Typography>
-                        <Input
-                            name="control-port"
-                            value={editedConfig.control_port}
-                            placeholder="9051"
-                            hasError={hasControlPortError(+editedConfig.control_port)}
-                            onChange={({ target }) => {
-                                if (target.value && isNaN(+target.value)) return;
-                                setEditedConfig((prev) => ({
-                                    ...(prev as TorConfig),
-                                    control_port: target.value !== '' ? +target.value.trim() : '',
-                                }));
-                            }}
-                        />
-                        <ErrorTypography variant="p">
-                            {hasControlPortError(+editedConfig.control_port) && t('errors.invalid-control-port')}
-                        </ErrorTypography>
-                    </Stack>
-
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                        <Typography variant="h6">{t('tor-bridges')}</Typography>
-                        <ToggleSwitch
-                            label={'Use Tor Bridges'}
-                            variant="gradient"
-                            checked={editedConfig.use_bridges}
-                            onChange={toggleUseBridges}
-                        />
-                    </Stack>
-
-                    {editedConfig.use_bridges && (
-                        <Stack>
-                            <StyledInput
-                                placeholder="obfs4 IP:PORT FINGERPRINT cert=CERT iat-mode=0"
-                                hasError={hasBridgeError(editedConfig.bridges[0])}
-                                value={editedConfig.bridges[0]}
+                {editedUseTor && editedConfig ? (
+                    <TorSettingsContainer>
+                        <Stack style={{ width: '100%' }} direction="column">
+                            <Typography variant="h6">{t('control-port')}</Typography>
+                            <Input
+                                name="control-port"
+                                value={editedConfig.control_port}
+                                placeholder="9051"
+                                hasError={hasControlPortError(+editedConfig.control_port)}
                                 onChange={({ target }) => {
+                                    if (target.value && isNaN(+target.value)) return;
                                     setEditedConfig((prev) => ({
                                         ...(prev as TorConfig),
-                                        bridges: [target.value.trim(), prev?.bridges[1] || ''],
+                                        control_port: target.value !== '' ? +target.value.trim() : '',
                                     }));
                                 }}
                             />
                             <ErrorTypography variant="p">
-                                {hasBridgeError(editedConfig.bridges[0]) && t('errors.invalid-bridge')}
-                            </ErrorTypography>
-                            <StyledInput
-                                placeholder="obfs4 IP:PORT FINGERPRINT cert=CERT iat-mode=0"
-                                hasError={hasBridgeError(editedConfig.bridges[1])}
-                                value={editedConfig.bridges[1]}
-                                onChange={(e) => {
-                                    setEditedConfig((prev) => ({
-                                        ...(prev as TorConfig),
-                                        bridges: [prev?.bridges[0] || '', e.target.value.trim()],
-                                    }));
-                                }}
-                            />
-                            <ErrorTypography variant="p">
-                                {hasBridgeError(editedConfig.bridges[1]) && t('errors.invalid-bridge')}
+                                {hasControlPortError(+editedConfig.control_port) && t('errors.invalid-control-port')}
                             </ErrorTypography>
                         </Stack>
-                    )}
-                </TorSettingsContainer>
-            ) : null}
-        </SettingsGroupWrapper>
+
+                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                            <Typography variant="h6">{t('tor-bridges')}</Typography>
+                            <ToggleSwitch
+                                label={'Use Tor Bridges'}
+                                variant="gradient"
+                                checked={editedConfig.use_bridges}
+                                onChange={toggleUseBridges}
+                            />
+                        </Stack>
+
+                        {editedConfig.use_bridges && (
+                            <Stack>
+                                <StyledInput
+                                    placeholder="obfs4 IP:PORT FINGERPRINT cert=CERT iat-mode=0"
+                                    hasError={hasBridgeError(editedConfig.bridges[0])}
+                                    value={editedConfig.bridges[0]}
+                                    onChange={({ target }) => {
+                                        setEditedConfig((prev) => ({
+                                            ...(prev as TorConfig),
+                                            bridges: [target.value.trim(), prev?.bridges[1] || ''],
+                                        }));
+                                    }}
+                                />
+                                <ErrorTypography variant="p">
+                                    {hasBridgeError(editedConfig.bridges[0]) && t('errors.invalid-bridge')}
+                                </ErrorTypography>
+                                <StyledInput
+                                    placeholder="obfs4 IP:PORT FINGERPRINT cert=CERT iat-mode=0"
+                                    hasError={hasBridgeError(editedConfig.bridges[1])}
+                                    value={editedConfig.bridges[1]}
+                                    onChange={(e) => {
+                                        setEditedConfig((prev) => ({
+                                            ...(prev as TorConfig),
+                                            bridges: [prev?.bridges[0] || '', e.target.value.trim()],
+                                        }));
+                                    }}
+                                />
+                                <ErrorTypography variant="p">
+                                    {hasBridgeError(editedConfig.bridges[1]) && t('errors.invalid-bridge')}
+                                </ErrorTypography>
+                            </Stack>
+                        )}
+                    </TorSettingsContainer>
+                ) : null}
+            </SettingsGroupWrapper>
+            {defaultUseTor && <TorDebug />}
+        </>
     );
 };
