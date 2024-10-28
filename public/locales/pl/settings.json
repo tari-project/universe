@@ -112,5 +112,9 @@
   "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
   "set-dynamic-fail-data": "Ustaw niestandardowe adresy URL dla węzłów Monero",
   "tor-entry-guards": "Tor Entry Guards",
-  "no-entry-guard": "Brak połączenia z Entry Guardami!"
+  "no-entry-guard": "Brak połączenia z Entry Guardami!",
+  "pre-release": {
+    "title": "Używaj wersji przedpremierowej",
+    "subtitle": "Eksploruj najnowsze funkcje przed ich wydaniem i przekaż nam swoją opinię"
+  }
 }

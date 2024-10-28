@@ -110,5 +110,9 @@
   "use-dynamic-fail-data": "Use dynamic fail data",
   "set-dynamic-fail-data": "Set custom urls for monero nodes",
   "tor-entry-guards": "Tor Entry Guards",
-  "no-entry-guard": "No Entry Guard connected!"
+  "no-entry-guard": "No Entry Guard connected!",
+  "pre-release": {
+    "title": "Use pre-release version",
+    "subtitle": "Explore the latest features before they go live and provide feedback"
+  }
 }

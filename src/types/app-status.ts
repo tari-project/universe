@@ -31,6 +31,7 @@ export interface AppConfig {
     auto_update: boolean;
     mmproxy_use_monero_fail: boolean;
     mmproxy_monero_nodes: string[];
+    pre_release: boolean;
 }
 
 export enum ExternalDependencyStatus {

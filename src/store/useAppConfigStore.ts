@@ -25,6 +25,7 @@ interface Actions {
     setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
+    setPreRelease: (preRelease: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -48,6 +49,7 @@ const initialState: State = {
     auto_update: false,
     mmproxy_use_monero_fail: false,
     mmproxy_monero_nodes: ['https://xmr-01.tari.com'],
+    pre_release: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
@@ -232,6 +234,16 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set monerod config', e);
             appStateStore.setError('Could not change monerod config');
             set({ mmproxy_use_monero_fail: !useMoneroFail, mmproxy_monero_nodes: prevMoneroNodes });
+        });
+    },
+    setPreRelease: async (preRelease) => {
+        set({ pre_release: preRelease });
+        invoke('set_pre_release', { preRelease }).catch((e) => {
+            Sentry.captureException(e);
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set pre release', e);
+            appStateStore.setError('Could not change pre release');
+            set({ pre_release: !preRelease });
         });
     },
 }));

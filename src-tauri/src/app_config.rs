@@ -63,6 +63,8 @@ pub struct AppConfigFromFile {
     mmproxy_monero_nodes: Vec<String>,
     #[serde(default = "default_false")]
     auto_update: bool,
+    #[serde(default = "default_false")]
+    pre_release: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -95,6 +97,7 @@ impl Default for AppConfigFromFile {
             mmproxy_use_monero_fail: false,
             auto_update: false,
             reset_earnings: false,
+            pre_release: false,
         }
     }
 }
@@ -179,6 +182,7 @@ pub(crate) struct AppConfig {
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
     auto_update: bool,
+    pre_release: bool,
 }
 
 impl AppConfig {
@@ -212,6 +216,7 @@ impl AppConfig {
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             auto_update: false,
+            pre_release: false,
         }
     }
 
@@ -261,6 +266,7 @@ impl AppConfig {
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
                 self.auto_update = config.auto_update;
                 self.reset_earnings = config.reset_earnings;
+                self.pre_release = config.pre_release;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -484,6 +490,12 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_pre_release(&mut self, pre_release: bool) -> Result<(), anyhow::Error> {
+        self.pre_release = pre_release;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub async fn set_monerod_config(
         &mut self,
         use_monero_fail: bool,
@@ -532,6 +544,7 @@ impl AppConfig {
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
             auto_update: self.auto_update,
+            pre_release: self.pre_release,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

@@ -404,6 +404,27 @@ async fn set_auto_update(
 }
 
 #[tauri::command]
+async fn set_pre_release(
+    pre_release: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_pre_release(pre_release)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_pre_release {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_pre_release took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn set_monerod_config(
     use_monero_fail: bool,
     monero_nodes: Vec<String>,
@@ -1407,6 +1428,7 @@ async fn get_transaction_history(
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
     if state.is_getting_transaction_history.load(Ordering::SeqCst) {
+        println!("XXXXXXXXXXXX Already getting transaction history");
         warn!(target: LOG_TARGET, "Already getting transaction history");
         return Err("Already getting transaction history".to_string());
     }
@@ -2094,7 +2116,8 @@ fn main() {
             set_tor_config,
             fetch_tor_bridges,
             set_monerod_config,
-            get_tor_entry_guards
+            get_tor_entry_guards,
+            set_pre_release
         ])
         .build(tauri::generate_context!())
         .inspect_err(
