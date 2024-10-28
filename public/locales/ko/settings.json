@@ -1,6 +1,5 @@
 {
   "settings": "설정",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "시드 단어",
   "send-logs": "로그 전송",
   "your-feedback": "문제를 설명해 주세요",
@@ -22,23 +21,14 @@
   "tabs": {
     "general": "일반",
     "mining": "채굴",
-    "experimental": "실험적"
+    "experimental": "실험적",
+    "very_experimental": "매우 실험적",
+    "airdrop": "에어드롭",
+    "wallet": "지갑"
   },
   "monero-address": {
     "title": "모네로 주소",
     "placeholder": "모네로 주소 입력"
-  },
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "마지막 블록 체인 추가 시간",
   "visual-mode": "시각 모드",
@@ -72,21 +62,50 @@
   "disconnect": "에어드롭 연결 해제",
   "inviteCode": "초대 코드",
   "use-tor": "Tor 사용하기",
-  "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network",
   "importing-wallet": "지갑 가져오기",
   "action-requires-restart": "이 작업은 변경 사항을 적용하기 위해 재시작이 필요합니다",
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
   "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",
   "report-issue": "문제 보고",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "선호 설정이 저장되어 다음에 Tari Universe가 시작될 때 적용됩니다.",
+  "gpu-device-enabled": "GPU 채굴 장치",
+  "gpu-device-enabled-description": "특정 GPU 장치를 활성화하거나 비활성화합니다.",
+  "gpu-device-no-found": "⚠️ GPU 장치를 찾을 수 없습니다",
+  "mine-on-app-start": {
+    "title": "시작 시 채굴",
+    "description": "활성화되면 앱이 시작될 때 자동으로 채굴을 시작합니다."
+  },
+  "should-auto-start": {
+    "title": "시스템 부팅 시 자동 시작",
+    "description": "활성화되면 컴퓨터에 로그인할 때 앱이 자동으로 시작됩니다."
+  },
+  "use-auto-update": {
+    "title": "Tari Universe 자동 업데이트",
+    "description": "활성화되면 앱이 업데이트를 확인하고 자동으로 설치합니다."
+  },
+  "restart-later": "나중에 재시작",
+  "restart-now": "지금 재시작",
+  "restart-universe": "Tari Universe를 재시작하시겠습니까?",
+  "tari-wallet-address": "Tari 지갑 주소",
+  "tor-bridges": "Tor 브리지",
+  "theme": "테마",
+  "sha-network-hash-rate": "Sha3 네트워크 해시레이트",
+  "randomx-network-hash-rate": "Randomx 네트워크 해시레이트",
+  "network": "네트워크",
+  "app-restart-required": "앱 재시작 필요",
+  "setup-tor-settings": "개인정보 보호 및 연결을 위한 Tor 설정 구성",
+  "control-port": "제어 포트",
+  "save": "저장",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
+    "invalid-control-port": "제어 포트 구성 설정이 잘못되었습니다",
+    "invalid-bridge": "브리지 구성 설정이 잘못되었습니다"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "Tari Aurora 연결",
+    "connect-wallet-to-phone": "Tari Universe 지갑을 휴대폰에 연결하세요",
+    "load-qr-code": "QR 코드 불러오기",
+    "do-not-share-this-code": "이 코드를 누구와도 공유하지 마세요",
+    "passphrase": "암호 구문"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
   "set-dynamic-fail-data": "Set custom urls for monero nodes",

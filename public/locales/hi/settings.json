@@ -1,6 +1,5 @@
 {
   "settings": "सेटिंग्स",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "बीज शब्द",
   "send-logs": "लॉग्स भेजें",
   "your-feedback": "कृपया अपनी समस्या का वर्णन करें",
@@ -22,23 +21,14 @@
   "tabs": {
     "general": "सामान्य",
     "mining": "माइनिंग",
-    "experimental": "प्रायोगिक"
+    "experimental": "प्रायोगिक",
+    "very_experimental": "बहुत प्रयोगात्मक",
+    "airdrop": "एयरड्रॉप",
+    "wallet": "वॉलेट"
   },
   "monero-address": {
     "title": "मोनरो पता",
     "placeholder": "मोनरो पता दर्ज करें"
-  },
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
   "visual-mode": "दृश्य मोड",
@@ -72,21 +62,50 @@
   "disconnect": "एयरड्रॉप से डिस्कनेक्ट करें",
   "inviteCode": "आमंत्रण कोड",
   "use-tor": "टोर का उपयोग करें",
-  "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network",
   "importing-wallet": "वॉलेट आयात किया जा रहा है",
   "action-requires-restart": "इस क्रिया के लिए परिवर्तनों को लागू करने हेतु पुनः आरंभ करना आवश्यक है",
   "low-hash-rate-warning": "आपकी हैश रेट बहुत कम है। Tari Universe के अलावा सभी ऐप्स को बंद करने का प्रयास करें",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
   "report-issue": "समस्या की रिपोर्ट करें",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "आपकी पसंद को सहेजा जाएगा और अगली बार जब तारी यूनिवर्स शुरू होगा, तब लागू किया जाएगा।",
+  "gpu-device-enabled": "GPU माइनिंग डिवाइस",
+  "gpu-device-enabled-description": "विशिष्ट GPU डिवाइस को सक्षम या अक्षम करें।",
+  "gpu-device-no-found": "⚠️ कोई GPU डिवाइस नहीं मिला",
+  "mine-on-app-start": {
+    "title": "स्टार्टअप पर माइनिंग",
+    "description": "सक्षम होने पर, ऐप लॉन्च होने पर स्वचालित रूप से माइनिंग शुरू कर देगा।"
+  },
+  "should-auto-start": {
+    "title": "सिस्टम बूट पर स्वचालित शुरूआत",
+    "description": "सक्षम होने पर, जब आप अपने कंप्यूटर में लॉग इन करेंगे तो ऐप स्वचालित रूप से शुरू हो जाएगा।"
+  },
+  "use-auto-update": {
+    "title": "तारी यूनिवर्स को स्वचालित रूप से अपडेट करें",
+    "description": "सक्षम होने पर, ऐप अपडेट की जांच करेगा और उन्हें स्वचालित रूप से इंस्टॉल करेगा।"
+  },
+  "restart-later": "बाद में पुनः प्रारंभ करें",
+  "restart-now": "अभी पुनः प्रारंभ करें",
+  "restart-universe": "तारी यूनिवर्स को पुनः प्रारंभ करें?",
+  "tari-wallet-address": "तारी वॉलेट पता",
+  "tor-bridges": "टोर ब्रिज",
+  "theme": "थीम",
+  "sha-network-hash-rate": "Sha3 नेटवर्क हैशरेट",
+  "randomx-network-hash-rate": "Randomx नेटवर्क हैशरेट",
+  "network": "नेटवर्क",
+  "app-restart-required": "ऐप पुनः प्रारंभ आवश्यक है",
+  "setup-tor-settings": "गोपनीयता नियंत्रण और कनेक्टिविटी के लिए टोर सेटिंग्स सेटअप करें",
+  "control-port": "कंट्रोल पोर्ट",
+  "save": "सहेजें",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
+    "invalid-control-port": "कंट्रोल पोर्ट कॉन्फ़िगरेशन अमान्य है",
+    "invalid-bridge": "ब्रिज कॉन्फ़िगरेशन अमान्य है"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "तारी ऑरोरा लिंक करें",
+    "connect-wallet-to-phone": "अपने तारी यूनिवर्स वॉलेट को अपने फोन से कनेक्ट करें",
+    "load-qr-code": "QR कोड लोड करें",
+    "do-not-share-this-code": "इस कोड को किसी के साथ साझा न करें",
+    "passphrase": "पासफ्रेज़"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
   "set-dynamic-fail-data": "Set custom urls for monero nodes",
