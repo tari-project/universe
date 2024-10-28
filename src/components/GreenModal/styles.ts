@@ -62,6 +62,7 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number }>`
 `;
 
 export const CloseButton = styled('button')`
+    cursor: pointer;
     position: absolute;
     top: -20px;
     left: 100%;
@@ -71,6 +72,7 @@ export const CloseButton = styled('button')`
     transition:
         color 0.2s ease,
         transform 0.2s ease;
+
     &:hover {
         color: #fff;
         transform: scale(1.1);
