@@ -1,3 +1,4 @@
+import { m } from 'framer-motion';
 import styled from 'styled-components';
 
 export const Wrapper = styled('div')``;
@@ -66,16 +67,27 @@ export const BlackButton = styled('button')`
     text-transform: uppercase;
     cursor: pointer;
 
-    span {
-        display: block;
-        transition: transform 0.2s ease;
-    }
+    overflow: hidden;
+    position: relative;
+
+    transition: transform 0.2s ease;
 
     &:hover {
-        span {
-            transform: scale(1.05);
-        }
+        transform: scale(1.05);
     }
+`;
+
+export const Copied = styled(m.div)`
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+
+    background-color: #c9eb00;
+    color: #000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
 
 export const Text = styled('div')`
@@ -130,4 +142,33 @@ export const Number = styled('span')`
     font-size: 25px;
     font-weight: 800;
     line-height: 60%;
+`;
+
+export const GemPill = styled('div')`
+    display: flex;
+    height: 32px;
+    padding: 7px 11px 7px 15px;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+
+    border-radius: 100px;
+    background: ${({ theme }) => theme.palette.action.background.contrast};
+    color: ${({ theme }) => theme.palette.contrast};
+
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+
+    color: #000;
+    font-size: 17px;
+    font-weight: 600;
+    font-family: Poppins, sans-serif;
+    text-align: center;
+    pointer-events: none;
+`;
+
+export const GemImage = styled('img')`
+    width: 20px;
 `;
