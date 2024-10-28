@@ -1,6 +1,6 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Trans, useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
 import {
     SettingsGroup,

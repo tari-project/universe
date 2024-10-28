@@ -10,7 +10,7 @@ import {
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { Trans, useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { Typography } from '@app/components/elements/Typography';
 import { TorConfig } from '@app/types/app-status';
 import { Input } from '@app/components/elements/inputs/Input';

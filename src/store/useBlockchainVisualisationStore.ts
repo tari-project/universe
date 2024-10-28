@@ -1,11 +1,12 @@
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 
-import { appWindow } from '@tauri-apps/api/window';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+const appWindow = getCurrentWebviewWindow()
 
 interface Recap {
     count: number;

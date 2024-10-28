@@ -14,7 +14,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { open } from '@tauri-apps/api/shell';
+import { open } from '@tauri-apps/plugin-shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import * as Sentry from '@sentry/react';

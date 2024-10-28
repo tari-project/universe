@@ -1,8 +1,9 @@
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useCallback, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { appWindow } from '@tauri-apps/api/window';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+const appWindow = getCurrentWebviewWindow()
 
 export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);

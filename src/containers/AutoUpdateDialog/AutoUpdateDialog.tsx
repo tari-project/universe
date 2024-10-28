@@ -3,9 +3,9 @@ import * as Sentry from '@sentry/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
+import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/plugin-updater';
 
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import { useAppStateStore } from '@app/store/appStateStore';
