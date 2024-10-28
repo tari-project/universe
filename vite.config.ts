@@ -3,8 +3,8 @@ import * as path from 'node:path';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import eslintPlugin from '@nabla/vite-plugin-eslint';
-import { sentryVitePlugin } from '@sentry/vite-plugin';
 import packageInfo from './package.json';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 const plugins: UserConfig['plugins'] = [
     react({
@@ -40,11 +40,14 @@ export default defineConfig(({ command, mode }) => {
     }
     return {
         ...baseOptions,
+        build: {
+            sourcemap: true, // Source map generation must be turned on for sentry
+        },
         plugins: [
             ...plugins,
             sentryVitePlugin({
                 org: 'tari-labs',
-                project: packageInfo.name,
+                project: 'tari-universe',
                 release: {
                     name: packageInfo.version,
                 },
