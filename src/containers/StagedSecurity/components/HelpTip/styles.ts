@@ -46,4 +46,5 @@ export const TextButton = styled('button')`
     text-decoration-line: underline;
 
     display: inline-flex;
+    cursor: pointer;
 `;
