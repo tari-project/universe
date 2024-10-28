@@ -1,6 +1,5 @@
 {
   "settings": "Instellings",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Saadwoorde",
   "change-language": "Verander taal",
   "logs": "Verslae",
@@ -21,18 +20,6 @@
   "reset-settings": "Stel Instellings Terug",
   "reset-permanently": "Is jy seker jy wil alle instellings permanent terugstel?",
   "reset-wallet": "Stel beursie terug",
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
-  },
   "connected-to-tari": "Gekoppel aan die Tari Netwerk",
   "not-connected-to-tari": "Nie aan die Tari Netwerk gekoppel nie",
   "connected-peers": "Gekoppelde Eweknieë",
@@ -44,7 +31,10 @@
   "tabs": {
     "general": "Algemeen",
     "mining": "Mynbou",
-    "experimental": "Eksperimenteel"
+    "experimental": "Eksperimenteel",
+    "very_experimental": "Baie Eksperimenteel",
+    "airdrop": "Airdrop",
+    "wallet": "Beursie"
   },
   "monero-address": {
     "title": "Monero-adres",
@@ -70,9 +60,6 @@
   "disconnect": "Ontkoppel van Airdrop",
   "inviteCode": "Uitnodigingskode",
   "use-tor": "Gebruik Tor",
-  "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network",
   "importing-wallet": "Beursie invoer",
   "action-requires-restart": "Hierdie aksie vereis \"n herbegin om veranderinge toe te pas",
   "low-hash-rate-warning": "Jou hash rate is baie laag. Probeer om alle toepassings behalwe Tari Universe te sluit",
@@ -80,12 +67,46 @@
   "yes": "Yes",
   "cancel": "Cancel",
   "report-issue": "Rapporteer \"n probleem",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "Jou voorkeur sal gestoor word en toegepas word die volgende keer as Tari Universe begin word.",
+  "gpu-device-enabled": "GPU Myn toestelle",
+  "gpu-device-enabled-description": "Aktiveer of deaktiveer spesifieke GPU toestel.",
+  "gpu-device-no-found": "⚠️ Geen GPU toestelle gevind nie",
+  "mine-on-app-start": {
+    "title": "Myn by opstart",
+    "description": "Wanneer geaktiveer, sal die app outomaties begin myn wanneer dit begin word."
+  },
+  "should-auto-start": {
+    "title": "Outomatiese begin by stelsel opstart",
+    "description": "Wanneer geaktiveer, sal die app outomaties begin wanneer jy by jou rekenaar aanmeld."
+  },
+  "use-auto-update": {
+    "title": "Werk Tari Universe outomaties op",
+    "description": "Wanneer geaktiveer, sal die app vir opdaterings kyk en dit outomaties installeer."
+  },
+  "restart-later": "Herbegin Later",
+  "restart-now": "Herbegin Nou",
+  "restart-universe": "Herbegin Tari Universe?",
+  "tari-wallet-address": "Tari Beursie Adres",
+  "tor-bridges": "Tor Brûe",
+  "theme": "Tema",
+  "sha-network-hash-rate": "Sha3 netwerk hashrate",
+  "randomx-network-hash-rate": "Randomx netwerk hashrate",
+  "network": "Netwerk",
+  "app-restart-required": "App herbegin benodig",
+  "setup-tor-settings": "Stel Tor-instellings op vir Privaatheidsbeheer en Konnektiwiteit",
+  "control-port": "Beheerpoort",
+  "save": "Stoor",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
-  }
+    "invalid-control-port": "Beheerpoort konfigurasie is ongeldig",
+    "invalid-bridge": "Brugkonfigurasie is ongeldig"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "Koppel Tari Aurora",
+    "connect-wallet-to-phone": "Koppel jou Tari Universe beursie aan jou foon",
+    "load-qr-code": "Laai QR-kode",
+    "do-not-share-this-code": "Moenie hierdie kode met enigiemand deel nie",
+    "passphrase": "Wagwoordfrase"
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }

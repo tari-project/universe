@@ -9,6 +9,11 @@
   "mining-schedules-description": "Zaplanuj swoją aktywność wydobywczą",
   "block": "Blok",
   "recent-wins": "Ostanie wygrane",
+  "paper-wallet-button": "Synchronizuj z telefonem",
+  "history-show-button": "Historia",
+  "history-hide-button": "Ukryj historię",
+  "paper-wallet-tooltip-title": "Synchronizuj z telefonem",
+  "paper-wallet-tooltip-message": "Śledź swoje XTM wszędzie, synchronizując portfel Universe z Tari Aurora.",
   "show-history": "Pokaż historię",
-  "hide-history": "Schowaj historię"
+  "hide-history": "Ukryj historię"
 }

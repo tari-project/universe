@@ -1,6 +1,5 @@
 {
   "settings": "Настройки",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Секретные слова",
   "send-logs": "Отправить логи",
   "your-feedback": "Пожалуйста, опишите вашу проблему",
@@ -22,23 +21,14 @@
   "tabs": {
     "general": "Общие",
     "mining": "Майнинг",
-    "experimental": "Экспериментальные"
+    "experimental": "Экспериментальные",
+    "very_experimental": "Очень экспериментальные",
+    "airdrop": "Эйрдроп",
+    "wallet": "Кошелек"
   },
   "monero-address": {
     "title": "Адрес Monero",
     "placeholder": "Введите адрес Monero"
-  },
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "Время добавления последнего блока в цепь",
   "visual-mode": "Визуальный режим",
@@ -72,20 +62,51 @@
   "disconnect": "Отключиться от Airdrop",
   "inviteCode": "Код приглашения",
   "use-tor": "Использовать Tor",
-  "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network",
   "importing-wallet": "Импорт кошелька",
   "action-requires-restart": "Для применения изменений требуется перезапуск",
   "low-hash-rate-warning": "Ваш хешрейт очень низкий. Попробуйте закрыть все приложения, кроме Tari Universe",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
   "report-issue": "Сообщить о проблеме",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "Ваши предпочтения будут сохранены и применены при следующем запуске Tari Universe.",
+  "gpu-device-enabled": "Устройства для майнинга на GPU",
+  "gpu-device-enabled-description": "Включить или отключить конкретное устройство GPU.",
+  "gpu-device-no-found": "⚠️ Устройства GPU не найдены",
+  "mine-on-app-start": {
+    "title": "Майнинг при запуске",
+    "description": "При запуске приложения майнинг будет начинаться автоматически."
+  },
+  "should-auto-start": {
+    "title": "Автозапуск при загрузке системы",
+    "description": "При включении приложение будет автоматически запускаться при входе в систему на вашем компьютере."
+  },
+  "use-auto-update": {
+    "title": "Автоматическое обновление Tari Universe",
+    "description": "При включении приложение будет проверять наличие обновлений и устанавливать их автоматически."
+  },
+  "restart-later": "Перезапустить позже",
+  "restart-now": "Перезапустить сейчас",
+  "restart-universe": "Перезапустить Tari Universe?",
+  "tari-wallet-address": "Адрес кошелька Tari",
+  "tor-bridges": "Мосты Tor",
+  "theme": "Тема",
+  "sha-network-hash-rate": "Хэшрейт сети Sha3",
+  "randomx-network-hash-rate": "Хэшрейт сети Randomx",
+  "network": "Сеть",
+  "app-restart-required": "Требуется перезапуск приложения",
+  "setup-tor-settings": "Настройка параметров Tor для управления конфиденциальностью и подключением",
+  "control-port": "Порт управления",
+  "save": "Сохранить",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
-  }
+    "invalid-control-port": "Конфигурация порта управления недействительна",
+    "invalid-bridge": "Конфигурация моста недействительна"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "Связать с Tari Aurora",
+    "connect-wallet-to-phone": "Подключите ваш кошелек Tari Universe к телефону",
+    "load-qr-code": "Загрузить QR-код",
+    "do-not-share-this-code": "Не делитесь этим кодом ни с кем",
+    "passphrase": "Парольная фраза"
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes"
 }

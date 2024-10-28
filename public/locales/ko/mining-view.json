@@ -13,7 +13,8 @@
     "started-auto-mining": "자동 채굴 시작됨",
     "stop-mining": "채굴 중지"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>자리를 비운 동안 {{ blocks }}를 획득했습니다</span>",
+  "estimated-earnings": "예상 수익",
+  "you-earn-rewards-separately": "CPU와 GPU 채굴에 대해 각각 보상을 받습니다",
   "day": "day"
 }

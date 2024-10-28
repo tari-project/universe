@@ -18,7 +18,9 @@ import CriticalErrorDialog from './containers/CriticalErrorDialog/CriticalErrorD
 import SettingsModal from '@app/containers/Settings/SettingsModal.tsx';
 import { ExternalDependenciesDialog } from './containers/ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
+import StagedSecurity from './containers/StagedSecurity/StagedSecurity.tsx';
 import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
+import { FloatingTree } from '@floating-ui/react';
 
 export default function App() {
     const isShuttingDown = useShuttingDown();
@@ -54,17 +56,22 @@ export default function App() {
                  * strict prop for using `m` instead of `motion`- see https://www.framer.com/motion/guide-reduce-bundle-size/#how-to-reduce-the-size-of-the-motion-component
                  */}
                 <MotionConfig reducedMotion="user">
-                    <AutoUpdateDialog />
-                    <CriticalErrorDialog />
-                    <ExternalDependenciesDialog />
-                    <SettingsModal />
-                    <PaperWalletModal />
-                    <LayoutGroup id="app-content">
-                        {shutDownMarkup}
-                        {mainMarkup}
+                    <FloatingTree>
+                        {/*dialogs*/}
+                        <SettingsModal />
+                        <StagedSecurity />
+                        <AutoUpdateDialog />
+                        <CriticalErrorDialog />
+                        <ExternalDependenciesDialog />
+                        <PaperWalletModal />
                         <ErrorSnackbar />
-                        <SplashScreen />
-                    </LayoutGroup>
+                        {/*dialogs end*/}
+                        <LayoutGroup id="app-content">
+                            {shutDownMarkup}
+                            {mainMarkup}
+                            <SplashScreen />
+                        </LayoutGroup>
+                    </FloatingTree>
                 </MotionConfig>
             </LazyMotion>
         </ThemeProvider>

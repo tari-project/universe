@@ -18,6 +18,9 @@ export const GlobalReset = createGlobalStyle`
     }
     fieldset,
     textarea,
+    dialog,
+    div,
+    button,
     input {
         all: unset;
         /* Chrome, Safari, Edge, Opera */
@@ -32,6 +35,8 @@ export const GlobalReset = createGlobalStyle`
             -moz-appearance: textfield;
         }
 
+        &:focus-within,
+        &:focus-visible,
         &:focus {
             outline: none;
         }
@@ -92,7 +97,6 @@ export const GlobalStyle = createGlobalStyle`
 
     #root {
         pointer-events: none;
-        
     }
 
 `;

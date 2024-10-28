@@ -25,6 +25,7 @@ interface Actions {
     setUseTor: (useTor: boolean) => Promise<void>;
     setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
+    setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
     setTheme: (theme: themeType) => Promise<void>;
 }
 
@@ -47,6 +48,8 @@ const initialState: State = {
     paper_wallet_enabled: false,
     use_tor: true,
     auto_update: false,
+    mmproxy_use_monero_fail: false,
+    mmproxy_monero_nodes: ['https://xmr-01.tari.com'],
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
@@ -226,6 +229,16 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             console.error('Could not set auto update', e);
             appStateStore.setError('Could not change auto update');
             set({ auto_update: !autoUpdate });
+        });
+    },
+    setMonerodConfig: async (useMoneroFail, moneroNodes) => {
+        const prevMoneroNodes = useAppConfigStore.getState().mmproxy_monero_nodes;
+        set({ mmproxy_use_monero_fail: useMoneroFail, mmproxy_monero_nodes: moneroNodes });
+        invoke('set_monerod_config', { useMoneroFail, moneroNodes }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set monerod config', e);
+            appStateStore.setError('Could not change monerod config');
+            set({ mmproxy_use_monero_fail: !useMoneroFail, mmproxy_monero_nodes: prevMoneroNodes });
         });
     },
     setTheme: async (themeArg) => {

@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "title": "Koppel jou Tari Universe beursie aan jou foon",
+    "text": "Laai Tari Aurora af en hou jou XTM oral dop. Kry dit nou in die App Store of Google Play Winkel.",
+    "blackButton": "Ek het die app",
+    "textButton": "Leer meer oor Tari Aurora",
+    "scan": "Skandeer QR-kode"
+  },
+  "qrcode": {
+    "warning": "Moenie hierdie QR-kode deel nie",
+    "title": "Voer in na Tari Aurora",
+    "text": "Skandeer die QR-kode binne die Tari Aurora app om jou Tari Universe beursie in te voer. Gebruik die eenmalige kode hieronder om jou identiteit te bevestig, volg dan die stappe binne die app.",
+    "blackButton": "Klaar",
+    "textButton": "Ek het hulp nodig",
+    "inputLabel": "Identifikasiekode",
+    "copied": "Gekopieer!"
+  }
+}
