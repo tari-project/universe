@@ -124,7 +124,7 @@ async function main() {
     const fileName = args[0];
 
     if (args.length === 1) {
-        console.log(`Cleaning up locales files for "${fileName}"...`);
+        console.info(`Cleaning up locales files for "${fileName}"...`);
     }
 
     if (!args.length) {
@@ -142,7 +142,16 @@ async function main() {
 
     for (const filePath of localesFilesPaths) {
         try {
-            const file = await fs.promises.readFile(filePath);
+            // Ensure the locale file exists
+            try {
+                await fs.promises.access(filePath, fs.constants.F_OK);
+            } catch (_err) {
+                await fs.promises.writeFile(filePath, JSON.stringify({}, null, 2));
+            }
+
+            // Read the current translation file
+            const file = await fs.promises.readFile(filePath, 'utf8');
+
             const translations = JSON.parse(file);
             const translationsWithDefaults = mergeDeep(JSON.parse(enTranslations), translations);
 
@@ -159,7 +168,7 @@ async function main() {
         }
     }
 
-    console.log('Translation update complete!');
+    console.info('Translation update complete!');
 }
 
 main();

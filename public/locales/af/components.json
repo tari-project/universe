@@ -1,11 +1,11 @@
 {
   "field-error-message": {
+    "integers-only": "Slegs heelgetalle toegelaat",
     "invalid": "Veld ongeldig",
-    "required": "Veld benodig",
-    "password-too-short": "Wagwoord moet ten minste 8 karakters hê",
-    "invalid-url": "Moet 'n geldige URL-adres wees",
-    "invalid-email": "Voer 'n geldige e-posadres in",
     "invalid-date": "Datum is ongeldig",
-    "integers-only": "Slegs heelgetalle toegelaat"
+    "invalid-email": "Voer 'n geldige e-posadres in",
+    "invalid-url": "Moet 'n geldige URL-adres wees",
+    "password-too-short": "Wagwoord moet ten minste 8 karakters hê",
+    "required": "Veld benodig"
   }
 }
