@@ -57,8 +57,13 @@ export default defineConfig(({ command, mode }) => {
                 telemetry: false,
                 debug: true,
                 sourcemaps: {
-                    assets: ['dist/assets'],
-                    ignore: ['node_modules'],
+                    assets: ['./dist/**'],
+                    ignore: [
+                        'node_modules',
+                        './dist/assets/textures/**',
+                        './dist/assets/models/**',
+                        './dist/assets/glApp.js',
+                    ],
                 },
             }),
         ],
