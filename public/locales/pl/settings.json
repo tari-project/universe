@@ -110,5 +110,7 @@
     "passphrase": "Hasło"
   },
   "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
-  "set-dynamic-fail-data": "Ustaw niestandardowe adresy URL dla węzłów Monero"
+  "set-dynamic-fail-data": "Ustaw niestandardowe adresy URL dla węzłów Monero",
+  "tor-entry-guards": "Tor Entry Guards",
+  "no-entry-guard": "Brak połączenia z Entry Guardami!"
 }
