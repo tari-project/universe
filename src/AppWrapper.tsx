@@ -61,9 +61,7 @@ export default function AppWrapper() {
         async function initialize() {
             await fetchAppConfig();
         }
-        return () => {
-            void initialize();
-        };
+        initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

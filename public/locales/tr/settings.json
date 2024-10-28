@@ -1,6 +1,5 @@
 {
   "settings": "Ayarlar",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "Seed Kelimeleri",
   "send-logs": "Günlüğü gönder",
   "change-language": "Dil Değiştir",
@@ -19,7 +18,10 @@
   "tabs": {
     "general": "Genel",
     "experimental": "Deneysel",
-    "mining": "Madencilik"
+    "mining": "Madencilik",
+    "very_experimental": "Çok Deneysel",
+    "airdrop": "Airdrop",
+    "wallet": "Cüzdan"
   },
   "monero-address": {
     "title": "Monero Adresi",
@@ -47,18 +49,6 @@
   "reset-wallet": "Cüzdanı Sıfırla",
   "experimental-title": "Deneysel Özellikler",
   "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatlice ilerleyin.",
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
-  },
   "connected-to-tari": "Tari Ağına Bağlı",
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",
   "connected-peers": "Bağlı Eşler",
@@ -72,20 +62,53 @@
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
   "inviteCode": "Davet Kodu",
   "use-tor": "Tor Kullan",
-  "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Sieć",
   "importing-wallet": "Cüzdan İçe Aktarılıyor",
   "action-requires-restart": "Bu işlem değişikliklerin uygulanması için yeniden başlatma gerektirir",
   "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",
   "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",
   "report-issue": "Bir sorunu bildir",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "Tercihiniz kaydedilecek ve bir sonraki Tari Universe başlatıldığında uygulanacaktır.",
+  "gpu-device-enabled": "GPU Madencilik cihazları",
+  "gpu-device-enabled-description": "Belirli bir GPU cihazını etkinleştir veya devre dışı bırak.",
+  "gpu-device-no-found": "⚠️ GPU cihazı bulunamadı",
+  "mine-on-app-start": {
+    "title": "Başlangıçta madencilik",
+    "description": "Etkinleştirildiğinde, uygulama başlatıldığında otomatik olarak madenciliğe başlayacaktır."
+  },
+  "should-auto-start": {
+    "title": "Sistem açılışında otomatik başlat",
+    "description": "Etkinleştirildiğinde, bilgisayarınıza giriş yaptığınızda uygulama otomatik olarak başlar."
+  },
+  "use-auto-update": {
+    "title": "Tari Universe\"i otomatik olarak güncelle",
+    "description": "Etkinleştirildiğinde, uygulama güncellemeleri kontrol eder ve otomatik olarak yükler."
+  },
+  "restart-later": "Daha Sonra Yeniden Başlat",
+  "restart-now": "Şimdi Yeniden Başlat",
+  "restart-universe": "Tari Universe\"i yeniden başlat?",
+  "tari-wallet-address": "Tari Cüzdan Adresi",
+  "tor-bridges": "Tor Köprüleri",
+  "theme": "Tema",
+  "sha-network-hash-rate": "Sha3 ağ hash oranı",
+  "randomx-network-hash-rate": "Randomx ağ hash oranı",
+  "network": "Ağ",
+  "app-restart-required": "Uygulama yeniden başlatılması gerekiyor",
+  "setup-tor-settings": "Gizlilik Kontrolü ve Bağlantı için Tor Ayarlarını Yapılandırın",
+  "control-port": "Kontrol Portu",
+  "save": "Kaydet",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
-  }
+    "invalid-control-port": "Kontrol Portu yapılandırması geçersiz",
+    "invalid-bridge": "Köprü yapılandırması geçersiz"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "Tari Aurora\"yı Bağla",
+    "connect-wallet-to-phone": "Tari Universe cüzdanınızı telefonunuza bağlayın",
+    "load-qr-code": "QR kodunu yükle",
+    "do-not-share-this-code": "Bu kodu kimseyle paylaşmayın",
+    "passphrase": "Parola"
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes",
+  "tor-entry-guards": "Tor Entry Guards",
+  "no-entry-guard": "No Entry Guard connected!"
 }
