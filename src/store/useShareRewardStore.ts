@@ -8,7 +8,7 @@ interface State {
 }
 
 interface Actions {
-    setShowModal: (showModal: boolean) => void;
+    setShowModal: (showModal: boolean, block: number, contributed: number, reward: number) => void;
 }
 
 const initialState: State = {
@@ -20,5 +20,5 @@ const initialState: State = {
 
 export const useShareRewardStore = create<State & Actions>()((set) => ({
     ...initialState,
-    setShowModal: (showModal) => set({ showModal }),
+    setShowModal: (showModal, block, contributed, reward) => set({ showModal, block, contributed, reward }),
 }));

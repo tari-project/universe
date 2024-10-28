@@ -1,22 +1,27 @@
-import { EarningsWrapper, InfoWrapper, LeftContent, SquadIconWrapper, Wrapper } from './HistoryItem.styles.ts';
+import {
+    EarningsWrapper,
+    FlexButton,
+    GemImage,
+    GemPill,
+    HoverWrapper,
+    InfoWrapper,
+    LeftContent,
+    SquadIconWrapper,
+    Wrapper,
+} from './HistoryItem.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import formatBalance from '@app/utils/formatBalance.ts';
 import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
+import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 interface HistoryItemProps {
     item: TransactionInfo;
 }
-
-const listItem = {
-    hidden: { y: 5, opacity: 0 },
-    visible: {
-        y: 0,
-        opacity: 1,
-    },
-};
 
 const randomGradientColours = [
     { colour: '#9F42FF', colour1: '#FF1493', colour2: '#2172EF' },
@@ -38,18 +43,43 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
     const { t } = useTranslation('sidebar', { useSuspense: false });
 
+    const [hovering, setHovering] = useState(false);
+    const setShowModal = useShareRewardStore((s) => s.setShowModal);
+
     const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
-    const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
+    const { colour, colour1, colour2 } = useMemo(() => {
+        return randomGradientColours[getRandomInt(9)];
+    }, []);
+
+    const block = item.message.split(': ')[1];
 
     return (
-        <Wrapper variants={listItem}>
-            <LeftContent>
+        <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+            <AnimatePresence>
+                {hovering && (
+                    <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <FlexButton
+                            initial={{ x: 20, y: '-50%' }}
+                            animate={{ x: 0, y: '-50%' }}
+                            exit={{ x: 20, y: '-50%' }}
+                            onClick={() => setShowModal(true, block, item.contributed, item.amount)}
+                        >
+                            Flex & Invite
+                            <GemPill>
+                                5,000 <GemImage src={gemImage} alt="" />
+                            </GemPill>
+                        </FlexButton>
+                    </HoverWrapper>
+                )}
+            </AnimatePresence>
+
+            <LeftContent className="hover-target">
                 <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
                     <TariSvg />
                 </SquadIconWrapper>
                 <InfoWrapper>
                     <Typography>
-                        {t('block')} #{item.message.split(': ')[1]}
+                        {t('block')} #{block}
                     </Typography>
                     <Typography variant="p">
                         {new Date(item.timestamp * 1000)?.toLocaleString(undefined, {
@@ -62,7 +92,8 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     </Typography>
                 </InfoWrapper>
             </LeftContent>
-            <EarningsWrapper>
+
+            <EarningsWrapper className="hover-target">
                 <Typography variant="h5" style={{ color: theme.palette.success.main }}>{`+ `}</Typography>
                 <Typography variant="h5" style={{ color: '#fff' }}>{`${earningsFormatted} tXTM`}</Typography>
             </EarningsWrapper>

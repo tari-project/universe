@@ -41,7 +41,7 @@ export default function ShareRewardModal() {
     }, [copied]);
 
     const handleClose = () => {
-        setShowModal(false);
+        setShowModal(false, 0, 0, 0);
     };
 
     const handleCopy = () => {
