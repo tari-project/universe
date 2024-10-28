@@ -26,6 +26,7 @@ pub(crate) struct MinotariNodeAdapter {
     pub(crate) grpc_port: u16,
     pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
+    pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
 }
 
@@ -39,6 +40,7 @@ impl MinotariNodeAdapter {
             use_pruned_mode: false,
             required_initial_peers: 3,
             use_tor: false,
+            tor_control_port: None,
         }
     }
 }
@@ -104,13 +106,26 @@ impl ProcessAdapter for MinotariNodeAdapter {
             //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
             //         .to_string(),
             // );
+            // if cfg!(target_os = "windows") {
+            //     // No need
+            // } else {
+            //     args.push("-p".to_string());
+            //     args.push("use_libtor=false".to_string());
+            // }
             args.push("-p".to_string());
             args.push(format!(
                 "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/{0}",
                 self.tcp_listener_port
             ));
             args.push("-p".to_string());
-            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
+            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
+            if let Some(tor_control_port) = self.tor_control_port {
+                args.push("-p".to_string());
+                args.push(format!(
+                    "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{}",
+                    tor_control_port
+                ));
+            }
         } else {
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
@@ -296,6 +311,7 @@ impl MinotariNodeStatusMonitor {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
 
+        let mut last_state: Option<i32> = None;
         loop {
             if self.shutdown_signal.is_triggered() {
                 break;
@@ -308,36 +324,39 @@ impl MinotariNodeStatusMonitor {
                 break;
             }
 
-            if sync_progress.state == SyncState::Startup as i32 {
-                progress_tracker
-                    .update(
-                        "preparing-for-initial-sync".to_string(),
-                        Some(HashMap::from([
-                            (
-                                "initial_connected_peers".to_string(),
-                                sync_progress.initial_connected_peers.to_string(),
-                            ),
-                            (
-                                "required_peers".to_string(),
-                                self.required_sync_peers.to_string(),
-                            ),
-                        ])),
-                        10,
-                    )
-                    .await;
-            } else if sync_progress.state == SyncState::Header as i32 {
-                let progress = if sync_progress.tip_height == 0 {
-                    10
-                } else {
-                    10 + (30 * sync_progress.local_height / sync_progress.tip_height)
-                };
+            let current_state = sync_progress.state;
+            if last_state.is_none() || last_state != Some(current_state) {
+                last_state = Some(current_state);
+                if sync_progress.state == SyncState::Startup as i32 {
+                    progress_tracker
+                        .update(
+                            "preparing-for-initial-sync".to_string(),
+                            Some(HashMap::from([
+                                (
+                                    "initial_connected_peers".to_string(),
+                                    sync_progress.initial_connected_peers.to_string(),
+                                ),
+                                (
+                                    "required_peers".to_string(),
+                                    self.required_sync_peers.to_string(),
+                                ),
+                            ])),
+                            10,
+                        )
+                        .await;
+                } else if sync_progress.state == SyncState::Header as i32 {
+                    let progress = if sync_progress.tip_height == 0 {
+                        10
+                    } else {
+                        10 + (30 * sync_progress.local_height / sync_progress.tip_height)
+                    };
 
-                progress_tracker
-                    .update(
-                        "waiting-for-header-sync".to_string(),
-                        Some(HashMap::from([
-                            (
-                                "local_header_height".to_string(),
+                    progress_tracker
+                        .update(
+                            "waiting-for-header-sync".to_string(),
+                            Some(HashMap::from([
+                                (
+                                    "local_header_height".to_string(),
                                 sync_progress.local_height.to_string(),
                             ),
                             (
@@ -352,28 +371,28 @@ impl MinotariNodeStatusMonitor {
                             // Keep these fields for old translations that have not been updated
                             (
                                 "local_height".to_string(),
-                                sync_progress.local_height.to_string(),
-                            ),
-                            (
-                                "tip_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                        ])),
-                        progress,
-                    )
-                    .await;
-            } else if sync_progress.state == SyncState::Block as i32 {
-                let progress = if sync_progress.tip_height == 0 {
-                    40
-                } else {
-                    40 + (60 * sync_progress.local_height / sync_progress.tip_height)
-                };
+                                    sync_progress.local_height.to_string(),
+                                ),
+                                (
+                                    "tip_height".to_string(),
+                                    sync_progress.tip_height.to_string(),
+                                ),
+                            ])),
+                            progress,
+                        )
+                        .await;
+                } else if sync_progress.state == SyncState::Block as i32 {
+                    let progress = if sync_progress.tip_height == 0 {
+                        40
+                    } else {
+                        40 + (60 * sync_progress.local_height / sync_progress.tip_height)
+                    };
 
-                progress_tracker
-                    .update(
-                        "waiting-for-block-sync".to_string(),
-                        Some(HashMap::from([
-                            // Assume the headers have already been synced
+                    progress_tracker
+                        .update(
+                            "waiting-for-block-sync".to_string(),
+                            Some(HashMap::from([
+                                // Assume the headers have already been synced
                             (
                                 "local_header_height".to_string(),
                                 sync_progress.tip_height.to_string(),
@@ -404,8 +423,9 @@ impl MinotariNodeStatusMonitor {
                     )
                     .await;
             } else {
-                //do nothing
+                //do nothing}
             }
+
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
         Ok(())

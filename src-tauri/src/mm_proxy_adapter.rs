@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use std::time::Instant;
 
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -8,6 +7,7 @@ use crate::utils::file_utils::convert_to_string;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::warn;
+// use log::warn;
 use reqwest::Client;
 use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
@@ -23,6 +23,8 @@ pub(crate) struct MergeMiningProxyConfig {
     pub p2pool_grpc_port: u16,
     pub coinbase_extra: String,
     pub tari_address: TariAddress,
+    pub use_monero_fail: bool,
+    pub monero_nodes: Vec<String>,
 }
 
 impl MergeMiningProxyConfig {
@@ -104,21 +106,13 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
             "-p".to_string(),
-            "merge_mining_proxy.use_dynamic_fail_data=false".to_string(),
+            format!(
+                "merge_mining_proxy.use_dynamic_fail_data={}",
+                config.use_monero_fail
+            ),
         ];
 
-        let nodes = [
-            "https://xmr-01.tari.com",
-            "http://node1.xmr-tw.org:18081",
-            // x"https://monero.homeqloud.com:443",
-            // x"http://monero1.com:18089",
-            "http://node.c3pool.org:18081",
-            "http://xmr-full.p2pool.uk:18089",
-            // x"https://monero.stackwallet.com:18081",
-            // x "http://xmr.support:18081",
-            //x "http://xmr.nthrow.nyc:18081",
-        ];
-        for node in nodes {
+        for node in &config.monero_nodes {
             args.push("-p".to_string());
             args.push(format!("merge_mining_proxy.monerod_url={}", node));
         }
@@ -149,7 +143,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             },
             MergeMiningProxyStatusMonitor {
                 json_rpc_port: config.port,
-                start_time: Instant::now(),
+                start_time: std::time::Instant::now(),
             },
         ))
     }
@@ -173,22 +167,22 @@ pub struct MergeMiningProxyStatusMonitor {
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         // TODO: Monero calls are really slow, so temporarily changing to Healthy
-        HealthStatus::Healthy
-        // if self
-        //     .get_version()
-        //     .await
-        //     .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
-        //     .is_ok()
-        // {
-        //     HealthStatus::Healthy
-        // } else {
-        //     if self.start_time.elapsed().as_secs() < 10 {
-        //         return HealthStatus::Healthy;
-        //     }
-        //     // HealthStatus::Unhealthy
-        //     // This can return a bad error from time to time, especially on startup
-        //     HealthStatus::Warning
-        // }
+        // HealthStatus::Healthy
+        if self
+            .get_version()
+            .await
+            .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
+            .is_ok()
+        {
+            HealthStatus::Healthy
+        } else {
+            if self.start_time.elapsed().as_secs() <30 {
+                return HealthStatus::Healthy;
+            }
+            // HealthStatus::Unhealthy
+            // This can return a bad error from time to time, especially on startup
+            HealthStatus::Warning
+        }
     }
 }
 

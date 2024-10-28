@@ -1,11 +1,13 @@
 import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
+import { Theme } from '@app/theme/types.ts';
 
 export const DIALOG_TYPES = ['logs', 'restart'] as const;
 type DialogTypeTuple = typeof DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number];
 
 interface State {
+    theme: Theme;
     showSplash: boolean;
     background: backgroundType;
     view: viewType;
@@ -16,6 +18,7 @@ interface State {
     dialogToShow?: DialogType | null;
 }
 interface Actions {
+    setTheme: (theme: Theme) => void;
     setShowSplash: (showSplash: boolean) => void;
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
@@ -29,6 +32,7 @@ interface Actions {
 type UIStoreState = State & Actions;
 
 const initialState: State = {
+    theme: 'light',
     showSplash: true,
     background: 'onboarding',
     view: 'setup',
@@ -41,6 +45,7 @@ const initialState: State = {
 
 export const useUIStore = create<UIStoreState>()((set) => ({
     ...initialState,
+    setTheme: (_theme) => set({ theme: 'light' }),
     setShowSplash: (showSplash) => set({ showSplash }),
     setBackground: (background) => set({ background }),
     setView: (view) => set({ view }),

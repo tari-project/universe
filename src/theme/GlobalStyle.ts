@@ -16,7 +16,9 @@ export const GlobalReset = createGlobalStyle`
             outline: none;
         }
     }
+    fieldset,
     textarea,
+    dialog,
     input {
         all: unset;
         /* Chrome, Safari, Edge, Opera */
@@ -31,6 +33,8 @@ export const GlobalReset = createGlobalStyle`
             -moz-appearance: textfield;
         }
 
+        &:focus-within,
+        &:focus-visible,
         &:focus {
             outline: none;
         }
@@ -54,6 +58,7 @@ export const GlobalStyle = createGlobalStyle`
         width: 100%;
         box-sizing: border-box;
         position: relative;
+        color: ${({ theme }) => theme.palette.text.primary};
 
         ::-webkit-scrollbar {
             display: none;
@@ -76,10 +81,15 @@ export const GlobalStyle = createGlobalStyle`
         }
     }
 
+    html {
+        background:  ${({ theme }) => theme.palette.base};
+    }
+    
     #canvas {
         z-index: 0;
         pointer-events: auto;
         width: 100vw;
+        background: none;
     }
 
     #root {

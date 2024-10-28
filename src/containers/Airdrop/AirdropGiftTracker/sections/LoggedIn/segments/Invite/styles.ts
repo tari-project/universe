@@ -1,5 +1,6 @@
 import { m } from 'framer-motion';
 import styled from 'styled-components';
+import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -18,13 +19,21 @@ export const InviteButton = styled('button')`
     padding: 12px 14px 12px 13px;
 
     border-radius: 60px;
-    background: #000;
+    background: ${({ theme }) => theme.palette.action.background.secondary};
+    color: ${({ theme }) => theme.palette.base};
 
     transition: transform 0.2s ease;
     overflow: hidden;
+    cursor: pointer;
 
     svg {
         flex-shrink: 0;
+        circle {
+            fill: ${({ theme }) => theme.palette.base};
+        }
+        path {
+            fill: ${({ theme }) => theme.palette.contrast};
+        }
     }
 
     &:hover {
@@ -43,10 +52,12 @@ export const TextWrapper = styled('div')`
     width: 100%;
 `;
 
-export const Image = styled('img')``;
+export const Image = styled('img')`
+    width: 15px;
+`;
 
 export const Title = styled('div')`
-    color: #fff;
+    color: ${({ theme }) => theme.palette.base};
     text-align: center;
     font-size: 12px;
     font-weight: 600;
@@ -54,14 +65,14 @@ export const Title = styled('div')`
 `;
 
 export const Text = styled('div')`
-    color: rgba(255, 255, 255, 0.5);
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.5)};
     text-align: center;
     font-size: 11px;
     font-weight: 600;
     line-height: 120%;
 
     span {
-        color: #fff;
+        color: ${({ theme }) => theme.palette.action.background.contrast};
     }
 `;
 
@@ -74,45 +85,11 @@ export const GemPill = styled('div')`
     gap: 2px;
 
     border-radius: 100px;
-    background: linear-gradient(0deg, #c9eb00 0%, #c9eb00 100%), linear-gradient(180deg, #755cff 0%, #2946d9 100%),
-        linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
-
-    color: #000;
+    background: ${({ theme }) => theme.palette.action.background.contrast};
+    color: ${({ theme }) => theme.palette.contrast};
     text-align: center;
     font-size: 12px;
     font-weight: 600;
-`;
-
-export const BonusWrapper = styled('div')`
-    position: relative;
-
-    .giftImage {
-        position: absolute;
-        top: -5px;
-        right: -15px;
-    }
-`;
-
-export const BonusText = styled('div')`
-    display: flex;
-    align-items: center;
-
-    height: 30px;
-    padding-left: 12px;
-
-    border-radius: 100px;
-    background: #f0f0f0;
-
-    color: rgba(0, 0, 0, 0.5);
-    font-size: 11px;
-    font-weight: 500;
-
-    strong {
-        color: #000;
-        font-weight: 600;
-        display: inline;
-        margin: 0 3px;
-    }
 `;
 
 export const Copied = styled(m.div)`
@@ -122,9 +99,9 @@ export const Copied = styled(m.div)`
     width: 100%;
     height: 100%;
 
-    background: #c9eb00;
+    background: ${({ theme }) => theme.palette.action.background.secondary};
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.action.background.contrast};
     text-align: center;
     font-size: 12px;
     font-weight: 600;

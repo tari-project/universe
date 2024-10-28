@@ -9,8 +9,7 @@ export const Container = styled.div`
     height: 70vh;
     overflow: hidden;
 
-    @media (max-width: 1100px) {
-        width: 85vw;
+    @media (min-width: 1200px) {
         height: 80vh;
     }
 `;

@@ -1,8 +1,6 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { useMiningStore } from '@app/store/useMiningStore';
-import { ConnectionIcon } from '@app/containers/Settings/components/Settings.styles.tsx';
 import {
     SettingsGroup,
     SettingsGroupContent,
@@ -15,8 +13,6 @@ import { useMemo } from 'react';
 export default function DebugSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const lastBlockTime = useBlockchainVisualisationStore((state) => state.debugBlockTime);
-    const isConnectedToTariNetwork = useMiningStore((s) => s.base_node?.is_connected);
-    const connectedPeers = useMiningStore((state) => state.base_node?.connected_peers || []);
 
     const displayTime = useMemo(() => {
         if (!lastBlockTime) return '-';
@@ -33,35 +29,16 @@ export default function DebugSettings() {
                         <SettingsGroupTitle>
                             <Typography variant="h6">{t('debug-info', { ns: 'settings' })}</Typography>
                         </SettingsGroupTitle>
-                        <Typography variant="p">{t('last-block-added-time', { ns: 'settings' })}</Typography>
-                    </SettingsGroupContent>
 
-                    <Stack direction="column" justifyContent="flex-end" alignItems="flex-end" style={{ width: '100%' }}>
-                        <Stack direction="row" justifyContent="right" alignItems="center">
-                            <ConnectionIcon $isConnected={isConnectedToTariNetwork} size={20} />
-                            <Typography variant="p">
-                                {t(isConnectedToTariNetwork ? 'connected-to-tari' : 'not-connected-to-tari', {
-                                    ns: 'settings',
-                                })}
-                            </Typography>
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            style={{ width: '100%' }}
+                        >
+                            <Typography variant="p">{t('last-block-added-time', { ns: 'settings' })}</Typography>
+                            <Typography>{displayTime}</Typography>
                         </Stack>
-                        <Typography>{displayTime}</Typography>
-                    </Stack>
-                </SettingsGroup>
-            </SettingsGroupWrapper>
-            <SettingsGroupWrapper>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{t('connected-peers', { ns: 'settings' })}</Typography>
-                </SettingsGroupTitle>
-                <SettingsGroup>
-                    <SettingsGroupContent style={{ fontSize: '11px' }}>
-                        {connectedPeers?.length
-                            ? connectedPeers.map((peer, i) => (
-                                  <Typography key={`peer-${peer}:${i}`}>
-                                      {i + 1}. {peer}
-                                  </Typography>
-                              ))
-                            : null}
                     </SettingsGroupContent>
                 </SettingsGroup>
             </SettingsGroupWrapper>

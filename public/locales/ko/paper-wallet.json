@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "blackButton": "앱이 있습니다",
+    "scan": "QR 코드 스캔",
+    "text": "Tari Aurora를 다운로드하여 어디서든 XTM을 추적하세요. 지금 App Store 또는 Google Play Store에서 다운로드하세요.",
+    "textButton": "Tari Aurora에 대해 더 알아보기",
+    "title": "Tari Universe 지갑을 휴대폰에 연결하세요"
+  },
+  "qrcode": {
+    "blackButton": "완료",
+    "copied": "복사됨!",
+    "inputLabel": "식별 코드",
+    "text": "Tari Aurora 앱 내에서 QR 코드를 스캔하여 Tari Universe 지갑을 가져오세요. 아래의 일회용 코드를 사용하여 신원을 확인한 후, 앱 내의 단계를 따르세요.",
+    "textButton": "도움이 필요합니다",
+    "title": "Tari Aurora로 가져오기",
+    "warning": "이 QR 코드를 공유하지 마세요"
+  }
+}

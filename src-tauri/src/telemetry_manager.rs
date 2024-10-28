@@ -16,12 +16,13 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_utilities::encoding::Base58;
+use tari_utilities::encoding::MBase58;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
@@ -165,6 +166,7 @@ pub struct TelemetryData {
     pub cpu_tribe_id: Option<String>,
     pub gpu_tribe_name: Option<String>,
     pub gpu_tribe_id: Option<String>,
+    pub extra_data: HashMap<String, String>,
 }
 
 pub struct TelemetryManager {
@@ -217,7 +219,7 @@ impl TelemetryManager {
             .expect("Failed to finalize hasher variable");
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
-        let unique_string = format!("v2,{},{}", buf.to_base58(), version,);
+        let unique_string = format!("v2,{},{}", buf.to_monero_base58(), version,);
         unique_string
     }
 
@@ -350,9 +352,10 @@ async fn get_telemetry_data(
         .await
         .read_hardware_parameters();
 
-    let p2pool_stats = match p2pool_manager.get_stats().await.inspect_err(|e| {
+    let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
-    }) {
+    });
+    let p2pool_stats = match p2pool_stats {
         Ok(stats) => stats,
         Err(_) => None,
     };
@@ -420,6 +423,30 @@ async fn get_telemetry_data(
         (None, None)
     };
 
+    let mut extra_data = HashMap::new();
+    extra_data.insert(
+        "config_cpu_enabled".to_string(),
+        config_guard.cpu_mining_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_gpu_enabled".to_string(),
+        config_guard.gpu_mining_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_p2pool_enabled".to_string(),
+        config_guard.p2pool_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_tor_enabled".to_string(),
+        config_guard.use_tor().to_string(),
+    );
+    if let Some(stats) = p2pool_stats.as_ref() {
+        extra_data.insert(
+            "p2pool_connected_peers".to_string(),
+            stats.connection_info.connected_peers.to_string(),
+        );
+    }
+
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
         block_height,
@@ -439,6 +466,7 @@ async fn get_telemetry_data(
         cpu_tribe_id,
         gpu_tribe_name,
         gpu_tribe_id,
+        extra_data,
     })
 }
 
@@ -571,7 +599,7 @@ where
                         e
                     ));
                 } else {
-                    warn!(target: LOG_TARGET, "Retrying {} as it failed due to failure: {:?}", operation_name, e);
+                    warn!(target: LOG_TARGET, "Retrying {} due to failure: {:?}", operation_name, e);
                 }
             }
         }

@@ -14,8 +14,8 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
-    poll_time: tokio::time::Duration,
-    health_timeout: tokio::time::Duration,
+    pub poll_time: tokio::time::Duration,
+    pub health_timeout: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
 }
 
@@ -74,7 +74,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
 
-        let mut app_shutdown = app_shutdown.clone();
+        let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             child.start().await?;
             sleep(Duration::from_secs(10)).await;
@@ -114,7 +114,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             }
                         }
 
-                            if !is_healthy {
+                            if !is_healthy && !child.shutdown.is_triggered() && !app_shutdown.is_triggered() && !inner_shutdown.is_triggered(){
                                match child.stop().await {
                                    Ok(exit_code) => {
                                       if exit_code != 0 {
@@ -131,13 +131,14 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                    }
                                }
                                // Restart dead app
-                               sleep(Duration::from_secs(1)).await;
-                               warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
-                               child.start().await?;
-                               // Wait for a bit before checking health again
-                               sleep(Duration::from_secs(3)).await;
+                                sleep(Duration::from_secs(2)).await;
+                                warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
+                                child.start().await?;
+                                // Wait for a bit before checking health again
+                                sleep(Duration::from_secs(10)).await;
+
+                               }
                             //    break;
-                            }
                       },
                     _ = inner_shutdown.wait() => {
                         return child.stop().await;

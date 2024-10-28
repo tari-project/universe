@@ -1,6 +1,4 @@
-import { CardItem } from './Settings.styles';
-import { Typography } from '@app/components/elements/Typography.tsx';
-import { Stack } from '@app/components/elements/Stack.tsx';
+import { CardItem, CardItemLabel, CardItemLabelValue, CardItemLabelWrapper, CardItemTitle } from './Settings.styles';
 
 export interface CardComponentProps {
     heading: string;
@@ -10,17 +8,13 @@ export interface CardComponentProps {
 export const CardComponent = ({ heading, labels }: CardComponentProps) => {
     return (
         <CardItem>
-            <Typography variant="h6" style={{ color: '#000', lineHeight: '14px' }}>
-                {heading}
-            </Typography>
-            <Stack gap={3}>
-                {labels.map(({ labelText, labelValue }) => (
-                    <Stack key={`label-${labelText}`} direction="row" justifyContent="flex-start">
-                        <Typography>{labelText}:</Typography>
-                        <Typography style={{ color: '#000' }}>{labelValue}</Typography>
-                    </Stack>
-                ))}
-            </Stack>
+            <CardItemTitle>{heading}</CardItemTitle>
+            {labels.map(({ labelText, labelValue }) => (
+                <CardItemLabelWrapper key={`label-${labelText}`}>
+                    <CardItemLabel>{labelText}:</CardItemLabel>
+                    <CardItemLabelValue>{labelValue}</CardItemLabelValue>
+                </CardItemLabelWrapper>
+            ))}
         </CardItem>
     );
 };

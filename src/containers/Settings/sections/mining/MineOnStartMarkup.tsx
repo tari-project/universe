@@ -1,6 +1,5 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
-import { Stack } from '@app/components/elements/Stack.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import {
