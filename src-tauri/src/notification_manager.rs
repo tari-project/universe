@@ -1,7 +1,7 @@
+use anyhow::Error;
+use log::{info, warn};
 use notify_rust::Notification;
 use std::sync::LazyLock;
-
-use log::info;
 
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
 
@@ -15,24 +15,34 @@ impl NotificationManager {
         Self {}
     }
 
-    pub fn trigger_notification(&self, summary: &str, body: &str) {
+    pub fn trigger_notification(&self, summary: &str, body: &str) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Triggering notification with summary: {} and body: {}", summary, body);
         let notification = self.build_notification(summary, body);
 
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Linux => {
                 #[cfg(target_os = "linux")]
-                notification.show().unwrap().on_close(|notification| {
+                let handle = notification.show().inspect_err(
+                    |e| warn!(target: LOG_TARGET, "Failed to show notification: {:?}", e),
+                )?;
+                handle.on_close(|notification| {
                     info!(target: LOG_TARGET, "Notification closed: {:?}", notification);
                 });
+                Ok(())
             }
             CurrentOperatingSystem::MacOS => {
                 #[cfg(target_os = "macos")]
-                notification.show().unwrap();
+                notification.show().inspect_err(
+                    |e| warn!(target: LOG_TARGET, "Failed to show notification: {:?}", e),
+                )?;
+                Ok(())
             }
             CurrentOperatingSystem::Windows => {
                 #[cfg(target_os = "windows")]
-                notification.show().unwrap();
+                notification.show().inspect_err(
+                    |e| warn!(target: LOG_TARGET, "Failed to show notification: {:?}", e),
+                )?;
+                Ok(())
             }
         }
     }

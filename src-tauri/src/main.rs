@@ -1070,7 +1070,7 @@ async fn get_seed_words(
 
 #[tauri::command]
 async fn trigger_notification(summary: &str, body: &str) -> Result<(), String> {
-    NotificationManager::current().trigger_notification(summary, body);
+    let _ = NotificationManager::current().trigger_notification(summary, body);
     Ok(())
 }
 
