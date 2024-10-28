@@ -23,7 +23,7 @@
   },
   "new-tari-version-available": "Tari Universe'ün yeni sürümü var!",
   "would-you-like-to-install": "Tari Universe'ü şimdi yüklemek ister misiniz {{version}} ?",
-  "installing-latest-version": "Installing {{version}} version of Tari Universe",
   "yes": "Evet",
-  "no": "Hayır"
+  "no": "Hayır",
+  "installing-latest-version": "Tari Universe\"in {{version}} sürümü yükleniyor"
 }

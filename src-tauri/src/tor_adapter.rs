@@ -1,8 +1,11 @@
 use std::path::PathBuf;
 
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::TcpStream;
+
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, info};
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
@@ -114,6 +117,48 @@ impl TorAdapter {
 
     //     Ok(())
     // }
+
+    pub async fn get_entry_guards(&self) -> Result<Vec<String>, Error> {
+        let control_port_address = format!("127.0.0.1:{}", self.config.control_port);
+        let stream = TcpStream::connect(control_port_address.clone()).await?;
+        let mut reader = BufReader::new(stream);
+
+        // AUTHENTICATE
+        let auth_command = "AUTHENTICATE\n";
+        reader.get_mut().write_all(auth_command.as_bytes()).await?;
+        let mut response = String::new();
+        reader.read_line(&mut response).await?;
+        if !response.starts_with("250 OK") {
+            error!(target: LOG_TARGET, "Tor AUTHENTICATE failed for: {:?}", control_port_address);
+            return Err(Error::msg("Authentication failed"));
+        }
+
+        // GETINFO entry-guards
+        let getinfo_command = "GETINFO entry-guards\n";
+        reader
+            .get_mut()
+            .write_all(getinfo_command.as_bytes())
+            .await?;
+        response.clear();
+        reader.read_line(&mut response).await?;
+
+        if response.starts_with("250+entry-guards=") {
+            let mut entry_guards: Vec<String> = vec![];
+            loop {
+                response.clear();
+                reader.read_line(&mut response).await?;
+                if response == ".\r\n" || response.is_empty() {
+                    break;
+                }
+                entry_guards.push(response.trim().to_string());
+            }
+
+            Ok(entry_guards)
+        } else {
+            error!(target: LOG_TARGET, "Tor GETINFO entry-guards with response: {:?}", response);
+            Err(Error::msg("Failed to get entry guards"))
+        }
+    }
 }
 
 impl ProcessAdapter for TorAdapter {

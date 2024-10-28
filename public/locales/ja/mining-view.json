@@ -13,7 +13,8 @@
     "started-auto-mining": "自動マイニング開始",
     "stop-mining": "マイニングを停止"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>不在中に{{ blocks }}を獲得しました</span>",
+  "estimated-earnings": "推定収益",
+  "you-earn-rewards-separately": "CPUとGPUのマイニングで別々に報酬を得ます",
   "day": "day"
 }

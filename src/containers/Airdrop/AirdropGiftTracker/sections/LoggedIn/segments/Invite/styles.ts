@@ -24,6 +24,7 @@ export const InviteButton = styled('button')`
 
     transition: transform 0.2s ease;
     overflow: hidden;
+    cursor: pointer;
 
     svg {
         flex-shrink: 0;

@@ -144,6 +144,8 @@ export const ClaimButton = styled('button')`
 
     position: relative;
     font-weight: bold;
+    cursor: pointer;
+
     &:hover {
         transform: scale(1.05);
     }

@@ -1,6 +1,5 @@
 {
   "settings": "設定",
-  "tari-wallet-address": "Tari Wallet Address",
   "seed-words": "シードワード",
   "send-logs": "ログを送信",
   "your-feedback": "問題を説明してください",
@@ -22,23 +21,14 @@
   "tabs": {
     "general": "一般",
     "mining": "マイニング",
-    "experimental": "実験的"
+    "experimental": "実験的",
+    "very_experimental": "非常に実験的",
+    "airdrop": "エアドロップ",
+    "wallet": "ウォレット"
   },
   "monero-address": {
     "title": "Moneroアドレス",
     "placeholder": "Moneroアドレスを入力"
-  },
-  "mine-on-app-start": {
-      "title": "Mining on startup",
-    "description": "When enabled, the app will start mining automatically when it is launched."
-  },
-  "should-auto-start": {
-    "title": "Auto-start on system boot",
-    "description": "When enabled, the app will start automatically when you log in to your computer."
-  },
-  "use-auto-update": {
-    "title": "Update Tari Universe automatically",
-    "description": "When enabled, the app will check for updates and install them automatically."
   },
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
   "visual-mode": "ビジュアルモード",
@@ -72,20 +62,53 @@
   "disconnect": "エアドロップから切断",
   "inviteCode": "招待コード",
   "use-tor": "Torを使用する",
-  "sha-network-hash-rate": "Sha3 network hashrate",
-  "randomx-network-hash-rate": "Randomx network hashrate",
-  "network": "Network",
   "importing-wallet": "ウォレットのインポート",
   "action-requires-restart": "この操作には再起動が必要です。変更を適用します",
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
   "report-issue": "問題を報告する",
-  "app-restart-required": "App restart required",
-  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-  "control-port": "Control Port",
-  "save": "Save",
+  "action-restart-copy": "設定は保存され、次回Tari Universeを起動したときに適用されます。",
+  "gpu-device-enabled": "GPUマイニングデバイス",
+  "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
+  "gpu-device-no-found": "⚠️ GPUデバイスが見つかりません",
+  "mine-on-app-start": {
+    "title": "起動時のマイニング",
+    "description": "有効にすると、アプリが起動したときに自動的にマイニングを開始します。"
+  },
+  "should-auto-start": {
+    "title": "システム起動時に自動開始",
+    "description": "有効にすると、コンピュータにログインしたときにアプリが自動的に起動します。"
+  },
+  "use-auto-update": {
+    "title": "Tari Universeを自動更新",
+    "description": "有効にすると、アプリは更新を確認し、自動的にインストールします。"
+  },
+  "restart-later": "後で再起動",
+  "restart-now": "今すぐ再起動",
+  "restart-universe": "Tari Universeを再起動しますか？",
+  "tari-wallet-address": "Tariウォレットアドレス",
+  "tor-bridges": "Torブリッジ",
+  "theme": "テーマ",
+  "sha-network-hash-rate": "Sha3ネットワークのハッシュレート",
+  "randomx-network-hash-rate": "Randomxネットワークのハッシュレート",
+  "network": "ネットワーク",
+  "app-restart-required": "アプリの再起動が必要です",
+  "setup-tor-settings": "プライバシー管理と接続のためのTor設定をセットアップ",
+  "control-port": "コントロールポート",
+  "save": "保存",
   "errors": {
-      "invalid-control-port": "Control Port configuration is invalid",
-      "invalid-bridge": "Bridge configuration is invalid"
-  }
+    "invalid-control-port": "コントロールポートの設定が無効です",
+    "invalid-bridge": "ブリッジ設定が無効です"
+  },
+  "paper-wallet": {
+    "link-tari-aurora": "Tari Auroraをリンク",
+    "connect-wallet-to-phone": "Tari Universeウォレットを電話に接続",
+    "load-qr-code": "QRコードを読み込む",
+    "do-not-share-this-code": "このコードを誰とも共有しないでください",
+    "passphrase": "パスフレーズ"
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes",
+  "tor-entry-guards": "Tor Entry Guards",
+  "no-entry-guard": "No Entry Guard connected!"
 }

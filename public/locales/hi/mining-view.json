@@ -13,7 +13,8 @@
     "started-auto-mining": "स्वचालित माइनिंग शुरू हुई",
     "stop-mining": "माइनिंग रोकें"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-while-away": "<span>आपने {{ blocks }} जीते</span> जब आप दूर थे",
+  "estimated-earnings": "अनुमानित कमाई",
+  "you-earn-rewards-separately": "आप CPU और GPU माइनिंग के लिए अलग-अलग पुरस्कार अर्जित करते हैं",
   "day": "day"
 }
