@@ -1,5 +1,5 @@
 {
-  "title": "外部依存関係",
   "description": "アプリケーションが正しく機能するためには、以下の外部依存関係が必要です。",
-  "download-and-install": "ダウンロードしてインストール"
+  "download-and-install": "ダウンロードしてインストール",
+  "title": "外部依存関係"
 }
