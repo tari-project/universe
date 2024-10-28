@@ -62,6 +62,14 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
     function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;
     function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
+    function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
+    function invoke(
+        param: 'set_monerod_config',
+        payload: {
+            useMoneroFail: boolean;
+            moneroNodes: string[];
+        }
+    );
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }

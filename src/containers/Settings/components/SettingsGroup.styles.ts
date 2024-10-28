@@ -37,11 +37,26 @@ export const SettingsGroup = styled.div`
     gap: 6px;
     position: relative;
     color: ${({ theme }) => theme.palette.text.secondary};
+
+    ol,
+    ul {
+        max-width: 100%;
+        padding-inline-start: 30px;
+        line-height: 1.3;
+
+        li {
+            word-wrap: anywhere;
+            &::marker {
+                font-weight: 500;
+            }
+        }
+    }
 `;
 
 export const SettingsGroupTitle = styled.div`
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};
+    justify-content: space-between;
 `;
 export const SettingsGroupContent = styled.div`
     display: flex;
