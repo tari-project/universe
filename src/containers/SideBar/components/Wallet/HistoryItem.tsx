@@ -37,19 +37,12 @@ function getRandomInt(max: number) {
 
 export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
-    const { t } = useTranslation('sidebar', { useSuspense: false });
+    const { t } = useTranslation('sidebar');
     const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
-    const isSent = !item.blockHeight && item.dest_address;
+    const isSent = !item.blockHeight;
     const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
 
-    if (isSent) {
-        console.debug(item.dest_address, item.dest_address58);
-    }
-
-    const itemTitle =
-        !isSent && item.blockHeight
-            ? `${t('block')} #${item.blockHeight}`
-            : `Sent to ${item.dest_address.slice(0, 4)}...`;
+    const itemTitle = !isSent ? `${t('block')} #${item.blockHeight}` : `${t('sent')} tXTM`;
 
     return (
         <Wrapper variants={listItem}>

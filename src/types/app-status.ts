@@ -82,7 +82,6 @@ export interface TransactionInfo {
     tx_id: number;
     source_address: string;
     dest_address: string;
-    dest_address58: string;
     status: number;
     direction: number;
     amount: number;

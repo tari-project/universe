@@ -29,6 +29,7 @@ export default function useFetchTx() {
     return useCallback(async () => {
         if (isTransactionLoading) return;
         setTransactionsLoading(true);
+
         try {
             const txs = await invoke('get_transaction_history');
             const sortedTransactions = txs.sort((a, b) => b.timestamp - a.timestamp);
@@ -45,12 +46,12 @@ export default function useFetchTx() {
             if (mapped?.length) {
                 await setItems(mapped);
             }
+            setTransactionsLoading(false);
         } catch (error) {
+            setTransactionsLoading(false);
             Sentry.captureException(error);
             setError('Could not get transaction history');
             console.error('Could not get transaction history: ', error);
-        } finally {
-            setTransactionsLoading(false);
         }
     }, [isTransactionLoading, setError, setItems, setTransactionsLoading]);
 }
