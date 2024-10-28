@@ -1525,6 +1525,7 @@ async fn get_tor_entry_guards(
     Ok(res)
 }
 
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
