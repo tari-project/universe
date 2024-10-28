@@ -2,12 +2,13 @@ import { EarningsWrapper, InfoWrapper, LeftContent, SquadIconWrapper, Wrapper } 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
-import { TransactionInfo } from '@app/types/app-status.ts';
+
 import formatBalance from '@app/utils/formatBalance.ts';
 import { useTranslation } from 'react-i18next';
 import { useMemo } from 'react';
+import { Transaction } from '@app/types/wallet.ts';
 interface HistoryItemProps {
-    item: TransactionInfo;
+    item: Transaction;
 }
 
 const listItem = {
@@ -37,9 +38,18 @@ function getRandomInt(max: number) {
 export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
     const { t } = useTranslation('sidebar', { useSuspense: false });
-
-    const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
     const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
+    const isSent = !item.blockHeight && item.dest_address;
+    const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
+
+    if (isSent) {
+        console.debug(item.dest_address, item.dest_address58);
+    }
+
+    const itemTitle =
+        !isSent && item.blockHeight
+            ? `${t('block')} #${item.blockHeight}`
+            : `Sent to ${item.dest_address.slice(0, 4)}...`;
 
     return (
         <Wrapper variants={listItem}>
@@ -48,9 +58,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     <TariSvg />
                 </SquadIconWrapper>
                 <InfoWrapper>
-                    <Typography>
-                        {t('block')} #{item.message.split(': ')[1]}
-                    </Typography>
+                    <Typography>{itemTitle}</Typography>
                     <Typography variant="p">
                         {new Date(item.timestamp * 1000)?.toLocaleString(undefined, {
                             month: 'short',
@@ -63,7 +71,12 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                 </InfoWrapper>
             </LeftContent>
             <EarningsWrapper>
-                <Typography variant="h5" style={{ color: theme.palette.success.main }}>{`+ `}</Typography>
+                <Typography
+                    variant="h5"
+                    style={{ color: isSent ? theme.palette.error.main : theme.palette.success.main }}
+                >
+                    {isSent ? `- ` : `+ `}
+                </Typography>
                 <Typography variant="h5" style={{ color: '#fff' }}>{`${earningsFormatted} tXTM`}</Typography>
             </EarningsWrapper>
         </Wrapper>

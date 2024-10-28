@@ -1,9 +1,9 @@
-import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { useWalletStore } from '@app/store/useWalletStore.ts';
+import * as Sentry from '@sentry/react';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api';
-import { TransactionInfo } from '@app/types/app-status.ts';
-import * as Sentry from '@sentry/react';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { Transaction } from '@app/types/wallet.ts';
 
 export default function useFetchTx() {
     const transactions = useWalletStore((s) => s.transactions);
@@ -14,7 +14,7 @@ export default function useFetchTx() {
     const setError = useAppStateStore((s) => s.setError);
 
     const setItems = useCallback(
-        async (newTx: TransactionInfo[]) => {
+        async (newTx: Transaction[]) => {
             const latestTx = newTx[0];
             const latestId = latestTx?.tx_id;
             const hasNewItems = !transactions?.find((tx) => tx.tx_id === latestId);
@@ -32,9 +32,18 @@ export default function useFetchTx() {
         try {
             const txs = await invoke('get_transaction_history');
             const sortedTransactions = txs.sort((a, b) => b.timestamp - a.timestamp);
+            const mapped = sortedTransactions?.map((tx) => {
+                const blockHeight = tx.message.split(': ')[1];
 
-            if (sortedTransactions?.length) {
-                await setItems(sortedTransactions);
+                if (!blockHeight) {
+                    return { ...tx, type: 'sent' as Transaction['type'] };
+                } else {
+                    return { ...tx, blockHeight, type: 'won' as Transaction['type'] };
+                }
+            }) as Transaction[];
+
+            if (mapped?.length) {
+                await setItems(mapped);
             }
         } catch (error) {
             Sentry.captureException(error);
