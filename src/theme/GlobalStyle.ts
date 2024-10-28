@@ -19,7 +19,6 @@ export const GlobalReset = createGlobalStyle`
     fieldset,
     textarea,
     dialog,
-    button,
     input {
         all: unset;
         /* Chrome, Safari, Edge, Opera */
