@@ -40,9 +40,6 @@ export default defineConfig(({ command, mode }) => {
     }
     return {
         ...baseOptions,
-        build: {
-            sourcemap: true, // Source map generation must be turned on for sentry
-        },
         plugins: [
             ...plugins,
             sentryVitePlugin({
