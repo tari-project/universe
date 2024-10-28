@@ -44,7 +44,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     if (!item.blockHeight || item.payment_id?.length > 0) {
         return null;
     }
-    
+
     const itemTitle = `${t('block')} #${item.blockHeight}`;
 
     return (

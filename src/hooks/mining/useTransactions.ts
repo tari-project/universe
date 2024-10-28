@@ -36,7 +36,7 @@ export default function useFetchTx() {
             const mapped = sortedTransactions?.map((tx) => {
                 const blockHeight = tx.message.split(': ')[1];
 
-                if (!!blockHeight) {
+                if (blockHeight) {
                     return { ...tx, blockHeight };
                 }
 
