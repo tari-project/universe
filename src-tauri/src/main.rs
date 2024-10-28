@@ -227,7 +227,7 @@ async fn send_feedback(
         .send_feedback(
             feedback,
             include_logs,
-            app.path_resolver().app_log_dir().clone(),
+            app.path().app_log_dir().ok(),
         )
         .await
         .inspect_err(|e| error!("error at send_feedback {:?}", e))
@@ -605,15 +605,15 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
     let data_dir = app
-        .path_resolver()
+        .path()
         .app_local_data_dir()
         .expect("Could not get data dir");
     let config_dir = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
     let log_dir = app
-        .path_resolver()
+        .path()
         .app_log_dir()
         .expect("Could not get log dir");
 
@@ -1007,11 +1007,11 @@ async fn import_seed_words(
 ) -> Result<(), String> {
     let timer = Instant::now();
     let config_path = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
     let data_dir = app
-        .path_resolver()
+        .path()
         .app_local_data_dir()
         .expect("Could not get data dir");
 
@@ -1060,7 +1060,7 @@ async fn get_seed_words(
 ) -> Result<Vec<String>, String> {
     let timer = Instant::now();
     let config_path = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
     let internal_wallet = InternalWallet::load_or_create(config_path)
@@ -1114,13 +1114,13 @@ async fn start_mining<'r>(
                 &cpu_miner_config,
                 monero_address.to_string(),
                 mm_proxy_port,
-                app.path_resolver()
+                app.path()
                     .app_local_data_dir()
                     .expect("Could not get data dir"),
-                app.path_resolver()
+                app.path()
                     .app_config_dir()
                     .expect("Could not get config dir"),
-                app.path_resolver()
+                app.path()
                     .app_log_dir()
                     .expect("Could not get log dir"),
                 mode,
@@ -1178,13 +1178,13 @@ async fn start_mining<'r>(
                 state.shutdown.to_signal(),
                 tari_address,
                 source,
-                app.path_resolver()
+                app.path()
                     .app_local_data_dir()
                     .expect("Could not get data dir"),
-                app.path_resolver()
+                app.path()
                     .app_config_dir()
                     .expect("Could not get config dir"),
-                app.path_resolver()
+                app.path()
                     .app_log_dir()
                     .expect("Could not get log dir"),
                 mode,
@@ -1257,7 +1257,7 @@ async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
 #[tauri::command]
 fn open_log_dir(app: tauri::AppHandle) {
     let log_dir = app
-        .path_resolver()
+        .path()
         .app_log_dir()
         .expect("Could not get log dir");
     if let Err(e) = open::that(log_dir) {
@@ -1483,7 +1483,7 @@ async fn get_tari_wallet_details(
 async fn get_paper_wallet_details(app: tauri::AppHandle) -> Result<PaperWalletConfig, String> {
     let timer = Instant::now();
     let config_path = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
     let internal_wallet = InternalWallet::load_or_create(config_path)
@@ -1584,7 +1584,7 @@ async fn get_miner_metrics(
     };
 
     let config_path = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
     let _unused = HardwareMonitor::current()
@@ -1664,10 +1664,10 @@ async fn reset_settings<'r>(
     stop_all_miners(state.inner().clone(), 5).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
-    let app_config_dir = app.path_resolver().app_config_dir();
-    let app_cache_dir = app.path_resolver().app_cache_dir();
-    let app_data_dir = app.path_resolver().app_data_dir();
-    let app_local_data_dir = app.path_resolver().app_local_data_dir();
+    let app_config_dir = app.path().app_config_dir();
+    let app_cache_dir = app.path().app_cache_dir();
+    let app_data_dir = app.path().app_data_dir();
+    let app_local_data_dir = app.path().app_local_data_dir();
 
     let dirs_to_remove = [
         app_config_dir,
@@ -1678,7 +1678,7 @@ async fn reset_settings<'r>(
     let valid_dir_paths: Vec<String> = dirs_to_remove
         .iter()
         .filter_map(|dir| {
-            if let Some(path) = dir {
+            if let Ok(path) = dir {
                 path.to_str().map(|s| s.to_string())
             } else {
                 None
@@ -1969,12 +1969,12 @@ fn main() {
         .setup(|app| {
             // TODO: Combine with sentry log
             tari_common::initialize_logging(
-                &app.path_resolver()
+                &app.path()
                     .app_config_dir()
                     .expect("Could not get config dir")
                     .join("universe")
                     .join("log4rs_config_universe.yml"),
-                &app.path_resolver()
+                &app.path()
                     .app_log_dir()
                     .expect("Could not get log dir"),
                 include_str!("../log4rs_sample.yml"),
@@ -1982,7 +1982,7 @@ fn main() {
             .expect("Could not set up logging");
 
             let config_path = app
-                .path_resolver()
+                .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
             let cpu_config2 = cpu_config.clone();
@@ -2008,7 +2008,7 @@ fn main() {
             };
 
             let config_path = app
-                .path_resolver()
+                .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
             let address = app.state::<UniverseAppState>().tari_address.clone();

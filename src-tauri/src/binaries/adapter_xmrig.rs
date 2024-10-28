@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use log::error;
 use regex::Regex;
 use tari_common::configuration::Network;
-use tauri::api::path::cache_dir;
 
 use crate::{github, progress_tracker::ProgressTracker, APPLICATION_FOLDER_ID};
 
@@ -42,7 +41,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error> {
         let cache_path =
-            cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
+            dirs::cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
 
         let binary_folder_path = cache_path
             .join(APPLICATION_FOLDER_ID)
