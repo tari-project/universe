@@ -173,7 +173,10 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
-async fn set_display_mode(display_mode: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+async fn set_display_mode(
+    display_mode: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     let timer = Instant::now();
     state
         .config
