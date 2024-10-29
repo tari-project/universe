@@ -3,7 +3,7 @@ import { invoke } from '@tauri-apps/api';
 import { create } from './create';
 import { AppConfig } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
-import { DisplayMode, modeType } from './types.ts';
+import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
@@ -26,7 +26,7 @@ interface Actions {
     setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
-    setTheme: (theme: DisplayMode) => Promise<void>;
+    setTheme: (theme: displayMode) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -61,7 +61,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             const configTheme = appConfig.theme?.toLowerCase();
 
             if (configTheme) {
-                await getState().setTheme(configTheme as DisplayMode);
+                await getState().setTheme(configTheme as displayMode);
             }
         } catch (e) {
             Sentry.captureException(e);
@@ -242,7 +242,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         });
     },
     setTheme: async (themeArg) => {
-        const theme = themeArg?.toLowerCase() as DisplayMode;
+        const theme = themeArg?.toLowerCase() as displayMode;
         const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
 
         const prevTheme = useAppConfigStore.getState().theme;
@@ -252,7 +252,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         setUITheme(uiTheme);
 
         set({ theme });
-        invoke('set_display_mode', { display_mode: theme }).catch((e) => {
+        invoke('set_display_mode', { displayMode: theme as displayMode }).catch((e) => {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set theme', e);
             appStateStore.setError('Could not change theme');
