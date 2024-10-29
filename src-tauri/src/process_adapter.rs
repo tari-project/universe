@@ -81,7 +81,7 @@ pub enum HealthStatus {
 }
 
 #[async_trait]
-pub(crate) trait StatusMonitor: Clone + Send + 'static {
+pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
     async fn check_health(&self) -> HealthStatus;
 }
 
@@ -123,7 +123,12 @@ impl ProcessInstance {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
             info!(target: LOG_TARGET, "Launching {} node", spec.name);
-            let mut child = launch_child_process(&spec.file_path, spec.envs.as_ref(), &spec.args)?;
+            let mut child = launch_child_process(
+                &spec.file_path,
+                spec.data_dir.as_path(),
+                spec.envs.as_ref(),
+                &spec.args,
+            )?;
 
             if let Some(id) = child.id() {
                 fs::write(
