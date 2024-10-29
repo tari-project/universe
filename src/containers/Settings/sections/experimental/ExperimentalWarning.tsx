@@ -4,8 +4,6 @@ import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore';
 import styled from 'styled-components';
-import { useKeyboardEvent } from '@app/hooks/helpers/useKeyboardEvent.ts';
-import { useCallback, useRef } from 'react';
 
 const ExperimentalContainer = styled.div`
     padding: 15px;
@@ -18,24 +16,14 @@ const ExperimentalContainer = styled.div`
 `;
 
 export default function ExperimentalWarning() {
-    const clickCount = useRef(0);
-    const keyPressed = useRef(false);
-    useKeyboardEvent({ keys: ['ArrowLeft'], callback: () => (keyPressed.current = true) });
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const { showExperimental, setShowExperimental } = useUIStore((s) => ({
         showExperimental: s.showExperimental,
         setShowExperimental: s.setShowExperimental,
     }));
 
-    const handleTemp = useCallback(() => {
-        if (showExperimental && keyPressed.current && clickCount.current > new Date().getDay()) {
-            setShowExperimental(showExperimental, true);
-        }
-        clickCount.current += 1;
-    }, [setShowExperimental, showExperimental]);
-
     return (
-        <ExperimentalContainer onClick={handleTemp}>
+        <ExperimentalContainer>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="h6">{t('experimental-title', { ns: 'settings' })}</Typography>
                 <ToggleSwitch checked={showExperimental} onChange={() => setShowExperimental(!showExperimental)} />
