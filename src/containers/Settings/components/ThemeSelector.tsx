@@ -13,7 +13,7 @@ const Wrapper = styled.fieldset`
 
 const themeOptions = ['system', 'light', 'dark'];
 export default function ThemeSelector() {
-    const configTheme = useAppConfigStore((s) => s.theme);
+    const configTheme = useAppConfigStore((s) => s.display_mode);
     const setTheme = useAppConfigStore((s) => s.setTheme);
 
     const handleChange = useCallback(
