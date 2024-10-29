@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'framer-motion';
 import { Menu, Text, Title, Trigger, Wrapper } from './styles';
 import { useState } from 'react';
-import { autoUpdate, offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import { autoUpdate, offset, safePolygon, shift, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 interface Props {
     trigger: JSX.Element;
@@ -15,9 +15,8 @@ export default function SyncTooltip({ trigger, title, text }: Props) {
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
         onOpenChange: setExpanded,
-        strategy: 'fixed',
         placement: 'top',
-        middleware: [offset(5)],
+        middleware: [offset(5), shift()],
         whileElementsMounted(referenceEl, floatingEl, update) {
             return autoUpdate(referenceEl, floatingEl, update, {
                 layoutShift: false,
@@ -45,8 +44,8 @@ export default function SyncTooltip({ trigger, title, text }: Props) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        {...getFloatingProps()}
                         style={floatingStyles}
+                        {...getFloatingProps()}
                     >
                         <Title>{title}</Title>
                         <Text>{text}</Text>
