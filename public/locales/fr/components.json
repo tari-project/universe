@@ -1,11 +1,11 @@
 {
   "field-error-message": {
+    "integers-only": "Seuls les entiers sont autorisés",
     "invalid": "Champ invalide",
-    "required": "Champ obligatoire",
-    "password-too-short": "Le mot de passe doit contenir au moins 8 caractères",
-    "invalid-url": "Doit être une adresse URL valide",
-    "invalid-email": "Entrez une adresse e-mail valide",
     "invalid-date": "La date n'est pas valide",
-    "integers-only": "Seuls les entiers sont autorisés"
+    "invalid-email": "Entrez une adresse e-mail valide",
+    "invalid-url": "Doit être une adresse URL valide",
+    "password-too-short": "Le mot de passe doit contenir au moins 8 caractères",
+    "required": "Champ obligatoire"
   }
 }

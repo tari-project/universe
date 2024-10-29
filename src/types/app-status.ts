@@ -1,5 +1,5 @@
 import { Language } from '@app/i18initializer';
-import { modeType, themeType } from '../store/types';
+import { displayMode, modeType } from '../store/types';
 
 export interface TorConfig {
     control_port: number;
@@ -11,7 +11,7 @@ export interface AppConfig {
     config_version: number;
     config_file?: string;
     mode: modeType;
-    theme: themeType;
+    theme: displayMode;
     auto_mining: boolean;
     mine_on_app_start: boolean;
     p2pool_enabled: boolean;
@@ -54,10 +54,6 @@ export interface ExternalDependency {
     status: ExternalDependencyStatus;
 }
 
-export interface ExternalDependencies {
-    additional_runtime: ExternalDependency;
-    minimum_runtime: ExternalDependency;
-}
 export interface CpuMinerMetrics {
     hardware?: HardwareParameters;
     mining: CpuMinerStatus;
@@ -142,31 +138,11 @@ export interface P2poolBlockStats {
     submitted: number;
 }
 
-export interface P2poolEstimatedEarnings {
-    one_minute: number;
-    one_hour: number;
-    one_day: number;
-    one_week: number;
-    one_month: number;
-}
-
-export interface P2poolStatsBlock {
-    hash: string;
-    height: number;
-    timestamp: number;
-    miner_wallet_address?: string;
-}
-
 export interface HardwareParameters {
     label: string;
     usage_percentage: number;
     current_temperature: number;
     max_temperature: number;
-}
-
-export interface HardwareStatus {
-    cpu: HardwareParameters;
-    gpu: HardwareParameters[];
 }
 
 export interface CpuMinerStatus {
@@ -178,10 +154,6 @@ export interface CpuMinerStatus {
 
 export interface CpuMinerConnectionStatus {
     is_connected: boolean;
-}
-
-export interface EstimatedEarnings {
-    estimated_earnings: number;
 }
 
 export interface GpuMinerStatus {

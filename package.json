@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.5.49",
+    "version": "0.5.52",
     "type": "module",
     "scripts": {
         "dev": "vite dev --mode development",
@@ -9,7 +9,8 @@
         "preview": "vite preview",
         "tauri": "tauri",
         "lint": "eslint src/",
-        "lint:fix": "eslint src/ --fix"
+        "lint:fix": "eslint src/ --fix",
+        "translate": "node ./scripts/translator.js"
     },
     "dependencies": {
         "@floating-ui/react": "^0.26.25",

@@ -19,8 +19,6 @@ export const GlobalReset = createGlobalStyle`
     fieldset,
     textarea,
     dialog,
-    div,
-    button,
     input {
         all: unset;
         /* Chrome, Safari, Edge, Opera */
@@ -61,6 +59,7 @@ export const GlobalStyle = createGlobalStyle`
         box-sizing: border-box;
         position: relative;
         color: ${({ theme }) => theme.palette.text.primary};
+        transition: color .2s ease, background-color .2s ease,  background .2s ease;
 
         ::-webkit-scrollbar {
             display: none;

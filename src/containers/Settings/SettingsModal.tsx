@@ -21,6 +21,8 @@ import {
     PoolMiningSettings,
     WalletSettings,
 } from './sections';
+import TempSettings from './sections/experimental/TempSettings.tsx';
+
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
 
 const markups = {
@@ -31,6 +33,7 @@ const markups = {
     wallet: <WalletSettings />,
     airdrop: <AirdropSettings />,
     experimental: <ExperimentalSettings />,
+    very_experimental: <TempSettings />,
 };
 
 export default function SettingsModal() {

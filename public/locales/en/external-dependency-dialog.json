@@ -1,5 +1,5 @@
 {
-    "title": "External Dependencies",
-    "description": "The following external dependencies are required for the application to function correctly.",
-    "download-and-install": "Download and install"
+  "description": "The following external dependencies are required for the application to function correctly.",
+  "download-and-install": "Download and install",
+  "title": "External Dependencies"
 }

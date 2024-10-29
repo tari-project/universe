@@ -12,15 +12,16 @@ import {
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
-import { TransactionInfo } from '@app/types/app-status.ts';
+
 import formatBalance from '@app/utils/formatBalance.ts';
 import { useTranslation } from 'react-i18next';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
+import { Transaction } from '@app/types/wallet.ts';
 interface HistoryItemProps {
-    item: TransactionInfo;
+    item: Transaction;
 }
 
 const randomGradientColours = [
@@ -52,6 +53,12 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     }, []);
 
     const block = item.message.split(': ')[1];
+
+    if (!item.blockHeight || item.payment_id?.length > 0) {
+        return null;
+    }
+
+    const itemTitle = `${t('block')} #${item.blockHeight}`;
 
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
@@ -85,9 +92,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     <TariSvg />
                 </SquadIconWrapper>
                 <InfoWrapper>
-                    <Typography>
-                        {t('block')} #{block}
-                    </Typography>
+                    <Typography>{itemTitle}</Typography>
                     <Typography variant="p">
                         {new Date(item.timestamp * 1000)?.toLocaleString(undefined, {
                             month: 'short',
@@ -99,9 +104,10 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     </Typography>
                 </InfoWrapper>
             </LeftContent>
-
-            <EarningsWrapper className="hover-target">
-                <Typography variant="h5" style={{ color: theme.palette.success.main }}>{`+ `}</Typography>
+            <EarningsWrapper>
+                <Typography variant="h5" style={{ color: theme.palette.success.main }}>
+                    {`+ `}
+                </Typography>
                 <Typography variant="h5" style={{ color: '#fff' }}>{`${earningsFormatted} tXTM`}</Typography>
             </EarningsWrapper>
         </Wrapper>
