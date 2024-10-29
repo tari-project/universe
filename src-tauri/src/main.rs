@@ -34,6 +34,7 @@ use setup_status_event::SetupStatusEvent;
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
+use opencl_engine::OpenCLEngine;
 
 use crate::cpu_miner::CpuMiner;
 use crate::feedback::Feedback;
@@ -67,6 +68,7 @@ mod mm_proxy_manager;
 mod network_utils;
 mod node_adapter;
 mod node_manager;
+mod opencl_engine;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -655,6 +657,8 @@ async fn setup_inner(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
+    OpenCLEngine::current().initialize().await?;
+
     state
         .telemetry_manager
         .write()
@@ -764,6 +768,8 @@ async fn setup_inner(
         .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+
+
     let mut tor_control_port = None;
     if use_tor {
         state
