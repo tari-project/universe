@@ -1,4 +1,7 @@
 {
+  "cpu-power": "CPUパワー",
+  "gpu-power": "GPUパワー",
+  "estimated-day": "推定 tXTM/日",
   "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",
   "current-block-time": "現在のブロック時間",
   "day": "day",

@@ -56,7 +56,7 @@ export default function Miner() {
         <MinerContainer>
             <TileContainer>
                 <Tile
-                    title="CPU Power"
+                    title={t('cpu-power')}
                     stats={isCpuMiningEnabled && cpu_is_mining ? formatHashrate(cpu_hash_rate, false) : '-'}
                     isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
                     chipValue={cpu_is_mining ? cpuHardwareStats?.usage_percentage : undefined}
@@ -64,7 +64,7 @@ export default function Miner() {
                     useLowerCase
                 />
                 <Tile
-                    title="GPU Power"
+                    title={t('gpu-power')}
                     stats={isGpuMiningEnabled && gpu_is_mining ? formatHashrate(gpu_hash_rate, false) : '-'}
                     isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
                     chipValue={gpu_is_mining ? gpuChipValue : undefined}
@@ -73,7 +73,7 @@ export default function Miner() {
                 />
                 <ModeSelect />
                 <ExpandableTile
-                    title="Est tXTM/day"
+                    title={t('estimated-day')}
                     stats={isMiningInProgress && Number.isFinite(totalEarnings) ? formatBalance(totalEarnings) : '-'}
                     isLoading={earningsLoading}
                     useLowerCase

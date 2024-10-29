@@ -1,4 +1,7 @@
 {
+  "cpu-power": "CPU Krag",
+  "gpu-power": "GPU Krag",
+  "estimated-day": "Est tXTM/dag",
   "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
   "current-block-time": "Huidige bloktyd",
   "day": "day",
