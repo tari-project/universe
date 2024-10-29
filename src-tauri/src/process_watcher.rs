@@ -131,11 +131,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                    }
                                }
                                // Restart dead app
-                                sleep(Duration::from_secs(2)).await;
+                                sleep(Duration::from_secs(1)).await;
                                 warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
                                 child.start().await?;
                                 // Wait for a bit before checking health again
-                                sleep(Duration::from_secs(10)).await;
+                                // sleep(Duration::from_secs(10)).await;
 
                                }
                             //    break;
