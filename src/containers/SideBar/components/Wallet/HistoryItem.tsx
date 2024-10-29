@@ -38,6 +38,7 @@ function getRandomInt(max: number) {
 export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
     const appLanguage = useAppConfigStore((s) => s.application_language);
+    const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
     const { t } = useTranslation('sidebar');
     const earningsFormatted = useFormatBalance(item.amount).toLowerCase();
     const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
@@ -57,7 +58,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                 <InfoWrapper>
                     <Typography>{itemTitle}</Typography>
                     <Typography variant="p">
-                        {new Date(item.timestamp * 1000)?.toLocaleString(appLanguage, {
+                        {new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
                             month: 'short',
                             day: '2-digit',
                             hourCycle: 'h24',
