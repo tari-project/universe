@@ -62,9 +62,16 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                             initial={{ x: 20, y: '-50%' }}
                             animate={{ x: 0, y: '-50%' }}
                             exit={{ x: 20, y: '-50%' }}
-                            onClick={() => setShowModal(true, block, item.contributed, item.amount)}
+                            onClick={() =>
+                                setShowModal({
+                                    showModal: true,
+                                    block: block,
+                                    contributed: 20000,
+                                    reward: item.amount,
+                                })
+                            }
                         >
-                            Flex & Invite
+                            {t('share-button')}
                             <GemPill>
                                 5,000 <GemImage src={gemImage} alt="" />
                             </GemPill>

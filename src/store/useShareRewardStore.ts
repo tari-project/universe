@@ -2,17 +2,17 @@ import { create } from './create.ts';
 
 interface State {
     showModal: boolean;
-    block: number;
-    contributed: number;
-    reward: number;
+    block: number | string;
+    contributed: number | string;
+    reward: number | string;
 }
 
 interface Actions {
-    setShowModal: (showModal: boolean, block: number, contributed: number, reward: number) => void;
+    setShowModal: (state: State) => void;
 }
 
 const initialState: State = {
-    showModal: true,
+    showModal: false,
     block: 24475,
     contributed: 14475,
     reward: 2.15,
@@ -20,5 +20,5 @@ const initialState: State = {
 
 export const useShareRewardStore = create<State & Actions>()((set) => ({
     ...initialState,
-    setShowModal: (showModal, block, contributed, reward) => set({ showModal, block, contributed, reward }),
+    setShowModal: (state: State) => set(state),
 }));
