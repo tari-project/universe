@@ -1,3 +1,4 @@
+import ThemeSettings from '@app/containers/Settings/sections/general/ThemeSettings';
 import AirdropPermissionSettings from './AirdropPermissionSettings.tsx';
 import LogsSettings from './LogsSettings.tsx';
 import LanguageSettings from './LanguageSettings.tsx';
@@ -11,6 +12,7 @@ export const GeneralSettings = () => {
             <StartApplicationOnBootSettings />
             <AutoUpdate />
             <LanguageSettings />
+            <ThemeSettings />
             <LogsSettings />
             <AirdropPermissionSettings />
             <ResetSettingsButton />
