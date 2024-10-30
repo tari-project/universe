@@ -217,12 +217,11 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
         let platform = Platform::default();
         let device = Device::first(platform).expect("Failed to get device info");
         let max_threads = device.max_wg_size().unwrap_or(800);
+        result.insert(
+            "max_gpu_available".to_string(),
+            i32::try_from(max_threads).unwrap_or(0),
+        );
     }
-
-    result.insert(
-        "max_gpu_available".to_string(),
-        i32::try_from(max_threads).unwrap_or(0),
-    );
 
     Ok(result)
 }
