@@ -24,7 +24,7 @@ const LOG_TARGET: &str = "tari::universe::tor_adapter";
 fn is_port_available(port: u16) -> bool {
     // Try to bind to the port; if successful, the port is available
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    TcpListener::bind(&addr).is_ok()
+    TcpListener::bind(addr).is_ok()
 }
 
 fn get_random_empty_port() -> u16 {
