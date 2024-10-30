@@ -23,10 +23,6 @@ export const Wrapper = styled(m.div)`
         GTAmerica Standard,
         sans-serif;
 
-    .hover-target {
-        transition: opacity 0.2s ease;
-    }
-
     &:hover {
         .hover-target {
             opacity: 0.2;
@@ -120,6 +116,10 @@ export const FlexButton = styled(m.button)`
     font-weight: 600;
     line-height: normal;
     cursor: pointer;
+
+    &:hover {
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+    }
 `;
 
 export const GemPill = styled.div`

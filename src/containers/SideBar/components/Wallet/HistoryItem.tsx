@@ -20,6 +20,7 @@ import { AnimatePresence } from 'framer-motion';
 import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 import { Transaction } from '@app/types/wallet.ts';
+import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 interface HistoryItemProps {
     item: Transaction;
 }
@@ -43,51 +44,55 @@ function getRandomInt(max: number) {
 export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
     const { t } = useTranslation('sidebar', { useSuspense: false });
+    const { referralQuestPoints } = useAirdropStore();
 
     const [hovering, setHovering] = useState(false);
-    const setShowModal = useShareRewardStore((s) => s.setShowModal);
+    const sharingEnabled = useShareRewardStore((s) => s.sharingEnabled);
+    const { setShowModal, setBlock, setContributed, setReward } = useShareRewardStore((s) => s);
 
     const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
+
     const { colour, colour1, colour2 } = useMemo(() => {
         return randomGradientColours[getRandomInt(9)];
     }, []);
-
-    const block = item.message.split(': ')[1];
 
     if (!item.blockHeight || item.payment_id?.length > 0) {
         return null;
     }
 
     const itemTitle = `${t('block')} #${item.blockHeight}`;
+    const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
+
+    const handleShareClick = () => {
+        setShowModal(true);
+        setBlock(item.blockHeight || 0);
+        setContributed(0);
+        setReward(earningsFormatted);
+    };
 
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-            <AnimatePresence>
-                {hovering && (
-                    <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <FlexButton
-                            initial={{ x: 20, y: '-50%' }}
-                            animate={{ x: 0, y: '-50%' }}
-                            exit={{ x: 20, y: '-50%' }}
-                            onClick={() =>
-                                setShowModal({
-                                    showModal: true,
-                                    block: block,
-                                    contributed: 20000,
-                                    reward: item.amount,
-                                })
-                            }
-                        >
-                            {t('share-button')}
-                            <GemPill>
-                                5,000 <GemImage src={gemImage} alt="" />
-                            </GemPill>
-                        </FlexButton>
-                    </HoverWrapper>
-                )}
-            </AnimatePresence>
+            {sharingEnabled && (
+                <AnimatePresence>
+                    {hovering && (
+                        <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            <FlexButton
+                                initial={{ x: 20, y: '-50%' }}
+                                animate={{ x: 0, y: '-50%' }}
+                                exit={{ x: 20, y: '-50%' }}
+                                onClick={handleShareClick}
+                            >
+                                {t('share.history-item-button')}
+                                <GemPill>
+                                    {gemsValue} <GemImage src={gemImage} alt="" />
+                                </GemPill>
+                            </FlexButton>
+                        </HoverWrapper>
+                    )}
+                </AnimatePresence>
+            )}
 
-            <LeftContent className="hover-target">
+            <LeftContent className={sharingEnabled ? 'hover-target' : ''}>
                 <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
                     <TariSvg />
                 </SquadIconWrapper>
