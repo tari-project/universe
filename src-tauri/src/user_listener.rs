@@ -1,5 +1,6 @@
 use device_query::{DeviceQuery, DeviceState};
 use log::{error, info};
+use tauri::Emitter;
 use tokio::time::{sleep, Duration};
 use tokio_util::sync::CancellationToken;
 

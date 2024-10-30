@@ -1,10 +1,10 @@
 use human_format::Formatter;
 use log::{error, info};
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 use tauri::{
-    AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
-    SystemTrayMenuItem,
+    AppHandle, Manager,
 };
+use tauri::menu::{Menu, MenuBuilder, MenuItem, MenuItemBuilder};
 
 use crate::hardware_monitor::HardwareStatus;
 
@@ -81,56 +81,71 @@ pub struct SystrayData {
 
 pub struct SystemtrayManager {
     pub systray: SystemTray,
+    handle: AppHandle,
 }
 
 impl SystemtrayManager {
-    pub fn new() -> Self {
+    pub fn new(handle: AppHandle) -> Self {
         let systray = SystemtrayManager::initialize_systray();
 
-        Self { systray }
+        Self { systray, handle }
     }
-    fn initialize_menu() -> SystemTrayMenu {
+    fn initialize_menu() -> Result<Menu, anyhow::Error> {
         info!(target: LOG_TARGET, "Initializing system tray menu");
-        let cpu_hashrate = CustomMenuItem::new(
+        let cpu_hashrate = MenuItem::with_id(
+            handle,
             SystrayItemId::CpuHashrate.to_str(),
             SystrayItemId::CpuHashrate.get_title(0.0),
-        )
-        .disabled();
-        let gpu_hashrate = CustomMenuItem::new(
+            false,
+            None,
+        )?;
+        let gpu_hashrate = MenuItem::with_id(
+            handle,
             SystrayItemId::GpuHashrate.to_str(),
             SystrayItemId::GpuHashrate.get_title(0.0),
-        )
-        .disabled();
-        let cpu_usage = CustomMenuItem::new(
+            false,
+            None,
+        )?;
+        let cpu_usage = MenuItem::with_id(
+            handle,
             SystrayItemId::CpuUsage.to_str(),
             SystrayItemId::CpuUsage.get_title(0.0),
-        )
-        .disabled();
-        let gpu_usage = CustomMenuItem::new(
+            false,
+            None
+        )?;
+        let gpu_usage = MenuItem::with_id(
+            handle,
             SystrayItemId::GpuUsage.to_str(),
             SystrayItemId::GpuUsage.get_title(0.0),
-        )
-        .disabled();
-        let estimated_earning = CustomMenuItem::new(
+            false,
+            None
+        )?;
+        let estimated_earning = MenuItem::with_id(
+            handle,
             SystrayItemId::EstimatedEarning.to_str(),
             SystrayItemId::EstimatedEarning.get_title(0.0),
-        )
-        .disabled();
-        let unminimize = CustomMenuItem::new(
+            false,
+            None
+        )?;
+        let unminimize = MenuItem::with_id(
+            handle,
             SystrayItemId::UnMinimize.to_str(),
             SystrayItemId::UnMinimize.get_title(0.0),
-        );
+            false,
+            None
+        )?;
 
-        SystemTrayMenu::new()
-            .add_item(cpu_usage)
-            .add_item(cpu_hashrate)
-            .add_native_item(SystemTrayMenuItem::Separator)
-            .add_item(gpu_usage)
-            .add_item(gpu_hashrate)
-            .add_native_item(SystemTrayMenuItem::Separator)
-            .add_item(estimated_earning)
-            .add_native_item(SystemTrayMenuItem::Separator)
-            .add_item(unminimize)
+        MenuBuilder::new(handle)
+            .item(&cpu_usage)
+            .item(&cpu_hashrate)
+            .separator()
+            .item(&gpu_usage)
+            .item(&gpu_hashrate)
+            .separator()
+            .item(&estimated_earning)
+            .separator()
+            .item(&unminimize)
+            .build()?
     }
 
     fn initialize_systray() -> SystemTray {

@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use log::error;
+use tauri::Emitter;
 use tokio::sync::RwLock;
 
 use crate::setup_status_event::SetupStatusEvent;

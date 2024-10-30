@@ -63,17 +63,16 @@ tari_crypto = "0.21.0"
 tari_key_manager = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_shutdown = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_utilities = "0.8.0"
-tauri = {version = "2", features = [
-  "macos-private-api",
-  "isolation", "image-png", "image-ico", "tray-icon",
-] }
-tauri-plugin-single-instance = { version = "2" }
+tauri = {version = "2", features = ["macos-private-api", "isolation", "image-png", "image-ico", "tray-icon", "unstable"] }
+tauri-plugin-single-instance = "^2"
+tauri-plugin-updater = "^2"
 thiserror = "1.0.26"
 tokio = {version = "1", features = ["full"] }
 tokio-util = {version = "0.7.11", features = ["compat"] }
 xz2 = {version = "0.1.7", features = ["static"] }# static bind lzma
 zip = "2.2.0"
 tauri-plugin-shell = "2"
+dirs = "5.0.1"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"

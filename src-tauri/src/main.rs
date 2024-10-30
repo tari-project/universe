@@ -17,11 +17,15 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Manager, RunEvent, UpdaterEvent};
+use tauri::async_runtime::{block_on, handle, JoinHandle};
+use tauri::{Emitter, Manager, RunEvent};
 use tokio::sync::RwLock;
 use tor_adapter::TorConfig;
 use wallet_adapter::TransactionInfo;
+use tauri_plugin_updater::Updater;
+use tauri_plugin_updater::Update;
+use tauri_plugin_sentry::{minidump, sentry};
+use tauri::tray::TrayIconBuilder;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
@@ -1950,23 +1954,23 @@ fn main() {
         setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
     };
 
-    let systray = SystemtrayManager::current().get_systray().clone();
-
     let app = tauri::Builder::default()
-        .system_tray(systray)
-        .on_system_tray_event(|app, event| {
-            SystemtrayManager::current().handle_system_tray_event(app.clone(), event)
-        })
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
-            app.emit_all("single-instance", Payload { args: argv, cwd })
+            app.emit("single-instance", Payload { args: argv, cwd })
                 .unwrap_or_else(
                     |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e),
                 );
         }))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .setup(|app| {
+            let tray_manager = SystemtrayManager::new(app.clone());
+            let tray = TrayIconBuilder::new().on_tray_icon_event(|tray, event|
+                SystemtrayManager::current().handle_system_tray_event(app.clone(), event)
+            ).build(app)?;
             // TODO: Combine with sentry log
             tari_common::initialize_logging(
                 &app.path()
@@ -2107,6 +2111,7 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
+
 
     let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
