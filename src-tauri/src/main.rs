@@ -1967,11 +1967,12 @@ fn main() {
         .setup(|app| {
             let tray = initialize_systray(app.handle().clone())?;
 
-            tray.on_tray_icon_event(|tray, event|
-                handle_system_tray_event(app.handle().clone(), event)
+            let app_handle = app.handle().clone(); // Clone the Arc for usage in the closure
+            tray.on_tray_icon_event(move |_tray, event|
+                handle_system_tray_event(app_handle.clone(), event)
             );
-            tray.on_menu_event(|tray, event|
-                handle_menu_event(app.handle().clone(), event)
+            tray.on_menu_event(move |handle, event|
+                handle_menu_event(handle.clone(), event)
             );
 
             // TODO: Combine with sentry log
