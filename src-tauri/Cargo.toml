@@ -20,7 +20,7 @@ blake2 = "0.10"
 chrono = "0.4.38"
 device_query = "2.1.0"
 dunce = "1.0.5"
-ocl = {version = "0.19.5", optional = true }
+ocl = "0.19.5"
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
 futures-util = "0.3.30"
@@ -111,7 +111,6 @@ custom-protocol = [
 ] # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
-opencl = ["ocl"]
 
 [package.metadata.cargo-machete]
 ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]

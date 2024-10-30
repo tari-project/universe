@@ -41,7 +41,6 @@ declare module '@tauri-apps/api/tauri' {
         payload: { mode: modeType; customCpuUsage: number; customGpuUsage: number }
     ): Promise<void>;
     function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
-    function invoke(param: 'set_theme', payload: { theme: themeType }): Promise<void>;
     function invoke(param: 'set_display_mode', payload: { displayMode: displayMode }): Promise<void>;
     function invoke(param: 'get_seed_words'): Promise<string[]>;
     function invoke(param: 'get_applications_versions'): Promise<ApplicationsVersions>;

@@ -7,7 +7,6 @@ use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredEx
 use log::trace;
 use log::{debug, error, info, warn};
 
-#[cfg(feature = "opencl")]
 use ocl::{Device, Platform};
 use regex::Regex;
 use serde::Serialize;
@@ -212,16 +211,13 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
     let mut result = HashMap::new();
     result.insert("max_cpu_available".to_string(), max_cpu_available);
 
-    #[cfg(feature = "opencl")]
-    {
-        let platform = Platform::default();
-        let device = Device::first(platform).expect("Failed to get device info");
-        let max_threads = device.max_wg_size().unwrap_or(800);
-        result.insert(
-            "max_gpu_available".to_string(),
-            i32::try_from(max_threads).unwrap_or(0),
-        );
-    }
+    let platform = Platform::default();
+    let device = Device::first(platform).expect("Failed to get device info");
+    let max_threads = device.max_wg_size().unwrap_or(800);
+    result.insert(
+        "max_gpu_available".to_string(),
+        i32::try_from(max_threads).unwrap_or(0),
+    );
 
     Ok(result)
 }
