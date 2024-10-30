@@ -4,6 +4,7 @@ use sys_locale::get_locale;
 use anyhow::anyhow;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 use tokio::fs;
 
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
@@ -236,8 +237,12 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
-                self.display_mode =
-                    DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
+                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
+                    self.display_mode =
+                        DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
+                } else {
+                    self.display_mode = DisplayMode::Light;
+                }
                 self.auto_mining = config.auto_mining;
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
@@ -261,7 +266,11 @@ impl AppConfig {
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
                 self.auto_update = config.auto_update;
-                self.reset_earnings = config.reset_earnings;
+                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
+                    self.reset_earnings = config.reset_earnings;
+                } else {
+                    self.reset_earnings = false;
+                }
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());

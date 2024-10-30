@@ -15,7 +15,6 @@ interface State {
     visualMode: boolean;
     sidebarOpen: boolean;
     showExperimental: boolean;
-    showResetBalance?: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
 }
@@ -26,7 +25,7 @@ interface Actions {
     setView: (view: State['view']) => void;
     toggleVisualMode: () => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
-    setShowExperimental: (showExperimental: boolean, showResetBalance?: boolean) => void;
+    setShowExperimental: (showExperimental: boolean) => void;
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
     setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
 }
@@ -56,7 +55,7 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setView: (view) => set({ view }),
     toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    setShowExperimental: (showExperimental, showResetBalance = false) => set({ showExperimental, showResetBalance }),
+    setShowExperimental: (showExperimental) => set({ showExperimental }),
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
 }));
