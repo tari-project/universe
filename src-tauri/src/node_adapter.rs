@@ -106,9 +106,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
             //         .to_string(),
             // );
-            if cfg!(target_os = "windows") {
-                // No need
-            } else {
+            if !cfg!(target_os = "windows") {
                 args.push("-p".to_string());
                 args.push("use_libtor=false".to_string());
             }

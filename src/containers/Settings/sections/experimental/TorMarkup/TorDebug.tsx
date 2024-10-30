@@ -26,7 +26,7 @@ export const TorDebug = () => {
             // Fetch entry guards after the tor is up
             fetchEntryGuards();
         }
-    });
+    }, [setupProgress]);
 
     return (
         <SettingsGroupWrapper>

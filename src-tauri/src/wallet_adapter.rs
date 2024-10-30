@@ -104,7 +104,12 @@ impl ProcessAdapter for WalletAdapter {
 
         if self.use_tor {
             args.push("-p".to_string());
-            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
+            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
+
+            if !cfg!(target_os = "windows") {
+                args.push("-p".to_string());
+                args.push("use_libtor=false".to_string());
+            }
         } else {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
