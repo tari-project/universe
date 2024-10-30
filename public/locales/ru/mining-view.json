@@ -1,20 +1,20 @@
 {
-  "floor": "Минимум",
-  "current-block-time": "Текущее время блока",
-  "your-reward-is": "Ваше вознаграждение",
   "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",
-  "mining-button-text": {
-    "starting-mining": "Запуск майнинга",
-    "start-mining": "Начать майнинг",
-    "pause-mining": "Пауза майнинга",
-    "changing-mode": "Изменение режима",
-    "cancel-mining": "Отмена майнинга",
-    "waiting-for-idle": "Ожидание простоя",
-    "started-auto-mining": "Авто-майнинг запущен",
-    "stop-mining": "Остановить майнинг"
-  },
-  "you-won-while-away": "<span>Вы выиграли {{ blocks }}</span>, пока вас не было",
+  "current-block-time": "Текущее время блока",
+  "day": "day",
   "estimated-earnings": "Ожидаемый доход",
+  "floor": "Минимум",
+  "mining-button-text": {
+    "cancel-mining": "Отмена майнинга",
+    "changing-mode": "Изменение режима",
+    "pause-mining": "Пауза майнинга",
+    "start-mining": "Начать майнинг",
+    "started-auto-mining": "Авто-майнинг запущен",
+    "starting-mining": "Запуск майнинга",
+    "stop-mining": "Остановить майнинг",
+    "waiting-for-idle": "Ожидание простоя"
+  },
   "you-earn-rewards-separately": "Вы получаете награды за майнинг на CPU и GPU отдельно",
-  "day": "day"
+  "you-won-while-away": "<span>Вы выиграли {{ blocks }}</span>, пока вас не было",
+  "your-reward-is": "Ваше вознаграждение"
 }

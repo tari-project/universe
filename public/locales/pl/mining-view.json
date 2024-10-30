@@ -1,20 +1,20 @@
 {
-  "floor": "Poziom",
-  "current-block-time": "Aktualny czas bloku",
-  "your-reward-is": "Twoja nagroda wynosi",
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
-  "mining-button-text": {
-    "starting-mining": "Uruchamianie kopania",
-    "start-mining": "Uruchom kopanie",
-    "pause-mining": "Wstrzymaj kopanie",
-    "changing-mode": "Zmiana trybu",
-    "cancel-mining": "Anuluj kopanie",
-    "waiting-for-idle": "Oczekiwanie na bezczynność",
-    "started-auto-mining": "Automatyczne kopanie uruchomione",
-    "stop-mining": "Zatrzymaj kopanie"
-  },
-  "you-won-while-away": "<span>Wygrałeś {{ blocks }}</span> podczas swojej nieobecności",
+  "current-block-time": "Aktualny czas bloku",
+  "day": "day",
   "estimated-earnings": "Szacowane zarobki",
+  "floor": "Poziom",
+  "mining-button-text": {
+    "cancel-mining": "Anuluj kopanie",
+    "changing-mode": "Zmiana trybu",
+    "pause-mining": "Wstrzymaj kopanie",
+    "start-mining": "Uruchom kopanie",
+    "started-auto-mining": "Automatyczne kopanie uruchomione",
+    "starting-mining": "Uruchamianie kopania",
+    "stop-mining": "Zatrzymaj kopanie",
+    "waiting-for-idle": "Oczekiwanie na bezczynność"
+  },
   "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
-  "day": "day"
+  "you-won-while-away": "<span>Wygrałeś {{ blocks }}</span> podczas swojej nieobecności",
+  "your-reward-is": "Twoja nagroda wynosi"
 }

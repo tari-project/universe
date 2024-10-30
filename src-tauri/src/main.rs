@@ -175,18 +175,21 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
-async fn set_theme(theme: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+async fn set_display_mode(
+    display_mode: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     let timer = Instant::now();
     state
         .config
         .write()
         .await
-        .set_theme(theme)
+        .set_display_mode(display_mode)
         .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_theme {:?}", e))
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_display_mode {:?}", e))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_theme took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_display_mode took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -2061,7 +2064,7 @@ fn main() {
             stop_mining,
             set_p2pool_enabled,
             set_mode,
-            set_theme,
+            set_display_mode,
             open_log_dir,
             get_seed_words,
             get_applications_versions,
