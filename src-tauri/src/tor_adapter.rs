@@ -1,5 +1,7 @@
+use std::net::{SocketAddr, TcpListener};
 use std::path::PathBuf;
 
+use rand::Rng;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 
@@ -19,6 +21,22 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::tor_adapter";
 
+fn is_port_available(port: u16) -> bool {
+    // Try to bind to the port; if successful, the port is available
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    TcpListener::bind(&addr).is_ok()
+}
+
+fn get_random_empty_port() -> u16 {
+    let mut rng = rand::thread_rng();
+    loop {
+        let port: u16 = rng.gen_range(1024..=65535);
+        if is_port_available(port) {
+            return port;
+        }
+    }
+}
+
 pub(crate) struct TorAdapter {
     socks_port: u16,
     config_file: Option<PathBuf>,
@@ -27,10 +45,8 @@ pub(crate) struct TorAdapter {
 
 impl TorAdapter {
     pub fn new() -> Self {
-        let socks_port = 9050;
-
         Self {
-            socks_port,
+            socks_port: 9050 as u16,
             config_file: None,
             config: TorConfig::default(),
         }
@@ -51,6 +67,17 @@ impl TorAdapter {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
         }
         self.update_config_file().await?;
+
+        if !is_port_available(self.config.control_port) {
+            debug!(target: LOG_TARGET, "Tor's Control port is not available. Using random empty one");
+            self.config.control_port = get_random_empty_port();
+        }
+
+        if !is_port_available(self.socks_port) {
+            debug!(target: LOG_TARGET, "Tor's Socks port is not available. Using random empty one");
+            self.socks_port = get_random_empty_port();
+        }
+
         Ok(())
     }
 
