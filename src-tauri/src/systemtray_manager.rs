@@ -1,15 +1,15 @@
 use human_format::Formatter;
 use log::{error, info};
-use std::sync::{Arc, LazyLock};
-use tauri::{
-    AppHandle, Manager,
-};
-use tauri::menu::{Menu, MenuBuilder, MenuItem, MenuItemBuilder};
+use anyhow::anyhow;
+use tauri::{AppHandle, Manager, Wry};
+use tauri::menu::{Menu, MenuBuilder, MenuEvent, MenuItem};
+use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
 
 use crate::hardware_monitor::HardwareStatus;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
-static INSTANCE: LazyLock<SystemtrayManager> = LazyLock::new(SystemtrayManager::new);
+static TRAY_ID: &str = "main";
+static MENU_ID: &str = "universe";
 
 pub enum SystrayItemId {
     CpuHashrate,
@@ -70,304 +70,267 @@ pub enum CurrentOperatingSystem {
     MacOS,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SystrayData {
     pub cpu_hashrate: f64,
     pub gpu_hashrate: f64,
     pub cpu_usage: f64,
     pub gpu_usage: f64,
     pub estimated_earning: f64,
+    pub minimized: bool,
 }
 
-pub struct SystemtrayManager {
-    pub systray: SystemTray,
-    handle: AppHandle,
+fn initialize_menu(handle: AppHandle, data: SystrayData) -> tauri::Result<Menu<Wry>> {
+    info!(target: LOG_TARGET, "Initializing system tray menu");
+    let cpu_hashrate = MenuItem::with_id(
+        &handle,
+        SystrayItemId::CpuHashrate.to_str(),
+        SystrayItemId::CpuHashrate.get_title(data.cpu_hashrate),
+        false,
+        None::<&str>,
+    )?;
+    let gpu_hashrate = MenuItem::with_id(
+        &handle,
+        SystrayItemId::GpuHashrate.to_str(),
+        SystrayItemId::GpuHashrate.get_title(data.gpu_hashrate),
+        false,
+        None::<&str>,
+    )?;
+    let cpu_usage = MenuItem::with_id(
+        &handle,
+        SystrayItemId::CpuUsage.to_str(),
+        SystrayItemId::CpuUsage.get_title(data.cpu_usage),
+        false,
+        None::<&str>,
+    )?;
+    let gpu_usage = MenuItem::with_id(
+        &handle,
+        SystrayItemId::GpuUsage.to_str(),
+        SystrayItemId::GpuUsage.get_title(data.gpu_usage),
+        false,
+        None::<&str>,
+    )?;
+    let estimated_earning = MenuItem::with_id(
+        &handle,
+        SystrayItemId::EstimatedEarning.to_str(),
+        SystrayItemId::EstimatedEarning.get_title(data.estimated_earning),
+        false,
+        None::<&str>,
+    )?;
+    let unminimize = MenuItem::with_id(
+        &handle,
+        SystrayItemId::UnMinimize.to_str(),
+        SystrayItemId::UnMinimize.get_title(0.0),
+        data.minimized,
+        None::<&str>,
+    )?;
+
+    MenuBuilder::with_id(&handle, MENU_ID)
+        .item(&cpu_usage)
+        .item(&cpu_hashrate)
+        .separator()
+        .item(&gpu_usage)
+        .item(&gpu_hashrate)
+        .separator()
+        .item(&estimated_earning)
+        .separator()
+        .item(&unminimize)
+        .build()
 }
 
-impl SystemtrayManager {
-    pub fn new(handle: AppHandle) -> Self {
-        let systray = SystemtrayManager::initialize_systray();
+pub fn initialize_systray(handle: AppHandle) -> Result<TrayIcon, anyhow::Error> {
+    info!(target: LOG_TARGET, "Initializing system tray");
+    let current_os = detect_current_os();
+    let builder = TrayIconBuilder::with_id(TRAY_ID);
 
-        Self { systray, handle }
-    }
-    fn initialize_menu() -> Result<Menu, anyhow::Error> {
-        info!(target: LOG_TARGET, "Initializing system tray menu");
-        let cpu_hashrate = MenuItem::with_id(
-            handle,
-            SystrayItemId::CpuHashrate.to_str(),
-            SystrayItemId::CpuHashrate.get_title(0.0),
-            false,
-            None,
-        )?;
-        let gpu_hashrate = MenuItem::with_id(
-            handle,
-            SystrayItemId::GpuHashrate.to_str(),
-            SystrayItemId::GpuHashrate.get_title(0.0),
-            false,
-            None,
-        )?;
-        let cpu_usage = MenuItem::with_id(
-            handle,
-            SystrayItemId::CpuUsage.to_str(),
-            SystrayItemId::CpuUsage.get_title(0.0),
-            false,
-            None
-        )?;
-        let gpu_usage = MenuItem::with_id(
-            handle,
-            SystrayItemId::GpuUsage.to_str(),
-            SystrayItemId::GpuUsage.get_title(0.0),
-            false,
-            None
-        )?;
-        let estimated_earning = MenuItem::with_id(
-            handle,
-            SystrayItemId::EstimatedEarning.to_str(),
-            SystrayItemId::EstimatedEarning.get_title(0.0),
-            false,
-            None
-        )?;
-        let unminimize = MenuItem::with_id(
-            handle,
-            SystrayItemId::UnMinimize.to_str(),
-            SystrayItemId::UnMinimize.get_title(0.0),
-            false,
-            None
-        )?;
+    let tray_menu = initialize_menu(handle.clone(), SystrayData::default())?;
+    let tooltip = internal_create_tooltip_from_data(SystrayData::default());
 
-        MenuBuilder::new(handle)
-            .item(&cpu_usage)
-            .item(&cpu_hashrate)
-            .separator()
-            .item(&gpu_usage)
-            .item(&gpu_hashrate)
-            .separator()
-            .item(&estimated_earning)
-            .separator()
-            .item(&unminimize)
-            .build()?
-    }
-
-    fn initialize_systray() -> SystemTray {
-        info!(target: LOG_TARGET, "Initializing system tray");
-        let current_os = SystemtrayManager::detect_current_os();
-        let systray = SystemTray::new();
-
-        let empty_data = SystrayData {
-            cpu_hashrate: 0.0,
-            gpu_hashrate: 0.0,
-            cpu_usage: 0.0,
-            gpu_usage: 0.0,
-            estimated_earning: 0.0,
-        };
-        let tray_menu = SystemtrayManager::initialize_menu();
-        let tooltip = SystemtrayManager::internal_create_tooltip_from_data(empty_data.clone());
-
-        match current_os {
-            CurrentOperatingSystem::Windows => {
-                return systray.with_tooltip(tooltip.clone().as_str());
-            }
-            CurrentOperatingSystem::Linux => systray.with_menu(tray_menu),
-            CurrentOperatingSystem::MacOS => {
-                return systray
-                    .with_menu(tray_menu)
-                    .with_tooltip(tooltip.clone().as_str())
-            }
+    match current_os {
+        CurrentOperatingSystem::Windows => {
+            builder.tooltip(tooltip.clone().as_str()).build(&handle).map_err(|e| anyhow::anyhow!(e))
+        },
+        CurrentOperatingSystem::Linux => builder.menu(&tray_menu).build(&handle).map_err(|e| anyhow::anyhow!(e)),
+        CurrentOperatingSystem::MacOS => {
+            builder.menu(&tray_menu).tooltip(tooltip.clone().as_str()).build(&handle).map_err(|e| anyhow::anyhow!(e))
         }
     }
+}
 
-    fn internal_create_tooltip_from_data(data: SystrayData) -> String {
-        let current_os = SystemtrayManager::detect_current_os();
+fn internal_create_tooltip_from_data(data: SystrayData) -> String {
+    let current_os = detect_current_os();
 
-        match current_os {
-            CurrentOperatingSystem::Windows => {
-                format!(
-                    "Hashrate | Usage\nCPU: {} H/s | {:.0}%\nGPU: {} H/s | {:.0}%\nEst. earning: {} tXTM/day",
-                    Formatter::new().with_decimals(2).with_separator("").format(data.cpu_hashrate),
-                    data.cpu_usage,
-                    Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
-                    data.gpu_usage,
-                    Formatter::new().with_decimals(2).with_separator("").format(data.estimated_earning / 1_000_000.0)
-                )
-            }
-            CurrentOperatingSystem::Linux => "Not supported".to_string(),
-            CurrentOperatingSystem::MacOS => {
-                format!(
-                    "CPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
-                    Formatter::new().with_decimals(0).with_separator("").format(data.cpu_hashrate),
-                    data.cpu_usage,
-                    Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
-                    data.gpu_usage,
-                    Formatter::new().with_decimals(2).with_separator("").format(data.estimated_earning / 1_000_000.0)
-                )
-            }
+    match current_os {
+        CurrentOperatingSystem::Windows => {
+            format!(
+                "Hashrate | Usage\nCPU: {} H/s | {:.0}%\nGPU: {} H/s | {:.0}%\nEst. earning: {} tXTM/day",
+                Formatter::new().with_decimals(2).with_separator("").format(data.cpu_hashrate),
+                data.cpu_usage,
+                Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
+                data.gpu_usage,
+                Formatter::new().with_decimals(2).with_separator("").format(data.estimated_earning / 1_000_000.0)
+            )
+        }
+        CurrentOperatingSystem::Linux => "Not supported".to_string(),
+        CurrentOperatingSystem::MacOS => {
+            format!(
+                "CPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
+                Formatter::new().with_decimals(0).with_separator("").format(data.cpu_hashrate),
+                data.cpu_usage,
+                Formatter::new().with_decimals(2).with_separator("").format(data.gpu_hashrate),
+                data.gpu_usage,
+                Formatter::new().with_decimals(2).with_separator("").format(data.estimated_earning / 1_000_000.0)
+            )
         }
     }
+}
 
-    fn update_menu_field(&self, app: AppHandle, item_id: SystrayItemId, value: f64) {
-        app.tray_handle()
-            .get_item(item_id.to_str())
-            .set_title(item_id.get_title(value))
-            .unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to update menu field: {}", e);
-            });
+fn update_menu_with_data(app: AppHandle, mut data: SystrayData) -> Result<(), anyhow::Error> {
+    let window = app.get_window("main").expect("Could not get window");
+    if let Ok(minimized) = window.is_minimized() {
+        data.minimized = minimized;
     }
+    app.tray_by_id(TRAY_ID).ok_or(anyhow::anyhow!("No tray found by id"))?.set_menu(initialize_menu(app.clone(), data).ok())?;
 
-    fn update_menu_with_data(&self, app: AppHandle, data: SystrayData) {
-        self.update_menu_field(app.clone(), SystrayItemId::CpuHashrate, data.cpu_hashrate);
-        self.update_menu_field(app.clone(), SystrayItemId::GpuHashrate, data.gpu_hashrate);
-        self.update_menu_field(app.clone(), SystrayItemId::CpuUsage, data.cpu_usage);
-        self.update_menu_field(app.clone(), SystrayItemId::GpuUsage, data.gpu_usage);
-        self.update_menu_field(
-            app.clone(),
-            SystrayItemId::EstimatedEarning,
-            data.estimated_earning,
-        );
-        self.update_minimize(app.clone());
+    Ok(())
+}
+
+pub fn create_tooltip_from_data(data: SystrayData) -> String {
+    internal_create_tooltip_from_data(data)
+}
+
+fn detect_current_os() -> CurrentOperatingSystem {
+    if cfg!(target_os = "windows") {
+        CurrentOperatingSystem::Windows
+    } else if cfg!(target_os = "linux") {
+        CurrentOperatingSystem::Linux
+    } else if cfg!(target_os = "macos") {
+        CurrentOperatingSystem::MacOS
+    } else {
+        panic!("Unsupported OS");
     }
+}
 
-    pub fn create_tooltip_from_data(&self, data: SystrayData) -> String {
-        SystemtrayManager::internal_create_tooltip_from_data(data)
-    }
+pub fn update_systray(app: AppHandle, data: SystrayData) -> Result<(), anyhow::Error> {
+    let tray = app.tray_by_id(TRAY_ID).ok_or(anyhow!("Couldn't get tray by id"))?;
+    let current_os = detect_current_os();
+    let tooltip = internal_create_tooltip_from_data(data.clone());
 
-    pub fn update_minimize(&self, app: AppHandle) {
-        let window = app.get_window("main").expect("Could not get window");
-        let _unused = app
-            .tray_handle()
-            .get_item(SystrayItemId::UnMinimize.to_str())
-            .set_enabled(window.is_minimized().expect("Could not get is_minimized"));
-    }
-
-    fn detect_current_os() -> CurrentOperatingSystem {
-        if cfg!(target_os = "windows") {
-            CurrentOperatingSystem::Windows
-        } else if cfg!(target_os = "linux") {
-            CurrentOperatingSystem::Linux
-        } else if cfg!(target_os = "macos") {
-            CurrentOperatingSystem::MacOS
-        } else {
-            panic!("Unsupported OS");
-        }
-    }
-
-    pub fn update_systray(&self, app: AppHandle, data: SystrayData) {
-        let current_os = SystemtrayManager::detect_current_os();
-        let tooltip = SystemtrayManager::internal_create_tooltip_from_data(data.clone());
-
-        match current_os {
-            CurrentOperatingSystem::Windows => {
-                app.tray_handle()
-                    .set_tooltip(tooltip.as_str())
-                    .unwrap_or_else(|e| {
-                        error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
-                    });
-            }
-            CurrentOperatingSystem::Linux => {
-                self.update_menu_with_data(app, data);
-            }
-            CurrentOperatingSystem::MacOS => {
-                self.update_menu_with_data(app.clone(), data);
-                app.clone()
-                    .tray_handle()
-                    .set_tooltip(tooltip.as_str())
-                    .unwrap_or_else(|e| {
-                        error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
-                    });
-            }
-        }
-    }
-
-    pub fn handle_system_tray_event(&self, app: AppHandle, event: SystemTrayEvent) {
-        let window = match app.get_window("main") {
-            Some(window) => window,
-            None => {
-                error!(target: LOG_TARGET, "Failed to get main window");
-                return;
-            }
-        };
-        match event {
-            SystemTrayEvent::DoubleClick { .. } => {
-                window.unminimize().unwrap_or_else(|error| {
-                    error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+    match current_os {
+        CurrentOperatingSystem::Windows => {
+            tray
+                .set_tooltip(Some(tooltip.as_str()))
+                .unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
                 });
-                window.set_focus().unwrap_or_else(|error| {
-                    error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+        }
+        CurrentOperatingSystem::Linux => {
+            update_menu_with_data(app, data)?;
+        }
+        CurrentOperatingSystem::MacOS => {
+            update_menu_with_data(app.clone(), data)?;
+            tray
+                .set_tooltip(Some(tooltip.as_str()))
+                .unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
                 });
-            }
-            SystemTrayEvent::MenuItemClick { id, .. } => {
-                info!(target: LOG_TARGET, "System tray menu item click event: {}", id);
-                match id.as_str() {
-                    "unminimize" => {
-                        info!(target: LOG_TARGET, "Unminimizing window");
-                        match SystemtrayManager::detect_current_os() {
-                            CurrentOperatingSystem::Linux => {
-                                let is_minimized = window.is_minimized().unwrap_or(false);
-                                let is_visible = window.is_visible().unwrap_or(false);
+        }
+    }
 
-                                if is_minimized | !is_visible {
-                                    // Ony soultion to unminimize and show the window on Linux
-                                    // At least one that I found
-                                    window.hide().unwrap_or_else(|error| {
-                                        error!(target: LOG_TARGET, "Failed hide window: {}", error);
-                                    });
-                                    window.unminimize().unwrap_or_else(|error| {
-                                        error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
-                                    });
-                                    window.show().unwrap_or_else(|error| {
-                                        error!(target: LOG_TARGET, "Failed to show window: {}", error);
-                                    });
-                                    window.set_focus().unwrap_or_else(|error| {
-                                        error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
-                                    });
-                                }
-                            }
-                            CurrentOperatingSystem::MacOS => {
-                                window.unminimize().unwrap_or_else(|error| {
-                                    error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
-                                });
-                                window.set_focus().unwrap_or_else(|error| {
-                                    error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
-                                });
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {
-                        info!(target: LOG_TARGET, "Unknown menu item click event: {}", id);
+    Ok(())
+}
+
+pub fn handle_menu_event(app: AppHandle, event: MenuEvent) {
+    let window = match app.get_window("main") {
+        Some(window) => window,
+        None => {
+            error!(target: LOG_TARGET, "Failed to get main window");
+            return;
+        }
+    };
+
+    info!(target: LOG_TARGET, "System tray menu item click event: {}", event.id.0);
+    match event.id.0.as_str() {
+        "unminimize" => {
+            info!(target: LOG_TARGET, "Unminimizing window");
+            match detect_current_os() {
+                CurrentOperatingSystem::Linux => {
+                    let is_minimized = window.is_minimized().unwrap_or(false);
+                    let is_visible = window.is_visible().unwrap_or(false);
+
+                    if is_minimized | !is_visible {
+                        // Ony soultion to unminimize and show the window on Linux
+                        // At least one that I found
+                        window.hide().unwrap_or_else(|error| {
+                            error!(target: LOG_TARGET, "Failed hide window: {}", error);
+                        });
+                        window.unminimize().unwrap_or_else(|error| {
+                            error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                        });
+                        window.show().unwrap_or_else(|error| {
+                            error!(target: LOG_TARGET, "Failed to show window: {}", error);
+                        });
+                        window.set_focus().unwrap_or_else(|error| {
+                            error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                        });
                     }
                 }
-            }
-            _ => {
-                info!(target: LOG_TARGET, "System tray event");
+                CurrentOperatingSystem::MacOS => {
+                    window.unminimize().unwrap_or_else(|error| {
+                        error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                    });
+                    window.set_focus().unwrap_or_else(|error| {
+                        error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                    });
+                }
+                _ => {}
             }
         }
-    }
-
-    pub fn create_systemtray_data(
-        &self,
-        cpu_hashrate: f64,
-        gpu_hashrate: f64,
-        hardware_status: HardwareStatus,
-        estimated_earning: f64,
-    ) -> SystrayData {
-        SystrayData {
-            cpu_hashrate,
-            gpu_hashrate,
-            cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
-            gpu_usage: hardware_status
-                .gpu
-                .iter()
-                .map(|hp| f64::from(hp.usage_percentage))
-                .sum::<f64>(),
-            estimated_earning,
+        _ => {
+            info!(target: LOG_TARGET, "Unknown menu item click event: {}", event.id.0);
         }
     }
+}
 
-    pub fn get_systray(&self) -> &SystemTray {
-        &self.systray
+pub fn handle_system_tray_event(app: AppHandle, event: TrayIconEvent) {
+    let window = match app.get_window("main") {
+        Some(window) => window,
+        None => {
+            error!(target: LOG_TARGET, "Failed to get main window");
+            return;
+        }
+    };
+    match event {
+        TrayIconEvent::DoubleClick { .. } => {
+            window.unminimize().unwrap_or_else(|error| {
+                error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+            });
+            window.set_focus().unwrap_or_else(|error| {
+                error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+            });
+        }
+        _ => {
+            info!(target: LOG_TARGET, "System tray event");
+        }
     }
+}
 
-    pub fn current() -> &'static SystemtrayManager {
-        &INSTANCE
+pub fn create_systemtray_data(
+    cpu_hashrate: f64,
+    gpu_hashrate: f64,
+    hardware_status: HardwareStatus,
+    estimated_earning: f64,
+) -> SystrayData {
+    SystrayData {
+        cpu_hashrate,
+        gpu_hashrate,
+        cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
+        gpu_usage: hardware_status
+            .gpu
+            .iter()
+            .map(|hp| f64::from(hp.usage_percentage))
+            .sum::<f64>(),
+        estimated_earning,
+        minimized: false,
     }
 }

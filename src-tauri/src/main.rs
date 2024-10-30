@@ -17,15 +17,12 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
-use tauri::async_runtime::{block_on, handle, JoinHandle};
+use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Emitter, Manager, RunEvent};
 use tokio::sync::RwLock;
 use tor_adapter::TorConfig;
 use wallet_adapter::TransactionInfo;
-use tauri_plugin_updater::Updater;
-use tauri_plugin_updater::Update;
 use tauri_plugin_sentry::{minidump, sentry};
-use tauri::tray::TrayIconBuilder;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
@@ -35,7 +32,7 @@ use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
-use systemtray_manager::{SystemtrayManager, SystrayData};
+use systemtray_manager::SystrayData;
 use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
 
@@ -47,6 +44,7 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::systemtray_manager::{create_systemtray_data, handle_menu_event, handle_system_tray_event, initialize_systray, update_systray};
 use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
 use crate::wallet_adapter::WalletBalance;
@@ -1600,14 +1598,14 @@ async fn get_miner_metrics(
         .await
         .read_hardware_parameters();
 
-    let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
+    let new_systemtray_data: SystrayData = create_systemtray_data(
         cpu_mining_status.hash_rate,
         gpu_mining_status.hash_rate as f64,
         hardware_status.clone(),
         (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
     );
 
-    SystemtrayManager::current().update_systray(app, new_systemtray_data);
+    update_systray(app, new_systemtray_data).map_err(|e| e.to_string())?;
 
     let connected_peers = state
         .node_manager
@@ -1967,10 +1965,15 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .setup(|app| {
-            let tray_manager = SystemtrayManager::new(app.clone());
-            let tray = TrayIconBuilder::new().on_tray_icon_event(|tray, event|
-                SystemtrayManager::current().handle_system_tray_event(app.clone(), event)
-            ).build(app)?;
+            let tray = initialize_systray(app.handle().clone())?;
+
+            tray.on_tray_icon_event(|tray, event|
+                handle_system_tray_event(app.handle().clone(), event)
+            );
+            tray.on_menu_event(|tray, event|
+                handle_menu_event(app.handle().clone(), event)
+            );
+
             // TODO: Combine with sentry log
             tari_common::initialize_logging(
                 &app.path()
