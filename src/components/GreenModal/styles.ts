@@ -23,6 +23,10 @@ export const Wrapper = styled('div')`
     @media (max-height: 955px) {
         align-items: flex-start;
     }
+
+    @media (max-height: 800px) {
+        padding: 60px 40px 60px 40px;
+    }
 `;
 
 export const Cover = styled(m.div)`
