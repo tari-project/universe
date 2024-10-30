@@ -17,7 +17,6 @@ const ExperimentalContainer = styled.div`
 
 export default function ExperimentalWarning() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-
     const { showExperimental, setShowExperimental } = useUIStore((s) => ({
         showExperimental: s.showExperimental,
         setShowExperimental: s.setShowExperimental,

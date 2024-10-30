@@ -227,18 +227,21 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
 }
 
 #[tauri::command]
-async fn set_theme(theme: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+async fn set_display_mode(
+    display_mode: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     let timer = Instant::now();
     state
         .config
         .write()
         .await
-        .set_theme(theme)
+        .set_display_mode(display_mode)
         .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_theme {:?}", e))
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_display_mode {:?}", e))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_theme took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_display_mode took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -452,6 +455,28 @@ async fn set_auto_update(
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_monerod_config(
+    use_monero_fail: bool,
+    monero_nodes: Vec<String>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_monerod_config(use_monero_fail, monero_nodes)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_monerod_config {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_monerod_config took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -798,20 +823,16 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
     let mut tor_control_port = None;
     if use_tor {
-        if cfg!(target_os = "windows") {
-            state
-                .tor_manager
-                .ensure_started(
-                    state.shutdown.to_signal(),
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
-                .await?;
-            tor_control_port = state.tor_manager.get_control_port().await?;
-        } else {
-            tor_control_port = Some(9051);
-        }
+        state
+            .tor_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+        tor_control_port = state.tor_manager.get_control_port().await?;
     }
     for _i in 0..2 {
         match state
@@ -1552,6 +1573,23 @@ async fn get_app_config(
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
+async fn get_tor_entry_guards(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+    let res = state
+        .tor_manager
+        .get_entry_guards()
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_tor_entry_guards took too long: {:?}", timer.elapsed());
+    }
+    Ok(res)
+}
+
+#[allow(clippy::too_many_lines)]
+#[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -1938,6 +1976,7 @@ fn main() {
     );
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // let mm_proxy_config = if app_config_raw.p2pool_enabled {
     //     MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     // } else {
@@ -2082,7 +2121,7 @@ fn main() {
             stop_mining,
             set_p2pool_enabled,
             set_mode,
-            set_theme,
+            set_display_mode,
             open_log_dir,
             get_seed_words,
             get_applications_versions,
@@ -2120,7 +2159,9 @@ fn main() {
             get_tor_config,
             get_max_consumption_levels,
             set_tor_config,
-            fetch_tor_bridges
+            fetch_tor_bridges,
+            set_monerod_config,
+            get_tor_entry_guards
         ])
         .build(tauri::generate_context!())
         .inspect_err(

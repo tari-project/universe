@@ -16,6 +16,7 @@ export const BlackButton = styled('button')`
     width: 100%;
     height: 81px;
     transition: opacity 0.2s ease;
+    cursor: pointer;
 
     span {
         display: block;

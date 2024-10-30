@@ -24,6 +24,7 @@ export const ClaimButton = styled('button')`
     color: ${({ theme }) => theme.palette.action.background.contrast};
     transition: transform 0.2s ease;
     overflow: hidden;
+    cursor: pointer;
 
     &:hover {
         transform: scale(1.05);

@@ -15,7 +15,7 @@ export const DashboardContainer = styled(m.div)<{ $view?: viewType; $visualModeO
     background-color: ${(props) => (props.$view !== 'setup' ? 'none' : props.theme.palette.background.splash)};
 
     ${({ $visualModeOff, $view, theme }) =>
-        ($view === 'setup' || $visualModeOff) &&
+        (($view === 'setup' && theme.mode !== 'dark') || $visualModeOff) &&
         css`
             &::before {
                 content: '';

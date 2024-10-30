@@ -3,10 +3,11 @@ import { invoke } from '@tauri-apps/api';
 import { create } from './create';
 import { AppConfig } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
-import { modeType } from './types.ts';
+import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 type State = Partial<AppConfig>;
 interface SetModeProps {
@@ -29,6 +30,8 @@ interface Actions {
     setUseTor: (useTor: boolean) => Promise<void>;
     setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
+    setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
+    setTheme: (theme: displayMode) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -51,14 +54,22 @@ const initialState: State = {
     custom_power_levels_enabled: false,
     use_tor: true,
     auto_update: false,
+    mmproxy_use_monero_fail: false,
+    mmproxy_monero_nodes: ['https://xmr-01.tari.com'],
 };
 
-export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
+export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
     ...initialState,
     fetchAppConfig: async () => {
         try {
             const appConfig = await invoke('get_app_config');
+            console.debug(JSON.stringify(appConfig));
             set(appConfig);
+            const configTheme = appConfig.display_mode?.toLowerCase();
+
+            if (configTheme) {
+                await getState().setTheme(configTheme as displayMode);
+            }
         } catch (e) {
             Sentry.captureException(e);
             console.error('Could not get app config: ', e);
@@ -230,6 +241,34 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set auto update', e);
             appStateStore.setError('Could not change auto update');
             set({ auto_update: !autoUpdate });
+        });
+    },
+    setMonerodConfig: async (useMoneroFail, moneroNodes) => {
+        const prevMoneroNodes = useAppConfigStore.getState().mmproxy_monero_nodes;
+        set({ mmproxy_use_monero_fail: useMoneroFail, mmproxy_monero_nodes: moneroNodes });
+        invoke('set_monerod_config', { useMoneroFail, moneroNodes }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set monerod config', e);
+            appStateStore.setError('Could not change monerod config');
+            set({ mmproxy_use_monero_fail: !useMoneroFail, mmproxy_monero_nodes: prevMoneroNodes });
+        });
+    },
+    setTheme: async (themeArg) => {
+        const display_mode = themeArg?.toLowerCase() as displayMode;
+        const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        const prevTheme = useAppConfigStore.getState().display_mode;
+        const setUITheme = useUIStore.getState().setTheme;
+        const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
+
+        setUITheme(uiTheme);
+
+        set({ display_mode });
+        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set theme', e);
+            appStateStore.setError('Could not change theme');
+            set({ display_mode: prevTheme });
         });
     },
 }));

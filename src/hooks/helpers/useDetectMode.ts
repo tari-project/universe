@@ -6,7 +6,7 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export function useDetectMode() {
     const setTheme = useUIStore((s) => s.setTheme);
-    const configTheme = useAppConfigStore((s) => s.theme);
+    const configTheme = useAppConfigStore((s) => s.display_mode);
 
     useEffect(() => {
         if (configTheme !== 'system') return;
