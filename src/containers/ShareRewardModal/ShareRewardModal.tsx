@@ -7,7 +7,6 @@ import {
     HeroImage,
     Label,
     RewardWrapper,
-    Text,
     Title,
     Value,
     WinnerPill,

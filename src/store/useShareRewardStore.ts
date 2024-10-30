@@ -13,7 +13,7 @@ interface Actions {
 }
 
 const initialState: State = {
-    sharingEnabled: true,
+    sharingEnabled: false,
     showModal: false,
     item: null,
 };
