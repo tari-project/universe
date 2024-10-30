@@ -22,7 +22,6 @@
         "winner-pill": "Winner of block",
         "copied": "Link Copied!",
         "button-text": "FLEX & INVITE",
-        "contributed": "I contributed <strong>{{number}} H/s</strong> to this block.",
         "reward": "my reward"
     }
 }

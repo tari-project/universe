@@ -19,25 +19,21 @@ import {
 import genericHeroImage from './images/generic-image.png';
 import gemImage from '../Airdrop/AirdropGiftTracker/images/gem.png';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
+import formatBalance from '@app/utils/formatBalance';
 
 export type PaperWalletModalSectionType = 'Connect' | 'QRCode';
 
 export default function ShareRewardModal() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
 
+    const { setShowModal, setItemData } = useShareRewardStore((s) => s);
     const showModal = useShareRewardStore((s) => s.showModal);
-    const setShowModal = useShareRewardStore((s) => s.setShowModal);
-    const block = useShareRewardStore((s) => s.block);
-    const contributed = useShareRewardStore((s) => s.contributed);
-    const reward = useShareRewardStore((s) => s.reward);
+    const item = useShareRewardStore((s) => s.item);
 
     const [copied, setCopied] = useState(false);
-
-    const { referralQuestPoints } = useAirdropStore();
-    const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 
     useEffect(() => {
         if (copied) {
@@ -49,10 +45,23 @@ export default function ShareRewardModal() {
 
     const handleClose = () => {
         setShowModal(false);
+        setItemData(null);
     };
 
+    const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropUrl || '');
+    const { userDetails, referralQuestPoints } = useAirdropStore();
+
+    const referralCode = userDetails?.user?.referral_code || '';
+    const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
+    const block = item?.blockHeight || 0;
+    const reward = item?.amount || 0;
+    const earningsFormatted = useMemo(() => formatBalance(reward).toLowerCase(), [reward]);
+    const tx_id = item?.tx_id || '';
+
+    const shareUrl = `${airdropUrl}/download/${referralCode}?tx_id=${tx_id}`;
+
     const handleCopy = () => {
-        navigator.clipboard.writeText('https://tari.com');
+        navigator.clipboard.writeText(shareUrl);
         setCopied(true);
     };
 
@@ -83,22 +92,10 @@ export default function ShareRewardModal() {
                             {t('share.button-text')}
                         </BlackButton>
 
-                        {contributed && contributed !== 0 ? (
-                            <Text>
-                                <Trans
-                                    t={t}
-                                    i18nKey="share.contributed"
-                                    ns="sidebar"
-                                    values={{ value: contributed.toLocaleString() }}
-                                    components={{ strong: <strong /> }}
-                                />
-                            </Text>
-                        ) : null}
-
                         <RewardWrapper>
                             <Label>{t('share.reward')}</Label>
                             <Value>
-                                <Number>{reward}</Number>
+                                <Number>{earningsFormatted}</Number>
                                 <Trans>XTM</Trans>
                             </Value>
                         </RewardWrapper>

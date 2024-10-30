@@ -22,7 +22,6 @@ export default function History() {
     const transactions = useWalletStore((s) => s.transactions);
     const txMarkup = useMemo(() => transactions.map((tx) => <HistoryItem key={tx.tx_id} item={tx} />), [transactions]);
 
-    console.log('8888888', transactions);
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
             <HistoryPadding>

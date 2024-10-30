@@ -44,11 +44,12 @@ function getRandomInt(max: number) {
 export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
     const { t } = useTranslation('sidebar', { useSuspense: false });
-    const { referralQuestPoints } = useAirdropStore();
+    const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
+    const airdropTokens = useAirdropStore((s) => s.airdropTokens);
 
     const [hovering, setHovering] = useState(false);
     const sharingEnabled = useShareRewardStore((s) => s.sharingEnabled);
-    const { setShowModal, setBlock, setContributed, setReward } = useShareRewardStore((s) => s);
+    const { setShowModal, setItemData } = useShareRewardStore((s) => s);
 
     const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
 
@@ -65,14 +66,16 @@ export default function HistoryItem({ item }: HistoryItemProps) {
 
     const handleShareClick = () => {
         setShowModal(true);
-        setBlock(item.blockHeight || 0);
-        setContributed(0);
-        setReward(earningsFormatted);
+        setItemData(item);
     };
+
+    const isLoggedIn = !!airdropTokens;
+
+    const showShareButton = sharingEnabled && isLoggedIn;
 
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-            {sharingEnabled && (
+            {showShareButton && (
                 <AnimatePresence>
                     {hovering && (
                         <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -92,7 +95,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                 </AnimatePresence>
             )}
 
-            <LeftContent className={sharingEnabled ? 'hover-target' : ''}>
+            <LeftContent className={showShareButton ? 'hover-target' : ''}>
                 <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
                     <TariSvg />
                 </SquadIconWrapper>

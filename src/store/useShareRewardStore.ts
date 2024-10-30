@@ -1,32 +1,25 @@
 import { create } from './create.ts';
+import { Transaction } from '@app/types/wallet.ts';
 
 interface State {
     sharingEnabled: boolean;
     showModal: boolean;
-    block: number | string;
-    contributed: number | string;
-    reward: number | string;
+    item: Transaction | null;
 }
 
 interface Actions {
     setShowModal: (showModal: boolean) => void;
-    setBlock: (block: number | string) => void;
-    setContributed: (contributed: number | string) => void;
-    setReward: (reward: number | string) => void;
+    setItemData: (item: Transaction | null) => void;
 }
 
 const initialState: State = {
     sharingEnabled: true,
     showModal: false,
-    block: 24475,
-    contributed: 14475,
-    reward: 2.15,
+    item: null,
 };
 
 export const useShareRewardStore = create<State & Actions>()((set) => ({
     ...initialState,
     setShowModal: (showModal) => set({ showModal }),
-    setBlock: (block) => set({ block }),
-    setContributed: (contributed) => set({ contributed }),
-    setReward: (reward) => set({ reward }),
+    setItemData: (item) => set({ item }),
 }));
