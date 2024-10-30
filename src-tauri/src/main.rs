@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use hardware::monitor::Monitor;
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
@@ -34,7 +35,7 @@ use setup_status_event::SetupStatusEvent;
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
-use opencl_engine::OpenCLEngine;
+use hardware::opencl_engine::OpenCLEngine;
 
 use crate::cpu_miner::CpuMiner;
 use crate::feedback::Feedback;
@@ -68,7 +69,7 @@ mod mm_proxy_manager;
 mod network_utils;
 mod node_adapter;
 mod node_manager;
-mod opencl_engine;
+mod hardware;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -661,6 +662,12 @@ async fn setup_inner(
     let now = SystemTime::now();
 
     OpenCLEngine::current().initialize().await?;
+    Monitor::current().initialize().await?;
+    // let gpu_devices = Monitor::current().get_gpu_devices().await?;
+    // let cpu_devices = Monitor::current().get_cpu_devices().await?;
+
+    // info!(target: LOG_TARGET, "GPU devices: {:?}", gpu_devices);
+    // info!(target: LOG_TARGET, "CPU devices: {:?}", cpu_devices);
 
     state
         .telemetry_manager
