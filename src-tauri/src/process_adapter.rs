@@ -2,7 +2,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{error, info, warn};
 use sentry::protocol::Event;
-use sentry_tauri::sentry;
+use tauri_plugin_sentry::sentry;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;

@@ -1863,14 +1863,14 @@ struct Payload {
 fn main() {
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
-    let client = sentry_tauri::sentry::init((
+    let client = sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
-        sentry_tauri::sentry::ClientOptions {
-            release: sentry_tauri::sentry::release_name!(),
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
             ..Default::default()
         },
     ));
-    let _guard = sentry_tauri::minidump::init(&client);
+    let _guard = minidump::init(&client);
 
     let mut shutdown = Shutdown::new();
 
