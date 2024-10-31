@@ -61,7 +61,7 @@ pub struct AppConfigFromFile {
     mmproxy_use_monero_fail: bool,
     #[serde(default = "default_monero_nodes")]
     mmproxy_monero_nodes: Vec<String>,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     auto_update: bool,
 }
 
@@ -93,7 +93,7 @@ impl Default for AppConfigFromFile {
             ludicrous_mode_cpu_threads: None,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
-            auto_update: false,
+            auto_update: true,
             reset_earnings: false,
         }
     }
@@ -211,7 +211,7 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
-            auto_update: false,
+            auto_update: true,
         }
     }
 
@@ -280,6 +280,11 @@ impl AppConfig {
         if self.config_version <= 8 {
             self.config_version = 9;
             self.mine_on_app_start = true;
+        }
+
+        if self.config_version <= 9 {
+            self.auto_update = true;
+            self.config_version = 10;
         }
     }
 
@@ -542,7 +547,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    9
+    10
 }
 
 fn default_mode() -> String {
