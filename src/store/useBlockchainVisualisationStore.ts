@@ -6,7 +6,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-const appWindow = getCurrentWebviewWindow()
+const appWindow = getCurrentWebviewWindow();
 
 interface Recap {
     count: number;

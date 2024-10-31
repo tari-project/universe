@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { resetAllStores } from '@app/store/create.ts';
-const appWindow = getCurrentWebviewWindow()
+const appWindow = getCurrentWebviewWindow();
 
 export function useShuttingDown() {
     const [isShuttingDown, setIsShuttingDown] = useState(false);
