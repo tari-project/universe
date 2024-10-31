@@ -1,8 +1,4 @@
-use std::ops::Deref;
-
-use crate::hardware_monitor::HardwareParameters;
-
-use super::{monitor::HardwareVendor, parameters_reader_impl::{DeviceParameters, ParametersReader}};
+use super::{gpu_parameters_reader_impl::GpuParametersReader, monitor::{DeviceParameters, HardwareVendor}};
 
 use anyhow::Error;
 use async_trait::async_trait;
@@ -23,7 +19,7 @@ impl CpuReader {
 }
 
 #[async_trait]
-impl ParametersReader for CpuReader {
+impl GpuParametersReader for CpuReader {
     async fn get_device_parameters(&self, old_device_parameters: Option<DeviceParameters> ) -> Result<DeviceParameters, Error> {
         let device_parameters = DeviceParameters {
             usage_percentage: 0.0,

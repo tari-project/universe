@@ -35,7 +35,6 @@ use setup_status_event::SetupStatusEvent;
 use systemtray_manager::{SystemtrayManager, SystrayData};
 use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
-use hardware::opencl_engine::OpenCLEngine;
 
 use crate::cpu_miner::CpuMiner;
 use crate::feedback::Feedback;
@@ -661,14 +660,6 @@ async fn setup_inner(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
-    OpenCLEngine::current().initialize().await?;
-    Monitor::current().initialize().await?;
-    // let gpu_devices = Monitor::current().get_gpu_devices().await?;
-    // let cpu_devices = Monitor::current().get_cpu_devices().await?;
-
-    // info!(target: LOG_TARGET, "GPU devices: {:?}", gpu_devices);
-    // info!(target: LOG_TARGET, "CPU devices: {:?}", cpu_devices);
-
     state
         .telemetry_manager
         .write()
@@ -779,6 +770,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
+    Monitor::current().initialize().await?;
 
     let mut tor_control_port = None;
     if use_tor {

@@ -1,6 +1,4 @@
-use crate::hardware_monitor::HardwareParameters;
-
-use super::{monitor::HardwareVendor, parameters_reader_impl::{DeviceParameters, ParametersReader}};
+use super::{gpu_parameters_reader_impl::GpuParametersReader, monitor::{DeviceParameters, HardwareVendor}};
 
 use anyhow::{Error, Ok};
 use async_trait::async_trait;
@@ -19,7 +17,7 @@ impl GpuReader {
 }
 
 #[async_trait]
-impl ParametersReader for GpuReader {
+impl GpuParametersReader for GpuReader {
     async fn get_device_parameters(&self, old_device_parameters: Option<DeviceParameters>) -> Result<DeviceParameters, Error> {
         let device_parameters = DeviceParameters {
             usage_percentage: 0.0,
