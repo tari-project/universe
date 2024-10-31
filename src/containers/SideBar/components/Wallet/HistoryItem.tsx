@@ -3,10 +3,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
 
-import formatBalance from '@app/utils/formatBalance.ts';
+import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
 import { Transaction } from '@app/types/wallet.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 interface HistoryItemProps {
     item: Transaction;
 }
@@ -37,8 +37,10 @@ function getRandomInt(max: number) {
 
 export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
+    const appLanguage = useAppConfigStore((s) => s.application_language);
+    const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
     const { t } = useTranslation('sidebar');
-    const earningsFormatted = useMemo(() => formatBalance(item.amount).toLowerCase(), [item.amount]);
+    const earningsFormatted = useFormatBalance(item.amount).toLowerCase();
     const { colour, colour1, colour2 } = randomGradientColours[getRandomInt(9)];
 
     if (!item.blockHeight || item.payment_id?.length > 0) {
@@ -56,7 +58,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                 <InfoWrapper>
                     <Typography>{itemTitle}</Typography>
                     <Typography variant="p">
-                        {new Date(item.timestamp * 1000)?.toLocaleString(undefined, {
+                        {new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
                             month: 'short',
                             day: '2-digit',
                             hourCycle: 'h24',

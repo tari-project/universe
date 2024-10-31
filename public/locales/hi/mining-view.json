@@ -1,4 +1,7 @@
 {
+  "cpu-power": "CPU पावर",
+  "gpu-power": "GPU पावर",
+  "estimated-day": "Est tXTM/दिन",
   "connection-to-node-lost": "माइनर से कनेक्शन खो गया। कृपया माइनर के पुनः कनेक्ट होने या पुनः आरंभ करने की प्रतीक्षा करें।",
   "current-block-time": "वर्तमान ब्लॉक समय",
   "day": "day",
