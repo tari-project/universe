@@ -2119,50 +2119,50 @@ fn main() {
 
     // let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
-        // tauri::RunEvent::Updater(updater_event) => match updater_event {
-        //     UpdaterEvent::Error(e) => {
-        //         error!(target: LOG_TARGET, "Updater error: {:?}", e);
-        //     }
-        //     UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
-        //         downloaded += chunk_length as u64;
-        //         let content_length = content_length.unwrap_or_else(|| {
-        //             warn!(target: LOG_TARGET, "Unable to determine content length");
-        //             downloaded
-        //         });
+        //tauri::RunEvent::Updater(updater_event) => match updater_event {
+        //    UpdaterEvent::Error(e) => {
+        //        error!(target: LOG_TARGET, "Updater error: {:?}", e);
+        //    }
+        //    UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
+        //        downloaded += chunk_length as u64;
+        //        let content_length = content_length.unwrap_or_else(|| {
+        //            warn!(target: LOG_TARGET, "Unable to determine content length");
+        //            downloaded
+        //        });
 
-        //         info!(target: LOG_TARGET, "Chunk Length: {} | Download progress: {} / {}", chunk_length, downloaded, content_length);
+        //        info!(target: LOG_TARGET, "Chunk Length: {} | Download progress: {} / {}", chunk_length, downloaded, content_length);
 
-        //         if let Some(window) = _app_handle.get_window("main") {
-        //             drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded: downloaded.min(content_length) }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
-        //             );
-        //         }
-        //     }
-        //     UpdaterEvent::Downloaded => {
-        //         shutdown.trigger();
-        //     }
-        //     _ => {
-        //         info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
-        //     }
-        // },
-        // tauri::RunEvent::ExitRequested { api: _, .. } => {
-        //     // api.prevent_exit();
-        //     info!(target: LOG_TARGET, "App shutdown caught");
-        //     let _unused = block_on(stop_all_miners(app_state.clone(), 2));
-        //     info!(target: LOG_TARGET, "App shutdown complete");
-        // }
-        // tauri::RunEvent::Exit => {
-        //     info!(target: LOG_TARGET, "App shutdown caught");
-        //     let _unused = block_on(stop_all_miners(app_state.clone(), 2));
-        //     info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
-        // }
-        // RunEvent::MainEventsCleared => {
-        //     // no need to handle
-        // }
-        // RunEvent::WindowEvent { label, event, .. } => {
-        //     trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
-        // }
-        // _ => {
-        //     debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
-        // }
+        //        if let Some(window) = _app_handle.get_window("main") {
+        //            drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded: downloaded.min(content_length) }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
+        //            );
+        //        }
+        //    }
+        //    UpdaterEvent::Downloaded => {
+        //        shutdown.trigger();
+        //    }
+        //    _ => {
+        //        info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
+        //    }
+        //},
+        tauri::RunEvent::ExitRequested { api: _, .. } => {
+            // api.prevent_exit();
+            info!(target: LOG_TARGET, "App shutdown caught");
+            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
+            info!(target: LOG_TARGET, "App shutdown complete");
+        }
+        tauri::RunEvent::Exit => {
+            info!(target: LOG_TARGET, "App shutdown caught");
+            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
+            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
+        }
+        RunEvent::MainEventsCleared => {
+            // no need to handle
+        }
+        RunEvent::WindowEvent { label, event, .. } => {
+            trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
+        }
+        _ => {
+            debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
+        }
     });
 }
