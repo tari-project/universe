@@ -1,4 +1,7 @@
 {
+  "cpu-power": "Daya CPU",
+  "gpu-power": "Daya GPU",
+  "estimated-day": "Perkiraan tXTM/hari",
   "connection-to-node-lost": "Koneksi ke penambang terputus. Harap tunggu penambang untuk menyambung kembali atau mulai ulang penambang.",
   "current-block-time": "Waktu blok saat ini",
   "day": "day",

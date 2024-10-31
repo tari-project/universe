@@ -1,4 +1,7 @@
 {
+  "cpu-power": "CPU Gücü",
+  "gpu-power": "GPU Gücü",
+  "estimated-day": "Est tXTM/gün",
   "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
   "current-block-time": "Geçerli blok zamanı",
   "day": "day",
