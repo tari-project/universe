@@ -1,8 +1,9 @@
 use anyhow::Error;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
+use serde::Serialize;
 
-#[derive(Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub struct DeviceParameters {
     pub usage_percentage: f32,
     pub current_temperature: f32,

@@ -1,8 +1,9 @@
-use std::sync::LazyLock;
+use std::{default, sync::LazyLock};
 
 use log::error;
 use anyhow::Error;
 use opencl3::context::Context;
+use serde::Serialize;
 use tokio::sync::RwLock;
 use super::{cpu_reader::CpuReader, gpu_reader::GpuReader, opencl_engine::OpenCLEngine, parameters_reader_impl::{DeviceParameters, ParametersReader}};
 
@@ -11,12 +12,13 @@ const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
 static INSTANCE: LazyLock<Monitor> = LazyLock::new(Monitor::new);
 
-#[derive(Debug , Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub enum HardwareVendor {
     Nvidia,
     Amd,
     Intel,
     Apple,
+    #[default] Unknown,
 }
 
 impl HardwareVendor {
@@ -26,6 +28,7 @@ impl HardwareVendor {
             HardwareVendor::Amd => "Amd".to_string(),
             HardwareVendor::Intel => "Intel".to_string(),
             HardwareVendor::Apple => "Apple".to_string(),
+            HardwareVendor::Unknown => "Unknown".to_string(),
         }
     }
 
@@ -56,17 +59,17 @@ impl HardwareVendor {
             HardwareVendor::Apple
         } else {
             error!(target: LOG_TARGET, "Unsupported hardware vendor: {:?}", vendor);
-            panic!("Unsupported hardware vendor");
+            HardwareVendor::Unknown
         }
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub struct DeviceStatus {
     pub is_available: bool,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub struct PublicDeviceProperties {
     pub vendor: HardwareVendor,
     pub name: String,
