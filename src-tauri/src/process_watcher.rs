@@ -89,7 +89,20 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             let mut is_healthy = false;
 
                             if child.ping() {
-                                if let Ok(inner) = timeout(health_timeout, status_monitor2.check_health()).await.inspect_err(|_|
+                                let status_monitor3 = status_monitor2.clone();
+                                let mut inner_shutdown2 = inner_shutdown.clone();
+                                let mut app_shutdown2 = app_shutdown.clone();
+                                if let Ok(inner) = timeout(
+                                    health_timeout,
+                                    async {
+                                      select! {
+                                          r = status_monitor3.check_health() => r,
+                                          // Watch for shutdown signals
+                                          _ = inner_shutdown2.wait() => HealthStatus::Healthy,
+                                          _ = app_shutdown2.wait() => HealthStatus::Healthy
+                                      }
+                                    }
+                                ).await.inspect_err(|_|
                                 error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name)) {
                                             match inner {
                                                 HealthStatus::Healthy => {
