@@ -195,10 +195,6 @@ fn update_menu_with_data(app: AppHandle, mut data: SystrayData) -> Result<(), an
     Ok(())
 }
 
-pub fn create_tooltip_from_data(data: SystrayData) -> String {
-    internal_create_tooltip_from_data(data)
-}
-
 fn detect_current_os() -> CurrentOperatingSystem {
     if cfg!(target_os = "windows") {
         CurrentOperatingSystem::Windows
