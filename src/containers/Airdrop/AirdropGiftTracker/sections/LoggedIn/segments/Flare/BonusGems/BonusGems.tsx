@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 import GemsAnimation from '../GemsAnimation/GemsAnimation';
 import { Background, Wrapper } from './styles';
 import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
-import { formatNumber } from '@app/utils/formatNumber.ts';
 import { useTranslation } from 'react-i18next';
+import { useFormatNumber } from '@app/hooks/useFormatNumber';
 
 interface Props {
     gems: number;
@@ -12,6 +12,7 @@ interface Props {
 
 export default function BonusGems({ gems, onAnimationComplete }: Props) {
     const { t } = useTranslation('airdrop', { useSuspense: false });
+    const formatNumber = useFormatNumber();
 
     useEffect(() => {
         const timer = setTimeout(() => {
