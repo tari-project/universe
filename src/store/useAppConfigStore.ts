@@ -57,7 +57,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
     fetchAppConfig: async () => {
         try {
             const appConfig = await invoke('get_app_config');
-            console.debug(JSON.stringify(appConfig));
             set(appConfig);
             const configTheme = appConfig.display_mode?.toLowerCase();
 
