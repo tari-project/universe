@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
 
-use crate::{network_utils, utils};
+use crate::network_utils;
 use crate::{
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -251,9 +251,7 @@ impl ProcessAdapter for TorAdapter {
                     name: self.name().to_string(),
                 },
             },
-            TorStatusMonitor {
-                control_port: control_port,
-            },
+            TorStatusMonitor { control_port },
         ))
     }
 
