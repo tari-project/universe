@@ -109,8 +109,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
             if cfg!(target_os = "windows") {
                 // No need
             } else {
-                args.push("-p".to_string());
-                args.push("use_libtor=false".to_string());
+                // args.push("-p".to_string());
+                // args.push("use_libtor=false".to_string());
             }
             args.push("-p".to_string());
             args.push(format!(
@@ -119,7 +119,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
             ));
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
-            if let Some(tor_control_port) = self.tor_control_port {
+            if let Some(mut tor_control_port) = self.tor_control_port {
+                // macos uses libtor, so will be 9051
+                if cfg!(target_os = "macos") {
+                    tor_control_port = 9051;
+                }
                 args.push("-p".to_string());
                 args.push(format!(
                     "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{}",

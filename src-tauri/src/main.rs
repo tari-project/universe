@@ -672,14 +672,16 @@ async fn setup_inner(
         > Duration::from_secs(60 * 60 * 6);
 
     if use_tor {
-        progress.set_max(5).await;
-        progress
-            .update("checking-latest-version-tor".to_string(), None, 0)
-            .await;
-        binary_resolver
-            .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
-            .await?;
-        sleep(Duration::from_secs(1));
+        if !cfg!(target_os = "macos") {
+            progress.set_max(5).await;
+            progress
+                .update("checking-latest-version-tor".to_string(), None, 0)
+                .await;
+            binary_resolver
+                .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+                .await?;
+            sleep(Duration::from_secs(1));
+        }
     }
     progress.set_max(10).await;
     progress
@@ -768,7 +770,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
     let mut tor_control_port = None;
-    if use_tor {
+    if use_tor && !cfg!(target_os = "macos") {
         state
             .tor_manager
             .ensure_started(
