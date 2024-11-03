@@ -1,10 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use hardware::monitor::{Monitor, PublicDeviceProperties};
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
+use hardware::monitor::{Monitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
 use regex::Regex;
@@ -61,6 +61,7 @@ mod feedback;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod hardware;
 mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -68,7 +69,6 @@ mod mm_proxy_manager;
 mod network_utils;
 mod node_adapter;
 mod node_manager;
-mod hardware;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -1604,8 +1604,14 @@ async fn get_miner_metrics(
     //     .await
     //     .read_hardware_parameters();
 
-    let gpu_public_parameters = Monitor::current().get_gpu_public_properties().await.map_err(|e| e.to_string())?;
-    let cpu_public_parameters = Monitor::current().get_cpu_public_properties().await.map_err(|e| e.to_string())?;
+    let gpu_public_parameters = Monitor::current()
+        .get_gpu_public_properties()
+        .await
+        .map_err(|e| e.to_string())?;
+    let cpu_public_parameters = Monitor::current()
+        .get_cpu_public_properties()
+        .await
+        .map_err(|e| e.to_string())?;
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu_mining_status.hash_rate,

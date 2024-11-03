@@ -336,8 +336,16 @@ impl SystemtrayManager {
         cpu_parameters: Vec<PublicDeviceProperties>,
         estimated_earning: f64,
     ) -> SystrayData {
-        let cpu_usage_percentage = cpu_parameters.iter().map(|cpu| f64::from(cpu.clone().parameters.unwrap_or_default().usage_percentage)).sum::<f64>().div(cpu_parameters.len() as f64);
-        let gpu_usage_percentage = gpu_parameters.iter().map(|gpu| f64::from(gpu.clone().parameters.unwrap_or_default().usage_percentage)).sum::<f64>().div(gpu_parameters.len() as f64);
+        let cpu_usage_percentage = cpu_parameters
+            .iter()
+            .map(|cpu| f64::from(cpu.clone().parameters.unwrap_or_default().usage_percentage))
+            .sum::<f64>()
+            .div(cpu_parameters.len() as f64);
+        let gpu_usage_percentage = gpu_parameters
+            .iter()
+            .map(|gpu| f64::from(gpu.clone().parameters.unwrap_or_default().usage_percentage))
+            .sum::<f64>()
+            .div(gpu_parameters.len() as f64);
         SystrayData {
             cpu_hashrate,
             gpu_hashrate,
