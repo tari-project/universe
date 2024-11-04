@@ -64,6 +64,7 @@ tari_key_manager = {git = "https://github.com/tari-project/tari.git", branch = "
 tari_shutdown = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_utilities = "0.8.0"
 tauri = {version = "2", features = ["macos-private-api", "isolation", "image-png", "image-ico", "tray-icon", "unstable"] }
+tauri-plugin-os = "2"
 tauri-plugin-single-instance = "^2"
 tauri-plugin-updater = "^2"
 thiserror = "1.0.26"

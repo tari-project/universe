@@ -17,19 +17,6 @@ use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::RwLock;
 
-use crate::commands::{
-    download_and_start_installer, exit_application, fetch_tor_bridges, get_app_config, get_app_id,
-    get_app_in_memory_config, get_applications_versions, get_external_dependencies,
-    get_miner_metrics, get_p2pool_stats, get_paper_wallet_details, get_seed_words,
-    get_tari_wallet_details, get_tor_config, get_tor_entry_guards, get_transaction_history,
-    import_seed_words, log_web_message, open_log_dir, reset_settings, resolve_application_language,
-    restart_application, send_feedback, set_airdrop_access_token, set_allow_telemetry,
-    set_application_language, set_auto_update, set_cpu_mining_enabled, set_display_mode,
-    set_excluded_gpu_devices, set_gpu_mining_enabled, set_mine_on_app_start, set_mode,
-    set_monero_address, set_monerod_config, set_p2pool_enabled,
-    set_should_always_use_system_language, set_should_auto_launch, set_tor_config, set_use_tor,
-    setup_application, start_mining, stop_mining, update_applications,
-};
 use crate::cpu_miner::CpuMiner;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
@@ -656,6 +643,7 @@ fn main() {
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
@@ -756,50 +744,50 @@ fn main() {
             }
         })
         .invoke_handler(tauri::generate_handler![
-            download_and_start_installer,
-            exit_application,
-            fetch_tor_bridges,
-            get_app_config,
-            get_app_id,
-            get_app_in_memory_config,
-            get_applications_versions,
-            get_external_dependencies,
-            get_miner_metrics,
-            get_p2pool_stats,
-            get_paper_wallet_details,
-            get_seed_words,
-            get_tari_wallet_details,
-            get_tor_config,
-            get_tor_entry_guards,
-            get_transaction_history,
-            import_seed_words,
-            log_web_message,
-            open_log_dir,
-            reset_settings,
-            resolve_application_language,
-            restart_application,
-            send_feedback,
-            set_airdrop_access_token,
-            set_allow_telemetry,
-            set_application_language,
-            set_auto_update,
-            set_cpu_mining_enabled,
-            set_display_mode,
-            set_excluded_gpu_devices,
-            set_gpu_mining_enabled,
-            set_mine_on_app_start,
-            set_mode,
-            set_monero_address,
-            set_monerod_config,
-            set_p2pool_enabled,
-            set_should_always_use_system_language,
-            set_should_auto_launch,
-            set_tor_config,
-            set_use_tor,
-            setup_application,
-            start_mining,
-            stop_mining,
-            update_applications,
+            commands::download_and_start_installer,
+            commands::exit_application,
+            commands::fetch_tor_bridges,
+            commands::get_app_config,
+            commands::get_app_id,
+            commands::get_app_in_memory_config,
+            commands::get_applications_versions,
+            commands::get_external_dependencies,
+            commands::get_miner_metrics,
+            commands::get_p2pool_stats,
+            commands::get_paper_wallet_details,
+            commands::get_seed_words,
+            commands::get_tari_wallet_details,
+            commands::get_tor_config,
+            commands::get_tor_entry_guards,
+            commands::get_transaction_history,
+            commands::import_seed_words,
+            commands::log_web_message,
+            commands::open_log_dir,
+            commands::reset_settings,
+            commands::resolve_application_language,
+            commands::restart_application,
+            commands::send_feedback,
+            commands::set_airdrop_access_token,
+            commands::set_allow_telemetry,
+            commands::set_application_language,
+            commands::set_auto_update,
+            commands::set_cpu_mining_enabled,
+            commands::set_display_mode,
+            commands::set_excluded_gpu_devices,
+            commands::set_gpu_mining_enabled,
+            commands::set_mine_on_app_start,
+            commands::set_mode,
+            commands::set_monero_address,
+            commands::set_monerod_config,
+            commands::set_p2pool_enabled,
+            commands::set_should_always_use_system_language,
+            commands::set_should_auto_launch,
+            commands::set_tor_config,
+            commands::set_use_tor,
+            commands::setup_application,
+            commands::start_mining,
+            commands::stop_mining,
+            commands::update_applications,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
