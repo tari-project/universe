@@ -178,6 +178,7 @@ jobs:
         if: startsWith(runner.os,'Windows')
         run: |
           # choco upgrade opencl-intel-cpu-runtime -y
+          choco install opencl -y
           vcpkg.exe --triplet=x64-windows install opencl
 
       - name: Set environment variables (windows)
