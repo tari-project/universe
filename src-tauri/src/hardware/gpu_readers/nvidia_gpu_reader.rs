@@ -1,9 +1,12 @@
-use anyhow::{anyhow,Error};
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug,error};
+use log::{debug, error};
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 
-use crate::{ hardware::monitor::DeviceParameters, utils::platform_utils::{CurrentOperatingSystem, PlatformUtils}};
+use crate::{
+    hardware::monitor::DeviceParameters,
+    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
+};
 
 use super::GpuParametersReader;
 
@@ -18,7 +21,8 @@ impl NvidiaGpuReader {
         match Nvml::init() {
             Ok(nvml) => {
                 debug!("Nvidia GPU reader initialized");
-                Some(nvml) },
+                Some(nvml)
+            }
             Err(e) => {
                 error!("Failed to initialize Nvidia GPU reader: {}", e);
                 None
@@ -31,10 +35,8 @@ impl NvidiaGpuReader {
 impl GpuParametersReader for NvidiaGpuReader {
     fn get_is_reader_implemented(&self) -> bool {
         match PlatformUtils::detect_current_os() {
-            CurrentOperatingSystem::Windows => 
-                self.init_nvml().is_some(),
-            CurrentOperatingSystem::Linux => 
-                self.init_nvml().is_some(),
+            CurrentOperatingSystem::Windows => self.init_nvml().is_some(),
+            CurrentOperatingSystem::Linux => self.init_nvml().is_some(),
             CurrentOperatingSystem::MacOS => false,
         }
     }
@@ -42,12 +44,21 @@ impl GpuParametersReader for NvidiaGpuReader {
         &self,
         old_device_parameters: Option<DeviceParameters>,
     ) -> Result<DeviceParameters, Error> {
-
-        let nvml = self.init_nvml().ok_or(anyhow!("Failed to initialize Nvidia GPU reader"))?;
+        let nvml = self
+            .init_nvml()
+            .ok_or(anyhow!("Failed to initialize Nvidia GPU reader"))?;
         // TODO ADD support for multiple GPUs
-        let main_device = nvml.device_by_index(0).map_err(|e| anyhow!("Failed to get Nvidia GPU device: {}", e))?;
-        let usage_percentage = main_device.utilization_rates().map_err(|e| anyhow!("Failed to get Nvidia GPU utilization rates: {}", e))?.gpu as f32;
-        let current_temperature = main_device.temperature(TemperatureSensor::Gpu).map_err(|e| anyhow!("Failed to get Nvidia GPU temperature: {}", e))? as f32;
+        let main_device = nvml
+            .device_by_index(0)
+            .map_err(|e| anyhow!("Failed to get Nvidia GPU device: {}", e))?;
+        let usage_percentage = main_device
+            .utilization_rates()
+            .map_err(|e| anyhow!("Failed to get Nvidia GPU utilization rates: {}", e))?
+            .gpu as f32;
+        let current_temperature = main_device
+            .temperature(TemperatureSensor::Gpu)
+            .map_err(|e| anyhow!("Failed to get Nvidia GPU temperature: {}", e))?
+            as f32;
 
         let device_parameters = DeviceParameters {
             usage_percentage,

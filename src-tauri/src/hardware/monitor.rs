@@ -142,7 +142,10 @@ impl Monitor {
 
     async fn load_gpu_devices_from_status_file(&self) -> Result<GpuStatusFileContent, Error> {
         let config_dir = config_dir().context("Failed to get config directory")?;
-        let file: PathBuf = config_dir.join(APPLICATION_FOLDER_ID).join("gpuminer").join("gpu_status.json");
+        let file: PathBuf = config_dir
+            .join(APPLICATION_FOLDER_ID)
+            .join("gpuminer")
+            .join("gpu_status.json");
         if file.exists() {
             info!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
             let content = tokio::fs::read_to_string(file).await?;
@@ -176,19 +179,21 @@ impl Monitor {
             let vendor = HardwareVendor::from_string(&gpu_device.device_name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
             let platform_device = GpuDeviceProperties {
-                private_properties: PrivateGpuDeviceProperties { device_reader: device_reader.clone() },
+                private_properties: PrivateGpuDeviceProperties {
+                    device_reader: device_reader.clone(),
+                },
                 public_properties: PublicDeviceProperties {
                     vendor: vendor.clone(),
                     name: gpu_device.device_name.clone(),
                     status: DeviceStatus {
                         is_available: gpu_device.is_available,
-                        is_reader_implemented: device_reader.clone().get_is_reader_implemented()
+                        is_reader_implemented: device_reader.clone().get_is_reader_implemented(),
                     },
                     parameters: if device_reader.clone().get_is_reader_implemented() {
                         device_reader.clone().get_device_parameters(None).await.ok()
                     } else {
                         None
-                    }
+                    },
                 },
             };
 
@@ -224,7 +229,9 @@ impl Monitor {
             let vendor = HardwareVendor::Intel;
             let device_reader = self.select_reader_for_cpu_device(vendor.clone()).await;
             let platform_device = CpuDeviceProperties {
-                private_properties: PrivateCpuDeviceProperties { device_reader: device_reader.clone() },
+                private_properties: PrivateCpuDeviceProperties {
+                    device_reader: device_reader.clone(),
+                },
                 public_properties: PublicDeviceProperties {
                     vendor: vendor.clone(),
                     name: cpu_device.brand().to_string(),

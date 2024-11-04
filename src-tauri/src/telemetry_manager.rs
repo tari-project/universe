@@ -370,14 +370,26 @@ async fn get_telemetry_data(
     let cpu_hash_rate = Some(cpu.hash_rate);
 
     let cpu_utilization = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
-        let filtered_cpus = cpu_hardware_parameters.iter().filter(|c| c.parameters.is_some()).collect::<Vec<_>>();
-        Some(filtered_cpus.iter().map(|c| c.parameters.clone().unwrap_or_default().usage_percentage).sum::<f32>().div(filtered_cpus.len() as f32))
+        let filtered_cpus = cpu_hardware_parameters
+            .iter()
+            .filter(|c| c.parameters.is_some())
+            .collect::<Vec<_>>();
+        Some(
+            filtered_cpus
+                .iter()
+                .map(|c| c.parameters.clone().unwrap_or_default().usage_percentage)
+                .sum::<f32>()
+                .div(filtered_cpus.len() as f32),
+        )
     } else {
         None
     };
 
     let cpu_make = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
-        let cpu_names: Vec<String> = cpu_hardware_parameters.iter().map(|c| c.name.clone()).collect();
+        let cpu_names: Vec<String> = cpu_hardware_parameters
+            .iter()
+            .map(|c| c.name.clone())
+            .collect();
         Some(cpu_names.into_iter().collect::<Vec<_>>().join(", "))
     } else {
         None
@@ -386,16 +398,26 @@ async fn get_telemetry_data(
     let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
 
     let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
-        let filtered_gpus = gpu_hardware_parameters.iter().filter(|c| c.parameters.is_some()).collect::<Vec<_>>();
-        Some(filtered_gpus.iter().map(|c| c.parameters.clone().unwrap_or_default().usage_percentage).sum::<f32>().div(filtered_gpus.len() as f32))
+        let filtered_gpus = gpu_hardware_parameters
+            .iter()
+            .filter(|c| c.parameters.is_some())
+            .collect::<Vec<_>>();
+        Some(
+            filtered_gpus
+                .iter()
+                .map(|c| c.parameters.clone().unwrap_or_default().usage_percentage)
+                .sum::<f32>()
+                .div(filtered_gpus.len() as f32),
+        )
     } else {
         None
     };
-        
-
 
     let gpu_make = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
-        let cpu_names: Vec<String> = gpu_hardware_parameters.iter().map(|c| c.name.clone()).collect();
+        let cpu_names: Vec<String> = gpu_hardware_parameters
+            .iter()
+            .map(|c| c.name.clone())
+            .collect();
         Some(cpu_names.into_iter().collect::<Vec<_>>().join(", "))
     } else {
         None

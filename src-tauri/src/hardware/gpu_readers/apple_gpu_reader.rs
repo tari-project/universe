@@ -1,7 +1,10 @@
 use anyhow::{Error, Ok};
 use async_trait::async_trait;
 
-use crate::{hardware::monitor::DeviceParameters, utils::platform_utils::{CurrentOperatingSystem, PlatformUtils}};
+use crate::{
+    hardware::monitor::DeviceParameters,
+    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
+};
 
 use super::GpuParametersReader;
 
