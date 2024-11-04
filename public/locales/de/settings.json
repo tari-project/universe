@@ -108,7 +108,9 @@
     "title": "Tari-Universum automatisch aktualisieren"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Tor verwenden",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Visueller Modus",
   "yes": "Ja",
   "your-feedback": "Beschreibe dein Problem, einschließlich deines Telegram-Namens, falls vorhanden, damit wir dich mit Updates kontaktieren können.",
