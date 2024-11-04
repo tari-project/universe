@@ -110,7 +110,9 @@
     "title": "Automatyczna aktualizacja Tari Universe"
   },
   "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
+  "use-random-control-port": "Użyj losowego portu kontrolnego",
   "use-tor": "Używaj Tor",
+  "use-tor-bridges": "Użyj mostów Tor",
   "visual-mode": "Tryb wizualny",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",

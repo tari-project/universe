@@ -108,7 +108,9 @@
     "title": "तारी यूनिवर्स को स्वचालित रूप से अपडेट करें"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "टोर का उपयोग करें",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "दृश्य मोड",
   "yes": "हाँ",
   "your-feedback": "कृपया अपनी समस्या का वर्णन करें",

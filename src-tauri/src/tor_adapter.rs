@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
 
+use crate::network_utils;
 use crate::{
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -27,10 +28,10 @@ pub(crate) struct TorAdapter {
 
 impl TorAdapter {
     pub fn new() -> Self {
-        let socks_port = 9050;
+        let port = network_utils::get_free_port().unwrap_or(9060);
 
         Self {
-            socks_port,
+            socks_port: port,
             config_file: None,
             config: TorConfig::default(),
         }
@@ -50,12 +51,19 @@ impl TorAdapter {
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
         }
+
         self.update_config_file().await?;
         Ok(())
     }
 
     fn apply_loaded_config(&mut self, config: String) {
-        self.config = serde_json::from_str::<TorConfig>(&config).unwrap_or_default();
+        let mut conf = serde_json::from_str::<TorConfig>(&config).unwrap_or_default();
+        if conf.version < 1 {
+            conf.control_port = 0;
+            conf.version = 1;
+        }
+
+        self.config = conf;
     }
 
     async fn update_config_file(&mut self) -> Result<(), anyhow::Error> {
@@ -72,6 +80,7 @@ impl TorAdapter {
     }
 
     pub fn get_tor_config(&self) -> TorConfig {
+        println!("get_tor_config: {:?}", self.config.clone());
         self.config.clone()
     }
 
@@ -187,6 +196,10 @@ impl ProcessAdapter for TorAdapter {
         if cfg!(target_os = "windows") {
             lyrebird_path.set_extension("exe");
         }
+        let mut control_port = self.config.control_port;
+        if control_port == 0 {
+            control_port = network_utils::get_free_port().unwrap_or(9061);
+        }
 
         let mut args: Vec<String> = vec![
             "--allow-missing-torrc".to_string(),
@@ -196,7 +209,7 @@ impl ProcessAdapter for TorAdapter {
             "--socksport".to_string(),
             self.socks_port.to_string(),
             "--controlport".to_string(),
-            format!("127.0.0.1:{}", self.config.control_port),
+            format!("127.0.0.1:{}", control_port),
             // TODO: Put hashed password back
             // "--HashedControlPassword".to_string(),
             // EncryptedKey::hash_password(&self.password).to_string(),
@@ -239,9 +252,7 @@ impl ProcessAdapter for TorAdapter {
                     name: self.name().to_string(),
                 },
             },
-            TorStatusMonitor {
-                control_port: self.config.control_port,
-            },
+            TorStatusMonitor { control_port },
         ))
     }
 
@@ -269,6 +280,8 @@ impl StatusMonitor for TorStatusMonitor {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TorConfig {
+    #[serde(default)]
+    version: u16,
     control_port: u16,
     use_bridges: bool,
     bridges: Vec<String>,
@@ -276,8 +289,10 @@ pub struct TorConfig {
 
 impl Default for TorConfig {
     fn default() -> Self {
+        // let port = network_utils::get_free_port().unwrap_or(9061);
         TorConfig {
-            control_port: 9051,
+            version: 1,
+            control_port: 0,
             use_bridges: false,
             bridges: Vec::new(),
         }
