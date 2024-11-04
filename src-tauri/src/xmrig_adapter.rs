@@ -2,14 +2,14 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::warn;
 use std::path::PathBuf;
-use tari_shutdown::Shutdown;
+use tari_shutdown::{Shutdown, ShutdownSignal};
 
 use crate::network_utils::get_free_port;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
-use crate::xmrig;
 use crate::xmrig::http_api::XmrigHttpApiClient;
+use crate::{process_utils, xmrig};
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
@@ -54,6 +54,45 @@ impl XmrigAdapter {
             extra_options: Vec::new(),
         }
     }
+
+    pub async fn benchmark(
+        &mut self,
+        data_dir: PathBuf,
+        log_dir: PathBuf,
+        shutdown: ShutdownSignal,
+        binary_version_path: PathBuf,
+    ) -> Result<u32, Error> {
+        self.kill_previous_instances(data_dir.clone())?;
+
+        let xmrig_shutdown = Shutdown::new();
+
+        let mut args = vec!["--bench=1M".to_string()];
+        let xmrig_log_file = get_log_path(log_dir)?;
+        match xmrig_log_file.to_str() {
+            Some(log_file) => {
+                args.push(format!("--log-file={}", &log_file));
+            }
+            None => {
+                warn!(target: LOG_TARGET, "Could not convert xmrig log file path to string");
+                warn!(target: LOG_TARGET, "Logs argument will not be added to xmrig");
+            }
+        };
+
+        let child =
+            process_utils::launch_child_process(&binary_version_path, &data_dir, None, &args)?;
+
+        let output = child.wait_with_output().await?;
+        // .map(|output| {
+        //     let output_str = String::from_utf8_lossy(&output.stdout);
+        //     let mut lines = output_str.lines();
+        //     let last_line = lines.last().unwrap_or("0");
+        //     last_line.parse::<u32>().unwrap_or(0)
+        // })
+        // .await;
+
+        dbg!(output);
+        todo!()
+    }
 }
 
 impl ProcessAdapter for XmrigAdapter {
@@ -74,12 +113,7 @@ impl ProcessAdapter for XmrigAdapter {
             .as_ref()
             .ok_or(anyhow::anyhow!("Node connection not set"))?
             .generate_args();
-        let xmrig_log_file = log_dir.join("xmrig.log");
-
-        let xmrig_log_file_parent = xmrig_log_file
-            .parent()
-            .ok_or_else(|| anyhow::anyhow!("Could not get parent directory of xmrig log file"))?;
-
+        let xmrig_log_file = get_log_path(log_dir)?;
         match xmrig_log_file.to_str() {
             Some(log_file) => {
                 args.push(format!("--log-file={}", &log_file));
@@ -89,10 +123,6 @@ impl ProcessAdapter for XmrigAdapter {
                 warn!(target: LOG_TARGET, "Logs argument will not be added to xmrig");
             }
         };
-
-        std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(| error | {
-            warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {}", error);
-        });
 
         args.push(format!("--http-port={}", self.http_api_port));
         args.push(format!("--http-access-token={}", self.http_api_token));
@@ -142,6 +172,18 @@ impl ProcessAdapter for XmrigAdapter {
     fn pid_file_name(&self) -> &str {
         "xmrig_pid"
     }
+}
+
+fn get_log_path(log_dir: PathBuf) -> Result<PathBuf, Error> {
+    let xmrig_log_file = log_dir.join("xmrig.log");
+    let xmrig_log_file_parent = xmrig_log_file
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Could not get parent directory of xmrig log file"))?;
+
+    std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(|error| {
+        warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {}", error);
+    });
+    Ok(xmrig_log_file)
 }
 
 #[derive(Clone)]

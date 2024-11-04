@@ -645,6 +645,7 @@ async fn setup_inner(
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
     let use_tor = app_config.use_tor();
+    let shutdown = state.shutdown.to_signal();
     drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
@@ -832,6 +833,17 @@ async fn setup_inner(
         .update("preparing-for-initial-sync".to_string(), None, 0)
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
+
+    progress.set_max(80).await;
+    progress
+        .update("setup-benchmarking".to_string(), None, 0)
+        .await;
+    let cpu_benchmark_hashrate = state
+        .cpu_miner
+        .write()
+        .await
+        .benchmark(shutdown.clone(), data_dir.clone(), log_dir.clone())
+        .await?;
 
     let app_config = state.config.read().await;
     if app_config.p2pool_enabled() {
