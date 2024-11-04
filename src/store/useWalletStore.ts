@@ -1,6 +1,6 @@
 import { create } from './create';
 import { WalletBalance } from '../types/app-status.ts';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import * as Sentry from '@sentry/react';
 import { Transaction } from '@app/types/wallet.ts';
 

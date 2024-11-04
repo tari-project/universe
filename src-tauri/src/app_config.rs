@@ -4,6 +4,7 @@ use sys_locale::get_locale;
 use anyhow::anyhow;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 use tokio::fs;
 
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
@@ -17,8 +18,8 @@ pub struct AppConfigFromFile {
     version: u32,
     #[serde(default = "default_mode")]
     mode: String,
-    #[serde(default = "default_theme")]
-    theme: String,
+    #[serde(default = "default_display_mode")]
+    display_mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
     #[serde(default = "default_true")]
@@ -70,7 +71,7 @@ impl Default for AppConfigFromFile {
         Self {
             version: default_version(),
             mode: default_mode(),
-            theme: default_theme(),
+            display_mode: default_display_mode(),
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -100,27 +101,27 @@ impl Default for AppConfigFromFile {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub enum Theme {
+pub enum DisplayMode {
     System,
     Dark,
     Light,
 }
 
-impl Theme {
-    pub fn from_str(s: &str) -> Option<Theme> {
+impl DisplayMode {
+    pub fn from_str(s: &str) -> Option<DisplayMode> {
         match s {
-            "system" => Some(Theme::System),
-            "dark" => Some(Theme::Dark),
-            "light" => Some(Theme::Light),
+            "system" => Some(DisplayMode::System),
+            "dark" => Some(DisplayMode::Dark),
+            "light" => Some(DisplayMode::Light),
             _ => None,
         }
     }
 
-    pub fn to_str(t: Theme) -> String {
+    pub fn to_str(t: DisplayMode) -> String {
         match t {
-            Theme::System => String::from("system"),
-            Theme::Dark => String::from("dark"),
-            Theme::Light => String::from("light"),
+            DisplayMode::System => String::from("system"),
+            DisplayMode::Dark => String::from("dark"),
+            DisplayMode::Light => String::from("light"),
         }
     }
 }
@@ -154,7 +155,7 @@ pub(crate) struct AppConfig {
     config_version: u32,
     config_file: Option<PathBuf>,
     mode: MiningMode,
-    theme: Theme,
+    display_mode: DisplayMode,
     auto_mining: bool,
     mine_on_app_start: bool,
     p2pool_enabled: bool,
@@ -187,7 +188,7 @@ impl AppConfig {
             config_version: default_version(),
             config_file: None,
             mode: MiningMode::Eco,
-            theme: Theme::System,
+            display_mode: DisplayMode::Light,
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -236,7 +237,12 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
-                self.theme = Theme::from_str(&config.theme).unwrap_or(Theme::Light);
+                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
+                    self.display_mode =
+                        DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
+                } else {
+                    self.display_mode = DisplayMode::Light;
+                }
                 self.auto_mining = config.auto_mining;
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
@@ -260,7 +266,11 @@ impl AppConfig {
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
                 self.auto_update = config.auto_update;
-                self.reset_earnings = config.reset_earnings;
+                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
+                    self.reset_earnings = config.reset_earnings;
+                } else {
+                    self.reset_earnings = false;
+                }
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -320,14 +330,14 @@ impl AppConfig {
         self.update_config_file().await?;
         Ok(())
     }
-    pub async fn set_theme(&mut self, theme: String) -> Result<(), anyhow::Error> {
-        let new_theme = match theme.as_str() {
-            "system" => Theme::Light,
-            "dark" => Theme::Light,
-            "light" => Theme::Light,
-            _ => return Err(anyhow!("Invalid theme")),
+    pub async fn set_display_mode(&mut self, display_mode: String) -> Result<(), anyhow::Error> {
+        let new_display_mode = match display_mode.as_str() {
+            "system" => DisplayMode::System,
+            "dark" => DisplayMode::Dark,
+            "light" => DisplayMode::Light,
+            _ => return Err(anyhow!("Invalid display_mode")),
         };
-        self.theme = new_theme;
+        self.display_mode = new_display_mode;
         self.update_config_file().await?;
         Ok(())
     }
@@ -507,7 +517,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
-            theme: Theme::to_str(self.theme),
+            display_mode: DisplayMode::to_str(self.display_mode),
             auto_mining: self.auto_mining,
             mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
@@ -549,7 +559,7 @@ fn default_mode() -> String {
     "Eco".to_string()
 }
 
-fn default_theme() -> String {
+fn default_display_mode() -> String {
     "light".to_string()
 }
 

@@ -1,6 +1,6 @@
 import { ApplicationsVersions, ExternalDependency } from '@app/types/app-status';
 import { create } from './create';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { useAppConfigStore } from './useAppConfigStore';
 import { useMiningStore } from './useMiningStore';
 import * as Sentry from '@sentry/react';

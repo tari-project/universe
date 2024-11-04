@@ -7,7 +7,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { IoAlertCircleOutline, IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { Trans, useTranslation } from 'react-i18next';
 import { useAppStateStore } from '@app/store/appStateStore';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useState } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';

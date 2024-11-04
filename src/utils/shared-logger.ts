@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 
 // Override console functions
 

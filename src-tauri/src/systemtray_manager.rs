@@ -1,9 +1,9 @@
+use anyhow::anyhow;
 use human_format::Formatter;
 use log::{error, info};
-use anyhow::anyhow;
-use tauri::{AppHandle, Manager, Wry};
 use tauri::menu::{Menu, MenuBuilder, MenuEvent, MenuItem};
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
+use tauri::{AppHandle, Manager, Wry};
 
 use crate::hardware_monitor::HardwareStatus;
 
@@ -147,13 +147,19 @@ pub fn initialize_systray(handle: AppHandle) -> Result<TrayIcon, anyhow::Error> 
     let tooltip = internal_create_tooltip_from_data(SystrayData::default());
 
     match current_os {
-        CurrentOperatingSystem::Windows => {
-            builder.tooltip(tooltip.clone().as_str()).build(&handle).map_err(|e| anyhow::anyhow!(e))
-        },
-        CurrentOperatingSystem::Linux => builder.menu(&tray_menu).build(&handle).map_err(|e| anyhow::anyhow!(e)),
-        CurrentOperatingSystem::MacOS => {
-            builder.menu(&tray_menu).tooltip(tooltip.clone().as_str()).build(&handle).map_err(|e| anyhow::anyhow!(e))
-        }
+        CurrentOperatingSystem::Windows => builder
+            .tooltip(tooltip.clone().as_str())
+            .build(&handle)
+            .map_err(|e| anyhow::anyhow!(e)),
+        CurrentOperatingSystem::Linux => builder
+            .menu(&tray_menu)
+            .build(&handle)
+            .map_err(|e| anyhow::anyhow!(e)),
+        CurrentOperatingSystem::MacOS => builder
+            .menu(&tray_menu)
+            .tooltip(tooltip.clone().as_str())
+            .build(&handle)
+            .map_err(|e| anyhow::anyhow!(e)),
     }
 }
 
@@ -190,7 +196,9 @@ fn update_menu_with_data(app: AppHandle, mut data: SystrayData) -> Result<(), an
     if let Ok(minimized) = window.is_minimized() {
         data.minimized = minimized;
     }
-    app.tray_by_id(TRAY_ID).ok_or(anyhow::anyhow!("No tray found by id"))?.set_menu(initialize_menu(app.clone(), data).ok())?;
+    app.tray_by_id(TRAY_ID)
+        .ok_or(anyhow::anyhow!("No tray found by id"))?
+        .set_menu(initialize_menu(app.clone(), data).ok())?;
 
     Ok(())
 }
@@ -208,14 +216,15 @@ fn detect_current_os() -> CurrentOperatingSystem {
 }
 
 pub fn update_systray(app: AppHandle, data: SystrayData) -> Result<(), anyhow::Error> {
-    let tray = app.tray_by_id(TRAY_ID).ok_or(anyhow!("Couldn't get tray by id"))?;
+    let tray = app
+        .tray_by_id(TRAY_ID)
+        .ok_or(anyhow!("Couldn't get tray by id"))?;
     let current_os = detect_current_os();
     let tooltip = internal_create_tooltip_from_data(data.clone());
 
     match current_os {
         CurrentOperatingSystem::Windows => {
-            tray
-                .set_tooltip(Some(tooltip.as_str()))
+            tray.set_tooltip(Some(tooltip.as_str()))
                 .unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
                 });
@@ -225,8 +234,7 @@ pub fn update_systray(app: AppHandle, data: SystrayData) -> Result<(), anyhow::E
         }
         CurrentOperatingSystem::MacOS => {
             update_menu_with_data(app.clone(), data)?;
-            tray
-                .set_tooltip(Some(tooltip.as_str()))
+            tray.set_tooltip(Some(tooltip.as_str()))
                 .unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
                 });

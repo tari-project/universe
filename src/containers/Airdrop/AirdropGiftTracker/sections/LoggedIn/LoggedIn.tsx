@@ -21,15 +21,15 @@ export default function LoggedIn() {
     } = useAirdropStore();
 
     useEffect(() => {
-        setGems(userPoints?.base.gems || userDetails?.user?.rank?.gems || 0);
-    }, [userPoints?.base.gems, userDetails?.user?.rank?.gems]);
+        setGems(userPoints?.base?.gems || userDetails?.user?.rank?.gems || 0);
+    }, [userPoints?.base?.gems, userDetails?.user?.rank?.gems]);
 
     const bonusTier = useMemo(
         () =>
             bonusTiers
                 ?.sort((a, b) => a.target - b.target)
-                .find((t) => t.target == (userPoints?.base.gems || userDetails?.user?.rank?.gems || 0)),
-        [bonusTiers, userDetails?.user?.rank?.gems, userPoints?.base.gems]
+                .find((t) => t.target == (userPoints?.base?.gems || userDetails?.user?.rank?.gems || 0)),
+        [bonusTiers, userDetails?.user?.rank?.gems, userPoints?.base?.gems]
     );
 
     const flareGems = useMemo(() => {

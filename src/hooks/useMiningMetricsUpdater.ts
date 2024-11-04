@@ -1,6 +1,6 @@
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useCallback } from 'react';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { setAnimationState } from '@app/visuals.ts';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import useFetchTx from '@app/hooks/mining/useTransactions.ts';

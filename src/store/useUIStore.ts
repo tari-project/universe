@@ -1,6 +1,7 @@
 import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
+import { animationDarkBg, animationLightBg, setAnimationProperties } from '@app/visuals.ts';
 
 export const DIALOG_TYPES = ['logs', 'restart'] as const;
 type DialogTypeTuple = typeof DIALOG_TYPES;
@@ -45,7 +46,10 @@ const initialState: State = {
 
 export const useUIStore = create<UIStoreState>()((set) => ({
     ...initialState,
-    setTheme: (_theme) => set({ theme: 'light' }),
+    setTheme: (theme) => {
+        setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
+        set({ theme });
+    },
     setShowSplash: (showSplash) => set({ showSplash }),
     setBackground: (background) => set({ background }),
     setView: (view) => set({ view }),
