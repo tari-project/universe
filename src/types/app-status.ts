@@ -148,6 +148,7 @@ export enum HardwareVendor {
 
 export interface DeviceStatus {
     is_available: boolean;
+    is_reader_implemented: boolean;
 }
 
 export interface DeviceParameters {
