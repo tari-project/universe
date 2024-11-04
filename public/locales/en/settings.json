@@ -119,7 +119,9 @@
     "title": "Update Tari Universe automatically"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Use Tor",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Visual mode",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",

@@ -747,7 +747,7 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
-    if use_tor {
+    if use_tor && !cfg!(target_os = "macos") {
         progress.set_max(5).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
@@ -757,6 +757,7 @@ async fn setup_inner(
             .await?;
         sleep(Duration::from_secs(1));
     }
+
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -844,7 +845,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
     let mut tor_control_port = None;
-    if use_tor {
+    if use_tor && !cfg!(target_os = "macos") {
         state
             .tor_manager
             .ensure_started(
