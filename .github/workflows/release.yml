@@ -177,8 +177,6 @@ jobs:
       - name: Install dependencies (windows/OpenCL)
         if: startsWith(runner.os,'Windows')
         run: |
-          choco install opencl -y
-          choco upgrade opencl-intel-cpu-runtime -y
           vcpkg.exe --triplet=x64-windows install opencl
 
       - name: Set OpenCL Library Path (windows)
