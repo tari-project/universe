@@ -177,8 +177,9 @@ jobs:
       - name: Install dependencies (windows/OpenCL)
         if: startsWith(runner.os,'Windows')
         run: |
-          # choco upgrade opencl-intel-cpu-runtime -y
+          choco install opencl-intel-cpu-runtime
           vcpkg.exe --triplet=x64-windows install opencl
+          echo "LIB=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_EN
 
       - name: Set environment variables (windows)
         if: startsWith(runner.os,'Windows')
