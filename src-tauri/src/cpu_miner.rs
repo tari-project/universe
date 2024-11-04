@@ -1,8 +1,9 @@
 use crate::app_config::MiningMode;
-use crate::binaries::Binaries;
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_watcher::ProcessWatcher;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use async_zip::base;
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -25,6 +26,25 @@ impl CpuMiner {
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
         }
+    }
+
+    pub async fn benchmark(
+        &mut self,
+        app_shutdown: ShutdownSignal,
+        base_path: PathBuf,
+        log_dir: PathBuf,
+    ) -> Result<(), anyhow::Error> {
+        let binary_path = BinaryResolver::current()
+            .read()
+            .await
+            .resolve_path_to_binary_files(Binaries::Xmrig)?;
+        let mut lock = self.watcher.write().await;
+        let hashrate = lock
+            .adapter
+            .benchmark(base_path, log_dir, app_shutdown, binary_path)
+            .await?;
+
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]

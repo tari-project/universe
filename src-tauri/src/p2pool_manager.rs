@@ -21,25 +21,12 @@ pub struct P2poolConfig {
     pub grpc_port: u16,
     pub stats_server_port: u16,
     pub base_node_address: String,
+    pub auto_select_squad: bool,
+    pub squad: Option<String>,
 }
 
-pub struct P2poolConfigBuilder {
-    config: P2poolConfig,
-}
-
-impl P2poolConfigBuilder {
-    pub fn new() -> Self {
-        Self {
-            config: P2poolConfig::default(),
-        }
-    }
-
-    pub fn with_base_node(&mut self, grpc_port: u16) -> &mut Self {
-        self.config.base_node_address = format!("http://127.0.0.1:{}", grpc_port);
-        self
-    }
-
-    pub fn build(&self) -> Result<P2poolConfig, anyhow::Error> {
+impl P2poolConfig {
+    pub fn try_create() -> Result<Self, anyhow::Error> {
         let grpc_port =
             network_utils::get_free_port().ok_or_else(|| anyhow!("Could not assign free port"))?;
         let stats_server_port = network_utils::get_free_port()
@@ -47,24 +34,25 @@ impl P2poolConfigBuilder {
         Ok(P2poolConfig {
             grpc_port,
             stats_server_port,
-            base_node_address: self.config.base_node_address.clone(),
+            base_node_address: String::from("http://127.0.0.1:18142"),
+            auto_select_squad: true,
+            squad: None,
         })
     }
-}
 
-impl P2poolConfig {
-    pub fn builder() -> P2poolConfigBuilder {
-        P2poolConfigBuilder::new()
+    pub fn with_base_node(mut self, grpc_port: u16) -> Self {
+        self.base_node_address = format!("http://127.0.0.1:{}", grpc_port);
+        self
     }
-}
 
-impl Default for P2poolConfig {
-    fn default() -> Self {
-        Self {
-            grpc_port: 18145,
-            stats_server_port: 19000,
-            base_node_address: String::from("http://127.0.0.1:18142"),
-        }
+    pub fn with_auto_select_squad(mut self, auto_select_squad: bool) -> Self {
+        self.auto_select_squad = auto_select_squad;
+        self
+    }
+
+    pub fn with_squad(mut self, squad: String) -> Self {
+        self.squad = Some(squad);
+        self
     }
 }
 

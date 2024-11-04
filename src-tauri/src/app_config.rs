@@ -64,6 +64,10 @@ pub struct AppConfigFromFile {
     mmproxy_monero_nodes: Vec<String>,
     #[serde(default = "default_true")]
     auto_update: bool,
+    #[serde(default = "default_true")]
+    p2pool_auto_select_squad: bool,
+    #[serde(default)]
+    p2pool_squad: Option<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -96,6 +100,8 @@ impl Default for AppConfigFromFile {
             mmproxy_use_monero_fail: false,
             auto_update: true,
             reset_earnings: false,
+            p2pool_auto_select_squad: true,
+            p2pool_squad: None,
         }
     }
 }
@@ -180,6 +186,8 @@ pub(crate) struct AppConfig {
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
     auto_update: bool,
+    p2pool_auto_select_squad: bool,
+    p2pool_squad: Option<String>,
 }
 
 impl AppConfig {
@@ -213,6 +221,8 @@ impl AppConfig {
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             auto_update: true,
+            p2pool_auto_select_squad: true,
+            p2pool_squad: None,
         }
     }
 
@@ -271,6 +281,8 @@ impl AppConfig {
                 } else {
                     self.reset_earnings = false;
                 }
+                self.p2pool_auto_select_squad = config.p2pool_auto_select_squad;
+                self.p2pool_squad = config.p2pool_squad;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -319,6 +331,14 @@ impl AppConfig {
 
     pub fn ludicrous_mode_cpu_threads(&self) -> Option<isize> {
         self.ludicrous_mode_cpu_threads
+    }
+
+    pub fn p2pool_auto_select_squad(&self) -> bool {
+        self.p2pool_auto_select_squad
+    }
+
+    pub fn p2pool_squad(&self) -> Option<&String> {
+        self.p2pool_squad.as_ref()
     }
 
     pub fn anon_id(&self) -> &str {
@@ -547,6 +567,8 @@ impl AppConfig {
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
             auto_update: self.auto_update,
+            p2pool_auto_select_squad: self.p2pool_auto_select_squad,
+            p2pool_squad: self.p2pool_squad.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

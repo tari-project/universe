@@ -645,6 +645,7 @@ async fn setup_inner(
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
     let use_tor = app_config.use_tor();
+    let shutdown = state.shutdown.to_signal();
     drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
@@ -833,16 +834,31 @@ async fn setup_inner(
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    if state.config.read().await.p2pool_enabled() {
+    progress.set_max(80).await;
+    progress
+        .update("setup-benchmarking".to_string(), None, 0)
+        .await;
+    let cpu_benchmark_hashrate = state
+        .cpu_miner
+        .write()
+        .await
+        .benchmark(shutdown.clone(), data_dir.clone(), log_dir.clone())
+        .await?;
+
+    let app_config = state.config.read().await;
+    if app_config.p2pool_enabled() {
         progress.set_max(85).await;
         progress
             .update("starting-p2pool".to_string(), None, 0)
             .await;
 
         let base_node_grpc = state.node_manager.get_grpc_port().await?;
-        let p2pool_config = P2poolConfig::builder()
+        let mut p2pool_config = P2poolConfig::try_create()?
             .with_base_node(base_node_grpc)
-            .build()?;
+            .with_auto_select_squad(app_config.p2pool_auto_select_squad());
+        if let Some(squad) = app_config.p2pool_squad() {
+            p2pool_config = p2pool_config.with_squad(squad.clone());
+        }
 
         state
             .p2pool_manager
@@ -855,6 +871,7 @@ async fn setup_inner(
             )
             .await?;
     }
+    drop(app_config);
 
     progress.set_max(100).await;
     progress
