@@ -1,6 +1,6 @@
 use std::{default, path::PathBuf, sync::LazyLock};
 
-use crate::APPLICATION_FOLDER_ID;
+use crate::{hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader}, APPLICATION_FOLDER_ID};
 
 use super::{
     cpu_readers::{
@@ -49,7 +49,7 @@ impl HardwareVendor {
     }
 
     pub fn is_amd(&self, vendor: &str) -> bool {
-        vendor.to_lowercase().contains("amd")
+        vendor.to_lowercase().contains("amd") || vendor.to_lowercase().contains("gfx")
     }
 
     pub fn is_intel(&self, vendor: &str) -> bool {
@@ -166,7 +166,10 @@ impl Monitor {
             HardwareVendor::Amd => Box::new(AmdGpuReader::new()),
             HardwareVendor::Intel => Box::new(IntelGpuReader::new()),
             HardwareVendor::Apple => Box::new(AppleGpuReader::new()),
-            _ => panic!("Unsupported GPU vendor: {:?}", vendor),
+            _ => { 
+                warn!("Unsupported GPU vendor: {:?}", vendor);
+                Box::new(DefaultGpuParametersReader)
+             }
         }
     }
 
@@ -211,7 +214,10 @@ impl Monitor {
             HardwareVendor::Amd => Box::new(AmdCpuParametersReader::new()),
             HardwareVendor::Intel => Box::new(IntelCpuParametersReader::new()),
             HardwareVendor::Apple => Box::new(AppleCpuParametersReader::new()),
-            _ => panic!("Unsupported CPU vendor: {:?}", vendor),
+            _ => { 
+                warn!("Unsupported GPU vendor: {:?}", vendor);
+                Box::new(DefaultCpuParametersReader)
+             }
         }
     }
 
