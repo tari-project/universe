@@ -7,14 +7,14 @@ use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredEx
 use log::trace;
 use log::{debug, error, info, warn};
 
-use opencl3::platform::get_platforms;
 use opencl3::device::{Device, CL_DEVICE_MAX_WORK_GROUP_SIZE};
+use opencl3::platform::get_platforms;
 use opencl3::types::cl_ulong;
 
-use std::convert::TryFrom;
 use regex::Regex;
 use serde::Serialize;
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -223,23 +223,23 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
         if platforms.is_empty() {
             return Ok(0);
         }
-        
+
         // Try to get the first GPU device from the first platform
         let devices = platforms[0].get_devices(opencl3::device::CL_DEVICE_TYPE_GPU)?;
         if devices.is_empty() {
             return Ok(0);
         }
-        
+
         // Get max work group size for the first device
         let device = Device::new(devices[0]);
         let max_wg_size: usize = device.max_work_group_size()?;
-            
+
         Ok(i32::try_from(max_wg_size).unwrap_or(0))
     })() {
         Ok(threads) => threads,
         Err(e) => {
             warn!(target: LOG_TARGET, "GPU detection failed: {}", e);
-            0  // Explicit default when GPU/OpenCL is not available
+            0 // Explicit default when GPU/OpenCL is not available
         }
     };
 
