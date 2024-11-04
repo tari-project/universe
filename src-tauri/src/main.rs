@@ -8,8 +8,7 @@ use log::trace;
 use log::{debug, error, info, warn};
 
 use opencl3::platform::get_platforms;
-use opencl3::device::{Device, CL_DEVICE_MAX_WORK_GROUP_SIZE};
-use opencl3::types::cl_ulong;
+use opencl3::device::Device;
 
 use std::convert::TryFrom;
 use regex::Regex;
