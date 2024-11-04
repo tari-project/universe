@@ -1,4 +1,7 @@
 {
+  "cpu-power": "CPU Power",
+  "gpu-power": "GPU Power",
+  "estimated-day":"Est tXTM/day",
   "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
   "current-block-time": "Aktuelle Blockzeit",
   "day": "day",

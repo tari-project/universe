@@ -1,4 +1,7 @@
 {
+  "cpu-power": "CPU 功率",
+  "gpu-power": "GPU 功率",
+  "estimated-day": "预估 tXTM/天",
   "connection-to-node-lost": "与矿工的连接丢失。请等待矿机重新连接或重启矿机.",
   "current-block-time": "当前区块时间",
   "day": "day",

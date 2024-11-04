@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import {
     SettingsGroup,
@@ -21,6 +21,8 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import * as Sentry from '@sentry/react';
 import { TorDebug } from './TorDebug';
 
+import { type } from '@tauri-apps/api/os';
+
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
     control_port: string | number;
@@ -41,11 +43,26 @@ export const TorMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const [defaultTorConfig, setDefaultTorConfig] = useState<TorConfig>();
+    const [isMac, setIsMac] = useState(false);
     const defaultUseTor = useAppConfigStore((s) => s.use_tor);
     const setUseTor = useAppConfigStore((s) => s.setUseTor);
     const [editedUseTor, setEditedUseTor] = useState(Boolean(defaultUseTor));
-
     const [editedConfig, setEditedConfig] = useState<EditedTorConfig>();
+
+    const hasCheckedOs = useRef(false);
+
+    const checkPlatform = useCallback(async () => {
+        const osType = await type();
+        if (osType) {
+            setIsMac(osType === 'Darwin');
+
+            hasCheckedOs.current = true;
+        }
+    }, []);
+    useEffect(() => {
+        if (hasCheckedOs.current) return;
+        checkPlatform();
+    }, [checkPlatform]);
 
     useEffect(() => {
         invoke('get_tor_config')
@@ -96,7 +113,6 @@ export const TorMarkup = () => {
             Number(editedConfig?.control_port) <= 0
         );
     }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor]);
-
     const toggleUseBridges = useCallback(async () => {
         const updated_use_bridges = !editedConfig?.use_bridges;
         let bridges = editedConfig?.bridges || [];
@@ -134,7 +150,7 @@ export const TorMarkup = () => {
                 </SettingsGroup>
 
                 {editedUseTor && editedConfig ? (
-                    <TorSettingsContainer>
+                    <TorSettingsContainer $isMac={isMac}>
                         <Stack style={{ width: '100%' }} direction="column">
                             <Typography variant="h6">{t('control-port')}</Typography>
                             <Input

@@ -31,7 +31,7 @@
   },
   "productName": "Tari Universe (Alpha)",
   "mainBinaryName": "Tari Universe (Alpha)",
-  "version": "0.5.55",
+  "version": "0.5.60",
   "identifier": "com.tari.universe.alpha",
   "plugins": {
     "updater": {

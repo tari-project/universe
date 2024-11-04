@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.5.55",
+    "version": "0.5.60",
     "type": "module",
     "scripts": {
         "dev": "vite dev --mode development",
@@ -15,10 +15,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.26.25",
         "@sentry/react": "^8.35.0",
-        "@tauri-apps/api": "^2",
-        "@tauri-apps/plugin-process": "^2.0.0",
-        "@tauri-apps/plugin-shell": "^2",
-        "@tauri-apps/plugin-updater": "^2",
+        "@tauri-apps/api": "^1",
         "emoji-regex": "^10.4.0",
         "framer-motion": "^11.11.10",
         "globals": "^15.11.0",
