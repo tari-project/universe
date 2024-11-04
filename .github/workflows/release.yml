@@ -177,7 +177,8 @@ jobs:
       - name: Install dependencies (windows/OpenCL)
         if: startsWith(runner.os,'Windows')
         run: |
-          vcpkg.exe --triplet=x64-windows install opencl
+          choco install opencl-intel-cpu-runtime
+          # vcpkg.exe --triplet=x64-windows install opencl
 
       - name: Set OpenCL Library Path (windows)
         if: startsWith(runner.os,'Windows')
