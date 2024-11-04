@@ -108,7 +108,9 @@
     "title": "Werk Tari Universe outomaties op"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Gebruik Tor",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Visuele modus",
   "yes": "Yes",
   "your-feedback": "Beskryf asseblief u probleem",
