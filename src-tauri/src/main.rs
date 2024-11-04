@@ -199,6 +199,9 @@ async fn set_mode(
 
 #[tauri::command]
 async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
+    let mut result = HashMap::new();
+
+    // CPU Detection
     let timer = Instant::now();
     let max_cpu_available = available_parallelism()
         .map(|cores| i32::try_from(cores.get()).unwrap_or(1))
@@ -208,24 +211,23 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
         warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
     }
 
-    let mut result = HashMap::new();
     result.insert("max_cpu_available".to_string(), max_cpu_available);
 
-    let platform = Platform::default();
-    // Try to get the first device on the platform
-    let device = match Device::first(platform) {
-        Ok(d) => d,
+    // GPU Detection
+    let gpu_threads = match (|| -> Result<i32, Box<dyn std::error::Error>> {
+        let platform = Platform::default();
+        let device = Device::first(platform)?;
+        let max_threads = device.max_wg_size().unwrap_or(800);
+        Ok(i32::try_from(max_threads).unwrap_or(0))
+    })() {
+        Ok(threads) => threads,
         Err(e) => {
-            eprintln!("Failed to get device info: {}", e);
-            return Ok(Default::default());
+            warn!(target: LOG_TARGET, "GPU detection failed: {}", e);
+            0 // Explicit default when GPU/OpenCL is not available
         }
     };
 
-    let max_threads = device.max_wg_size().unwrap_or(800);
-    result.insert(
-        "max_gpu_available".to_string(),
-        i32::try_from(max_threads).unwrap_or(0),
-    );
+    result.insert("max_gpu_available".to_string(), gpu_threads);
 
     Ok(result)
 }
