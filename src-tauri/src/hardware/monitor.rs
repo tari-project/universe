@@ -1,5 +1,7 @@
 use std::{default, path::PathBuf, sync::LazyLock};
 
+use crate::APPLICATION_FOLDER_ID;
+
 use super::{
     cpu_readers::{
         amd_cpu_reader::AmdCpuParametersReader, apple_cpu_reader::AppleCpuParametersReader,
@@ -140,7 +142,7 @@ impl Monitor {
 
     async fn load_gpu_devices_from_status_file(&self) -> Result<GpuStatusFileContent, Error> {
         let config_dir = config_dir().context("Failed to get config directory")?;
-        let file: PathBuf = config_dir.join("gpuminer").join("gpu_status.json");
+        let file: PathBuf = config_dir.join(APPLICATION_FOLDER_ID).join("gpuminer").join("gpu_status.json");
         if file.exists() {
             info!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
             let content = tokio::fs::read_to_string(file).await?;
@@ -170,6 +172,7 @@ impl Monitor {
         let mut platform_devices = Vec::new();
 
         for gpu_device in gpu_status_file_content.gpu_devices.iter() {
+            info!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
             let vendor = HardwareVendor::from_string(&gpu_device.device_name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
             let platform_device = GpuDeviceProperties {
