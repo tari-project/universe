@@ -1,4 +1,7 @@
 {
+  "cpu-power": "Moc CPU",
+  "gpu-power": "Moc GPU",
+  "estimated-day": "Est tXTM/dzień",
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
   "current-block-time": "Aktualny czas bloku",
   "day": "day",

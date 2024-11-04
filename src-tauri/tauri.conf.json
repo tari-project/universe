@@ -7,7 +7,7 @@
     },
     "package": {
         "productName": "Tari Universe (Alpha)",
-        "version": "0.5.55"
+        "version": "0.5.60"
     },
     "tauri": {
         "systemTray": {
@@ -16,9 +16,7 @@
         },
         "updater": {
             "active": true,
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
             "dialog": false,
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
         },
@@ -39,6 +37,9 @@
                 "unmaximize": true,
                 "unminimize": true,
                 "startDragging": true
+            },
+            "os": {
+                "all": true
             }
         },
         "pattern": {

@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.5.55"
+version = "0.5.60"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -64,7 +64,7 @@ tari_crypto = "0.21.0"
 tari_key_manager = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_shutdown = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_utilities = "0.8.0"
-tauri = {version = "1.8.0", features = [
+tauri = {version = "1.8.0", features = [ "os-all",
   "system-tray",
   "updater",
   "window-show",
@@ -114,3 +114,4 @@ release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
 ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]
+

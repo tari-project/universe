@@ -6608,7 +6608,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.5.55"
+version = "0.5.60"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7150,6 +7150,7 @@ dependencies = [
  "objc",
  "once_cell",
  "open 3.2.0",
+ "os_info",
  "os_pipe",
  "percent-encoding",
  "plist",
@@ -7166,6 +7167,7 @@ dependencies = [
  "serialize-to-javascript",
  "shared_child",
  "state",
+ "sys-locale",
  "tar",
  "tauri-macros",
  "tauri-runtime",
