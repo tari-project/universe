@@ -108,7 +108,9 @@
     "title": "Автоматическое обновление Tari Universe"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Использовать Tor",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Визуальный режим",
   "yes": "Да",
   "your-feedback": "Пожалуйста, опишите вашу проблему",

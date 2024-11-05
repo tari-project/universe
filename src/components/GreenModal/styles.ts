@@ -23,6 +23,10 @@ export const Wrapper = styled('div')`
     @media (max-height: 955px) {
         align-items: flex-start;
     }
+
+    @media (max-height: 800px) {
+        padding: 60px 40px 60px 40px;
+    }
 `;
 
 export const Cover = styled(m.div)`
@@ -54,7 +58,6 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number 
     flex-direction: column;
     justify-content: flex-end;
     gap: 40px;
-
     max-width: 635px;
 
     ${({ $boxWidth }) =>
