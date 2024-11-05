@@ -108,7 +108,9 @@
     "title": "Tari Universe\"i otomatik olarak güncelle"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Tor Kullan",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Görsel mod",
   "yes": "Evet",
   "your-feedback": "Lütfen sorununuzu açıklayın",

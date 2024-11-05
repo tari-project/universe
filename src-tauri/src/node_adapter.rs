@@ -106,9 +106,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
             //         .to_string(),
             // );
-            if cfg!(target_os = "windows") {
-                // No need
-            } else {
+            if !cfg!(target_os = "macos") {
                 args.push("-p".to_string());
                 args.push("use_libtor=false".to_string());
             }
@@ -119,7 +117,11 @@ impl ProcessAdapter for MinotariNodeAdapter {
             ));
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
-            if let Some(tor_control_port) = self.tor_control_port {
+            if let Some(mut tor_control_port) = self.tor_control_port {
+                // macos uses libtor, so will be 9051
+                if cfg!(target_os = "macos") {
+                    tor_control_port = 9051;
+                }
                 args.push("-p".to_string());
                 args.push(format!(
                     "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{}",
@@ -307,6 +309,7 @@ impl MinotariNodeStatusMonitor {
         })
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
@@ -314,14 +317,14 @@ impl MinotariNodeStatusMonitor {
         let mut last_state: Option<i32> = None;
         loop {
             if self.shutdown_signal.is_triggered() {
-                break;
+                break Ok(());
             }
             let tip = client.get_tip_info(Empty {}).await?;
             let sync_progress = client.get_sync_progress(Empty {}).await?;
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
             if tip_res.initial_sync_achieved {
-                break;
+                break Ok(());
             }
 
             let current_state = sync_progress.state;
@@ -356,6 +359,20 @@ impl MinotariNodeStatusMonitor {
                             "waiting-for-header-sync".to_string(),
                             Some(HashMap::from([
                                 (
+                                    "local_header_height".to_string(),
+                                    sync_progress.local_height.to_string(),
+                                ),
+                                (
+                                    "tip_header_height".to_string(),
+                                    sync_progress.tip_height.to_string(),
+                                ),
+                                ("local_block_height".to_string(), "0".to_string()),
+                                (
+                                    "tip_block_height".to_string(),
+                                    sync_progress.tip_height.to_string(),
+                                ),
+                                // Keep these fields for old translations that have not been updated
+                                (
                                     "local_height".to_string(),
                                     sync_progress.local_height.to_string(),
                                 ),
@@ -378,6 +395,24 @@ impl MinotariNodeStatusMonitor {
                         .update(
                             "waiting-for-block-sync".to_string(),
                             Some(HashMap::from([
+                                // Assume the headers have already been synced
+                                (
+                                    "local_header_height".to_string(),
+                                    sync_progress.tip_height.to_string(),
+                                ),
+                                (
+                                    "tip_header_height".to_string(),
+                                    sync_progress.tip_height.to_string(),
+                                ),
+                                (
+                                    "local_block_height".to_string(),
+                                    sync_progress.local_height.to_string(),
+                                ),
+                                (
+                                    "tip_block_height".to_string(),
+                                    sync_progress.tip_height.to_string(),
+                                ),
+                                // Keep these fields for old translations that have not been updated
                                 (
                                     "local_height".to_string(),
                                     sync_progress.local_height.to_string(),
@@ -397,7 +432,6 @@ impl MinotariNodeStatusMonitor {
 
             tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
-        Ok(())
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
