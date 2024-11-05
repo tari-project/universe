@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.5.55"
+version = "0.5.61"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -21,6 +21,7 @@ chrono = "0.4.38"
 device_query = "2.1.0"
 dunce = "1.0.5"
 dyn-clone = "1.0.17"
+opencl3 = "0.9.5"
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
 futures-util = "0.3.30"
@@ -66,23 +67,24 @@ tari_crypto = "0.21.0"
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_utilities = "0.8.0"
-tauri = { version = "1.8.0", features = [
-  "system-tray",
-  "updater",
-  "window-show",
-  "window-unminimize",
-  "window-minimize",
-  "window-hide",
-  "window-unmaximize",
-  "window-start-dragging",
-  "window-maximize",
-  "window-close",
-  "macos-private-api",
-  "isolation",
-  "shell-open",
+tauri = {version = "1.8.0", features = [ "os-all",
   "icon-ico",
   "icon-png",
+  "isolation",
+  "macos-private-api",
+  "os-all",
   "process-command-api",
+  "shell-open",
+  "system-tray",
+  "updater",
+  "window-close",
+  "window-hide",
+  "window-maximize",
+  "window-minimize",
+  "window-show",
+  "window-start-dragging",
+  "window-unmaximize",
+  "window-unminimize",
 ] }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 thiserror = "1.0.26"
@@ -116,3 +118,4 @@ release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
 ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]
+

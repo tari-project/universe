@@ -6,7 +6,7 @@ import { formatHashrate } from '@app/utils/formatHashrate.ts';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { ExpandableTile } from '@app/containers/SideBar/Miner/components/ExpandableTile.tsx';
-import formatBalance from '@app/utils/formatBalance.ts';
+import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import {
     ExpandableTileItem,
@@ -57,11 +57,15 @@ export default function Miner() {
           (cpuHardwareStats?.length || 1)
         : 0;
 
+    const totalEarningsFormatted = useFormatBalance(totalEarnings);
+    const estimatedBalanceFormatted = useFormatBalance(cpu_estimated_earnings);
+    const gpuEstimatedEarnings = useFormatBalance(gpu_estimated_earnings);
+
     return (
         <MinerContainer>
             <TileContainer>
                 <Tile
-                    title="CPU Power"
+                    title={t('cpu-power')}
                     stats={isCpuMiningEnabled && cpu_is_mining ? formatHashrate(cpu_hash_rate, false) : '-'}
                     isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
                     chipValue={cpu_is_mining ? cpuChipValue : undefined}
@@ -69,7 +73,7 @@ export default function Miner() {
                     useLowerCase
                 />
                 <Tile
-                    title="GPU Power"
+                    title={t('gpu-power')}
                     stats={isGpuMiningEnabled && gpu_is_mining ? formatHashrate(gpu_hash_rate, false) : '-'}
                     isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
                     chipValue={gpu_is_mining ? gpuChipValue : undefined}
@@ -78,8 +82,8 @@ export default function Miner() {
                 />
                 <ModeSelect />
                 <ExpandableTile
-                    title="Est tXTM/day"
-                    stats={isMiningInProgress && Number.isFinite(totalEarnings) ? formatBalance(totalEarnings) : '-'}
+                    title={t('estimated-day')}
+                    stats={isMiningInProgress && Number.isFinite(totalEarnings) ? totalEarningsFormatted : '-'}
                     isLoading={earningsLoading}
                     useLowerCase
                 >
@@ -99,7 +103,7 @@ export default function Miner() {
                                 }}
                             >
                                 {isMiningInProgress && isCpuMiningEnabled && cpu_estimated_earnings
-                                    ? formatBalance(cpu_estimated_earnings)
+                                    ? estimatedBalanceFormatted
                                     : '-'}
                             </Typography>
                             <Unit>
@@ -122,7 +126,7 @@ export default function Miner() {
                                 }}
                             >
                                 {isMiningInProgress && isGpuMiningEnabled && gpu_estimated_earnings
-                                    ? formatBalance(gpu_estimated_earnings)
+                                    ? gpuEstimatedEarnings
                                     : '-'}
                             </Typography>
                             <Unit>

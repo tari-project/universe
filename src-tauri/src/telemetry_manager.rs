@@ -104,6 +104,7 @@ impl From<Network> for TelemetryNetwork {
 pub enum TelemetryMiningMode {
     Eco,
     Ludicrous,
+    Custom,
 }
 
 impl From<MiningMode> for TelemetryMiningMode {
@@ -111,6 +112,7 @@ impl From<MiningMode> for TelemetryMiningMode {
         match value {
             MiningMode::Eco => TelemetryMiningMode::Eco,
             MiningMode::Ludicrous => TelemetryMiningMode::Ludicrous,
+            MiningMode::Custom => TelemetryMiningMode::Custom,
         }
     }
 }

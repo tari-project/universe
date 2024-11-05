@@ -108,7 +108,9 @@
     "title": "Perbarui Tari Universe secara otomatis"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Gunakan Tor",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Mode visual",
   "yes": "Ya",
   "your-feedback": "Silakan jelaskan masalah Anda",

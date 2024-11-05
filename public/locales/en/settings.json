@@ -9,6 +9,17 @@
   "connected-to-tari": "Connected to the Tari Network",
   "control-port": "Control Port",
   "cpu-mining-enabled": "CPU Mining",
+  "custom-power-levels": {
+    "title": "Custom Mode",
+    "warning": "Warning",
+    "saved": "Changes saved!",
+    "gpu-power-level": "GPU Power %",
+    "cpu-power-level": "CPU Cores",
+    "choose-gpu-power-level": "Choose how many threads you want your GPU to allocat to mining",
+    "choose-cpu-power-level": "Choose how many cores from your CPU to be allocated to mining",
+    "cpu-warning": "High CPU usage can cause overheating, increase energy consumption, and may lead to hardware damage over time. Please monitor usage to ensure safe and efficient operation.",
+    "gpu-warning": "High GPU usage can cause overheating, increase energy consumption, and may lead to hardware damage over time. Please monitor usage to ensure safe and efficient operation."
+  },
   "debug-info": "Debug",
   "disconnect": "Disconnect from Airdrop",
   "errors": {
@@ -108,7 +119,9 @@
     "title": "Update Tari Universe automatically"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Use Tor",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Visual mode",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
