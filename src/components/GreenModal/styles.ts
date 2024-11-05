@@ -38,11 +38,13 @@ export const Cover = styled(m.div)`
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 0;
     cursor: pointer;
+
+    backdrop-filter: blur(10px);
 `;
 
-export const BoxWrapper = styled(m.div)<{ $boxWidth?: number }>`
+export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number }>`
     width: 100%;
-    max-width: 635px;
+
     flex-shrink: 0;
 
     border-radius: 35px;
@@ -52,12 +54,11 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number }>`
     position: relative;
     z-index: 1;
 
-    padding: 50px;
-
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     gap: 40px;
+    max-width: 635px;
 
     ${({ $boxWidth }) =>
         $boxWidth &&
@@ -65,9 +66,13 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number }>`
             max-width: ${$boxWidth}px;
         `}
 
-    @media (max-height: 680px) {
-        padding: 40px 50px;
-    }
+    padding: 50px;
+
+    ${({ $padding }) =>
+        $padding &&
+        css`
+            padding: ${$padding}px;
+        `}
 `;
 
 export const CloseButton = styled('button')`
