@@ -834,16 +834,16 @@ async fn setup_inner(
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
-    progress.set_max(80).await;
-    progress
-        .update("setup-benchmarking".to_string(), None, 0)
-        .await;
-    let cpu_benchmark_hashrate = state
-        .cpu_miner
-        .write()
-        .await
-        .benchmark(shutdown.clone(), data_dir.clone(), log_dir.clone())
-        .await?;
+    // progress.set_max(80).await;
+    // progress
+    //     .update("setup-benchmarking".to_string(), None, 0)
+    //     .await;
+    // let cpu_benchmark_hashrate = state
+    //     .cpu_miner
+    //     .write()
+    //     .await
+    //     .benchmark(shutdown.clone(), data_dir.clone(), log_dir.clone())
+    //     .await?;
 
     let app_config = state.config.read().await;
     if app_config.p2pool_enabled() {

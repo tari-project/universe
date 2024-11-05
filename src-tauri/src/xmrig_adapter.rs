@@ -54,45 +54,6 @@ impl XmrigAdapter {
             extra_options: Vec::new(),
         }
     }
-
-    pub async fn benchmark(
-        &mut self,
-        data_dir: PathBuf,
-        log_dir: PathBuf,
-        shutdown: ShutdownSignal,
-        binary_version_path: PathBuf,
-    ) -> Result<u32, Error> {
-        self.kill_previous_instances(data_dir.clone())?;
-
-        let xmrig_shutdown = Shutdown::new();
-
-        let mut args = vec!["--bench=1M".to_string()];
-        let xmrig_log_file = get_log_path(log_dir)?;
-        match xmrig_log_file.to_str() {
-            Some(log_file) => {
-                args.push(format!("--log-file={}", &log_file));
-            }
-            None => {
-                warn!(target: LOG_TARGET, "Could not convert xmrig log file path to string");
-                warn!(target: LOG_TARGET, "Logs argument will not be added to xmrig");
-            }
-        };
-
-        let child =
-            process_utils::launch_child_process(&binary_version_path, &data_dir, None, &args)?;
-
-        let output = child.wait_with_output().await?;
-        // .map(|output| {
-        //     let output_str = String::from_utf8_lossy(&output.stdout);
-        //     let mut lines = output_str.lines();
-        //     let last_line = lines.last().unwrap_or("0");
-        //     last_line.parse::<u32>().unwrap_or(0)
-        // })
-        // .await;
-
-        dbg!(output);
-        todo!()
-    }
 }
 
 impl ProcessAdapter for XmrigAdapter {
