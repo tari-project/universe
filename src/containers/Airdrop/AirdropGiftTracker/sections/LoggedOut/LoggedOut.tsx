@@ -60,6 +60,8 @@ export default function LoggedOut() {
         }
     }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setAirdropTokens, setAuthUuid, setUserPoints]);
 
+    const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
+
     return (
         <>
             <Wrapper>
@@ -67,7 +69,7 @@ export default function LoggedOut() {
                     <Title>{t('claimGems')}</Title>
 
                     <GemPill>
-                        {(referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString()}
+                        {gemsValue}
                         <Image src={gemImage} alt="" />
                     </GemPill>
                 </ClaimButton>
