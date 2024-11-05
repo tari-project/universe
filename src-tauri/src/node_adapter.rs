@@ -309,6 +309,7 @@ impl MinotariNodeStatusMonitor {
         })
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
@@ -425,14 +426,14 @@ impl MinotariNodeStatusMonitor {
                         )
                         .await;
                 } else {
-                    //do nothing}
+                    //do nothing
                 }
-
-                tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
             }
-            let _ = Ok::<(), Error>(());
+
+            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         }
     }
+
     pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
