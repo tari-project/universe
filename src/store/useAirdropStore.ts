@@ -211,4 +211,4 @@ export const useAirdropStore = create<AirdropStore>()(
         }
     )
 );
-useAirdropStore.setState({ authUuid: '' }); // https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#persist-middlware-no-longer-stores-item-at-store-creation
+useAirdropStore.getState().setSeenPermissions(initialState.seenPermissions || false); // https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#persist-middlware-no-longer-stores-item-at-store-creation

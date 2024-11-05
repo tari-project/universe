@@ -1,5 +1,5 @@
 import { Language } from '@app/i18initializer';
-import { modeType, themeType } from '../store/types';
+import { displayMode, modeType } from '../store/types';
 
 export interface TorConfig {
     control_port: number;
@@ -11,7 +11,7 @@ export interface AppConfig {
     config_version: number;
     config_file?: string;
     mode: modeType;
-    theme: themeType;
+    display_mode: displayMode;
     auto_mining: boolean;
     mine_on_app_start: boolean;
     p2pool_enabled: boolean;
@@ -29,6 +29,7 @@ export interface AppConfig {
     paper_wallet_enabled: boolean;
     use_tor: boolean;
     auto_update: boolean;
+    reset_earnings: boolean;
     mmproxy_use_monero_fail: boolean;
     mmproxy_monero_nodes: string[];
 }

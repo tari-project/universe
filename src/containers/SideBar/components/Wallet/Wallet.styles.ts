@@ -22,7 +22,6 @@ export const WalletContainer = styled(m.div)`
     max-height: 508px;
     min-height: 178px;
     z-index: 2;
-    overflow: hidden;
 
     justify-content: space-between;
 
@@ -70,6 +69,8 @@ export const ScrollMask = styled(m.div)`
     width: 100%;
     z-index: 1;
     opacity: 0.7;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
 `;
 
 export const HistoryContainer = styled(m.div)`
@@ -95,7 +96,6 @@ export const WalletCornerButtons = styled('div')`
     top: 10px;
     right: 13px;
     z-index: 2;
-
     display: flex;
     gap: 3px;
 `;
