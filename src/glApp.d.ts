@@ -9,6 +9,8 @@ export type GlAppState =
     | 'stop'
     | 'complete'
     | 'success'
+    | 'success2'
+    | 'success3'
     | 'fail'
     | 'resultAnimation'
     | 'restartAnimation'

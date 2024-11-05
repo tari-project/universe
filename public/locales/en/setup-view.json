@@ -19,8 +19,8 @@
     "starting-mmproxy": "Starting merge mining proxy",
     "starting-p2pool": "Starting P2Pool",
     "starting-up": "Starting up",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_height}}/{{tip_height}} blocks synced",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_height}}/{{tip_height}} headers synced",
+    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
+    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
     "waiting-for-node": "Waiting for node to sync",
     "waiting-for-wallet": "Waiting for wallet"
   },
