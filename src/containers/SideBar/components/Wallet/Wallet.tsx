@@ -5,6 +5,7 @@ import {
     BalanceVisibilityButton,
     CornerButton,
     ScrollMask,
+    SidebarCover,
     WalletBalance,
     WalletBalanceContainer,
     WalletContainer,
@@ -75,34 +76,47 @@ export default function Wallet() {
     );
 
     return (
-        <WalletContainer>
-            <WalletCornerButtons>
-                {paperWalletEnabled && (
-                    <SyncTooltip
-                        trigger={
-                            <CornerButton onClick={handleSyncButtonClick}>{t('paper-wallet-button')}</CornerButton>
-                        }
-                        title={t('paper-wallet-tooltip-title')}
-                        text={t('paper-wallet-tooltip-message')}
+        <>
+            <WalletContainer>
+                <WalletCornerButtons>
+                    {paperWalletEnabled && (
+                        <SyncTooltip
+                            trigger={
+                                <CornerButton onClick={handleSyncButtonClick}>{t('paper-wallet-button')}</CornerButton>
+                            }
+                            title={t('paper-wallet-tooltip-title')}
+                            text={t('paper-wallet-tooltip-message')}
+                        />
+                    )}
+                    {balance ? (
+                        <CornerButton onClick={handleShowClick}>
+                            {!showHistory ? t('show-history') : t('hide-history')}
+                        </CornerButton>
+                    ) : null}
+                </WalletCornerButtons>
+
+                {balanceMarkup}
+
+                <AnimatePresence mode="wait">
+                    {showHistory ? (
+                        <>
+                            <History />
+                            <ScrollMask initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
+                        </>
+                    ) : null}
+                </AnimatePresence>
+            </WalletContainer>
+
+            <AnimatePresence>
+                {showHistory && (
+                    <SidebarCover
+                        onClick={handleShowClick}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                     />
                 )}
-                {balance ? (
-                    <CornerButton onClick={handleShowClick}>
-                        {!showHistory ? t('show-history') : t('hide-history')}
-                    </CornerButton>
-                ) : null}
-            </WalletCornerButtons>
-
-            {balanceMarkup}
-
-            <AnimatePresence mode="wait">
-                {showHistory ? (
-                    <>
-                        <History />
-                        <ScrollMask initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
-                    </>
-                ) : null}
             </AnimatePresence>
-        </WalletContainer>
+        </>
     );
 }
