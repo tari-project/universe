@@ -10,14 +10,7 @@ export const Trigger = styled('div')`
 `;
 
 export const Menu = styled(m.div)`
-    z-index: 2;
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    margin-bottom: 7px;
+    height: min-content;
 
     display: flex;
     align-items: flex-start;
@@ -28,7 +21,7 @@ export const Menu = styled(m.div)`
 
     border-radius: 15px;
     background: #fff;
-    box-shadow: 0px 2.915px 24.782px 0px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 3px 25px 0 rgba(0, 0, 0, 0.25);
 
     width: 216px;
 `;
@@ -39,6 +32,7 @@ export const Title = styled('div')`
     font-style: normal;
     font-weight: 500;
     line-height: 110%;
+    position: relative;
 `;
 
 export const Text = styled('div')`
@@ -46,4 +40,5 @@ export const Text = styled('div')`
     font-size: 12px;
     font-weight: 500;
     line-height: 116.667%;
+    position: relative;
 `;

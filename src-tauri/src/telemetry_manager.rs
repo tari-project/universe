@@ -16,6 +16,7 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
@@ -102,6 +103,7 @@ impl From<Network> for TelemetryNetwork {
 pub enum TelemetryMiningMode {
     Eco,
     Ludicrous,
+    Custom,
 }
 
 impl From<MiningMode> for TelemetryMiningMode {
@@ -109,6 +111,7 @@ impl From<MiningMode> for TelemetryMiningMode {
         match value {
             MiningMode::Eco => TelemetryMiningMode::Eco,
             MiningMode::Ludicrous => TelemetryMiningMode::Ludicrous,
+            MiningMode::Custom => TelemetryMiningMode::Custom,
         }
     }
 }
@@ -165,6 +168,7 @@ pub struct TelemetryData {
     pub cpu_tribe_id: Option<String>,
     pub gpu_tribe_name: Option<String>,
     pub gpu_tribe_id: Option<String>,
+    pub extra_data: HashMap<String, String>,
 }
 
 pub struct TelemetryManager {
@@ -421,6 +425,30 @@ async fn get_telemetry_data(
         (None, None)
     };
 
+    let mut extra_data = HashMap::new();
+    extra_data.insert(
+        "config_cpu_enabled".to_string(),
+        config_guard.cpu_mining_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_gpu_enabled".to_string(),
+        config_guard.gpu_mining_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_p2pool_enabled".to_string(),
+        config_guard.p2pool_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_tor_enabled".to_string(),
+        config_guard.use_tor().to_string(),
+    );
+    if let Some(stats) = p2pool_stats.as_ref() {
+        extra_data.insert(
+            "p2pool_connected_peers".to_string(),
+            stats.connection_info.connected_peers.to_string(),
+        );
+    }
+
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
         block_height,
@@ -440,6 +468,7 @@ async fn get_telemetry_data(
         cpu_tribe_id,
         gpu_tribe_name,
         gpu_tribe_id,
+        extra_data,
     })
 }
 

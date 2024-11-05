@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'framer-motion';
 
 import { EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
-import formatBalance from '@app/utils/formatBalance.ts';
+import { useFormatBalance } from '@app/utils/formatBalance.ts';
 
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { Trans, useTranslation } from 'react-i18next';
@@ -35,7 +35,7 @@ export default function Earnings() {
 
     const displayEarnings = recapData?.totalEarnings || earnings;
 
-    const formatted = formatBalance(displayEarnings || 0, 1);
+    const formatted = useFormatBalance(displayEarnings || 0, 1);
 
     return (
         <EarningsContainer>

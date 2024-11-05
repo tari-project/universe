@@ -69,6 +69,8 @@ export const ScrollMask = styled(m.div)`
     width: 100%;
     z-index: 1;
     opacity: 0.7;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
 `;
 
 export const HistoryContainer = styled(m.div)`
@@ -94,7 +96,6 @@ export const WalletCornerButtons = styled('div')`
     top: 10px;
     right: 13px;
     z-index: 2;
-
     display: flex;
     gap: 3px;
 `;
@@ -125,4 +126,14 @@ export const CornerButton = styled('button')`
         border: 1px solid rgba(156, 156, 156, 0.18);
         background: rgba(255, 255, 255, 0.3);
     }
+`;
+
+export const SidebarCover = styled(m.div)`
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.3);
+
+    cursor: pointer;
+    z-index: 1;
 `;

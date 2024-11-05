@@ -1,6 +1,5 @@
 import { useMiningStore } from '@app/store/useMiningStore';
 import { HardwareParameters } from '../types/app-status';
-import { useShallow } from 'zustand/react/shallow';
 import { useMemo } from 'react';
 
 const roundTo = (num: number, precision = 2) => {
@@ -9,8 +8,8 @@ const roundTo = (num: number, precision = 2) => {
 };
 
 export const useHardwareStats = () => {
-    const cpuHardwareStats = useMiningStore(useShallow((s) => s.cpu.hardware));
-    const gpuHardwareStats = useMiningStore(useShallow((s) => s.gpu.hardware));
+    const cpuHardwareStats = useMiningStore((s) => s.cpu.hardware);
+    const gpuHardwareStats = useMiningStore((s) => s.gpu.hardware);
 
     const cpu = useMemo(() => {
         if (cpuHardwareStats) {

@@ -1,13 +1,12 @@
-import { useAppStateStore } from '@app/store/appStateStore';
-import SetupView from './SetupView';
-import { useShallow } from 'zustand/react/shallow';
-import AirdropPermission from '@app/containers/Airdrop/AirdropPermission/AirdropPermission';
 import { useSetUp } from '@app/hooks/useSetUp';
+import { useAppStateStore } from '@app/store/appStateStore';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+import AirdropPermission from '@app/containers/Airdrop/AirdropPermission/AirdropPermission';
+import SetupView from './SetupView';
 
 function SetupViewContainer() {
     const setupTitle = useAppStateStore((s) => s.setupTitle);
-    const setupTitleParams = useAppStateStore(useShallow((s) => s.setupTitleParams));
+    const setupTitleParams = useAppStateStore((s) => s.setupTitleParams);
     const setupProgress = useAppStateStore((s) => s.setupProgress);
     const seenPermissions = useAirdropStore((s) => s.seenPermissions);
     const progressPercentage = Math.floor(setupProgress * 100);

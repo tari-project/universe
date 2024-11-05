@@ -101,6 +101,12 @@ export const GemsWrapper = styled('div')`
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
+
+    @media (max-height: 800px) {
+        width: 80%;
+        top: -90px;
+        transform: scale(0.7) translateX(-71%);
+    }
 `;
 
 export const Gem1 = styled('img')`
@@ -144,6 +150,8 @@ export const ClaimButton = styled('button')`
 
     position: relative;
     font-weight: bold;
+    cursor: pointer;
+
     &:hover {
         transform: scale(1.05);
     }

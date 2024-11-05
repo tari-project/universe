@@ -1,7 +1,8 @@
-export function formatNumber(value: number, maxDigits?: number): string {
-    return Intl.NumberFormat(undefined, {
+export function formatNumber(value: number, maxDigits = 3, locale?: string): string {
+    //TODO: add props for customisation
+    return Intl.NumberFormat(locale, {
         notation: 'compact',
-        maximumFractionDigits: maxDigits || 3,
+        maximumFractionDigits: maxDigits,
         style: 'decimal',
     }).format(value);
 }

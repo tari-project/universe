@@ -6,12 +6,18 @@ use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use log::trace;
 use log::{debug, error, info, warn};
+
+use opencl3::device::Device;
+use opencl3::platform::get_platforms;
+
 use regex::Regex;
 use serde::Serialize;
+use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::sleep;
+use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
@@ -57,7 +63,6 @@ mod cpu_miner;
 mod download_utils;
 mod external_dependencies;
 mod feedback;
-mod format_utils;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
@@ -156,13 +161,35 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
 }
 
 #[tauri::command]
-async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+async fn set_mode(
+    mode: String,
+    custom_cpu_usage: Option<f64>,
+    custom_gpu_usage: Option<f64>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
+
+    fn f64_to_isize_safe(_value: Option<f64>) -> Option<isize> {
+        let value = _value.unwrap_or(-1.0);
+        if value.is_finite() && value >= isize::MIN as f64 && value <= isize::MAX as f64 {
+            #[allow(clippy::cast_possible_truncation)]
+            Some(value.round() as isize)
+        } else {
+            warn!(target: LOG_TARGET, "Invalid value for custom_cpu_usage or custom_gpu_usage: {:?}", _value);
+            None
+        }
+    }
+
     state
         .config
         .write()
         .await
-        .set_mode(mode)
+        .set_mode(
+            mode,
+            f64_to_isize_safe(custom_cpu_usage),
+            f64_to_isize_safe(custom_gpu_usage),
+        )
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -174,18 +201,68 @@ async fn set_mode(mode: String, state: tauri::State<'_, UniverseAppState>) -> Re
 }
 
 #[tauri::command]
-async fn set_theme(theme: String, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
+    let mut result = HashMap::new();
+
+    // CPU Detection
+    let timer = Instant::now();
+    let max_cpu_available = available_parallelism()
+        .map(|cores| i32::try_from(cores.get()).unwrap_or(1))
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
+    }
+
+    result.insert("max_cpu_available".to_string(), max_cpu_available);
+
+    // GPU Detection (OpenCL)
+    let gpu_threads = match (|| -> Result<i32, Box<dyn std::error::Error>> {
+        let platforms = get_platforms()?;
+        if platforms.is_empty() {
+            return Ok(0);
+        }
+
+        // Try to get the first GPU device from the first platform
+        let devices = platforms[0].get_devices(opencl3::device::CL_DEVICE_TYPE_GPU)?;
+        if devices.is_empty() {
+            return Ok(0);
+        }
+
+        // Get max work group size for the first device
+        let device = Device::new(devices[0]);
+        let max_wg_size: usize = device.max_work_group_size()?;
+
+        Ok(i32::try_from(max_wg_size).unwrap_or(0))
+    })() {
+        Ok(threads) => threads,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "GPU detection failed: {}", e);
+            0 // Explicit default when GPU/OpenCL is not available
+        }
+    };
+
+    result.insert("max_gpu_available".to_string(), gpu_threads);
+
+    Ok(result)
+}
+
+#[tauri::command]
+async fn set_display_mode(
+    display_mode: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     let timer = Instant::now();
     state
         .config
         .write()
         .await
-        .set_theme(theme)
+        .set_display_mode(display_mode)
         .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_theme {:?}", e))
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_display_mode {:?}", e))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_theme took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_display_mode took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -399,6 +476,28 @@ async fn set_auto_update(
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_monerod_config(
+    use_monero_fail: bool,
+    monero_nodes: Vec<String>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_monerod_config(use_monero_fail, monero_nodes)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_monerod_config {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_monerod_config took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -647,7 +746,7 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
-    if use_tor {
+    if use_tor && !cfg!(target_os = "macos") {
         progress.set_max(5).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
@@ -657,6 +756,7 @@ async fn setup_inner(
             .await?;
         sleep(Duration::from_secs(1));
     }
+
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -744,21 +844,17 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
     let mut tor_control_port = None;
-    if use_tor {
-        if cfg!(target_os = "windows") {
-            state
-                .tor_manager
-                .ensure_started(
-                    state.shutdown.to_signal(),
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
-                .await?;
-            tor_control_port = state.tor_manager.get_control_port().await?;
-        } else {
-            tor_control_port = Some(9051);
-        }
+    if use_tor && !cfg!(target_os = "macos") {
+        state
+            .tor_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+        tor_control_port = state.tor_manager.get_control_port().await?;
     }
     for _i in 0..2 {
         match state
@@ -1078,6 +1174,10 @@ async fn start_mining<'r>(
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
+    let custom_cpu_usage = config.custom_cpu_usage();
+    let custom_gpu_usage = config.custom_gpu_usage().map(|custom_gpu_usage| {
+        u16::try_from(custom_gpu_usage).expect("Failed to convert custom_gpu_usage to u16")
+    });
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = config.monero_address().to_string();
@@ -1107,6 +1207,7 @@ async fn start_mining<'r>(
                     .app_log_dir()
                     .expect("Could not get log dir"),
                 mode,
+                custom_cpu_usage,
             )
             .await;
 
@@ -1172,6 +1273,7 @@ async fn start_mining<'r>(
                     .expect("Could not get log dir"),
                 mode,
                 telemetry_id,
+                custom_gpu_usage,
             )
             .await;
 
@@ -1493,6 +1595,23 @@ async fn get_app_config(
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
+async fn get_tor_entry_guards(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+    let res = state
+        .tor_manager
+        .get_entry_guards()
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_tor_entry_guards took too long: {:?}", timer.elapsed());
+    }
+    Ok(res)
+}
+
+#[allow(clippy::too_many_lines)]
+#[tauri::command]
 async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -1566,7 +1685,7 @@ async fn get_miner_metrics(
         cpu_mining_status.hash_rate,
         gpu_mining_status.hash_rate as f64,
         hardware_status.clone(),
-        cpu_mining_status.estimated_earnings as f64,
+        (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
     );
 
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
@@ -1787,6 +1906,7 @@ struct CpuMinerConfig {
     tari_address: TariAddress,
     eco_mode_xmrig_options: Vec<String>,
     ludicrous_mode_xmrig_options: Vec<String>,
+    custom_mode_xmrig_options: Vec<String>,
     eco_mode_cpu_percentage: Option<isize>,
     ludicrous_mode_cpu_percentage: Option<isize>,
 }
@@ -1853,6 +1973,7 @@ fn main() {
         tari_address: TariAddress::default(),
         eco_mode_xmrig_options: vec![],
         ludicrous_mode_xmrig_options: vec![],
+        custom_mode_xmrig_options: vec![],
         eco_mode_cpu_percentage: None,
         ludicrous_mode_cpu_percentage: None,
     }));
@@ -1877,6 +1998,7 @@ fn main() {
     );
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // let mm_proxy_config = if app_config_raw.p2pool_enabled {
     //     MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
     // } else {
@@ -1962,6 +2084,7 @@ fn main() {
                     cpu_conf.eco_mode_xmrig_options = app_conf.eco_mode_cpu_options().clone();
                     cpu_conf.ludicrous_mode_xmrig_options =
                         app_conf.ludicrous_mode_cpu_options().clone();
+                    cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
                     Ok(())
                 });
 
@@ -2020,7 +2143,7 @@ fn main() {
             stop_mining,
             set_p2pool_enabled,
             set_mode,
-            set_theme,
+            set_display_mode,
             open_log_dir,
             get_seed_words,
             get_applications_versions,
@@ -2056,8 +2179,11 @@ fn main() {
             import_seed_words,
             set_auto_update,
             get_tor_config,
+            get_max_consumption_levels,
             set_tor_config,
-            fetch_tor_bridges
+            fetch_tor_bridges,
+            set_monerod_config,
+            get_tor_entry_guards
         ])
         .build(tauri::generate_context!())
         .inspect_err(
