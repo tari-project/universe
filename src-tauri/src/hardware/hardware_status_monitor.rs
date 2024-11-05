@@ -37,6 +37,7 @@ pub enum HardwareVendor {
 }
 
 impl HardwareVendor {
+    #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         match self {
             HardwareVendor::Nvidia => "Nvidia".to_string(),
@@ -156,7 +157,7 @@ impl HardwareStatusMonitor {
             Ok(gpu_status)
         } else {
             warn!(target: LOG_TARGET, "Gpu status file not found: {:?}", file);
-            return Ok(GpuStatusFileContent::default());
+            Ok(GpuStatusFileContent::default())
         }
     }
 
@@ -180,7 +181,7 @@ impl HardwareStatusMonitor {
         let gpu_status_file_content = self.load_gpu_devices_from_status_file().await?;
         let mut platform_devices = Vec::new();
 
-        for gpu_device in gpu_status_file_content.gpu_devices.iter() {
+        for gpu_device in &gpu_status_file_content.gpu_devices {
             info!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
             let vendor = HardwareVendor::from_string(&gpu_device.device_name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
