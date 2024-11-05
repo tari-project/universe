@@ -29,6 +29,7 @@ interface AppState {
     fetchApplicationsVersions: () => Promise<void>;
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
+    triggerNotification: (summary: string, body: string) => Promise<void>;
 }
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
@@ -108,4 +109,15 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     },
     missingExternalDependencies: [],
     loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
+    triggerNotification: async (summary: string, body: string) => {
+        try {
+            await invoke('trigger_notification', {
+                summary,
+                body,
+            });
+        } catch (error) {
+            Sentry.captureException(error);
+            console.error('Error triggering notification', error);
+        }
+    },
 }));
