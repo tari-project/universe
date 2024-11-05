@@ -13,16 +13,16 @@ import {
     RangeLabel,
     RangeLimits,
     InputContainer,
-    IconImage,
+    PerformanceMarker,
     RangeValueHolder,
     RangeInputHolder,
     WarningContainer,
     SuccessContainer,
     TopRightContainer,
+    SLIDER_WIDTH,
+    SLIDER_THUMB_WIDTH,
 } from './CustomPowerLevelsDialog.styles.ts';
-import { useTranslation } from 'react-i18next';
-import eco from '@app/assets/icons/emoji/eco.png';
-import fire from '@app/assets/icons/emoji/fire.png';
+import { Trans, useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoClose } from 'react-icons/io5';
@@ -32,6 +32,7 @@ export function CustomPowerLevelsDialog() {
     const [initialised, setInitialised] = useState(false);
     const [saved, setSaved] = useState(false);
 
+    const mode = useAppConfigStore((s) => s.mode);
     const configCpuLevels = useAppConfigStore((s) => s.custom_max_cpu_usage);
     const configGpuLevels = useAppConfigStore((s) => s.custom_max_gpu_usage);
     const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
@@ -89,7 +90,7 @@ export function CustomPowerLevelsDialog() {
                     customCpuLevels: customCpuLevel,
                     customGpuLevels: customGpuLevel,
                 }).then(() => setSaved(true));
-            }, 800);
+            }, 400);
             return () => clearTimeout(timeout);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -102,6 +103,16 @@ export function CustomPowerLevelsDialog() {
             return () => clearTimeout(timeout);
         }
     }, [saved]);
+
+    useEffect(() => {
+        if (mode !== 'Custom' && maxLevels.max_gpu_available) {
+            const gpuValue = mode === 'Eco' ? 3 : Math.min(maxLevels.max_gpu_available, 800);
+            const cpuValue =
+                mode === 'Eco' ? Math.round(maxLevels.max_cpu_available * 0.3) : maxLevels.max_cpu_available;
+            setCustomGpuLevel(gpuValue);
+            setCustomCpuLevel(cpuValue);
+        }
+    }, [mode, maxLevels.max_gpu_available, maxLevels.max_cpu_available]);
 
     return (
         <Dialog open={customLevelsDialogOpen} onOpenChange={setCustomLevelsDialogOpen}>
@@ -118,19 +129,43 @@ export function CustomPowerLevelsDialog() {
                 </CustomLelvelsHeader>
                 <CustomLevelsContent>
                     <RangeInputComponent
+                        usePercentage
                         label={t('custom-power-levels.cpu-power-level')}
                         maxLevel={maxLevels.max_cpu_available}
                         value={customCpuLevel}
-                        desc={t('custom-power-levels.choose-cpu-power-level')}
+                        desc={
+                            <Trans
+                                i18nKey="settings:custom-power-levels.choose-cpu-power-level"
+                                components={{
+                                    span: <span />,
+                                }}
+                                values={{
+                                    current: customCpuLevel,
+                                    max: maxLevels.max_cpu_available,
+                                }}
+                            />
+                        }
                         warning={t('custom-power-levels.cpu-warning')}
                         onChange={setCustomCpuLevel}
                     />
                     <Divider />
                     <RangeInputComponent
+                        usePercentage
+                        desc={
+                            <Trans
+                                i18nKey="settings:custom-power-levels.choose-gpu-power-level"
+                                components={{
+                                    span: <span />,
+                                }}
+                                values={{
+                                    current: customGpuLevel,
+                                    max: maxLevels.max_gpu_available,
+                                }}
+                            />
+                        }
                         label={t('custom-power-levels.gpu-power-level')}
                         maxLevel={maxLevels.max_gpu_available}
                         value={customGpuLevel}
-                        desc={t('custom-power-levels.choose-gpu-power-level')}
                         warning={t('custom-power-levels.gpu-warning')}
                         onChange={setCustomGpuLevel}
                     />
@@ -144,47 +179,103 @@ interface RangeInputProps {
     label: string;
     maxLevel: number;
     value: number;
-    desc: string;
+    desc: string | React.ReactNode;
     min?: number;
     warning?: string;
+    usePercentage?: boolean;
     onChange: (value: number) => void;
 }
-const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning, min = 1 }: RangeInputProps) => {
+const RangeInputComponent = ({
+    label,
+    maxLevel,
+    value,
+    desc,
+    onChange,
+    warning,
+    min = 0,
+    usePercentage = false,
+}: RangeInputProps) => {
+    const [isHover, setIsHover] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: true });
+
+    const [currentValue, setCurrentValue] = useState(0);
+
+    useEffect(() => {
+        if (maxLevel && !currentValue) {
+            setCurrentValue(usePercentage ? Math.ceil((value * 100) / maxLevel) : value);
+        }
+    }, [currentValue, maxLevel, usePercentage, value]);
+
+    const maxValue = usePercentage ? 100 : maxLevel;
+
     const getPosition = (value: number, max: number) => {
         // Position the value bubble in the range input thumb
-        return 15 + ((value - min) / (max - min)) * (600 - 30);
+        return 15 + ((value - min) / (max - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH);
     };
 
     // Check if the value is over 75% of the max level
-    const hasWarning = (value * 100) / (maxLevel - min) > 75;
+    const hasWarning = maxValue - min !== 0 && (currentValue * 100) / (maxValue - min) > 75;
 
-    if (!maxLevel) return null;
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const inputValue = Number(e.target.value);
+        if (usePercentage) {
+            setCurrentValue(inputValue);
+        }
+    };
+
+    const handleMouseUp = () => {
+        const newValue = usePercentage ? Math.ceil((currentValue * maxLevel) / 100) : currentValue;
+        if (value !== newValue) {
+            onChange(newValue);
+        }
+    };
+
+    const ecoLeft = 15 + ((15 - min) / (maxValue - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH);
+    const fireLeft = 15 + ((75 - min) / (maxValue - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH);
+
+    if (!maxValue) return null;
     return (
         <div>
             <InputContainer>
                 <RangeLabel> {label}</RangeLabel>
-                <RangeIntputWrapper>
-                    <RangeLimits>{min}</RangeLimits>
+                <RangeIntputWrapper
+                    onMouseEnter={() => setIsHover(true)}
+                    onMouseLeave={() => setIsHover(false)}
+                    onMouseUp={handleMouseUp}
+                >
+                    <RangeLimits>
+                        {min} {usePercentage ? '%' : ''}
+                    </RangeLimits>
                     <RangeInputHolder>
-                        <IconImage src={eco} alt="eco" $left={15} />
-                        <IconImage src={fire} alt="ludicrous" $left={75} />
+                        <PerformanceMarker
+                            $left={ecoLeft}
+                            style={{ display: currentValue > 12 && currentValue < 18 ? 'none' : 'block' }}
+                        />
+                        <PerformanceMarker
+                            $left={fireLeft}
+                            $red
+                            style={{ display: currentValue > 72 && currentValue < 78 ? 'none' : 'block' }}
+                        />
                         <RangeValueHolder
                             style={{
-                                left: getPosition(value, maxLevel),
+                                left: getPosition(currentValue, maxValue),
+                                display: isHover ? 'block' : 'none',
                             }}
                         >
-                            {value}
+                            {currentValue}
                         </RangeValueHolder>
                         <RangeInput
+                            $rangeValue={currentValue}
                             type="range"
-                            value={value}
-                            max={maxLevel}
+                            value={currentValue}
+                            max={maxValue}
                             min={min}
-                            onChange={(e) => onChange(parseInt(e.target.value))}
+                            onChange={handleChange}
                         />
                     </RangeInputHolder>
-                    <RangeLimits>{maxLevel}</RangeLimits>
+                    <RangeLimits>
+                        {maxValue} {usePercentage ? '%' : ''}
+                    </RangeLimits>
                 </RangeIntputWrapper>
                 <InputDescription>{desc}</InputDescription>
             </InputContainer>
