@@ -355,8 +355,14 @@ async fn get_telemetry_data(
     //     .await
     //     .read_hardware_parameters();
 
-    let gpu_hardware_parameters = HardwareStatusMonitor::current().get_gpu_public_properties().await.ok();
-    let cpu_hardware_parameters = HardwareStatusMonitor::current().get_cpu_public_properties().await.ok();
+    let gpu_hardware_parameters = HardwareStatusMonitor::current()
+        .get_gpu_public_properties()
+        .await
+        .ok();
+    let cpu_hardware_parameters = HardwareStatusMonitor::current()
+        .get_cpu_public_properties()
+        .await
+        .ok();
 
     let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
