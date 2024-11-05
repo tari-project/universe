@@ -7,19 +7,22 @@ export function useShuttingDown() {
     const [isShuttingDown, setIsShuttingDown] = useState(false);
 
     useEffect(() => {
-        appWindow.onCloseRequested(async (e) => {
+        const ul = appWindow.onCloseRequested(async (e) => {
             if (!isShuttingDown) {
-                e.preventDefault();
                 setIsShuttingDown(true);
+                e.preventDefault();
             }
         });
+        return () => {
+            ul.then((unlisten) => unlisten());
+        };
     }, [isShuttingDown]);
 
     useEffect(() => {
         if (isShuttingDown) {
-            setTimeout(() => {
+            setTimeout(async () => {
                 resetAllStores();
-                appWindow.close();
+                await appWindow.destroy();
             }, 250);
         }
     }, [isShuttingDown]);
