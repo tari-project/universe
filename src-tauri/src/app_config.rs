@@ -58,12 +58,19 @@ pub struct AppConfigFromFile {
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
+    custom_mode_cpu_options: Vec<String>,
     #[serde(default = "default_false")]
     mmproxy_use_monero_fail: bool,
     #[serde(default = "default_monero_nodes")]
     mmproxy_monero_nodes: Vec<String>,
+    #[serde(default = "default_custom_max_cpu_usage")]
+    custom_max_cpu_usage: Option<isize>,
+    #[serde(default = "default_custom_max_gpu_usage")]
+    custom_max_gpu_usage: Option<isize>,
     #[serde(default = "default_true")]
     auto_update: bool,
+    #[serde(default = "default_false")]
+    custom_power_levels_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -85,17 +92,21 @@ impl Default for AppConfigFromFile {
             should_always_use_system_language: false,
             should_auto_launch: false,
             application_language: default_application_language(),
+            custom_max_cpu_usage: None,
+            custom_max_gpu_usage: None,
             airdrop_ui_enabled: true,
             paper_wallet_enabled: false,
             use_tor: true,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
+            custom_mode_cpu_options: Vec::new(),
             eco_mode_cpu_threads: None,
             ludicrous_mode_cpu_threads: None,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
             auto_update: true,
             reset_earnings: false,
+            custom_power_levels_enabled: false,
         }
     }
 }
@@ -130,6 +141,7 @@ impl DisplayMode {
 pub enum MiningMode {
     Eco,
     Ludicrous,
+    Custom,
 }
 
 impl MiningMode {
@@ -137,6 +149,7 @@ impl MiningMode {
         match s {
             "Eco" => Some(MiningMode::Eco),
             "Ludicrous" => Some(MiningMode::Ludicrous),
+            "Custom" => Some(MiningMode::Custom),
             _ => None,
         }
     }
@@ -145,6 +158,7 @@ impl MiningMode {
         match m {
             MiningMode::Eco => String::from("Eco"),
             MiningMode::Ludicrous => String::from("Ludicrous"),
+            MiningMode::Custom => String::from("Custom"),
         }
     }
 }
@@ -177,9 +191,13 @@ pub(crate) struct AppConfig {
     ludicrous_mode_cpu_threads: Option<isize>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
+    custom_mode_cpu_options: Vec<String>,
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
+    custom_max_cpu_usage: Option<isize>,
+    custom_max_gpu_usage: Option<isize>,
     auto_update: bool,
+    custom_power_levels_enabled: bool,
 }
 
 impl AppConfig {
@@ -204,14 +222,18 @@ impl AppConfig {
             application_language: default_application_language(),
             airdrop_ui_enabled: true,
             use_tor: true,
+            custom_max_cpu_usage: None,
+            custom_max_gpu_usage: None,
             paper_wallet_enabled: false,
             reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
+            custom_mode_cpu_options: Vec::new(),
             eco_mode_cpu_threads: None,
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            custom_power_levels_enabled: false,
             auto_update: true,
         }
     }
@@ -263,9 +285,14 @@ impl AppConfig {
                 self.eco_mode_cpu_threads = config.eco_mode_cpu_threads;
                 self.ludicrous_mode_cpu_options = config.ludicrous_mode_cpu_options;
                 self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
+                self.custom_mode_cpu_options = config.custom_mode_cpu_options;
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
+                self.custom_max_cpu_usage = config.custom_max_cpu_usage;
+                self.custom_max_gpu_usage = config.custom_max_gpu_usage;
                 self.auto_update = config.auto_update;
+                self.reset_earnings = config.reset_earnings;
+                self.custom_power_levels_enabled = config.custom_power_levels_enabled;
                 if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
                     self.reset_earnings = config.reset_earnings;
                 } else {
@@ -313,6 +340,11 @@ impl AppConfig {
     pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
         &self.ludicrous_mode_cpu_options
     }
+
+    pub fn custom_mode_cpu_options(&self) -> &Vec<String> {
+        &self.custom_mode_cpu_options
+    }
+
     pub fn eco_mode_cpu_threads(&self) -> Option<isize> {
         self.eco_mode_cpu_threads
     }
@@ -325,14 +357,26 @@ impl AppConfig {
         &self.anon_id
     }
 
-    pub async fn set_mode(&mut self, mode: String) -> Result<(), anyhow::Error> {
+    pub async fn set_mode(
+        &mut self,
+        mode: String,
+        custom_max_cpu_usage: Option<isize>,
+        custom_max_gpu_usage: Option<isize>,
+    ) -> Result<(), anyhow::Error> {
         let new_mode = match mode.as_str() {
             "Eco" => MiningMode::Eco,
             "Ludicrous" => MiningMode::Ludicrous,
+            "Custom" => MiningMode::Custom,
             _ => return Err(anyhow!("Invalid mode")),
         };
         self.mode = new_mode;
         self.update_config_file().await?;
+        if let Some(custom_max_cpu_usage) = custom_max_cpu_usage {
+            self.set_max_cpu_usage(custom_max_cpu_usage).await?;
+        }
+        if let Some(custom_max_gpu_usage) = custom_max_gpu_usage {
+            self.set_max_gpu_usage(custom_max_gpu_usage).await?;
+        }
         Ok(())
     }
     pub async fn set_display_mode(&mut self, display_mode: String) -> Result<(), anyhow::Error> {
@@ -349,6 +393,32 @@ impl AppConfig {
 
     pub fn mode(&self) -> MiningMode {
         self.mode
+    }
+
+    pub fn custom_gpu_usage(&self) -> Option<isize> {
+        self.custom_max_cpu_usage
+    }
+
+    pub async fn set_max_gpu_usage(
+        &mut self,
+        custom_max_gpu_usage: isize,
+    ) -> Result<(), anyhow::Error> {
+        self.custom_max_gpu_usage = Some(custom_max_gpu_usage);
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn custom_cpu_usage(&self) -> Option<isize> {
+        self.custom_max_cpu_usage
+    }
+
+    pub async fn set_max_cpu_usage(
+        &mut self,
+        custom_max_cpu_usage: isize,
+    ) -> Result<(), anyhow::Error> {
+        self.custom_max_cpu_usage = Some(custom_max_cpu_usage);
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
@@ -538,15 +608,19 @@ impl AppConfig {
             application_language: self.application_language.clone(),
             airdrop_ui_enabled: self.airdrop_ui_enabled,
             paper_wallet_enabled: self.paper_wallet_enabled,
+            custom_max_cpu_usage: self.custom_max_cpu_usage,
+            custom_max_gpu_usage: self.custom_max_gpu_usage,
             use_tor: self.use_tor,
             reset_earnings: self.reset_earnings,
             eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
             ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
+            custom_mode_cpu_options: self.custom_mode_cpu_options.clone(),
             eco_mode_cpu_threads: self.eco_mode_cpu_threads,
             ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
             auto_update: self.auto_update,
+            custom_power_levels_enabled: self.custom_power_levels_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -558,6 +632,14 @@ impl AppConfig {
 
 fn default_version() -> u32 {
     10
+}
+
+fn default_custom_max_cpu_usage() -> Option<isize> {
+    None
+}
+
+fn default_custom_max_gpu_usage() -> Option<isize> {
+    None
 }
 
 fn default_mode() -> String {
