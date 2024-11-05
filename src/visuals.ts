@@ -3,7 +3,7 @@ import { GlAppState } from './glApp';
 export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },
     { property: 'bgColor2', value: '#d0d0d0' },
-    { property: 'neutralColor', value: '#fff8ec' },
+    { property: 'neutralColor', value: '#ffffff' },
     { property: 'mainColor', value: '#0096ff' },
     { property: 'successColor', value: '#00c881' },
     { property: 'failColor', value: '#ca0101' },
