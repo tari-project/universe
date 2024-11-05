@@ -3331,16 +3331,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
-name = "libamdgpu_top"
-version = "0.9.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39b50e0e5cce465adc7ee940180b45ab963d662440cefec837c820a51485ecd0"
-dependencies = [
- "anyhow",
- "libdrm_amdgpu_sys",
-]
-
-[[package]]
 name = "libappindicator"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3369,15 +3359,6 @@ name = "libc"
 version = "0.2.161"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e9489c2807c139ffd9c1794f4af0ebe86a828db53ecdc7fea2111d0fed085d1"
-
-[[package]]
-name = "libdrm_amdgpu_sys"
-version = "0.7.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2291cc7b4cf0006ebe83f0c7f1eb6d4aea1fc2601be08ada31e4f34e4b61d099"
-dependencies = [
- "libc",
-]
 
 [[package]]
 name = "liblmdb-sys"
@@ -6652,8 +6633,6 @@ dependencies = [
  "human_format",
  "jsonwebtoken",
  "keyring",
- "libamdgpu_top",
- "libdrm_amdgpu_sys",
  "libsqlite3-sys",
  "log",
  "log4rs",
