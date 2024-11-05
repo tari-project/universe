@@ -27,6 +27,8 @@ export function setAnimationState(state: GlAppState) {
         newState = 'resume';
         sM.isPaused = false;
     }
+
+    console.debug(state);
     window.glApp.setState(newState);
     if (state == 'pause') {
         // needed to add this because the set() doesn't update their isPaused for some reason

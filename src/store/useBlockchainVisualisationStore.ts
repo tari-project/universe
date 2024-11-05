@@ -40,11 +40,29 @@ const checkCanAnimate = async () => {
     return !minimized && (focused || documentIsVisible);
 };
 
+function getSuccessTier(earnings: number) {
+    const humanValue = earnings / 1_000_000;
+
+    if (humanValue < 100) {
+        return 'success';
+    }
+
+    if (humanValue <= 1000) {
+        return 'success2';
+    }
+
+    return 'success3';
+}
+
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set, getState) => ({
     recapIds: [],
     handleWinRecap: (recapData) => {
         useMiningStore.getState().setMiningControlsEnabled(false);
-        setAnimationState('success');
+
+        const successTier = getSuccessTier(recapData.totalEarnings);
+
+        console.debug(`successTier= ${successTier}`);
+        setAnimationState(successTier);
 
         set({ recapData });
 
@@ -60,7 +78,10 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
-            setAnimationState('success');
+
+            const successTier = getSuccessTier(earnings);
+            console.debug(`successTier= ${successTier}`);
+            setAnimationState(successTier);
             set({ earnings });
             setTimeout(() => {
                 useMiningStore.getState().setMiningControlsEnabled(true);
