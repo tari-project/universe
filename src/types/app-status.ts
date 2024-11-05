@@ -29,6 +29,9 @@ export interface AppConfig {
     paper_wallet_enabled: boolean;
     use_tor: boolean;
     auto_update: boolean;
+    custom_max_cpu_usage: number;
+    custom_max_gpu_usage: number;
+    custom_power_levels_enabled: boolean;
     reset_earnings: boolean;
     mmproxy_use_monero_fail: boolean;
     mmproxy_monero_nodes: string[];
@@ -191,4 +194,9 @@ export interface ApplicationsVersions {
 export interface PaperWalletDetails {
     qr_link: string;
     password: string;
+}
+
+export interface MaxConsumptionLevels {
+    max_cpu_available: number;
+    max_gpu_available: number;
 }
