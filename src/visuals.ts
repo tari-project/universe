@@ -7,7 +7,10 @@ export const animationLightBg = [
     { property: 'mainColor', value: '#0096ff' },
     { property: 'successColor', value: '#00c881' },
     { property: 'failColor', value: '#ca0101' },
+    { property: 'particlesColor', value: '#505050' },
     { property: 'goboIntensity', value: 0.45 },
+    { property: 'particlesOpacity', value: 0.75 },
+    { property: 'particlesSize', value: 0.01 },
 ];
 
 export const animationDarkBg = [
@@ -17,7 +20,10 @@ export const animationDarkBg = [
     { property: 'successColor', value: '#c9eb00' },
     { property: 'mainColor', value: '#813bf5' },
     { property: 'failColor', value: '#fe2c3f' },
+    { property: 'particlesColor', value: '#813bf5' },
     { property: 'goboIntensity', value: 0.75 },
+    { property: 'particlesOpacity', value: 0.95 },
+    { property: 'particlesSize', value: 0.02 },
 ];
 
 export function setAnimationState(state: GlAppState) {
@@ -28,7 +34,6 @@ export function setAnimationState(state: GlAppState) {
         sM.isPaused = false;
     }
 
-    console.debug(state);
     window.glApp.setState(newState);
     if (state == 'pause') {
         // needed to add this because the set() doesn't update their isPaused for some reason

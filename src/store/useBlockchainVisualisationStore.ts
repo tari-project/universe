@@ -61,7 +61,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 
         const successTier = getSuccessTier(recapData.totalEarnings);
 
-        console.debug(`successTier= ${successTier}`);
         setAnimationState(successTier);
 
         set({ recapData });
@@ -78,9 +77,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
-
             const successTier = getSuccessTier(earnings);
-            console.debug(`successTier= ${successTier}`);
             setAnimationState(successTier);
             set({ earnings });
             setTimeout(() => {
