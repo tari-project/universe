@@ -1,6 +1,6 @@
 // use std::{fs::OpenOptions, os::fd::IntoRawFd};
 
-use anyhow::{anyhow, Context, Error, Ok};
+use anyhow::Error;
 use async_trait::async_trait;
 // use libamdgpu_top::{
 //     DevicePath,
@@ -10,12 +10,13 @@ use async_trait::async_trait;
 //     get_all_amdgpu_pci_bus, DeviceHandle, HwmonTempType, PowerCap, GPU_INFO, HW_IP::HW_IP_TYPE,
 //     SENSOR_INFO::SENSOR_TYPE,
 // };
-use log::info;
 
 use crate::{
-    hardware::monitor::DeviceParameters,
+    hardware::hardware_status_monitor::DeviceParameters,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
+
+// use adlx::{AdlxHelper, Gpu1, GpuList, GpuMetrics, GpuMetricsList, Interface};
 
 use super::GpuParametersReader;
 
@@ -40,32 +41,51 @@ impl GpuParametersReader for AmdGpuReader {
 
     async fn get_device_parameters(
         &self,
-        old_device_parameters: Option<DeviceParameters>,
+        _old_device_parameters: Option<DeviceParameters>,
     ) -> Result<DeviceParameters, Error> {
+        // info!("AMD GPU reader is implemented");
+
+        // let helper = AdlxHelper::new().inspect_err(
+        //     |e| warn!("Failed to create AdlxHelper: {}", e),
+        // )?;
+        // info!("AdlxHelper created");
+        // let system = helper.system();
+        // info!("System created");
+        // let gpu_list = system.gpus()?;
+        // info!("GpuList created");
+
+        // info!("GPU count: {}", gpu_list.size());
+
+        // for gpu in 0..gpu_list.size() {
+        //     let gpu = gpu_list.at(gpu)?;
+        //     let gpu1 = gpu.cast::<Gpu1>()?;
+        //     info!("GPU name: {}", gpu1.name()?);
+        //     info!("GPU product name: {}", gpu1.product_name()?)
+        // };
         // let test = get_all_amdgpu_pci_bus();
 
         // let mut usage_percentage = 0.0;
         // let mut current_temperature = 0.0;
 
         // for pci in test.iter() {
-            // let render = pci.get_drm_render_path()?;
-            // let fd = OpenOptions::new().read(true).write(true).open(render)?;
-            // let (amdgpu,_major,_minor) = DeviceHandle::init(fd.into_raw_fd()).map_err(|e| anyhow!(e)).context("Failed to initialize AMDGPU device handle")?;
-            // let usage_info = amdgpu.gtt_usage_info().ok();
-            // let other_info = amdgpu.device_info().ok();
-            // let another_info = amdgpu.get_gpu_metrics().ok();
+        // let render = pci.get_drm_render_path()?;
+        // let fd = OpenOptions::new().read(true).write(true).open(render)?;
+        // let (amdgpu,_major,_minor) = DeviceHandle::init(fd.into_raw_fd()).map_err(|e| anyhow!(e)).context("Failed to initialize AMDGPU device handle")?;
+        // let usage_info = amdgpu.gtt_usage_info().ok();
+        // let other_info = amdgpu.device_info().ok();
+        // let another_info = amdgpu.get_gpu_metrics().ok();
 
-            // info!("Usage info: {:?}", usage_info);
-            // info!("Other info: {:?}", other_info);
-            // info!("Another info: {:?}", another_info);
-            // info!("Another info: {:?}", amdgpu.get_hw_ip_info(HW_IP_TYPE::COMPUTE).ok());
-            // info!("Another info: {:?}", amdgpu.get_hwmon_temp(HwmonTempType::Edge));
-            // info!("Another info: {:?}", amdgpu.get_hwmon_temp(HwmonTempType::Junction));
-            // info!("Another info: {:?}", amdgpu.get_vbios_info().ok());
-            // info!("Another info: {:?}", amdgpu.vram_usage_info().ok());
-            // info!("Another info: {:?}", amdgpu.vbios_info().ok());
-            // info!("Another info: {:?}", amdgpu.sensor_info(SENSOR_TYPE::GPU_LOAD).ok());
-            // info!("Another info: {:?}", amdgpu.sensor_info(SENSOR_TYPE::GPU_TEMP).ok());
+        // info!("Usage info: {:?}", usage_info);
+        // info!("Other info: {:?}", other_info);
+        // info!("Another info: {:?}", another_info);
+        // info!("Another info: {:?}", amdgpu.get_hw_ip_info(HW_IP_TYPE::COMPUTE).ok());
+        // info!("Another info: {:?}", amdgpu.get_hwmon_temp(HwmonTempType::Edge));
+        // info!("Another info: {:?}", amdgpu.get_hwmon_temp(HwmonTempType::Junction));
+        // info!("Another info: {:?}", amdgpu.get_vbios_info().ok());
+        // info!("Another info: {:?}", amdgpu.vram_usage_info().ok());
+        // info!("Another info: {:?}", amdgpu.vbios_info().ok());
+        // info!("Another info: {:?}", amdgpu.sensor_info(SENSOR_TYPE::GPU_LOAD).ok());
+        // info!("Another info: {:?}", amdgpu.sensor_info(SENSOR_TYPE::GPU_TEMP).ok());
 
         //     let hwon_path = pci.get_hwmon_path().unwrap_or_default();
         //     // let s = std::fs::read_to_string(hwon_path.join("power1_input")).ok().unwrap_or_default();

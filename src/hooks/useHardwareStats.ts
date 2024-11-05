@@ -35,5 +35,8 @@ export const useHardwareStats = () => {
         return undefined;
     }, [gpuHardwareStats]);
 
-    return { cpu, gpu };
+    const doesAnyCpuHasReadings = cpuHardwareStats?.some((cpu) => cpu.status.is_reader_implemented);
+    const doesAnyGpuHasReadings = gpuHardwareStats?.some((gpu) => gpu.status.is_reader_implemented);
+
+    return { cpu, gpu, doesAnyCpuHasReadings, doesAnyGpuHasReadings };
 };

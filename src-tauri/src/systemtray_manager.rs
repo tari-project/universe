@@ -6,7 +6,7 @@ use tauri::{
     SystemTrayMenuItem,
 };
 
-use crate::{hardware::monitor::PublicDeviceProperties, hardware_monitor::HardwareStatus};
+use crate::hardware::hardware_status_monitor::PublicDeviceProperties;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 static INSTANCE: LazyLock<SystemtrayManager> = LazyLock::new(SystemtrayManager::new);

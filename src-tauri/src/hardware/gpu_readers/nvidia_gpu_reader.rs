@@ -4,7 +4,7 @@ use log::{debug, error};
 use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
 
 use crate::{
-    hardware::monitor::DeviceParameters,
+    hardware::hardware_status_monitor::DeviceParameters,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 

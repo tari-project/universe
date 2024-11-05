@@ -7,7 +7,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
 
-use super::monitor::DeviceParameters;
+use super::hardware_status_monitor::DeviceParameters;
 
 #[async_trait]
 pub trait GpuParametersReader: Send + DynClone + Sync + 'static {
@@ -37,7 +37,7 @@ impl GpuParametersReader for DefaultGpuParametersReader {
     }
     async fn get_device_parameters(
         &self,
-        old_device_parameters: Option<DeviceParameters>,
+        _old_device_parameters: Option<DeviceParameters>,
     ) -> Result<DeviceParameters, Error> {
         let device_parameters = DeviceParameters {
             usage_percentage: 0.0,

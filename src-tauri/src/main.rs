@@ -4,7 +4,7 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
-use hardware::monitor::{Monitor, PublicDeviceProperties};
+use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
 use regex::Regex;
@@ -769,7 +769,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
-    Monitor::current().initialize().await?;
+    HardwareStatusMonitor::current().initialize().await?;
 
     let mut tor_control_port = None;
     if use_tor {
@@ -1603,11 +1603,11 @@ async fn get_miner_metrics(
     //     .await
     //     .read_hardware_parameters();
 
-    let gpu_public_parameters = Monitor::current()
+    let gpu_public_parameters = HardwareStatusMonitor::current()
         .get_gpu_public_properties()
         .await
         .map_err(|e| e.to_string())?;
-    let cpu_public_parameters = Monitor::current()
+    let cpu_public_parameters = HardwareStatusMonitor::current()
         .get_cpu_public_properties()
         .await
         .map_err(|e| e.to_string())?;

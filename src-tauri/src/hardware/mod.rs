@@ -1,4 +1,4 @@
 mod cpu_readers;
 mod gpu_readers;
 
-pub mod monitor;
+pub mod hardware_status_monitor;

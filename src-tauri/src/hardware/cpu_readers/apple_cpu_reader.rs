@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use sysinfo::{Component, Components, CpuRefreshKind, RefreshKind, System};
 
 use crate::{
-    hardware::monitor::DeviceParameters,
+    hardware::hardware_status_monitor::DeviceParameters,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 

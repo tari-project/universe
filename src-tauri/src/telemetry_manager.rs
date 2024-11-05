@@ -1,11 +1,10 @@
 use crate::app_in_memory_config::AppInMemoryConfig;
-use crate::hardware::monitor::Monitor;
+use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::p2pool_manager::{self, P2poolManager};
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
     gpu_miner::GpuMiner,
-    hardware_monitor::HardwareMonitor,
     node_manager::NodeManager,
 };
 use anyhow::Result;
@@ -354,8 +353,8 @@ async fn get_telemetry_data(
     //     .await
     //     .read_hardware_parameters();
 
-    let gpu_hardware_parameters = Monitor::current().get_gpu_public_properties().await.ok();
-    let cpu_hardware_parameters = Monitor::current().get_cpu_public_properties().await.ok();
+    let gpu_hardware_parameters = HardwareStatusMonitor::current().get_gpu_public_properties().await.ok();
+    let cpu_hardware_parameters = HardwareStatusMonitor::current().get_cpu_public_properties().await.ok();
 
     let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);

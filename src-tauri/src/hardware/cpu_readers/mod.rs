@@ -2,7 +2,7 @@ pub mod amd_cpu_reader;
 pub mod apple_cpu_reader;
 pub mod intel_cpu_reader;
 
-use super::monitor::DeviceParameters;
+use super::hardware_status_monitor::DeviceParameters;
 use anyhow::Error;
 use async_trait::async_trait;
 use dyn_clone::DynClone;
@@ -18,7 +18,6 @@ pub trait CpuParametersReader: Send + DynClone + Sync + 'static {
     ) -> Result<DeviceParameters, Error>;
     fn get_is_reader_implemented(&self) -> bool;
 }
-
 
 #[derive(Clone)]
 pub struct DefaultCpuParametersReader;
@@ -36,7 +35,7 @@ impl CpuParametersReader for DefaultCpuParametersReader {
     }
     async fn get_device_parameters(
         &self,
-        old_device_parameters: Option<DeviceParameters>,
+        _old_device_parameters: Option<DeviceParameters>,
     ) -> Result<DeviceParameters, Error> {
         let device_parameters = DeviceParameters {
             usage_percentage: 0.0,

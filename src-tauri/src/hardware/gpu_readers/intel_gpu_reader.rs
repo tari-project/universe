@@ -2,7 +2,7 @@ use anyhow::{Error, Ok};
 use async_trait::async_trait;
 
 use crate::{
-    hardware::monitor::DeviceParameters,
+    hardware::hardware_status_monitor::DeviceParameters,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 
@@ -28,7 +28,7 @@ impl GpuParametersReader for IntelGpuReader {
     }
     async fn get_device_parameters(
         &self,
-        old_device_parameters: Option<DeviceParameters>,
+        _old_device_parameters: Option<DeviceParameters>,
     ) -> Result<DeviceParameters, Error> {
         let device_parameters = DeviceParameters {
             usage_percentage: 0.0,

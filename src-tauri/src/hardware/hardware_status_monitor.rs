@@ -1,6 +1,9 @@
-use std::{default, path::PathBuf, sync::LazyLock};
+use std::{path::PathBuf, sync::LazyLock};
 
-use crate::{hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader}, APPLICATION_FOLDER_ID};
+use crate::{
+    hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
+    APPLICATION_FOLDER_ID,
+};
 
 use super::{
     cpu_readers::{
@@ -21,7 +24,7 @@ use tokio::sync::RwLock;
 
 const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
-static INSTANCE: LazyLock<Monitor> = LazyLock::new(Monitor::new);
+static INSTANCE: LazyLock<HardwareStatusMonitor> = LazyLock::new(HardwareStatusMonitor::new);
 
 #[derive(Debug, Serialize, Clone, Default)]
 pub enum HardwareVendor {
@@ -127,12 +130,12 @@ pub struct GpuDeviceProperties {
     pub private_properties: PrivateGpuDeviceProperties,
 }
 
-pub struct Monitor {
+pub struct HardwareStatusMonitor {
     gpu_devices: RwLock<Vec<GpuDeviceProperties>>,
     cpu_devices: RwLock<Vec<CpuDeviceProperties>>,
 }
 
-impl Monitor {
+impl HardwareStatusMonitor {
     fn new() -> Self {
         Self {
             gpu_devices: RwLock::new(Vec::new()),
@@ -166,10 +169,10 @@ impl Monitor {
             HardwareVendor::Amd => Box::new(AmdGpuReader::new()),
             HardwareVendor::Intel => Box::new(IntelGpuReader::new()),
             HardwareVendor::Apple => Box::new(AppleGpuReader::new()),
-            _ => { 
+            _ => {
                 warn!("Unsupported GPU vendor: {:?}", vendor);
                 Box::new(DefaultGpuParametersReader)
-             }
+            }
         }
     }
 
@@ -181,6 +184,9 @@ impl Monitor {
             info!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
             let vendor = HardwareVendor::from_string(&gpu_device.device_name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
+            info!(target: LOG_TARGET, "GPU vendor: {:?}", vendor.to_string());
+            info!(target: LOG_TARGET, "GPU is available: {:?}", gpu_device.is_available);
+            info!(target: LOG_TARGET, "GPU reader implemented: {:?}", device_reader.clone().get_is_reader_implemented());
             let platform_device = GpuDeviceProperties {
                 private_properties: PrivateGpuDeviceProperties {
                     device_reader: device_reader.clone(),
@@ -193,6 +199,7 @@ impl Monitor {
                         is_reader_implemented: device_reader.clone().get_is_reader_implemented(),
                     },
                     parameters: if device_reader.clone().get_is_reader_implemented() {
+                        info!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
                         device_reader.clone().get_device_parameters(None).await.ok()
                     } else {
                         None
@@ -214,10 +221,10 @@ impl Monitor {
             HardwareVendor::Amd => Box::new(AmdCpuParametersReader::new()),
             HardwareVendor::Intel => Box::new(IntelCpuParametersReader::new()),
             HardwareVendor::Apple => Box::new(AppleCpuParametersReader::new()),
-            _ => { 
+            _ => {
                 warn!("Unsupported GPU vendor: {:?}", vendor);
                 Box::new(DefaultCpuParametersReader)
-             }
+            }
         }
     }
 
@@ -326,7 +333,7 @@ impl Monitor {
         Ok(platform_devices)
     }
 
-    pub fn current() -> &'static Monitor {
+    pub fn current() -> &'static HardwareStatusMonitor {
         &INSTANCE
     }
 }
