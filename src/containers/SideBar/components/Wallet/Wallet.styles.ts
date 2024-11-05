@@ -127,3 +127,13 @@ export const CornerButton = styled('button')`
         background: rgba(255, 255, 255, 0.3);
     }
 `;
+
+export const SidebarCover = styled(m.div)`
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.3);
+
+    cursor: pointer;
+    z-index: 1;
+`;

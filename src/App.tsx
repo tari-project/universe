@@ -21,6 +21,7 @@ import { GlobalFontFace } from '@app/theme/fonts/GlobalFontFaces.ts';
 import StagedSecurity from './containers/StagedSecurity/StagedSecurity.tsx';
 import PaperWalletModal from './containers/PaperWalletModal/PaperWalletModal.tsx';
 import { FloatingTree } from '@floating-ui/react';
+import ShareRewardModal from './containers/ShareRewardModal/ShareRewardModal.tsx';
 
 export default function App() {
     const isShuttingDown = useShuttingDown();
@@ -65,6 +66,7 @@ export default function App() {
                         <ExternalDependenciesDialog />
                         <PaperWalletModal />
                         <ErrorSnackbar />
+                        <ShareRewardModal />
                         {/*dialogs end*/}
                         <LayoutGroup id="app-content">
                             {shutDownMarkup}
