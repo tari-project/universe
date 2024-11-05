@@ -88,6 +88,11 @@
             "publisher": "Tari Labs, LLC",
             "macOS": {
                 "providerShortName": "Tari Labs, LLC"
+            },
+            "windows": {
+                "wix": {
+                    "template": "./wix/custom.wxs"
+                }
             }
         },
         "macOSPrivateApi": true
