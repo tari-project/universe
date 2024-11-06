@@ -144,7 +144,7 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get install --no-install-recommends --assume-yes \
-                    libwebkit2gtk-4.0-dev \
+                    libwebkit2gtk-4.1-dev \
                     libappindicator3-dev \
                     librsvg2-dev \
                     patchelf \
@@ -222,8 +222,8 @@ jobs:
                   AZURE_TENANT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_TENANT_ID }}
                   AZURE_CLIENT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_ID }}
                   AZURE_CLIENT_SECRET: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_SECRET }}
-                  TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-                  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+                  TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+                  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
                   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                   NODE_OPTIONS: '--max_old_space_size=4096'
               with:
