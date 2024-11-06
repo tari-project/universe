@@ -1389,3 +1389,11 @@ pub async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String
 
     Ok(result)
 }
+
+#[tauri::command]
+pub fn close_splashscreen(app: tauri::AppHandle) {
+    let splash_window = app.get_webview_window("splashscreen").unwrap();
+    let main_window = app.get_webview_window("main").unwrap();
+    splash_window.close().unwrap();
+    main_window.show().unwrap();
+}

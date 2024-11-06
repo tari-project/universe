@@ -805,7 +805,8 @@ fn main() {
             commands::start_mining,
             commands::stop_mining,
             commands::update_applications,
-            commands::get_max_consumption_levels
+            commands::get_max_consumption_levels,
+            commands::close_splashscreen
         ])
         .build(tauri::generate_context!())
         .inspect_err(
