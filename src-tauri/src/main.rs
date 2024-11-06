@@ -4,6 +4,7 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
+use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
 
@@ -35,7 +36,6 @@ use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
@@ -68,6 +68,7 @@ mod feedback;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod hardware;
 mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -845,6 +846,9 @@ async fn setup_inner(
         .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+
+    HardwareStatusMonitor::current().initialize().await?;
+
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
         state
@@ -1670,23 +1674,33 @@ async fn get_miner_metrics(
         }
     };
 
-    let config_path = app
-        .path_resolver()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let _unused = HardwareMonitor::current()
-        .write()
+    // let config_path = app
+    //     .path_resolver()
+    //     .app_config_dir()
+    //     .expect("Could not get config dir");
+    // let _unused = HardwareMonitor::current()
+    //     .write()
+    //     .await
+    //     .load_status_file(config_path);
+    // let hardware_status = HardwareMonitor::current()
+    //     .write()
+    //     .await
+    //     .read_hardware_parameters();
+
+    let gpu_public_parameters = HardwareStatusMonitor::current()
+        .get_gpu_public_properties()
         .await
-        .load_status_file(config_path);
-    let hardware_status = HardwareMonitor::current()
-        .write()
+        .map_err(|e| e.to_string())?;
+    let cpu_public_parameters = HardwareStatusMonitor::current()
+        .get_cpu_public_properties()
         .await
-        .read_hardware_parameters();
+        .map_err(|e| e.to_string())?;
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu_mining_status.hash_rate,
         gpu_mining_status.hash_rate as f64,
-        hardware_status.clone(),
+        gpu_public_parameters.clone(),
+        cpu_public_parameters.clone(),
         (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
     );
 
@@ -1706,11 +1720,11 @@ async fn get_miner_metrics(
         sha_network_hash_rate: sha_hash_rate,
         randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
-            hardware: hardware_status.cpu,
+            hardware: cpu_public_parameters.clone(),
             mining: cpu_mining_status,
         },
         gpu: GpuMinerMetrics {
-            hardware: hardware_status.gpu,
+            hardware: gpu_public_parameters.clone(),
             mining: gpu_mining_status,
         },
         base_node: BaseNodeStatus {
@@ -1840,13 +1854,13 @@ async fn reset_settings<'r>(
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
-    hardware: Option<HardwareParameters>,
+    hardware: Vec<PublicDeviceProperties>,
     mining: CpuMinerStatus,
 }
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Vec<HardwareParameters>,
+    hardware: Vec<PublicDeviceProperties>,
     mining: GpuMinerStatus,
 }
 

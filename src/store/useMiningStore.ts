@@ -43,7 +43,7 @@ const initialState: State = {
     miningControlsEnabled: true,
     excludedGpuDevices: [],
     cpu: {
-        hardware: undefined,
+        hardware: [],
         mining: {
             is_mining: false,
             hash_rate: 0,
