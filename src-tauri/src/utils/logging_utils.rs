@@ -30,11 +30,11 @@ pub fn setup_logging(config_file: &Path, base_path: &Path, default: &str) -> Res
     let mut file = File::create(config_file).map_err(|e| {
         Error::msg(format!(
             "Could not create default log file: {}",
-            e.to_string()
+            e
         ))
     })?;
 
     file.write_all(contents.as_bytes())
-        .map_err(|e| Error::msg(format!("Could not write to file: {}", e.to_string())))?;
+        .map_err(|e| Error::msg(format!("Could not write to file: {}", e)))?;
     Ok(contents)
 }

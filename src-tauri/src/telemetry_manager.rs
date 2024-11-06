@@ -226,6 +226,7 @@ impl TelemetryManager {
         unique_string
     }
 
+    #[allow(dead_code)]
     pub fn update_network(&mut self, network: Option<Network>) {
         self.node_network = network;
     }
@@ -367,10 +368,7 @@ async fn get_telemetry_data(
     let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
     });
-    let p2pool_stats = match p2pool_stats {
-        Ok(stats) => stats,
-        Err(_) => None,
-    };
+    let p2pool_stats = p2pool_stats.unwrap_or_default();
 
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
