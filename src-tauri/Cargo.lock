@@ -6652,6 +6652,7 @@ dependencies = [
  "sentry-tauri",
  "serde",
  "serde_json",
+ "serde_yaml",
  "sha2",
  "sys-locale",
  "sysinfo",
