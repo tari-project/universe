@@ -9,7 +9,7 @@ version = "0.5.63"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = {version = "2", features = ["isolation"] }
+tauri-build = {version = "2", features = ["isolation", "config-json5"] }
 
 [dependencies]
 anyhow = "1"
@@ -64,7 +64,7 @@ tari_crypto = "0.21.0"
 tari_key_manager = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_shutdown = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_utilities = "0.8.0"
-tauri = {version = "2", features = ["macos-private-api", "isolation", "image-png", "image-ico", "tray-icon", "unstable"] }
+tauri = {version = "2", features = ["macos-private-api", "isolation", "image-png", "image-ico", "tray-icon", "unstable", "config-json5"] }
 tauri-plugin-os = "2"
 tauri-plugin-single-instance = "^2"
 tauri-plugin-updater = "^2"

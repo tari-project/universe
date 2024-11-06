@@ -38,8 +38,10 @@ jobs:
             args: ''
           - platform: 'windows-2019'
             args: '--bundles msi,updater'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+          - platform: "macos-latest" # for Arm based macs (M1 and above).
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest" # for Intel based macs.
+            args: "--target x86_64-apple-darwin"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -79,17 +81,17 @@ jobs:
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".package.productName = \"Tari Universe ${{ env.BETA_STRING }}\"" -i tauri.conf.json
-          yq eval ".package.version += \"-${BETA_DATE}\"" -i tauri.conf.json
-          yq eval ".tauri.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} | Testnet\"" -i tauri.conf.json
-          yq eval ".tauri.bundle.identifier = \"com.tari.universe.beta\"" -i tauri.conf.json
+          yq eval ".package.productName = \"Tari Universe ${{ env.BETA_STRING }}\"" -i tauri.conf.json5
+          yq eval ".package.version += \"-${BETA_DATE}\"" -i tauri.conf.json5
+          yq eval ".tauri.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} | Testnet\"" -i tauri.conf.json5
+          yq eval ".tauri.bundle.identifier = \"com.tari.universe.beta\"" -i tauri.conf.json5
           yq eval ".tauri.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
-            -i tauri.conf.json
-          cat tauri.conf.json
+            -i tauri.conf.json5
+          cat tauri.conf.json5
           sed -i.bak -E "s/^version\s*=\s*\"([0-9]+\.[0-9]+\.[0-9]+)\"/version = \"\1-${BETA_DATE}\"/" \
             Cargo.toml
           cat Cargo.toml
-          sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json
+          sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json5
 
       - name: Set environment variables for RELEASE builds
         if: ${{ startsWith(github.ref, 'refs/heads/release') }}
@@ -104,11 +106,11 @@ jobs:
           echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".package.productName = \"Tari Universe\"" -i tauri.conf.json
-          yq eval ".tauri.windows[0].title = \"Tari Universe | Testnet\"" -i tauri.conf.json
-          yq eval ".tauri.bundle.identifier = \"com.tari.universe\"" -i tauri.conf.json
+          yq eval ".package.productName = \"Tari Universe\"" -i tauri.conf.json5
+          yq eval ".tauri.windows[0].title = \"Tari Universe | Testnet\"" -i tauri.conf.json5
+          yq eval ".tauri.bundle.identifier = \"com.tari.universe\"" -i tauri.conf.json5
           yq eval ".tauri.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\"]" \
-            -i tauri.conf.json
+            -i tauri.conf.json5
 
       - name: Node.js setup
         uses: actions/setup-node@v4
