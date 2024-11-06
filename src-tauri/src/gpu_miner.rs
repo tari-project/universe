@@ -46,10 +46,13 @@ impl GpuMiner {
         log_path: PathBuf,
         mining_mode: MiningMode,
         coinbase_extra: String,
+        custom_gpu_usage: Option<u16>,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
-        process_watcher.adapter.set_mode(mining_mode);
+        process_watcher
+            .adapter
+            .set_mode(mining_mode, custom_gpu_usage);
         process_watcher.adapter.node_source = Some(node_source);
         process_watcher.adapter.coinbase_extra = coinbase_extra;
         process_watcher
@@ -152,7 +155,7 @@ impl GpuMiner {
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
         crate::download_utils::set_permissions(&gpuminer_bin).await?;
-        let child = process_utils::launch_child_process(&gpuminer_bin, None, &args)?;
+        let child = process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args)?;
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
         match output.status.code() {

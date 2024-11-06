@@ -96,6 +96,7 @@
     "wallet": "지갑"
   },
   "tari-wallet-address": "Tari 지갑 주소",
+  "terms-and-conditions": "Terms & Conditions",
   "theme": "테마",
   "tor-bridges": "Tor 브리지",
   "tor-entry-guards": "Tor Entry Guards",
@@ -108,7 +109,9 @@
     "title": "Tari Universe 자동 업데이트"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Tor 사용하기",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "시각 모드",
   "yes": "예",
   "your-feedback": "문제를 설명해 주세요",

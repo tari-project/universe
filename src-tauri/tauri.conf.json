@@ -7,7 +7,7 @@
     },
     "package": {
         "productName": "Tari Universe (Alpha)",
-        "version": "0.5.49"
+        "version": "0.5.63"
     },
     "tauri": {
         "systemTray": {
@@ -39,6 +39,9 @@
                 "unmaximize": true,
                 "unminimize": true,
                 "startDragging": true
+            },
+            "os": {
+                "all": true
             }
         },
         "pattern": {

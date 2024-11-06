@@ -21,6 +21,7 @@ import {
     PoolMiningSettings,
     WalletSettings,
 } from './sections';
+
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
 
 const markups = {
