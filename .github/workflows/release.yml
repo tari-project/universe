@@ -34,12 +34,12 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                    - platform: 'ubuntu-20.04'
-                      args: ''
-                    - platform: 'windows-2019'
+                    - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
+                      args: '--bundles updater'
+                    - platform: 'windows-latest'
                       args: '--bundles msi,updater'
                     - platform: 'macos-latest'
-                      args: '--target universal-apple-darwin'
+                      args: '--target universal-apple-darwin --bundles updater'
 
         runs-on: ${{ matrix.platform }}
         steps:
@@ -197,7 +197,7 @@ jobs:
               run: |
                   cd "${GITHUB_WORKSPACE}/src-tauri"
                   echo "{}" | \
-                    jq '.tauri .bundle .windows += {"signCommand": "${{ env.WINDOWS_SIGN_COMMAND }}"}' > \
+                    jq '.bundle .windows += {"signCommand": "${{ env.WINDOWS_SIGN_COMMAND }}"}' > \
                       ./tauri.windows.conf.json
                   cat ./tauri.windows.conf.json
                   cargo install trusted-signing-cli
