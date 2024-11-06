@@ -13,6 +13,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant, SystemTime};
+use system_monitor::SystemMonitor;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -76,6 +77,7 @@ mod process_utils;
 mod process_watcher;
 mod progress_tracker;
 mod setup_status_event;
+mod system_monitor;
 mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
@@ -833,17 +835,6 @@ async fn setup_inner(
         .update("preparing-for-initial-sync".to_string(), None, 0)
         .await;
     state.node_manager.wait_synced(progress.clone()).await?;
-
-    // progress.set_max(80).await;
-    // progress
-    //     .update("setup-benchmarking".to_string(), None, 0)
-    //     .await;
-    // let cpu_benchmark_hashrate = state
-    //     .cpu_miner
-    //     .write()
-    //     .await
-    //     .benchmark(shutdown.clone(), data_dir.clone(), log_dir.clone())
-    //     .await?;
 
     let app_config = state.config.read().await;
     if app_config.p2pool_enabled() {
@@ -1972,6 +1963,7 @@ fn main() {
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
+    let sys_monitor = SystemMonitor::new(cpu_miner.clone(), p2pool_manager.clone());
 
     let app = tauri::Builder::default()
         .system_tray(systray)
@@ -2131,6 +2123,13 @@ fn main() {
 
     let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
+        tauri::RunEvent::Ready => {
+            info!(target: LOG_TARGET, "Tari Universe v{} ready. Starting system monitor", _app_handle.package_info().version);
+            tauri::async_runtime::spawn(async {
+
+                sys_monitor.start(shutdown.clone()).await;
+            })
+        },
         tauri::RunEvent::Updater(updater_event) => match updater_event {
             UpdaterEvent::Error(e) => {
                 error!(target: LOG_TARGET, "Updater error: {:?}", e);

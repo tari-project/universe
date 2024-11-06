@@ -6015,6 +6015,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple_moving_average"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a4b144ad185430cd033299e2c93e465d5a7e65fbb858593dc57181fa13cd310"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6536,6 +6545,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "simple_moving_average",
  "sys-locale",
  "sysinfo",
  "tar",
