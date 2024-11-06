@@ -1,19 +1,21 @@
 {
   "content": {
-    "step-1": "Tari Universe makes it easy to mine Tari tokens on a Mac or PC. The future financial system is accessible to all {{emoji}} {{emoji1}}",
-    "step-2": "Tari is a groundbreaking layer 1 blockchain protocol. It is lightning-fast and will power magical user experiences. Tari tokens are the money of the Tari network.",
-    "step-3": "Mining Tari is a race. The first computer on the network to solve the puzzle will be rewarded in Tari tokens (XTM) and gems. This process secures the Tari network.",
-    "step-4": "Tari is currently in testnet mode. This is the dress rehearsal before the Tari mainnet launch. Tokens mined now (tXTM) have no value. However, gems do!",
-    "step-5": "Nothing! Once you're synced, you will start mining and earning gems automatically. Earn more gems by mining tXTM and sharing your invite link with friends. The more gems you earn, the larger your future airdrop!",
-    "step-6": "Tari is pro-human, pro-freedom, and open-source. It is powered and secured by everyone running Tari Universe. Tari exists because of you. {{emoji}}"
+    "step-1": "Tari Universeは、MacやPCでTariトークンを簡単にマイニングできます。未来の金融システムはすべての人にアクセス可能です {{emoji}} {{emoji1}}",
+    "step-2": "Tariは画期的なレイヤー1ブロックチェーンプロトコルです。非常に高速で、魔法のようなユーザー体験を提供します。TariトークンはTariネットワークの通貨です。",
+    "step-3": "Tariのマイニングは競争です。ネットワーク上で最初にパズルを解いたコンピュータがTariトークン（XTM）とジェムで報酬を受け取ります。このプロセスがTariネットワークを保護します。",
+    "step-4": "Tariは現在テストネットモードです。これはTariメインネットのローンチ前のリハーサルです。現在マイニングされたトークン（tXTM）には価値がありませんが、ジェムには価値があります！",
+    "step-5": "何もしなくて大丈夫です！同期が完了すると、自動的にマイニングを開始し、ジェムを獲得します。tXTMをマイニングし、招待リンクを友達と共有することで、さらに多くのジェムを獲得できます。獲得したジェムが多いほど、将来のエアドロップが大きくなります！",
+    "step-6": "Tariは人間性、自由、オープンソースを支持します。Tari Universeを運営するすべての人によって支えられ、保護されています。Tariはあなたのおかげで存在します。{{emoji}}"
   },
-
   "heading": {
     "step-1": "Welcome to Tari Universe!",
-    "step-2": "What is Tari?",
-    "step-3": "What is Mining?",
-    "step-4": "Is Tari Live Now?",
-    "step-5": "What Do I Do Next?",
-    "step-6": "You are Tari"
+    "step-2": "Tariとは？",
+    "step-3": "マイニングとは？",
+    "step-4": "Tariは今ライブですか？",
+    "step-5": "次に何をすればいいですか？",
+    "step-6": "あなたはTariです"
+  },
+  "footer": {
+    "heading": "フッターです"
   }
 }

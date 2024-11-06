@@ -15,5 +15,13 @@
   "recent-wins": "Son Kazançlar",
   "setup-scheduler": "Kurulum Planlayıcısı",
   "show-history": "Geçmişi göster",
-  "wallet-balance": "Cüzdan Bakiyesi"
+  "wallet-balance": "Cüzdan Bakiyesi",
+  "share": {
+    "history-item-button": "Göster ve Davet Et",
+    "title": "Az önce tari madenciliği yaptım",
+    "winner-pill": "Blok Kazananı",
+    "copied": "Bağlantı Kopyalandı!",
+    "button-text": "GÖSTER VE DAVET ET",
+    "reward": "ödülüm"
+  }
 }
