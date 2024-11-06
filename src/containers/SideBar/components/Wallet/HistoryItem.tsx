@@ -46,13 +46,14 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const theme = useTheme();
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
+    const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
+
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const earningsFormatted = useFormatBalance(item.amount).toLowerCase();
     const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
 
     const [hovering, setHovering] = useState(false);
-    const sharingEnabled = useShareRewardStore((s) => s.sharingEnabled);
     const { setShowModal, setItemData } = useShareRewardStore((s) => s);
 
     const { colour, colour1, colour2 } = useMemo(() => {

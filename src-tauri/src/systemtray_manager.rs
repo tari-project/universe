@@ -1,12 +1,12 @@
 use human_format::Formatter;
 use log::{error, info};
-use std::sync::LazyLock;
+use std::{ops::Div, sync::LazyLock};
 use tauri::{
     AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem,
 };
 
-use crate::hardware_monitor::HardwareStatus;
+use crate::hardware::hardware_status_monitor::PublicDeviceProperties;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 static INSTANCE: LazyLock<SystemtrayManager> = LazyLock::new(SystemtrayManager::new);
@@ -332,18 +332,25 @@ impl SystemtrayManager {
         &self,
         cpu_hashrate: f64,
         gpu_hashrate: f64,
-        hardware_status: HardwareStatus,
+        gpu_parameters: Vec<PublicDeviceProperties>,
+        cpu_parameters: Vec<PublicDeviceProperties>,
         estimated_earning: f64,
     ) -> SystrayData {
+        let cpu_usage_percentage = cpu_parameters
+            .iter()
+            .map(|cpu| f64::from(cpu.clone().parameters.unwrap_or_default().usage_percentage))
+            .sum::<f64>()
+            .div(cpu_parameters.len() as f64);
+        let gpu_usage_percentage = gpu_parameters
+            .iter()
+            .map(|gpu| f64::from(gpu.clone().parameters.unwrap_or_default().usage_percentage))
+            .sum::<f64>()
+            .div(gpu_parameters.len() as f64);
         SystrayData {
             cpu_hashrate,
             gpu_hashrate,
-            cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
-            gpu_usage: hardware_status
-                .gpu
-                .iter()
-                .map(|hp| f64::from(hp.usage_percentage))
-                .sum::<f64>(),
+            cpu_usage: cpu_usage_percentage,
+            gpu_usage: gpu_usage_percentage,
             estimated_earning,
         }
     }
