@@ -18,7 +18,7 @@
         "@tauri-apps/api": "^2",
         "@tauri-apps/plugin-os": "^2.0.0",
         "@tauri-apps/plugin-process": "^2.0.0",
-        "@tauri-apps/plugin-shell": "^2",
+        "@tauri-apps/plugin-shell": "^2.0.1",
         "@tauri-apps/plugin-updater": "^2.0.0",
         "emoji-regex": "^10.4.0",
         "framer-motion": "^11.11.11",

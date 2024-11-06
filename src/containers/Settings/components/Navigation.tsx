@@ -4,7 +4,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 import { ButtonContainer, Container, SectionButton, TermsBtn } from './Navigation.styles.ts';
 
-import { open } from '@tauri-apps/api/shell';
+import { open } from '@tauri-apps/plugin-shell';
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
