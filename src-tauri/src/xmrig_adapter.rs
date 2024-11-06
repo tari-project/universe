@@ -74,7 +74,12 @@ impl ProcessAdapter for XmrigAdapter {
             .as_ref()
             .ok_or(anyhow::anyhow!("Node connection not set"))?
             .generate_args();
-        let xmrig_log_file = log_dir.join("xmrig.log");
+        let xmrig_log_file = log_dir.join("xmrig").join("xmrig.log");
+        std::fs::create_dir_all(
+            xmrig_log_file
+                .parent()
+                .expect("Could not get xmrig root log dir"),
+        )?;
 
         let xmrig_log_file_parent = xmrig_log_file
             .parent()

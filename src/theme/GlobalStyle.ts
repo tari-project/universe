@@ -50,6 +50,7 @@ export const GlobalStyle = createGlobalStyle`
         margin: 0;
         padding: 0;
         font-family: Poppins, sans-serif;
+        font-size: 16px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         height: 100%;
@@ -83,7 +84,8 @@ export const GlobalStyle = createGlobalStyle`
     }
 
     html {
-        background:  ${({ theme }) => theme.palette.base};
+        background: #fff;// for now
+        //background:  ${({ theme }) => theme.palette.base};
     }
     
     #canvas {
@@ -96,5 +98,4 @@ export const GlobalStyle = createGlobalStyle`
     #root {
         pointer-events: none;
     }
-
 `;

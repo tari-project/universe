@@ -133,7 +133,7 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
-    seenPermissions?: boolean;
+    seenPermissions: boolean;
 }
 
 interface AirdropStore extends AirdropState {
@@ -157,11 +157,10 @@ const initialState: AirdropState = {
     seenPermissions: false,
 };
 
-const clearState: AirdropState = {
+const clearState: Partial<AirdropState> = {
     authUuid: '',
     airdropTokens: undefined,
     miningRewardPoints: undefined,
-    seenPermissions: false,
     userDetails: undefined,
     userPoints: undefined,
 };
@@ -211,4 +210,6 @@ export const useAirdropStore = create<AirdropStore>()(
         }
     )
 );
-useAirdropStore.getState().setSeenPermissions(initialState.seenPermissions || false); // https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#persist-middlware-no-longer-stores-item-at-store-creation
+useAirdropStore
+    .getState()
+    .setSeenPermissions(useAirdropStore.getState().seenPermissions || initialState.seenPermissions); // https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#persist-middlware-no-longer-stores-item-at-store-creation
