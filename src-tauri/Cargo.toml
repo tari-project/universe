@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.5.61"
+version = "0.5.63"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -65,14 +65,8 @@ tari_crypto = "0.21.0"
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_utilities = "0.8.0"
-tauri = {version = "1.8.0", features = [ "os-all",
-  "icon-ico",
-  "icon-png",
-  "isolation",
-  "macos-private-api",
+tauri = { version = "1.8.0", features = [ "window-unmaximize", "window-unminimize",
   "os-all",
-  "process-command-api",
-  "shell-open",
   "system-tray",
   "updater",
   "window-close",
@@ -81,8 +75,14 @@ tauri = {version = "1.8.0", features = [ "os-all",
   "window-minimize",
   "window-show",
   "window-start-dragging",
-  "window-unmaximize",
-  "window-unminimize",
+  "window-maximize",
+  "window-close",
+  "macos-private-api",
+  "isolation",
+  "shell-open",
+  "icon-ico",
+  "icon-png",
+  "process-command-api",
 ] }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 thiserror = "1.0.26"
@@ -116,4 +116,3 @@ release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
 ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]
-
