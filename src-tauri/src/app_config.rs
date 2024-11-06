@@ -69,9 +69,9 @@ pub struct AppConfigFromFile {
     custom_max_gpu_usage: Option<isize>,
     #[serde(default = "default_true")]
     auto_update: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     custom_power_levels_enabled: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     sharing_enabled: bool,
 }
 
@@ -328,6 +328,12 @@ impl AppConfig {
         if self.config_version <= 9 {
             self.auto_update = true;
             self.config_version = 10;
+        }
+
+        if self.config_version <= 10 {
+            self.custom_power_levels_enabled = true;
+            self.sharing_enabled = true;
+            self.config_version = 11;
         }
     }
 
