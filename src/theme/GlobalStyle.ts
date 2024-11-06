@@ -1,6 +1,8 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalReset = createGlobalStyle`
+
+
     button {
         -webkit-appearance: none;
         border-radius: 0;
@@ -12,8 +14,13 @@ export const GlobalReset = createGlobalStyle`
         border: none;
         color: inherit;
         font: inherit;
+
         &:focus {
-            outline: none;
+            outline: none
+        }
+
+        &:focus-visible {
+            outline: 3px solid #c9eb00;
         }
     }
     fieldset,
@@ -21,6 +28,7 @@ export const GlobalReset = createGlobalStyle`
     dialog,
     input {
         all: unset;
+
         /* Chrome, Safari, Edge, Opera */
         &::-webkit-outer-spin-button,
         &::-webkit-inner-spin-button {
@@ -33,10 +41,12 @@ export const GlobalReset = createGlobalStyle`
             -moz-appearance: textfield;
         }
 
-        &:focus-within,
-        &:focus-visible,
         &:focus {
-            outline: none;
+            outline: none
+        }
+
+        &:focus-visible {
+            outline: 3px solid #c9eb00;
         }
     }
 

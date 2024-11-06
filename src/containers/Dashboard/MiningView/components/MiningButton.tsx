@@ -62,8 +62,8 @@ export default function MiningButton() {
                 $isLoading={isAppLoading}
             >
                 {!isAppLoading ? <span>{t(`mining-button-text.${miningButtonStateText}`)}</span> : <LoadingSvg />}
+                <AnimatePresence>{isMining ? <ButtonOrbitAnimation /> : null}</AnimatePresence>
             </StyledButton>
-            <AnimatePresence>{isMining ? <ButtonOrbitAnimation /> : null}</AnimatePresence>
         </ButtonWrapper>
     );
 }
