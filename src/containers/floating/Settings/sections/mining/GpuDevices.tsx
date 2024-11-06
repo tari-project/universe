@@ -13,7 +13,6 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { Stack } from '@app/components/elements/Stack';
-import { useHardwareStats } from '@app/hooks/useHardwareStats';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 const GpuDevices = () => {
