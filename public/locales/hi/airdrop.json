@@ -22,6 +22,7 @@
   "logout": "लॉगआउट",
   "nextTierBonus": "<strong>{{count}} मित्रों</strong> को आमंत्रित करें और {{bonusGems}} बोनस रत्न कमाएं",
   "permission": {
+    "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
     "text": "Tari Universe आपके अनुभव को बेहतर बनाने और माइनिंग के लिए आपको रत्नों से पुरस्कृत करने के लिए विश्लेषण का उपयोग करना चाहता है।",
     "title": "रत्न कमाएं और Tari Universe को बेहतर बनाएं"
   },

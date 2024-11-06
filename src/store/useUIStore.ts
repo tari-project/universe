@@ -9,7 +9,6 @@ export type DialogType = DialogTypeTuple[number];
 
 interface State {
     theme: Theme;
-    showSplash: boolean;
     background: backgroundType;
     view: viewType;
     visualMode: boolean;
@@ -20,7 +19,6 @@ interface State {
 }
 interface Actions {
     setTheme: (theme: Theme) => void;
-    setShowSplash: (showSplash: boolean) => void;
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
     toggleVisualMode: () => void;
@@ -34,7 +32,6 @@ type UIStoreState = State & Actions;
 
 const initialState: State = {
     theme: 'light',
-    showSplash: true,
     background: 'onboarding',
     view: 'setup',
     visualMode: true,
@@ -50,7 +47,6 @@ export const useUIStore = create<UIStoreState>()((set) => ({
         setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
         set({ theme });
     },
-    setShowSplash: (showSplash) => set({ showSplash }),
     setBackground: (background) => set({ background }),
     setView: (view) => set({ view }),
     toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
