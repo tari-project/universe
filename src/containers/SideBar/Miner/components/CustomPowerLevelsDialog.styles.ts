@@ -1,5 +1,8 @@
 import styled, { css } from 'styled-components';
 
+export const SLIDER_WIDTH = 570;
+export const SLIDER_THUMB_WIDTH = 30;
+
 export const CustomLevelsContent = styled.div`
     padding: 15px 15px 35px;
     margin-top: 10px;
@@ -17,20 +20,21 @@ export const RangeInput = styled.input`
     width: 100%;
     height: 9px;
     border-radius: 5px;
-    background: #813bf5;
+    background: #ddd;
     outline: none;
     -webkit-transition: 0.2s;
     transition: opacity 0.2s;
-    width: 600px;
+    width: ${SLIDER_WIDTH}px;
 
     &::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        width: 30px;
-        height: 30px;
+        width: ${SLIDER_THUMB_WIDTH}px;
+        height: ${SLIDER_THUMB_WIDTH}px;
         border-radius: 50%;
         background: white;
         border: 2px solid #813bf5;
+        z-index: 10;
         cursor: pointer;
         transition: background 0.15s ease-in-out;
     }
@@ -53,6 +57,7 @@ export const RangeLabel = styled.label`
     align-items: center;
     font-size: 14px;
     font-family: Poppins, sans-serif;
+    padding-bottom: 10px;
 `;
 
 export const InputDescription = styled.div`
@@ -62,6 +67,10 @@ export const InputDescription = styled.div`
     font-size: 12px;
     font-family: Poppins, sans-serif;
     color: #6c6d8a;
+    padding-bottom: 10px;
+    span {
+        font-weight: bold;
+    }
 `;
 
 export const RangeIntputWrapper = styled.div`
@@ -97,7 +106,7 @@ export const RangeValueHolder = styled.div`
     color: #fff;
     justify-content: center;
     align-items: center;
-    transform: translateX(-50%);
+    transform: translateX(-50%) translateZ(0);
     background: #813bf5;
     position: absolute;
     min-width: 20px;
@@ -119,14 +128,23 @@ export const RangeValueHolder = styled.div`
     }
 `;
 
-export const IconImage = styled.img<{ $left: number }>`
-    width: 20px;
-    height: 20px;
+export const PerformanceMarker = styled.div<{ $red?: boolean }>`
     position: absolute;
-    top: -20px;
-    left: ${({ $left }) => `
-         ${$left}%
-    `};
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+
+    z-index: 3;
+
+    top: 8px;
+
+    background: #62cc32;
+    ${({ $red }) =>
+        $red &&
+        css`
+            background: #ff0000;
+        `}
 `;
 
 export const WarningContainer = styled.div<{ $visible: boolean }>`
@@ -145,7 +163,7 @@ export const WarningContainer = styled.div<{ $visible: boolean }>`
     ${({ $visible }) =>
         $visible &&
         css`
-            opacity: 1;
+            opacity: 0.7;
             padding: 8px 15px;
             height: 50px;
         `}

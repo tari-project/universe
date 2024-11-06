@@ -12,11 +12,11 @@
   "custom-power-levels": {
     "title": "Custom Mode",
     "warning": "Warning",
-    "saved": "Changes saved!",
+    "saved": "Applying Changes",
     "gpu-power-level": "GPU Power %",
     "cpu-power-level": "CPU Cores",
-    "choose-gpu-power-level": "Choose how many threads you want your GPU to allocat to mining",
-    "choose-cpu-power-level": "Choose how many cores from your CPU to be allocated to mining",
+    "choose-gpu-power-level": "Choose how much you want your GPU to be allocated to mining <span>({{current}} out of {{max}} threads)</span>",
+    "choose-cpu-power-level": "Choose how much you want your CPU to be allocated to mining <span>({{current}} out of {{max}} cores)</span>",
     "cpu-warning": "High CPU usage can cause overheating, increase energy consumption, and may lead to hardware damage over time. Please monitor usage to ensure safe and efficient operation.",
     "gpu-warning": "High GPU usage can cause overheating, increase energy consumption, and may lead to hardware damage over time. Please monitor usage to ensure safe and efficient operation."
   },
