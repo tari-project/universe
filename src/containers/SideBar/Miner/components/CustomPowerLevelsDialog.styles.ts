@@ -12,7 +12,7 @@ export const CustomLevelsContent = styled.div`
     width: 700px;
 `;
 
-export const RangeInput = styled.input<{ $rangeValue: number }>`
+export const RangeInput = styled.input`
     position: relative;
     z-index: 2;
     margin: 5px 0;
@@ -25,9 +25,6 @@ export const RangeInput = styled.input<{ $rangeValue: number }>`
     -webkit-transition: 0.2s;
     transition: opacity 0.2s;
     width: ${SLIDER_WIDTH}px;
-
-    background: ${({ $rangeValue }) =>
-        $rangeValue ? `linear-gradient(to right, #813bf5 ${$rangeValue || 1}%, #ddd ${$rangeValue || 1}%)` : '#ddd'};
 
     &::-webkit-slider-thumb {
         -webkit-appearance: none;
@@ -131,7 +128,7 @@ export const RangeValueHolder = styled.div`
     }
 `;
 
-export const PerformanceMarker = styled.div<{ $left: number; $red?: boolean }>`
+export const PerformanceMarker = styled.div<{ $red?: boolean }>`
     position: absolute;
     transform: translateX(-50%);
     width: 5px;
@@ -140,9 +137,6 @@ export const PerformanceMarker = styled.div<{ $left: number; $red?: boolean }>`
 
     z-index: 3;
 
-    left: ${({ $left }) => `
-         ${$left}px
-    `};
     top: 8px;
 
     background: #62cc32;
