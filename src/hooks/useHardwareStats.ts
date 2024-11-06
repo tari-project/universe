@@ -13,7 +13,7 @@ export const useHardwareStats = () => {
 
     const cpu = useMemo(() => {
         if (cpuHardwareStats) {
-            return gpuHardwareStats.map<HardwareParameters>((stats) => ({
+            return cpuHardwareStats.map<HardwareParameters>((stats) => ({
                 label: stats.name,
                 usage_percentage: roundTo(stats.parameters?.usage_percentage ?? 0),
                 current_temperature: roundTo(stats.parameters?.current_temperature ?? 0),
