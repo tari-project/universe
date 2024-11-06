@@ -1,19 +1,21 @@
 {
   "content": {
-    "step-1": "Tari Universe makes it easy to mine Tari tokens on a Mac or PC. The future financial system is accessible to all {{emoji}} {{emoji1}}",
-    "step-2": "Tari is a groundbreaking layer 1 blockchain protocol. It is lightning-fast and will power magical user experiences. Tari tokens are the money of the Tari network.",
-    "step-3": "Mining Tari is a race. The first computer on the network to solve the puzzle will be rewarded in Tari tokens (XTM) and gems. This process secures the Tari network.",
-    "step-4": "Tari is currently in testnet mode. This is the dress rehearsal before the Tari mainnet launch. Tokens mined now (tXTM) have no value. However, gems do!",
-    "step-5": "Nothing! Once you're synced, you will start mining and earning gems automatically. Earn more gems by mining tXTM and sharing your invite link with friends. The more gems you earn, the larger your future airdrop!",
-    "step-6": "Tari is pro-human, pro-freedom, and open-source. It is powered and secured by everyone running Tari Universe. Tari exists because of you. {{emoji}}"
+    "step-1": "Tari Universe, Mac veya PC\"de Tari token\"larını kolayca madencilik yapmanızı sağlar. Geleceğin finansal sistemi herkes için erişilebilir {{emoji}} {{emoji1}}",
+    "step-2": "Tari, çığır açan bir katman 1 blockchain protokolüdür. Şimşek hızında ve büyüleyici kullanıcı deneyimlerini güçlendirecek. Tari token\"ları, Tari ağının parasıdır.",
+    "step-3": "Tari madenciliği bir yarıştır. Ağdaki bulmacayı ilk çözen bilgisayar, Tari token\"ları (XTM) ve mücevherlerle ödüllendirilir. Bu süreç, Tari ağını güvence altına alır.",
+    "step-4": "Tari şu anda testnet modunda. Bu, Tari ana ağ lansmanından önceki prova. Şu anda çıkarılan token\"lar (tXTM) değersizdir. Ancak, mücevherler değerlidir!",
+    "step-5": "Hiçbir şey! Senkronize olduktan sonra otomatik olarak madencilik yapmaya ve mücevher kazanmaya başlayacaksınız. tXTM madenciliği yaparak ve davet bağlantınızı arkadaşlarınızla paylaşarak daha fazla mücevher kazanın. Ne kadar çok mücevher kazanırsanız, gelecekteki airdrop\"unuz o kadar büyük olur!",
+    "step-6": "Tari insan yanlısı, özgürlük yanlısı ve açık kaynaklıdır. Tari Universe\"ü çalıştıran herkes tarafından güçlendirilir ve güvence altına alınır. Tari sizin sayenizde var. {{emoji}}"
   },
-
   "heading": {
     "step-1": "Welcome to Tari Universe!",
-    "step-2": "What is Tari?",
-    "step-3": "What is Mining?",
-    "step-4": "Is Tari Live Now?",
-    "step-5": "What Do I Do Next?",
-    "step-6": "You are Tari"
+    "step-2": "Tari Nedir?",
+    "step-3": "Madencilik Nedir?",
+    "step-4": "Tari Şu Anda Canlı mı?",
+    "step-5": "Sırada Ne Yapmalıyım?",
+    "step-6": "Sen Tari\"sin"
+  },
+  "footer": {
+    "heading": "ben bir altbilgiyim"
   }
 }

@@ -1,19 +1,21 @@
 {
   "content": {
-    "step-1": "Tari Universe makes it easy to mine Tari tokens on a Mac or PC. The future financial system is accessible to all {{emoji}} {{emoji1}}",
-    "step-2": "Tari is a groundbreaking layer 1 blockchain protocol. It is lightning-fast and will power magical user experiences. Tari tokens are the money of the Tari network.",
-    "step-3": "Mining Tari is a race. The first computer on the network to solve the puzzle will be rewarded in Tari tokens (XTM) and gems. This process secures the Tari network.",
-    "step-4": "Tari is currently in testnet mode. This is the dress rehearsal before the Tari mainnet launch. Tokens mined now (tXTM) have no value. However, gems do!",
-    "step-5": "Nothing! Once you're synced, you will start mining and earning gems automatically. Earn more gems by mining tXTM and sharing your invite link with friends. The more gems you earn, the larger your future airdrop!",
-    "step-6": "Tari is pro-human, pro-freedom, and open-source. It is powered and secured by everyone running Tari Universe. Tari exists because of you. {{emoji}}"
+    "step-1": "Tari Universe macht es einfach, Tari-Token auf einem Mac oder PC zu minen. Das zukünftige Finanzsystem ist für alle zugänglich {{emoji}} {{emoji1}}",
+    "step-2": "Tari ist ein bahnbrechendes Layer-1-Blockchain-Protokoll. Es ist blitzschnell und wird magische Benutzererlebnisse ermöglichen. Tari-Token sind das Geld des Tari-Netzwerks.",
+    "step-3": "Das Mining von Tari ist ein Rennen. Der erste Computer im Netzwerk, der das Rätsel löst, wird mit Tari-Token (XTM) und Edelsteinen belohnt. Dieser Prozess sichert das Tari-Netzwerk.",
+    "step-4": "Tari befindet sich derzeit im Testnet-Modus. Dies ist die Generalprobe vor dem Start des Tari-Mainnets. Jetzt geminte Token (tXTM) haben keinen Wert. Edelsteine jedoch schon!",
+    "step-5": "Nichts! Sobald Sie synchronisiert sind, beginnen Sie automatisch mit dem Mining und verdienen Edelsteine. Verdienen Sie mehr Edelsteine, indem Sie tXTM minen und Ihren Einladungslink mit Freunden teilen. Je mehr Edelsteine Sie verdienen, desto größer wird Ihr zukünftiger Airdrop!",
+    "step-6": "Tari ist menschenfreundlich, freiheitsliebend und Open-Source. Es wird von allen betrieben und gesichert, die Tari Universe nutzen. Tari existiert wegen Ihnen. {{emoji}}"
   },
-
   "heading": {
     "step-1": "Welcome to Tari Universe!",
-    "step-2": "What is Tari?",
-    "step-3": "What is Mining?",
-    "step-4": "Is Tari Live Now?",
-    "step-5": "What Do I Do Next?",
-    "step-6": "You are Tari"
+    "step-2": "Was ist Tari?",
+    "step-3": "Was ist Mining?",
+    "step-4": "Ist Tari jetzt live?",
+    "step-5": "Was mache ich als Nächstes?",
+    "step-6": "Sie sind Tari"
+  },
+  "footer": {
+    "heading": "Ich bin ein Footer"
   }
 }

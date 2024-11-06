@@ -15,5 +15,13 @@
   "recent-wins": "Onlangse oorwinnings",
   "setup-scheduler": "Stel skeduleerder op",
   "show-history": "Wys geskiedenis",
-  "wallet-balance": "Beursie balans"
+  "wallet-balance": "Beursie balans",
+  "share": {
+    "history-item-button": "Flex & Nooi",
+    "title": "Ek het pas tari gemyn",
+    "winner-pill": "Wenner van blok",
+    "copied": "Skakel Gekopieer!",
+    "button-text": "FLEX & NOOI",
+    "reward": "my beloning"
+  }
 }

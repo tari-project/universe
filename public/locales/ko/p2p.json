@@ -1,9 +1,9 @@
 {
-  "miners": "Miners",
-  "p2pool-chain-tip": "P2Pool Chain Tip",
-  "p2pool-connected": "P2Pool Connected",
-  "p2pool-connection-info": "Connection",
-  "p2pool-connection-info-more": "Connection details",
-  "p2pool-stats": "Pool mining stats",
-  "tribe": "Tribe"
+  "miners": "채굴자",
+  "p2pool-chain-tip": "P2Pool 체인 팁",
+  "p2pool-connected": "P2Pool 연결됨",
+  "p2pool-connection-info": "연결",
+  "p2pool-connection-info-more": "연결 세부 정보",
+  "p2pool-stats": "풀 채굴 통계",
+  "tribe": "부족"
 }

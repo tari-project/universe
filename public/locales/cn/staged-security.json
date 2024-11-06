@@ -1,34 +1,34 @@
 {
   "common": {
-    "got-it": "Got it"
+    "got-it": "知道了"
   },
   "completedTip": {
-    "text": "Your seed phrase can be found again in your settings",
-    "title": "Seed phrase"
+    "text": "您可以在设置中再次找到您的种子短语",
+    "title": "种子短语"
   },
   "intro": {
-    "balance": "Your wallet has <span>{{balance}}</span> XTM",
-    "button": "Back up seed phrase",
-    "text": "Tari Universe automatically sets up a wallet for you when you start mining. Make sure you always have access to your wallet by storing your seed phrase in a safe spot.",
-    "title": "Protect your tokens by backing up your seed phrase",
-    "warning": "❗ Highly recommended"
+    "balance": "您的钱包有 <span>{{balance}}</span> XTM",
+    "button": "备份种子短语",
+    "text": "当您开始挖矿时，Tari Universe会自动为您设置一个钱包。通过将种子短语存放在安全的地方，确保您始终可以访问您的钱包。",
+    "title": "通过备份种子短语保护您的代币",
+    "warning": "❗ 强烈推荐"
   },
   "reminderTip": {
-    "text": "It is highly recommended to back up your seed phrase for your unique wallet",
-    "title": "Quickly back up your seed phrase in settings"
+    "text": "强烈建议备份您的种子短语以保护您的独特钱包",
+    "title": "在设置中快速备份您的种子短语"
   },
   "seedPhrase": {
-    "button": "VERIFY SEED PHRASE",
-    "checkbox": "I understand that if I lose my recovery seed phrase I will not be able to restore my wallet.",
-    "copied": "Copied!",
-    "copy": "Copy to clipboard",
-    "text": "You will need this code again to restore your wallet.",
-    "title": "Write down your seed phrase and store it somewhere safe"
+    "button": "验证种子短语",
+    "checkbox": "我明白如果我丢失了恢复种子短语，我将无法恢复我的钱包。",
+    "copied": "已复制！",
+    "copy": "复制到剪贴板",
+    "text": "您将需要此代码来恢复您的钱包。",
+    "title": "写下您的种子短语并将其安全存放"
   },
   "verifySeed": {
-    "button": "CONFIRM SEED PHRASE",
-    "placeholder": "Click the words below in the correct order",
-    "text": "To make sure you wrote down your seed phrase correctly, please select the words in the correct order.",
-    "title": "Verify your seed phrase"
+    "button": "确认种子短语",
+    "placeholder": "按正确顺序点击下面的单词",
+    "text": "为了确保您正确记录了种子短语，请按正确的顺序选择单词。",
+    "title": "验证您的种子短语"
   }
 }
