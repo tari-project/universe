@@ -35,6 +35,7 @@ export interface AppConfig {
     reset_earnings: boolean;
     mmproxy_use_monero_fail: boolean;
     mmproxy_monero_nodes: string[];
+    sharing_enabled: boolean;
 }
 
 export enum ExternalDependencyStatus {
