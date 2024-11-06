@@ -35,11 +35,11 @@ jobs:
             matrix:
                 include:
                     - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
-                      args: '--bundles updater'
+                      args: ''
                     - platform: 'windows-latest'
                       args: '--bundles msi,updater'
                     - platform: 'macos-latest'
-                      args: '--target universal-apple-darwin --bundles updater'
+                      args: '--target universal-apple-darwin'
 
         runs-on: ${{ matrix.platform }}
         steps:
