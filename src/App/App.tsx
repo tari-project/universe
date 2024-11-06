@@ -32,7 +32,7 @@ export default function App() {
                     <FloatingElements />
                     <AppContent>
                         {isSettingUp ? <Setup /> : null}
-                        {!isShuttingDown && !isSettingUp ? <MainView /> : null}
+                        {isShuttingDown || isSettingUp ? null : <MainView />}
                         {isShuttingDown ? <ShuttingDownScreen /> : null}
                     </AppContent>
                 </MotionConfig>

@@ -32,20 +32,20 @@ function AutoUpdateDialog() {
     }, [setIsAfterAutoUpdate]);
 
     const handleUpdate = useCallback(async () => {
-        if (!isLoading) {
-            setIsLoading(true);
-            await installUpdate();
-            console.info('Installing latest version of Tari Universe');
-            try {
-                console.info('Restarting application after update');
-                await invoke('restart_application');
-            } catch (e) {
-                Sentry.captureException(e);
-                console.error('Relaunch error', e);
-            }
-            handleClose();
+        if (isLoading) return;
+
+        setIsLoading(true);
+        await installUpdate();
+        console.info('Installing latest version of Tari Universe');
+        try {
+            console.info('Restarting application after update');
+            await invoke('restart_application');
+        } catch (e) {
+            Sentry.captureException(e);
+            console.error('Relaunch error', e);
         }
-    }, [handleClose, isLoading]);
+        handleClose();
+    }, [isLoading, handleClose]);
 
     const checkUpdateTariUniverse = useCallback(async () => {
         try {
@@ -102,7 +102,7 @@ function AutoUpdateDialog() {
                             <SquaredButton onClick={handleClose} color="warning">
                                 {t('no')}
                             </SquaredButton>
-                            <SquaredButton onClick={handleUpdate} color="green">
+                            <SquaredButton onClick={() => handleUpdate()} color="green">
                                 {t('yes')}
                             </SquaredButton>
                         </>

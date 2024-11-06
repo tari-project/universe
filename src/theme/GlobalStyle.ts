@@ -84,7 +84,8 @@ export const GlobalStyle = createGlobalStyle`
     }
 
     html {
-        background:  ${({ theme }) => theme.palette.base};
+        background: #fff;// for now
+        //background:  ${({ theme }) => theme.palette.base};
     }
     
     #canvas {
