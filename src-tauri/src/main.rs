@@ -1181,9 +1181,6 @@ async fn start_mining<'r>(
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
     let custom_cpu_usage = config.custom_cpu_usage();
-    // let custom_gpu_usage = config.custom_gpu_usage().map(|custom_gpu_usage| {
-    //     u16::try_from(custom_gpu_usage).expect("Failed to convert custom_gpu_usage to u16")
-    // });
     let custom_gpu_usage = config.custom_gpu_usage();
     let custom_gpu_usage = if let Some(custom_gpu_usage) = custom_gpu_usage {
         u16::try_from(custom_gpu_usage.clamp(0, 100)).ok()
