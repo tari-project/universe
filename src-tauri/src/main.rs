@@ -12,7 +12,6 @@ use opencl3::platform::get_platforms;
 
 use log4rs::config::RawConfig;
 use regex::Regex;
-use sentry_tauri;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::convert::TryFrom;
