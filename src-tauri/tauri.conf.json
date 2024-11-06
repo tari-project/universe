@@ -3,8 +3,7 @@
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build",
         "frontendDist": "../dist",
-        "devUrl": "http://localhost:1420",
-        "withGlobalTauri": true
+        "devUrl": "http://localhost:1420"
     },
     "bundle": {
         "active": true,
@@ -61,6 +60,7 @@
             "menuOnLeftClick": true
         },
         "macOSPrivateApi": true,
+        "withGlobalTauri": true,
         "windows": [
             {
                 "title": "Tari Universe (Alpha) | Testnet",

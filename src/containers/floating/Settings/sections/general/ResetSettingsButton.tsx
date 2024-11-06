@@ -5,7 +5,6 @@ import * as Sentry from '@sentry/react';
 
 import { useAppStateStore } from '@app/store/appStateStore';
 
-
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';

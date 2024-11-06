@@ -6,7 +6,6 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { Trans, useTranslation } from 'react-i18next';
 
 import { Typography } from '@app/components/elements/Typography';
 import { TorConfig } from '@app/types/app-status';

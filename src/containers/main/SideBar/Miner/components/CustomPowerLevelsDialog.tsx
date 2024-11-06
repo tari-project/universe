@@ -2,7 +2,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MaxConsumptionLevels } from '@app/types/app-status';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import {
     CustomLelvelsHeader,
