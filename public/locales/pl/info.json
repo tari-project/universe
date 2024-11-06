@@ -1,19 +1,21 @@
 {
   "content": {
-    "step-1": "Tari Universe makes it easy to mine Tari tokens on a Mac or PC. The future financial system is accessible to all {{emoji}} {{emoji1}}",
-    "step-2": "Tari is a groundbreaking layer 1 blockchain protocol. It is lightning-fast and will power magical user experiences. Tari tokens are the money of the Tari network.",
-    "step-3": "Mining Tari is a race. The first computer on the network to solve the puzzle will be rewarded in Tari tokens (XTM) and gems. This process secures the Tari network.",
-    "step-4": "Tari is currently in testnet mode. This is the dress rehearsal before the Tari mainnet launch. Tokens mined now (tXTM) have no value. However, gems do!",
-    "step-5": "Nothing! Once you're synced, you will start mining and earning gems automatically. Earn more gems by mining tXTM and sharing your invite link with friends. The more gems you earn, the larger your future airdrop!",
-    "step-6": "Tari is pro-human, pro-freedom, and open-source. It is powered and secured by everyone running Tari Universe. Tari exists because of you. {{emoji}}"
+    "step-1": "Tari Universe ułatwia kopanie tokenów Tari na Macu lub PC. Przyszły system finansowy jest dostępny dla wszystkich {{emoji}} {{emoji1}}",
+    "step-2": "Tari to przełomowy protokół blockchain warstwy 1. Jest błyskawicznie szybki i zapewni magiczne doświadczenia użytkowników. Tokeny Tari są walutą sieci Tari.",
+    "step-3": "Kopanie Tari to wyścig. Pierwszy komputer w sieci, który rozwiąże zagadkę, zostanie nagrodzony tokenami Tari (XTM) i klejnotami. Ten proces zabezpiecza sieć Tari.",
+    "step-4": "Tari jest obecnie w trybie testnet. To próba generalna przed uruchomieniem głównej sieci Tari. Tokeny wykopane teraz (tXTM) nie mają wartości. Jednak klejnoty mają!",
+    "step-5": "Nic! Gdy jesteś zsynchronizowany, automatycznie zaczniesz kopać i zarabiać klejnoty. Zarabiaj więcej klejnotów, kopiąc tXTM i dzieląc się swoim linkiem zaproszeniowym z przyjaciółmi. Im więcej klejnotów zarobisz, tym większy będzie twój przyszły airdrop!",
+    "step-6": "Tari jest pro-ludzkie, pro-wolnościowe i open-source. Jest zasilane i zabezpieczane przez wszystkich, którzy uruchamiają Tari Universe. Tari istnieje dzięki tobie. {{emoji}}"
   },
-
   "heading": {
     "step-1": "Welcome to Tari Universe!",
-    "step-2": "What is Tari?",
-    "step-3": "What is Mining?",
-    "step-4": "Is Tari Live Now?",
-    "step-5": "What Do I Do Next?",
-    "step-6": "You are Tari"
+    "step-2": "Czym jest Tari?",
+    "step-3": "Czym jest kopanie?",
+    "step-4": "Czy Tari jest już na żywo?",
+    "step-5": "Co robić dalej?",
+    "step-6": "Jesteś Tari"
+  },
+  "footer": {
+    "heading": "jestem stopką"
   }
 }
