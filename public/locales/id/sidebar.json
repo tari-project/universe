@@ -15,5 +15,13 @@
   "recent-wins": "Kemenangan terbaru",
   "setup-scheduler": "Atur Penjadwal",
   "show-history": "Tampilkan riwayat",
-  "wallet-balance": "Saldo Dompet"
+  "wallet-balance": "Saldo Dompet",
+  "share": {
+    "history-item-button": "Pamer & Undang",
+    "title": "Saya baru saja menambang tari",
+    "winner-pill": "Pemenang blok",
+    "copied": "Tautan Tersalin!",
+    "button-text": "PAMER & UNDANG",
+    "reward": "hadiah saya"
+  }
 }

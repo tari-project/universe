@@ -108,8 +108,8 @@ impl Default for AppConfigFromFile {
             mmproxy_use_monero_fail: false,
             auto_update: true,
             reset_earnings: false,
-            custom_power_levels_enabled: false,
-            sharing_enabled: false,
+            custom_power_levels_enabled: true,
+            sharing_enabled: true,
         }
     }
 }
@@ -237,9 +237,9 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
-            custom_power_levels_enabled: false,
+            custom_power_levels_enabled: true,
             auto_update: true,
-            sharing_enabled: false,
+            sharing_enabled: true,
         }
     }
 

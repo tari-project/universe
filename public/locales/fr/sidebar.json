@@ -15,5 +15,13 @@
   "recent-wins": "Gains récents",
   "setup-scheduler": "Configurer le planificateur",
   "show-history": "Afficher l\"historique",
-  "wallet-balance": "Solde du portefeuille"
+  "wallet-balance": "Solde du portefeuille",
+  "share": {
+    "history-item-button": "Flex & Inviter",
+    "title": "Je viens de miner du tari",
+    "winner-pill": "Gagnant du bloc",
+    "copied": "Lien copié !",
+    "button-text": "FLEX & INVITER",
+    "reward": "ma récompense"
+  }
 }
