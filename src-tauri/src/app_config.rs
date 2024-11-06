@@ -109,7 +109,7 @@ impl Default for AppConfigFromFile {
             auto_update: true,
             reset_earnings: false,
             custom_power_levels_enabled: false,
-            sharing_enabled: false,
+            sharing_enabled: true,
         }
     }
 }
@@ -239,7 +239,7 @@ impl AppConfig {
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             custom_power_levels_enabled: false,
             auto_update: true,
-            sharing_enabled: false,
+            sharing_enabled: true,
         }
     }
 
