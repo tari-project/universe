@@ -1,6 +1,6 @@
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MaxConsumptionLevels } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
@@ -13,87 +13,58 @@ import {
     RangeLabel,
     RangeLimits,
     InputContainer,
-    IconImage,
+    PerformanceMarker,
     RangeValueHolder,
     RangeInputHolder,
     WarningContainer,
     SuccessContainer,
     TopRightContainer,
+    SLIDER_WIDTH,
+    SLIDER_THUMB_WIDTH,
 } from './CustomPowerLevelsDialog.styles.ts';
 import { useTranslation } from 'react-i18next';
-import eco from '@app/assets/icons/emoji/eco.png';
-import fire from '@app/assets/icons/emoji/fire.png';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoClose } from 'react-icons/io5';
+import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 
-export function CustomPowerLevelsDialog() {
-    const { t } = useTranslation('settings', { useSuspense: false });
-    const [initialised, setInitialised] = useState(false);
-    const [saved, setSaved] = useState(false);
-
-    const configCpuLevels = useAppConfigStore((s) => s.custom_max_cpu_usage);
-    const configGpuLevels = useAppConfigStore((s) => s.custom_max_gpu_usage);
-    const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
-
-    const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
-    const setCustomLevelsDialogOpen = useMiningStore((s) => s.setCustomLevelsDialogOpen);
-
-    const [customGpuLevel, setCustomGpuLevel] = useState(1);
-    const [customCpuLevel, setCustomCpuLevel] = useState(1);
-
+const useGetMaxConsumptionLevels = () => {
+    const [isLoading, setIsLoading] = useState(false);
     const [maxLevels, setMaxLevels] = useState<MaxConsumptionLevels>({
         max_cpu_available: 0,
         max_gpu_available: 0,
     });
 
     useEffect(() => {
-        // Set saved values
-        if (!customLevelsDialogOpen || initialised) return;
-
-        if (configCpuLevels) {
-            setCustomCpuLevel(configCpuLevels);
-        }
-
-        if (configGpuLevels) {
-            setCustomGpuLevel(configGpuLevels);
-        }
-
-        setInitialised(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [configCpuLevels, configGpuLevels, customLevelsDialogOpen]);
-
-    useEffect(() => {
         // Get max CPU and GPU values
         const getMaxConsumptionLevels = async () => {
+            setIsLoading(true);
             const res = await invoke('get_max_consumption_levels');
             setMaxLevels(res);
+            setIsLoading(false);
         };
-        if (customLevelsDialogOpen && !maxLevels.max_cpu_available) {
+        if (maxLevels.max_cpu_available === 0 && !isLoading) {
             getMaxConsumptionLevels();
         }
-    }, [customLevelsDialogOpen, maxLevels.max_cpu_available]);
+    }, [maxLevels.max_cpu_available, isLoading]);
 
-    useEffect(() => {
-        // Update config with a slight delay
-        if (!initialised || !customLevelsDialogOpen) return;
+    return maxLevels;
+};
 
-        if (saved) {
-            setSaved(false);
-        }
+export function CustomPowerLevelsDialog() {
+    const { t } = useTranslation('settings', { useSuspense: false });
+    const [saved, setSaved] = useState(false);
 
-        if (customCpuLevel !== configCpuLevels || customGpuLevel !== configGpuLevels) {
-            const timeout = setTimeout(() => {
-                changeMiningMode({
-                    mode: 'Custom',
-                    customCpuLevels: customCpuLevel,
-                    customGpuLevels: customGpuLevel,
-                }).then(() => setSaved(true));
-            }, 800);
-            return () => clearTimeout(timeout);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [customCpuLevel, customGpuLevel]);
+    const mode = useAppConfigStore((s) => s.mode);
+    const configCpuLevels = useAppConfigStore((s) => s.custom_max_cpu_usage);
+    const configGpuLevels = useAppConfigStore((s) => s.custom_max_gpu_usage);
+
+    const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
+    const setCustomLevelsDialogOpen = useMiningStore((s) => s.setCustomLevelsDialogOpen);
+
+    const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
+
+    const maxLevels = useGetMaxConsumptionLevels();
 
     useEffect(() => {
         // Remove save animation
@@ -102,6 +73,44 @@ export function CustomPowerLevelsDialog() {
             return () => clearTimeout(timeout);
         }
     }, [saved]);
+
+    const gpuValue = useMemo(() => {
+        if (mode !== 'Custom' && maxLevels.max_gpu_available) {
+            return mode === 'Eco' ? 3 : Math.min(maxLevels.max_gpu_available, 800);
+        }
+        return configGpuLevels || 0;
+    }, [mode, maxLevels.max_gpu_available, configGpuLevels]);
+
+    const cpuValue = useMemo(() => {
+        if (mode !== 'Custom' && maxLevels.max_cpu_available) {
+            return mode === 'Eco' ? Math.round(maxLevels.max_cpu_available * 0.3) : maxLevels.max_cpu_available;
+        }
+        return configCpuLevels || 0;
+    }, [mode, maxLevels.max_cpu_available, configCpuLevels]);
+
+    const handleChangeCpu = useCallback(
+        (value: number) => {
+            changeMiningMode({
+                mode: 'Custom',
+                customCpuLevels: value,
+                customGpuLevels: gpuValue,
+            }).then(() => setSaved(true));
+        },
+        [changeMiningMode, gpuValue]
+    );
+
+    const handleChangeGpu = useCallback(
+        (value: number) => {
+            changeMiningMode({
+                mode: 'Custom',
+                customCpuLevels: cpuValue,
+                customGpuLevels: value,
+            }).then(() => setSaved(true));
+        },
+        [changeMiningMode, cpuValue]
+    );
+
+    if (!maxLevels.max_cpu_available) return <LinearProgress />;
 
     return (
         <Dialog open={customLevelsDialogOpen} onOpenChange={setCustomLevelsDialogOpen}>
@@ -120,19 +129,19 @@ export function CustomPowerLevelsDialog() {
                     <RangeInputComponent
                         label={t('custom-power-levels.cpu-power-level')}
                         maxLevel={maxLevels.max_cpu_available}
-                        value={customCpuLevel}
+                        value={cpuValue}
                         desc={t('custom-power-levels.choose-cpu-power-level')}
                         warning={t('custom-power-levels.cpu-warning')}
-                        onChange={setCustomCpuLevel}
+                        onChange={handleChangeCpu}
                     />
                     <Divider />
                     <RangeInputComponent
+                        desc={t('custom-power-levels.choose-gpu-power-level')}
                         label={t('custom-power-levels.gpu-power-level')}
                         maxLevel={maxLevels.max_gpu_available}
-                        value={customGpuLevel}
-                        desc={t('custom-power-levels.choose-gpu-power-level')}
+                        value={gpuValue}
                         warning={t('custom-power-levels.gpu-warning')}
-                        onChange={setCustomGpuLevel}
+                        onChange={handleChangeGpu}
                     />
                 </CustomLevelsContent>
             </DialogContent>
@@ -145,48 +154,115 @@ interface RangeInputProps {
     maxLevel: number;
     value: number;
     desc: string;
-    min?: number;
     warning?: string;
     onChange: (value: number) => void;
 }
-const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning, min = 1 }: RangeInputProps) => {
+const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }: RangeInputProps) => {
+    const min = 1;
+    const [isHover, setIsHover] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: true });
-    const getPosition = (value: number, max: number) => {
+
+    const [currentValue, setCurrentValue] = useState(0);
+    const [calculatedValue, setCalculatedValue] = useState(0);
+
+    useEffect(() => {
+        if (maxLevel && !currentValue) {
+            setCurrentValue(Math.ceil((value * 100) / maxLevel));
+        }
+    }, [currentValue, maxLevel, value]);
+
+    const maxValue = 100;
+
+    const getPosition = useCallback((value: number, max: number) => {
         // Position the value bubble in the range input thumb
-        return 15 + ((value - min) / (max - min)) * (600 - 30);
-    };
+        return 15 + ((value - min) / (max - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH);
+    }, []);
 
     // Check if the value is over 75% of the max level
-    const hasWarning = (value * 100) / (maxLevel - min) > 75;
+    const hasWarning = (currentValue * 100) / maxValue > 75;
 
-    if (!maxLevel) return null;
+    const handleMouseUp = useCallback(() => {
+        setIsHover(false);
+        onChange(calculatedValue);
+    }, [calculatedValue, onChange]);
+
+    const handleMouseDown = () => {
+        setIsHover(true);
+    };
+
+    const handleChange = useCallback(
+        (event: React.ChangeEvent<HTMLInputElement>) => {
+            const newValue = Number(event.target.value);
+            setCurrentValue(newValue);
+            const calculatedValue = Math.ceil((newValue * maxLevel) / 100);
+            setCalculatedValue(calculatedValue);
+        },
+        [maxLevel]
+    );
+
+    // Positioning with useMemo for `RangeValueHolder`
+    const rangeValueHolderStyle = useMemo(
+        () => ({
+            left: getPosition(currentValue, maxValue),
+            display: isHover ? 'block' : 'none',
+        }),
+        [getPosition, currentValue, maxValue, isHover]
+    );
+
+    const ecomarkstyle = useMemo(
+        () => ({
+            display: currentValue > 12 && currentValue < 18 ? 'none' : 'block',
+            left: 15 + ((15 - min) / (maxValue - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
+        }),
+        [currentValue]
+    );
+
+    const firemarkstyle = useMemo(
+        () => ({
+            display: currentValue > 72 && currentValue < 78 ? 'none' : 'block',
+            left: 15 + ((75 - min) / (maxValue - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
+        }),
+        [currentValue]
+    );
+
+    const rangeValueStyle = useMemo(
+        () => ({
+            background: currentValue
+                ? `linear-gradient(to right, #813bf5 ${currentValue || 1}%, #ddd ${currentValue || 1}%)`
+                : '#ddd',
+        }),
+        [currentValue]
+    );
+
+    if (!maxValue) return null;
     return (
         <div>
             <InputContainer>
                 <RangeLabel> {label}</RangeLabel>
-                <RangeIntputWrapper>
-                    <RangeLimits>{min}</RangeLimits>
+                <RangeIntputWrapper onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
+                    <RangeLimits>{'0 %'}</RangeLimits>
                     <RangeInputHolder>
-                        <IconImage src={eco} alt="eco" $left={15} />
-                        <IconImage src={fire} alt="ludicrous" $left={75} />
-                        <RangeValueHolder
-                            style={{
-                                left: getPosition(value, maxLevel),
-                            }}
-                        >
-                            {value}
-                        </RangeValueHolder>
+                        <PerformanceMarker style={ecomarkstyle} />
+                        <PerformanceMarker $red style={firemarkstyle} />
+                        <RangeValueHolder style={rangeValueHolderStyle}>{currentValue}</RangeValueHolder>
                         <RangeInput
                             type="range"
-                            value={value}
-                            max={maxLevel}
-                            min={min}
-                            onChange={(e) => onChange(parseInt(e.target.value))}
+                            value={currentValue}
+                            style={rangeValueStyle}
+                            max={maxValue}
+                            min={1}
+                            onChange={handleChange}
                         />
                     </RangeInputHolder>
-                    <RangeLimits>{maxLevel}</RangeLimits>
+                    <RangeLimits>{`${maxValue} %`}</RangeLimits>
                 </RangeIntputWrapper>
-                <InputDescription>{desc}</InputDescription>
+                <InputDescription
+                    dangerouslySetInnerHTML={{
+                        __html: desc
+                            .replace('{{current}}', calculatedValue.toString())
+                            .replace('{{max}}', maxLevel.toString()),
+                    }}
+                ></InputDescription>
             </InputContainer>
             <WarningContainer $visible={hasWarning}>
                 <strong>{t('custom-power-levels.warning')}</strong>: {warning}
