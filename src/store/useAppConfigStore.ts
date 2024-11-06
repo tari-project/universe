@@ -10,6 +10,11 @@ import { changeLanguage } from 'i18next';
 import { useUIStore } from '@app/store/useUIStore.ts';
 
 type State = Partial<AppConfig>;
+interface SetModeProps {
+    mode: modeType;
+    customGpuLevels?: number;
+    customCpuLevels?: number;
+}
 
 interface Actions {
     fetchAppConfig: () => Promise<void>;
@@ -19,7 +24,7 @@ interface Actions {
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMineOnAppStart: (mineOnAppStart: boolean) => Promise<void>;
-    setMode: (mode: modeType) => Promise<void>;
+    setMode: (params: SetModeProps) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
     setUseTor: (useTor: boolean) => Promise<void>;
@@ -44,8 +49,10 @@ const initialState: State = {
     monero_address: '',
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
+    sharing_enabled: false,
     airdrop_ui_enabled: false,
     paper_wallet_enabled: false,
+    custom_power_levels_enabled: false,
     use_tor: true,
     auto_update: false,
     mmproxy_use_monero_fail: false,
@@ -131,8 +138,10 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         }
         invoke('set_cpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (enabled || miningState.gpu.mining.is_mining)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
@@ -157,10 +166,13 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
             await miningState.pauseMining();
         }
+
         invoke('set_gpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (miningState.cpu.mining.is_mining || enabled)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
@@ -200,10 +212,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             set({ monero_address: prevMoneroAddress });
         });
     },
-    setMode: async (mode) => {
+    setMode: async (params) => {
+        const { mode, customGpuLevels, customCpuLevels } = params;
         const prevMode = useAppConfigStore.getState().mode;
-        set({ mode });
-        invoke('set_mode', { mode }).catch((e) => {
+        set({ mode, custom_max_cpu_usage: customCpuLevels, custom_max_gpu_usage: customGpuLevels });
+        invoke('set_mode', {
+            mode,
+            customCpuUsage: customCpuLevels,
+            customGpuUsage: customGpuLevels,
+        }).catch((e) => {
             Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set mode', e);

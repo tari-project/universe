@@ -9,6 +9,17 @@
   "connected-to-tari": "Connected to the Tari Network",
   "control-port": "Control Port",
   "cpu-mining-enabled": "CPU Mining",
+  "custom-power-levels": {
+    "title": "Custom Mode",
+    "warning": "Warning",
+    "saved": "Applying Changes",
+    "gpu-power-level": "GPU Power %",
+    "cpu-power-level": "CPU Cores",
+    "choose-gpu-power-level": "Choose how much you want your GPU to be allocated to mining <span>({{current}} out of {{max}} threads)</span>",
+    "choose-cpu-power-level": "Choose how much you want your CPU to be allocated to mining <span>({{current}} out of {{max}} cores)</span>",
+    "cpu-warning": "High CPU usage can cause overheating, increase energy consumption, and may lead to hardware damage over time. Please monitor usage to ensure safe and efficient operation.",
+    "gpu-warning": "High GPU usage can cause overheating, increase energy consumption, and may lead to hardware damage over time. Please monitor usage to ensure safe and efficient operation."
+  },
   "debug-info": "Debug",
   "disconnect": "Disconnect from Airdrop",
   "errors": {
@@ -96,6 +107,7 @@
     "wallet": "Wallet"
   },
   "tari-wallet-address": "Tari Wallet Address",
+  "terms-and-conditions": "Terms & Conditions",
   "theme": "Theme",
   "tor-bridges": "Tor Bridges",
   "tor-entry-guards": "Tor Entry Guards",
