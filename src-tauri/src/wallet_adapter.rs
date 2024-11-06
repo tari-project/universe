@@ -3,6 +3,7 @@ use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
 use crate::utils::file_utils::convert_to_string;
+use crate::utils::logging_utils::setup_logging;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
@@ -64,7 +65,16 @@ impl ProcessAdapter for WalletAdapter {
         std::fs::create_dir_all(&working_dir)?;
 
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
-        let formatted_log_dir = convert_to_string(log_dir)?;
+        let config_dir = log_dir
+            .join("wallet")
+            .join("configs")
+            .join("log4rs_config_wallet.yml");
+
+        setup_logging(
+            &config_dir.clone(),
+            &log_dir,
+            include_str!("../log4rs/wallet_sample.yml"),
+        )?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
@@ -76,7 +86,11 @@ impl ProcessAdapter for WalletAdapter {
             "--spend-key".to_string(),
             self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
-            format!("--log-path={}", formatted_log_dir),
+            format!(
+                "--log-config={}",
+                config_dir.to_str().expect("Could not get config dir")
+            )
+            .to_string(),
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
