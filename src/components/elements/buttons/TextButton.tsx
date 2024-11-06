@@ -7,7 +7,7 @@ export const TextButton = ({
     children,
     variant,
     color = 'tariPurple',
-    colorIntensity = 500,
+    colorIntensity,
     size = 'medium',
     ...props
 }: TextButtonProps) => {

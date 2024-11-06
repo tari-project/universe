@@ -22,6 +22,7 @@
   "logout": "Keluar",
   "nextTierBonus": "Undang <strong>{{count}} teman</strong> & dapatkan {{bonusGems}} permata bonus",
   "permission": {
+    "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
     "text": "Tari Universe ingin menggunakan analitik untuk meningkatkan pengalaman Anda dan memberi Anda hadiah dengan permata untuk menambang.",
     "title": "Dapatkan Permata & buat Tari Universe lebih baik"
   },

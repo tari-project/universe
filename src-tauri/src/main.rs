@@ -26,7 +26,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Manager, RunEvent, UpdaterEvent};
+use tauri::{Manager, RunEvent, UpdaterEvent, Window};
 use tokio::sync::RwLock;
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
@@ -1333,7 +1333,7 @@ async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r"obfs4.*?<br\/>").map_err(|e| e.to_string())?;
+    let re = Regex::new(r"obfs4.*?<br/>").map_err(|e| e.to_string())?;
     let bridges: Vec<String> = re
         .find_iter(&res_html)
         .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
@@ -1851,6 +1851,19 @@ async fn reset_settings<'r>(
 
     Ok(())
 }
+#[tauri::command]
+async fn close_splashscreen(window: Window) {
+    window
+        .get_window("splashscreen")
+        .expect("no window labeled 'splashscreen' found")
+        .close()
+        .expect("could not close");
+    window
+        .get_window("main")
+        .expect("no window labeled 'main' found")
+        .show()
+        .expect("could not show");
+}
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
@@ -2158,6 +2171,7 @@ fn main() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            close_splashscreen,
             setup_application,
             start_mining,
             stop_mining,
