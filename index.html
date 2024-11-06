@@ -63,13 +63,6 @@
           glApp.setSize(window.innerWidth, window.innerHeight);
         }
 
-
-        document.addEventListener("contextmenu", (e) => {
-          if (window.location.hostname !== "localhost") {
-            e.preventDefault();
-          }
-        });
-
         document.addEventListener('DOMContentLoaded', preload);
       </script>
     </main>

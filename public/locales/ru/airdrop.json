@@ -22,6 +22,7 @@
   "logout": "Выйти",
   "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
   "permission": {
+    "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
     "text": "Tari Universe хочет использовать аналитику для улучшения вашего опыта и вознаграждать вас гемами за майнинг.",
     "title": "Зарабатывайте гемы и улучшайте Tari Universe"
   },
