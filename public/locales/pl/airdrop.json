@@ -22,6 +22,7 @@
   "logout": "Wyloguj się",
   "nextTierBonus": "Zaproś <strong>{{count}} znajomych</strong> i zdobądź {{bonusGems}} dodatkowych klejnotów",
   "permission": {
+    "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
     "text": "Tari Universe chciałby używać analityki, aby poprawić Twoje doświadczenia i nagrodzić Cię klejnotami za kopanie.",
     "title": "Zarabiaj klejnoty i ulepszaj Tari Universe"
   },

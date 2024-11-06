@@ -22,6 +22,7 @@
   "logout": "登出",
   "nextTierBonus": "邀请<strong>{{count}}位朋友</strong>并赚取{{bonusGems}}个奖励宝石",
   "permission": {
+    "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
     "text": "Tari Universe 希望使用分析数据来改善您的体验，并通过挖矿奖励您宝石。",
     "title": "赚取宝石并让 Tari Universe 更好"
   },
