@@ -55,9 +55,8 @@ export default function ShareRewardModal() {
     const block = item?.blockHeight || 0;
     const reward = item?.amount || 0;
     const earningsFormatted = useMemo(() => formatBalance(reward).toLowerCase(), [reward]);
-    const tx_id = item?.tx_id || '';
 
-    const shareUrl = `${airdropUrl}/download/${referralCode}?tx_id=${tx_id}`;
+    const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
     const handleCopy = () => {
         navigator.clipboard.writeText(shareUrl);
