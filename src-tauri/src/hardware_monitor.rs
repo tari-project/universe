@@ -132,8 +132,8 @@ impl HardwareMonitor {
 
     pub fn read_hardware_parameters(&mut self) -> HardwareStatus {
         // USED FOR DEBUGGING
-        // println!("Reading hardware parameters for {}", self.current_implementation.get_implementation_name());
-        // self.current_implementation.log_all_components();
+        // println!("Reading hardware parameters for {}", self.current_implementation._get_implementation_name());
+        // self.current_implementation._log_all_components();
         let cpu = Some(
             self.current_implementation
                 .read_cpu_parameters(self.cpu.clone()),
