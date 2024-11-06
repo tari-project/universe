@@ -22,6 +22,7 @@
   "logout": "Teken uit",
   "nextTierBonus": "Nooi <strong>{{count}} vriende</strong> & verdien {{bonusGems}} bonus edelstene",
   "permission": {
+    "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
     "text": "Tari Heelal wil graag analise gebruik om u ervaring te verbeter en u met edelstene vir mynbou te beloon.",
     "title": "Verdien Edelstene & maak Tari Heelal beter"
   },

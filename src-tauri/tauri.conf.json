@@ -3,7 +3,8 @@
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build",
         "frontendDist": "../dist",
-        "devUrl": "http://localhost:1420"
+        "devUrl": "http://localhost:1420",
+        "withGlobalTauri": true
     },
     "bundle": {
         "active": true,
@@ -70,9 +71,17 @@
                 "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
-                "decorations": true,
                 "transparent": false,
-                "additionalBrowserArgs": "--enable-features=ignore-gpu-blocklist, --disable=features=disable-accelerated-2d-canvas"
+                "visible": false,
+                "center": true
+            },
+            {
+                "title": "Tari Universe (Alpha) | Testnet",
+                "width": 1380,
+                "height": 780,
+                "label": "splashscreen",
+                "url": "splash.html",
+                "center": true
             }
         ]
     }
