@@ -10,6 +10,8 @@ export const Wrapper = styled(m.div)`
     justify-content: space-between;
     align-items: center;
     border-radius: 10px;
+    overflow: hidden;
+    position: relative;
 
     background: rgba(255, 255, 255, 0.07);
     box-shadow: 0 4px 65px 0 rgba(90, 90, 90, 0.2);
@@ -20,6 +22,12 @@ export const Wrapper = styled(m.div)`
     font-family:
         GTAmerica Standard,
         sans-serif;
+
+    &:hover {
+        .hover-target {
+            opacity: 0.2;
+        }
+    }
 `;
 
 export const LeftContent = styled.div`
@@ -60,6 +68,7 @@ export const InfoWrapper = styled.div`
         font-weight: 600;
     }
 `;
+
 export const EarningsWrapper = styled.div`
     display: flex;
     justify-self: flex-end;
@@ -76,4 +85,59 @@ export const ListLabel = styled.div`
     font-style: normal;
     font-weight: 500;
     line-height: normal;
+`;
+
+export const HoverWrapper = styled(m.div)`
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    background-color: rgba(255, 255, 255, 0.1);
+`;
+
+export const FlexButton = styled(m.button)`
+    display: flex;
+    height: 31px;
+    padding: 8px 5px 8px 18px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+
+    border-radius: 158.799px;
+    background: linear-gradient(0deg, #c9eb00 0%, #c9eb00 100%), linear-gradient(180deg, #755cff 0%, #2946d9 100%),
+        linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
+
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    color: #000;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: normal;
+    cursor: pointer;
+
+    &:hover {
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+    }
+`;
+
+export const GemPill = styled.div`
+    border-radius: 60px;
+    background: #000;
+
+    display: flex;
+    height: 20px;
+    padding: 7px 5px 7px 8px;
+    align-items: center;
+    gap: 4px;
+
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: normal;
+`;
+
+export const GemImage = styled.img`
+    width: 11px;
 `;

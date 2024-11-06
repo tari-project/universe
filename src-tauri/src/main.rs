@@ -5,6 +5,7 @@ use auto_launcher::AutoLauncher;
 use log::trace;
 use log::{debug, error, info, warn};
 use serde::Serialize;
+
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -217,7 +218,7 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
-    if use_tor {
+    if use_tor && !cfg!(target_os = "macos") {
         progress.set_max(5).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
@@ -227,6 +228,7 @@ async fn setup_inner(
             .await?;
         sleep(Duration::from_secs(1));
     }
+
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -314,7 +316,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
     let mut tor_control_port = None;
-    if use_tor {
+    if use_tor && !cfg!(target_os = "macos") {
         state
             .tor_manager
             .ensure_started(
@@ -523,6 +525,7 @@ struct CpuMinerConfig {
     tari_address: TariAddress,
     eco_mode_xmrig_options: Vec<String>,
     ludicrous_mode_xmrig_options: Vec<String>,
+    custom_mode_xmrig_options: Vec<String>,
     eco_mode_cpu_percentage: Option<isize>,
     ludicrous_mode_cpu_percentage: Option<isize>,
 }
@@ -589,6 +592,7 @@ fn main() {
         tari_address: TariAddress::default(),
         eco_mode_xmrig_options: vec![],
         ludicrous_mode_xmrig_options: vec![],
+        custom_mode_xmrig_options: vec![],
         eco_mode_cpu_percentage: None,
         ludicrous_mode_cpu_percentage: None,
     }));
@@ -691,6 +695,7 @@ fn main() {
                     cpu_conf.eco_mode_xmrig_options = app_conf.eco_mode_cpu_options().clone();
                     cpu_conf.ludicrous_mode_xmrig_options =
                         app_conf.ludicrous_mode_cpu_options().clone();
+                    cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
                     Ok(())
                 });
 
@@ -788,6 +793,7 @@ fn main() {
             commands::start_mining,
             commands::stop_mining,
             commands::update_applications,
+            commands::get_max_consumption_levels
         ])
         .build(tauri::generate_context!())
         .inspect_err(

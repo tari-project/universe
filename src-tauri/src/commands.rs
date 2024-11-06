@@ -1,3 +1,7 @@
+use opencl3::device::Device;
+use opencl3::platform::get_platforms;
+use std::collections::HashMap;
+
 use crate::app_config::AppConfig;
 use crate::app_in_memory_config::AirdropInMemoryConfig;
 use crate::auto_launcher::AutoLauncher;
@@ -25,7 +29,7 @@ use regex::Regex;
 use sentry::integrations::anyhow::capture_anyhow;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::Ordering;
-use std::thread::sleep;
+use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -34,14 +38,33 @@ use tauri::Manager;
 #[tauri::command]
 pub async fn set_mode(
     mode: String,
+    custom_cpu_usage: Option<f64>,
+    custom_gpu_usage: Option<f64>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
+
+    fn f64_to_isize_safe(_value: Option<f64>) -> Option<isize> {
+        let value = _value.unwrap_or(-1.0);
+        if value.is_finite() && value >= isize::MIN as f64 && value <= isize::MAX as f64 {
+            #[allow(clippy::cast_possible_truncation)]
+            Some(value.round() as isize)
+        } else {
+            warn!(target: LOG_TARGET, "Invalid value for custom_cpu_usage or custom_gpu_usage: {:?}", _value);
+            None
+        }
+    }
+
     state
         .config
         .write()
         .await
-        .set_mode(mode)
+        .set_mode(
+            mode,
+            f64_to_isize_safe(custom_cpu_usage),
+            f64_to_isize_safe(custom_gpu_usage),
+        )
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -653,6 +676,10 @@ pub async fn start_mining<'r>(
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
+    let custom_cpu_usage = config.custom_cpu_usage();
+    let custom_gpu_usage = config.custom_gpu_usage().map(|custom_gpu_usage| {
+        u16::try_from(custom_gpu_usage).expect("Failed to convert custom_gpu_usage to u16")
+    });
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = config.monero_address().to_string();
@@ -680,6 +707,7 @@ pub async fn start_mining<'r>(
                     .expect("Could not get config dir"),
                 app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
+                custom_cpu_usage,
             )
             .await;
 
@@ -743,6 +771,7 @@ pub async fn start_mining<'r>(
                 app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
                 telemetry_id,
+                custom_gpu_usage,
             )
             .await;
 
@@ -761,7 +790,6 @@ pub async fn start_mining<'r>(
     }
     Ok(())
 }
-
 #[tauri::command]
 pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let timer = Instant::now();
@@ -1296,4 +1324,51 @@ pub async fn reset_settings<'r>(
     }
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
+}
+
+#[tauri::command]
+pub async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
+    let mut result = HashMap::new();
+
+    // CPU Detection
+    let timer = Instant::now();
+    let max_cpu_available = available_parallelism()
+        .map(|cores| i32::try_from(cores.get()).unwrap_or(1))
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
+    }
+
+    result.insert("max_cpu_available".to_string(), max_cpu_available);
+
+    // GPU Detection (OpenCL)
+    let gpu_threads = match (|| -> Result<i32, Box<dyn std::error::Error>> {
+        let platforms = get_platforms()?;
+        if platforms.is_empty() {
+            return Ok(0);
+        }
+
+        // Try to get the first GPU device from the first platform
+        let devices = platforms[0].get_devices(opencl3::device::CL_DEVICE_TYPE_GPU)?;
+        if devices.is_empty() {
+            return Ok(0);
+        }
+
+        // Get max work group size for the first device
+        let device = Device::new(devices[0]);
+        let max_wg_size: usize = device.max_work_group_size()?;
+
+        Ok(i32::try_from(max_wg_size).unwrap_or(0))
+    })() {
+        Ok(threads) => threads,
+        Err(e) => {
+            warn!(target: LOG_TARGET, "GPU detection failed: {}", e);
+            0 // Explicit default when GPU/OpenCL is not available
+        }
+    };
+
+    result.insert("max_gpu_available".to_string(), gpu_threads);
+
+    Ok(result)
 }

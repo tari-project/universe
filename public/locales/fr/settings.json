@@ -108,7 +108,9 @@
     "title": "Mettre à jour Tari Universe automatiquement"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Utiliser Tor",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Mode visuel",
   "yes": "Yes",
   "your-feedback": "Veuillez décrire votre problème",

@@ -212,6 +212,12 @@ jobs:
             libprotobuf-dev \
             protobuf-compiler
 
+      - name: install dependencies (linux/OpenCL)
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
       - name: Node.js setup
         uses: actions/setup-node@v4
         with:

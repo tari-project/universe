@@ -108,7 +108,9 @@
     "title": "Tari Universeを自動更新"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "Torを使用する",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "ビジュアルモード",
   "yes": "はい",
   "your-feedback": "問題を説明してください",

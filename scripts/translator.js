@@ -154,8 +154,7 @@ async function main() {
 
             const translations = JSON.parse(file);
             const translationsWithDefaults = mergeDeep(JSON.parse(enTranslations), translations);
-
-            if (args > 1) {
+            if (args.length > 1) {
                 const translation = args[1].split('=');
                 setNestedValue(translationsWithDefaults, translation[0], translation[1]);
             }

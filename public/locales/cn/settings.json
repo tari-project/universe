@@ -108,7 +108,9 @@
     "title": "自动更新 Tari 宇宙"
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
   "use-tor": "使用Tor",
+  "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "视觉模式",
   "yes": "是",
   "your-feedback": "请描述您的问题",

@@ -49,6 +49,7 @@ export const TorMarkup = () => {
     const setUseTor = useAppConfigStore((s) => s.setUseTor);
     const [editedUseTor, setEditedUseTor] = useState(Boolean(defaultUseTor));
     const [editedConfig, setEditedConfig] = useState<EditedTorConfig>();
+    const [isRandomControlPort, setIsRandomControlPort] = useState(false);
 
     const hasCheckedOs = useRef(false);
 
@@ -70,6 +71,7 @@ export const TorMarkup = () => {
             .then((torConfig: TorConfig) => {
                 setEditedConfig(torConfig);
                 setDefaultTorConfig(torConfig);
+                setIsRandomControlPort(!torConfig?.control_port);
             })
             .catch((e) => {
                 Sentry.captureException(e);
@@ -111,9 +113,9 @@ export const TorMarkup = () => {
             (editedConfig?.use_bridges &&
                 (!editedConfig?.bridges?.length || editedConfig?.bridges.some((bridge) => hasBridgeError(bridge))) &&
                 !editedConfig?.control_port) ||
-            Number(editedConfig?.control_port) <= 0
+            (!isRandomControlPort && Number(editedConfig?.control_port) <= 0)
         );
-    }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor]);
+    }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor, isRandomControlPort]);
     const toggleUseBridges = useCallback(async () => {
         const updated_use_bridges = !editedConfig?.use_bridges;
         let bridges = editedConfig?.bridges || [];
@@ -128,6 +130,14 @@ export const TorMarkup = () => {
         }));
     }, [editedConfig?.bridges, editedConfig?.use_bridges]);
 
+    const toggleRandomControlPort = useCallback(() => {
+        setEditedConfig((prev) => ({
+            ...(prev as TorConfig),
+            control_port: isRandomControlPort ? prev?.control_port || 9051 : 0,
+        }));
+        setIsRandomControlPort((prev) => !prev);
+    }, [isRandomControlPort]);
+
     return (
         <>
             <SettingsGroupWrapper>
@@ -141,41 +151,60 @@ export const TorMarkup = () => {
                         </SettingsGroupTitle>
                         <Typography>{t('setup-tor-settings')}</Typography>
                     </SettingsGroupContent>
-                    <SettingsGroupAction>
-                        {isSaveButtonVisible ? (
-                            <Button onClick={onSave}>{t('save')}</Button>
-                        ) : (
-                            <ToggleSwitch checked={editedUseTor} onChange={() => setEditedUseTor((p) => !p)} />
-                        )}
+                    <SettingsGroupAction style={{ alignItems: 'center' }}>
+                        {isSaveButtonVisible && <Button onClick={onSave}>{t('save')}</Button>}
+                        <ToggleSwitch checked={editedUseTor} onChange={() => setEditedUseTor((p) => !p)} />
                     </SettingsGroupAction>
                 </SettingsGroup>
 
                 {editedUseTor && editedConfig ? (
                     <TorSettingsContainer $isMac={isMac}>
-                        <Stack style={{ width: '100%' }} direction="column">
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            style={{ marginBottom: '16px' }}
+                        >
                             <Typography variant="h6">{t('control-port')}</Typography>
-                            <Input
-                                name="control-port"
-                                value={editedConfig.control_port}
-                                placeholder="9051"
-                                hasError={hasControlPortError(+editedConfig.control_port)}
-                                onChange={({ target }) => {
-                                    if (target.value && isNaN(+target.value)) return;
-                                    setEditedConfig((prev) => ({
-                                        ...(prev as TorConfig),
-                                        control_port: target.value !== '' ? +target.value.trim() : '',
-                                    }));
-                                }}
+                            <ToggleSwitch
+                                label={t('use-random-control-port')}
+                                variant="gradient"
+                                checked={isRandomControlPort}
+                                onChange={toggleRandomControlPort}
                             />
-                            <ErrorTypography variant="p">
-                                {hasControlPortError(+editedConfig.control_port) && t('errors.invalid-control-port')}
-                            </ErrorTypography>
                         </Stack>
 
-                        <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        {!isRandomControlPort && (
+                            <Stack style={{ width: '100%' }} direction="column">
+                                <Input
+                                    name="control-port"
+                                    value={editedConfig.control_port}
+                                    placeholder="9051"
+                                    hasError={hasControlPortError(+editedConfig.control_port)}
+                                    onChange={({ target }) => {
+                                        if (target.value && isNaN(+target.value)) return;
+                                        setEditedConfig((prev) => ({
+                                            ...(prev as TorConfig),
+                                            control_port: target.value !== '' ? +target.value.trim() : '',
+                                        }));
+                                    }}
+                                />
+                                <ErrorTypography variant="p">
+                                    {hasControlPortError(+editedConfig.control_port) &&
+                                        t('errors.invalid-control-port')}
+                                </ErrorTypography>
+                            </Stack>
+                        )}
+
+                        <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
+                            style={{ marginBottom: '16px' }}
+                        >
                             <Typography variant="h6">{t('tor-bridges')}</Typography>
                             <ToggleSwitch
-                                label={'Use Tor Bridges'}
+                                label={t('use-tor-bridges')}
                                 variant="gradient"
                                 checked={editedConfig.use_bridges}
                                 onChange={toggleUseBridges}
