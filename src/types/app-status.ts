@@ -35,6 +35,7 @@ export interface AppConfig {
     reset_earnings: boolean;
     mmproxy_use_monero_fail: boolean;
     mmproxy_monero_nodes: string[];
+    sharing_enabled: boolean;
 }
 
 export enum ExternalDependencyStatus {
@@ -59,12 +60,12 @@ export interface ExternalDependency {
 }
 
 export interface CpuMinerMetrics {
-    hardware?: HardwareParameters;
+    hardware: PublicDeviceParameters[];
     mining: CpuMinerStatus;
 }
 
 export interface GpuMinerMetrics {
-    hardware: HardwareParameters[];
+    hardware: PublicDeviceParameters[];
     mining: GpuMinerStatus;
 }
 
@@ -141,7 +142,30 @@ export interface P2poolBlockStats {
     rejected: number;
     submitted: number;
 }
+export enum HardwareVendor {
+    Nvidia = 'Nvidia',
+    Amd = 'Amd',
+    Intel = 'Intel',
+    Apple = 'Apple',
+    Unknown = 'Unknown',
+}
 
+export interface DeviceStatus {
+    is_available: boolean;
+    is_reader_implemented: boolean;
+}
+
+export interface DeviceParameters {
+    usage_percentage: number;
+    current_temperature: number;
+    max_temperature: number;
+}
+export interface PublicDeviceParameters {
+    vendor: HardwareVendor;
+    name: string;
+    status: DeviceStatus;
+    parameters?: DeviceParameters;
+}
 export interface HardwareParameters {
     label: string;
     usage_percentage: number;

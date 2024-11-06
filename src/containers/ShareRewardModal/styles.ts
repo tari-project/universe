@@ -9,6 +9,11 @@ export const HeroImage = styled('img')`
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
+
+    @media (max-height: 800px) {
+        width: 65%;
+        top: -50px;
+    }
 `;
 
 export const ContentWrapper = styled('div')`
@@ -19,6 +24,10 @@ export const ContentWrapper = styled('div')`
     justify-content: center;
     align-items: center;
     gap: 20px;
+
+    @media (max-height: 800px) {
+        padding-top: 190px;
+    }
 `;
 
 export const Title = styled('div')`

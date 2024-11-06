@@ -5,19 +5,25 @@ import { useUiMiningStateMachine } from '@app/hooks/mining/useMiningUiStateMachi
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useCallback, useEffect } from 'react';
 import useEarningsRecap from '@app/hooks/mining/useEarningsRecap.ts';
+import { useAppStateStore } from '@app/store/appStateStore';
 
 export default function useMiningStatesSync() {
     const fetchMiningMetrics = useMiningMetricsUpdater();
     const fetchWalletDetails = useWalletStore((s) => s.fetchWalletDetails);
+    const setupProgress = useAppStateStore((s) => s.setupProgress);
 
     useBlockInfo();
     useUiMiningStateMachine();
     useEarningsRecap();
 
     const callIntervalItems = useCallback(async () => {
-        await fetchMiningMetrics();
-        await fetchWalletDetails();
-    }, [fetchMiningMetrics, fetchWalletDetails]);
+        if (setupProgress >= 0.75) {
+            await fetchWalletDetails();
+        }
+        if (setupProgress >= 1) {
+            await fetchMiningMetrics();
+        }
+    }, [fetchMiningMetrics, fetchWalletDetails, setupProgress]);
 
     // intervalItems
     useEffect(() => {
