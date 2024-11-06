@@ -4,6 +4,7 @@ use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
 use crate::utils::file_utils::convert_to_string;
+use crate::utils::logging_utils::setup_logging;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::warn;
@@ -67,20 +68,29 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         if self.config.is_none() {
             return Err(Error::msg("MergeMiningProxyAdapter config is None"));
         }
-
         let config = self
             .config
             .as_ref()
             .ok_or_else(|| anyhow!("MergeMiningProxyAdapter config is None"))?;
+
+        let config_dir = &log_dir
+            .join("proxy")
+            .join("configs")
+            .join("log4rs_config_proxy.yml");
+        setup_logging(
+            &config_dir.clone(),
+            &log_dir,
+            include_str!("../log4rs/proxy_sample.yml"),
+        )?;
+
         let working_dir_string = convert_to_string(working_dir)?;
-        let log_dir_string = convert_to_string(log_dir)?;
+        let config_dir_string = convert_to_string(config_dir.to_path_buf())?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
             working_dir_string,
             "--non-interactive-mode".to_string(),
-            "--log-path".to_string(),
-            log_dir_string,
+            format!("--log-config={}", config_dir_string),
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(

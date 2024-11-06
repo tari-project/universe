@@ -13,27 +13,30 @@ export const useHardwareStats = () => {
 
     const cpu = useMemo(() => {
         if (cpuHardwareStats) {
-            return {
-                label: cpuHardwareStats.label,
-                usage_percentage: roundTo(cpuHardwareStats.usage_percentage),
-                current_temperature: roundTo(cpuHardwareStats.current_temperature),
-                max_temperature: roundTo(cpuHardwareStats.max_temperature),
-            } as HardwareParameters;
+            return cpuHardwareStats.map<HardwareParameters>((stats) => ({
+                label: stats.name,
+                usage_percentage: roundTo(stats.parameters?.usage_percentage ?? 0),
+                current_temperature: roundTo(stats.parameters?.current_temperature ?? 0),
+                max_temperature: roundTo(stats.parameters?.max_temperature ?? 0),
+            }));
         }
         return undefined;
     }, [cpuHardwareStats]);
 
     const gpu = useMemo(() => {
         if (gpuHardwareStats) {
-            return gpuHardwareStats.map((stats) => ({
-                label: stats.label,
-                usage_percentage: roundTo(stats.usage_percentage),
-                current_temperature: roundTo(stats.current_temperature),
-                max_temperature: roundTo(stats.max_temperature),
-            })) as HardwareParameters[];
+            return gpuHardwareStats.map<HardwareParameters>((stats) => ({
+                label: stats.name,
+                usage_percentage: roundTo(stats.parameters?.usage_percentage ?? 0),
+                current_temperature: roundTo(stats.parameters?.current_temperature ?? 0),
+                max_temperature: roundTo(stats.parameters?.max_temperature ?? 0),
+            }));
         }
         return undefined;
     }, [gpuHardwareStats]);
 
-    return { cpu, gpu };
+    const doesAnyCpuHasReadings = cpuHardwareStats?.some((cpu) => cpu.status.is_reader_implemented);
+    const doesAnyGpuHasReadings = gpuHardwareStats?.some((gpu) => gpu.status.is_reader_implemented);
+
+    return { cpu, gpu, doesAnyCpuHasReadings, doesAnyGpuHasReadings };
 };
