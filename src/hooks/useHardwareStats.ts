@@ -13,24 +13,28 @@ export const useHardwareStats = () => {
 
     const cpu = useMemo(() => {
         if (cpuHardwareStats) {
-            return cpuHardwareStats.map<HardwareParameters>((stats) => ({
-                label: stats.name,
-                usage_percentage: roundTo(stats.parameters?.usage_percentage ?? 0),
-                current_temperature: roundTo(stats.parameters?.current_temperature ?? 0),
-                max_temperature: roundTo(stats.parameters?.max_temperature ?? 0),
-            }));
+            return cpuHardwareStats
+                .filter((cpu) => cpu.status.is_reader_implemented)
+                .map<HardwareParameters>((stats) => ({
+                    label: stats.name,
+                    usage_percentage: roundTo(stats.parameters?.usage_percentage ?? 0),
+                    current_temperature: roundTo(stats.parameters?.current_temperature ?? 0),
+                    max_temperature: roundTo(stats.parameters?.max_temperature ?? 0),
+                }));
         }
         return undefined;
     }, [cpuHardwareStats]);
 
     const gpu = useMemo(() => {
         if (gpuHardwareStats) {
-            return gpuHardwareStats.map<HardwareParameters>((stats) => ({
-                label: stats.name,
-                usage_percentage: roundTo(stats.parameters?.usage_percentage ?? 0),
-                current_temperature: roundTo(stats.parameters?.current_temperature ?? 0),
-                max_temperature: roundTo(stats.parameters?.max_temperature ?? 0),
-            }));
+            return gpuHardwareStats
+                .filter((gpu) => gpu.status.is_reader_implemented)
+                .map<HardwareParameters>((stats) => ({
+                    label: stats.name,
+                    usage_percentage: roundTo(stats.parameters?.usage_percentage ?? 0),
+                    current_temperature: roundTo(stats.parameters?.current_temperature ?? 0),
+                    max_temperature: roundTo(stats.parameters?.max_temperature ?? 0),
+                }));
         }
         return undefined;
     }, [gpuHardwareStats]);
