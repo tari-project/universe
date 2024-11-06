@@ -27,12 +27,8 @@ pub fn setup_logging(config_file: &Path, base_path: &Path, default: &str) -> Res
         .replace('\\', "/");
 
     let contents = contents.replace("{{log_dir}}", &replace_str);
-    let mut file = File::create(config_file).map_err(|e| {
-        Error::msg(format!(
-            "Could not create default log file: {}",
-            e
-        ))
-    })?;
+    let mut file = File::create(config_file)
+        .map_err(|e| Error::msg(format!("Could not create default log file: {}", e)))?;
 
     file.write_all(contents.as_bytes())
         .map_err(|e| Error::msg(format!("Could not write to file: {}", e)))?;

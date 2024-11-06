@@ -12,7 +12,6 @@ use winreg::enums::HKEY_LOCAL_MACHINE;
 #[cfg(target_os = "windows")]
 use winreg::RegKey;
 
-
 #[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
