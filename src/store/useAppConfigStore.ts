@@ -137,8 +137,10 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         }
         invoke('set_cpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (enabled || miningState.gpu.mining.is_mining)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
@@ -163,10 +165,16 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
             await miningState.pauseMining();
         }
+
+        console.log('miningState.miningInitiated', miningState.miningInitiated);
+        console.log('miningState.cpu.mining.is_mining', miningState.cpu.mining.is_mining);
+        console.log('miningState.gpu.mining.is_mining', miningState.gpu.mining.is_mining);
         invoke('set_gpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (miningState.cpu.mining.is_mining || enabled)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
