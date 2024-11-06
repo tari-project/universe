@@ -2046,6 +2046,7 @@ fn main() {
     //         None,
     //     )
     // };
+    let sys_monitor = SystemMonitor::new(cpu_miner.clone(), p2pool_manager.clone());
     let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
@@ -2075,8 +2076,7 @@ fn main() {
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
-    let sys_monitor = SystemMonitor::new(cpu_miner.clone(), p2pool_manager.clone());
-
+    let shutdown_signal = shutdown.to_signal();
     let app = tauri::Builder::default()
         .system_tray(systray)
         .on_system_tray_event(|app, event| {
@@ -2241,13 +2241,16 @@ fn main() {
     );
 
     let mut downloaded: u64 = 0;
+
     app.run(move |_app_handle, event| match event {
         tauri::RunEvent::Ready => {
             info!(target: LOG_TARGET, "Tari Universe v{} ready. Starting system monitor", _app_handle.package_info().version);
-            tauri::async_runtime::spawn(async {
-
-                sys_monitor.start(shutdown.clone()).await;
-            })
+            // This should only be run once
+            let shutdown_signal2 = shutdown_signal.clone();
+            let sys_monitor2 = sys_monitor.clone();
+            tauri::async_runtime::spawn(async move {
+                sys_monitor2.run(shutdown_signal2).await;
+            });
         },
         tauri::RunEvent::Updater(updater_event) => match updater_event {
             UpdaterEvent::Error(e) => {

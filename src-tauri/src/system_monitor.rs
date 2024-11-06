@@ -11,13 +11,14 @@ use crate::{cpu_miner::CpuMiner, p2pool_manager::P2poolManager};
 
 const CPU_HASHRATE_LOG_TARGET: &str = "cpu_hashrate";
 
+#[derive(Clone)]
 pub(crate) struct SystemMonitor {
     cpu_miner: Arc<RwLock<CpuMiner>>,
     p2pool_manager: P2poolManager,
 }
 
 impl SystemMonitor {
-    pub async fn new(cpu_miner: Arc<RwLock<CpuMiner>>, p2pool_manager: P2poolManager) -> Self {
+    pub fn new(cpu_miner: Arc<RwLock<CpuMiner>>, p2pool_manager: P2poolManager) -> Self {
         Self {
             cpu_miner,
             p2pool_manager,
