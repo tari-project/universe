@@ -36,7 +36,7 @@ jobs:
                 include:
                     - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
                       args: ''
-                    - platform: 'windows-latest'
+                    - platform: 'windows-2019'
                       args: '--bundles msi,updater'
                     - platform: 'macos-latest'
                       args: '--target universal-apple-darwin'
