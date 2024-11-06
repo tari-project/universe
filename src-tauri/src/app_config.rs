@@ -71,6 +71,8 @@ pub struct AppConfigFromFile {
     auto_update: bool,
     #[serde(default = "default_false")]
     custom_power_levels_enabled: bool,
+    #[serde(default = "default_false")]
+    sharing_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -107,6 +109,7 @@ impl Default for AppConfigFromFile {
             auto_update: true,
             reset_earnings: false,
             custom_power_levels_enabled: false,
+            sharing_enabled: false,
         }
     }
 }
@@ -198,6 +201,7 @@ pub(crate) struct AppConfig {
     custom_max_gpu_usage: Option<isize>,
     auto_update: bool,
     custom_power_levels_enabled: bool,
+    sharing_enabled: bool,
 }
 
 impl AppConfig {
@@ -235,6 +239,7 @@ impl AppConfig {
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             custom_power_levels_enabled: false,
             auto_update: true,
+            sharing_enabled: false,
         }
     }
 
@@ -298,6 +303,7 @@ impl AppConfig {
                 } else {
                     self.reset_earnings = false;
                 }
+                self.sharing_enabled = config.sharing_enabled;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -621,6 +627,7 @@ impl AppConfig {
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
             auto_update: self.auto_update,
             custom_power_levels_enabled: self.custom_power_levels_enabled,
+            sharing_enabled: self.sharing_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
