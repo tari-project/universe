@@ -52,6 +52,11 @@ export default function Miner() {
           (gpuHardwareStats?.length || 1)
         : 0;
 
+    const cpuChipValue = cpuHardwareStats
+        ? cpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
+          (cpuHardwareStats?.length || 1)
+        : 0;
+
     const totalEarningsFormatted = useFormatBalance(totalEarnings);
     const estimatedBalanceFormatted = useFormatBalance(cpu_estimated_earnings);
     const gpuEstimatedEarnings = useFormatBalance(gpu_estimated_earnings);
@@ -63,7 +68,7 @@ export default function Miner() {
                     title={t('cpu-power')}
                     stats={isCpuMiningEnabled && cpu_is_mining ? formatHashrate(cpu_hash_rate, false) : '-'}
                     isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
-                    chipValue={cpu_is_mining ? cpuHardwareStats?.usage_percentage : undefined}
+                    chipValue={cpu_is_mining ? cpuChipValue : undefined}
                     unit="H/s"
                     useLowerCase
                 />

@@ -2,10 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
+use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
 use serde::Serialize;
-
+use log4rs::config::RawConfig;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -18,6 +20,7 @@ use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::RwLock;
 
+use utils::logging_utils::setup_logging;
 use crate::cpu_miner::CpuMiner;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
@@ -54,6 +57,7 @@ mod feedback;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod hardware;
 mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -315,6 +319,9 @@ async fn setup_inner(
         .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+
+    HardwareStatusMonitor::current().initialize().await?;
+
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
         state
@@ -457,13 +464,13 @@ async fn setup_inner(
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
-    hardware: Option<HardwareParameters>,
+    hardware: Vec<PublicDeviceProperties>,
     mining: CpuMinerStatus,
 }
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Vec<HardwareParameters>,
+    hardware: Vec<PublicDeviceProperties>,
     mining: GpuMinerStatus,
 }
 
@@ -668,17 +675,21 @@ fn main() {
             });
             tray.on_menu_event(move |handle, event| handle_menu_event(handle.clone(), event));
 
-            // TODO: Combine with sentry log
-            tari_common::initialize_logging(
+            let contents = setup_logging(
                 &app.path()
                     .app_config_dir()
                     .expect("Could not get config dir")
+                    .join("logs")
                     .join("universe")
+                    .join("configs")
                     .join("log4rs_config_universe.yml"),
                 &app.path().app_log_dir().expect("Could not get log dir"),
-                include_str!("../log4rs_sample.yml"),
+                include_str!("../log4rs/universe_sample.yml"),
             )
             .expect("Could not set up logging");
+            let config: RawConfig = serde_yaml::from_str(&contents)
+                .expect("Could not parse the contents of the log file as yaml");
+            log4rs::init_raw_config(config).expect("Could not initialize logging");
 
             let config_path = app
                 .path()

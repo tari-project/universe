@@ -1,10 +1,10 @@
 use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::p2pool_manager::{self, P2poolManager};
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
     gpu_miner::GpuMiner,
-    hardware_monitor::HardwareMonitor,
     node_manager::NodeManager,
 };
 use anyhow::Result;
@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::future::Future;
+use std::ops::Div;
 use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
@@ -350,10 +351,19 @@ async fn get_telemetry_data(
         }
     };
 
-    let hardware_status = HardwareMonitor::current()
-        .write()
+    // let hardware_status = HardwareMonitor::current()
+    //     .write()
+    //     .await
+    //     .read_hardware_parameters();
+
+    let gpu_hardware_parameters = HardwareStatusMonitor::current()
+        .get_gpu_public_properties()
         .await
-        .read_hardware_parameters();
+        .ok();
+    let cpu_hardware_parameters = HardwareStatusMonitor::current()
+        .get_cpu_public_properties()
+        .await
+        .ok();
 
     let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
@@ -366,24 +376,60 @@ async fn get_telemetry_data(
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
     let cpu_hash_rate = Some(cpu.hash_rate);
-    let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
-    let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
+
+    let cpu_utilization = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
+        let filtered_cpus = cpu_hardware_parameters
+            .iter()
+            .filter(|c| c.parameters.is_some())
+            .collect::<Vec<_>>();
+        Some(
+            filtered_cpus
+                .iter()
+                .map(|c| c.parameters.clone().unwrap_or_default().usage_percentage)
+                .sum::<f32>()
+                .div(filtered_cpus.len() as f32),
+        )
+    } else {
+        None
+    };
+
+    let cpu_make = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
+        let cpu_names: Vec<String> = cpu_hardware_parameters
+            .iter()
+            .map(|c| c.name.clone())
+            .collect();
+        Some(cpu_names.into_iter().collect::<Vec<_>>().join(", "))
+    } else {
+        None
+    };
+
     let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
-    let gpu_utilization = Some(
-        hardware_status
-            .gpu
-            .clone()
-            .into_iter()
-            .map(|c| c.usage_percentage)
-            .sum::<f32>(),
-    );
-    let gpu_makes: Vec<_> = hardware_status
-        .gpu
-        .clone()
-        .into_iter()
-        .map(|c| c.label.clone())
-        .collect();
-    let gpu_make = Some(gpu_makes.into_iter().collect::<Vec<_>>().join(", ")); //TODO refactor - now is JUST WIP to meet the String type
+
+    let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
+        let filtered_gpus = gpu_hardware_parameters
+            .iter()
+            .filter(|c| c.parameters.is_some())
+            .collect::<Vec<_>>();
+        Some(
+            filtered_gpus
+                .iter()
+                .map(|c| c.parameters.clone().unwrap_or_default().usage_percentage)
+                .sum::<f32>()
+                .div(filtered_gpus.len() as f32),
+        )
+    } else {
+        None
+    };
+
+    let gpu_make = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
+        let cpu_names: Vec<String> = gpu_hardware_parameters
+            .iter()
+            .map(|c| c.name.clone())
+            .collect();
+        Some(cpu_names.into_iter().collect::<Vec<_>>().join(", "))
+    } else {
+        None
+    }; //TODO refactor - now is JUST WIP to meet the String type
     let version = env!("CARGO_PKG_VERSION").to_string();
     let gpu_mining_used =
         config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
