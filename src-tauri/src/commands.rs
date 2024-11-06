@@ -10,7 +10,7 @@ use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
 use crate::gpu_miner_adapter::GpuNodeSource;
-use crate::hardware_monitor::HardwareMonitor;
+use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
 use crate::p2pool::models::Stats;
@@ -24,6 +24,8 @@ use crate::{
     GpuMinerMetrics, MinerMetrics, TariWalletDetails, UniverseAppState, LOG_TARGET, LOG_TARGET_WEB,
     MAX_ACCEPTABLE_COMMAND_TIME,
 };
+
+use crate::hardware_monitor::{HardwareParameters, HardwareStatus};
 use log::{debug, error, info, warn};
 use regex::Regex;
 use sentry::integrations::anyhow::capture_anyhow;
@@ -1159,28 +1161,16 @@ pub async fn get_miner_metrics(
             return Err(e.to_string());
         }
     };
+    // add sys tray data changes from main later
 
-    let config_path = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let _unused = HardwareMonitor::current()
-        .write()
+    let gpu_public_parameters = HardwareStatusMonitor::current()
+        .get_gpu_public_properties()
         .await
-        .load_status_file(config_path);
-    let hardware_status = HardwareMonitor::current()
-        .write()
+        .map_err(|e| e.to_string())?;
+    let cpu_public_parameters = HardwareStatusMonitor::current()
+        .get_cpu_public_properties()
         .await
-        .read_hardware_parameters();
-
-    let new_systemtray_data: SystrayData = create_systemtray_data(
-        cpu_mining_status.hash_rate,
-        gpu_mining_status.hash_rate as f64,
-        hardware_status.clone(),
-        (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
-    );
-
-    update_systray(app, new_systemtray_data).map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     let connected_peers = state
         .node_manager
@@ -1191,16 +1181,43 @@ pub async fn get_miner_metrics(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
+    // TEMP! replace with new stuff when we fix sys tray
+    let _cpu = HardwareParameters {
+        label: "-".parse().unwrap(),
+        usage_percentage: 0f32,
+        current_temperature: 0f32,
+        max_temperature: 0f32,
+    };
+    let _gpu = HardwareParameters {
+        label: "-".parse().unwrap(),
+        usage_percentage: 0f32,
+        current_temperature: 0f32,
+        max_temperature: 0f32,
+    };
+
+    let hardware_status = HardwareStatus {
+        cpu: Option::from(_cpu),
+        gpu: Vec::from([_gpu]),
+    };
+
+    let new_systemtray_data: SystrayData = create_systemtray_data(
+        cpu_mining_status.hash_rate,
+        gpu_mining_status.hash_rate as f64,
+        hardware_status.clone(),
+        (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
+    );
+
+    update_systray(app, new_systemtray_data).map_err(|e| e.to_string())?;
 
     let ret = MinerMetrics {
         sha_network_hash_rate: sha_hash_rate,
         randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
-            hardware: hardware_status.cpu,
+            hardware: cpu_public_parameters.clone(),
             mining: cpu_mining_status,
         },
         gpu: GpuMinerMetrics {
-            hardware: hardware_status.gpu,
+            hardware: gpu_public_parameters.clone(),
             mining: gpu_mining_status,
         },
         base_node: BaseNodeStatus {

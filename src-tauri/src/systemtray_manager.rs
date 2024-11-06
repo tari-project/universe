@@ -1,12 +1,11 @@
 use anyhow::anyhow;
 use human_format::Formatter;
 use log::{error, info};
-use std::{ops::Div, sync::LazyLock};
 use tauri::menu::{Menu, MenuBuilder, MenuEvent, MenuItem};
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, Wry};
 
-use crate::hardware::hardware_status_monitor::PublicDeviceProperties;
+use crate::hardware_monitor::HardwareStatus;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 static TRAY_ID: &str = "main";
@@ -323,24 +322,18 @@ pub fn handle_system_tray_event(app: AppHandle, event: TrayIconEvent) {
 pub fn create_systemtray_data(
     cpu_hashrate: f64,
     gpu_hashrate: f64,
-    gpu_parameters: Vec<PublicDeviceProperties>,
-        cpu_parameters: Vec<PublicDeviceProperties>,
+    hardware_status: HardwareStatus,
     estimated_earning: f64,
 ) -> SystrayData {
-    let cpu_usage_percentage = cpu_parameters
-        .iter()
-        .map(|cpu| f64::from(cpu.clone().parameters.unwrap_or_default().usage_percentage))
-        .sum::<f64>()
-            .div(cpu_parameters.len() as f64);
-            let gpu_usage_percentage = gpu_parameters
+    SystrayData {
+        cpu_hashrate,
+        gpu_hashrate,
+        cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
+        gpu_usage: hardware_status
+            .gpu
             .iter()
-            .map(|gpu| f64::from(gpu.clone().parameters.unwrap_or_default().usage_percentage))
-            .sum::<f64>().div(gpu_parameters.len() as f64);
-        SystrayData {
-            cpu_hashrate,
-            gpu_hashrate,
-            cpu_usage: cpu_usage_percentage,
-            gpu_usage: gpu_usage_percentage,
+            .map(|hp| f64::from(hp.usage_percentage))
+            .sum::<f64>(),
         estimated_earning,
         minimized: false,
     }

@@ -2,12 +2,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
-use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
-use serde::Serialize;
 use log4rs::config::RawConfig;
+use serde::Serialize;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -20,7 +19,6 @@ use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::RwLock;
 
-use utils::logging_utils::setup_logging;
 use crate::cpu_miner::CpuMiner;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
@@ -38,11 +36,11 @@ use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::GpuMinerStatus;
-use hardware_monitor::HardwareParameters;
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
 use telemetry_manager::TelemetryManager;
+use utils::logging_utils::setup_logging;
 
 mod app_config;
 mod app_in_memory_config;
@@ -320,7 +318,9 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
-    HardwareStatusMonitor::current().initialize().await?;
+    HardwareStatusMonitor::current()
+        .initialize(config_dir.clone())
+        .await?;
 
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
