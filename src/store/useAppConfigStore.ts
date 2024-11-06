@@ -49,6 +49,7 @@ const initialState: State = {
     monero_address: '',
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
+    sharing_enabled: false,
     airdrop_ui_enabled: false,
     paper_wallet_enabled: false,
     custom_power_levels_enabled: false,
