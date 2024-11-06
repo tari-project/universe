@@ -8,7 +8,7 @@ export default function ShuttingDownScreen() {
     const { t } = useTranslation('common', { useSuspense: false });
 
     return (
-        <AppContentContainer key="shutdown">
+        <AppContentContainer key="shutdown" initial="hidden">
             <ShuttingDownScreenContainer>
                 <CircularProgress />
                 <Typography variant="h4">{t('shutting-down')}</Typography>

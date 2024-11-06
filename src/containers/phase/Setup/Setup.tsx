@@ -9,7 +9,7 @@ import grain from '/assets/img/grain.png';
 export default function Setup() {
     useSetUp();
     return (
-        <AppContentContainer key="setup">
+        <AppContentContainer key="setup" initial="visible">
             <SetupWrapper $bg={grain}>
                 <HeroText />
                 <InfoNav />

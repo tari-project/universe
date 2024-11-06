@@ -25,7 +25,6 @@ const variants = {
 
 export const AppContentContainer = styled(m.div).attrs({
     variants,
-    initial: 'hidden',
     animate: 'visible',
     exit: 'hidden',
 })`

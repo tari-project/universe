@@ -9,7 +9,7 @@ export default function MainView() {
     const visualMode = useUIStore((s) => s.visualMode);
 
     return (
-        <AppContentContainer key="main">
+        <AppContentContainer key="main" initial="hidden">
             <DashboardContainer $visualModeOff={!visualMode}>
                 <SideBar />
                 <Dashboard />
