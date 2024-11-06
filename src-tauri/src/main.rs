@@ -1184,10 +1184,10 @@ async fn start_mining<'r>(
     let custom_gpu_usage = config.custom_gpu_usage();
     let custom_gpu_usage = if let Some(custom_gpu_usage) = custom_gpu_usage {
         u16::try_from(custom_gpu_usage.clamp(0, 100)).ok()
-    }else {
+    } else {
         None
     };
-    
+
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let monero_address = config.monero_address().to_string();
     if cpu_mining_enabled {
