@@ -280,11 +280,13 @@ impl HardwareStatusMonitor {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDeviceProperties>, Error> {
         let gpu_devices = self.gpu_devices.read().await;
         Ok(gpu_devices.clone())
     }
 
+    #[allow(dead_code)]
     pub async fn get_cpu_devices(&self) -> Result<Vec<CpuDeviceProperties>, Error> {
         let cpu_devices = self.cpu_devices.read().await;
         Ok(cpu_devices.clone())

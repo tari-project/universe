@@ -25,6 +25,7 @@ pub trait GpuParametersReader: Send + DynClone + Sync + 'static {
 pub struct DefaultGpuParametersReader;
 
 impl DefaultGpuParametersReader {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {}
     }
