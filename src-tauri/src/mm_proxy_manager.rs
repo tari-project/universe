@@ -93,7 +93,7 @@ impl MmProxyManager {
             base_node_grpc_port: config.base_node_grpc_port,
             coinbase_extra: config.coinbase_extra.clone(),
             p2pool_enabled: config.p2pool_enabled,
-            port: PortAllocator::current().assign_port_with_fallback(),
+            port: PortAllocator::new().assign_port_with_fallback(),
             p2pool_grpc_port: config.p2pool_port,
             monero_nodes: config.monero_nodes.clone(),
             use_monero_fail: config.use_monero_fail,

@@ -28,7 +28,7 @@ pub(crate) struct TorAdapter {
 
 impl TorAdapter {
     pub fn new() -> Self {
-        let port = PortAllocator::current().assign_port_with_fallback();
+        let port = PortAllocator::new().assign_port_with_fallback();
 
         Self {
             socks_port: port,
@@ -198,7 +198,7 @@ impl ProcessAdapter for TorAdapter {
         }
         let mut control_port = self.config.control_port;
         if control_port == 0 {
-            control_port = PortAllocator::current().assign_port_with_fallback();
+            control_port = PortAllocator::new().assign_port_with_fallback();
         }
 
         let mut args: Vec<String> = vec![

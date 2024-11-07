@@ -4,8 +4,6 @@ use std::net::TcpListener;
 use std::sync::LazyLock;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
-static INSTANCE: LazyLock<PortAllocator> = LazyLock::new(PortAllocator::new);
-
 const ADDRESS: &str = "127.0.0.1";
 const MAX_TRIES: u16 = 10;
 const FALLBACK_PORT_RANGE: std::ops::Range<u16> = 49152..65535;
@@ -15,10 +13,6 @@ pub struct PortAllocator {}
 impl PortAllocator {
     pub fn new() -> Self {
         Self {}
-    }
-
-    pub fn current() -> &'static PortAllocator {
-        &INSTANCE
     }
 
     fn get_address_with_0_port(&self) -> String {

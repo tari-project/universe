@@ -32,8 +32,8 @@ pub struct WalletAdapter {
 
 impl WalletAdapter {
     pub fn new(use_tor: bool) -> Self {
-        let tcp_listener_port = PortAllocator::current().assign_port_with_fallback();
-        let grpc_port = PortAllocator::current().assign_port_with_fallback();
+        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             use_tor,
             base_node_address: None,

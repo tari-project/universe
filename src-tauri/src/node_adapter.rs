@@ -33,8 +33,8 @@ pub(crate) struct MinotariNodeAdapter {
 
 impl MinotariNodeAdapter {
     pub fn new() -> Self {
-        let port = PortAllocator::current().assign_port_with_fallback();
-        let tcp_listener_port = PortAllocator::current().assign_port_with_fallback();
+        let port = PortAllocator::new().assign_port_with_fallback();
+        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             grpc_port: port,
             tcp_listener_port,

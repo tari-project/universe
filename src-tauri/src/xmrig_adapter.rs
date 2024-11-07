@@ -43,7 +43,7 @@ pub struct XmrigAdapter {
 
 impl XmrigAdapter {
     pub fn new() -> Self {
-        let http_api_port = PortAllocator::current().assign_port_with_fallback();
+        let http_api_port = PortAllocator::new().assign_port_with_fallback();
         let http_api_token = "pass".to_string();
         Self {
             node_connection: None,

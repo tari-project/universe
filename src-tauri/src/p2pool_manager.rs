@@ -39,8 +39,8 @@ impl P2poolConfigBuilder {
     }
 
     pub fn build(&self) -> Result<P2poolConfig, anyhow::Error> {
-        let grpc_port = PortAllocator::current().assign_port_with_fallback();
-        let stats_server_port = PortAllocator::current().assign_port_with_fallback();
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
+        let stats_server_port = PortAllocator::new().assign_port_with_fallback();
         Ok(P2poolConfig {
             grpc_port,
             stats_server_port,
