@@ -1192,9 +1192,10 @@ async fn start_mining<'r>(
     }
 
     let gpu_available = state.gpu_miner.read().await.is_gpu_mining_available();
-    info!(target: LOG_TARGET, "Gpu availability {:?}", gpu_available.clone());
+    info!(target: LOG_TARGET, "Gpu availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
 
     if gpu_mining_enabled && gpu_available {
+        info!(target: LOG_TARGET, "1. Starting gpu miner");
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         let p2pool_enabled = state.config.read().await.p2pool_enabled();
         let source = if p2pool_enabled {
@@ -1210,6 +1211,7 @@ async fn start_mining<'r>(
             GpuNodeSource::BaseNode { port: grpc_port }
         };
 
+        info!(target: LOG_TARGET, "2 Starting gpu miner");
         let mut telemetry_id = state
             .telemetry_manager
             .read()
@@ -1220,6 +1222,7 @@ async fn start_mining<'r>(
             telemetry_id = "tari-universe".to_string();
         }
 
+        info!(target: LOG_TARGET, "3. Starting gpu miner");
         let res = state
             .gpu_miner
             .write()
@@ -1243,11 +1246,12 @@ async fn start_mining<'r>(
             )
             .await;
 
+        info!(target: LOG_TARGET, "4. Starting gpu miner");
         if let Err(e) = res {
             error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
             drop(
-                state.cpu_miner.write().await.stop().await.inspect_err(
-                    |e| error!(target: LOG_TARGET, "Could not stop cpu miner: {:?}", e),
+                state.gpu_miner.write().await.stop().await.inspect_err(
+                    |e| error!(target: LOG_TARGET, "Could not stop gpu miner: {:?}", e),
                 ),
             );
             return Err(e.to_string());
