@@ -1663,9 +1663,10 @@ async fn get_miner_metrics(
     //     .read_hardware_parameters();
 
     // info!(target: LOG_TARGET, "4 elapsed {:?}", timer.elapsed());
-    // let gpu_public_parameters = HardwareStatusMonitor::current()
-    //     .get_gpu_public_properties()
-    //     .await
+    let gpu_public_parameters = HardwareStatusMonitor::current()
+        .get_gpu_devices_public_properties()
+        .await
+        .map_err(|e| e.to_string())?;
     //     .map_err(|e| e.to_string())?;
     // info!(target: LOG_TARGET, "5 elapsed {:?}", timer.elapsed());
     // let cpu_public_parameters = HardwareStatusMonitor::current()
@@ -1705,7 +1706,7 @@ async fn get_miner_metrics(
             mining: cpu_mining_status,
         },
         gpu: GpuMinerMetrics {
-            // hardware: gpu_public_parameters.clone(),
+            hardware: gpu_public_parameters.clone(),
             mining: gpu_mining_status,
         },
         base_node: BaseNodeStatus {
@@ -1854,7 +1855,7 @@ pub struct CpuMinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    // hardware: Vec<PublicDeviceProperties>,
+    hardware: Vec<PublicDeviceProperties>,
     mining: GpuMinerStatus,
 }
 
