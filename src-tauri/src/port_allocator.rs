@@ -37,10 +37,7 @@ impl PortAllocator {
     }
 
     fn check_if_port_is_free(&self, port: u16) -> bool {
-        match TcpListener::bind(format!("{}:{}", ADDRESS, port)) {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        TcpListener::bind(format!("{}:{}", ADDRESS, port)).is_ok()
     }
 
     fn asign_port_from_fallback_range(&self) -> u16 {
