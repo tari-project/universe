@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Error};
 use log::{error, info, warn};
 use std::net::TcpListener;
-use std::sync::LazyLock;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 const ADDRESS: &str = "127.0.0.1";
