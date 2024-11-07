@@ -1063,6 +1063,27 @@ async fn set_cpu_mining_enabled<'r>(
 }
 
 #[tauri::command]
+async fn set_visual_mode<'r>(
+    enabled: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let mut config = state.config.write().await;
+    config
+        .set_visual_mode(enabled)
+        .await
+        .inspect_err(|e| error!("error at set_visual_mode {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "set_visual_mode took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(())
+}
+
+#[tauri::command]
 async fn set_gpu_mining_enabled(
     enabled: bool,
     state: tauri::State<'_, UniverseAppState>,
@@ -2228,7 +2249,8 @@ fn main() {
             set_tor_config,
             fetch_tor_bridges,
             set_monerod_config,
-            get_tor_entry_guards
+            get_tor_entry_guards,
+            set_visual_mode
         ])
         .build(tauri::generate_context!())
         .inspect_err(
