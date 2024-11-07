@@ -203,7 +203,7 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
     result.insert("max_cpu_available".to_string(), max_cpu_available);
 
     // At some point we should split this per card and allow the user to choose
-    let gpu_threads = 256;
+    let gpu_threads = 1024;
 
     result.insert("max_gpu_available".to_string(), gpu_threads);
 

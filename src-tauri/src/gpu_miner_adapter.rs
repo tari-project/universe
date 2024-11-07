@@ -21,7 +21,7 @@ use crate::{
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
 pub const ECO_MODE_GPU_GRID_SIZE: u16 = 2;
-pub const LUDICROUS_MODE_GPU_GRID_SIZE: u16 = 200; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
+pub const LUDICROUS_MODE_GPU_GRID_SIZE: u16 = 900; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
     BaseNode { port: u16 },

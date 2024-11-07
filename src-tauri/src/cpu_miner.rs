@@ -6,7 +6,7 @@ use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMin
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::{cmp, thread};
+use std::thread;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
@@ -70,9 +70,15 @@ impl CpuMiner {
             .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100u32);
 
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => eco_mode_threads,
-            MiningMode::Custom => custom_cpu_threads.unwrap_or(eco_mode_threads),
-            MiningMode::Ludicrous => cmp::max(max_cpu_available.saturating_sub(1), 1), // subtract 1 to keep the system responsive
+            MiningMode::Eco => Some(eco_mode_threads),
+            MiningMode::Custom => {
+                if custom_cpu_threads.unwrap_or(0) == max_cpu_available {
+                    None
+                } else {
+                    custom_cpu_threads
+                }
+            }
+            MiningMode::Ludicrous => None,
         };
 
         lock.adapter.node_connection = Some(xmrig_node_connection);
