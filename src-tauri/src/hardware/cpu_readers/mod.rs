@@ -23,6 +23,7 @@ pub trait CpuParametersReader: Send + DynClone + Sync + 'static {
 pub struct DefaultCpuParametersReader;
 
 impl DefaultCpuParametersReader {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {}
     }
