@@ -4,12 +4,14 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
+use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
 
 use opencl3::device::Device;
 use opencl3::platform::get_platforms;
 
+use log4rs::config::RawConfig;
 use regex::Regex;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -24,16 +26,16 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Manager, RunEvent, UpdaterEvent};
+use tauri::{Manager, RunEvent, UpdaterEvent, Window};
 use tokio::sync::RwLock;
 use tor_adapter::TorConfig;
+use utils::logging_utils::setup_logging;
 use wallet_adapter::TransactionInfo;
 
 use app_config::AppConfig;
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use hardware_monitor::{HardwareMonitor, HardwareParameters};
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
@@ -66,6 +68,7 @@ mod feedback;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod hardware;
 mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -170,13 +173,13 @@ async fn set_mode(
     let timer = Instant::now();
     info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
 
-    fn f64_to_isize_safe(_value: Option<f64>) -> Option<isize> {
-        let value = _value.unwrap_or(-1.0);
+    fn f64_to_isize_safe(value: Option<f64>) -> Option<isize> {
+        let value = value.unwrap_or_default();
         if value.is_finite() && value >= isize::MIN as f64 && value <= isize::MAX as f64 {
             #[allow(clippy::cast_possible_truncation)]
             Some(value.round() as isize)
         } else {
-            warn!(target: LOG_TARGET, "Invalid value for custom_cpu_usage or custom_gpu_usage: {:?}", _value);
+            warn!(target: LOG_TARGET, "Invalid value for custom_cpu_usage or custom_gpu_usage: {:?}", value);
             None
         }
     }
@@ -843,6 +846,9 @@ async fn setup_inner(
         .detect(config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+
+    HardwareStatusMonitor::current().initialize().await?;
+
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
         state
@@ -1327,7 +1333,7 @@ async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r"obfs4.*?<br\/>").map_err(|e| e.to_string())?;
+    let re = Regex::new(r"obfs4.*?<br/>").map_err(|e| e.to_string())?;
     let bridges: Vec<String> = re
         .find_iter(&res_html)
         .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
@@ -1629,6 +1635,7 @@ async fn get_miner_metrics(
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
     let mut cpu_miner = state.cpu_miner.write().await;
+    // info!(target: LOG_TARGET, "1 elapsed {:?}", timer.elapsed());
     let mut gpu_miner = state.gpu_miner.write().await;
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
@@ -1641,6 +1648,7 @@ async fn get_miner_metrics(
                 }
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
+    // info!(target: LOG_TARGET, "2 elapsed {:?}", timer.elapsed());
 
     let cpu_mining_status = match cpu_miner
         .status(randomx_hash_rate, block_reward)
@@ -1657,6 +1665,8 @@ async fn get_miner_metrics(
         }
     };
 
+    // info!(target: LOG_TARGET, "3 elapsed {:?}", timer.elapsed());
+
     let gpu_mining_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -1668,28 +1678,44 @@ async fn get_miner_metrics(
         }
     };
 
-    let config_path = app
-        .path_resolver()
-        .app_config_dir()
-        .expect("Could not get config dir");
-    let _unused = HardwareMonitor::current()
-        .write()
-        .await
-        .load_status_file(config_path);
-    let hardware_status = HardwareMonitor::current()
-        .write()
-        .await
-        .read_hardware_parameters();
+    // let config_path = app
+    //     .path_resolver()
+    //     .app_config_dir()
+    //     .expect("Could not get config dir");
+    // let _unused = HardwareMonitor::current()
+    //     .write()
+    //     .await
+    //     .load_status_file(config_path);
+    // let hardware_status = HardwareMonitor::current()
+    //     .write()
+    //     .await
+    //     .read_hardware_parameters();
+
+    // info!(target: LOG_TARGET, "4 elapsed {:?}", timer.elapsed());
+    // let gpu_public_parameters = HardwareStatusMonitor::current()
+    //     .get_gpu_public_properties()
+    //     .await
+    //     .map_err(|e| e.to_string())?;
+    // info!(target: LOG_TARGET, "5 elapsed {:?}", timer.elapsed());
+    // let cpu_public_parameters = HardwareStatusMonitor::current()
+    //     .get_cpu_public_properties()
+    //     .await
+    //     .map_err(|e| e.to_string())?;
+
+    // info!(target: LOG_TARGET, "6 elapsed {:?}", timer.elapsed());
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu_mining_status.hash_rate,
         gpu_mining_status.hash_rate as f64,
-        hardware_status.clone(),
+        // gpu_public_parameters.clone(),
+        // cpu_public_parameters.clone(),
         (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
     );
 
+    // info!(target: LOG_TARGET, "7 elapsed {:?}", timer.elapsed());
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
+    // info!(target: LOG_TARGET, "8 elapsed {:?}", timer.elapsed());
     let connected_peers = state
         .node_manager
         .list_connected_peers()
@@ -1704,11 +1730,11 @@ async fn get_miner_metrics(
         sha_network_hash_rate: sha_hash_rate,
         randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
-            hardware: hardware_status.cpu,
+            // hardware: cpu_public_parameters.clone(),
             mining: cpu_mining_status,
         },
         gpu: GpuMinerMetrics {
-            hardware: hardware_status.gpu,
+            // hardware: gpu_public_parameters.clone(),
             mining: gpu_mining_status,
         },
         base_node: BaseNodeStatus {
@@ -1835,16 +1861,29 @@ async fn reset_settings<'r>(
 
     Ok(())
 }
+#[tauri::command]
+async fn close_splashscreen(window: Window) {
+    window
+        .get_window("splashscreen")
+        .expect("no window labeled 'splashscreen' found")
+        .close()
+        .expect("could not close");
+    window
+        .get_window("main")
+        .expect("no window labeled 'main' found")
+        .show()
+        .expect("could not show");
+}
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
-    hardware: Option<HardwareParameters>,
+    // hardware: Vec<PublicDeviceProperties>,
     mining: CpuMinerStatus,
 }
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Vec<HardwareParameters>,
+    // hardware: Vec<PublicDeviceProperties>,
     mining: GpuMinerStatus,
 }
 
@@ -2054,19 +2093,23 @@ fn main() {
         }))
         .manage(app_state.clone())
         .setup(|app| {
-            // TODO: Combine with sentry log
-            tari_common::initialize_logging(
+            let contents = setup_logging(
                 &app.path_resolver()
                     .app_config_dir()
                     .expect("Could not get config dir")
+                    .join("logs")
                     .join("universe")
+                    .join("configs")
                     .join("log4rs_config_universe.yml"),
                 &app.path_resolver()
                     .app_log_dir()
                     .expect("Could not get log dir"),
-                include_str!("../log4rs_sample.yml"),
+                include_str!("../log4rs/universe_sample.yml"),
             )
             .expect("Could not set up logging");
+            let config: RawConfig = serde_yaml::from_str(&contents)
+                .expect("Could not parse the contents of the log file as yaml");
+            log4rs::init_raw_config(config).expect("Could not initialize logging");
 
             let config_path = app
                 .path_resolver()
@@ -2138,6 +2181,7 @@ fn main() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            close_splashscreen,
             setup_application,
             start_mining,
             stop_mining,

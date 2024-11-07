@@ -1,9 +1,9 @@
 {
-  "miners": "Miners",
-  "p2pool-chain-tip": "P2Pool Chain Tip",
-  "p2pool-connected": "P2Pool Connected",
-  "p2pool-connection-info": "Connection",
-  "p2pool-connection-info-more": "Connection details",
-  "p2pool-stats": "Pool mining stats",
-  "tribe": "Tribe"
+  "miners": "माइनर्स",
+  "p2pool-chain-tip": "P2Pool चेन टिप",
+  "p2pool-connected": "P2Pool कनेक्टेड",
+  "p2pool-connection-info": "कनेक्शन",
+  "p2pool-connection-info-more": "कनेक्शन विवरण",
+  "p2pool-stats": "पूल माइनिंग आँकड़े",
+  "tribe": "जनजाति"
 }

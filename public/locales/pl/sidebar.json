@@ -15,5 +15,13 @@
   "recent-wins": "Ostanie wygrane",
   "setup-scheduler": "Ustawienia harmonogramu",
   "show-history": "Pokaż historię",
-  "wallet-balance": "Saldo portfela"
+  "wallet-balance": "Saldo portfela",
+  "share": {
+    "history-item-button": "Pochwal się i zaproś",
+    "title": "Właśnie wykopałem tari",
+    "winner-pill": "Zwycięzca bloku",
+    "copied": "Link skopiowany!",
+    "button-text": "POCHWAL SIĘ I ZAPROŚ",
+    "reward": "moja nagroda"
+  }
 }

@@ -49,9 +49,10 @@ const initialState: State = {
     monero_address: '',
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
+    sharing_enabled: true,
     airdrop_ui_enabled: false,
     paper_wallet_enabled: false,
-    custom_power_levels_enabled: false,
+    custom_power_levels_enabled: true,
     use_tor: true,
     auto_update: false,
     mmproxy_use_monero_fail: false,
@@ -137,8 +138,10 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         }
         invoke('set_cpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (enabled || miningState.gpu.mining.is_mining)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
@@ -163,10 +166,13 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
             await miningState.pauseMining();
         }
+
         invoke('set_gpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (miningState.cpu.mining.is_mining || enabled)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {

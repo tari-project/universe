@@ -15,5 +15,13 @@
   "recent-wins": "最近の勝利",
   "setup-scheduler": "スケジューラの設定",
   "show-history": "履歴を表示",
-  "wallet-balance": "ウォレット残高"
+  "wallet-balance": "ウォレット残高",
+  "share": {
+    "history-item-button": "フレックス＆招待",
+    "title": "Tariをマイニングしました",
+    "winner-pill": "ブロックの勝者",
+    "copied": "リンクをコピーしました！",
+    "button-text": "フレックス＆招待",
+    "reward": "私の報酬"
+  }
 }
