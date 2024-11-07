@@ -102,7 +102,7 @@ impl CpuMiner {
     }
 
     pub async fn status(
-        &mut self,
+        &self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {

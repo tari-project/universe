@@ -25,7 +25,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Manager, RunEvent, UpdaterEvent, Window};
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
 use wallet_adapter::TransactionInfo;
@@ -1136,6 +1136,7 @@ async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    let _lock = state.stop_start_mutex.lock().await;
     let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
@@ -1146,7 +1147,15 @@ async fn start_mining<'r>(
     });
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
+    let tari_address = cpu_miner_config.tari_address.clone();
+    let p2pool_enabled = config.p2pool_enabled();
     let monero_address = config.monero_address().to_string();
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
     if cpu_mining_enabled {
         let mm_proxy_port = state
             .mm_proxy_manager
@@ -1196,8 +1205,8 @@ async fn start_mining<'r>(
 
     if gpu_mining_enabled && gpu_available {
         info!(target: LOG_TARGET, "1. Starting gpu miner");
-        let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
-        let p2pool_enabled = state.config.read().await.p2pool_enabled();
+        // let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
+        // let p2pool_enabled = state.config.read().await.p2pool_enabled();
         let source = if p2pool_enabled {
             let p2pool_port = state.p2pool_manager.grpc_port().await;
             GpuNodeSource::P2Pool { port: p2pool_port }
@@ -1212,12 +1221,7 @@ async fn start_mining<'r>(
         };
 
         info!(target: LOG_TARGET, "2 Starting gpu miner");
-        let mut telemetry_id = state
-            .telemetry_manager
-            .read()
-            .await
-            .get_unique_string()
-            .await;
+
         if telemetry_id.is_empty() {
             telemetry_id = "tari-universe".to_string();
         }
@@ -1265,6 +1269,7 @@ async fn start_mining<'r>(
 
 #[tauri::command]
 async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let _lock = state.stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
         .cpu_miner
@@ -1598,9 +1603,7 @@ async fn get_miner_metrics(
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
-    let mut cpu_miner = state.cpu_miner.write().await;
     // info!(target: LOG_TARGET, "1 elapsed {:?}", timer.elapsed());
-    let mut gpu_miner = state.gpu_miner.write().await;
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -1614,6 +1617,7 @@ async fn get_miner_metrics(
             });
     // info!(target: LOG_TARGET, "2 elapsed {:?}", timer.elapsed());
 
+    let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
@@ -1628,9 +1632,11 @@ async fn get_miner_metrics(
             return Err(e);
         }
     };
+    drop(cpu_miner);
 
     // info!(target: LOG_TARGET, "3 elapsed {:?}", timer.elapsed());
 
+    let gpu_miner = state.gpu_miner.read().await;
     let gpu_mining_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -1641,6 +1647,7 @@ async fn get_miner_metrics(
             return Err(e.to_string());
         }
     };
+    drop(gpu_miner);
 
     // let config_path = app
     //     .path_resolver()
@@ -1916,6 +1923,7 @@ struct CpuMinerConfig {
 
 #[derive(Clone)]
 struct UniverseAppState {
+    stop_start_mutex: Arc<Mutex<()>>,
     is_getting_wallet_balance: Arc<AtomicBool>,
     is_getting_p2pool_stats: Arc<AtomicBool>,
     is_getting_miner_metrics: Arc<AtomicBool>,
@@ -2014,6 +2022,7 @@ fn main() {
     // };
     let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
+        stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
         is_getting_wallet_balance: Arc::new(AtomicBool::new(false)),

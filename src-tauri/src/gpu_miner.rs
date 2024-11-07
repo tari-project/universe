@@ -83,7 +83,7 @@ impl GpuMiner {
     }
 
     pub async fn status(
-        &mut self,
+        &self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<GpuMinerStatus, anyhow::Error> {
