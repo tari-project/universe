@@ -22,7 +22,7 @@
   "logout": "Déconnexion",
   "nextTierBonus": "Invitez <strong>{{count}} ami(s)</strong> et gagnez {{bonusGems}} gemme(s) bonu(s)",
   "permission": {
-    "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
+    "setup": "Tari Universe souhaite utiliser des analyses pour <strong>améliorer votre expérience.</strong>",
     "text": "Tari Universe aimerait utiliser des outils d'analyse pour améliorer ton expérience et te récompenser avec des gemmes pour le minage.",
     "title": "Gagne des gemmes et améliore le Tari Universe"
   },

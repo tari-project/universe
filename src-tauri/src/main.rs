@@ -6,6 +6,7 @@ use port_allocator::PortAllocator;
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
+#[allow(unused_imports)]
 use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
@@ -1645,6 +1646,7 @@ async fn get_miner_metrics(
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
     let mut cpu_miner = state.cpu_miner.write().await;
+    // info!(target: LOG_TARGET, "1 elapsed {:?}", timer.elapsed());
     let mut gpu_miner = state.gpu_miner.write().await;
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
@@ -1657,6 +1659,7 @@ async fn get_miner_metrics(
                 }
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
+    // info!(target: LOG_TARGET, "2 elapsed {:?}", timer.elapsed());
 
     let cpu_mining_status = match cpu_miner
         .status(randomx_hash_rate, block_reward)
@@ -1672,6 +1675,8 @@ async fn get_miner_metrics(
             return Err(e);
         }
     };
+
+    // info!(target: LOG_TARGET, "3 elapsed {:?}", timer.elapsed());
 
     let gpu_mining_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
@@ -1697,25 +1702,31 @@ async fn get_miner_metrics(
     //     .await
     //     .read_hardware_parameters();
 
-    let gpu_public_parameters = HardwareStatusMonitor::current()
-        .get_gpu_public_properties()
-        .await
-        .map_err(|e| e.to_string())?;
-    let cpu_public_parameters = HardwareStatusMonitor::current()
-        .get_cpu_public_properties()
-        .await
-        .map_err(|e| e.to_string())?;
+    // info!(target: LOG_TARGET, "4 elapsed {:?}", timer.elapsed());
+    // let gpu_public_parameters = HardwareStatusMonitor::current()
+    //     .get_gpu_public_properties()
+    //     .await
+    //     .map_err(|e| e.to_string())?;
+    // info!(target: LOG_TARGET, "5 elapsed {:?}", timer.elapsed());
+    // let cpu_public_parameters = HardwareStatusMonitor::current()
+    //     .get_cpu_public_properties()
+    //     .await
+    //     .map_err(|e| e.to_string())?;
+
+    // info!(target: LOG_TARGET, "6 elapsed {:?}", timer.elapsed());
 
     let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
         cpu_mining_status.hash_rate,
         gpu_mining_status.hash_rate as f64,
-        gpu_public_parameters.clone(),
-        cpu_public_parameters.clone(),
+        // gpu_public_parameters.clone(),
+        // cpu_public_parameters.clone(),
         (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
     );
 
+    // info!(target: LOG_TARGET, "7 elapsed {:?}", timer.elapsed());
     SystemtrayManager::current().update_systray(app, new_systemtray_data);
 
+    // info!(target: LOG_TARGET, "8 elapsed {:?}", timer.elapsed());
     let connected_peers = state
         .node_manager
         .list_connected_peers()
@@ -1730,11 +1741,11 @@ async fn get_miner_metrics(
         sha_network_hash_rate: sha_hash_rate,
         randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
-            hardware: cpu_public_parameters.clone(),
+            // hardware: cpu_public_parameters.clone(),
             mining: cpu_mining_status,
         },
         gpu: GpuMinerMetrics {
-            hardware: gpu_public_parameters.clone(),
+            // hardware: gpu_public_parameters.clone(),
             mining: gpu_mining_status,
         },
         base_node: BaseNodeStatus {
@@ -1877,13 +1888,13 @@ async fn close_splashscreen(window: Window) {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
-    hardware: Vec<PublicDeviceProperties>,
+    // hardware: Vec<PublicDeviceProperties>,
     mining: CpuMinerStatus,
 }
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Vec<PublicDeviceProperties>,
+    // hardware: Vec<PublicDeviceProperties>,
     mining: GpuMinerStatus,
 }
 

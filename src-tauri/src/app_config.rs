@@ -69,9 +69,9 @@ pub struct AppConfigFromFile {
     custom_max_gpu_usage: Option<isize>,
     #[serde(default = "default_true")]
     auto_update: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     custom_power_levels_enabled: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     sharing_enabled: bool,
 }
 
@@ -108,8 +108,8 @@ impl Default for AppConfigFromFile {
             mmproxy_use_monero_fail: false,
             auto_update: true,
             reset_earnings: false,
-            custom_power_levels_enabled: false,
-            sharing_enabled: false,
+            custom_power_levels_enabled: true,
+            sharing_enabled: true,
         }
     }
 }
@@ -237,9 +237,9 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
-            custom_power_levels_enabled: false,
+            custom_power_levels_enabled: true,
             auto_update: true,
-            sharing_enabled: false,
+            sharing_enabled: true,
         }
     }
 
@@ -328,6 +328,12 @@ impl AppConfig {
         if self.config_version <= 9 {
             self.auto_update = true;
             self.config_version = 10;
+        }
+
+        if self.config_version <= 10 {
+            self.custom_power_levels_enabled = true;
+            self.sharing_enabled = true;
+            self.config_version = 11;
         }
     }
 

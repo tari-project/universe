@@ -15,5 +15,13 @@
   "recent-wins": "Kürzliche Gewinne",
   "setup-scheduler": "Scheduler einrichten",
   "show-history": "Verlauf anzeigen",
-  "wallet-balance": "Wallet-Balance"
+  "wallet-balance": "Wallet-Balance",
+  "share": {
+    "history-item-button": "Flex & Einladen",
+    "title": "Ich habe gerade Tari gemined",
+    "winner-pill": "Gewinner des Blocks",
+    "copied": "Link kopiert!",
+    "button-text": "FLEX & EINLADEN",
+    "reward": "meine Belohnung"
+  }
 }
