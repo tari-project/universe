@@ -73,6 +73,8 @@ pub struct AppConfigFromFile {
     custom_power_levels_enabled: bool,
     #[serde(default = "default_true")]
     sharing_enabled: bool,
+    #[serde(default = "default_true")]
+    visual_mode: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -110,6 +112,7 @@ impl Default for AppConfigFromFile {
             reset_earnings: false,
             custom_power_levels_enabled: true,
             sharing_enabled: true,
+            visual_mode: true,
         }
     }
 }
@@ -202,6 +205,7 @@ pub(crate) struct AppConfig {
     auto_update: bool,
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
+    visual_mode: bool,
 }
 
 impl AppConfig {
@@ -240,6 +244,7 @@ impl AppConfig {
             custom_power_levels_enabled: true,
             auto_update: true,
             sharing_enabled: true,
+            visual_mode: true,
         }
     }
 
@@ -304,6 +309,7 @@ impl AppConfig {
                     self.reset_earnings = false;
                 }
                 self.sharing_enabled = config.sharing_enabled;
+                self.visual_mode = config.visual_mode;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -334,6 +340,11 @@ impl AppConfig {
             self.custom_power_levels_enabled = true;
             self.sharing_enabled = true;
             self.config_version = 11;
+        }
+
+        if self.config_version <= 11 {
+            self.visual_mode = true;
+            self.config_version = 12;
         }
     }
 
@@ -459,6 +470,12 @@ impl AppConfig {
 
     pub async fn set_p2pool_enabled(&mut self, p2pool_enabled: bool) -> Result<(), anyhow::Error> {
         self.p2pool_enabled = p2pool_enabled;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_visual_mode(&mut self, visual_mode: bool) -> Result<(), anyhow::Error> {
+        self.visual_mode = visual_mode;
         self.update_config_file().await?;
         Ok(())
     }
@@ -634,6 +651,7 @@ impl AppConfig {
             auto_update: self.auto_update,
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,
+            visual_mode: self.visual_mode,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -644,7 +662,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    10
+    11
 }
 
 fn default_custom_max_cpu_usage() -> Option<u32> {
