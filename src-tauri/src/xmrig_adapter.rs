@@ -37,7 +37,7 @@ pub struct XmrigAdapter {
     pub monero_address: Option<String>,
     pub http_api_token: String,
     pub http_api_port: u16,
-    pub cpu_max_percentage: Option<isize>,
+    pub cpu_threads: Option<u32>,
     pub extra_options: Vec<String>,
 }
 
@@ -50,7 +50,7 @@ impl XmrigAdapter {
             monero_address: None,
             http_api_token: http_api_token.clone(),
             http_api_port,
-            cpu_max_percentage: None,
+            cpu_threads: None,
             extra_options: Vec::new(),
         }
     }
@@ -110,7 +110,7 @@ impl ProcessAdapter for XmrigAdapter {
         ));
         args.push(format!(
             "--threads={}",
-            self.cpu_max_percentage
+            self.cpu_threads
                 .ok_or(anyhow::anyhow!("CPU max percentage not set"))?
         ));
         args.push("--verbose".to_string());
