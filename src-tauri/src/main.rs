@@ -1,6 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use anyhow::anyhow;
+use port_allocator::PortAllocator;
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
@@ -57,6 +59,7 @@ use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 
 mod app_config;
+mod port_allocator;
 mod app_in_memory_config;
 mod auto_launcher;
 mod binaries;
@@ -719,6 +722,13 @@ async fn setup_inner(
             return Ok(());
         }
     }
+
+    let mut port_allocator_instance = PortAllocator::current().write().await;
+    let port1 = &port_allocator_instance.assign_port().map_err(|e| anyhow!(e.to_string()))?;
+    let port2 = &port_allocator_instance.assign_port().map_err(|e| anyhow!(e.to_string()))?;
+    let port3 = &port_allocator_instance.assign_port().map_err(|e| anyhow!(e.to_string()))?;
+
+    info!(target: LOG_TARGET, "Ports assigned: {}, {}, {}", port1, port2, port3);
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
