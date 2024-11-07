@@ -20,6 +20,7 @@ export const GlobalReset = createGlobalStyle`
 
         &:focus-visible {
             outline: 3px solid #c9eb00;
+            outline-offset: 2px;
         }
     }
     
@@ -43,6 +44,7 @@ export const GlobalReset = createGlobalStyle`
 
         &:focus-visible {
             outline: 3px solid #c9eb00;
+            outline-offset: 2px;
         }
     }
 
