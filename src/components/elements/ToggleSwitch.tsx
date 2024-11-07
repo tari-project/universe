@@ -5,7 +5,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 const Wrapper = styled.label<{ $disabled?: boolean }>`
     display: flex;
     cursor: pointer;
-    position: relative; // Added to contain absolute input
+    position: relative;
 
     ${({ $disabled }) =>
         $disabled &&
