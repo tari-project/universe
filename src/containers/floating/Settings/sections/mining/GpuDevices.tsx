@@ -54,7 +54,7 @@ const GpuDevices = () => {
                 </SettingsGroup>
                 <SettingsGroup>
                     <SettingsGroupContent>
-                        {gpuDevices.length > 0 ? (
+                        {gpuDevices && gpuDevices.length > 0 ? (
                             gpuDevices.map((device, i) => (
                                 <Stack
                                     key={device.name}
