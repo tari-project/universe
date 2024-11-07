@@ -2,6 +2,7 @@
 mod setup_utils {
     use log::{error, info};
     use std::io::{self, Write};
+    use std::os::windows::process::CommandExt;
     use std::path::PathBuf;
     use std::process::Command;
 
