@@ -69,6 +69,11 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             set(appConfig);
             const configTheme = appConfig.display_mode?.toLowerCase();
 
+            const canvasElement = document.getElementById('canvas');
+            if (canvasElement && !appConfig.visual_mode) {
+                canvasElement.style.display = 'none';
+            }
+
             if (configTheme) {
                 await getState().setTheme(configTheme as displayMode);
             }
