@@ -56,10 +56,12 @@ impl PortAllocator {
     }
 
     pub fn assign_port(&self)  -> Result<u16,Error> {
+
         let mut port = self.get_port()?;
         let mut tries = 0;
 
-        while self.check_if_port_is_free(port) {
+        while !self.check_if_port_is_free(port) {
+    
             port = self.get_port()?;
             tries += 1;
             if tries >= MAX_TRIES {
@@ -74,10 +76,12 @@ impl PortAllocator {
     }
 
     pub fn assign_port_with_fallback(&self) -> u16{
+
         let mut port = self.get_port().unwrap_or_else(|_| self.asign_port_from_fallback_range());
         let mut tries = 0;
 
-        while self.check_if_port_is_free(port) {
+        while !self.check_if_port_is_free(port) {
+    
             port = self.get_port().unwrap_or_else(|_| self.asign_port_from_fallback_range());
             tries += 1;
             if tries >= MAX_TRIES {

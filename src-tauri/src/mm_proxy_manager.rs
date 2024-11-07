@@ -9,7 +9,6 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
-use crate::network_utils;
 use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
 
