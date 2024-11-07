@@ -286,6 +286,18 @@ impl HardwareStatusMonitor {
         Ok(gpu_devices.clone())
     }
 
+    pub async fn get_gpu_devices_public_properties(&self) -> Result<Vec<PublicDeviceProperties>, Error> {
+        let gpu_devices = self.gpu_devices.read().await;
+
+        let mut platform_devices = Vec::new();
+
+        for device in gpu_devices.iter() {
+            platform_devices.push(device.public_properties.clone());
+        };
+
+        Ok(platform_devices)
+    }
+
     #[allow(dead_code)]
     pub async fn get_cpu_devices(&self) -> Result<Vec<CpuDeviceProperties>, Error> {
         let cpu_devices = self.cpu_devices.read().await;
