@@ -1,7 +1,7 @@
 import { HiOutlineSelector } from 'react-icons/hi';
 import { useEffect, useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { SpinnerIcon } from '@app/components/elements/SpinnerIcon.tsx';
+
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 
 import {
@@ -14,6 +14,7 @@ import {
     Wrapper,
 } from './Select.styles.ts';
 import { autoUpdate, useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
+import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 
 export interface SelectOption {
     label: string;
@@ -30,9 +31,18 @@ interface Props {
     variant?: SelectVariant;
     disabled?: boolean;
     loading?: boolean;
+    forceHeight?: number;
 }
 
-export function Select({ options, selectedValue, disabled, loading, onChange, variant = 'primary' }: Props) {
+export function Select({
+    options,
+    selectedValue,
+    disabled,
+    loading,
+    onChange,
+    variant = 'primary',
+    forceHeight,
+}: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const isBordered = variant === 'bordered';
 
@@ -72,7 +82,7 @@ export function Select({ options, selectedValue, disabled, loading, onChange, va
                 $disabled={disabled}
                 $isBordered={isBordered}
             >
-                <SelectedOption $isBordered={isBordered}>
+                <SelectedOption $isBordered={isBordered} $forceHeight={forceHeight}>
                     <Typography>{selectedLabel}</Typography>
                     {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
                 </SelectedOption>

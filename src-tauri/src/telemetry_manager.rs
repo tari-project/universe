@@ -1,10 +1,10 @@
 use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::p2pool_manager::{self, P2poolManager};
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
     gpu_miner::GpuMiner,
-    hardware_monitor::HardwareMonitor,
     node_manager::NodeManager,
 };
 use anyhow::Result;
@@ -16,12 +16,14 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::future::Future;
+use std::ops::Div;
 use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_utilities::encoding::Base58;
+use tari_utilities::encoding::MBase58;
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
 
@@ -102,6 +104,7 @@ impl From<Network> for TelemetryNetwork {
 pub enum TelemetryMiningMode {
     Eco,
     Ludicrous,
+    Custom,
 }
 
 impl From<MiningMode> for TelemetryMiningMode {
@@ -109,6 +112,7 @@ impl From<MiningMode> for TelemetryMiningMode {
         match value {
             MiningMode::Eco => TelemetryMiningMode::Eco,
             MiningMode::Ludicrous => TelemetryMiningMode::Ludicrous,
+            MiningMode::Custom => TelemetryMiningMode::Custom,
         }
     }
 }
@@ -165,6 +169,7 @@ pub struct TelemetryData {
     pub cpu_tribe_id: Option<String>,
     pub gpu_tribe_name: Option<String>,
     pub gpu_tribe_id: Option<String>,
+    pub extra_data: HashMap<String, String>,
 }
 
 pub struct TelemetryManager {
@@ -217,7 +222,7 @@ impl TelemetryManager {
             .expect("Failed to finalize hasher variable");
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
-        let unique_string = format!("v2,{},{}", buf.to_base58(), version,);
+        let unique_string = format!("v2,{},{}", buf.to_monero_base58(), version,);
         unique_string
     }
 
@@ -313,6 +318,7 @@ async fn validate_jwt(airdrop_access_token: Arc<RwLock<Option<String>>>) -> Opti
     })
 }
 
+#[allow(clippy::too_many_lines)]
 async fn get_telemetry_data(
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -344,21 +350,87 @@ async fn get_telemetry_data(
         }
     };
 
-    let hardware_status = HardwareMonitor::current()
-        .write()
-        .await
-        .read_hardware_parameters();
+    // let hardware_status = HardwareMonitor::current()
+    //     .write()
+    //     .await
+    //     .read_hardware_parameters();
 
-    let p2pool_stats = p2pool_manager.stats().await;
+    let gpu_hardware_parameters = HardwareStatusMonitor::current()
+        .get_gpu_public_properties()
+        .await
+        .ok();
+    let cpu_hardware_parameters = HardwareStatusMonitor::current()
+        .get_cpu_public_properties()
+        .await
+        .ok();
+
+    let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
+        warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
+    });
+    let p2pool_stats = match p2pool_stats {
+        Ok(stats) => stats,
+        Err(_) => None,
+    };
 
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
     let cpu_hash_rate = Some(cpu.hash_rate);
-    let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
-    let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
+
+    let cpu_utilization = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
+        let filtered_cpus = cpu_hardware_parameters
+            .iter()
+            .filter(|c| c.parameters.is_some())
+            .collect::<Vec<_>>();
+        Some(
+            filtered_cpus
+                .iter()
+                .map(|c| c.parameters.clone().unwrap_or_default().usage_percentage)
+                .sum::<f32>()
+                .div(filtered_cpus.len() as f32),
+        )
+    } else {
+        None
+    };
+
+    let (cpu_make, all_cpus) =
+        if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
+            let cpu_names: Vec<String> = cpu_hardware_parameters
+                .iter()
+                .map(|c| c.name.clone())
+                .collect();
+            (cpu_names.first().cloned(), cpu_names)
+        } else {
+            (None, vec![])
+        };
+
     let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
-    let gpu_utilization = hardware_status.gpu.clone().map(|c| c.usage_percentage);
-    let gpu_make = hardware_status.gpu.clone().map(|c| c.label);
+
+    let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
+        let filtered_gpus = gpu_hardware_parameters
+            .iter()
+            .filter(|c| c.parameters.is_some())
+            .collect::<Vec<_>>();
+        Some(
+            filtered_gpus
+                .iter()
+                .map(|c| c.parameters.clone().unwrap_or_default().usage_percentage)
+                .sum::<f32>()
+                .div(filtered_gpus.len() as f32),
+        )
+    } else {
+        None
+    };
+
+    let (gpu_make, all_gpus) =
+        if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
+            let gpu_names: Vec<String> = gpu_hardware_parameters
+                .iter()
+                .map(|c| c.name.clone())
+                .collect();
+            (gpu_names.first().cloned(), gpu_names)
+        } else {
+            (None, vec![])
+        }; //TODO refactor - now is JUST WIP to meet the String type
     let version = env!("CARGO_PKG_VERSION").to_string();
     let gpu_mining_used =
         config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
@@ -371,18 +443,65 @@ async fn get_telemetry_data(
         (false, false) => TelemetryResource::None,
     };
 
-    let p2pool_gpu_stats_sha3 = p2pool_stats.get("sha3").map(|stats| stats.squad.clone());
-    let p2pool_cpu_stats_randomx = p2pool_stats.get("randomx").map(|stats| stats.squad.clone());
+    let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
+    let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
     let p2pool_enabled =
         config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
-    let cpu_tribe_name = p2pool_cpu_stats_randomx
-        .clone()
-        .map(|tribe| tribe.name.clone());
-    let cpu_tribe_id = p2pool_cpu_stats_randomx.map(|tribe| tribe.id.clone());
-    let gpu_tribe_name = p2pool_gpu_stats_sha3
-        .clone()
-        .map(|tribe| tribe.name.clone());
-    let gpu_tribe_id = p2pool_gpu_stats_sha3.map(|tribe| tribe.id.clone());
+    let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
+        if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
+            (
+                Some(randomx_stats.squad.name.clone()),
+                Some(randomx_stats.squad.id.clone()),
+            )
+        } else {
+            (None, None)
+        }
+    } else {
+        (None, None)
+    };
+
+    let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
+        if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
+            (
+                Some(sha3_stats.squad.name.clone()),
+                Some(sha3_stats.squad.id.clone()),
+            )
+        } else {
+            (None, None)
+        }
+    } else {
+        (None, None)
+    };
+
+    let mut extra_data = HashMap::new();
+    extra_data.insert(
+        "config_cpu_enabled".to_string(),
+        config_guard.cpu_mining_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_gpu_enabled".to_string(),
+        config_guard.gpu_mining_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_p2pool_enabled".to_string(),
+        config_guard.p2pool_enabled().to_string(),
+    );
+    extra_data.insert(
+        "config_tor_enabled".to_string(),
+        config_guard.use_tor().to_string(),
+    );
+    if let Some(stats) = p2pool_stats.as_ref() {
+        extra_data.insert(
+            "p2pool_connected_peers".to_string(),
+            stats.connection_info.connected_peers.to_string(),
+        );
+    }
+    if !all_cpus.is_empty() {
+        extra_data.insert("all_cpus".to_string(), all_cpus.join(","));
+    }
+    if !all_gpus.is_empty() {
+        extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
+    }
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
@@ -403,6 +522,7 @@ async fn get_telemetry_data(
         cpu_tribe_id,
         gpu_tribe_name,
         gpu_tribe_id,
+        extra_data,
     })
 }
 
@@ -535,7 +655,7 @@ where
                         e
                     ));
                 } else {
-                    warn!(target: LOG_TARGET, "Retrying {} as it failed due to failure: {:?}", operation_name, e);
+                    warn!(target: LOG_TARGET, "Retrying {} due to failure: {:?}", operation_name, e);
                 }
             }
         }

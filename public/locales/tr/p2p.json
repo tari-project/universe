@@ -1,0 +1,9 @@
+{
+  "miners": "Madenciler",
+  "p2pool-chain-tip": "P2Pool Zincir Ucu",
+  "p2pool-connected": "P2Pool Bağlandı",
+  "p2pool-connection-info": "Bağlantı",
+  "p2pool-connection-info-more": "Bağlantı detayları",
+  "p2pool-stats": "Havuz madenciliği istatistikleri",
+  "tribe": "Kabile"
+}

@@ -1,21 +1,18 @@
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
-use dirs_next::data_local_dir;
 use log::{info, warn};
 use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
-use tokio::select;
 
-use crate::binaries::{Binaries, BinaryResolver};
 use crate::p2pool;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::P2poolConfig;
+use crate::process_adapter::HealthStatus;
+use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::process_utils::launch_child_process;
 use crate::utils::file_utils::convert_to_string;
 
 #[cfg(target_os = "windows")]
@@ -45,16 +42,13 @@ impl ProcessAdapter for P2poolAdapter {
         data_dir: PathBuf,
         _config_dir: PathBuf,
         log_path: PathBuf,
+        binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting p2pool node");
 
-        let working_dir = data_local_dir()
-            .expect("Could not get local data directory")
-            .join("tari-universe")
-            .join("sha-p2pool");
+        let working_dir = data_dir.join("sha-p2pool");
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create p2pool working directory - {}", error);
         });
@@ -76,88 +70,45 @@ impl ProcessAdapter for P2poolAdapter {
             config.stats_server_port.to_string(),
             "--base-node-address".to_string(),
             config.base_node_address.clone(),
-            "--mdns-disabled".to_string(),
+            // "--mdns-disabled".to_string(),
             "-b".to_string(),
             log_path_string,
+            "--stable-peer".to_string(),
+            "--private-key-folder".to_string(),
+            working_dir.to_string_lossy().to_string(),
         ];
         let pid_file_name = self.pid_file_name().to_string();
+
+        args.push("--squad".to_string());
+        args.push("default_2".to_string());
+        let mut envs = HashMap::new();
+        match Network::get_current_or_user_setting_or_default() {
+            Network::Esmeralda => {
+                envs.insert("TARI_NETWORK".to_string(), "esmeralda".to_string());
+            }
+            Network::NextNet => {
+                envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
+            }
+            _ => {
+                return Err(anyhow!("Unsupported network"));
+            }
+        };
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule("sha_p2pool.exe".to_string(), file_path.clone())?;
+
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    // file details
-                    let file_path = BinaryResolver::current()
-                        .read()
-                        .await
-                        .resolve_path_to_binary_files(Binaries::ShaP2pool)
-                        .await?;
-
-                    #[cfg(target_os = "windows")]
-                    add_firewall_rule("sha_p2pool.exe".to_string(), file_path.clone())?;
-                    crate::download_utils::set_permissions(&file_path).await?;
-
-                    // let output = process_utils::launch_and_get_outputs(
-                    //     &file_path,
-                    //     vec!["list-tribes".to_string()],
-                    // )
-                    // .await?;
-                    // let tribes: Vec<String> = serde_json::from_slice(&output)?;
-                    // let tribe = match tribes.choose(&mut rand::thread_rng()) {
-                    //     Some(tribe) => tribe.to_string(),
-                    //     None => String::from("default"), // TODO: generate name
-                    // };
-                    args.push("--tribe".to_string());
-                    args.push("default2".to_string());
-
-                    // env
-                    let mut envs = HashMap::new();
-                    match Network::get_current_or_user_setting_or_default() {
-                        Network::Esmeralda => {
-                            envs.insert("TARI_NETWORK".to_string(), "esmeralda".to_string());
-                        }
-                        Network::NextNet => {
-                            envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
-                        }
-                        _ => {
-                            return Err(anyhow!("Unsupported network"));
-                        }
-                    }
-
-                    // start
-                    let mut child = launch_child_process(&file_path, Some(envs), &args)?;
-
-                    if let Some(id) = child.id() {
-                        fs::write(data_dir.join(pid_file_name.clone()), id.to_string())?;
-                    }
-                    let exit_code;
-
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                        res2 = child.wait() => {
-                            match res2
-                             {
-                                Ok(res) => {
-                                    exit_code = res.code().unwrap_or(0)
-                                    },
-                                Err(e) => {
-                                    warn!(target: LOG_TARGET, "Error in MergeMiningProxyInstance: {}", e);
-                                    return Err(e.into());
-                                }
-                            }
-                        },
-                    };
-                    info!(target: LOG_TARGET, "Stopping p2pool node");
-
-                    if let Err(error) = fs::remove_file(data_dir.join(pid_file_name)) {
-                        warn!(target: LOG_TARGET, "Could not clear p2pool's pid file: {error:?}");
-                    }
-
-                    Ok(exit_code)
-                })),
+                handle: None,
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_version_path,
+                    envs: Some(envs),
+                    args,
+                    data_dir,
+                    pid_file_name,
+                    name: "P2pool".to_string(),
+                },
             },
             P2poolStatusMonitor::new(format!("http://127.0.0.1:{}", config.stats_server_port)),
         ))
@@ -172,6 +123,7 @@ impl ProcessAdapter for P2poolAdapter {
     }
 }
 
+#[derive(Clone)]
 pub struct P2poolStatusMonitor {
     stats_client: p2pool::stats_client::Client,
 }
@@ -186,9 +138,19 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    type Status = HashMap<String, Stats>;
+    async fn check_health(&self) -> HealthStatus {
+        match self.stats_client.stats().await {
+            Ok(_) => HealthStatus::Healthy,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
+                HealthStatus::Unhealthy
+            }
+        }
+    }
+}
 
-    async fn status(&self) -> Result<Self::Status, Error> {
+impl P2poolStatusMonitor {
+    pub async fn status(&self) -> Result<Stats, Error> {
         self.stats_client.stats().await
     }
 }

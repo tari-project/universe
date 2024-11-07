@@ -1,0 +1,34 @@
+{
+  "common": {
+    "got-it": "Mengerti"
+  },
+  "completedTip": {
+    "text": "Frasa pemulihan Anda dapat ditemukan kembali di pengaturan Anda",
+    "title": "Frasa pemulihan"
+  },
+  "intro": {
+    "balance": "Dompet Anda memiliki <span>{{balance}}</span> XTM",
+    "button": "Cadangkan frasa pemulihan",
+    "text": "Tari Universe secara otomatis menyiapkan dompet untuk Anda saat Anda mulai menambang. Pastikan Anda selalu memiliki akses ke dompet Anda dengan menyimpan frasa pemulihan Anda di tempat yang aman.",
+    "title": "Lindungi token Anda dengan mencadangkan frasa pemulihan Anda",
+    "warning": "Sangat disarankan"
+  },
+  "reminderTip": {
+    "text": "Sangat disarankan untuk mencadangkan frasa pemulihan Anda untuk dompet unik Anda",
+    "title": "Segera cadangkan frasa pemulihan Anda di pengaturan"
+  },
+  "seedPhrase": {
+    "button": "VERIFIKASI FRASA PEMULIHAN",
+    "checkbox": "Saya mengerti bahwa jika saya kehilangan frasa pemulihan saya, saya tidak akan dapat memulihkan dompet saya.",
+    "copied": "Tersalin!",
+    "copy": "Salin ke papan klip",
+    "text": "Anda akan membutuhkan kode ini lagi untuk memulihkan dompet Anda.",
+    "title": "Tuliskan frasa pemulihan Anda dan simpan di tempat yang aman"
+  },
+  "verifySeed": {
+    "button": "KONFIRMASI FRASA PEMULIHAN",
+    "placeholder": "Klik kata-kata di bawah ini dalam urutan yang benar",
+    "text": "Untuk memastikan Anda menuliskan frasa pemulihan Anda dengan benar, silakan pilih kata-kata dalam urutan yang benar.",
+    "title": "Verifikasi frasa pemulihan Anda"
+  }
+}

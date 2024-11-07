@@ -7,6 +7,13 @@
     <script type="module" crossorigin src="/assets/glApp.js"></script>
     <title>Tari Universe | Testnet</title>
     <style>
+      body,
+      main,
+      #root {
+        padding: 0;
+        margin: 0;
+      }
+
       #canvas {
         position: absolute;
         pointer-events: auto;
@@ -39,9 +46,6 @@
           time = performance.now() / 1000;
           window.addEventListener('resize', onResize);
 
-          glApp.properties.bgColor1 = '#F6F6F6';
-          glApp.properties.bgColor2 = '#EEEEEE';
-
           onResize();
           animate();
         }
@@ -65,13 +69,6 @@
           glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
           glApp.setSize(window.innerWidth, window.innerHeight);
         }
-
-
-        document.addEventListener("contextmenu", (e) => {
-          if (window.location.hostname !== "localhost") {
-            e.preventDefault();
-          }
-        });
 
         document.addEventListener('DOMContentLoaded', preload);
       </script>

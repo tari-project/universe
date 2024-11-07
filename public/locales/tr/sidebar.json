@@ -1,12 +1,27 @@
 {
-    "auto-miner":"Otomatik Madenci",
-    "auto-miner-description":"Otomatik madenci, makineniz boştayken madencinizi açacaktır",
-    "next-milestone":"Sonraki Dönüm Noktası",
-    "wallet-balance":"Cüzdan Bakiyesi",
-    "setup-scheduler":"Kurulum Planlayıcısı",
-    "mining-schedules":"Madencilik Planları",
-    "mining-schedules-description":"Madencilik faaliyetinizi planlayın",
-    "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
-    "block": "Block",
-    "recent-wins": "Recent wins"
+  "auto-miner": "Otomatik Madenci",
+  "auto-miner-description": "Otomatik madenci, makineniz boştayken madencinizi açacaktır",
+  "block": "Blok",
+  "hide-history": "Geçmişi gizle",
+  "history-hide-button": "Geçmişi Gizle",
+  "history-show-button": "Geçmiş",
+  "lost-connection": "Tari Ağı ile bağlantı kesildi. Yeniden bağlanılıyor..",
+  "mining-schedules": "Madencilik Planları",
+  "mining-schedules-description": "Madencilik faaliyetinizi planlayın",
+  "next-milestone": "Sonraki Dönüm Noktası",
+  "paper-wallet-button": "Telefonla Senkronize Et",
+  "paper-wallet-tooltip-message": "Universe cüzdanınızı Tari Aurora ile senkronize ederek XTM\"inizi her yerde takip edin.",
+  "paper-wallet-tooltip-title": "Telefonla Senkronize Et",
+  "recent-wins": "Son Kazançlar",
+  "setup-scheduler": "Kurulum Planlayıcısı",
+  "show-history": "Geçmişi göster",
+  "wallet-balance": "Cüzdan Bakiyesi",
+  "share": {
+    "history-item-button": "Göster ve Davet Et",
+    "title": "Az önce tari madenciliği yaptım",
+    "winner-pill": "Blok Kazananı",
+    "copied": "Bağlantı Kopyalandı!",
+    "button-text": "GÖSTER VE DAVET ET",
+    "reward": "ödülüm"
+  }
 }

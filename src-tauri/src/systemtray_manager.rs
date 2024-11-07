@@ -1,12 +1,12 @@
+use human_format::Formatter;
 use log::{error, info};
-use std::sync::LazyLock;
+use std::{ops::Div, sync::LazyLock};
 use tauri::{
     AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem,
 };
 
-use crate::format_utils::format_balance;
-use crate::hardware_monitor::HardwareStatus;
+use crate::hardware::hardware_status_monitor::PublicDeviceProperties;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 static INSTANCE: LazyLock<SystemtrayManager> = LazyLock::new(SystemtrayManager::new);
@@ -34,12 +34,30 @@ impl SystrayItemId {
 
     pub fn get_title(&self, value: f64) -> String {
         match self {
-            SystrayItemId::CpuHashrate => format!("CPU Hashrate: {:.2} H/s", value),
-            SystrayItemId::GpuHashrate => format!("GPU Hashrate: {:.2} H/s", value),
+            SystrayItemId::CpuHashrate => format!(
+                "CPU Hashrate: {} H/s",
+                Formatter::new()
+                    .with_decimals(2)
+                    .with_separator("")
+                    .format(value)
+            ),
+            SystrayItemId::GpuHashrate => format!(
+                "GPU Hashrate: {} H/s",
+                Formatter::new()
+                    .with_decimals(2)
+                    .with_separator("")
+                    .format(value)
+            ),
             SystrayItemId::CpuUsage => format!("CPU Usage: {:.2}%", value),
             SystrayItemId::GpuUsage => format!("GPU Usage: {:.2}%", value),
             SystrayItemId::EstimatedEarning => {
-                format!("Est earning: {} tXTM/day", format_balance(value))
+                format!(
+                    "Est earning: {} tXTM/day",
+                    Formatter::new()
+                        .with_decimals(2)
+                        .with_separator("")
+                        .format(value / 1_000_000.0)
+                )
             }
             SystrayItemId::UnMinimize => "Unminimize".to_string(),
         }
@@ -56,8 +74,8 @@ pub enum CurrentOperatingSystem {
 pub struct SystrayData {
     pub cpu_hashrate: f64,
     pub gpu_hashrate: f64,
-    pub cpu_usage: f64,
-    pub gpu_usage: f64,
+    // pub cpu_usage: f64,
+    // pub gpu_usage: f64,
     pub estimated_earning: f64,
 }
 
@@ -83,16 +101,16 @@ impl SystemtrayManager {
             SystrayItemId::GpuHashrate.get_title(0.0),
         )
         .disabled();
-        let cpu_usage = CustomMenuItem::new(
-            SystrayItemId::CpuUsage.to_str(),
-            SystrayItemId::CpuUsage.get_title(0.0),
-        )
-        .disabled();
-        let gpu_usage = CustomMenuItem::new(
-            SystrayItemId::GpuUsage.to_str(),
-            SystrayItemId::GpuUsage.get_title(0.0),
-        )
-        .disabled();
+        // let cpu_usage = CustomMenuItem::new(
+        //     SystrayItemId::CpuUsage.to_str(),
+        //     SystrayItemId::CpuUsage.get_title(0.0),
+        // )
+        // .disabled();
+        // let gpu_usage = CustomMenuItem::new(
+        //     SystrayItemId::GpuUsage.to_str(),
+        //     SystrayItemId::GpuUsage.get_title(0.0),
+        // )
+        // .disabled();
         let estimated_earning = CustomMenuItem::new(
             SystrayItemId::EstimatedEarning.to_str(),
             SystrayItemId::EstimatedEarning.get_title(0.0),
@@ -104,10 +122,10 @@ impl SystemtrayManager {
         );
 
         SystemTrayMenu::new()
-            .add_item(cpu_usage)
+            // .add_item(cpu_usage)
             .add_item(cpu_hashrate)
             .add_native_item(SystemTrayMenuItem::Separator)
-            .add_item(gpu_usage)
+            // .add_item(gpu_usage)
             .add_item(gpu_hashrate)
             .add_native_item(SystemTrayMenuItem::Separator)
             .add_item(estimated_earning)
@@ -123,8 +141,8 @@ impl SystemtrayManager {
         let empty_data = SystrayData {
             cpu_hashrate: 0.0,
             gpu_hashrate: 0.0,
-            cpu_usage: 0.0,
-            gpu_usage: 0.0,
+            // cpu_usage: 0.0,
+            // gpu_usage: 0.0,
             estimated_earning: 0.0,
         };
         let tray_menu = SystemtrayManager::initialize_menu();
@@ -132,7 +150,7 @@ impl SystemtrayManager {
 
         match current_os {
             CurrentOperatingSystem::Windows => {
-                return systray.with_tooltip(tooltip.clone().as_str())
+                return systray.with_tooltip(tooltip.clone().as_str());
             }
             CurrentOperatingSystem::Linux => systray.with_menu(tray_menu),
             CurrentOperatingSystem::MacOS => {
@@ -149,19 +167,41 @@ impl SystemtrayManager {
         match current_os {
             CurrentOperatingSystem::Windows => {
                 format!(
-                    "Hashrate | Usage\nCPU: {:.0} H/s | {:.0}%\nGPU: {:.0} H/s | {:.0}%\nEst. earning: {} tXTM/day",
-                    data.cpu_hashrate,
-                    data.cpu_usage,
-                    data.gpu_hashrate,
-                    data.gpu_usage,
-                    format_balance(data.estimated_earning)
+                    "Hashrate \nCPU: {} H/s\nGPU: {} H/s\nEst. earning: {} tXTM/day",
+                    Formatter::new()
+                        .with_decimals(2)
+                        .with_separator("")
+                        .format(data.cpu_hashrate),
+                    // data.cpu_usage,
+                    Formatter::new()
+                        .with_decimals(2)
+                        .with_separator("")
+                        .format(data.gpu_hashrate),
+                    // data.gpu_usage,
+                    Formatter::new()
+                        .with_decimals(2)
+                        .with_separator("")
+                        .format(data.estimated_earning / 1_000_000.0)
                 )
             }
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             CurrentOperatingSystem::MacOS => {
                 format!(
-                    "CPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nGPU:\n  Hashrate: {:.0} H/s\n  Usage: {:.0}%\nEst. earning: {} tXTM/day",
-                    data.cpu_hashrate, data.cpu_usage, data.gpu_hashrate, data.gpu_usage, format_balance(data.estimated_earning)
+                    "CPU:\n  Hashrate: {} H/s\nGPU:\n  Hashrate: {} H/s\nEst. earning: {} tXTM/day",
+                    Formatter::new()
+                        .with_decimals(0)
+                        .with_separator("")
+                        .format(data.cpu_hashrate),
+                    // data.cpu_usage,
+                    Formatter::new()
+                        .with_decimals(2)
+                        .with_separator("")
+                        .format(data.gpu_hashrate),
+                    // data.gpu_usage,
+                    Formatter::new()
+                        .with_decimals(2)
+                        .with_separator("")
+                        .format(data.estimated_earning / 1_000_000.0)
                 )
             }
         }
@@ -179,17 +219,26 @@ impl SystemtrayManager {
     fn update_menu_with_data(&self, app: AppHandle, data: SystrayData) {
         self.update_menu_field(app.clone(), SystrayItemId::CpuHashrate, data.cpu_hashrate);
         self.update_menu_field(app.clone(), SystrayItemId::GpuHashrate, data.gpu_hashrate);
-        self.update_menu_field(app.clone(), SystrayItemId::CpuUsage, data.cpu_usage);
-        self.update_menu_field(app.clone(), SystrayItemId::GpuUsage, data.gpu_usage);
+        // self.update_menu_field(app.clone(), SystrayItemId::CpuUsage, data.cpu_usage);
+        // self.update_menu_field(app.clone(), SystrayItemId::GpuUsage, data.gpu_usage);
         self.update_menu_field(
             app.clone(),
             SystrayItemId::EstimatedEarning,
             data.estimated_earning,
         );
+        self.update_minimize(app.clone());
     }
 
     pub fn create_tooltip_from_data(&self, data: SystrayData) -> String {
         SystemtrayManager::internal_create_tooltip_from_data(data)
+    }
+
+    pub fn update_minimize(&self, app: AppHandle) {
+        let window = app.get_window("main").expect("Could not get window");
+        let _unused = app
+            .tray_handle()
+            .get_item(SystrayItemId::UnMinimize.to_str())
+            .set_enabled(window.is_minimized().expect("Could not get is_minimized"));
     }
 
     fn detect_current_os() -> CurrentOperatingSystem {
@@ -301,14 +350,25 @@ impl SystemtrayManager {
         &self,
         cpu_hashrate: f64,
         gpu_hashrate: f64,
-        hardware_status: HardwareStatus,
+        // gpu_parameters: Vec<PublicDeviceProperties>,
+        // cpu_parameters: Vec<PublicDeviceProperties>,
         estimated_earning: f64,
     ) -> SystrayData {
+        // let cpu_usage_percentage = cpu_parameters
+        //     .iter()
+        //     .map(|cpu| f64::from(cpu.clone().parameters.unwrap_or_default().usage_percentage))
+        //     .sum::<f64>()
+        //     .div(cpu_parameters.len() as f64);
+        // let gpu_usage_percentage = gpu_parameters
+        //     .iter()
+        //     .map(|gpu| f64::from(gpu.clone().parameters.unwrap_or_default().usage_percentage))
+        //     .sum::<f64>()
+        //     .div(gpu_parameters.len() as f64);
         SystrayData {
             cpu_hashrate,
             gpu_hashrate,
-            cpu_usage: f64::from(hardware_status.cpu.unwrap_or_default().usage_percentage),
-            gpu_usage: f64::from(hardware_status.gpu.unwrap_or_default().usage_percentage),
+            // cpu_usage: cpu_usage_percentage,
+            // gpu_usage: gpu_usage_percentage,
             estimated_earning,
         }
     }

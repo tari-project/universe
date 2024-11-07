@@ -1,0 +1,34 @@
+{
+  "common": {
+    "got-it": "Verstaan"
+  },
+  "completedTip": {
+    "text": "Jou saadfrase kan weer in jou instellings gevind word",
+    "title": "Saadfrase"
+  },
+  "intro": {
+    "balance": "Jou beursie het <span>{{balance}}</span> XTM",
+    "button": "Rugsteun saadfrase",
+    "text": "Tari Universe stel outomaties \"n beursie vir jou op wanneer jy begin myn. Maak seker jy het altyd toegang tot jou beursie deur jou saadfrase op \"n veilige plek te stoor.",
+    "title": "Beskerm jou tokens deur jou saadfrase te rugsteun",
+    "warning": "Sterk aanbeveel"
+  },
+  "reminderTip": {
+    "text": "Dit word sterk aanbeveel om jou saadfrase vir jou unieke beursie te rugsteun",
+    "title": "Rugsteun vinnig jou saadfrase in instellings"
+  },
+  "seedPhrase": {
+    "button": "VERIFIEER SAADFRASE",
+    "checkbox": "Ek verstaan dat as ek my herstel saadfrase verloor, ek nie my beursie sal kan herstel nie.",
+    "copied": "Gekopieer!",
+    "copy": "Kopieer na knipbord",
+    "text": "Jy sal hierdie kode weer nodig hê om jou beursie te herstel.",
+    "title": "Skryf jou saadfrase neer en stoor dit op \"n veilige plek"
+  },
+  "verifySeed": {
+    "button": "BEVESTIG SAADFRASE",
+    "placeholder": "Klik die woorde hieronder in die korrekte volgorde",
+    "text": "Om seker te maak jy het jou saadfrase korrek neergeskryf, kies asseblief die woorde in die korrekte volgorde.",
+    "title": "Verifieer jou saadfrase"
+  }
+}

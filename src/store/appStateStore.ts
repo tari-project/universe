@@ -3,6 +3,7 @@ import { create } from './create';
 import { invoke } from '@tauri-apps/api';
 import { useAppConfigStore } from './useAppConfigStore';
 import { useMiningStore } from './useMiningStore';
+import * as Sentry from '@sentry/react';
 
 interface AppState {
     isAfterAutoUpdate: boolean;
@@ -51,8 +52,8 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
         set({ isSettingUp: false });
 
         // Proceed with auto mining when enabled
-        const { auto_mining, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
-        if (auto_mining && (cpu_mining_enabled || gpu_mining_enabled)) {
+        const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
+        if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
             const { startMining } = useMiningStore.getState();
             await startMining();
         }
@@ -64,6 +65,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             const applications_versions = await invoke('get_applications_versions');
             set({ applications_versions });
         } catch (error) {
+            Sentry.captureException(error);
             console.error('Error getting applications versions', error);
         }
     },
@@ -80,6 +82,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
                 await getState().fetchApplicationsVersions();
                 retries--;
             } catch (error) {
+                Sentry.captureException(error);
                 console.error('Error getting applications versions', error);
             }
         }
@@ -89,6 +92,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             await invoke('update_applications');
             await getState().fetchApplicationsVersions();
         } catch (error) {
+            Sentry.captureException(error);
             console.error('Error updating applications versions', error);
         }
     },
@@ -98,6 +102,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             const externalDependencies = await invoke('get_external_dependencies');
             set({ externalDependencies });
         } catch (error) {
+            Sentry.captureException(error);
             console.error('Error loading missing external dependencies', error);
         }
     },

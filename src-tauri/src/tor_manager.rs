@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc};
 use tokio::sync::RwLock;
 
 use crate::process_watcher::ProcessWatcher;
-use crate::tor_adapter::TorAdapter;
+use crate::tor_adapter::{TorAdapter, TorConfig};
 use tari_shutdown::ShutdownSignal;
 
 pub(crate) struct TorManager {
@@ -37,7 +37,17 @@ impl TorManager {
         {
             let mut process_watcher = self.watcher.write().await;
             process_watcher
-                .start(app_shutdown, base_path, config_path, log_path)
+                .adapter
+                .load_or_create_config(config_path.clone())
+                .await?;
+            process_watcher
+                .start(
+                    app_shutdown,
+                    base_path,
+                    config_path,
+                    log_path,
+                    crate::binaries::Binaries::Tor,
+                )
                 .await?;
         }
         self.wait_ready().await?;
@@ -60,5 +70,36 @@ impl TorManager {
         }
 
         Ok(())
+    }
+
+    pub async fn get_tor_config(&self) -> TorConfig {
+        self.watcher.read().await.adapter.get_tor_config()
+    }
+
+    pub async fn set_tor_config(&self, config: TorConfig) -> Result<TorConfig, anyhow::Error> {
+        self.watcher
+            .write()
+            .await
+            .adapter
+            .set_tor_config(config)
+            .await
+    }
+
+    pub async fn get_control_port(&self) -> Result<Option<u16>, anyhow::Error> {
+        let process_watcher = self.watcher.read().await;
+        Ok(process_watcher
+            .status_monitor
+            .as_ref()
+            .map(|m| m.control_port))
+    }
+
+    pub async fn get_entry_guards(&self) -> Result<Vec<String>, anyhow::Error> {
+        self.watcher.read().await.adapter.get_entry_guards().await
+    }
+
+    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
+        let mut process_watcher = self.watcher.write().await;
+        let exit_code = process_watcher.stop().await?;
+        Ok(exit_code)
     }
 }

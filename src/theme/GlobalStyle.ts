@@ -16,7 +16,9 @@ export const GlobalReset = createGlobalStyle`
             outline: none;
         }
     }
+    fieldset,
     textarea,
+    dialog,
     input {
         all: unset;
         /* Chrome, Safari, Edge, Opera */
@@ -31,6 +33,8 @@ export const GlobalReset = createGlobalStyle`
             -moz-appearance: textfield;
         }
 
+        &:focus-within,
+        &:focus-visible,
         &:focus {
             outline: none;
         }
@@ -46,6 +50,7 @@ export const GlobalStyle = createGlobalStyle`
         margin: 0;
         padding: 0;
         font-family: Poppins, sans-serif;
+        font-size: 16px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         height: 100%;
@@ -54,6 +59,8 @@ export const GlobalStyle = createGlobalStyle`
         width: 100%;
         box-sizing: border-box;
         position: relative;
+        color: ${({ theme }) => theme.palette.text.primary};
+        transition: color .2s ease, background-color .2s ease,  background .2s ease;
 
         ::-webkit-scrollbar {
             display: none;
@@ -76,14 +83,19 @@ export const GlobalStyle = createGlobalStyle`
         }
     }
 
+    html {
+        background: #fff;// for now
+        //background:  ${({ theme }) => theme.palette.base};
+    }
+    
     #canvas {
         z-index: 0;
         pointer-events: auto;
         width: 100vw;
+        background: none;
     }
 
     #root {
         pointer-events: none;
     }
-
 `;

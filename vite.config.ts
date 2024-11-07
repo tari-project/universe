@@ -1,35 +1,70 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import eslintPlugin from '@nabla/vite-plugin-eslint';
-import tsconfigPaths from 'vite-tsconfig-paths';
+import { defineConfig, UserConfig } from 'vite';
 import * as path from 'node:path';
+import react from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import eslintPlugin from '@nabla/vite-plugin-eslint';
+import packageInfo from './package.json';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
-// https://vitejs.dev/config/
+const plugins: UserConfig['plugins'] = [
+    react({
+        babel: { plugins: ['styled-components'] },
+    }),
+    tsconfigPaths(),
+    eslintPlugin({ eslintOptions: { cache: false } }),
+];
+const baseOptions: UserConfig = {
+    plugins,
+    resolve: {
+        alias: {
+            '@app': path.resolve(__dirname, './src'),
+        },
+    },
+    logLevel: 'error',
+};
 
-export default defineConfig(() => {
+const devOptions: UserConfig = {
+    clearScreen: false,
+    server: {
+        port: 1420,
+        strictPort: true,
+        watch: {
+            ignored: ['**/src-tauri/**'],
+        },
+    },
+};
+
+export default defineConfig(({ command, mode }) => {
+    if (command === 'serve') {
+        return { ...devOptions, ...baseOptions };
+    }
     return {
-        // prevent vite from obscuring rust errors
-        clearScreen: false,
-        // Tauri expects a fixed port, fail if that port is not available
-        server: {
-            port: 1420,
-            strictPort: true,
-            watch: {
-                // 3. tell vite to ignore watching `src-tauri`
-                ignored: ['**/src-tauri/**'],
-            },
+        ...baseOptions,
+        build: {
+            sourcemap: true,
         },
         plugins: [
-            react({
-                babel: { plugins: ['styled-components'] },
+            ...plugins,
+            sentryVitePlugin({
+                org: 'tari-labs',
+                project: 'tari-universe',
+                release: {
+                    name: packageInfo.version,
+                },
+                reactComponentAnnotation: { enabled: true },
+                authToken: process.env.SENTRY_AUTH_TOKEN,
+                disable: mode === 'development',
+                telemetry: false,
+                sourcemaps: {
+                    assets: ['./dist/**'],
+                    ignore: [
+                        'node_modules',
+                        './dist/assets/textures/**',
+                        './dist/assets/models/**',
+                        './dist/assets/glApp.js',
+                    ],
+                },
             }),
-            tsconfigPaths(),
-            eslintPlugin({ eslintOptions: { cache: false } }),
         ],
-        resolve: {
-            alias: {
-                '@app': path.resolve(__dirname, './src'),
-            },
-        },
     };
 });

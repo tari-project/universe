@@ -1,0 +1,9 @@
+{
+  "miners": "Penambang",
+  "p2pool-chain-tip": "Tip Rantai P2Pool",
+  "p2pool-connected": "P2Pool Terhubung",
+  "p2pool-connection-info": "Koneksi",
+  "p2pool-connection-info-more": "Detail koneksi",
+  "p2pool-stats": "Statistik penambangan pool",
+  "tribe": "Tribe"
+}

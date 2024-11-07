@@ -63,7 +63,13 @@ impl WalletManager {
         process_watcher.adapter.base_node_address =
             Some(format!("/ip4/127.0.0.1/tcp/{}", base_node_tcp_port));
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(
+                app_shutdown,
+                base_path,
+                config_path,
+                log_path,
+                crate::binaries::Binaries::Wallet,
+            )
             .await?;
         process_watcher.wait_ready().await?;
         Ok(())

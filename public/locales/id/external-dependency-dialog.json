@@ -1,5 +1,5 @@
 {
-    "title": "External Dependencies",
-    "description": "The following external dependencies are required for the application to function correctly.",
-    "download-and-install": "Download and install"
+  "description": "Ketergantungan eksternal berikut diperlukan agar aplikasi berfungsi dengan benar.",
+  "download-and-install": "Unduh dan pasang",
+  "title": "Ketergantungan Eksternal"
 }

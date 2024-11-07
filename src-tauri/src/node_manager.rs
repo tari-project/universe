@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use log::{debug, error};
+use log::error;
 use minotari_node_grpc_client::grpc::Peer;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -71,12 +71,20 @@ impl NodeManager {
         config_path: PathBuf,
         log_path: PathBuf,
         use_tor: bool,
+        tor_control_port: Option<u16>,
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
             process_watcher.adapter.use_tor = use_tor;
+            process_watcher.adapter.tor_control_port = tor_control_port;
             process_watcher
-                .start(app_shutdown, base_path, config_path, log_path)
+                .start(
+                    app_shutdown,
+                    base_path,
+                    config_path,
+                    log_path,
+                    crate::binaries::Binaries::MinotariNode,
+                )
                 .await?;
         }
         self.wait_ready().await?;
@@ -92,7 +100,13 @@ impl NodeManager {
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(
+                app_shutdown,
+                base_path,
+                config_path,
+                log_path,
+                crate::binaries::Binaries::MinotariNode,
+            )
             .await?;
 
         Ok(())
@@ -208,8 +222,8 @@ impl NodeManager {
                     "%Y-%m-%d %H:%M:%S%.f",
                 ) {
                     Ok(datetime) => datetime,
-                    Err(e) => {
-                        debug!(target: LOG_TARGET, "Error parsing datetime: {}", e);
+                    Err(_e) => {
+                        // debug!(target: LOG_TARGET, "Error parsing datetime: {}", e);
                         return false;
                     }
                 };

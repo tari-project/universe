@@ -1,19 +1,24 @@
 import { create } from './create';
-import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api';
-import { useAppStateStore } from './appStateStore.ts';
+import * as Sentry from '@sentry/react';
+import { Transaction } from '@app/types/wallet.ts';
 
 interface State extends WalletBalance {
     tari_address_base58: string;
     tari_address_emoji: string;
+    tari_address?: string;
     balance: number | null;
-    transactions: TransactionInfo[];
+    transactions: Transaction[];
     isTransactionLoading: boolean;
+    is_wallet_importing: boolean;
 }
 
 interface Actions {
     fetchWalletDetails: () => Promise<void>;
-    fetchTransactionHistory: () => Promise<void>;
+    setTransactionsLoading: (isTransactionLoading: boolean) => void;
+    setTransactions: (transactions?: Transaction[]) => void;
+    importSeedWords: (seedWords: string[]) => Promise<void>;
 }
 
 type WalletStoreState = State & Actions;
@@ -28,9 +33,10 @@ const initialState: State = {
     pending_outgoing_balance: 0,
     transactions: [],
     isTransactionLoading: false,
+    is_wallet_importing: false,
 };
 
-export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
+export const useWalletStore = create<WalletStoreState>()((set) => ({
     ...initialState,
     fetchWalletDetails: async () => {
         try {
@@ -42,6 +48,7 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
             } = tari_wallet_details.wallet_balance || {};
             // Q: Should we subtract pending_outgoing_balance here?
             const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
+
             set({
                 ...tari_wallet_details.wallet_balance,
                 tari_address_base58: tari_wallet_details.tari_address_base58,
@@ -49,24 +56,19 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
                 balance: tari_wallet_details?.wallet_balance ? newBalance : null,
             });
         } catch (error) {
+            Sentry.captureException(error);
             console.error('Could not get tari wallet details: ', error);
         }
     },
-    fetchTransactionHistory: async () => {
-        if (getState().isTransactionLoading) return;
-
-        set({ isTransactionLoading: true });
+    setTransactions: (transactions) => set({ transactions }),
+    setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),
+    importSeedWords: async (seedWords: string[]) => {
         try {
-            const txs = await invoke('get_transaction_history');
-            set({
-                transactions: txs.sort((a, b) => b.timestamp - a.timestamp),
-            });
+            set({ is_wallet_importing: true });
+            await invoke('import_seed_words', { seedWords });
         } catch (error) {
-            const appStateStore = useAppStateStore.getState();
-            appStateStore.setError('Could not get transaction history');
-            console.error('Could not get transaction history: ', error);
-        } finally {
-            set({ isTransactionLoading: false });
+            Sentry.captureException(error);
+            console.error('Could not import seed words: ', error);
         }
     },
 }));

@@ -1,13 +1,12 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
-// import { useInterval } from "../useInterval";
 import { useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
+import * as Sentry from '@sentry/react';
 
-export function useAirdropTokensRefresh() {
-    const { airdropTokens, setAirdropTokens, backendInMemoryConfig } = useAirdropStore();
+export function useHandleAirdropTokensRefresh() {
+    const { airdropTokens, setAirdropTokens } = useAirdropStore();
 
-    // Handle refreshing the access token
-    const handleRefresh = useCallback(
+    return useCallback(
         (airdropApiUrl: string) => {
             // 5 hours from now
             const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
@@ -32,10 +31,16 @@ export function useAirdropTokensRefresh() {
         },
         [airdropTokens, setAirdropTokens]
     );
+}
+export function useAirdropTokensRefresh() {
+    const { airdropTokens, backendInMemoryConfig } = useAirdropStore();
+
+    // Handle refreshing the access token
+    const handleRefresh = useHandleAirdropTokensRefresh();
 
     useEffect(() => {
         if (!backendInMemoryConfig?.airdropApiUrl) return;
-        const interval = setInterval(handleRefresh, 1000 * 60 * 60, backendInMemoryConfig?.airdropApiUrl);
+        const interval = setInterval(() => handleRefresh(backendInMemoryConfig?.airdropApiUrl), 1000 * 60 * 60);
         return () => clearInterval(interval);
     }, [handleRefresh, backendInMemoryConfig?.airdropApiUrl]);
 
@@ -43,6 +48,7 @@ export function useAirdropTokensRefresh() {
     useEffect(() => {
         if (!airdropTokens) return;
         invoke('set_airdrop_access_token', { token: airdropTokens?.token }).catch((error) => {
+            Sentry.captureException(error);
             console.error('Error getting airdrop tokens', error);
         });
     }, [airdropTokens]);
