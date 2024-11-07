@@ -1663,7 +1663,10 @@ async fn get_miner_metrics(
     //     .read_hardware_parameters();
 
     // info!(target: LOG_TARGET, "4 elapsed {:?}", timer.elapsed());
-    let gpu_public_parameters = HardwareStatusMonitor::current().get_gpu_devices_public_properties().await.map_err(|e| e.to_string())?;
+    let gpu_public_parameters = HardwareStatusMonitor::current()
+        .get_gpu_devices_public_properties()
+        .await
+        .map_err(|e| e.to_string())?;
     //     .map_err(|e| e.to_string())?;
     // info!(target: LOG_TARGET, "5 elapsed {:?}", timer.elapsed());
     // let cpu_public_parameters = HardwareStatusMonitor::current()
