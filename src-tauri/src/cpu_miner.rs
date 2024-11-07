@@ -6,14 +6,14 @@ use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMin
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::thread;
+use std::{cmp, thread};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
-const ECO_MODE_CPU_USAGE: isize = 30;
+const ECO_MODE_CPU_USAGE: u32 = 30;
 
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
@@ -39,7 +39,7 @@ impl CpuMiner {
         config_path: PathBuf,
         log_dir: PathBuf,
         mode: MiningMode,
-        custom_max_cpu_usage: Option<isize>,
+        custom_cpu_threads: Option<u32>,
     ) -> Result<(), anyhow::Error> {
         let mut lock = self.watcher.write().await;
 
@@ -57,7 +57,7 @@ impl CpuMiner {
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
                 debug!(target:LOG_TARGET, "Available CPUs: {}", available_cpus);
-                isize::try_from(available_cpus.get()).unwrap_or(1)
+                available_cpus.get() as u32
             }
             Err(err) => {
                 error!("Available CPUs: Unknown, error: {}", err);
@@ -65,19 +65,19 @@ impl CpuMiner {
             }
         };
 
-        let eco_mode_isize = cpu_miner_config
+        let eco_mode_threads = cpu_miner_config
             .eco_mode_cpu_percentage
-            .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100isize);
+            .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100u32);
 
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => eco_mode_isize,
-            MiningMode::Custom => custom_max_cpu_usage.unwrap_or(eco_mode_isize),
-            MiningMode::Ludicrous => -1, // Use all
+            MiningMode::Eco => eco_mode_threads,
+            MiningMode::Custom => custom_cpu_threads.unwrap_or(eco_mode_threads),
+            MiningMode::Ludicrous => cmp::max(max_cpu_available.saturating_sub(1), 1), // subtract 1 to keep the system responsive
         };
 
         lock.adapter.node_connection = Some(xmrig_node_connection);
         lock.adapter.monero_address = Some(monero_address.clone());
-        lock.adapter.cpu_max_percentage = Some(cpu_max_percentage);
+        lock.adapter.cpu_threads = Some(cpu_max_percentage);
         lock.adapter.extra_options = match mode {
             MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
             MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),

@@ -164,33 +164,18 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
 #[tauri::command]
 async fn set_mode(
     mode: String,
-    custom_cpu_usage: Option<f64>,
-    custom_gpu_usage: Option<f64>,
+    custom_cpu_usage: Option<u32>,
+    custom_gpu_usage: Option<u32>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
 
-    fn f64_to_isize_safe(value: Option<f64>) -> Option<isize> {
-        let value = value.unwrap_or_default();
-        if value.is_finite() && value >= isize::MIN as f64 && value <= isize::MAX as f64 {
-            #[allow(clippy::cast_possible_truncation)]
-            Some(value.round() as isize)
-        } else {
-            warn!(target: LOG_TARGET, "Invalid value for custom_cpu_usage or custom_gpu_usage: {:?}", value);
-            None
-        }
-    }
-
     state
         .config
         .write()
         .await
-        .set_mode(
-            mode,
-            f64_to_isize_safe(custom_cpu_usage),
-            f64_to_isize_safe(custom_gpu_usage),
-        )
+        .set_mode(mode, custom_cpu_usage, custom_gpu_usage)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -218,7 +203,7 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
     result.insert("max_cpu_available".to_string(), max_cpu_available);
 
     // At some point we should split this per card and allow the user to choose
-    let gpu_threads = 2048;
+    let gpu_threads = 256;
 
     result.insert("max_gpu_available".to_string(), gpu_threads);
 
@@ -1921,8 +1906,8 @@ struct CpuMinerConfig {
     eco_mode_xmrig_options: Vec<String>,
     ludicrous_mode_xmrig_options: Vec<String>,
     custom_mode_xmrig_options: Vec<String>,
-    eco_mode_cpu_percentage: Option<isize>,
-    ludicrous_mode_cpu_percentage: Option<isize>,
+    eco_mode_cpu_percentage: Option<u32>,
+    ludicrous_mode_cpu_percentage: Option<u32>,
 }
 
 #[derive(Clone)]
