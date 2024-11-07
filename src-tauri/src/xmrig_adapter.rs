@@ -37,7 +37,7 @@ pub struct XmrigAdapter {
     pub monero_address: Option<String>,
     pub http_api_token: String,
     pub http_api_port: u16,
-    pub cpu_threads: Option<u32>,
+    pub cpu_threads: Option<Option<u32>>,
     pub extra_options: Vec<String>,
 }
 
@@ -108,11 +108,12 @@ impl ProcessAdapter for XmrigAdapter {
                 .as_ref()
                 .ok_or(anyhow::anyhow!("Monero address not set"))?
         ));
-        args.push(format!(
-            "--threads={}",
-            self.cpu_threads
-                .ok_or(anyhow::anyhow!("CPU max percentage not set"))?
-        ));
+        // don't specify threads for ludicrous mode
+        if let Some(cpu_threads) = self.cpu_threads {
+            if let Some(cpu_threads) = cpu_threads {
+                args.push(format!("--threads={}", cpu_threads));
+            }
+        }
         args.push("--verbose".to_string());
         for extra_option in &self.extra_options {
             args.push(extra_option.clone());
