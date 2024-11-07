@@ -58,7 +58,6 @@ use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
 
 mod app_config;
-mod port_allocator;
 mod app_in_memory_config;
 mod auto_launcher;
 mod binaries;
@@ -81,6 +80,7 @@ mod node_manager;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
+mod port_allocator;
 mod process_adapter;
 mod process_killer;
 mod process_utils;

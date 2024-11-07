@@ -1,7 +1,7 @@
-use std::sync::LazyLock;
-use std::net::TcpListener;
-use anyhow::{Error,anyhow};
+use anyhow::{anyhow, Error};
 use log::{error, info, warn};
+use std::net::TcpListener;
+use std::sync::LazyLock;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 static INSTANCE: LazyLock<PortAllocator> = LazyLock::new(PortAllocator::new);
@@ -28,9 +28,13 @@ impl PortAllocator {
     fn get_port(&self) -> Result<u16, Error> {
         match TcpListener::bind(self.get_address_with_0_port()) {
             Ok(listener) => {
-                let port = listener.local_addr().ok().map(|addr| addr.port()).ok_or_else(|| anyhow!("Failed to get port"))?;
+                let port = listener
+                    .local_addr()
+                    .ok()
+                    .map(|addr| addr.port())
+                    .ok_or_else(|| anyhow!("Failed to get port"))?;
                 Ok(port)
-            },
+            }
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to bind to port: {:?}", e);
                 Err(anyhow!("Failed to bind to port"))
@@ -45,7 +49,6 @@ impl PortAllocator {
         }
     }
 
-
     fn asign_port_from_fallback_range(&self) -> u16 {
         for p in FALLBACK_PORT_RANGE {
             if self.check_if_port_is_free(p) {
@@ -55,13 +58,11 @@ impl PortAllocator {
         0
     }
 
-    pub fn assign_port(&self)  -> Result<u16,Error> {
-
+    pub fn assign_port(&self) -> Result<u16, Error> {
         let mut port = self.get_port()?;
         let mut tries = 0;
 
         while !self.check_if_port_is_free(port) {
-    
             port = self.get_port()?;
             tries += 1;
             if tries >= MAX_TRIES {
@@ -72,17 +73,18 @@ impl PortAllocator {
 
         info!(target: LOG_TARGET, "Assigned port: {}", port);
         Ok(port)
-
     }
 
-    pub fn assign_port_with_fallback(&self) -> u16{
-
-        let mut port = self.get_port().unwrap_or_else(|_| self.asign_port_from_fallback_range());
+    pub fn assign_port_with_fallback(&self) -> u16 {
+        let mut port = self
+            .get_port()
+            .unwrap_or_else(|_| self.asign_port_from_fallback_range());
         let mut tries = 0;
 
         while !self.check_if_port_is_free(port) {
-    
-            port = self.get_port().unwrap_or_else(|_| self.asign_port_from_fallback_range());
+            port = self
+                .get_port()
+                .unwrap_or_else(|_| self.asign_port_from_fallback_range());
             tries += 1;
             if tries >= MAX_TRIES {
                 warn!(target: LOG_TARGET, "Failed to assign port after {} tries", MAX_TRIES);
@@ -94,5 +96,4 @@ impl PortAllocator {
         info!(target: LOG_TARGET, "Assigned port: {}", port);
         port
     }
-    
 }

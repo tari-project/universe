@@ -10,7 +10,6 @@ use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
 
-use crate::network_utils;
 use crate::port_allocator::PortAllocator;
 use crate::{
     process_adapter::{
