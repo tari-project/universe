@@ -13,7 +13,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::add_firewall_rule;
+use crate::utils::setup_utils::windows_firewall::add_firewall_rule;
 
 use crate::{
     app_config::MiningMode,
@@ -160,7 +160,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         }
 
         #[cfg(target_os = "windows")]
-        add_firewall_rule("xtrgpuminer.exe".to_string(), file_path.clone())?;
+        add_firewall_rule("xtrgpuminer.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {

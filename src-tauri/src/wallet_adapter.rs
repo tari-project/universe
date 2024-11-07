@@ -19,7 +19,7 @@ use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::add_firewall_rule;
+use crate::utils::setup_utils::windows_firewall::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 

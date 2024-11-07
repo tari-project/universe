@@ -1,5 +1,5 @@
 #[cfg(windows)]
-mod setup_utils {
+pub mod setup_utils {
     use log::{error, info};
     use std::io::{self, Write};
     use std::os::windows::process::CommandExt;
@@ -68,7 +68,6 @@ mod setup_utils {
                 error!(target: LOG_TARGET, "Failed to add firewall rule.");
             }
         } else {
-            info!(target: LOG_TARGET, "BBBBBBBBBBBBBBBBBBBBBBBBBB");
             info!(target: LOG_TARGET, "Firewall rule already exists.");
         }
 

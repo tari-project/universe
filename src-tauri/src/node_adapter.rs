@@ -21,7 +21,7 @@ use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::ByteArray;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::add_firewall_rule;
+use crate::utils::setup_utils::windows_firewall::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
@@ -162,7 +162,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
         }
 
         #[cfg(target_os = "windows")]
-        add_firewall_rule("minotari_node.exe".to_string(), file_path.clone())?;
+        add_firewall_rule("minotari_node.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {
