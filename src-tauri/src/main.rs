@@ -724,13 +724,6 @@ async fn setup_inner(
         }
     }
 
-    let mut port_allocator_instance = PortAllocator::current().write().await;
-    let port1 = &port_allocator_instance.assign_port().map_err(|e| anyhow!(e.to_string()))?;
-    let port2 = &port_allocator_instance.assign_port().map_err(|e| anyhow!(e.to_string()))?;
-    let port3 = &port_allocator_instance.assign_port().map_err(|e| anyhow!(e.to_string()))?;
-
-    info!(target: LOG_TARGET, "Ports assigned: {}, {}, {}", port1, port2, port3);
-
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
     let use_tor = app_config.use_tor();
