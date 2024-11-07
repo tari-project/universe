@@ -168,6 +168,7 @@ const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }
     useEffect(() => {
         if (maxLevel && !currentValue) {
             setCurrentValue(Math.ceil((value * 100) / maxLevel));
+            setCalculatedValue(value);
         }
     }, [currentValue, maxLevel, value]);
 
@@ -244,7 +245,7 @@ const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }
                     <RangeInputHolder>
                         <PerformanceMarker style={ecomarkstyle} />
                         <PerformanceMarker $red style={firemarkstyle} />
-                        <RangeValueHolder style={rangeValueHolderStyle}>{currentValue}</RangeValueHolder>
+                        <RangeValueHolder style={rangeValueHolderStyle}>{`${currentValue}%`}</RangeValueHolder>
                         <RangeInput
                             type="range"
                             value={currentValue}
