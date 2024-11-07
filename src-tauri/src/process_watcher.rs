@@ -2,7 +2,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use log::{error, info, warn};
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
@@ -16,6 +16,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
     pub health_timeout: tokio::time::Duration,
+    pub expected_startup_time: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
 }
 
@@ -27,6 +28,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(5),
             health_timeout: tokio::time::Duration::from_secs(4),
+            expected_startup_time: tokio::time::Duration::from_secs(20),
             status_monitor: None,
         }
     }
@@ -74,9 +76,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
 
+        let expected_startup_time = self.expected_startup_time;
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             child.start().await?;
+            let mut uptime = Instant::now();
             sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET, "Starting process watcher for {}", name);
             let mut watch_timer = tokio::time::interval(poll_time);
@@ -128,6 +132,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         }
 
                             if !is_healthy && !child.shutdown.is_triggered() && !app_shutdown.is_triggered() && !inner_shutdown.is_triggered(){
+                               if uptime.elapsed() < expected_startup_time {
+                                   warn!(target: LOG_TARGET, "{} is not healthy. Waiting for startup time to elapse", name);
+                               }
+                               else {
                                match child.stop().await {
                                    Ok(exit_code) => {
                                       if exit_code != 0 {
@@ -146,11 +154,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                                // Restart dead app
                                 sleep(Duration::from_secs(1)).await;
                                 warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
+                                uptime = Instant::now();
                                 child.start().await?;
                                 // Wait for a bit before checking health again
                                 // sleep(Duration::from_secs(10)).await;
 
-                               }
+                            }
+                        }
                             //    break;
                       },
                     _ = inner_shutdown.wait() => {
