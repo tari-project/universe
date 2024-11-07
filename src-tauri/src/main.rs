@@ -8,9 +8,6 @@ use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDevicePrope
 use log::trace;
 use log::{debug, error, info, warn};
 
-use opencl3::device::Device;
-use opencl3::platform::get_platforms;
-
 use log4rs::config::RawConfig;
 use regex::Regex;
 use serde::Serialize;
@@ -219,31 +216,8 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
 
     result.insert("max_cpu_available".to_string(), max_cpu_available);
 
-    // GPU Detection (OpenCL)
-    let gpu_threads = match (|| -> Result<i32, Box<dyn std::error::Error>> {
-        let platforms = get_platforms()?;
-        if platforms.is_empty() {
-            return Ok(0);
-        }
-
-        // Try to get the first GPU device from the first platform
-        let devices = platforms[0].get_devices(opencl3::device::CL_DEVICE_TYPE_GPU)?;
-        if devices.is_empty() {
-            return Ok(0);
-        }
-
-        // Get max work group size for the first device
-        let device = Device::new(devices[0]);
-        let max_wg_size: usize = device.max_work_group_size()?;
-
-        Ok(i32::try_from(max_wg_size).unwrap_or(0))
-    })() {
-        Ok(threads) => threads,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "GPU detection failed: {}", e);
-            0 // Explicit default when GPU/OpenCL is not available
-        }
-    };
+    // At some point we should split this per card and allow the user to choose
+    let gpu_threads = 2048;
 
     result.insert("max_gpu_available".to_string(), gpu_threads);
 
