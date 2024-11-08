@@ -12,12 +12,20 @@ export const CustomLevelsContent = styled.div`
     width: 700px;
 `;
 
+export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
+    position: relative;
+    ${({ $disabled }) =>
+        $disabled &&
+        css`
+            cursor: wait;
+        `}
+`;
+
 export const RangeInput = styled.input`
     position: relative;
     z-index: 2;
     margin: 5px 0;
     -webkit-appearance: none;
-    width: 100%;
     height: 9px;
     border-radius: 5px;
     background: #ddd;
@@ -35,12 +43,20 @@ export const RangeInput = styled.input`
         background: white;
         border: 2px solid #813bf5;
         z-index: 10;
-        cursor: pointer;
         transition: background 0.15s ease-in-out;
+        cursor: pointer;
+    }
+
+    &:disabled {
+        opacity: 0.6;
+        pointer-events: none;
+        &::-webkit-slider-thumb {
+            pointer-events: none;
+        }
     }
 `;
 
-export const CustomLelvelsHeader = styled.div`
+export const CustomLevelsHeader = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -73,17 +89,13 @@ export const InputDescription = styled.div`
     }
 `;
 
-export const RangeIntputWrapper = styled.div`
+export const RangeInputWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 14px;
     font-family: Poppins, sans-serif;
     gap: 10px;
-`;
-
-export const RangeInputHolder = styled.div`
-    position: relative;
 `;
 
 export const RangeLimits = styled.div`
@@ -115,6 +127,7 @@ export const RangeValueHolder = styled.div`
     min-height: 20px;
     top: -35px;
     z-index: 2;
+    transition: all 0.2s;
     &::after {
         content: '';
         position: absolute;
@@ -156,7 +169,6 @@ export const WarningContainer = styled.div<{ $visible: boolean }>`
     border: 1px solid #ff0000;
     border-radius: 5px;
     background: rgba(255, 0, 0, 0.1);
-    font-size: 12px;
     height: 0;
     opacity: 0;
     transition: all 0.3s ease-in-out;
@@ -178,7 +190,6 @@ export const SuccessContainer = styled.div<{ $visible: boolean }>`
     border: 1px solid #188750;
     border-radius: 5px;
     background: rgba(24, 135, 80, 0.1);
-    font-size: 12px;
     opacity: 0;
     transition: all 0.3s ease-in-out;
     ${({ $visible }) =>

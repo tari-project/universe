@@ -29,12 +29,12 @@ function ModeSelect() {
     const custom_power_levels_enabled = useAppConfigStore((s) => s.custom_power_levels_enabled);
 
     const handleChange = useCallback(
-        async (mode: string) => {
-            if (mode === 'Custom') {
+        async (newMode: string) => {
+            if (newMode === 'Custom') {
                 setCustomLevelsDialog(true);
                 return;
             }
-            await changeMiningMode({ mode: mode as modeType });
+            await changeMiningMode({ mode: newMode as modeType });
         },
         [changeMiningMode, setCustomLevelsDialog]
     );
@@ -61,8 +61,8 @@ function ModeSelect() {
             <Typography>{t('mode')}</Typography>
             <ModeSelectWrapper>
                 <Select
-                    disabled={isMiningLoading || isChangingMode || isSettingUp || !isMiningControlsEnabled}
-                    loading={isChangingMode}
+                    disabled={isSettingUp}
+                    loading={isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
                     onChange={handleChange}
                     selectedValue={mode}
                     options={tabOptions}

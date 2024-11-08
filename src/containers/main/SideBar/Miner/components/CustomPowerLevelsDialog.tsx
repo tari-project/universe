@@ -1,14 +1,14 @@
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MaxConsumptionLevels } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import {
-    CustomLelvelsHeader,
+    CustomLevelsHeader,
     CustomLevelsContent,
     InputDescription,
-    RangeIntputWrapper,
+    RangeInputWrapper,
     RangeInput,
     RangeLabel,
     RangeLimits,
@@ -63,6 +63,7 @@ export function CustomPowerLevelsDialog() {
     const setCustomLevelsDialogOpen = useMiningStore((s) => s.setCustomLevelsDialogOpen);
 
     const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
+    const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
     const maxLevels = useGetMaxConsumptionLevels();
 
@@ -113,18 +114,20 @@ export function CustomPowerLevelsDialog() {
     if (!maxLevels.max_cpu_available) return <LinearProgress />;
 
     return (
-        <Dialog open={customLevelsDialogOpen} onOpenChange={setCustomLevelsDialogOpen}>
+        <Dialog open={customLevelsDialogOpen} onOpenChange={setCustomLevelsDialogOpen} disableClose={isChangingMode}>
             <DialogContent>
-                <CustomLelvelsHeader>
+                <CustomLevelsHeader>
                     {t('custom-power-levels.title')}
                     <TopRightContainer>
-                        <SuccessContainer $visible={saved}>{t('custom-power-levels.saved')}</SuccessContainer>
+                        <SuccessContainer $visible={isChangingMode || saved}>
+                            {t('custom-power-levels.saved')}
+                        </SuccessContainer>
 
                         <IconButton onClick={() => setCustomLevelsDialogOpen(false)}>
                             <IoClose size={18} />
                         </IconButton>
                     </TopRightContainer>
-                </CustomLelvelsHeader>
+                </CustomLevelsHeader>
                 <CustomLevelsContent>
                     <RangeInputComponent
                         label={t('custom-power-levels.cpu-power-level')}
@@ -133,6 +136,7 @@ export function CustomPowerLevelsDialog() {
                         desc={t('custom-power-levels.choose-cpu-power-level')}
                         warning={t('custom-power-levels.cpu-warning')}
                         onChange={handleChangeCpu}
+                        isLoading={isChangingMode}
                     />
                     <Divider />
                     <RangeInputComponent
@@ -142,6 +146,7 @@ export function CustomPowerLevelsDialog() {
                         value={gpuValue}
                         warning={t('custom-power-levels.gpu-warning')}
                         onChange={handleChangeGpu}
+                        isLoading={isChangingMode}
                     />
                 </CustomLevelsContent>
             </DialogContent>
@@ -155,15 +160,26 @@ interface RangeInputProps {
     value: number;
     desc: string;
     warning?: string;
+    isLoading?: boolean;
     onChange: (value: number) => void;
 }
-const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }: RangeInputProps) => {
+const RangeInputComponent = ({
+    label,
+    maxLevel,
+    value,
+    desc,
+    onChange,
+    warning,
+    isLoading = false,
+}: RangeInputProps) => {
     const min = 1;
     const [isHover, setIsHover] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: true });
 
     const [currentValue, setCurrentValue] = useState(0);
     const [calculatedValue, setCalculatedValue] = useState(0);
+
+    const hasChanges = useRef(false);
 
     useEffect(() => {
         if (maxLevel && !currentValue) {
@@ -184,8 +200,12 @@ const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }
 
     const handleMouseUp = useCallback(() => {
         setIsHover(false);
-        onChange(calculatedValue);
-    }, [calculatedValue, onChange]);
+
+        if (!isLoading && hasChanges.current) {
+            onChange(calculatedValue);
+            hasChanges.current = false;
+        }
+    }, [calculatedValue, isLoading, onChange]);
 
     const handleMouseDown = () => {
         setIsHover(true);
@@ -197,6 +217,7 @@ const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }
             setCurrentValue(newValue);
             const calculatedValue = Math.ceil((newValue * maxLevel) / 100);
             setCalculatedValue(calculatedValue);
+            hasChanges.current = true;
         },
         [maxLevel]
     );
@@ -240,9 +261,14 @@ const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }
         <div>
             <InputContainer>
                 <RangeLabel> {label}</RangeLabel>
-                <RangeIntputWrapper onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
+                <RangeInputWrapper
+                    onMouseDown={handleMouseDown}
+                    onMouseEnter={handleMouseDown}
+                    onMouseLeave={() => setIsHover(false)}
+                    onMouseUp={handleMouseUp}
+                >
                     <RangeLimits>{'0 %'}</RangeLimits>
-                    <RangeInputHolder>
+                    <RangeInputHolder $disabled={isLoading}>
                         <PerformanceMarker style={ecomarkstyle} />
                         <PerformanceMarker $red style={firemarkstyle} />
                         <RangeValueHolder style={rangeValueHolderStyle}>{`${currentValue}%`}</RangeValueHolder>
@@ -253,10 +279,11 @@ const RangeInputComponent = ({ label, maxLevel, value, desc, onChange, warning }
                             max={maxValue}
                             min={1}
                             onChange={handleChange}
+                            disabled={isLoading}
                         />
                     </RangeInputHolder>
                     <RangeLimits>{`${maxValue} %`}</RangeLimits>
-                </RangeIntputWrapper>
+                </RangeInputWrapper>
                 <InputDescription
                     dangerouslySetInnerHTML={{
                         __html: desc
