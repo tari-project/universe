@@ -20,6 +20,7 @@ use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::RwLock;
 
 use crate::cpu_miner::CpuMiner;
+use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
