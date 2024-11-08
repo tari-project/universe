@@ -1,5 +1,4 @@
 import { MinerMetrics } from '@app/types/app-status';
-import { setAnimationState } from '@app/visuals';
 import { create } from './create';
 
 import { invoke } from '@tauri-apps/api';
@@ -96,7 +95,6 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         set({ miningInitiated: false });
         try {
             await invoke('stop_mining', {});
-            setAnimationState('stop');
             console.info('Mining stopped.');
         } catch (e) {
             Sentry.captureException(e);

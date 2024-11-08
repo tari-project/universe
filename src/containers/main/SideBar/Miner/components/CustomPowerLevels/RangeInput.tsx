@@ -23,7 +23,15 @@ interface RangeInputProps {
     warning?: string;
     isLoading?: boolean;
     usePercentage?: boolean;
+    step?: number;
     onChange: (value: number) => void;
+}
+
+function convertToPercentage(value: number, max: number): number {
+    return Math.ceil((value * 100) / max);
+}
+function convertToUnit(value: number, max: number): number {
+    return Math.ceil((value * max) / 100);
 }
 export const RangeInputComponent = ({
     label,
@@ -32,10 +40,11 @@ export const RangeInputComponent = ({
     desc,
     onChange,
     warning,
+    step,
     isLoading = false,
     usePercentage = false,
 }: RangeInputProps) => {
-    const min = 1;
+    const min = step ?? 1;
     const [isHover, setIsHover] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: true });
 
@@ -46,17 +55,21 @@ export const RangeInputComponent = ({
 
     useEffect(() => {
         if (maxLevel && !currentValue) {
-            setCurrentValue(Math.ceil((value * 100) / maxLevel));
+            const sliderValue = usePercentage ? convertToPercentage(value, maxLevel) : value;
+            setCurrentValue(sliderValue);
             setCalculatedValue(value);
         }
-    }, [currentValue, maxLevel, value]);
+    }, [currentValue, maxLevel, usePercentage, value]);
 
-    const maxValue = 100;
+    const maxValue = usePercentage ? 100 : maxLevel;
 
-    const getPosition = useCallback((value: number, max: number) => {
-        // Position the value bubble in the range input thumb
-        return 15 + ((value - min) / (max - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH);
-    }, []);
+    const getPosition = useCallback(
+        (value: number, max: number) => {
+            // Position the value bubble in the range input thumb
+            return 15 + ((value - min) / (max - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH);
+        },
+        [min]
+    );
 
     // Check if the value is over 75% of the max level
     const hasWarning = (currentValue * 100) / maxValue > 75;
@@ -78,46 +91,37 @@ export const RangeInputComponent = ({
         (event: ChangeEvent<HTMLInputElement>) => {
             const newValue = Number(event.target.value);
             setCurrentValue(newValue);
-            const calculatedValue = Math.ceil((newValue * maxLevel) / 100);
-            setCalculatedValue(calculatedValue);
+            const newCalculatedValue = usePercentage ? convertToUnit(newValue, maxLevel) : newValue;
+            setCalculatedValue(newCalculatedValue);
             hasChanges.current = true;
         },
-        [maxLevel]
+        [maxLevel, usePercentage]
     );
 
-    // Positioning with useMemo for `RangeValueHolder`
-    const rangeValueHolderStyle = useMemo(
-        () => ({
-            left: getPosition(currentValue, maxValue),
-            display: isHover ? 'block' : 'none',
-        }),
-        [getPosition, currentValue, maxValue, isHover]
-    );
-
-    const ecomarkstyle = useMemo(
-        () => ({
-            display: currentValue > 12 && currentValue < 18 ? 'none' : 'block',
-            left: 15 + ((15 - min) / (maxValue - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
-        }),
-        [currentValue]
-    );
-
-    const firemarkstyle = useMemo(
-        () => ({
-            display: currentValue > 72 && currentValue < 78 ? 'none' : 'block',
-            left: 15 + ((75 - min) / (maxValue - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
-        }),
-        [currentValue]
-    );
-
-    const rangeValueStyle = useMemo(
-        () => ({
-            background: currentValue
-                ? `linear-gradient(to right, #813bf5 ${currentValue || 1}%, #ddd ${currentValue || 1}%)`
-                : '#ddd',
-        }),
-        [currentValue]
-    );
+    const valueBasedStyles = useMemo(() => {
+        // these should all be percentage based for styling values
+        const _maxVal = 100;
+        const comparisonValue = convertToPercentage(currentValue, maxValue);
+        return {
+            rangeValueHolder: {
+                left: getPosition(comparisonValue, _maxVal),
+                display: isHover ? 'block' : 'none',
+            },
+            ecomark: {
+                display: comparisonValue > comparisonValue && comparisonValue < 18 ? 'none' : 'block',
+                left: 15 + ((15 - min) / (_maxVal - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
+            },
+            firemark: {
+                display: comparisonValue > 72 && comparisonValue < 78 ? 'none' : 'block',
+                left: 15 + ((75 - min) / (_maxVal - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
+            },
+            rangeValue: {
+                background: comparisonValue
+                    ? `linear-gradient(to right, #813bf5 ${comparisonValue || 1}%, #ddd ${comparisonValue || 1}%)`
+                    : '#ddd',
+            },
+        };
+    }, [currentValue, getPosition, isHover, maxValue, min]);
 
     if (!maxValue) return null;
     return (
@@ -130,22 +134,25 @@ export const RangeInputComponent = ({
                     onMouseLeave={() => setIsHover(false)}
                     onMouseUp={handleMouseUp}
                 >
-                    <RangeLimits>{'0%'}</RangeLimits>
+                    <RangeLimits>{usePercentage ? '0%' : '0'}</RangeLimits>
                     <RangeInputHolder $disabled={isLoading}>
-                        <PerformanceMarker style={ecomarkstyle} />
-                        <PerformanceMarker $red style={firemarkstyle} />
-                        <RangeValueHolder style={rangeValueHolderStyle}>{`${currentValue}%`}</RangeValueHolder>
+                        <PerformanceMarker style={valueBasedStyles.ecomark} />
+                        <PerformanceMarker $red style={valueBasedStyles.firemark} />
+                        <RangeValueHolder style={valueBasedStyles.rangeValueHolder}>
+                            {usePercentage ? `${currentValue}%` : currentValue}
+                        </RangeValueHolder>
                         <RangeInput
+                            step={step}
                             type="range"
                             value={currentValue}
-                            style={rangeValueStyle}
+                            style={valueBasedStyles.rangeValue}
                             max={maxValue}
-                            min={1}
+                            min={min}
                             onChange={handleChange}
                             disabled={isLoading}
                         />
                     </RangeInputHolder>
-                    <RangeLimits>{`${maxValue}%`}</RangeLimits>
+                    <RangeLimits>{usePercentage ? `${maxValue}%` : maxValue}</RangeLimits>
                 </RangeInputWrapper>
                 <InputDescription
                     dangerouslySetInnerHTML={{

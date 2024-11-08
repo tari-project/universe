@@ -24,4 +24,10 @@ export const useUiMiningStateMachine = () => {
             setAnimationState('stop');
         }
     }, [isSetupFinished, isMiningInitiated, isMining, statusIndex, isChangingMode]);
+
+    useEffect(() => {
+        if (isMining && isChangingMode) {
+            setAnimationState('stop');
+        }
+    }, [isMining, statusIndex, isChangingMode]);
 };

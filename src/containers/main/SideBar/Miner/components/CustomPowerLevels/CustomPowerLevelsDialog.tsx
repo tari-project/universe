@@ -125,6 +125,7 @@ export function CustomPowerLevelsDialog() {
                         desc={t('custom-power-levels.choose-cpu-power-level')}
                         warning={t('custom-power-levels.cpu-warning')}
                         onChange={handleChangeCpu}
+                        usePercentage
                         isLoading={isChangingMode}
                     />
                     <Divider />
@@ -136,6 +137,7 @@ export function CustomPowerLevelsDialog() {
                         warning={t('custom-power-levels.gpu-warning')}
                         onChange={handleChangeGpu}
                         isLoading={isChangingMode}
+                        step={2}
                     />
                 </CustomLevelsContent>
             </DialogContent>

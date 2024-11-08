@@ -9,7 +9,6 @@ import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
 import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
 import { useTheme } from 'styled-components';
 import { Trans, useTranslation } from 'react-i18next';
@@ -23,7 +22,7 @@ export default function Miner() {
     const theme = useTheme();
     const { t } = useTranslation('mining-view', { useSuspense: false });
     useMiningStatesSync();
-    const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
+
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
@@ -46,16 +45,6 @@ export default function Miner() {
 
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
-
-    const gpuChipValue = gpuHardwareStats
-        ? gpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
-          (gpuHardwareStats?.length || 1)
-        : 0;
-
-    const cpuChipValue = cpuHardwareStats
-        ? cpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
-          (cpuHardwareStats?.length || 1)
-        : 0;
 
     const totalEarningsFormatted = useFormatBalance(totalEarnings);
     const estimatedBalanceFormatted = useFormatBalance(cpu_estimated_earnings);
