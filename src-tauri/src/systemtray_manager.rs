@@ -1,11 +1,14 @@
 use human_format::Formatter;
 use log::{error, info};
+
+#[allow(unused_imports)]
 use std::{ops::Div, sync::LazyLock};
 use tauri::{
     AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu,
     SystemTrayMenuItem,
 };
 
+#[allow(unused_imports)]
 use crate::hardware::hardware_status_monitor::PublicDeviceProperties;
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
@@ -14,7 +17,9 @@ static INSTANCE: LazyLock<SystemtrayManager> = LazyLock::new(SystemtrayManager::
 pub enum SystrayItemId {
     CpuHashrate,
     GpuHashrate,
+    #[allow(dead_code)]
     CpuUsage,
+    #[allow(dead_code)]
     GpuUsage,
     EstimatedEarning,
     UnMinimize,
@@ -229,6 +234,7 @@ impl SystemtrayManager {
         self.update_minimize(app.clone());
     }
 
+    #[allow(dead_code)]
     pub fn create_tooltip_from_data(&self, data: SystrayData) -> String {
         SystemtrayManager::internal_create_tooltip_from_data(data)
     }

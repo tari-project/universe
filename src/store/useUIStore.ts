@@ -11,7 +11,6 @@ interface State {
     theme: Theme;
     background: backgroundType;
     view: viewType;
-    visualMode: boolean;
     sidebarOpen: boolean;
     showExperimental: boolean;
     showExternalDependenciesDialog: boolean;
@@ -21,7 +20,6 @@ interface Actions {
     setTheme: (theme: Theme) => void;
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
-    toggleVisualMode: () => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setShowExperimental: (showExperimental: boolean) => void;
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
@@ -34,7 +32,6 @@ const initialState: State = {
     theme: 'light',
     background: 'onboarding',
     view: 'setup',
-    visualMode: true,
     sidebarOpen: false,
     dialogToShow: null,
     showExperimental: false,
@@ -49,7 +46,6 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     },
     setBackground: (background) => set({ background }),
     setView: (view) => set({ view }),
-    toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setShowExperimental: (showExperimental) => set({ showExperimental }),
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
