@@ -462,7 +462,7 @@ async fn setup_inner(
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
-    hardware: Vec<PublicDeviceProperties>,
+    // hardware: Vec<PublicDeviceProperties>,
     mining: CpuMinerStatus,
 }
 
@@ -531,8 +531,8 @@ struct CpuMinerConfig {
     eco_mode_xmrig_options: Vec<String>,
     ludicrous_mode_xmrig_options: Vec<String>,
     custom_mode_xmrig_options: Vec<String>,
-    eco_mode_cpu_percentage: Option<isize>,
-    ludicrous_mode_cpu_percentage: Option<isize>,
+    eco_mode_cpu_percentage: Option<u32>,
+    ludicrous_mode_cpu_percentage: Option<u32>,
 }
 
 #[derive(Clone)]
