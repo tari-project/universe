@@ -1,4 +1,5 @@
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
+import { Typography } from '@app/components/elements/Typography';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MaxConsumptionLevels } from '@app/types/app-status';
@@ -117,12 +118,11 @@ export function CustomPowerLevelsDialog() {
         <Dialog open={customLevelsDialogOpen} onOpenChange={setCustomLevelsDialogOpen} disableClose={isChangingMode}>
             <DialogContent>
                 <CustomLevelsHeader>
-                    {t('custom-power-levels.title')}
+                    <Typography>{t('custom-power-levels.title')}</Typography>
                     <TopRightContainer>
                         <SuccessContainer $visible={isChangingMode || saved}>
                             {t('custom-power-levels.saved')}
                         </SuccessContainer>
-
                         <IconButton onClick={() => setCustomLevelsDialogOpen(false)}>
                             <IoClose size={18} />
                         </IconButton>
@@ -258,7 +258,7 @@ const RangeInputComponent = ({
 
     if (!maxValue) return null;
     return (
-        <div>
+        <>
             <InputContainer>
                 <RangeLabel> {label}</RangeLabel>
                 <RangeInputWrapper
@@ -295,6 +295,6 @@ const RangeInputComponent = ({
             <WarningContainer $visible={hasWarning}>
                 <strong>{t('custom-power-levels.warning')}</strong>: {warning}
             </WarningContainer>
-        </div>
+        </>
     );
 };

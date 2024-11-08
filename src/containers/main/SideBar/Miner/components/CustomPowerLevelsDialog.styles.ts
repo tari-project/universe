@@ -4,11 +4,11 @@ export const SLIDER_WIDTH = 570;
 export const SLIDER_THUMB_WIDTH = 30;
 
 export const CustomLevelsContent = styled.div`
-    padding: 15px 15px 35px;
+    padding: 0 10px;
     margin-top: 10px;
     display: flex;
     flex-direction: column;
-    gap: 30px;
+    gap: 20px;
     width: 700px;
 `;
 
@@ -62,8 +62,9 @@ export const CustomLevelsHeader = styled.div`
     align-items: center;
     margin-bottom: 10px;
     font-size: 18px;
-    font-family: Poppins, sans-serif;
-    padding-bottom: 26px;
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 0 10px 10px;
     border-bottom: 1px solid #0000000d;
 `;
 
@@ -72,7 +73,7 @@ export const RangeLabel = styled.label`
     justify-content: space-between;
     align-items: center;
     font-size: 14px;
-    font-family: Poppins, sans-serif;
+    font-weight: 500;
     padding-bottom: 10px;
 `;
 
@@ -177,7 +178,8 @@ export const WarningContainer = styled.div<{ $visible: boolean }>`
         css`
             opacity: 0.7;
             padding: 8px 15px;
-            height: 50px;
+            max-height: 50px;
+            height: auto;
         `}
 `;
 
