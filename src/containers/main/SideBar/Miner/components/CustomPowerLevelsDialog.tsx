@@ -267,7 +267,7 @@ const RangeInputComponent = ({
                     onMouseLeave={() => setIsHover(false)}
                     onMouseUp={handleMouseUp}
                 >
-                    <RangeLimits>{'0 %'}</RangeLimits>
+                    <RangeLimits>{'0%'}</RangeLimits>
                     <RangeInputHolder $disabled={isLoading}>
                         <PerformanceMarker style={ecomarkstyle} />
                         <PerformanceMarker $red style={firemarkstyle} />
@@ -282,7 +282,7 @@ const RangeInputComponent = ({
                             disabled={isLoading}
                         />
                     </RangeInputHolder>
-                    <RangeLimits>{`${maxValue} %`}</RangeLimits>
+                    <RangeLimits>{`${maxValue}%`}</RangeLimits>
                 </RangeInputWrapper>
                 <InputDescription
                     dangerouslySetInnerHTML={{

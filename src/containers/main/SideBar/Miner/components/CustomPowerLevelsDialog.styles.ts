@@ -14,6 +14,7 @@ export const CustomLevelsContent = styled.div`
 
 export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
     position: relative;
+    width: 100%;
     ${({ $disabled }) =>
         $disabled &&
         css`
@@ -32,7 +33,8 @@ export const RangeInput = styled.input`
     outline: none;
     -webkit-transition: 0.2s;
     transition: opacity 0.2s;
-    width: ${SLIDER_WIDTH}px;
+    min-width: ${SLIDER_WIDTH}px;
+    width: 100%;
 
     &::-webkit-slider-thumb {
         -webkit-appearance: none;
@@ -40,6 +42,7 @@ export const RangeInput = styled.input`
         width: ${SLIDER_THUMB_WIDTH}px;
         height: ${SLIDER_THUMB_WIDTH}px;
         border-radius: 50%;
+        box-sizing: border-box;
         background: white;
         border: 2px solid #813bf5;
         z-index: 10;
@@ -91,26 +94,24 @@ export const InputDescription = styled.div`
 `;
 
 export const RangeInputWrapper = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr auto 2fr;
+    align-items: stretch;
     font-size: 14px;
-    font-family: Poppins, sans-serif;
     gap: 10px;
 `;
 
 export const RangeLimits = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     font-size: 18px;
-    font-family: Poppins, sans-serif;
+    font-weight: 500;
+    text-align: center;
 `;
 
 export const InputContainer = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 10px;
     position: relative;
 `;
 
