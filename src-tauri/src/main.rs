@@ -665,7 +665,7 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .setup(|app| {
-            let app_handle = app.handle().clone(); // Clone the Arc for usage in the closure
+            let _app_handle = app.handle().clone(); // Clone the Arc for usage in the closure
 
             let contents = setup_logging(
                 &app.path()
@@ -798,7 +798,8 @@ fn main() {
             commands::stop_mining,
             commands::update_applications,
             commands::get_max_consumption_levels,
-            commands::close_splashscreen
+            commands::close_splashscreen,
+            commands::set_visual_mode
         ])
         .build(tauri::generate_context!())
         .inspect_err(

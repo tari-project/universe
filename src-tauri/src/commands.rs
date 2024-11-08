@@ -22,7 +22,6 @@ use crate::{
     MAX_ACCEPTABLE_COMMAND_TIME,
 };
 
-use crate::hardware_monitor::{HardwareParameters, HardwareStatus};
 use log::{debug, error, info, warn};
 use regex::Regex;
 use sentry::integrations::anyhow::capture_anyhow;
@@ -1090,7 +1089,7 @@ pub async fn get_tor_entry_guards(
 #[tauri::command]
 pub async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
+    _app: tauri::AppHandle,
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
     if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
@@ -1325,10 +1324,14 @@ pub async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String
 
 #[tauri::command]
 pub fn close_splashscreen(app: tauri::AppHandle) {
-    let splash_window = app.get_webview_window("splashscreen").unwrap();
-    let main_window = app.get_webview_window("main").unwrap();
-    splash_window.close().unwrap();
-    main_window.show().unwrap();
+    let splash_window = app
+        .get_webview_window("splashscreen")
+        .expect("Could not get splashscreen window");
+    let main_window = app
+        .get_webview_window("main")
+        .expect("Could not get webview window");
+    splash_window.close().expect("Could not close window");
+    main_window.show().expect("Could not show window");
 }
 
 #[tauri::command]
