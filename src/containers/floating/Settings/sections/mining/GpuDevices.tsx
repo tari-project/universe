@@ -13,7 +13,6 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { Stack } from '@app/components/elements/Stack';
-import { useHardwareStats } from '@app/hooks/useHardwareStats';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 const GpuDevices = () => {
@@ -27,8 +26,7 @@ const GpuDevices = () => {
     const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
     const excludedDevices = useMiningStore((s) => s.excludedGpuDevices);
     const setExcludedDevice = useMiningStore((s) => s.setExcludedGpuDevice);
-    const { gpu: gpuHardwareStats } = useHardwareStats();
-    const gpuDevicesList: string[] = gpuHardwareStats?.map((gpu) => gpu.label) ?? [];
+    const gpuDevices = useMiningStore((s) => s.gpu.hardware);
 
     const handleSetExcludedDevice = useCallback(
         async (device: number) => {
@@ -56,14 +54,19 @@ const GpuDevices = () => {
                 </SettingsGroup>
                 <SettingsGroup>
                     <SettingsGroupContent>
-                        {gpuDevicesList.length > 0 ? (
-                            gpuDevicesList.map((device, i) => (
-                                <Stack key={device} direction="row" alignItems="center" justifyContent="space-between">
+                        {(gpuDevices || []).length > 0 ? (
+                            gpuDevices.map((device, i) => (
+                                <Stack
+                                    key={device.name}
+                                    direction="row"
+                                    alignItems="center"
+                                    justifyContent="space-between"
+                                >
                                     <Typography variant="h6">
-                                        {i + 1}. {device}
+                                        {i + 1}. {device.name}
                                     </Typography>
                                     <ToggleSwitch
-                                        key={device}
+                                        key={device.name}
                                         checked={!excludedDevices.includes(i) && isGpuMiningEnabled}
                                         disabled={isDisabled}
                                         onChange={() => handleSetExcludedDevice(i)}

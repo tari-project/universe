@@ -32,6 +32,7 @@ interface Actions {
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
     setTheme: (theme: displayMode) => Promise<void>;
+    setVisualMode: (enabled: boolean) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -49,14 +50,15 @@ const initialState: State = {
     monero_address: '',
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
-    sharing_enabled: false,
+    sharing_enabled: true,
     airdrop_ui_enabled: false,
     paper_wallet_enabled: false,
-    custom_power_levels_enabled: false,
+    custom_power_levels_enabled: true,
     use_tor: true,
     auto_update: false,
     mmproxy_use_monero_fail: false,
     mmproxy_monero_nodes: ['https://xmr-01.tari.com'],
+    visual_mode: true,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
@@ -66,6 +68,11 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             const appConfig = await invoke('get_app_config');
             set(appConfig);
             const configTheme = appConfig.display_mode?.toLowerCase();
+
+            const canvasElement = document.getElementById('canvas');
+            if (canvasElement && !appConfig.visual_mode) {
+                canvasElement.style.display = 'none';
+            }
 
             if (configTheme) {
                 await getState().setTheme(configTheme as displayMode);
@@ -274,6 +281,16 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             console.error('Could not set theme', e);
             appStateStore.setError('Could not change theme');
             set({ display_mode: prevTheme });
+        });
+    },
+    setVisualMode: (enabled) => {
+        set({ visual_mode: enabled });
+        invoke('set_visual_mode', { enabled }).catch((e) => {
+            Sentry.captureException(e);
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set visual mode', e);
+            appStateStore.setError('Could not change visual mode');
+            set({ visual_mode: !enabled });
         });
     },
 }));

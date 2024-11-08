@@ -227,6 +227,7 @@ impl TelemetryManager {
         unique_string
     }
 
+    #[allow(dead_code)]
     pub fn update_network(&mut self, network: Option<Network>) {
         self.node_network = network;
     }
@@ -334,7 +335,7 @@ async fn get_telemetry_data(
             .await
             .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
 
-    let mut cpu_miner = cpu_miner.write().await;
+    let cpu_miner = cpu_miner.read().await;
     let cpu = match cpu_miner.status(randomx_hash_rate, block_reward).await {
         Ok(cpu) => cpu,
         Err(e) => {
@@ -342,7 +343,7 @@ async fn get_telemetry_data(
             return Err(TelemetryManagerError::Other(e));
         }
     };
-    let mut gpu_miner_lock = gpu_miner.write().await;
+    let gpu_miner_lock = gpu_miner.read().await;
     let gpu_status = match gpu_miner_lock.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -368,10 +369,7 @@ async fn get_telemetry_data(
     let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
     });
-    let p2pool_stats = match p2pool_stats {
-        Ok(stats) => stats,
-        Err(_) => None,
-    };
+    let p2pool_stats = p2pool_stats.unwrap_or_default();
 
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
@@ -393,15 +391,16 @@ async fn get_telemetry_data(
         None
     };
 
-    let cpu_make = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
-        let cpu_names: Vec<String> = cpu_hardware_parameters
-            .iter()
-            .map(|c| c.name.clone())
-            .collect();
-        Some(cpu_names.into_iter().collect::<Vec<_>>().join(", "))
-    } else {
-        None
-    };
+    let (cpu_make, all_cpus) =
+        if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
+            let cpu_names: Vec<String> = cpu_hardware_parameters
+                .iter()
+                .map(|c| c.name.clone())
+                .collect();
+            (cpu_names.first().cloned(), cpu_names)
+        } else {
+            (None, vec![])
+        };
 
     let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
 
@@ -421,15 +420,16 @@ async fn get_telemetry_data(
         None
     };
 
-    let gpu_make = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
-        let cpu_names: Vec<String> = gpu_hardware_parameters
-            .iter()
-            .map(|c| c.name.clone())
-            .collect();
-        Some(cpu_names.into_iter().collect::<Vec<_>>().join(", "))
-    } else {
-        None
-    }; //TODO refactor - now is JUST WIP to meet the String type
+    let (gpu_make, all_gpus) =
+        if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
+            let gpu_names: Vec<String> = gpu_hardware_parameters
+                .iter()
+                .map(|c| c.name.clone())
+                .collect();
+            (gpu_names.first().cloned(), gpu_names)
+        } else {
+            (None, vec![])
+        }; //TODO refactor - now is JUST WIP to meet the String type
     let version = env!("CARGO_PKG_VERSION").to_string();
     let gpu_mining_used =
         config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
@@ -494,6 +494,12 @@ async fn get_telemetry_data(
             "p2pool_connected_peers".to_string(),
             stats.connection_info.connected_peers.to_string(),
         );
+    }
+    if !all_cpus.is_empty() {
+        extra_data.insert("all_cpus".to_string(), all_cpus.join(","));
+    }
+    if !all_gpus.is_empty() {
+        extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
     }
 
     Ok(TelemetryData {

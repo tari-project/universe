@@ -54,8 +54,8 @@ pub struct AppConfigFromFile {
     paper_wallet_enabled: bool,
     #[serde(default = "default_false")]
     reset_earnings: bool,
-    eco_mode_cpu_threads: Option<isize>,
-    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_threads: Option<u32>,
+    ludicrous_mode_cpu_threads: Option<u32>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
     custom_mode_cpu_options: Vec<String>,
@@ -64,15 +64,17 @@ pub struct AppConfigFromFile {
     #[serde(default = "default_monero_nodes")]
     mmproxy_monero_nodes: Vec<String>,
     #[serde(default = "default_custom_max_cpu_usage")]
-    custom_max_cpu_usage: Option<isize>,
+    custom_max_cpu_usage: Option<u32>,
     #[serde(default = "default_custom_max_gpu_usage")]
-    custom_max_gpu_usage: Option<isize>,
+    custom_max_gpu_usage: Option<u32>,
     #[serde(default = "default_true")]
     auto_update: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     custom_power_levels_enabled: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     sharing_enabled: bool,
+    #[serde(default = "default_true")]
+    visual_mode: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -108,8 +110,9 @@ impl Default for AppConfigFromFile {
             mmproxy_use_monero_fail: false,
             auto_update: true,
             reset_earnings: false,
-            custom_power_levels_enabled: false,
-            sharing_enabled: false,
+            custom_power_levels_enabled: true,
+            sharing_enabled: true,
+            visual_mode: true,
         }
     }
 }
@@ -190,18 +193,19 @@ pub(crate) struct AppConfig {
     paper_wallet_enabled: bool,
     use_tor: bool,
     reset_earnings: bool,
-    eco_mode_cpu_threads: Option<isize>,
-    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_threads: Option<u32>,
+    ludicrous_mode_cpu_threads: Option<u32>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
     custom_mode_cpu_options: Vec<String>,
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
-    custom_max_cpu_usage: Option<isize>,
-    custom_max_gpu_usage: Option<isize>,
+    custom_max_cpu_usage: Option<u32>,
+    custom_max_gpu_usage: Option<u32>,
     auto_update: bool,
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
+    visual_mode: bool,
 }
 
 impl AppConfig {
@@ -237,9 +241,10 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
-            custom_power_levels_enabled: false,
+            custom_power_levels_enabled: true,
             auto_update: true,
-            sharing_enabled: false,
+            sharing_enabled: true,
+            visual_mode: true,
         }
     }
 
@@ -304,6 +309,7 @@ impl AppConfig {
                     self.reset_earnings = false;
                 }
                 self.sharing_enabled = config.sharing_enabled;
+                self.visual_mode = config.visual_mode;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -329,6 +335,17 @@ impl AppConfig {
             self.auto_update = true;
             self.config_version = 10;
         }
+
+        if self.config_version <= 10 {
+            self.custom_power_levels_enabled = true;
+            self.sharing_enabled = true;
+            self.config_version = 11;
+        }
+
+        if self.config_version <= 11 {
+            self.visual_mode = true;
+            self.config_version = 12;
+        }
     }
 
     pub fn mmproxy_monero_nodes(&self) -> &Vec<String> {
@@ -351,11 +368,11 @@ impl AppConfig {
         &self.custom_mode_cpu_options
     }
 
-    pub fn eco_mode_cpu_threads(&self) -> Option<isize> {
+    pub fn eco_mode_cpu_threads(&self) -> Option<u32> {
         self.eco_mode_cpu_threads
     }
 
-    pub fn ludicrous_mode_cpu_threads(&self) -> Option<isize> {
+    pub fn ludicrous_mode_cpu_threads(&self) -> Option<u32> {
         self.ludicrous_mode_cpu_threads
     }
 
@@ -366,8 +383,8 @@ impl AppConfig {
     pub async fn set_mode(
         &mut self,
         mode: String,
-        custom_max_cpu_usage: Option<isize>,
-        custom_max_gpu_usage: Option<isize>,
+        custom_max_cpu_usage: Option<u32>,
+        custom_max_gpu_usage: Option<u32>,
     ) -> Result<(), anyhow::Error> {
         let new_mode = match mode.as_str() {
             "Eco" => MiningMode::Eco,
@@ -401,26 +418,26 @@ impl AppConfig {
         self.mode
     }
 
-    pub fn custom_gpu_usage(&self) -> Option<isize> {
-        self.custom_max_cpu_usage
+    pub fn custom_gpu_usage(&self) -> Option<u32> {
+        self.custom_max_gpu_usage
     }
 
     pub async fn set_max_gpu_usage(
         &mut self,
-        custom_max_gpu_usage: isize,
+        custom_max_gpu_usage: u32,
     ) -> Result<(), anyhow::Error> {
         self.custom_max_gpu_usage = Some(custom_max_gpu_usage);
         self.update_config_file().await?;
         Ok(())
     }
 
-    pub fn custom_cpu_usage(&self) -> Option<isize> {
+    pub fn custom_cpu_usage(&self) -> Option<u32> {
         self.custom_max_cpu_usage
     }
 
     pub async fn set_max_cpu_usage(
         &mut self,
-        custom_max_cpu_usage: isize,
+        custom_max_cpu_usage: u32,
     ) -> Result<(), anyhow::Error> {
         self.custom_max_cpu_usage = Some(custom_max_cpu_usage);
         self.update_config_file().await?;
@@ -453,6 +470,12 @@ impl AppConfig {
 
     pub async fn set_p2pool_enabled(&mut self, p2pool_enabled: bool) -> Result<(), anyhow::Error> {
         self.p2pool_enabled = p2pool_enabled;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_visual_mode(&mut self, visual_mode: bool) -> Result<(), anyhow::Error> {
+        self.visual_mode = visual_mode;
         self.update_config_file().await?;
         Ok(())
     }
@@ -628,6 +651,7 @@ impl AppConfig {
             auto_update: self.auto_update,
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,
+            visual_mode: self.visual_mode,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -638,14 +662,14 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    10
+    11
 }
 
-fn default_custom_max_cpu_usage() -> Option<isize> {
+fn default_custom_max_cpu_usage() -> Option<u32> {
     None
 }
 
-fn default_custom_max_gpu_usage() -> Option<isize> {
+fn default_custom_max_gpu_usage() -> Option<u32> {
     None
 }
 

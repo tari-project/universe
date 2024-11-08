@@ -189,9 +189,6 @@ impl HardwareStatusMonitor {
             info!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
             let vendor = HardwareVendor::from_string(&gpu_device.device_name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
-            info!(target: LOG_TARGET, "GPU vendor: {:?}", vendor.to_string());
-            info!(target: LOG_TARGET, "GPU is available: {:?}", gpu_device.is_available);
-            info!(target: LOG_TARGET, "GPU reader implemented: {:?}", device_reader.clone().get_is_reader_implemented());
             let platform_device = GpuDeviceProperties {
                 private_properties: PrivateGpuDeviceProperties {
                     device_reader: device_reader.clone(),
@@ -203,12 +200,13 @@ impl HardwareStatusMonitor {
                         is_available: gpu_device.is_available,
                         is_reader_implemented: device_reader.clone().get_is_reader_implemented(),
                     },
-                    parameters: if device_reader.clone().get_is_reader_implemented() {
-                        info!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
-                        device_reader.clone().get_device_parameters(None).await.ok()
-                    } else {
-                        None
-                    },
+                    parameters: None,
+                    // parameters: if device_reader.clone().get_is_reader_implemented() {
+                    //     info!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
+                    //     device_reader.clone().get_device_parameters(None).await.ok()
+                    // } else {
+                    //     None
+                    // },
                 },
             };
 
@@ -257,11 +255,12 @@ impl HardwareStatusMonitor {
                         is_available: true,
                         is_reader_implemented: device_reader.clone().get_is_reader_implemented(),
                     },
-                    parameters: if device_reader.clone().get_is_reader_implemented() {
-                        device_reader.clone().get_device_parameters(None).await.ok()
-                    } else {
-                        None
-                    },
+                    parameters: None,
+                    // parameters: if device_reader.clone().get_is_reader_implemented() {
+                    //     device_reader.clone().get_device_parameters(None).await.ok()
+                    // } else {
+                    //     None
+                    // },
                 },
             };
 
@@ -284,11 +283,27 @@ impl HardwareStatusMonitor {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDeviceProperties>, Error> {
         let gpu_devices = self.gpu_devices.read().await;
         Ok(gpu_devices.clone())
     }
 
+    pub async fn get_gpu_devices_public_properties(
+        &self,
+    ) -> Result<Vec<PublicDeviceProperties>, Error> {
+        let gpu_devices = self.gpu_devices.read().await;
+
+        let mut platform_devices = Vec::new();
+
+        for device in gpu_devices.iter() {
+            platform_devices.push(device.public_properties.clone());
+        }
+
+        Ok(platform_devices)
+    }
+
+    #[allow(dead_code)]
     pub async fn get_cpu_devices(&self) -> Result<Vec<CpuDeviceProperties>, Error> {
         let cpu_devices = self.cpu_devices.read().await;
         Ok(cpu_devices.clone())

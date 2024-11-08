@@ -4,6 +4,7 @@ use tauri::Emitter;
 use tokio::time::{sleep, Duration};
 use tokio_util::sync::CancellationToken;
 
+#[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::user_listener";
 
 #[derive(Debug, Clone)]
@@ -24,6 +25,7 @@ pub struct CurrentTimeoutDurationEventPayload {
     duration: u64,
 }
 
+#[allow(dead_code)]
 impl UserListener {
     pub fn new() -> Self {
         Self {
