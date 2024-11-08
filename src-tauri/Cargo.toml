@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.5.63"
+version = "0.6.4"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -20,6 +20,7 @@ blake2 = "0.10"
 chrono = "0.4.38"
 device_query = "2.1.0"
 dunce = "1.0.5"
+dyn-clone = "1.0.17"
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
 futures-util = "0.3.30"
@@ -40,7 +41,6 @@ minotari_wallet_grpc_client = {git = "https://github.com/tari-project/tari.git",
 nix = {version = "0.29.0", features = ["signal"]}
 nvml-wrapper = "0.10.0"
 open = "5"
-opencl3 = "0.9.5"
 phraze = "0.3.15"
 rand = "0.8.5"
 regex = "1.10.5"
@@ -51,6 +51,7 @@ sentry = {version = "0.34.0", features = ["anyhow"]}
 sentry-tauri = "0.3.0"
 serde = {version = "1", features = ["derive"]}
 serde_json = "1"
+serde_yaml = "0.9.10"
 sha2 = "0.10.8"
 sys-locale = "0.3.1"
 sysinfo = "0.31.2"
@@ -65,14 +66,16 @@ tari_key_manager = {git = "https://github.com/tari-project/tari.git", branch = "
 tari_shutdown = {git = "https://github.com/tari-project/tari.git", branch = "development"}
 tari_utilities = "0.8.0"
 tauri = {version = "1.8.0", features = [
+  "window-unmaximize",
+  "window-unminimize",
   "os-all",
   "system-tray",
   "updater",
-  "window-show",
-  "window-unminimize",
-  "window-minimize",
+  "window-close",
   "window-hide",
-  "window-unmaximize",
+  "window-maximize",
+  "window-minimize",
+  "window-show",
   "window-start-dragging",
   "window-maximize",
   "window-close",

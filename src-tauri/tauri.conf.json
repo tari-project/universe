@@ -3,11 +3,12 @@
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build",
         "devPath": "http://localhost:1420",
-        "distDir": "../dist"
+        "distDir": "../dist",
+        "withGlobalTauri": true
     },
     "package": {
         "productName": "Tari Universe (Alpha)",
-        "version": "0.5.63"
+        "version": "0.6.4"
     },
     "tauri": {
         "systemTray": {
@@ -60,9 +61,17 @@
                 "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
-                "decorations": true,
                 "transparent": false,
-                "additionalBrowserArgs": "--enable-features=ignore-gpu-blocklist, --disable=features=disable-accelerated-2d-canvas"
+                "visible": false,
+                "center": true
+            },
+            {
+                "title": "Tari Universe (Alpha) | Testnet",
+                "width": 1380,
+                "height": 780,
+                "label": "splashscreen",
+                "url": "splash.html",
+                "center": true
             }
         ],
         "security": {

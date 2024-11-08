@@ -93,6 +93,7 @@ impl NodeManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn start(
         &self,
         app_shutdown: ShutdownSignal,
@@ -162,6 +163,7 @@ impl NodeManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn try_get_listening_port(&self) -> Result<u16, anyhow::Error> {
         // todo!()
         Ok(0)

@@ -1,10 +1,10 @@
 use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::p2pool_manager::{self, P2poolManager};
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
     gpu_miner::GpuMiner,
-    hardware_monitor::HardwareMonitor,
     node_manager::NodeManager,
 };
 use anyhow::Result;
@@ -18,6 +18,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::future::Future;
+use std::ops::Div;
 use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
@@ -225,6 +226,7 @@ impl TelemetryManager {
         unique_string
     }
 
+    #[allow(dead_code)]
     pub fn update_network(&mut self, network: Option<Network>) {
         self.node_network = network;
     }
@@ -332,7 +334,7 @@ async fn get_telemetry_data(
             .await
             .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
 
-    let mut cpu_miner = cpu_miner.write().await;
+    let cpu_miner = cpu_miner.read().await;
     let cpu = match cpu_miner.status(randomx_hash_rate, block_reward).await {
         Ok(cpu) => cpu,
         Err(e) => {
@@ -340,7 +342,7 @@ async fn get_telemetry_data(
             return Err(TelemetryManagerError::Other(e));
         }
     };
-    let mut gpu_miner_lock = gpu_miner.write().await;
+    let gpu_miner_lock = gpu_miner.read().await;
     let gpu_status = match gpu_miner_lock.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -349,40 +351,84 @@ async fn get_telemetry_data(
         }
     };
 
-    let hardware_status = HardwareMonitor::current()
-        .write()
+    // let hardware_status = HardwareMonitor::current()
+    //     .write()
+    //     .await
+    //     .read_hardware_parameters();
+
+    let gpu_hardware_parameters = HardwareStatusMonitor::current()
+        .get_gpu_public_properties()
         .await
-        .read_hardware_parameters();
+        .ok();
+    let cpu_hardware_parameters = HardwareStatusMonitor::current()
+        .get_cpu_public_properties()
+        .await
+        .ok();
 
     let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
     });
-    let p2pool_stats = match p2pool_stats {
-        Ok(stats) => stats,
-        Err(_) => None,
-    };
+    let p2pool_stats = p2pool_stats.unwrap_or_default();
 
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
     let cpu_hash_rate = Some(cpu.hash_rate);
-    let cpu_utilization = hardware_status.cpu.clone().map(|c| c.usage_percentage);
-    let cpu_make = hardware_status.cpu.clone().map(|c| c.label);
+
+    let cpu_utilization = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
+        let filtered_cpus = cpu_hardware_parameters
+            .iter()
+            .filter(|c| c.parameters.is_some())
+            .collect::<Vec<_>>();
+        Some(
+            filtered_cpus
+                .iter()
+                .map(|c| c.parameters.clone().unwrap_or_default().usage_percentage)
+                .sum::<f32>()
+                .div(filtered_cpus.len() as f32),
+        )
+    } else {
+        None
+    };
+
+    let (cpu_make, all_cpus) =
+        if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
+            let cpu_names: Vec<String> = cpu_hardware_parameters
+                .iter()
+                .map(|c| c.name.clone())
+                .collect();
+            (cpu_names.first().cloned(), cpu_names)
+        } else {
+            (None, vec![])
+        };
+
     let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
-    let gpu_utilization = Some(
-        hardware_status
-            .gpu
-            .clone()
-            .into_iter()
-            .map(|c| c.usage_percentage)
-            .sum::<f32>(),
-    );
-    let gpu_makes: Vec<_> = hardware_status
-        .gpu
-        .clone()
-        .into_iter()
-        .map(|c| c.label.clone())
-        .collect();
-    let gpu_make = Some(gpu_makes.into_iter().collect::<Vec<_>>().join(", ")); //TODO refactor - now is JUST WIP to meet the String type
+
+    let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
+        let filtered_gpus = gpu_hardware_parameters
+            .iter()
+            .filter(|c| c.parameters.is_some())
+            .collect::<Vec<_>>();
+        Some(
+            filtered_gpus
+                .iter()
+                .map(|c| c.parameters.clone().unwrap_or_default().usage_percentage)
+                .sum::<f32>()
+                .div(filtered_gpus.len() as f32),
+        )
+    } else {
+        None
+    };
+
+    let (gpu_make, all_gpus) =
+        if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
+            let gpu_names: Vec<String> = gpu_hardware_parameters
+                .iter()
+                .map(|c| c.name.clone())
+                .collect();
+            (gpu_names.first().cloned(), gpu_names)
+        } else {
+            (None, vec![])
+        }; //TODO refactor - now is JUST WIP to meet the String type
     let version = env!("CARGO_PKG_VERSION").to_string();
     let gpu_mining_used =
         config_guard.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
@@ -447,6 +493,12 @@ async fn get_telemetry_data(
             "p2pool_connected_peers".to_string(),
             stats.connection_info.connected_peers.to_string(),
         );
+    }
+    if !all_cpus.is_empty() {
+        extra_data.insert("all_cpus".to_string(), all_cpus.join(","));
+    }
+    if !all_gpus.is_empty() {
+        extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
     }
 
     Ok(TelemetryData {

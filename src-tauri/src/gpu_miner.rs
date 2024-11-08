@@ -46,13 +46,13 @@ impl GpuMiner {
         log_path: PathBuf,
         mining_mode: MiningMode,
         coinbase_extra: String,
-        custom_gpu_usage: Option<u16>,
+        custom_gpu_grid_size: Option<u16>,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher
             .adapter
-            .set_mode(mining_mode, custom_gpu_usage);
+            .set_mode(mining_mode, custom_gpu_grid_size);
         process_watcher.adapter.node_source = Some(node_source);
         process_watcher.adapter.coinbase_extra = coinbase_extra;
         process_watcher
@@ -83,7 +83,7 @@ impl GpuMiner {
     }
 
     pub async fn status(
-        &mut self,
+        &self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<GpuMinerStatus, anyhow::Error> {

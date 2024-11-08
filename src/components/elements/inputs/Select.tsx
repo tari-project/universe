@@ -1,7 +1,7 @@
 import { HiOutlineSelector } from 'react-icons/hi';
 import { useEffect, useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { SpinnerIcon } from '@app/components/elements/SpinnerIcon.tsx';
+
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 
 import {
@@ -14,6 +14,7 @@ import {
     Wrapper,
 } from './Select.styles.ts';
 import { autoUpdate, useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
+import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 
 export interface SelectOption {
     label: string;

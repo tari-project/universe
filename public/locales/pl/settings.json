@@ -89,19 +89,19 @@
   "should-use-system-language": "Użyj języka systemowego",
   "tabs": {
     "airdrop": "Airdrop",
-    "connections": "Connections",
+    "connections": "Połączenia",
     "experimental": "Eksperymentalne",
     "general": "Ogólne",
     "mining": "Wydobycie",
-    "p2p": "Pool Mining",
+    "p2p": "Kopanie w puli",
     "very_experimental": "Bardzo Eksperymentalne",
     "wallet": "Portfel"
   },
   "tari-wallet-address": "Adres portfela Tari",
-  "terms-and-conditions": "Terms & Conditions",
+  "terms-and-conditions": "Warunki i zasady",
   "theme": "Motyw",
   "tor-bridges": "Mosty Tor",
-  "tor-entry-guards": "Tor Entry Guards",
+  "tor-entry-guards": "Strażnicy wejściowi Tor",
   "tribe": "Zespół",
   "tribe-earnings": "Zarobki zespołu",
   "tribe-pool-height": "Wysokość zespołu",
@@ -117,5 +117,16 @@
   "visual-mode": "Tryb wizualny",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",
-  "your-reference": "Twoje odniesienie"
+  "your-reference": "Twoje odniesienie",
+  "custom-power-levels": {
+    "title": "Tryb niestandardowy",
+    "warning": "Ostrzeżenie",
+    "saved": "Zastosowanie zmian",
+    "gpu-power-level": "Moc GPU %",
+    "cpu-power-level": "Rdzenie CPU",
+    "choose-gpu-power-level": "Wybierz, ile mocy GPU chcesz przeznaczyć na kopanie <span>({{current}} z {{max}} wątków)</span>",
+    "choose-cpu-power-level": "Wybierz, ile mocy CPU chcesz przeznaczyć na kopanie <span>({{current}} z {{max}} rdzeni)</span>",
+    "cpu-warning": "Wysokie zużycie CPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
+    "gpu-warning": "Wysokie zużycie GPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę."
+  }
 }
