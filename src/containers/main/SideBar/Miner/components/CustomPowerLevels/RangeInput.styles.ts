@@ -3,15 +3,6 @@ import styled, { css } from 'styled-components';
 export const SLIDER_WIDTH = 570;
 export const SLIDER_THUMB_WIDTH = 30;
 
-export const CustomLevelsContent = styled.div`
-    padding: 0 10px;
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 700px;
-`;
-
 export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
     position: relative;
     width: 100%;
@@ -57,18 +48,6 @@ export const RangeInput = styled.input`
             pointer-events: none;
         }
     }
-`;
-
-export const CustomLevelsHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 1.4;
-    padding: 0 10px 10px;
-    border-bottom: 1px solid #0000000d;
 `;
 
 export const RangeLabel = styled.label`
@@ -182,29 +161,4 @@ export const WarningContainer = styled.div<{ $visible: boolean }>`
             max-height: 50px;
             height: auto;
         `}
-`;
-
-export const SuccessContainer = styled.div<{ $visible: boolean }>`
-    overflow: hidden;
-    padding: 15px;
-    font-size: 12px;
-    font-family: Poppins, sans-serif;
-    color: #188750;
-    border: 1px solid #188750;
-    border-radius: 5px;
-    background: rgba(24, 135, 80, 0.1);
-    opacity: 0;
-    transition: all 0.3s ease-in-out;
-    ${({ $visible }) =>
-        $visible &&
-        css`
-            opacity: 1;
-        `}
-`;
-
-export const TopRightContainer = styled.div`
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
 `;

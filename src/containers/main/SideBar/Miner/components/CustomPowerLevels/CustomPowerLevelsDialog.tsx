@@ -1,27 +1,16 @@
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Typography } from '@app/components/elements/Typography';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MaxConsumptionLevels } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/tauri';
+import { RangeInputComponent } from './RangeInput';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import {
     CustomLevelsHeader,
     CustomLevelsContent,
-    InputDescription,
-    RangeInputWrapper,
-    RangeInput,
-    RangeLabel,
-    RangeLimits,
-    InputContainer,
-    PerformanceMarker,
-    RangeValueHolder,
-    RangeInputHolder,
-    WarningContainer,
     SuccessContainer,
     TopRightContainer,
-    SLIDER_WIDTH,
-    SLIDER_THUMB_WIDTH,
 } from './CustomPowerLevelsDialog.styles.ts';
 import { useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
@@ -153,148 +142,3 @@ export function CustomPowerLevelsDialog() {
         </Dialog>
     );
 }
-
-interface RangeInputProps {
-    label: string;
-    maxLevel: number;
-    value: number;
-    desc: string;
-    warning?: string;
-    isLoading?: boolean;
-    onChange: (value: number) => void;
-}
-const RangeInputComponent = ({
-    label,
-    maxLevel,
-    value,
-    desc,
-    onChange,
-    warning,
-    isLoading = false,
-}: RangeInputProps) => {
-    const min = 1;
-    const [isHover, setIsHover] = useState(false);
-    const { t } = useTranslation('settings', { useSuspense: true });
-
-    const [currentValue, setCurrentValue] = useState(0);
-    const [calculatedValue, setCalculatedValue] = useState(0);
-
-    const hasChanges = useRef(false);
-
-    useEffect(() => {
-        if (maxLevel && !currentValue) {
-            setCurrentValue(Math.ceil((value * 100) / maxLevel));
-            setCalculatedValue(value);
-        }
-    }, [currentValue, maxLevel, value]);
-
-    const maxValue = 100;
-
-    const getPosition = useCallback((value: number, max: number) => {
-        // Position the value bubble in the range input thumb
-        return 15 + ((value - min) / (max - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH);
-    }, []);
-
-    // Check if the value is over 75% of the max level
-    const hasWarning = (currentValue * 100) / maxValue > 75;
-
-    const handleMouseUp = useCallback(() => {
-        setIsHover(false);
-
-        if (!isLoading && hasChanges.current) {
-            onChange(calculatedValue);
-            hasChanges.current = false;
-        }
-    }, [calculatedValue, isLoading, onChange]);
-
-    const handleMouseDown = () => {
-        setIsHover(true);
-    };
-
-    const handleChange = useCallback(
-        (event: React.ChangeEvent<HTMLInputElement>) => {
-            const newValue = Number(event.target.value);
-            setCurrentValue(newValue);
-            const calculatedValue = Math.ceil((newValue * maxLevel) / 100);
-            setCalculatedValue(calculatedValue);
-            hasChanges.current = true;
-        },
-        [maxLevel]
-    );
-
-    // Positioning with useMemo for `RangeValueHolder`
-    const rangeValueHolderStyle = useMemo(
-        () => ({
-            left: getPosition(currentValue, maxValue),
-            display: isHover ? 'block' : 'none',
-        }),
-        [getPosition, currentValue, maxValue, isHover]
-    );
-
-    const ecomarkstyle = useMemo(
-        () => ({
-            display: currentValue > 12 && currentValue < 18 ? 'none' : 'block',
-            left: 15 + ((15 - min) / (maxValue - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
-        }),
-        [currentValue]
-    );
-
-    const firemarkstyle = useMemo(
-        () => ({
-            display: currentValue > 72 && currentValue < 78 ? 'none' : 'block',
-            left: 15 + ((75 - min) / (maxValue - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
-        }),
-        [currentValue]
-    );
-
-    const rangeValueStyle = useMemo(
-        () => ({
-            background: currentValue
-                ? `linear-gradient(to right, #813bf5 ${currentValue || 1}%, #ddd ${currentValue || 1}%)`
-                : '#ddd',
-        }),
-        [currentValue]
-    );
-
-    if (!maxValue) return null;
-    return (
-        <>
-            <InputContainer>
-                <RangeLabel> {label}</RangeLabel>
-                <RangeInputWrapper
-                    onMouseDown={handleMouseDown}
-                    onMouseEnter={handleMouseDown}
-                    onMouseLeave={() => setIsHover(false)}
-                    onMouseUp={handleMouseUp}
-                >
-                    <RangeLimits>{'0%'}</RangeLimits>
-                    <RangeInputHolder $disabled={isLoading}>
-                        <PerformanceMarker style={ecomarkstyle} />
-                        <PerformanceMarker $red style={firemarkstyle} />
-                        <RangeValueHolder style={rangeValueHolderStyle}>{`${currentValue}%`}</RangeValueHolder>
-                        <RangeInput
-                            type="range"
-                            value={currentValue}
-                            style={rangeValueStyle}
-                            max={maxValue}
-                            min={1}
-                            onChange={handleChange}
-                            disabled={isLoading}
-                        />
-                    </RangeInputHolder>
-                    <RangeLimits>{`${maxValue}%`}</RangeLimits>
-                </RangeInputWrapper>
-                <InputDescription
-                    dangerouslySetInnerHTML={{
-                        __html: desc
-                            .replace('{{current}}', calculatedValue.toString())
-                            .replace('{{max}}', maxLevel.toString()),
-                    }}
-                ></InputDescription>
-            </InputContainer>
-            <WarningContainer $visible={hasWarning}>
-                <strong>{t('custom-power-levels.warning')}</strong>: {warning}
-            </WarningContainer>
-        </>
-    );
-};
