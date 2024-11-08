@@ -665,8 +665,6 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .setup(|app| {
-            let _app_handle = app.handle().clone(); // Clone the Arc for usage in the closure
-
             let contents = setup_logging(
                 &app.path()
                     .app_config_dir()

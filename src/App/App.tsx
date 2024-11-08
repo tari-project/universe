@@ -1,6 +1,8 @@
 import { useShuttingDown } from '@app/hooks/useShuttingDown';
 import { useAppStateStore } from '@app/store/appStateStore';
+import { TrayIcon } from '@tauri-apps/api/tray';
 import { LazyMotion, domMax, MotionConfig } from 'framer-motion';
+import { useCallback, useEffect } from 'react';
 
 import ShuttingDownScreen from '../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import FloatingElements from '../containers/floating/FloatingElements.tsx';
@@ -16,6 +18,19 @@ import AppContent from './AppContent';
 export default function App() {
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
+
+    const trayStuff = useCallback(async () => {
+        const tray = await TrayIcon.getById('universe-systray');
+
+        if (tray) {
+            tray.setTitle(null);
+            tray.setIcon('icons/icon.png');
+        }
+    }, []);
+
+    useEffect(() => {
+        trayStuff();
+    }, []);
 
     return (
         <ThemeProvider>

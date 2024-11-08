@@ -40,8 +40,7 @@
             "windows": {
                 "installMode": "passive"
             }
-        },
-        "system-tray": {}
+        }
     },
     "app": {
         "security": {
@@ -55,8 +54,9 @@
             }
         },
         "trayIcon": {
-            "iconPath": "icons/systray_icon.ico",
-            "menuOnLeftClick": true
+            "id": "universe-systray",
+            "title": "hi",
+            "iconPath": "icons/systray_icon.ico"
         },
         "macOSPrivateApi": true,
         "withGlobalTauri": true,
