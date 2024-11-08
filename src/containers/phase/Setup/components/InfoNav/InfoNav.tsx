@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import InfoItem from './InfoItem';
 import { Nav, NavContainer, NavItem, NavItemCurrent } from './InfoNav.styles';
 
-const STEP_TIME_SECONDS = 15;
+const STEP_TIME_SECONDS = 9;
 const steps = Array.from({ length: 6 }, (_, i) => i + 1);
 
 export default function InfoNav() {
