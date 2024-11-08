@@ -1,5 +1,3 @@
-use opencl3::device::Device;
-use opencl3::platform::get_platforms;
 use std::collections::HashMap;
 
 use crate::app_config::AppConfig;
@@ -15,7 +13,6 @@ use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
 use crate::p2pool::models::Stats;
 use crate::progress_tracker::ProgressTracker;
-use crate::systemtray_manager::{create_systemtray_data, update_systray, SystrayData};
 use crate::tor_adapter::TorConfig;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
@@ -40,33 +37,18 @@ use tauri::Manager;
 #[tauri::command]
 pub async fn set_mode(
     mode: String,
-    custom_cpu_usage: Option<f64>,
-    custom_gpu_usage: Option<f64>,
+    custom_cpu_usage: Option<u32>,
+    custom_gpu_usage: Option<u32>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
 
-    fn f64_to_isize_safe(_value: Option<f64>) -> Option<isize> {
-        let value = _value.unwrap_or(-1.0);
-        if value.is_finite() && value >= isize::MIN as f64 && value <= isize::MAX as f64 {
-            #[allow(clippy::cast_possible_truncation)]
-            Some(value.round() as isize)
-        } else {
-            warn!(target: LOG_TARGET, "Invalid value for custom_cpu_usage or custom_gpu_usage: {:?}", _value);
-            None
-        }
-    }
-
     state
         .config
         .write()
         .await
-        .set_mode(
-            mode,
-            f64_to_isize_safe(custom_cpu_usage),
-            f64_to_isize_safe(custom_gpu_usage),
-        )
+        .set_mode(mode, custom_cpu_usage, custom_gpu_usage)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -1122,8 +1104,7 @@ pub async fn get_miner_metrics(
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
-    let mut cpu_miner = state.cpu_miner.write().await;
-    let mut gpu_miner = state.gpu_miner.write().await;
+    // info!(target: LOG_TARGET, "1 elapsed {:?}", timer.elapsed());
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -1135,7 +1116,9 @@ pub async fn get_miner_metrics(
                 }
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
+    // info!(target: LOG_TARGET, "2 elapsed {:?}", timer.elapsed());
 
+    let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
         .status(randomx_hash_rate, block_reward)
         .await
@@ -1150,7 +1133,11 @@ pub async fn get_miner_metrics(
             return Err(e);
         }
     };
+    drop(cpu_miner);
 
+    // info!(target: LOG_TARGET, "3 elapsed {:?}", timer.elapsed());
+
+    let gpu_miner = state.gpu_miner.read().await;
     let gpu_mining_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -1161,14 +1148,10 @@ pub async fn get_miner_metrics(
             return Err(e.to_string());
         }
     };
-    // add sys tray data changes from main later
+    drop(gpu_miner);
 
     let gpu_public_parameters = HardwareStatusMonitor::current()
-        .get_gpu_public_properties()
-        .await
-        .map_err(|e| e.to_string())?;
-    let cpu_public_parameters = HardwareStatusMonitor::current()
-        .get_cpu_public_properties()
+        .get_gpu_devices_public_properties()
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1181,39 +1164,12 @@ pub async fn get_miner_metrics(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
-    // TEMP! replace with new stuff when we fix sys tray
-    let _cpu = HardwareParameters {
-        label: "-".parse().unwrap(),
-        usage_percentage: 0f32,
-        current_temperature: 0f32,
-        max_temperature: 0f32,
-    };
-    let _gpu = HardwareParameters {
-        label: "-".parse().unwrap(),
-        usage_percentage: 0f32,
-        current_temperature: 0f32,
-        max_temperature: 0f32,
-    };
-
-    let hardware_status = HardwareStatus {
-        cpu: Option::from(_cpu),
-        gpu: Vec::from([_gpu]),
-    };
-
-    let new_systemtray_data: SystrayData = create_systemtray_data(
-        cpu_mining_status.hash_rate,
-        gpu_mining_status.hash_rate as f64,
-        hardware_status.clone(),
-        (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
-    );
-
-    update_systray(app, new_systemtray_data).map_err(|e| e.to_string())?;
 
     let ret = MinerMetrics {
         sha_network_hash_rate: sha_hash_rate,
         randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
-            hardware: cpu_public_parameters.clone(),
+            // hardware: cpu_public_parameters.clone(),
             mining: cpu_mining_status,
         },
         gpu: GpuMinerMetrics {
@@ -1359,31 +1315,8 @@ pub async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String
 
     result.insert("max_cpu_available".to_string(), max_cpu_available);
 
-    // GPU Detection (OpenCL)
-    let gpu_threads = match (|| -> Result<i32, Box<dyn std::error::Error>> {
-        let platforms = get_platforms()?;
-        if platforms.is_empty() {
-            return Ok(0);
-        }
-
-        // Try to get the first GPU device from the first platform
-        let devices = platforms[0].get_devices(opencl3::device::CL_DEVICE_TYPE_GPU)?;
-        if devices.is_empty() {
-            return Ok(0);
-        }
-
-        // Get max work group size for the first device
-        let device = Device::new(devices[0]);
-        let max_wg_size: usize = device.max_work_group_size()?;
-
-        Ok(i32::try_from(max_wg_size).unwrap_or(0))
-    })() {
-        Ok(threads) => threads,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "GPU detection failed: {}", e);
-            0 // Explicit default when GPU/OpenCL is not available
-        }
-    };
+    // At some point we should split this per card and allow the user to choose
+    let gpu_threads = 1024;
 
     result.insert("max_gpu_available".to_string(), gpu_threads);
 
@@ -1396,4 +1329,25 @@ pub fn close_splashscreen(app: tauri::AppHandle) {
     let main_window = app.get_webview_window("main").unwrap();
     splash_window.close().unwrap();
     main_window.show().unwrap();
+}
+
+#[tauri::command]
+pub async fn set_visual_mode<'r>(
+    enabled: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let mut config = state.config.write().await;
+    config
+        .set_visual_mode(enabled)
+        .await
+        .inspect_err(|e| error!("error at set_visual_mode {:?}", e))
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET,
+            "set_visual_mode took too long: {:?}",
+            timer.elapsed()
+        );
+    }
+    Ok(())
 }

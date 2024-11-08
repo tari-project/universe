@@ -27,7 +27,6 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
-use crate::systemtray_manager::{handle_menu_event, handle_system_tray_event, initialize_systray};
 use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
 use crate::wallet_adapter::WalletBalance;
@@ -72,7 +71,6 @@ mod process_utils;
 mod process_watcher;
 mod progress_tracker;
 mod setup_status_event;
-mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
 mod tor_adapter;
@@ -667,13 +665,7 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .setup(|app| {
-            let tray = initialize_systray(app.handle().clone())?;
-
             let app_handle = app.handle().clone(); // Clone the Arc for usage in the closure
-            tray.on_tray_icon_event(move |_tray, event| {
-                handle_system_tray_event(app_handle.clone(), event)
-            });
-            tray.on_menu_event(move |handle, event| handle_menu_event(handle.clone(), event));
 
             let contents = setup_logging(
                 &app.path()
