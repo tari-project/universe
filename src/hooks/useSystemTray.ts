@@ -1,11 +1,38 @@
-import { useCallback, useEffect } from 'react';
+import { Menu } from '@tauri-apps/api/menu';
+import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
 import { TrayIcon } from '@tauri-apps/api/tray';
-import { Menu, PredefinedMenuItem } from '@tauri-apps/api/menu';
+import { useCallback, useEffect, useRef } from 'react';
 
-export function useSystemTray() {
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+
+const appWindow = getCurrentWebviewWindow();
+const tray = await TrayIcon.getById('universe-systray');
+
+//             {
+//                     id: 'unminimize',
+//                     text: 'Unminimize',
+//                     enabled: await appWindow?.isMinimized(),
+//                     action: () => {
+//                         appWindow.unminimize();
+//                     },
+//                 },
+//                 {
+//                     id: 'minimize',
+//                     text: 'Minimize',
+//                     enabled: await appWindow?.isMinimizable(),
+//                     action: () => {
+//                         appWindow.minimize();
+//                     },
+//                 },
+
+export function useInitSystemTray() {
+    const initiated = useRef(false);
     const setMenu = useCallback(async () => {
-        const separator = await PredefinedMenuItem.new({ item: 'Separator' });
-        const menu = await Menu.new({
+        const separator = {
+            item: 'Separator',
+        } as PredefinedMenuItemOptions;
+
+        return await Menu.new({
             items: [
                 {
                     id: 'cpu_hashrate',
@@ -34,26 +61,21 @@ export function useSystemTray() {
                     text: 'Est earning: {} tXTM/day',
                     enabled: false,
                 },
-                {
-                    id: 'unminimize',
-                    text: 'Unminimize',
-                },
             ],
         });
-
-        return menu;
     }, []);
-    const setTray = useCallback(async () => {
-        const tray = await TrayIcon.getById('universe-systray');
+    const setInitialTray = useCallback(async () => {
         const menu = await setMenu();
         if (tray) {
-            tray.setTitle('fancy systray ');
-            tray.setIcon('icons/icon.png');
-            tray.setMenu(menu);
+            await tray.setIcon('icons/icon.png');
+            await tray.setMenu(menu);
         }
-    }, []);
+    }, [setMenu]);
 
     useEffect(() => {
-        setTray();
-    }, []);
+        if (initiated.current) return;
+        setInitialTray().then(() => {
+            initiated.current = true;
+        });
+    }, [setInitialTray]);
 }

@@ -55,7 +55,6 @@
         },
         "trayIcon": {
             "id": "universe-systray",
-            "title": "hi",
             "iconPath": "icons/systray_icon.ico"
         },
         "macOSPrivateApi": true,
