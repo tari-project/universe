@@ -5,7 +5,8 @@ export type ToastType = 'default' | 'error' | 'warning' | 'success';
 
 interface Toast {
     id?: number | string;
-    message: string;
+    title: string;
+    text?: string;
     timeout?: number;
     type?: ToastType;
 }

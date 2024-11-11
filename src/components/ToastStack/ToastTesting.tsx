@@ -31,19 +31,34 @@ const Button = styled.button`
 
 export const ToastTesting = () => {
     const showBasicToast = () => {
-        addToast({ message: 'This is a basic toast' });
+        addToast({
+            title: 'Changes saved',
+            text: 'All your changes have been saved to the cloud',
+        });
     };
 
     const showErrorToast = () => {
-        addToast({ message: 'This is an error toast', type: 'error' });
+        addToast({
+            title: 'Connection failed',
+            text: 'Please check your internet connection and try again',
+            type: 'error',
+        });
     };
 
     const showWarningToast = () => {
-        addToast({ message: 'This is a warning toast', type: 'warning' });
+        addToast({
+            title: 'Session expiring soon',
+            text: 'Your session will expire in 5 minutes. Please save your work.',
+            type: 'warning',
+        });
     };
 
     const showSuccessToast = () => {
-        addToast({ message: 'This is a success toast', type: 'success' });
+        addToast({
+            title: 'Profile updated',
+            text: 'Your changes have been synced across all devices',
+            type: 'success',
+        });
     };
 
     return (

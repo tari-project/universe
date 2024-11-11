@@ -3,18 +3,19 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { toastVariants } from './motion';
 import { ToastType, useToastStore } from '../useToastStore';
 
-import { Wrapper, CloseButton, ToastContent, ProgressCircle } from './styles';
+import { Wrapper, CloseButton, ToastContent, ProgressCircle, Title, Text } from './styles';
 
 export interface Props {
     id?: number | string;
     index?: number;
-    message: string;
+    title: string;
+    text?: string;
     timeout?: number;
     isHovered?: boolean;
     type?: ToastType;
 }
 
-export const Toast = ({ id, index, message, timeout = 4500, isHovered = false, type = 'default' }: Props) => {
+export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = false, type = 'default' }: Props) => {
     const [show, setShow] = useState(false);
     const [positionVariant, setPositionVariant] = useState('hidden');
     const [progress, setProgress] = useState(0);
@@ -87,7 +88,8 @@ export const Toast = ({ id, index, message, timeout = 4500, isHovered = false, t
             $type={type}
         >
             <ToastContent>
-                {message}
+                <Title>{title}</Title>
+                {text && <Text>{text}</Text>}
                 <CloseButton onClick={() => handleHide(id)} $type={type}>
                     <ProgressCircle width="28" height="28" viewBox="0 0 28 28" $progress={progress} $type={type}>
                         <circle
@@ -98,7 +100,7 @@ export const Toast = ({ id, index, message, timeout = 4500, isHovered = false, t
                             strokeDashoffset={75.398 - (75.398 * Math.min(progress, 100)) / 100}
                         />
                     </ProgressCircle>
-                    ×
+                    <span>×</span>
                 </CloseButton>
             </ToastContent>
         </Wrapper>

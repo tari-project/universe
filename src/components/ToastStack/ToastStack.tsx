@@ -27,11 +27,12 @@ export const ToastStack = () => {
             <Wrapper>
                 <Inside onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
                     <AnimatePresence>
-                        {reversedToasts.map(({ id, message, timeout, type }, index) => (
+                        {reversedToasts.map(({ id, title, text, timeout, type }, index) => (
                             <Toast
-                                key={`toast-${id}-${message}`}
+                                key={`toast-${id}-${title}`}
                                 id={id || 0}
-                                message={message}
+                                title={title}
+                                text={text}
                                 timeout={timeout}
                                 type={type}
                                 index={index}
