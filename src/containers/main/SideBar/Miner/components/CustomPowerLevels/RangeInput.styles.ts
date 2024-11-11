@@ -35,7 +35,8 @@ export const RangeInput = styled.input`
         border-radius: 50%;
         box-sizing: border-box;
         background: white;
-        border: 2px solid #813bf5;
+        border: 2px solid deeppink;
+        //border: 2px solid #813bf5;
         z-index: 10;
         transition: background 0.15s ease-in-out;
         cursor: pointer;

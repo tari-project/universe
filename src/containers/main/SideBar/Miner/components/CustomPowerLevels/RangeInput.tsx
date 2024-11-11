@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, ChangeEvent } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useCallback, useMemo, useRef, useState, ChangeEvent } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import {
     InputContainer,
     InputDescription,
@@ -30,9 +30,7 @@ interface RangeInputProps {
 function convertToPercentage(value: number, max: number): number {
     return Math.ceil((value * 100) / max);
 }
-function convertToUnit(value: number, max: number): number {
-    return Math.ceil((value * max) / 100);
-}
+
 export const RangeInputComponent = ({
     label,
     maxLevel,
@@ -44,24 +42,13 @@ export const RangeInputComponent = ({
     isLoading = false,
     usePercentage = false,
 }: RangeInputProps) => {
-    const min = step ?? 1;
+    const min = step ?? 0;
     const [isHover, setIsHover] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: true });
 
-    const [currentValue, setCurrentValue] = useState(0);
-    const [calculatedValue, setCalculatedValue] = useState(0);
+    const [currentValue, setCurrentValue] = useState(value);
 
     const hasChanges = useRef(false);
-
-    useEffect(() => {
-        if (maxLevel && !currentValue) {
-            const sliderValue = usePercentage ? convertToPercentage(value, maxLevel) : value;
-            setCurrentValue(sliderValue);
-            setCalculatedValue(value);
-        }
-    }, [currentValue, maxLevel, usePercentage, value]);
-
-    const maxValue = usePercentage ? 100 : maxLevel;
 
     const getPosition = useCallback(
         (value: number, max: number) => {
@@ -70,41 +57,36 @@ export const RangeInputComponent = ({
         },
         [min]
     );
-
     // Check if the value is over 75% of the max level
-    const hasWarning = (currentValue * 100) / maxValue > 75;
+    const hasWarning = convertToPercentage(currentValue, maxLevel) > 75;
 
     const handleMouseUp = useCallback(() => {
         setIsHover(false);
 
         if (!isLoading && hasChanges.current) {
-            onChange(calculatedValue);
+            onChange(currentValue);
             hasChanges.current = false;
         }
-    }, [calculatedValue, isLoading, onChange]);
+    }, [currentValue, isLoading, onChange]);
 
     const handleMouseDown = () => {
         setIsHover(true);
     };
 
-    const handleChange = useCallback(
-        (event: ChangeEvent<HTMLInputElement>) => {
-            const newValue = Number(event.target.value);
-            setCurrentValue(newValue);
-            const newCalculatedValue = usePercentage ? convertToUnit(newValue, maxLevel) : newValue;
-            setCalculatedValue(newCalculatedValue);
-            hasChanges.current = true;
-        },
-        [maxLevel, usePercentage]
-    );
+    const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
+        const newValue = Number(event.target.value);
+        setCurrentValue(newValue);
+        hasChanges.current = true;
+    }, []);
 
     const valueBasedStyles = useMemo(() => {
         // these should all be percentage based for styling values
         const _maxVal = 100;
-        const comparisonValue = convertToPercentage(currentValue, maxValue);
+        const comparisonValue = convertToPercentage(currentValue, maxLevel);
+        console.debug(`comparisonValue= ${comparisonValue}`);
         return {
             rangeValueHolder: {
-                left: getPosition(comparisonValue, _maxVal),
+                left: getPosition(currentValue, maxLevel),
                 display: isHover ? 'block' : 'none',
             },
             ecomark: {
@@ -117,13 +99,13 @@ export const RangeInputComponent = ({
             },
             rangeValue: {
                 background: comparisonValue
-                    ? `linear-gradient(to right, #813bf5 ${comparisonValue || 1}%, #ddd ${comparisonValue || 1}%)`
+                    ? `linear-gradient(to right, #813bf5 ${comparisonValue}%, #ddd ${comparisonValue}%)`
                     : '#ddd',
             },
         };
-    }, [currentValue, getPosition, isHover, maxValue, min]);
-
-    if (!maxValue) return null;
+    }, [currentValue, getPosition, isHover, maxLevel, min]);
+    console.debug(valueBasedStyles.rangeValue.background);
+    if (!maxLevel) return null;
     return (
         <>
             <InputContainer>
@@ -134,7 +116,7 @@ export const RangeInputComponent = ({
                     onMouseLeave={() => setIsHover(false)}
                     onMouseUp={handleMouseUp}
                 >
-                    <RangeLimits>{usePercentage ? '0%' : '0'}</RangeLimits>
+                    <RangeLimits>0</RangeLimits>
                     <RangeInputHolder $disabled={isLoading}>
                         <PerformanceMarker style={valueBasedStyles.ecomark} />
                         <PerformanceMarker $red style={valueBasedStyles.firemark} />
@@ -146,21 +128,25 @@ export const RangeInputComponent = ({
                             type="range"
                             value={currentValue}
                             style={valueBasedStyles.rangeValue}
-                            max={maxValue}
+                            max={maxLevel}
                             min={min}
                             onChange={handleChange}
                             disabled={isLoading}
                         />
                     </RangeInputHolder>
-                    <RangeLimits>{usePercentage ? `${maxValue}%` : maxValue}</RangeLimits>
+                    <RangeLimits>{maxLevel}</RangeLimits>
                 </RangeInputWrapper>
-                <InputDescription
-                    dangerouslySetInnerHTML={{
-                        __html: desc
-                            .replace('{{current}}', calculatedValue.toString())
-                            .replace('{{max}}', maxLevel.toString()),
-                    }}
-                ></InputDescription>
+                <InputDescription>
+                    <Trans
+                        i18nKey={desc}
+                        ns="settings"
+                        values={{
+                            current: currentValue.toString(),
+                            max: maxLevel.toString(),
+                        }}
+                        components={{ span: <span /> }}
+                    />
+                </InputDescription>
             </InputContainer>
             <WarningContainer $visible={hasWarning}>
                 <strong>{t('custom-power-levels.warning')}</strong>: {warning}
