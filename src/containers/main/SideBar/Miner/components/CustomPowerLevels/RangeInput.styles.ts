@@ -29,21 +29,6 @@ export const InputVal = styled(m.div)`
     pointer-events: none;
     background: #813bf5;
 `;
-export const RangeInputSteps = styled.div`
-    position: relative;
-    z-index: 1;
-    top: 0;
-    left: 0;
-    width: ${SLIDER_WIDTH}px;
-    display: flex;
-    justify-content: space-between;
-    span {
-        &:after {
-            content: '|';
-            position: relative;
-        }
-    }
-`;
 export const RangeInput = styled.input<{ $thumbLeft?: number }>`
     appearance: none;
     -webkit-appearance: none;

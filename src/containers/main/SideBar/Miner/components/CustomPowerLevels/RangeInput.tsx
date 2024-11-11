@@ -7,13 +7,10 @@ import {
     PerformanceMarker,
     RangeInput,
     RangeInputHolder,
-    RangeInputSteps,
     RangeInputWrapper,
     RangeLabel,
     RangeLimits,
     RangeValueHolder,
-    SLIDER_THUMB_WIDTH,
-    SLIDER_WIDTH,
     WarningContainer,
 } from './RangeInput.styles';
 
@@ -47,7 +44,7 @@ export const RangeInputComponent = ({
     const min = step ?? 1;
     const [isHover, setIsHover] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: true });
-
+    const inputRef = useRef<HTMLInputElement>(null);
     const [currentValue, setCurrentValue] = useState(value);
 
     const hasChanges = useRef(false);
@@ -80,7 +77,7 @@ export const RangeInputComponent = ({
 
     const valueBasedStyles = useMemo(() => {
         // these should all be percentage based for styling values
-        const _maxVal = 100;
+
         const comparisonValue = convertToPercentage(currentValue, maxLevel);
         return {
             rangeValueHolder: {
@@ -88,19 +85,19 @@ export const RangeInputComponent = ({
                 display: isHover ? 'block' : 'none',
             },
             ecomark: {
-                display: comparisonValue > comparisonValue && comparisonValue < 18 ? 'none' : 'block',
-                left: ((15 - min) / (_maxVal - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
+                display: comparisonValue > 12 && comparisonValue < 18 ? 'none' : 'block',
+                left: '15%',
             },
             firemark: {
                 display: comparisonValue > 72 && comparisonValue < 78 ? 'none' : 'block',
-                left: ((75 - min) / (_maxVal - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
+                left: '75%',
             },
             rangeValue: {
                 width: `${comparisonValue}%`,
                 left: comparisonValue,
             },
         };
-    }, [currentValue, isHover, maxLevel, min]);
+    }, [currentValue, isHover, maxLevel]);
     if (!maxLevel) return null;
     return (
         <>
@@ -118,6 +115,7 @@ export const RangeInputComponent = ({
                             {usePercentage ? `${currentValue}%` : currentValue}
                         </RangeValueHolder>
                         <RangeInput
+                            ref={inputRef}
                             step={step}
                             type="range"
                             value={currentValue}
