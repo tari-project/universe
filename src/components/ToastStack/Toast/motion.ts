@@ -36,9 +36,34 @@ export const toastVariants: Variants = {
         opacity: 0,
     },
     exit: {
-        y: 0,
         opacity: 0,
         scale: 0,
+        y: 0,
+        transition: {
+            ease: 'linear',
+            duration: 0.2,
+        },
+    },
+    exitFirst: {
+        opacity: 0,
+        transition: {
+            ease: 'linear',
+            duration: 0.2,
+        },
+    },
+    exitSecond: {
+        opacity: 0,
+        y: -16,
+        scale: 0.7,
+        transition: {
+            ease: 'linear',
+            duration: 0.2,
+        },
+    },
+    exitThird: {
+        opacity: 0,
+        y: -30,
+        scale: 0.4,
         transition: {
             ease: 'linear',
             duration: 0.2,

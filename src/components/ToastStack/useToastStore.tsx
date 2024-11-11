@@ -1,17 +1,13 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
+export type ToastType = 'default' | 'error' | 'warning' | 'success';
+
 interface Toast {
     id?: number | string;
-    index?: number;
     message: string;
     timeout?: number;
-    delay?: number;
-    messageAction?: {
-        copy: string;
-        onAction: () => void;
-    };
-    onAction?: (id: number | string) => void;
+    type?: ToastType;
 }
 
 interface ToastStore {
