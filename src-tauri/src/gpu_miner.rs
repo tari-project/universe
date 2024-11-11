@@ -18,9 +18,20 @@ use crate::{
 const SHA_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
+#[derive(Debug, Deserialize)]
+pub(crate) GpuDetectedSettings {
+    pub device_index: u32,
+    pub device_name: String,
+    pub is_available: bool,
+    pub grid_size: u32,
+    pub max_grid_size: u32,
+    pub block_size: u32,
+}
+
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
     is_available: bool,
+    gpu_settings: Vec<GpuDetectedSettings>,
     excluded_gpu_devices: Vec<u8>,
 }
 
@@ -31,6 +42,7 @@ impl GpuMiner {
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             is_available: false,
+            gpu_settings: vec![],
             excluded_gpu_devices: vec![],
         }
     }
@@ -132,21 +144,16 @@ impl GpuMiner {
     pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
 
+        let output_file = config_dir
+            .join("gpuminer")
+            .join("gpu_status.json")
+            .to_string_lossy()
+            .to_string();
         let args: Vec<String> = vec![
             "--detect".to_string(),
             "true".to_string(),
-            "--config".to_string(),
-            config_dir
-                .join("gpuminer")
-                .join("config.json")
-                .to_string_lossy()
-                .to_string(),
             "--gpu-status-file".to_string(),
-            config_dir
-                .join("gpuminer")
-                .join("gpu_status.json")
-                .to_string_lossy()
-                .to_string(),
+            output_file.clone(),
         ];
         let gpuminer_bin = BinaryResolver::current()
             .read()
@@ -158,6 +165,9 @@ impl GpuMiner {
         let child = process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args)?;
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
+        let gpu_settings = std::fs::read_to_string(output_file)?;
+        let gpu_settings: Vec<GpuDetectedSettings> = serde_json::from_str(&gpu_settings)?;  
+        self.gpu_settings = gpu_settings;
         match output.status.code() {
             Some(0) => {
                 self.is_available = true;
