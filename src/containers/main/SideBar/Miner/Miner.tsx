@@ -47,16 +47,6 @@ export default function Miner() {
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
 
-    const gpuChipValue = gpuHardwareStats
-        ? gpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
-          (gpuHardwareStats?.length || 1)
-        : 0;
-
-    const cpuChipValue = cpuHardwareStats
-        ? cpuHardwareStats?.reduce((acc, current) => acc + current.usage_percentage, 0) /
-          (cpuHardwareStats?.length || 1)
-        : 0;
-
     const totalEarningsFormatted = useFormatBalance(totalEarnings);
     const estimatedBalanceFormatted = useFormatBalance(cpu_estimated_earnings);
     const gpuEstimatedEarnings = useFormatBalance(gpu_estimated_earnings);

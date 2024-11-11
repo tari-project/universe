@@ -53,10 +53,6 @@
                 }
             }
         },
-        "trayIcon": {
-            "id": "universe-systray",
-            "iconPath": "icons/systray_icon.ico"
-        },
         "macOSPrivateApi": true,
         "withGlobalTauri": true,
         "windows": [
