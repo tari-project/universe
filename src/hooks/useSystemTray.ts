@@ -1,16 +1,19 @@
 import { useHardwareStats } from '@app/hooks/useHardwareStats';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useFormatBalance } from '@app/utils/formatBalance';
+import { formatHashrate } from '@app/utils/formatHashrate';
 import { Menu } from '@tauri-apps/api/menu';
+import { MenuOptions } from '@tauri-apps/api/menu/menu';
 import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
-import { TrayIcon, TrayIconEvent } from '@tauri-apps/api/tray';
+import { TrayIcon } from '@tauri-apps/api/tray';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
+const TRAY_ID = 'universe-tray-icon';
 const defaultIconPath = 'icons/systray_icon.ico';
 const darkIconPath = 'icons/icon.png';
 
-export function useInitSystemTray() {
-    const initiated = useRef(false);
+export function useSystemTray() {
+    const hasUpdates = useRef(false);
     const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
     const { cpu: cpuHardware, gpu: gpuHardware } = useHardwareStats();
     const { cpu_est, cpu_h } = useMiningStore((s) => ({
@@ -30,81 +33,57 @@ export function useInitSystemTray() {
         ? cpuHardware?.reduce((acc, current) => acc + current.usage_percentage, 0) / (cpuHardware?.length || 1)
         : 0;
 
-    const getMenu = useCallback(async () => {
+    const menuItems = useMemo(() => {
         const separator = {
             item: 'Separator',
         } as PredefinedMenuItemOptions;
+        const minimize = {
+            item: 'Minimize',
+            text: 'Minimize',
+        } as PredefinedMenuItemOptions;
 
-        return await Menu.new({
-            items: [
-                {
-                    id: 'cpu_hashrate',
-                    text: `CPU Hashrate: ${cpu_h}`,
-                    enabled: false,
-                },
-                {
-                    id: 'gpu_hashrate',
-                    text: `GPU Hashrate: ${gpu_h}`,
-                    enabled: false,
-                },
-                separator,
-                {
-                    id: 'cpu_usage',
-                    text: `CPU Usage: ${cpuUsage}`,
-                    enabled: false,
-                },
-                {
-                    id: 'gpu_usage',
-                    text: `GPU Usage: ${gpuUsage}`,
-                    enabled: false,
-                },
-                separator,
-                {
-                    id: 'estimated_earning',
-                    text: `Est earning: ${totalEarningsFormatted} tXTM/day`,
-                    enabled: false,
-                },
-            ],
-        });
+        hasUpdates.current = Boolean(totalEarningsFormatted || gpuUsage || cpuUsage || cpu_h || gpu_h);
+        return [
+            {
+                id: 'cpu_hashrate',
+                text: `CPU Hashrate: ${cpu_h ? `${formatHashrate(cpu_h)}` : '-'}`,
+                enabled: false,
+            },
+            {
+                id: 'gpu_hashrate',
+                text: `GPU Hashrate: ${gpu_h ? `${formatHashrate(gpu_h)}` : '-'}`,
+                enabled: false,
+            },
+            separator,
+            {
+                id: 'cpu_usage',
+                text: `CPU Usage: ${cpuUsage || '-'}`,
+                enabled: false,
+            },
+            {
+                id: 'gpu_usage',
+                text: `GPU Usage: ${gpuUsage || '-'}`,
+                enabled: false,
+            },
+            separator,
+            {
+                id: 'estimated_earning',
+                text: `Est earning: ${totalEarningsFormatted || '-'} tXTM/day`,
+                enabled: false,
+            },
+            minimize,
+        ] as MenuOptions['items'];
     }, [cpuUsage, cpu_h, gpuUsage, gpu_h, totalEarningsFormatted]);
 
-    const menuEvents = useMemo(
-        () => ({
-            action: (event: TrayIconEvent) => {
-                switch (event.type) {
-                    case 'Click':
-                        break;
-                    case 'Enter':
-                        getMenu().then(async (menu) => {
-                            const t = await TrayIcon.getById('universe-tray-icon');
-                            if (t) {
-                                await t.setMenu(menu);
-                            }
-                        });
-
-                        break;
-                }
-            },
-        }),
-        [getMenu]
-    );
-
-    const setInitialTray = useCallback(async () => {
-        await TrayIcon.removeById('universe-tray-icon');
-        const tray = await TrayIcon.new({
-            id: 'universe-tray-icon',
-            action: menuEvents.action,
-            icon: prefersDarkMode() ? darkIconPath : defaultIconPath,
-        });
-        const menu = await getMenu();
-        if (tray) {
-            await tray.setMenu(menu);
-        }
-    }, [menuEvents.action, getMenu]);
+    const setTray = useCallback(async () => {
+        const menu = await Menu.new({ items: menuItems });
+        const icon = prefersDarkMode() ? darkIconPath : defaultIconPath;
+        const tray = await TrayIcon.getById(TRAY_ID);
+        await tray?.setMenu(menu);
+        await tray?.setIcon(icon);
+    }, [menuItems]);
 
     useEffect(() => {
-        setInitialTray().then(() => {
-            initiated.current = true;
-        });
-    }, [setInitialTray]);
+        void setTray();
+    }, [setTray]);
 }
