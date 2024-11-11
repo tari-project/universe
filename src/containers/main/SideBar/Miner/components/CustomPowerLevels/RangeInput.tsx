@@ -97,6 +97,7 @@ export const RangeInputComponent = ({
             },
             rangeValue: {
                 width: `${comparisonValue}%`,
+                left: comparisonValue,
             },
         };
     }, [currentValue, isHover, maxLevel, min]);
@@ -124,9 +125,9 @@ export const RangeInputComponent = ({
                             min={0}
                             onChange={handleChange}
                             disabled={isLoading}
-                            $thumbLeft={valueBasedStyles.rangeValue.width}
+                            $thumbLeft={valueBasedStyles.rangeValue.left}
                         />
-                        <InputVal style={valueBasedStyles.rangeValue} />
+                        <InputVal style={{ width: valueBasedStyles.rangeValue.width }} />
                         <PerformanceMarker style={valueBasedStyles.ecomark} />
                         <PerformanceMarker $red style={valueBasedStyles.firemark} />
                     </RangeInputHolder>

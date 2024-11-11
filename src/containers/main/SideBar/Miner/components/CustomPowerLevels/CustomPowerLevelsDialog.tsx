@@ -127,17 +127,17 @@ export function CustomPowerLevelsDialog() {
                         onChange={handleChangeCpu}
                         isLoading={isChangingMode}
                     />
-                    {/*<Divider />*/}
-                    {/*<RangeInputComponent*/}
-                    {/*    desc={'custom-power-levels.choose-gpu-power-level'}*/}
-                    {/*    label={t('custom-power-levels.gpu-power-level')}*/}
-                    {/*    maxLevel={maxLevels.max_gpu_available}*/}
-                    {/*    value={gpuValue}*/}
-                    {/*    warning={t('custom-power-levels.gpu-warning')}*/}
-                    {/*    onChange={handleChangeGpu}*/}
-                    {/*    isLoading={isChangingMode}*/}
-                    {/*    step={2}*/}
-                    {/*/>*/}
+                    <Divider />
+                    <RangeInputComponent
+                        desc={'custom-power-levels.choose-gpu-power-level'}
+                        label={t('custom-power-levels.gpu-power-level')}
+                        maxLevel={maxLevels.max_gpu_available}
+                        value={gpuValue}
+                        warning={t('custom-power-levels.gpu-warning')}
+                        onChange={handleChangeGpu}
+                        isLoading={isChangingMode}
+                        step={2}
+                    />
                 </CustomLevelsContent>
             </DialogContent>
         </Dialog>

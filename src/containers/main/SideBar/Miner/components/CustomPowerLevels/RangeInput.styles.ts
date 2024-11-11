@@ -10,7 +10,6 @@ export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
     height: 9px;
     border-radius: 5px;
     width: ${SLIDER_WIDTH}px;
-    //overflow: hidden;
     ${({ $disabled }) =>
         $disabled &&
         css`
@@ -45,7 +44,7 @@ export const RangeInputSteps = styled.div`
         }
     }
 `;
-export const RangeInput = styled.input<{ $thumbLeft?: string }>`
+export const RangeInput = styled.input<{ $thumbLeft?: number }>`
     appearance: none;
     -webkit-appearance: none;
     width: ${SLIDER_WIDTH}px;
@@ -69,7 +68,7 @@ export const RangeInput = styled.input<{ $thumbLeft?: string }>`
         border: 2px solid #813bf5;
         cursor: pointer;
         position: absolute;
-        left: ${({ $thumbLeft }) => $thumbLeft};
+        left: calc(${({ $thumbLeft = 0 }) => `${$thumbLeft}% - ${SLIDER_THUMB_WIDTH / 2}px`});
         bottom: -50%;
     }
 
@@ -109,7 +108,7 @@ export const RangeInputWrapper = styled.div`
     display: grid;
     width: 100%;
     grid-template-columns: 1fr auto 2fr;
-    align-items: stretch;
+    align-items: center;
     font-size: 14px;
     gap: 10px;
 `;
@@ -132,14 +131,14 @@ export const RangeValueHolder = styled.div`
     color: #fff;
     justify-content: center;
     align-items: center;
-    transform: translateX(-50%) translateZ(0);
+    transform: translateX(-50%) translateZ(0) translateY(-50%);
     background: #813bf5;
     position: absolute;
     min-width: 20px;
     padding: 2px 8px;
     border-radius: 5px;
     min-height: 20px;
-    top: -35px;
+    top: -${SLIDER_THUMB_WIDTH}px;
     z-index: 2;
     transition: all 0.2s;
     &::after {
