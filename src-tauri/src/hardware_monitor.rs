@@ -77,6 +77,7 @@ pub struct HardwareMonitor {
     gpu_devices: Vec<GpuStatus>,
 }
 
+#[allow(dead_code)]
 impl HardwareMonitor {
     pub fn new() -> Self {
         HardwareMonitor {
@@ -164,6 +165,7 @@ impl HardwareMonitor {
     }
 }
 
+#[allow(dead_code)]
 struct WindowsHardwareMonitor {
     nvml: Option<Nvml>,
     gpu_status_file: Option<PathBuf>,
@@ -311,6 +313,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
     }
 }
 
+#[allow(dead_code)]
 struct LinuxHardwareMonitor {
     nvml: Option<Nvml>,
     gpu_status_file: Option<PathBuf>,
@@ -485,6 +488,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
     }
 }
 
+#[allow(dead_code)]
 struct MacOSHardwareMonitor {
     gpu_status_file: Option<PathBuf>,
 }

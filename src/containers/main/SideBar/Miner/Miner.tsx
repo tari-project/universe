@@ -68,7 +68,7 @@ export default function Miner() {
                     title={t('cpu-power')}
                     stats={isCpuMiningEnabled && cpu_is_mining ? formatHashrate(cpu_hash_rate, false) : '-'}
                     isLoading={isCpuMiningEnabled && (isLoading || isWaitingForCPUHashRate)}
-                    chipValue={cpu_is_mining ? cpuChipValue : undefined}
+                    chipValue={undefined}
                     unit="H/s"
                     useLowerCase
                 />
@@ -76,7 +76,7 @@ export default function Miner() {
                     title={t('gpu-power')}
                     stats={isGpuMiningEnabled && gpu_is_mining ? formatHashrate(gpu_hash_rate, false) : '-'}
                     isLoading={isGpuMiningEnabled && (isLoading || isWaitingForGPUHashRate)}
-                    chipValue={gpu_is_mining ? gpuChipValue : undefined}
+                    chipValue={undefined}
                     unit="H/s"
                     useLowerCase
                 />

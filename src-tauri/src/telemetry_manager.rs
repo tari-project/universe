@@ -226,6 +226,7 @@ impl TelemetryManager {
         unique_string
     }
 
+    #[allow(dead_code)]
     pub fn update_network(&mut self, network: Option<Network>) {
         self.node_network = network;
     }
@@ -333,7 +334,7 @@ async fn get_telemetry_data(
             .await
             .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
 
-    let mut cpu_miner = cpu_miner.write().await;
+    let cpu_miner = cpu_miner.read().await;
     let cpu = match cpu_miner.status(randomx_hash_rate, block_reward).await {
         Ok(cpu) => cpu,
         Err(e) => {
@@ -341,7 +342,7 @@ async fn get_telemetry_data(
             return Err(TelemetryManagerError::Other(e));
         }
     };
-    let mut gpu_miner_lock = gpu_miner.write().await;
+    let gpu_miner_lock = gpu_miner.read().await;
     let gpu_status = match gpu_miner_lock.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
@@ -367,10 +368,7 @@ async fn get_telemetry_data(
     let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
         warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
     });
-    let p2pool_stats = match p2pool_stats {
-        Ok(stats) => stats,
-        Err(_) => None,
-    };
+    let p2pool_stats = p2pool_stats.unwrap_or_default();
 
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);

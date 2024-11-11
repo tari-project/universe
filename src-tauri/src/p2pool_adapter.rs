@@ -29,6 +29,7 @@ impl P2poolAdapter {
         Self { config: None }
     }
 
+    #[allow(dead_code)]
     pub fn config(&self) -> Option<&P2poolConfig> {
         self.config.as_ref()
     }
