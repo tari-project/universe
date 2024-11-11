@@ -231,6 +231,7 @@ jobs:
                   releaseName: ${{ env.releaseName }}
                   releaseBody: 'Tari Universe - See the assets to download this version and install'
                   # releaseId: ${{ env.releaseId }}
+                  updaterJsonKeepUniversal: true
                   releaseDraft: true
                   prerelease: true
                   includeDebug: false
