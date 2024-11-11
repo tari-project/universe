@@ -1,3 +1,4 @@
+import { m } from 'framer-motion';
 import styled, { css } from 'styled-components';
 
 export const SLIDER_WIDTH = 570;
@@ -5,7 +6,11 @@ export const SLIDER_THUMB_WIDTH = 30;
 
 export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
     position: relative;
-    width: 100%;
+    background: #ddd;
+    height: 9px;
+    border-radius: 5px;
+    width: ${SLIDER_WIDTH}px;
+    //overflow: hidden;
     ${({ $disabled }) =>
         $disabled &&
         css`
@@ -13,38 +18,65 @@ export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
         `}
 `;
 
-export const RangeInput = styled.input`
-    position: relative;
-    z-index: 2;
-    margin: 5px 0;
-    -webkit-appearance: none;
+export const InputVal = styled(m.div)`
+    border-bottom-left-radius: 20px;
+    border-top-left-radius: 20px;
+    position: absolute;
+    left: 0;
+    z-index: 0;
     height: 9px;
+    max-width: ${SLIDER_WIDTH}px;
+    top: 0;
+    pointer-events: none;
+    background: #813bf5;
+`;
+export const RangeInputSteps = styled.div`
+    position: relative;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    width: ${SLIDER_WIDTH}px;
+    display: flex;
+    justify-content: space-between;
+    span {
+        &:after {
+            content: '|';
+            position: relative;
+        }
+    }
+`;
+export const RangeInput = styled.input<{ $thumbLeft?: string }>`
+    appearance: none;
+    -webkit-appearance: none;
+    width: ${SLIDER_WIDTH}px;
+    height: 9px;
+    top: 0;
+    left: 0;
+    position: relative;
     border-radius: 5px;
-    background: #ddd;
     outline: none;
     -webkit-transition: 0.2s;
     transition: opacity 0.2s;
-    min-width: ${SLIDER_WIDTH}px;
-    width: 100%;
 
     &::-webkit-slider-thumb {
-        -webkit-appearance: none;
         appearance: none;
+        -webkit-appearance: none;
         width: ${SLIDER_THUMB_WIDTH}px;
         height: ${SLIDER_THUMB_WIDTH}px;
-        border-radius: 50%;
-        box-sizing: border-box;
+        z-index: 5;
         background: white;
-        border: 2px solid deeppink;
-        //border: 2px solid #813bf5;
-        z-index: 10;
-        transition: background 0.15s ease-in-out;
+        border-radius: 50%;
+        border: 2px solid #813bf5;
         cursor: pointer;
+        position: absolute;
+        left: ${({ $thumbLeft }) => $thumbLeft};
+        bottom: -50%;
     }
 
     &:disabled {
         opacity: 0.6;
         pointer-events: none;
+
         &::-webkit-slider-thumb {
             pointer-events: none;
         }
@@ -125,15 +157,12 @@ export const RangeValueHolder = styled.div`
 
 export const PerformanceMarker = styled.div<{ $red?: boolean }>`
     position: absolute;
-    transform: translateX(-50%);
     width: 5px;
     height: 5px;
     border-radius: 50%;
-
     z-index: 3;
-
-    top: 8px;
-
+    top: 50%;
+    transform: translateY(-50%);
     background: #62cc32;
     ${({ $red }) =>
         $red &&

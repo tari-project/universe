@@ -3,9 +3,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import {
     InputContainer,
     InputDescription,
+    InputVal,
     PerformanceMarker,
     RangeInput,
     RangeInputHolder,
+    RangeInputSteps,
     RangeInputWrapper,
     RangeLabel,
     RangeLimits,
@@ -38,11 +40,11 @@ export const RangeInputComponent = ({
     desc,
     onChange,
     warning,
-    step,
+    step = 1,
     isLoading = false,
     usePercentage = false,
 }: RangeInputProps) => {
-    const min = step ?? 0;
+    const min = step ?? 1;
     const [isHover, setIsHover] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: true });
 
@@ -50,13 +52,6 @@ export const RangeInputComponent = ({
 
     const hasChanges = useRef(false);
 
-    const getPosition = useCallback(
-        (value: number, max: number) => {
-            // Position the value bubble in the range input thumb
-            return 15 + ((value - min) / (max - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH);
-        },
-        [min]
-    );
     // Check if the value is over 75% of the max level
     const hasWarning = convertToPercentage(currentValue, maxLevel) > 75;
 
@@ -73,38 +68,38 @@ export const RangeInputComponent = ({
         setIsHover(true);
     };
 
-    const handleChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
-        const newValue = Number(event.target.value);
-        setCurrentValue(newValue);
-        hasChanges.current = true;
-    }, []);
+    const handleChange = useCallback(
+        (event: ChangeEvent<HTMLInputElement>) => {
+            const newValue = Number(event.target.value);
+            console.debug(`newValue= ${newValue}`);
+            setCurrentValue(newValue >= min ? newValue : min);
+            hasChanges.current = true;
+        },
+        [min]
+    );
 
     const valueBasedStyles = useMemo(() => {
         // these should all be percentage based for styling values
         const _maxVal = 100;
         const comparisonValue = convertToPercentage(currentValue, maxLevel);
-        console.debug(`comparisonValue= ${comparisonValue}`);
         return {
             rangeValueHolder: {
-                left: getPosition(currentValue, maxLevel),
+                left: `${comparisonValue}%`,
                 display: isHover ? 'block' : 'none',
             },
             ecomark: {
                 display: comparisonValue > comparisonValue && comparisonValue < 18 ? 'none' : 'block',
-                left: 15 + ((15 - min) / (_maxVal - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
+                left: ((15 - min) / (_maxVal - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
             },
             firemark: {
                 display: comparisonValue > 72 && comparisonValue < 78 ? 'none' : 'block',
-                left: 15 + ((75 - min) / (_maxVal - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
+                left: ((75 - min) / (_maxVal - min)) * (SLIDER_WIDTH - SLIDER_THUMB_WIDTH),
             },
             rangeValue: {
-                background: comparisonValue
-                    ? `linear-gradient(to right, #813bf5 ${comparisonValue}%, #ddd ${comparisonValue}%)`
-                    : '#ddd',
+                width: `${comparisonValue}%`,
             },
         };
-    }, [currentValue, getPosition, isHover, maxLevel, min]);
-    console.debug(valueBasedStyles.rangeValue.background);
+    }, [currentValue, isHover, maxLevel, min]);
     if (!maxLevel) return null;
     return (
         <>
@@ -118,8 +113,6 @@ export const RangeInputComponent = ({
                 >
                     <RangeLimits>0</RangeLimits>
                     <RangeInputHolder $disabled={isLoading}>
-                        <PerformanceMarker style={valueBasedStyles.ecomark} />
-                        <PerformanceMarker $red style={valueBasedStyles.firemark} />
                         <RangeValueHolder style={valueBasedStyles.rangeValueHolder}>
                             {usePercentage ? `${currentValue}%` : currentValue}
                         </RangeValueHolder>
@@ -127,12 +120,15 @@ export const RangeInputComponent = ({
                             step={step}
                             type="range"
                             value={currentValue}
-                            style={valueBasedStyles.rangeValue}
                             max={maxLevel}
-                            min={min}
+                            min={0}
                             onChange={handleChange}
                             disabled={isLoading}
+                            $thumbLeft={valueBasedStyles.rangeValue.width}
                         />
+                        <InputVal style={valueBasedStyles.rangeValue} />
+                        <PerformanceMarker style={valueBasedStyles.ecomark} />
+                        <PerformanceMarker $red style={valueBasedStyles.firemark} />
                     </RangeInputHolder>
                     <RangeLimits>{maxLevel}</RangeLimits>
                 </RangeInputWrapper>
