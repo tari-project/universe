@@ -9,7 +9,7 @@ import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { useHardwareStats } from '@app/hooks/useHardwareStats.ts';
+
 import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
 import { useTheme } from 'styled-components';
 import { Trans, useTranslation } from 'react-i18next';
@@ -23,7 +23,6 @@ export default function Miner() {
     const theme = useTheme();
     const { t } = useTranslation('mining-view', { useSuspense: false });
     useMiningStatesSync();
-    const { cpu: cpuHardwareStats, gpu: gpuHardwareStats } = useHardwareStats();
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
