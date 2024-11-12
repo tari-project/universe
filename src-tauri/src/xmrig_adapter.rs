@@ -106,6 +106,7 @@ impl ProcessAdapter for XmrigAdapter {
                 .as_ref()
                 .ok_or(anyhow::anyhow!("Monero address not set"))?
         ));
+        #[allow(clippy::collapsible_match)]
         // don't specify threads for ludicrous mode
         if let Some(cpu_threads) = self.cpu_threads {
             if let Some(cpu_threads) = cpu_threads {
