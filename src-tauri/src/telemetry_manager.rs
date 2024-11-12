@@ -240,7 +240,7 @@ impl TelemetryManager {
         let id_sha256 = sha256_hasher.finalize();
         let id_base64_sha256 = BASE64_STANDARD.encode(id_sha256);
         let unique_string = format!(
-            "v2,{},{},{}",
+            "v3,{},{},{}",
             buf.to_monero_base58(),
             version,
             id_base64_sha256
