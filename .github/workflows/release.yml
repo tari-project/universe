@@ -72,9 +72,6 @@ jobs:
               shell: bash
               run: |
                   #set -xueo pipefail
-                  # Setup tauri action envs
-                  echo "tagName=v__VERSION__\"-${BETA_DATE}\"" >> $GITHUB_ENV
-                  echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__" >> $GITHUB_ENV
                   echo "TARI_NETWORK=esme" >> $GITHUB_ENV
                   echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
                   echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
