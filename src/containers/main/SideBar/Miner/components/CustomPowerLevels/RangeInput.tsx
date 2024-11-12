@@ -68,7 +68,6 @@ export const RangeInputComponent = ({
     const handleChange = useCallback(
         (event: ChangeEvent<HTMLInputElement>) => {
             const newValue = Number(event.target.value);
-            console.debug(`newValue= ${newValue}`);
             setCurrentValue(newValue >= min ? newValue : min);
             hasChanges.current = true;
         },
