@@ -12,6 +12,7 @@ const TestingWrapper = styled.div`
     top: 10px;
     right: 10px;
     pointer-events: all;
+    z-index: 999;
 `;
 
 const Button = styled.button`

@@ -20,7 +20,7 @@ interface ToastStore {
 
 export const useToastStore = create<ToastStore>()(
     devtools((set) => ({
-        showToastTesting: true,
+        showToastTesting: false,
         toasts: [],
         addToast: (toast) =>
             set((state) => {
