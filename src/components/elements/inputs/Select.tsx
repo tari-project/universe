@@ -60,7 +60,8 @@ export function Select({
         }
     }, [isOpen, elements, update]);
 
-    function handleChange(value: string) {
+    function handleChange(value: string, disableClick = false) {
+        if (disableClick) return;
         onChange(value);
         setIsOpen(false);
     }
@@ -99,11 +100,13 @@ export function Select({
             >
                 {options.map(({ label, value, iconSrc }) => {
                     const selected = value === selectedOption?.value;
+                    const disableClick = loading && !selected && value !== 'Custom';
                     return (
                         <StyledOption
-                            onClick={() => handleChange(value)}
+                            onClick={() => handleChange(value, disableClick)}
                             key={`opt-${value}-${label}`}
                             $selected={selected}
+                            $loading={loading && !selected}
                         >
                             <OptionLabelWrapper>
                                 {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}
