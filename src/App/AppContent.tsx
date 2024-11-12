@@ -4,7 +4,7 @@ import { AppContentWrapper } from './App.styles';
 
 export default function AppContent({ children }: { children: ReactNode }) {
     return (
-        <AppContentWrapper>
+        <AppContentWrapper key="app-content-wrapper">
             <AnimatePresence mode="wait">{children}</AnimatePresence>
         </AppContentWrapper>
     );

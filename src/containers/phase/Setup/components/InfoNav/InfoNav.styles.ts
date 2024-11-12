@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Container = styled.div`
     display: flex;
@@ -17,7 +17,6 @@ export const Heading = styled.div`
     line-height: 1;
     letter-spacing: -2px;
     white-space: pre-line;
-    text-wrap: nowrap;
 `;
 
 export const Copy = styled.div`
@@ -44,19 +43,33 @@ export const NavContainer = styled.div`
 export const Nav = styled.div`
     display: flex;
     gap: 5px;
+    position: relative;
+    z-index: 2;
 `;
 
 export const NavItem = styled(m.div)<{ $selected?: boolean }>`
-    border-radius: 2px;
+    border-radius: 50px;
     position: relative;
     display: flex;
     width: 70px;
     height: 4px;
     cursor: pointer;
+
+    transition: transform 0.3s ease;
+
+    &:hover {
+        transform: scaleY(2);
+    }
+
+    ${({ $selected }) =>
+        $selected &&
+        css`
+            pointer-events: none;
+        `};
 `;
 
 export const NavItemCurrent = styled(m.div)`
-    border-radius: 2px;
+    border-radius: 50px;
     position: absolute;
     top: 0;
     left: 0;

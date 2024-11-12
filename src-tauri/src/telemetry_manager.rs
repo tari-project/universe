@@ -334,7 +334,7 @@ async fn get_telemetry_data(
             .await
             .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
 
-    let mut cpu_miner = cpu_miner.write().await;
+    let cpu_miner = cpu_miner.read().await;
     let cpu = match cpu_miner.status(randomx_hash_rate, block_reward).await {
         Ok(cpu) => cpu,
         Err(e) => {
@@ -342,7 +342,7 @@ async fn get_telemetry_data(
             return Err(TelemetryManagerError::Other(e));
         }
     };
-    let mut gpu_miner_lock = gpu_miner.write().await;
+    let gpu_miner_lock = gpu_miner.read().await;
     let gpu_status = match gpu_miner_lock.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
         Err(e) => {
