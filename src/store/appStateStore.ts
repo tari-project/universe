@@ -1,4 +1,5 @@
 import { ApplicationsVersions, ExternalDependency } from '@app/types/app-status';
+import { setAnimationState } from '@app/visuals';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api';
 import { useAppConfigStore } from './useAppConfigStore';
@@ -21,7 +22,7 @@ interface AppState {
     isSettingsOpen: boolean;
     setIsSettingsOpen: (value: boolean) => void;
     isSettingUp: boolean;
-    settingUpFinished: () => Promise<void>;
+    setSettingUpFinished: () => Promise<void>;
     externalDependencies: ExternalDependency[];
     fetchExternalDependencies: () => Promise<void>;
     loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
@@ -48,13 +49,14 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     isSettingsOpen: false,
     setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
     isSettingUp: true,
-    settingUpFinished: async () => {
+    setSettingUpFinished: async () => {
         set({ isSettingUp: false });
+        setAnimationState('showVisual');
 
         // Proceed with auto mining when enabled
         const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
         if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-            const { startMining } = useMiningStore.getState();
+            const startMining = useMiningStore.getState().startMining;
             await startMining();
         }
     },
@@ -78,7 +80,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             }
 
             try {
-                console.info('Fetching applications versions');
                 await getState().fetchApplicationsVersions();
                 retries--;
             } catch (error) {

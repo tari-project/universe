@@ -3,13 +3,17 @@ import { m } from 'framer-motion';
 
 export const OrbitWrapper = styled(m.div)`
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+
     width: 300px;
     height: 300px;
     max-width: 300px;
     max-height: 300px;
     pointer-events: none;
     user-select: none;
-    z-index: 1;
+    z-index: 0;
 `;
 export const Orbit = styled(m.div)`
     border-radius: 100%;
