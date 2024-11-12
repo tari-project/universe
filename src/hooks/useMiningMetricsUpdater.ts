@@ -29,14 +29,14 @@ export default function useMiningMetricsUpdater() {
                     setAnimationState('start');
                 }
 
-                setMiningMetrics(metrics);
                 const blockHeight = metrics.base_node.block_height;
-
-                if (blockHeight > currentBlockHeight) {
+                if (blockHeight && blockHeight > currentBlockHeight) {
                     await fetchTx();
-                    await handleNewBlock(blockHeight, isMining);
+                    if (blockHeight > 0) {
+                        await handleNewBlock(blockHeight, isMining);
+                    }
                 }
-
+                setMiningMetrics(metrics);
                 setIsFetchingMetrics(false);
             }
         } catch (e) {
