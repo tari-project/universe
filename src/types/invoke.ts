@@ -59,7 +59,7 @@ declare module '@tauri-apps/api/tauri' {
     ): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
-    function invoke(param: 'restart_application'): Promise<string>;
+    function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
