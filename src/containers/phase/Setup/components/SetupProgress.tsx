@@ -18,7 +18,7 @@ const Percentage = styled(Typography)`
 const InfoText = styled(Typography)`
     font-weight: 400;
     margin-bottom: 14px;
-    text-wrap: nowrap;
+    white-space: nowrap;
 `;
 export default function SetupProgress() {
     const { t } = useTranslation('setup-view');
