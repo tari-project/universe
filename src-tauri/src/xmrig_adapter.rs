@@ -4,7 +4,7 @@ use log::warn;
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 
-use crate::network_utils::get_free_port;
+use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
@@ -43,7 +43,7 @@ pub struct XmrigAdapter {
 
 impl XmrigAdapter {
     pub fn new() -> Self {
-        let http_api_port = get_free_port().unwrap_or(18000);
+        let http_api_port = PortAllocator::new().assign_port_with_fallback();
         let http_api_token = "pass".to_string();
         Self {
             node_connection: None,
