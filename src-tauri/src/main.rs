@@ -72,6 +72,7 @@ mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
+mod network_utils;
 mod node_adapter;
 mod node_manager;
 mod p2pool;
