@@ -1,54 +1,70 @@
+import { m } from 'framer-motion';
 import styled, { css } from 'styled-components';
 
 export const SLIDER_WIDTH = 570;
 export const SLIDER_THUMB_WIDTH = 30;
 
-export const CustomLevelsContent = styled.div`
-    padding: 15px 15px 35px;
-    margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    width: 700px;
-`;
-
-export const RangeInput = styled.input`
+export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
     position: relative;
-    z-index: 2;
-    margin: 5px 0;
-    -webkit-appearance: none;
-    width: 100%;
+    background: #ddd;
     height: 9px;
     border-radius: 5px;
-    background: #ddd;
+    width: ${SLIDER_WIDTH}px;
+    ${({ $disabled }) =>
+        $disabled &&
+        css`
+            cursor: wait;
+        `}
+`;
+
+export const InputVal = styled(m.div)`
+    border-bottom-left-radius: 20px;
+    border-top-left-radius: 20px;
+    position: absolute;
+    left: 0;
+    z-index: 0;
+    height: 9px;
+    max-width: ${SLIDER_WIDTH}px;
+    top: 0;
+    pointer-events: none;
+    background: #813bf5;
+`;
+export const RangeInput = styled.input<{ $thumbLeft?: number }>`
+    appearance: none;
+    -webkit-appearance: none;
+    width: ${SLIDER_WIDTH}px;
+    height: 9px;
+    top: 0;
+    left: 0;
+    position: relative;
+    border-radius: 5px;
     outline: none;
     -webkit-transition: 0.2s;
     transition: opacity 0.2s;
-    width: ${SLIDER_WIDTH}px;
 
     &::-webkit-slider-thumb {
-        -webkit-appearance: none;
         appearance: none;
+        -webkit-appearance: none;
         width: ${SLIDER_THUMB_WIDTH}px;
         height: ${SLIDER_THUMB_WIDTH}px;
-        border-radius: 50%;
+        z-index: 5;
         background: white;
+        border-radius: 50%;
         border: 2px solid #813bf5;
-        z-index: 10;
         cursor: pointer;
-        transition: background 0.15s ease-in-out;
+        position: absolute;
+        left: calc(${({ $thumbLeft = 0 }) => `${$thumbLeft}% - ${SLIDER_THUMB_WIDTH / 2}px`});
+        bottom: -50%;
     }
-`;
 
-export const CustomLelvelsHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    font-size: 18px;
-    font-family: Poppins, sans-serif;
-    padding-bottom: 26px;
-    border-bottom: 1px solid #0000000d;
+    &:disabled {
+        opacity: 0.6;
+        pointer-events: none;
+
+        &::-webkit-slider-thumb {
+            pointer-events: none;
+        }
+    }
 `;
 
 export const RangeLabel = styled.label`
@@ -56,7 +72,7 @@ export const RangeLabel = styled.label`
     justify-content: space-between;
     align-items: center;
     font-size: 14px;
-    font-family: Poppins, sans-serif;
+    font-weight: 500;
     padding-bottom: 10px;
 `;
 
@@ -73,31 +89,25 @@ export const InputDescription = styled.div`
     }
 `;
 
-export const RangeIntputWrapper = styled.div`
-    display: flex;
-    justify-content: space-between;
+export const RangeInputWrapper = styled.div`
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr auto 2fr;
     align-items: center;
     font-size: 14px;
-    font-family: Poppins, sans-serif;
     gap: 10px;
 `;
 
-export const RangeInputHolder = styled.div`
-    position: relative;
-`;
-
 export const RangeLimits = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     font-size: 18px;
-    font-family: Poppins, sans-serif;
+    font-weight: 500;
+    text-align: center;
 `;
 
 export const InputContainer = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 10px;
     position: relative;
 `;
 
@@ -106,15 +116,16 @@ export const RangeValueHolder = styled.div`
     color: #fff;
     justify-content: center;
     align-items: center;
-    transform: translateX(-50%) translateZ(0);
+    transform: translateX(-50%) translateZ(0) translateY(-50%);
     background: #813bf5;
     position: absolute;
     min-width: 20px;
     padding: 2px 8px;
     border-radius: 5px;
     min-height: 20px;
-    top: -35px;
+    top: -${SLIDER_THUMB_WIDTH}px;
     z-index: 2;
+    transition: all 0.2s;
     &::after {
         content: '';
         position: absolute;
@@ -130,15 +141,12 @@ export const RangeValueHolder = styled.div`
 
 export const PerformanceMarker = styled.div<{ $red?: boolean }>`
     position: absolute;
-    transform: translateX(-50%);
     width: 5px;
     height: 5px;
     border-radius: 50%;
-
     z-index: 3;
-
-    top: 8px;
-
+    top: 50%;
+    transform: translateY(-50%);
     background: #62cc32;
     ${({ $red }) =>
         $red &&
@@ -156,7 +164,6 @@ export const WarningContainer = styled.div<{ $visible: boolean }>`
     border: 1px solid #ff0000;
     border-radius: 5px;
     background: rgba(255, 0, 0, 0.1);
-    font-size: 12px;
     height: 0;
     opacity: 0;
     transition: all 0.3s ease-in-out;
@@ -165,32 +172,7 @@ export const WarningContainer = styled.div<{ $visible: boolean }>`
         css`
             opacity: 0.7;
             padding: 8px 15px;
-            height: 50px;
+            max-height: 50px;
+            height: auto;
         `}
-`;
-
-export const SuccessContainer = styled.div<{ $visible: boolean }>`
-    overflow: hidden;
-    padding: 15px;
-    font-size: 12px;
-    font-family: Poppins, sans-serif;
-    color: #188750;
-    border: 1px solid #188750;
-    border-radius: 5px;
-    background: rgba(24, 135, 80, 0.1);
-    font-size: 12px;
-    opacity: 0;
-    transition: all 0.3s ease-in-out;
-    ${({ $visible }) =>
-        $visible &&
-        css`
-            opacity: 1;
-        `}
-`;
-
-export const TopRightContainer = styled.div`
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
 `;

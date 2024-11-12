@@ -23,6 +23,7 @@ export default function Miner() {
     const theme = useTheme();
     const { t } = useTranslation('mining-view', { useSuspense: false });
     useMiningStatesSync();
+
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);

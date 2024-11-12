@@ -13,7 +13,7 @@
     "title": "Custom Mode",
     "warning": "Warning",
     "saved": "Applying Changes",
-    "gpu-power-level": "GPU Power %",
+    "gpu-power-level": "GPU Power",
     "cpu-power-level": "CPU Cores",
     "choose-gpu-power-level": "Choose how much you want your GPU to be allocated to mining <span>({{current}} out of {{max}} threads)</span>",
     "choose-cpu-power-level": "Choose how much you want your CPU to be allocated to mining <span>({{current}} out of {{max}} cores)</span>",

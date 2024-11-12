@@ -1,41 +1,90 @@
-import { listen } from '@tauri-apps/api/event';
-import { useState } from 'react';
+import * as Sentry from '@sentry/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { check, Update } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
 
-export type UpdateStatus = 'NONE' | 'DOWNLOADING' | 'DONE';
+import { useInterval } from '@app/hooks/useInterval';
+import { useAppStateStore } from '@app/store/appStateStore';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { useUIStore } from '@app/store/useUIStore';
 
-interface UpdateStatusEvent {
-    status: UpdateStatus;
-    error: null | string;
-}
+const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60; // 1 hour
 
-interface UpdateDownloadProgressEvent {
-    contentLength: number;
-    chunkLength: number;
-    downloaded: number;
-}
+export const useHandleUpdate = () => {
+    const setIsAfterAutoUpdate = useAppStateStore((s) => s.setIsAfterAutoUpdate);
+    const auto_update = useAppConfigStore((s) => s.auto_update);
+    const [latestVersion, setLatestVersion] = useState<string>();
+    const [isLoading, setIsLoading] = useState(false);
+    const [contentLength, setContentLength] = useState(0);
+    const [downloaded, setDownloaded] = useState(0);
+    const [update, setUpdate] = useState<Update>();
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
-export const useUpdateStatus = () => {
-    const [status, setStatus] = useState<UpdateStatus>('NONE');
-    const [contentLength, setContentLength] = useState<number>(0);
-    const [downloaded, setDownloaded] = useState<number>(0);
+    const handleClose = useCallback(() => {
+        setDialogToShow(null);
+        setIsAfterAutoUpdate(true);
+    }, [setIsAfterAutoUpdate, setDialogToShow]);
 
-    listen<UpdateStatusEvent>('tauri://update-status', (status) => {
-        const statusString = status.payload.status;
-        setStatus(statusString);
-    });
-
-    listen<UpdateDownloadProgressEvent>('update-progress', (progressEvent) => {
-        const contentLength = progressEvent.payload.contentLength;
-        setContentLength(contentLength);
-        if (contentLength === 0) {
-            setStatus('NONE');
+    const handleUpdate = useCallback(async () => {
+        if (!update) {
+            return;
         }
-        if (contentLength > 0) {
-            setStatus('DOWNLOADING');
-            const downloaded = progressEvent.payload.downloaded;
-            setDownloaded(downloaded);
-        }
-    });
+        setIsLoading(true);
+        console.info('Installing latest version of Tari Universe');
 
-    return { status, contentLength, downloaded };
+        await update.downloadAndInstall((event) => {
+            switch (event.event) {
+                case 'Started':
+                    setContentLength(event.data.contentLength || 0);
+                    break;
+                case 'Progress':
+                    setDownloaded((c) => c + event.data.chunkLength);
+                    break;
+                case 'Finished':
+                    console.info('download finished');
+                    break;
+            }
+        });
+        handleClose();
+        await relaunch();
+    }, [handleClose, update]);
+
+    const checkUpdateTariUniverse = useCallback(async () => {
+        try {
+            const updateRes = await check();
+            if (updateRes?.available) {
+                setUpdate(updateRes);
+                console.info(`New Tari Universe version: ${updateRes.version} available`);
+                console.info(`Release notes: ${updateRes.body}`);
+                setLatestVersion(updateRes.version);
+                if (auto_update) {
+                    console.info('Proceed with auto-update');
+                    await handleUpdate();
+                }
+                setDialogToShow('autoUpdate');
+            } else {
+                setIsAfterAutoUpdate(true);
+            }
+        } catch (error) {
+            Sentry.captureException(error);
+            console.error('AutoUpdate error:', error);
+            setIsAfterAutoUpdate(true);
+        }
+    }, [auto_update, handleUpdate, setIsAfterAutoUpdate, setDialogToShow]);
+
+    return { checkUpdateTariUniverse, handleUpdate, isLoading, handleClose, latestVersion, contentLength, downloaded };
 };
+
+export function useUpdateListener() {
+    const { checkUpdateTariUniverse } = useHandleUpdate();
+    const hasDoneInitialCheck = useRef(false);
+
+    useInterval(() => checkUpdateTariUniverse(), UPDATE_CHECK_INTERVAL);
+
+    useEffect(() => {
+        if (hasDoneInitialCheck.current) return;
+        checkUpdateTariUniverse().then(() => {
+            hasDoneInitialCheck.current = true;
+        });
+    }, [checkUpdateTariUniverse]);
+}
