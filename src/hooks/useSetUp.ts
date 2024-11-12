@@ -4,7 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../types.ts';
 
 import { invoke } from '@tauri-apps/api/core';
-import { useUIStore } from '../store/useUIStore.ts';
+
 import { useAppStateStore } from '../store/appStateStore.ts';
 
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';

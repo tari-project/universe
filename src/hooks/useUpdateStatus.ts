@@ -1,69 +1,23 @@
+import * as Sentry from '@sentry/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { check, Update } from '@tauri-apps/plugin-updater';
+import { relaunch } from '@tauri-apps/plugin-process';
+
 import { useInterval } from '@app/hooks/useInterval';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
 import { useUIStore } from '@app/store/useUIStore';
-import * as Sentry from '@sentry/react';
-import { listen } from '@tauri-apps/api/event';
-import { invoke } from '@tauri-apps/api/tauri';
-
-import { useCallback, useEffect, useRef, useState } from 'react';
-
-export type UpdateStatus = 'NONE' | 'DOWNLOADING' | 'DONE';
-
-interface UpdateStatusEvent {
-    status: UpdateStatus;
-    error: null | string;
-}
-
-interface UpdateDownloadProgressEvent {
-    contentLength: number;
-    chunkLength: number;
-    downloaded: number;
-}
-
-export const useUpdateStatus = () => {
-    const [status, setStatus] = useState<UpdateStatus>('NONE');
-    const [contentLength, setContentLength] = useState<number>(0);
-    const [downloaded, setDownloaded] = useState<number>(0);
-
-    useEffect(() => {
-        const ul = listen<UpdateStatusEvent>('tauri://update-status', (status) => {
-            const statusString = status.payload.status;
-            setStatus(statusString);
-        });
-
-        return () => {
-            ul.then((unlisten) => unlisten());
-        };
-    }, []);
-
-    useEffect(() => {
-        const ul = listen<UpdateDownloadProgressEvent>('update-progress', (progressEvent) => {
-            const contentLength = progressEvent.payload.contentLength;
-            setContentLength(contentLength);
-            if (contentLength === 0) {
-                setStatus('NONE');
-            }
-            if (contentLength > 0) {
-                setStatus('DOWNLOADING');
-                const downloaded = progressEvent.payload.downloaded;
-                setDownloaded(downloaded);
-            }
-        });
-        return () => {
-            ul.then((unlisten) => unlisten());
-        };
-    }, []);
-
-    return { status, contentLength, downloaded };
-};
 
 const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60; // 1 hour
 
 export const useHandleUpdate = () => {
-    const [isLoading, setIsLoading] = useState(false);
     const setIsAfterAutoUpdate = useAppStateStore((s) => s.setIsAfterAutoUpdate);
+    const auto_update = useAppConfigStore((s) => s.auto_update);
+    const [latestVersion, setLatestVersion] = useState<string>();
+    const [isLoading, setIsLoading] = useState(false);
+    const [contentLength, setContentLength] = useState(0);
+    const [downloaded, setDownloaded] = useState(0);
+    const [update, setUpdate] = useState<Update>();
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     const handleClose = useCallback(() => {
@@ -72,39 +26,37 @@ export const useHandleUpdate = () => {
     }, [setIsAfterAutoUpdate, setDialogToShow]);
 
     const handleUpdate = useCallback(async () => {
-        setIsLoading(true);
-        await installUpdate();
-        console.info('Installing latest version of Tari Universe');
-        try {
-            console.info('Restarting application after update');
-            await invoke('restart_application');
-        } catch (e) {
-            Sentry.captureException(e);
-            console.error('Relaunch error', e);
+        if (!update) {
+            return;
         }
+        setIsLoading(true);
+        console.info('Installing latest version of Tari Universe');
+
+        await update.downloadAndInstall((event) => {
+            switch (event.event) {
+                case 'Started':
+                    setContentLength(event.data.contentLength || 0);
+                    break;
+                case 'Progress':
+                    setDownloaded((c) => c + event.data.chunkLength);
+                    break;
+                case 'Finished':
+                    console.info('download finished');
+                    break;
+            }
+        });
         handleClose();
-    }, [handleClose]);
+        await relaunch();
+    }, [handleClose, update]);
 
-    return { handleUpdate, isLoading, handleClose };
-};
-
-export function useUpdateListener() {
-    const initialCheck = useRef(false);
-    const setLatestVersion = useUIStore((s) => s.setLatestVersion);
-    const auto_update = useAppConfigStore((s) => s.auto_update);
-    const setIsAfterAutoUpdate = useAppStateStore((s) => s.setIsAfterAutoUpdate);
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
-
-    const { handleUpdate, isLoading } = useHandleUpdate();
     const checkUpdateTariUniverse = useCallback(async () => {
-        if (isLoading) return;
         try {
-            const { shouldUpdate, manifest } = await checkUpdate();
-            if (shouldUpdate) {
-                console.info('New Tari Universe version available', manifest);
-                if (manifest?.version) {
-                    setLatestVersion(manifest?.version);
-                }
+            const updateRes = await check();
+            if (updateRes?.available) {
+                setUpdate(updateRes);
+                console.info(`New Tari Universe version: ${updateRes.version} available`);
+                console.info(`Release notes: ${updateRes.body}`);
+                setLatestVersion(updateRes.version);
                 if (auto_update) {
                     console.info('Proceed with auto-update');
                     await handleUpdate();
@@ -118,22 +70,21 @@ export function useUpdateListener() {
             console.error('AutoUpdate error:', error);
             setIsAfterAutoUpdate(true);
         }
-    }, [auto_update, handleUpdate, isLoading, setDialogToShow, setIsAfterAutoUpdate, setLatestVersion]);
+    }, [auto_update, handleUpdate, setIsAfterAutoUpdate, setDialogToShow]);
+
+    return { checkUpdateTariUniverse, handleUpdate, isLoading, handleClose, latestVersion, contentLength, downloaded };
+};
+
+export function useUpdateListener() {
+    const { checkUpdateTariUniverse } = useHandleUpdate();
+    const hasDoneInitialCheck = useRef(false);
 
     useInterval(() => checkUpdateTariUniverse(), UPDATE_CHECK_INTERVAL);
 
     useEffect(() => {
-        const unlistenPromise = onUpdaterEvent(({ error, status }) => {
-            // This will log all updater events, including status updates and errors.
-            console.info('Updater event', error, status);
+        if (hasDoneInitialCheck.current) return;
+        checkUpdateTariUniverse().then(() => {
+            hasDoneInitialCheck.current = true;
         });
-        return () => {
-            unlistenPromise?.then((unlisten) => unlisten());
-        };
-    }, [checkUpdateTariUniverse]);
-
-    useEffect(() => {
-        if (initialCheck.current) return;
-        checkUpdateTariUniverse().then(() => (initialCheck.current = true));
     }, [checkUpdateTariUniverse]);
 }

@@ -1,9 +1,9 @@
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Typography } from '@app/components/elements/Typography';
 import { useMiningStore } from '@app/store/useMiningStore';
+import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MaxConsumptionLevels } from '@app/types/app-status';
-import { invoke } from '@tauri-apps/api/tauri';
 import { RangeInputComponent } from './RangeInput';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import {
