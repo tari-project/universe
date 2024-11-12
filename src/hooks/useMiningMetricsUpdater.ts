@@ -12,6 +12,8 @@ export default function useMiningMetricsUpdater() {
     const baseNodeConnected = useMiningStore((s) => s.base_node.is_connected);
     const setMiningMetrics = useMiningStore((s) => s.setMiningMetrics);
     const handleNewBlock = useBlockchainVisualisationStore((s) => s.handleNewBlock);
+    const displayBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const setDisplayBlockHeight = useBlockchainVisualisationStore((s) => s.setDisplayBlockHeight);
     const [isFetchingMetrics, setIsFetchingMetrics] = useState(false);
 
     return useCallback(async () => {
@@ -30,10 +32,13 @@ export default function useMiningMetricsUpdater() {
                 }
 
                 const blockHeight = metrics.base_node.block_height;
-
                 if (blockHeight > 0 && currentBlockHeight > 0 && blockHeight > currentBlockHeight) {
                     await fetchTx();
                     await handleNewBlock(blockHeight, isMining);
+                } else {
+                    if (blockHeight && !displayBlockHeight) {
+                        setDisplayBlockHeight(blockHeight);
+                    }
                 }
                 setMiningMetrics(metrics);
                 setIsFetchingMetrics(false);
@@ -43,5 +48,14 @@ export default function useMiningMetricsUpdater() {
             console.error('Fetch mining metrics error: ', e);
             setIsFetchingMetrics(false);
         }
-    }, [baseNodeConnected, currentBlockHeight, fetchTx, handleNewBlock, isFetchingMetrics, setMiningMetrics]);
+    }, [
+        baseNodeConnected,
+        currentBlockHeight,
+        displayBlockHeight,
+        fetchTx,
+        handleNewBlock,
+        isFetchingMetrics,
+        setDisplayBlockHeight,
+        setMiningMetrics,
+    ]);
 }
