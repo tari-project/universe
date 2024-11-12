@@ -445,31 +445,31 @@ async fn get_telemetry_data(
     let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
     let p2pool_enabled =
         config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
-    let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
-        if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
-            (
-                Some(randomx_stats.squad.name.clone()),
-                Some(randomx_stats.squad.id.clone()),
-            )
-        } else {
-            (None, None)
-        }
-    } else {
-        (None, None)
-    };
+    // let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
+    //     if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
+    //         (
+    //             Some(randomx_stats.squad.name.clone()),
+    //             Some(randomx_stats.squad.id.clone()),
+    //         )
+    //     } else {
+    //         (None, None)
+    //     }
+    // } else {
+    //     (None, None)
+    // };
 
-    let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
-        if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
-            (
-                Some(sha3_stats.squad.name.clone()),
-                Some(sha3_stats.squad.id.clone()),
-            )
-        } else {
-            (None, None)
-        }
-    } else {
-        (None, None)
-    };
+    // let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
+    //     if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
+    //         (
+    //             Some(sha3_stats.squad.name.clone()),
+    //             Some(sha3_stats.squad.id.clone()),
+    //         )
+    //     } else {
+    //         (None, None)
+    //     }
+    // } else {
+    //     (None, None)
+    // };
 
     let mut extra_data = HashMap::new();
     extra_data.insert(
@@ -493,7 +493,16 @@ async fn get_telemetry_data(
             "p2pool_connected_peers".to_string(),
             stats.connection_info.connected_peers.to_string(),
         );
+        extra_data.insert(
+            "p2pool_rx_height".to_string(),
+            stats.randomx_stats.height.to_string(),
+        );
+        extra_data.insert(
+            "p2pool_sha3_height".to_string(),
+            stats.sha3x_stats.height.to_string(),
+        );
     }
+
     if !all_cpus.is_empty() {
         extra_data.insert("all_cpus".to_string(), all_cpus.join(","));
     }
@@ -516,10 +525,10 @@ async fn get_telemetry_data(
         resource_used,
         version,
         p2pool_enabled,
-        cpu_tribe_name,
-        cpu_tribe_id,
-        gpu_tribe_name,
-        gpu_tribe_id,
+        cpu_tribe_name: None,
+        cpu_tribe_id: None,
+        gpu_tribe_name: None,
+        gpu_tribe_id: None,
         extra_data,
     })
 }
