@@ -21,12 +21,17 @@ const variants = {
         opacity: 1,
         transition,
     },
+    exit: {
+        y: 0,
+        opacity: 1,
+        transition: { ...transition, duration: 0.3, ease: 'easeOut' },
+    },
 };
 
 export const AppContentContainer = styled(m.div).attrs({
     variants,
     animate: 'visible',
-    exit: 'hidden',
+    exit: 'exit',
 })`
     width: 100vw;
     height: 100vh;
