@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable i18next/no-literal-string */
 
 import { addToast } from './useToastStore';
 import { styled } from 'styled-components';
