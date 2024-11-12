@@ -20,7 +20,7 @@ export default function AutoUpdateDialog() {
     const subtitle = isLoading ? 'installing-latest-version' : 'would-you-like-to-install';
 
     return (
-        <Dialog open={open} onOpenChange={handleClose}>
+        <Dialog open={open} onOpenChange={handleClose} disableClose>
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t(subtitle, { version: latestVersion })}</Typography>

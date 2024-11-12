@@ -51,11 +51,11 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     isSettingUp: true,
     setSettingUpFinished: async () => {
         set({ isSettingUp: false });
+        setAnimationState('showVisual');
 
         // Proceed with auto mining when enabled
         const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
         if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-            setAnimationState('showVisual');
             const startMining = useMiningStore.getState().startMining;
             await startMining();
         }
