@@ -7,6 +7,7 @@ import { ExternalDependenciesDialog } from './ExternalDependenciesDialog/Externa
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import PaperWalletModal from './PaperWalletModal/PaperWalletModal.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
+import { ToastStack } from '@app/components/ToastStack/ToastStack.tsx';
 
 export default function FloatingElements() {
     return (
@@ -18,6 +19,7 @@ export default function FloatingElements() {
             <ExternalDependenciesDialog />
             <PaperWalletModal />
             <ShareRewardModal />
+            <ToastStack />
         </FloatingTree>
     );
 }

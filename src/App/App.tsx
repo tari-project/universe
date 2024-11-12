@@ -12,7 +12,6 @@ import { GlobalFontFace } from '../theme/fonts/GlobalFontFaces.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
 
 import AppContent from './AppContent';
-import { ToastStack } from '@app/components/ToastStack/ToastStack.tsx';
 
 export default function App() {
     const isShuttingDown = useShuttingDown();
@@ -36,7 +35,6 @@ export default function App() {
                         {isShuttingDown || isSettingUp ? null : <MainView />}
                         {isShuttingDown ? <ShuttingDownScreen /> : null}
                     </AppContent>
-                    <ToastStack />
                 </MotionConfig>
             </LazyMotion>
         </ThemeProvider>
