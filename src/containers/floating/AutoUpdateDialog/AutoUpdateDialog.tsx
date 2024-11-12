@@ -32,8 +32,6 @@ function AutoUpdateDialog() {
     }, [setIsAfterAutoUpdate]);
 
     const handleUpdate = useCallback(async () => {
-        if (isLoading) return;
-
         setIsLoading(true);
         await installUpdate();
         console.info('Installing latest version of Tari Universe');
@@ -45,9 +43,10 @@ function AutoUpdateDialog() {
             console.error('Relaunch error', e);
         }
         handleClose();
-    }, [isLoading, handleClose]);
+    }, [handleClose]);
 
     const checkUpdateTariUniverse = useCallback(async () => {
+        if (isLoading) return;
         try {
             const { shouldUpdate, manifest } = await checkUpdate();
             if (shouldUpdate) {
@@ -66,7 +65,7 @@ function AutoUpdateDialog() {
             console.error('AutoUpdate error:', error);
             setIsAfterAutoUpdate(true);
         }
-    }, [auto_update, handleUpdate, setIsAfterAutoUpdate]);
+    }, [auto_update, handleUpdate, isLoading, setIsAfterAutoUpdate]);
 
     useInterval(() => checkUpdateTariUniverse(), UPDATE_CHECK_INTERVAL);
 
