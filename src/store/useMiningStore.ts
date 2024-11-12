@@ -119,25 +119,24 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     },
     changeMiningMode: async (params) => {
         const { mode, customGpuLevels, customCpuLevels } = params;
-        console.info('Changing mode...');
+        console.info(`Changing mode to ${mode}...`);
         const state = getState();
-
         set({ isChangingMode: true });
+
         if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
             await state.pauseMining();
         }
         try {
             const appConfigState = useAppConfigStore.getState();
             await appConfigState.setMode({ mode: mode as modeType, customGpuLevels, customCpuLevels });
+            console.info(`Mode changed to ${mode}`);
             if (state.miningInitiated) {
                 await state.startMining();
             }
-
-            console.info(`Mode changed to ${mode}`);
-            set({ isChangingMode: false });
         } catch (e) {
             Sentry.captureException(e);
             console.error('Failed to change mode: ', e);
+        } finally {
             set({ isChangingMode: false });
         }
     },

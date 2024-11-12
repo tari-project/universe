@@ -1,4 +1,4 @@
-use crate::network_utils::get_free_port;
+use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
@@ -32,8 +32,8 @@ pub struct WalletAdapter {
 
 impl WalletAdapter {
     pub fn new(use_tor: bool) -> Self {
-        let tcp_listener_port = get_free_port().unwrap_or(18188);
-        let grpc_port = get_free_port().unwrap_or(18141);
+        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             use_tor,
             base_node_address: None,
