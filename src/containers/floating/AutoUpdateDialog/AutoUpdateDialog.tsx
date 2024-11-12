@@ -17,7 +17,7 @@ import { useInterval } from '@app/hooks/useInterval.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60; // 1 hour
-function AutoUpdateDialog() {
+export default function AutoUpdateDialog() {
     const setIsAfterAutoUpdate = useAppStateStore((s) => s.setIsAfterAutoUpdate);
     const auto_update = useAppConfigStore((s) => s.auto_update);
     const [latestVersion, setLatestVersion] = useState<string>();
@@ -32,7 +32,6 @@ function AutoUpdateDialog() {
     }, [setIsAfterAutoUpdate]);
 
     const handleUpdate = useCallback(async () => {
-        setIsLoading(true);
         await installUpdate();
         console.info('Installing latest version of Tari Universe');
         try {
@@ -50,6 +49,7 @@ function AutoUpdateDialog() {
         try {
             const { shouldUpdate, manifest } = await checkUpdate();
             if (shouldUpdate) {
+                setIsLoading(true);
                 console.info('New Tari Universe version available', manifest);
                 setLatestVersion(manifest?.version);
                 if (auto_update) {
@@ -111,5 +111,3 @@ function AutoUpdateDialog() {
         </Dialog>
     );
 }
-
-export default AutoUpdateDialog;

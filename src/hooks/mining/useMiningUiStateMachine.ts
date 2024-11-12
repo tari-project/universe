@@ -8,26 +8,21 @@ export const useUiMiningStateMachine = () => {
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const gpuIsMining = useMiningStore((s) => s.gpu.mining.is_mining);
-    const isSetupFinished = !useAppStateStore((s) => s.isSettingUp);
+    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const isMining = cpuIsMining || gpuIsMining;
 
     const statusIndex = window?.glApp?.stateManager?.statusIndex;
+    const status = window?.glApp?.stateManager?.status;
 
     useEffect(() => {
-        if (isMining) {
+        if (isMining && status !== 'free') {
             setAnimationState('start');
         }
-    }, [isMining, statusIndex]);
+    }, [statusIndex, isMining, status]);
 
     useEffect(() => {
-        if (isSetupFinished && !isMiningInitiated && !isMining && !isChangingMode) {
+        if (!isSettingUp && !isMiningInitiated && !isMining && !isChangingMode) {
             setAnimationState('stop');
         }
-    }, [isSetupFinished, isMiningInitiated, isMining, statusIndex, isChangingMode]);
-
-    useEffect(() => {
-        if (isMining && isChangingMode) {
-            setAnimationState('stop');
-        }
-    }, [isMining, statusIndex, isChangingMode]);
+    }, [statusIndex, isSettingUp, isMiningInitiated, isMining, isChangingMode]);
 };

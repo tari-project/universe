@@ -9,8 +9,9 @@ import { useAppStateStore } from '@app/store/appStateStore';
 
 export default function useMiningStatesSync() {
     const fetchMiningMetrics = useMiningMetricsUpdater();
-    const fetchWalletDetails = useWalletStore((s) => s.fetchWalletDetails);
+    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const setupProgress = useAppStateStore((s) => s.setupProgress);
+    const fetchWalletDetails = useWalletStore((s) => s.fetchWalletDetails);
 
     useBlockInfo();
     useUiMiningStateMachine();
@@ -20,10 +21,10 @@ export default function useMiningStatesSync() {
         if (setupProgress >= 0.75) {
             await fetchWalletDetails();
         }
-        if (setupProgress >= 1) {
+        if (setupProgress >= 1 && !isSettingUp) {
             await fetchMiningMetrics();
         }
-    }, [fetchMiningMetrics, fetchWalletDetails, setupProgress]);
+    }, [fetchMiningMetrics, fetchWalletDetails, isSettingUp, setupProgress]);
 
     // intervalItems
     useEffect(() => {
