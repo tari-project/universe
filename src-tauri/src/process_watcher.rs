@@ -39,7 +39,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         &mut self,
         base_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
-        self.adapter.kill_previous_instances(base_path)?;
+        self.adapter.kill_previous_instances(base_path).await?;
         Ok(())
     }
 
