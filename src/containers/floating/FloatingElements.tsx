@@ -8,6 +8,7 @@ import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import PaperWalletModal from './PaperWalletModal/PaperWalletModal.tsx';
 import ErrorSnackbar from './Error/ErrorSnackbar.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
+import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
 
 export default function FloatingElements() {
     return (
@@ -20,6 +21,7 @@ export default function FloatingElements() {
             <PaperWalletModal />
             <ShareRewardModal />
             <ErrorSnackbar />
+            <AdminUI />
         </FloatingTree>
     );
 }
