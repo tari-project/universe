@@ -17,7 +17,7 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 const GpuDevices = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const miningAllowed = useAppStateStore((s) => s.setupProgress >= 1);
+    const miningAllowed = useAppStateStore((s) => !s.isSettingUp);
     const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
