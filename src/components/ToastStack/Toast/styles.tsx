@@ -116,13 +116,13 @@ export const ToastContent = styled.div`
 
 export const Title = styled.div`
     font-weight: 500;
-    font-size: 16px;
+    font-size: 14px;
     line-height: 120%;
 `;
 
 export const Text = styled.div`
     font-size: 12px;
-    opacity: 0.7;
+    opacity: 0.8;
     font-weight: 400;
     line-height: 120%;
 `;

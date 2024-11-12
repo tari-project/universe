@@ -12,6 +12,7 @@ interface Toast {
 }
 
 interface ToastStore {
+    showToastTesting: boolean;
     toasts: Toast[];
     addToast: (toast: Toast) => void;
     removeToast: (id: number | string) => void;
@@ -19,6 +20,7 @@ interface ToastStore {
 
 export const useToastStore = create<ToastStore>()(
     devtools((set) => ({
+        showToastTesting: true,
         toasts: [],
         addToast: (toast) =>
             set((state) => {

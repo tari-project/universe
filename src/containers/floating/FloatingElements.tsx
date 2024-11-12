@@ -6,7 +6,6 @@ import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
 import { ExternalDependenciesDialog } from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import PaperWalletModal from './PaperWalletModal/PaperWalletModal.tsx';
-import ErrorSnackbar from './Error/ErrorSnackbar.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 
 export default function FloatingElements() {
@@ -19,7 +18,6 @@ export default function FloatingElements() {
             <ExternalDependenciesDialog />
             <PaperWalletModal />
             <ShareRewardModal />
-            <ErrorSnackbar />
         </FloatingTree>
     );
 }

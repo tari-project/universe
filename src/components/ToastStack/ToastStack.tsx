@@ -1,15 +1,14 @@
 import { useState } from 'react';
-
 import { AnimatePresence } from 'framer-motion';
-
 import { Toast } from './Toast/Toast';
 import { useToastStore } from './useToastStore';
-
+import { useAppStateStore } from '@app/store/appStateStore';
 import { Inside, Wrapper } from './styles';
 import { ToastTesting } from './ToastTesting';
 
 export const ToastStack = () => {
-    const { toasts } = useToastStore();
+    const { toasts, showToastTesting } = useToastStore();
+    const { isSettingUp } = useAppStateStore();
     const [isHovered, setIsHovered] = useState(false);
 
     const handleMouseEnter = () => {
@@ -24,7 +23,7 @@ export const ToastStack = () => {
 
     return (
         <>
-            <Wrapper>
+            <Wrapper $isSettingUp={isSettingUp}>
                 <Inside onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
                     <AnimatePresence>
                         {reversedToasts.map(({ id, title, text, timeout, type }, index) => (
@@ -43,7 +42,7 @@ export const ToastStack = () => {
                 </Inside>
             </Wrapper>
 
-            <ToastTesting />
+            {showToastTesting && <ToastTesting />}
         </>
     );
 };

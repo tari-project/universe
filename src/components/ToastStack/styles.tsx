@@ -1,6 +1,6 @@
 import { styled } from 'styled-components';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $isSettingUp?: boolean }>`
     position: fixed;
     left: 0;
     bottom: 0;
@@ -8,7 +8,8 @@ export const Wrapper = styled.div`
 
     width: 100%;
     pointer-events: none;
-    padding-left: 368px;
+    padding-left: ${({ $isSettingUp }) => ($isSettingUp ? '0' : '368px')};
+    transition: padding-left 0.3s ease;
 `;
 
 export const Inside = styled.div`
