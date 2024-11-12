@@ -1,5 +1,6 @@
 import { useDisableRefresh } from '@app/hooks/useDisableRefresh';
 import { useListenForExternalDependencies } from '@app/hooks/useListenForExternalDependencies';
+import { useUpdateListener } from '@app/hooks/useUpdateStatus';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 
@@ -33,6 +34,7 @@ export default function AppWrapper() {
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
     useDetectMode();
     useDisableRefresh();
+    useUpdateListener();
     useLangaugeResolver();
     useListenForExternalDependencies();
 

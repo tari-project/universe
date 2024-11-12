@@ -12,13 +12,12 @@ export const useUiMiningStateMachine = () => {
     const isMining = cpuIsMining || gpuIsMining;
 
     const statusIndex = window?.glApp?.stateManager?.statusIndex;
-    const status = window?.glApp?.stateManager?.status;
 
     useEffect(() => {
-        if (isMining && status !== 'free') {
+        if (isMining) {
             setAnimationState('start');
         }
-    }, [statusIndex, isMining, status]);
+    }, [statusIndex, isMining]);
 
     useEffect(() => {
         if (!isSettingUp && !isMiningInitiated && !isMining && !isChangingMode) {
