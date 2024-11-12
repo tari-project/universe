@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
 
-use crate::network_utils;
+use crate::port_allocator::PortAllocator;
 use crate::{
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -28,7 +28,7 @@ pub(crate) struct TorAdapter {
 
 impl TorAdapter {
     pub fn new() -> Self {
-        let port = network_utils::get_free_port().unwrap_or(9060);
+        let port = PortAllocator::new().assign_port_with_fallback();
 
         Self {
             socks_port: port,
@@ -198,7 +198,7 @@ impl ProcessAdapter for TorAdapter {
         }
         let mut control_port = self.config.control_port;
         if control_port == 0 {
-            control_port = network_utils::get_free_port().unwrap_or(9061);
+            control_port = PortAllocator::new().assign_port_with_fallback();
         }
 
         let mut args: Vec<String> = vec![

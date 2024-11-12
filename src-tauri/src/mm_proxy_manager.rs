@@ -9,7 +9,7 @@ use tokio::sync::RwLock;
 use tokio::time::sleep;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
-use crate::network_utils;
+use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
@@ -93,7 +93,7 @@ impl MmProxyManager {
             base_node_grpc_port: config.base_node_grpc_port,
             coinbase_extra: config.coinbase_extra.clone(),
             p2pool_enabled: config.p2pool_enabled,
-            port: network_utils::get_free_port().expect("Failed to get free port"),
+            port: PortAllocator::new().assign_port_with_fallback(),
             p2pool_grpc_port: config.p2pool_port,
             monero_nodes: config.monero_nodes.clone(),
             use_monero_fail: config.use_monero_fail,
