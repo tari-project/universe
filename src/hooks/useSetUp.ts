@@ -46,7 +46,9 @@ export function useSetUp() {
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
             switch (p.event_type) {
                 case 'setup_status':
-                    setSetupDetails(p.title, p.title_params, p.progress);
+                    if (p.progress > 0) {
+                        setSetupDetails(p.title, p.title_params, p.progress);
+                    }
                     if (p.progress >= 1) {
                         handlePostSetup().finally(() => setSeenPermissions(true));
                     }
