@@ -213,17 +213,19 @@ jobs:
                   args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
             - name: Debug step {artifactPaths}
-              if: ${{ false }}
               continue-on-error: true
               env:
                   artifactPaths: ${{ steps.build.outputs.artifactPaths }}
+                  path2: ${{ steps.build.outputs.artifactPaths[1] }}
               shell: bash
-              run: echo "Artifact ID from previous job is $artifactPaths"
+              run: echo "Artifact ID from previous job is $artifactPaths | Artifact 1 is $artifactPaths[0] | 2 is $path2"
 
             - name: Upload BETA releases
               if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
               uses: actions/upload-artifact@v4
+              env:
+                  path: ${{ steps.build.outputs.artifactPaths[0] }}
               with:
                   name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
-                  path: index ${{ steps.build.outputs.artifactPaths }} 0
+                  path: ${{ fromJSON(env.path) }}
                   overwrite: true
