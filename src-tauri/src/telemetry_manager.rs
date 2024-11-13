@@ -8,6 +8,7 @@ use crate::{
     node_manager::NodeManager,
 };
 use anyhow::Result;
+use base64::prelude::*;
 use blake2::digest::Update;
 use blake2::digest::VariableOutput;
 use blake2::Blake2bVar;
@@ -16,6 +17,7 @@ use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use sha2::Digest;
 use std::collections::HashMap;
 use std::future::Future;
 use std::ops::Div;
@@ -182,6 +184,7 @@ pub struct TelemetryManager {
     pub cancellation_token: CancellationToken,
     node_network: Option<Network>,
     p2pool_manager: P2poolManager,
+    airdrop_access_token: Arc<RwLock<Option<String>>>,
 }
 
 impl TelemetryManager {
@@ -204,6 +207,7 @@ impl TelemetryManager {
             node_network: network,
             in_memory_config,
             p2pool_manager,
+            airdrop_access_token: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -223,7 +227,26 @@ impl TelemetryManager {
             .expect("Failed to finalize hasher variable");
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
-        let unique_string = format!("v2,{},{}", buf.to_monero_base58(), version,);
+
+        let token_guard = self.airdrop_access_token.read().await;
+        let id: Option<String> = token_guard.clone().and_then(|jwt| {
+            let claims = decode_jwt_claims(&jwt);
+            claims.map(|claim| claim.id)
+        });
+        let id_or_empty = id.unwrap_or("".to_string());
+        let id_as_bytes = id_or_empty.as_bytes();
+
+        let mut sha256_hasher = sha2::Sha256::new();
+        sha2::Digest::update(&mut sha256_hasher, id_as_bytes);
+        let id_sha256 = sha256_hasher.finalize();
+        let id_base64_sha256 = BASE64_STANDARD.encode(id_sha256);
+        let unique_string = format!(
+            "v3,{},{},{}",
+            buf.to_monero_base58(),
+            version,
+            id_base64_sha256
+        );
+
         unique_string
     }
 
@@ -238,19 +261,15 @@ impl TelemetryManager {
         window: tauri::Window,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
-        self.start_telemetry_process(
-            TelemetryFrequency::default().into(),
-            airdrop_access_token,
-            window,
-        )
-        .await?;
+        self.airdrop_access_token = airdrop_access_token.clone();
+        self.start_telemetry_process(TelemetryFrequency::default().into(), window)
+            .await?;
         Ok(())
     }
 
     async fn start_telemetry_process(
         &mut self,
         timeout: Duration,
-        airdrop_access_token: Arc<RwLock<Option<String>>>,
         window: tauri::Window,
     ) -> Result<(), TelemetryManagerError> {
         let node_manager = self.node_manager.clone();
@@ -262,6 +281,7 @@ impl TelemetryManager {
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let p2pool_manager_cloned = self.p2pool_manager.clone();
+        let airdrop_access_token = self.airdrop_access_token.clone();
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
@@ -289,17 +309,7 @@ impl TelemetryManager {
 async fn validate_jwt(airdrop_access_token: Arc<RwLock<Option<String>>>) -> Option<String> {
     let airdrop_access_token_internal = airdrop_access_token.read().await.clone();
     airdrop_access_token_internal.clone().and_then(|t| {
-        let key = DecodingKey::from_secret(&[]);
-        let mut validation = Validation::new(Algorithm::HS256);
-        validation.insecure_disable_signature_validation();
-
-        let claims = match decode::<AirdropAccessToken>(&t, &key, &validation) {
-            Ok(data) => Some(data.claims),
-            Err(e) => {
-                warn!(target: LOG_TARGET,"Error decoding access token: {:?}", e);
-                None
-            }
-        };
+        let claims = decode_jwt_claims(&t);
 
         let now = std::time::SystemTime::now();
         let now_unix = now
@@ -318,6 +328,20 @@ async fn validate_jwt(airdrop_access_token: Arc<RwLock<Option<String>>>) -> Opti
             None
         }
     })
+}
+
+fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
+    let key = DecodingKey::from_secret(&[]);
+    let mut validation = Validation::new(Algorithm::HS256);
+    validation.insecure_disable_signature_validation();
+
+    match decode::<AirdropAccessToken>(t, &key, &validation) {
+        Ok(data) => Some(data.claims),
+        Err(e) => {
+            warn!(target: LOG_TARGET,"Error decoding access token: {:?}", e);
+            None
+        }
+    }
 }
 
 #[allow(clippy::too_many_lines)]
@@ -442,35 +466,35 @@ async fn get_telemetry_data(
         (false, false) => TelemetryResource::None,
     };
 
-    let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
-    let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
+    // let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
+    // let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
     let p2pool_enabled =
         config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
-    let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
-        if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
-            (
-                Some(randomx_stats.squad.name.clone()),
-                Some(randomx_stats.squad.id.clone()),
-            )
-        } else {
-            (None, None)
-        }
-    } else {
-        (None, None)
-    };
+    // let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
+    //     if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
+    //         (
+    //             Some(randomx_stats.squad.name.clone()),
+    //             Some(randomx_stats.squad.id.clone()),
+    //         )
+    //     } else {
+    //         (None, None)
+    //     }
+    // } else {
+    //     (None, None)
+    // };
 
-    let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
-        if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
-            (
-                Some(sha3_stats.squad.name.clone()),
-                Some(sha3_stats.squad.id.clone()),
-            )
-        } else {
-            (None, None)
-        }
-    } else {
-        (None, None)
-    };
+    // let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
+    //     if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
+    //         (
+    //             Some(sha3_stats.squad.name.clone()),
+    //             Some(sha3_stats.squad.id.clone()),
+    //         )
+    //     } else {
+    //         (None, None)
+    //     }
+    // } else {
+    //     (None, None)
+    // };
 
     let mut extra_data = HashMap::new();
     extra_data.insert(
@@ -494,7 +518,16 @@ async fn get_telemetry_data(
             "p2pool_connected_peers".to_string(),
             stats.connection_info.connected_peers.to_string(),
         );
+        extra_data.insert(
+            "p2pool_rx_height".to_string(),
+            stats.randomx_stats.height.to_string(),
+        );
+        extra_data.insert(
+            "p2pool_sha3_height".to_string(),
+            stats.sha3x_stats.height.to_string(),
+        );
     }
+
     if !all_cpus.is_empty() {
         extra_data.insert("all_cpus".to_string(), all_cpus.join(","));
     }
@@ -517,10 +550,10 @@ async fn get_telemetry_data(
         resource_used,
         version,
         p2pool_enabled,
-        cpu_tribe_name,
-        cpu_tribe_id,
-        gpu_tribe_name,
-        gpu_tribe_id,
+        cpu_tribe_name: None,
+        cpu_tribe_id: None,
+        gpu_tribe_name: None,
+        gpu_tribe_id: None,
         extra_data,
     })
 }
