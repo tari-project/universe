@@ -1,7 +1,7 @@
 ---
 name: Beta Release
 
-'on':
+on:
     push:
         paths-ignore:
             - '**/*.md'
@@ -223,9 +223,6 @@ jobs:
             - name: Upload BETA releases
               if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
               uses: actions/upload-artifact@v4
-              env:
-                  path: ${{ steps.build.outputs.artifactPaths[0] }}
               with:
                   name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
-                  path: ${{ fromJSON(env.path) }}
-                  overwrite: true
+                  path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
