@@ -6592,6 +6592,7 @@ dependencies = [
  "async-trait",
  "async_zip",
  "auto-launch",
+ "base64 0.22.1",
  "blake2",
  "chrono",
  "device_query",
