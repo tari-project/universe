@@ -1,6 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
 use log::info;
+use serde::Deserialize;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
@@ -19,7 +20,12 @@ const SHA_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 #[derive(Debug, Deserialize)]
-pub(crate) GpuDetectedSettings {
+pub struct GpuStatusJson {
+    pub gpu_devices: Vec<GpuDetectedSettings>,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct GpuDetectedSettings {
     pub device_index: u32,
     pub device_name: String,
     pub is_available: bool,
@@ -110,7 +116,9 @@ impl GpuMiner {
         }
         match &process_watcher.status_monitor {
             Some(status_monitor) => {
+                // info!(target: LOG_TARGET, "Getting xtrgpuminer status");
                 let mut status = status_monitor.status().await?;
+                // info!(target: LOG_TARGET, "xtrgpuminer status: {:?}", status);
                 let hash_rate = status.hash_rate;
                 let estimated_earnings = if network_hash_rate == 0 {
                     0
@@ -166,8 +174,8 @@ impl GpuMiner {
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
         let gpu_settings = std::fs::read_to_string(output_file)?;
-        let gpu_settings: Vec<GpuDetectedSettings> = serde_json::from_str(&gpu_settings)?;  
-        self.gpu_settings = gpu_settings;
+        let gpu_settings: GpuStatusJson = serde_json::from_str(&gpu_settings)?;  
+        self.gpu_settings = gpu_settings.gpu_devices;
         match output.status.code() {
             Some(0) => {
                 self.is_available = true;

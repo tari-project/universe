@@ -124,6 +124,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         set({ isChangingMode: true });
 
         if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
+            console.log('Pausing mining...');
             await state.pauseMining();
         }
         try {
@@ -131,6 +132,7 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             await appConfigState.setMode({ mode: mode as modeType, customGpuLevels, customCpuLevels });
             console.info(`Mode changed to ${mode}`);
             if (state.miningInitiated) {
+                console.log('Restarting mining...');
                 await state.startMining();
             }
         } catch (e) {
