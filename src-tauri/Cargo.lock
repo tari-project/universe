@@ -6720,12 +6720,13 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.6.6"
+version = "0.6.8"
 dependencies = [
  "anyhow",
  "async-trait",
  "async_zip",
  "auto-launch",
+ "base64 0.22.1",
  "blake2",
  "chrono",
  "device_query",
