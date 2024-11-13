@@ -18,4 +18,4 @@ jobs:
             - name: check lint/prettier errors
               run: npm run lint
             - name: check taplo
-              run: taplo fmt --check
+              run: npm run lint:taplo
