@@ -8,8 +8,6 @@ name: Beta Release
         branches:
             - 'beta'
             - 'build-*'
-    schedule:
-        - cron: '05 00 * * *'
     workflow_dispatch:
 
 concurrency:
@@ -28,7 +26,7 @@ jobs:
         permissions:
             contents: write
         strategy:
-            fail-fast: false
+            fail-fast: true
             matrix:
                 include:
                     - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
@@ -227,5 +225,5 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                   name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
-                  path: ${{ steps.build.outputs.artifactPaths[0] }}
+                  path: index ${{ steps.build.outputs.artifactPaths }} 0
                   overwrite: true
