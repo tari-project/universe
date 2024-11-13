@@ -31,7 +31,7 @@ use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 #[tauri::command]
 pub async fn set_mode(
@@ -1089,7 +1089,7 @@ pub async fn get_tor_entry_guards(
 #[tauri::command]
 pub async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
+    app: tauri::AppHandle,
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
     if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
@@ -1189,6 +1189,7 @@ pub async fn get_miner_metrics(
         .is_getting_miner_metrics
         .store(false, Ordering::SeqCst);
 
+    app.emit("miner_metrics", &ret).unwrap();
     Ok(ret)
 }
 

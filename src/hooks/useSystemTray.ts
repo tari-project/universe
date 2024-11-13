@@ -6,11 +6,13 @@ import { Menu } from '@tauri-apps/api/menu';
 import { MenuOptions } from '@tauri-apps/api/menu/menu';
 import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
 import { TrayIcon } from '@tauri-apps/api/tray';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 const TRAY_ID = 'universe-tray-icon';
 const defaultIconPath = 'icons/systray_icon.ico';
 const darkIconPath = 'icons/icon.png';
+const appWindow = getCurrentWebviewWindow();
 
 export function useSystemTray() {
     const hasUpdates = useRef(false);
@@ -41,7 +43,7 @@ export function useSystemTray() {
             item: 'Minimize',
             text: 'Minimize',
         } as PredefinedMenuItemOptions;
-
+        // TODO use listener
         hasUpdates.current = Boolean(totalEarningsFormatted || gpuUsage || cpuUsage || cpu_h || gpu_h);
         return [
             {
@@ -72,6 +74,14 @@ export function useSystemTray() {
                 enabled: false,
             },
             minimize,
+            {
+                id: 'unminimize',
+                text: 'Unminimize',
+                enabled: appWindow.isMinimized(),
+                action: () => {
+                    appWindow.unminimize();
+                },
+            },
         ] as MenuOptions['items'];
     }, [cpuUsage, cpu_h, gpuUsage, gpu_h, totalEarningsFormatted]);
 

@@ -20,6 +20,7 @@ use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::RwLock;
 
 use crate::cpu_miner::CpuMiner;
+#[cfg(target_os = "windows")]
 use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
@@ -815,8 +816,7 @@ fn main() {
     // let mut downloaded: u64 = 0;
     app.run(move |_app_handle, event| match event {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
-            // api.prevent_exit();
-            info!(target: LOG_TARGET, "App shutdown caught");
+            info!(target: LOG_TARGET, "App shutdown request caught");
             let _unused = block_on(stop_all_miners(app_state.clone(), 2));
             info!(target: LOG_TARGET, "App shutdown complete");
         }

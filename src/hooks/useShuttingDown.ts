@@ -7,10 +7,9 @@ export function useShuttingDown() {
     const [isShuttingDown, setIsShuttingDown] = useState(false);
 
     useEffect(() => {
-        const ul = appWindow.onCloseRequested(async (e) => {
-            if (!isShuttingDown) {
+        const ul = appWindow.onCloseRequested(async (event) => {
+            if (!isShuttingDown && !event.isPreventDefault()) {
                 setIsShuttingDown(true);
-                e.preventDefault();
             }
         });
         return () => {
@@ -22,7 +21,6 @@ export function useShuttingDown() {
         if (isShuttingDown) {
             setTimeout(async () => {
                 resetAllStores();
-                await appWindow.destroy();
             }, 250);
         }
     }, [isShuttingDown]);
