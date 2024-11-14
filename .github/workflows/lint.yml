@@ -17,3 +17,5 @@ jobs:
               run: npm ci
             - name: check lint/prettier errors
               run: npm run lint
+            - name: check taplo
+              run: npm run lint:taplo
