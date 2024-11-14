@@ -60,12 +60,6 @@ export const NavItem = styled(m.div)<{ $selected?: boolean }>`
     &:hover {
         transform: scaleY(2);
     }
-
-    ${({ $selected }) =>
-        $selected &&
-        css`
-            pointer-events: none;
-        `};
 `;
 
 export const NavItemCurrent = styled(m.div)`
