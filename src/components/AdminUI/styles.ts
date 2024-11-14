@@ -39,16 +39,18 @@ export const MenuWrapper = styled(m.div)`
     right: 30px;
     z-index: 99999;
 
-    max-width: 330px;
+    max-width: 350px;
 `;
 
 export const MenuContent = styled(m.div)`
     background: rgba(0, 0, 0, 0.8);
-    padding: 10px;
+    padding: 20px;
     border-radius: 8px;
+
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
+
     min-width: 200px;
     max-height: calc(100vh - 100px);
     overflow-y: auto;
@@ -75,13 +77,17 @@ export const CategoryLabel = styled('div')`
     color: #999;
     font-size: 11px;
     text-transform: uppercase;
-    margin-top: 8px;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
     border-bottom: 1px solid #666;
 `;
 
 export const ButtonGroup = styled('div')`
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
+    gap: 6px;
+    padding-bottom: 10px;
+
+    &:last-child {
+        padding-bottom: 0;
+    }
 `;
