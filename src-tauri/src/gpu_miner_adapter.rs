@@ -44,19 +44,42 @@ impl GpuMinerAdapter {
     pub fn new(gpu_devices: Vec<GpuDetectedSettings>) -> Self {
         Self {
             tari_address: TariAddress::default(),
-            gpu_grid_size: gpu_devices.iter().map(|x| GpuThreads{gpu_name: x.device_name.clone(),max_gpu_threads:x.max_grid_size}).collect(),
+            gpu_grid_size: gpu_devices
+                .iter()
+                .map(|x| GpuThreads {
+                    gpu_name: x.device_name.clone(),
+                    max_gpu_threads: x.max_grid_size,
+                })
+                .collect(),
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
             excluded_gpu_devices: vec![],
-            gpu_devices
-
+            gpu_devices,
         }
     }
 
     pub fn set_mode(&mut self, mode: MiningMode, custom_max_gpus_grid_size: Vec<GpuThreads>) {
         match mode {
-            MiningMode::Eco => self.gpu_grid_size = self.gpu_devices.iter().map(|x| GpuThreads{gpu_name: x.device_name.clone(),max_gpu_threads:ECO_MODE_GPU_GRID_SIZE}).collect(),
-            MiningMode::Ludicrous => self.gpu_grid_size = self.gpu_devices.iter().map(|x| GpuThreads{gpu_name: x.device_name.clone(),max_gpu_threads:LUDICROUS_MODE_GPU_GRID_SIZE}).collect(),
+            MiningMode::Eco => {
+                self.gpu_grid_size = self
+                    .gpu_devices
+                    .iter()
+                    .map(|x| GpuThreads {
+                        gpu_name: x.device_name.clone(),
+                        max_gpu_threads: ECO_MODE_GPU_GRID_SIZE,
+                    })
+                    .collect()
+            }
+            MiningMode::Ludicrous => {
+                self.gpu_grid_size = self
+                    .gpu_devices
+                    .iter()
+                    .map(|x| GpuThreads {
+                        gpu_name: x.device_name.clone(),
+                        max_gpu_threads: LUDICROUS_MODE_GPU_GRID_SIZE,
+                    })
+                    .collect()
+            }
             MiningMode::Custom => {
                 self.gpu_grid_size = custom_max_gpus_grid_size;
             }
@@ -99,7 +122,12 @@ impl ProcessAdapter for GpuMinerAdapter {
             }
         };
 
-        let grid_size = self.gpu_grid_size.iter().map(|x| x.max_gpu_threads.clone().to_string()).collect::<Vec<_>>().join(",");
+        let grid_size = self
+            .gpu_grid_size
+            .iter()
+            .map(|x| x.max_gpu_threads.clone().to_string())
+            .collect::<Vec<_>>()
+            .join(",");
         info!(target: LOG_TARGET, "Gpu miner grid size: {}", grid_size);
 
         let mut args: Vec<String> = vec![

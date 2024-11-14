@@ -25,7 +25,7 @@ pub struct GpuStatusJson {
     pub gpu_devices: Vec<GpuDetectedSettings>,
 }
 
-#[derive(Debug, Deserialize,Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub(crate) struct GpuDetectedSettings {
     pub device_index: u32,
     pub device_name: String,
@@ -176,7 +176,7 @@ impl GpuMiner {
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
         let gpu_settings = std::fs::read_to_string(output_file)?;
-        let gpu_settings: GpuStatusJson = serde_json::from_str(&gpu_settings)?;  
+        let gpu_settings: GpuStatusJson = serde_json::from_str(&gpu_settings)?;
         self.gpu_devices = gpu_settings.gpu_devices;
         match output.status.code() {
             Some(0) => {

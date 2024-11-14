@@ -192,7 +192,9 @@ async fn set_mode(
 }
 
 #[tauri::command]
-async fn get_max_consumption_levels(state: tauri::State<'_, UniverseAppState>) -> Result<MaxConsumptionLevels, String> {
+async fn get_max_consumption_levels(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<MaxConsumptionLevels, String> {
     // CPU Detection
     let timer = Instant::now();
     let max_cpu_available = available_parallelism()
@@ -203,7 +205,13 @@ async fn get_max_consumption_levels(state: tauri::State<'_, UniverseAppState>) -
         warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
     }
 
-    let gpu_devices = state.gpu_miner.read().await.get_gpu_devices().await.map_err(|e| e.to_string())?;
+    let gpu_devices = state
+        .gpu_miner
+        .read()
+        .await
+        .get_gpu_devices()
+        .await
+        .map_err(|e| e.to_string())?;
 
     let mut max_gpus_threads = Vec::new();
     for gpu_device in gpu_devices {
@@ -218,7 +226,6 @@ async fn get_max_consumption_levels(state: tauri::State<'_, UniverseAppState>) -
         max_cpu_threads: max_cpu_available,
         max_gpus_threads,
     })
-
 }
 
 #[tauri::command]

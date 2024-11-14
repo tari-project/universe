@@ -169,7 +169,7 @@ impl MiningMode {
     }
 }
 
-#[derive(Debug, Serialize,Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GpuThreads {
     pub gpu_name: String,
     pub max_gpu_threads: u32,
