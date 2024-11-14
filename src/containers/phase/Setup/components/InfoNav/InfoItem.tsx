@@ -1,13 +1,9 @@
-import { useTranslation } from 'react-i18next';
 import { Container, Heading, Copy, AnimatedTextContainer } from './InfoNav.styles';
 import { m, Variants } from 'framer-motion';
-const emojis = {
-    'step-1': ['💜', '🐢'],
-    'step-6': ['🙏'],
-};
 
 interface InfoItemProps {
-    step?: number;
+    title: string;
+    text: string;
 }
 
 const container: Variants = {
@@ -51,24 +47,14 @@ function AnimatedLetters({ text }: { text: string }) {
     );
 }
 
-export default function InfoItem({ step = 1 }: InfoItemProps) {
-    const { t } = useTranslation('info');
-    const stepEmojis = emojis[`step-${step}`];
-
-    const emojiParams = {};
-    if (stepEmojis?.length) {
-        stepEmojis.forEach((e: string, i: number) => (emojiParams[`emoji${i > 0 ? i : ''}`] = e));
-    }
-
-    const headingText = t(`heading.step-${step}`);
-    const copyText = t(`content.step-${step}`, { ...emojiParams });
+export default function InfoItem({ title, text }: InfoItemProps) {
     return (
         <Container>
             <Heading>
-                <AnimatedLetters text={headingText} />
+                <AnimatedLetters text={title} />
             </Heading>
             <Copy>
-                <AnimatedLetters text={copyText} />
+                <AnimatedLetters text={text} />
             </Copy>
         </Container>
     );
