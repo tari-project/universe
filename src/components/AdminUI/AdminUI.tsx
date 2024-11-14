@@ -25,7 +25,7 @@ export default function AdminUI() {
     return (
         <>
             <ToggleButton ref={refs.setReference} {...getReferenceProps()}>
-                UI Debug
+                Admin UI
             </ToggleButton>
             {isOpen && (
                 <MenuWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
