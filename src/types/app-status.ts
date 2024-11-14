@@ -30,7 +30,7 @@ export interface AppConfig {
     use_tor: boolean;
     auto_update: boolean;
     custom_max_cpu_usage: number;
-    custom_max_gpu_usage: number;
+    custom_max_gpu_usage: GpuThreads[];
     custom_power_levels_enabled: boolean;
     reset_earnings: boolean;
     mmproxy_use_monero_fail: boolean;
@@ -221,7 +221,11 @@ export interface PaperWalletDetails {
     password: string;
 }
 
+export interface GpuThreads {
+    gpu_name: string;
+    max_gpu_threads: number;
+}
 export interface MaxConsumptionLevels {
-    max_cpu_available: number;
-    max_gpu_available: number;
+    max_cpu_threads: number;
+    max_gpus_threads: GpuThreads[];
 }

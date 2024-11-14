@@ -18,7 +18,8 @@
     "choose-gpu-power-level": "Choose how much you want your GPU to be allocated to mining <span>({{current}} out of {{max}} threads)</span>",
     "choose-cpu-power-level": "Choose how much you want your CPU to be allocated to mining <span>({{current}} out of {{max}} cores)</span>",
     "cpu-warning": "Sustained high CPU usage may cause overheating, and hardware failure.",
-    "gpu-warning": "Sustained high GPU usage may cause overheating, and hardware failure."
+    "gpu-warning": "Sustained high GPU usage may cause overheating, and hardware failure.",
+    "save-changes": "Save Changes"
   },
   "debug-info": "Debug",
   "disconnect": "Disconnect from Airdrop",

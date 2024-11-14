@@ -7,6 +7,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
+use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::process_utils;
@@ -24,7 +25,7 @@ pub struct GpuStatusJson {
     pub gpu_devices: Vec<GpuDetectedSettings>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize,Clone)]
 pub(crate) struct GpuDetectedSettings {
     pub device_index: u32,
     pub device_name: String,
@@ -37,18 +38,18 @@ pub(crate) struct GpuDetectedSettings {
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
     is_available: bool,
-    gpu_settings: Vec<GpuDetectedSettings>,
+    gpu_devices: Vec<GpuDetectedSettings>,
     excluded_gpu_devices: Vec<u8>,
 }
 
 impl GpuMiner {
     pub fn new() -> Self {
-        let adapter = GpuMinerAdapter::new();
+        let adapter = GpuMinerAdapter::new(vec![]);
         let process_watcher = ProcessWatcher::new(adapter);
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             is_available: false,
-            gpu_settings: vec![],
+            gpu_devices: vec![],
             excluded_gpu_devices: vec![],
         }
     }
@@ -64,10 +65,11 @@ impl GpuMiner {
         log_path: PathBuf,
         mining_mode: MiningMode,
         coinbase_extra: String,
-        custom_gpu_grid_size: Option<u16>,
+        custom_gpu_grid_size: Vec<GpuThreads>,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
+        process_watcher.adapter.gpu_devices = self.gpu_devices.clone();
         process_watcher
             .adapter
             .set_mode(mining_mode, custom_gpu_grid_size);
@@ -175,7 +177,7 @@ impl GpuMiner {
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
         let gpu_settings = std::fs::read_to_string(output_file)?;
         let gpu_settings: GpuStatusJson = serde_json::from_str(&gpu_settings)?;  
-        self.gpu_settings = gpu_settings.gpu_devices;
+        self.gpu_devices = gpu_settings.gpu_devices;
         match output.status.code() {
             Some(0) => {
                 self.is_available = true;
@@ -201,5 +203,9 @@ impl GpuMiner {
     ) -> Result<(), anyhow::Error> {
         self.excluded_gpu_devices = excluded_gpu_devices;
         Ok(())
+    }
+
+    pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDetectedSettings>, anyhow::Error> {
+        Ok(self.gpu_devices.clone())
     }
 }
