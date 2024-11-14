@@ -77,7 +77,7 @@ export const useHandleUpdate = () => {
         console.info('Installing latest version of Tari Universe');
         try {
             console.info('Restarting application after update');
-            await invoke('restart_application');
+            await invoke('restart_application', { shouldStopMiners: false });
         } catch (e) {
             Sentry.captureException(e);
             console.error('Relaunch error', e);

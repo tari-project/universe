@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/tauri';
 
@@ -11,7 +11,7 @@ import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
-    const [isInitializing, setIsInitializing] = useState(false);
+    const isInitializingRef = useRef(false);
     const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
 
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
@@ -58,28 +58,16 @@ export function useSetUp() {
                     break;
             }
         });
-        if (isAfterAutoUpdate && !isInitializing) {
-            setIsInitializing(true);
+        if (isAfterAutoUpdate && !isInitializingRef.current) {
+            isInitializingRef.current = true;
             clearStorage();
-            invoke('setup_application')
-                .catch((e) => {
-                    Sentry.captureException(e);
-                    setCriticalError(`Failed to setup application: ${e}`);
-                })
-                .then(() => {
-                    setIsInitializing(false);
-                });
+            invoke('setup_application').catch((e) => {
+                Sentry.captureException(e);
+                setCriticalError(`Failed to setup application: ${e}`);
+            });
         }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [
-        clearStorage,
-        handlePostSetup,
-        isAfterAutoUpdate,
-        isInitializing,
-        setCriticalError,
-        setSeenPermissions,
-        setSetupDetails,
-    ]);
+    }, [clearStorage, handlePostSetup, isAfterAutoUpdate, setCriticalError, setSeenPermissions, setSetupDetails]);
 }
