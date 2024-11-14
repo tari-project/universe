@@ -13,13 +13,9 @@ const emojis = {
     'step-6': ['🙏'],
 };
 
-const slideTime = {
-    'step-1': 6,
-    'step-2': 8,
-    'step-3': 7,
-    'step-4': 6,
-    'step-5': 9,
-    'step-6': 6,
+const calculateReadingTime = (text) => {
+    const words = text.split(' ').length;
+    return (words / 350) * 60 + 2; // Convert to seconds + 3s for a pause
 };
 
 export default function InfoNav() {
@@ -40,27 +36,6 @@ export default function InfoNav() {
         });
     };
 
-    const sliderMarkup = steps?.map((step) => {
-        const key = `nav-item-${step}`;
-        const isSelected = currentStep === step;
-
-        return (
-            <NavItem key={key} $selected={isSelected} onClick={() => handleStepClick(step)}>
-                <LinearProgress value={0} variant="tiny" />
-                {isSelected ? (
-                    <NavItemCurrent layoutId="selected" key={`selected:${key}`}>
-                        <LinearProgress
-                            value={100}
-                            duration={slideTime[`step-${currentStep}`]}
-                            variant="tiny"
-                            onAnimationComplete={handleNextStep}
-                        />
-                    </NavItemCurrent>
-                ) : null}
-            </NavItem>
-        );
-    });
-
     const stepEmojis = emojis[`step-${currentStep}`];
 
     const emojiParams = {};
@@ -70,6 +45,28 @@ export default function InfoNav() {
 
     const title = t(`heading.step-${currentStep}`);
     const text = t(`content.step-${currentStep}`, { ...emojiParams });
+
+    const sliderMarkup = steps?.map((step) => {
+        const key = `nav-item-${step}`;
+        const isSelected = currentStep === step;
+        const duration = calculateReadingTime(title + text);
+
+        return (
+            <NavItem key={key} $selected={isSelected} onClick={() => handleStepClick(step)}>
+                <LinearProgress value={0} variant="tiny" />
+                {isSelected ? (
+                    <NavItemCurrent layoutId="selected" key={`selected:${key}`}>
+                        <LinearProgress
+                            value={100}
+                            duration={duration}
+                            variant="tiny"
+                            onAnimationComplete={handleNextStep}
+                        />
+                    </NavItemCurrent>
+                ) : null}
+            </NavItem>
+        );
+    });
 
     return (
         <NavContainer>
