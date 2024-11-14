@@ -8,7 +8,7 @@ import styled from 'styled-components';
 const Wrapper = styled.div`
     display: flex;
     height: 45px;
-    padding: 11px;
+    padding: 11px 11px 11px 20px;
     justify-content: center;
     align-items: center;
     border-radius: 60px;

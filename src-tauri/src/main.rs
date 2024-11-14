@@ -486,11 +486,15 @@ async fn set_monerod_config(
 
 #[tauri::command]
 async fn restart_application(
+    should_stop_miners: bool,
     _window: tauri::Window,
-    _state: tauri::State<'_, UniverseAppState>,
+    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    // This restart doesn't need to shutdown all the miners
+    if should_stop_miners {
+        stop_all_miners(state.inner().clone(), 5).await?;
+    }
+
     app.restart();
     Ok(())
 }
