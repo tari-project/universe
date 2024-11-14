@@ -1,3 +1,4 @@
+use crate::github::request_client::RequestClient;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
@@ -39,12 +40,12 @@ pub async fn download_file_with_retries(
     }
 }
 
-async fn download_file(
+pub async fn download_file(
     url: &str,
     destination: &Path,
     progress_tracker: ProgressTracker,
 ) -> Result<(), anyhow::Error> {
-    let response = reqwest::get(url).await?;
+    let response = RequestClient::current().send_get_request(url).await?;
 
     // Ensure the directory exists
     if let Some(parent) = destination.parent() {
@@ -57,9 +58,9 @@ async fn download_file(
     // Stream the response body directly to the file
     let mut stream = response.bytes_stream();
     while let Some(item) = stream.next().await {
-        let _ = progress_tracker
-            .update("downloading".to_string(), None, 10)
-            .await;
+        // let _ = progress_tracker
+        //     .update("downloading".to_string(), None, 10)
+        //     .await;
         dest.write_all(&item?).await?;
     }
 

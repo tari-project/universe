@@ -1,14 +1,18 @@
-use anyhow::anyhow;
+mod cache;
+pub mod request_client;
+
+use cache::CacheJsonFile;
 use log::{debug, info, warn};
-use reqwest::Client;
-use serde::Deserialize;
+use request_client::RequestClient;
+use reqwest::Response;
+use serde::{Deserialize, Serialize};
 
 use crate::binaries::binaries_resolver::{VersionAsset, VersionDownloadInfo};
 
 const LOG_TARGET: &str = "tari::universe::github";
 
 #[derive(Deserialize)]
-struct Release {
+pub struct Release {
     name: String,
     tag_name: String,
     draft: bool,
@@ -20,11 +24,20 @@ struct Asset {
     name: String,
     browser_download_url: String,
 }
-
-#[derive(Debug)]
-enum ReleaseSource {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ReleaseSource {
     Github,
     Mirror,
+}
+
+impl ReleaseSource {
+    pub fn is_github(&self) -> bool {
+        matches!(self, ReleaseSource::Github)
+    }
+
+    pub fn is_mirror(&self) -> bool {
+        matches!(self, ReleaseSource::Mirror)
+    }
 }
 
 pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
@@ -59,35 +72,41 @@ pub async fn list_releases(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
-    let mut attempts = 0;
-    let mut releases = loop {
-        match list_releases_from(ReleaseSource::Mirror, repo_owner, repo_name).await {
-            Ok(r) => break r,
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to fetch releases from mirror: {}", e);
-            }
-        };
-        attempts += 1;
-        warn!(
-            target: LOG_TARGET,
-            "Failed to fetch releases from mirror, attempt {}",
-            attempts
-        );
-    };
-    // Add any missing releases from github
-    let github_releases = list_releases_from(ReleaseSource::Github, repo_owner, repo_name)
+    info!(target: LOG_TARGET, "Reading cache releases for {}/{}", repo_owner, repo_name);
+    CacheJsonFile::current()
+        .write()
+        .await
+        .read_version_releases_responses_cache_file()?;
+
+    info!(target: LOG_TARGET, "Fetching mirror releases for {}/{}", repo_owner, repo_name);
+
+    let mut mirror_releases = list_mirror_releases(repo_owner, repo_name)
+        .await
+        .inspect_err(|e| {
+            warn!(target: LOG_TARGET, "Failed to fetch releases from Mirror: {}", e);
+        })
+        .unwrap_or_default();
+
+    info!(target: LOG_TARGET, "Found {} releases from mirror", mirror_releases.len());
+
+    info!(target: LOG_TARGET, "Fetching github releases for {}/{}", repo_owner, repo_name);
+
+    let github_releases = list_github_releases(repo_owner, repo_name)
         .await
         .inspect_err(|e| {
             warn!(target: LOG_TARGET, "Failed to fetch releases from Github: {}", e);
         })
         .unwrap_or_default();
 
+    info!(target: LOG_TARGET, "Found {} releases from Github", github_releases.len());
+
+    // Add any missing releases from github
     for release in &github_releases {
-        if !releases.iter().any(|r| r.version == release.version) {
-            releases.push(release.clone());
+        if !mirror_releases.iter().any(|r| r.version == release.version) {
+            mirror_releases.push(release.clone());
         }
     }
-    Ok(releases)
+    Ok(mirror_releases)
 
     // if releases.as_ref().map_or(false, |r| !r.is_empty()) {
     //     releases
@@ -96,35 +115,149 @@ pub async fn list_releases(
     // }
 }
 
-async fn list_releases_from(
-    source: ReleaseSource,
+async fn list_mirror_releases(
     repo_owner: &str,
     repo_name: &str,
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
-    let client = Client::new();
-    let url = match source {
-        ReleaseSource::Github => get_gh_url(repo_owner, repo_name),
-        ReleaseSource::Mirror => get_mirror_url(repo_owner, repo_name),
-    };
+    let url = get_mirror_url(repo_owner, repo_name);
+    info!(target: LOG_TARGET, "Mirror releases url: {}", url);
 
-    let response = client
-        .get(&url)
-        .header("User-Agent", "request")
-        .send()
-        .await?;
-    if response.status() != 200 {
-        return Err(anyhow!(
-            "Failed to fetch releases for {}:{}: {} - ",
-            repo_owner,
-            repo_name,
-            response.status()
-        ));
+    let (need_to_download, cache_entry_present, response) =
+        check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Mirror).await?;
+
+    info!(target: LOG_TARGET, "Mirror releases need to download: {}", need_to_download);
+    info!(target: LOG_TARGET, "Mirror releases cache entry present: {}", cache_entry_present);
+
+    let mut versions_list: Vec<VersionDownloadInfo> = vec![];
+    let mut does_hit = response
+        .and_then(|res| {
+            Some(
+                RequestClient::current()
+                    .get_cf_cache_status_from_head_response(&res)
+                    .is_hit(),
+            )
+        })
+        .unwrap_or(false);
+
+    info!(target: LOG_TARGET, "Mirror releases cache hit: {}", does_hit);
+
+    if need_to_download && !does_hit {
+        does_hit = RequestClient::current().check_if_cache_hits(&url).await?;
     }
-    let data = response.text().await?;
-    let releases: Vec<Release> = serde_json::from_str(&data)?;
 
-    debug!(target: LOG_TARGET, "Releases for {}/{}:", repo_owner, repo_name);
-    let mut res = vec![];
+    let mut cache_json_file_lock = CacheJsonFile::current().write().await;
+
+    if does_hit && need_to_download {
+        let (response, etag) = RequestClient::current()
+            .fetch_get_versions_download_info(&url)
+            .await?;
+        let remote_versions_list =
+            extract_versions_from_release(repo_owner, repo_name, response, ReleaseSource::Mirror)
+                .await?;
+
+        if cache_entry_present {
+            cache_json_file_lock.update_cache_entry(repo_owner, repo_name, None, Some(etag))?;
+        } else {
+            cache_json_file_lock.create_cache_entry(repo_owner, repo_name, None, Some(etag))?;
+        };
+        versions_list.extend(remote_versions_list);
+        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
+    } else {
+        let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
+        versions_list.extend(content);
+    }
+
+    Ok(versions_list)
+}
+
+async fn list_github_releases(
+    repo_owner: &str,
+    repo_name: &str,
+) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
+    let url = get_gh_url(repo_owner, repo_name);
+    info!(target: LOG_TARGET, "Github releases url: {}", url);
+
+    let (need_to_download, cache_entry_present, _) =
+        check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Github).await?;
+
+    info!(target: LOG_TARGET, "Github releases need to download: {}", need_to_download);
+    info!(target: LOG_TARGET, "Github releases cache entry present: {}", cache_entry_present);
+
+    let mut versions_list: Vec<VersionDownloadInfo> = vec![];
+
+    let mut cache_json_file_lock = CacheJsonFile::current().write().await;
+
+    if need_to_download {
+        let (response, etag) = RequestClient::current()
+            .fetch_get_versions_download_info(&url)
+            .await?;
+        let remote_versions_list =
+            extract_versions_from_release(repo_owner, repo_name, response, ReleaseSource::Github)
+                .await?;
+
+        if cache_entry_present {
+            cache_json_file_lock.update_cache_entry(repo_owner, repo_name, Some(etag), None)?;
+        } else {
+            cache_json_file_lock.create_cache_entry(repo_owner, repo_name, Some(etag), None)?;
+        };
+
+        versions_list.extend(remote_versions_list);
+        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
+    } else {
+        let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
+        versions_list.extend(content);
+    }
+
+    Ok(versions_list)
+}
+
+async fn check_if_need_download(
+    repo_owner: &str,
+    repo_name: &str,
+    url: &str,
+    source: ReleaseSource,
+) -> Result<(bool, bool, Option<Response>), anyhow::Error> {
+    let cache_json_file_lock = CacheJsonFile::current().write().await;
+    let cache_entry = cache_json_file_lock.get_cache_entry(repo_owner, repo_name);
+    let mut need_to_download = false;
+    let cache_entry_present = cache_entry.is_some();
+
+    match cache_entry {
+        Some(cache_entry) => {
+            if !cache_json_file_lock.chech_if_content_file_exist(repo_owner, repo_name) {
+                need_to_download = true;
+            }
+
+            let response = RequestClient::current().send_head_request(url).await?;
+            let remote_etag = RequestClient::current().get_etag_from_head_response(&response);
+            let local_etag = match source {
+                ReleaseSource::Mirror => cache_entry.mirror_etag.clone(),
+                ReleaseSource::Github => cache_entry.github_etag.clone(),
+            };
+
+            info!(target: LOG_TARGET, "Remote etag: {}", remote_etag);
+            info!(target: LOG_TARGET, "Local etag: {:?}", cache_entry);
+
+            if !remote_etag.eq(&local_etag.unwrap_or("".to_string())) {
+                need_to_download = true
+            };
+
+            Ok((need_to_download, cache_entry_present, Some(response)))
+        }
+        None => {
+            need_to_download = true;
+            Ok((need_to_download, cache_entry_present, None))
+        }
+    }
+}
+
+async fn extract_versions_from_release(
+    repo_owner: &str,
+    repo_name: &str,
+    releases: Vec<Release>,
+    source: ReleaseSource,
+) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
+    let mut versions_list = vec![];
     for release in releases {
         if release.draft {
             continue;
@@ -136,7 +269,6 @@ async fn list_releases_from(
         // Remove any v prefix
         let release_name = release.tag_name.trim_start_matches('v').to_string();
         debug!(target: LOG_TARGET, " - release: {}", release_name);
-        // res.push(semver::Version::parse(&tag_name)?);
         let mut assets = vec![];
         for asset in release.assets {
             let url = match source {
@@ -149,11 +281,12 @@ async fn list_releases_from(
             assets.push(VersionAsset {
                 url,
                 name: asset.name,
+                source: source.clone(),
             });
         }
         match semver::Version::parse(&release_name) {
             Ok(v) => {
-                res.push(VersionDownloadInfo { version: v, assets });
+                versions_list.push(VersionDownloadInfo { version: v, assets });
             }
             Err(e) => {
                 info!(target: LOG_TARGET, "Failed to parse {:?} version: {}", release_name, e);
@@ -162,5 +295,5 @@ async fn list_releases_from(
         }
     }
 
-    Ok(res)
+    Ok(versions_list)
 }

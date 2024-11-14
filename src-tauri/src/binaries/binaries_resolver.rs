@@ -1,8 +1,11 @@
+use crate::github::ReleaseSource;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use log::info;
 use regex::Regex;
 use semver::Version;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -15,19 +18,22 @@ use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
+pub const LOG_TARGET: &str = "tari::universe::binary_resolver";
+
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionDownloadInfo {
     pub(crate) version: Version,
     pub(crate) assets: Vec<VersionAsset>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionAsset {
     pub(crate) url: String,
     pub(crate) name: String,
+    pub(crate) source: ReleaseSource,
 }
 
 #[async_trait]
@@ -208,6 +214,8 @@ impl BinaryResolver {
         progress_tracker: ProgressTracker,
         should_check_for_update: bool,
     ) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "Initializing binary: {} | should check for update: {}", binary.name(), should_check_for_update);
+
         let manager = self
             .managers
             .get_mut(&binary)
@@ -215,7 +223,7 @@ impl BinaryResolver {
 
         manager.read_local_versions().await;
 
-        if should_check_for_update {
+        if true {
             // Will populate Vec of downloaded versions that meet the requirements
             manager.check_for_updates().await;
         }
