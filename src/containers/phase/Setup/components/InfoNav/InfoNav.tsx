@@ -15,7 +15,7 @@ const emojis = {
 
 const calculateReadingTime = (text) => {
     const words = text.split(' ').length;
-    return (words / 350) * 60 + 2; // Convert to seconds + 3s for a pause
+    return (words / 350) * 60 + 2; // Convert to seconds + 2s for a pause
 };
 
 export default function InfoNav() {
