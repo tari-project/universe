@@ -4,11 +4,26 @@ import { AnimatePresence } from 'framer-motion';
 import { useCallback, useState } from 'react';
 import InfoItem from './InfoItem';
 import { Nav, NavContainer, NavItem, NavItemCurrent } from './InfoNav.styles';
+import { useTranslation } from 'react-i18next';
 
-const STEP_TIME_SECONDS = 9;
 const steps = Array.from({ length: 6 }, (_, i) => i + 1);
 
+const emojis = {
+    'step-1': ['💜', '🐢'],
+    'step-6': ['🙏'],
+};
+
+const slideTime = {
+    'step-1': 6,
+    'step-2': 8,
+    'step-3': 7,
+    'step-4': 6,
+    'step-5': 9,
+    'step-6': 6,
+};
+
 export default function InfoNav() {
+    const { t } = useTranslation('info');
     const [currentStep, setCurrentStep] = useState(steps[0]);
 
     const handleStepClick = useCallback((newStep: number) => {
@@ -36,7 +51,7 @@ export default function InfoNav() {
                     <NavItemCurrent layoutId="selected" key={`selected:${key}`}>
                         <LinearProgress
                             value={100}
-                            duration={STEP_TIME_SECONDS}
+                            duration={slideTime[`step-${currentStep}`]}
                             variant="tiny"
                             onAnimationComplete={handleNextStep}
                         />
@@ -46,10 +61,20 @@ export default function InfoNav() {
         );
     });
 
+    const stepEmojis = emojis[`step-${currentStep}`];
+
+    const emojiParams = {};
+    if (stepEmojis?.length) {
+        stepEmojis.forEach((e: string, i: number) => (emojiParams[`emoji${i > 0 ? i : ''}`] = e));
+    }
+
+    const title = t(`heading.step-${currentStep}`);
+    const text = t(`content.step-${currentStep}`, { ...emojiParams });
+
     return (
         <NavContainer>
             <AnimatePresence mode="wait">
-                <InfoItem key={`step-${currentStep}-content-wrapper`} step={currentStep} />
+                <InfoItem key={`step-${currentStep}-content-wrapper`} title={title} text={text} />
             </AnimatePresence>
             <AnimatePresence>
                 <InfoItemGraphic key={`step-${currentStep}-graphics-wrapper`} step={currentStep} />
