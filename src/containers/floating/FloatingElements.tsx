@@ -10,6 +10,8 @@ import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
 import { ToastStack } from '@app/components/ToastStack/ToastStack.tsx';
 
+const environment = import.meta.env.MODE;
+
 export default function FloatingElements() {
     return (
         <FloatingTree>
@@ -21,7 +23,7 @@ export default function FloatingElements() {
             <PaperWalletModal />
             <ShareRewardModal />
             <ToastStack />
-            <AdminUI />
+            {environment === 'development' && <AdminUI />}
         </FloatingTree>
     );
 }

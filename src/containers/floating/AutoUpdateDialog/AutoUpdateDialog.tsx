@@ -17,8 +17,6 @@ export default function AutoUpdateDialog() {
     const open = useUIStore((s) => s.dialogToShow === 'autoUpdate');
     const latestVersion = useUIStore((s) => s.latestVersion);
 
-    console.log({ open });
-
     const subtitle = isLoading ? 'installing-latest-version' : 'would-you-like-to-install';
 
     return (

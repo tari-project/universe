@@ -7,6 +7,7 @@ import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { ToastsGroup } from './groups/ToastsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
+import { AnimatePresence } from 'framer-motion';
 
 export default function AdminUI() {
     const [isOpen, setIsOpen] = useState(false);
@@ -24,20 +25,26 @@ export default function AdminUI() {
 
     return (
         <>
-            <ToggleButton ref={refs.setReference} {...getReferenceProps()}>
+            <ToggleButton ref={refs.setReference} {...getReferenceProps()} $isOpen={isOpen}>
                 Admin UI
             </ToggleButton>
-            {isOpen && (
-                <MenuWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
-                    <MenuContent>
-                        <ThemeGroup />
-                        <DialogsGroup />
-                        <GreenModalsGroup />
-                        <ToastsGroup />
-                        <OtherUIGroup />
-                    </MenuContent>
-                </MenuWrapper>
-            )}
+            <AnimatePresence>
+                {isOpen && (
+                    <MenuWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
+                        <MenuContent
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                        >
+                            <ThemeGroup />
+                            <DialogsGroup />
+                            <GreenModalsGroup />
+                            <ToastsGroup />
+                            <OtherUIGroup />
+                        </MenuContent>
+                    </MenuWrapper>
+                )}
+            </AnimatePresence>
         </>
     );
 }

@@ -1,6 +1,7 @@
-import styled from 'styled-components';
+import { m } from 'framer-motion';
+import styled, { css } from 'styled-components';
 
-export const ToggleButton = styled('button')`
+export const ToggleButton = styled('button')<{ $isOpen?: boolean }>`
     background: #444;
     color: white;
     padding: 8px 20px;
@@ -14,13 +15,25 @@ export const ToggleButton = styled('button')`
     pointer-events: all;
 
     font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 
     &:hover {
         background: #555;
+        opacity: 1;
     }
+
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            background: #555;
+            opacity: 1;
+        `}
 `;
 
-export const MenuWrapper = styled('div')`
+export const MenuWrapper = styled(m.div)`
     position: fixed;
     top: 20px;
     right: 30px;
@@ -29,7 +42,7 @@ export const MenuWrapper = styled('div')`
     max-width: 330px;
 `;
 
-export const MenuContent = styled('div')`
+export const MenuContent = styled(m.div)`
     background: rgba(0, 0, 0, 0.8);
     padding: 10px;
     border-radius: 8px;
