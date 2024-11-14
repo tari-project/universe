@@ -1,5 +1,5 @@
-use crate::network_utils::get_free_port;
 use crate::node_manager::NodeIdentity;
+use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
@@ -33,8 +33,8 @@ pub(crate) struct MinotariNodeAdapter {
 
 impl MinotariNodeAdapter {
     pub fn new() -> Self {
-        let port = get_free_port().unwrap_or(18142);
-        let tcp_listener_port = get_free_port().unwrap_or(18189);
+        let port = PortAllocator::new().assign_port_with_fallback();
+        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             grpc_port: port,
             tcp_listener_port,

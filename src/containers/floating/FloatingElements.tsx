@@ -6,9 +6,9 @@ import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
 import { ExternalDependenciesDialog } from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import PaperWalletModal from './PaperWalletModal/PaperWalletModal.tsx';
-import ErrorSnackbar from './Error/ErrorSnackbar.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
+import { ToastStack } from '@app/components/ToastStack/ToastStack.tsx';
 
 export default function FloatingElements() {
     return (
@@ -20,8 +20,8 @@ export default function FloatingElements() {
             <ExternalDependenciesDialog />
             <PaperWalletModal />
             <ShareRewardModal />
-            <ErrorSnackbar />
             <AdminUI />
+            <ToastStack />
         </FloatingTree>
     );
 }

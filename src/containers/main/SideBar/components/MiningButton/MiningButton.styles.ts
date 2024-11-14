@@ -37,7 +37,6 @@ export const ButtonWrapper = styled(m.div)`
     position: relative;
     display: flex;
     align-items: center;
-    overflow: hidden;
     justify-content: center;
     border-radius: ${({ theme }) => theme.shape.borderRadius.button};
     width: 100%;
