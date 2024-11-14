@@ -20,8 +20,8 @@ export default function FloatingElements() {
             <ExternalDependenciesDialog />
             <PaperWalletModal />
             <ShareRewardModal />
-            <AdminUI />
             <ToastStack />
+            <AdminUI />
         </FloatingTree>
     );
 }

@@ -26,7 +26,7 @@ export const MenuWrapper = styled('div')`
     right: 30px;
     z-index: 99999;
 
-    max-width: 350px;
+    max-width: 330px;
 `;
 
 export const MenuContent = styled('div')`
@@ -39,10 +39,11 @@ export const MenuContent = styled('div')`
     min-width: 200px;
     max-height: calc(100vh - 100px);
     overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 `;
 
-export const Button = styled('button')`
-    background: #444;
+export const Button = styled('button')<{ $isActive?: boolean }>`
+    background: ${({ $isActive }) => ($isActive ? '#666' : '#444')};
     color: white;
     border: 1px solid #666;
     padding: 4px 8px;
@@ -53,7 +54,7 @@ export const Button = styled('button')`
     transition: background-color 0.2s ease;
 
     &:hover {
-        background: #555;
+        background: ${({ $isActive }) => ($isActive ? '#666' : '#555')};
     }
 `;
 

@@ -23,6 +23,7 @@ interface AppState {
     isSettingsOpen: boolean;
     setIsSettingsOpen: (value: boolean) => void;
     isSettingUp: boolean;
+    setIsSettingUp: (value: boolean) => void;
     setSettingUpFinished: () => Promise<void>;
     externalDependencies: ExternalDependency[];
     fetchExternalDependencies: () => Promise<void>;
@@ -57,6 +58,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     isSettingsOpen: false,
     setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
     isSettingUp: true,
+    setIsSettingUp: (value: boolean) => set({ isSettingUp: value }),
     setSettingUpFinished: async () => {
         set({ isSettingUp: false });
         setAnimationState('showVisual');
