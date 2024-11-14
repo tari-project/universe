@@ -175,6 +175,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 grpc_port: self.grpc_port,
                 required_sync_peers: self.required_initial_peers,
                 shutdown_signal: status_shutdown,
+                last_block_height: 0,
+                last_sha3_estimated_hashrate: 0,
+                last_randomx_estimated_hashrate: 0,
             },
         ))
     }
@@ -201,6 +204,9 @@ pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
     required_sync_peers: u32,
     shutdown_signal: ShutdownSignal,
+    last_block_height: u64,
+    last_sha3_estimated_hashrate: u64,
+    last_randomx_estimated_hashrate: u64,
 }
 
 #[async_trait]
@@ -216,7 +222,7 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
 
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
-        &self,
+        &mut self,
     ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), MinotariNodeStatusMonitorError> {
         // TODO: use GRPC port returned from process
         let mut client =
@@ -259,6 +265,18 @@ impl MinotariNodeStatusMonitor {
             metadata.best_block_hash.clone(),
             metadata.timestamp,
         );
+
+        if sync_achieved && (block_height <= self.last_block_height) {
+            return Ok((
+                self.last_sha3_estimated_hashrate,
+                self.last_randomx_estimated_hashrate,
+                MicroMinotari(reward),
+                block_height,
+                block_time,
+                sync_achieved,
+            ));
+        }
+
         // First try with 10 blocks
         let blocks = [10, 100];
         let mut result = Err(anyhow::anyhow!("No difficulty found"));
@@ -300,10 +318,13 @@ impl MinotariNodeStatusMonitor {
                 ));
             }
             if last_randomx_estimated_hashrate != 0 && last_sha3_estimated_hashrate != 0 {
+                self.last_sha3_estimated_hashrate = last_sha3_estimated_hashrate;
+                self.last_randomx_estimated_hashrate = last_randomx_estimated_hashrate;
                 break;
             }
         }
 
+        self.last_block_height = block_height;
         Ok(result?)
     }
 

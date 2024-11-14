@@ -171,10 +171,10 @@ impl NodeManager {
     pub async fn get_network_hash_rate_and_block_reward(
         &self,
     ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), NodeManagerError> {
-        let status_monitor_lock = self.watcher.read().await;
+        let mut status_monitor_lock = self.watcher.write().await;
         let status_monitor = status_monitor_lock
             .status_monitor
-            .as_ref()
+            .as_mut()
             .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
         status_monitor
             .get_network_hash_rate_and_block_reward()
