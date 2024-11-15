@@ -1,4 +1,5 @@
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import styled from 'styled-components';
 
@@ -94,7 +95,8 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
 
     const handleConfrimed = useCallback(async () => {
         if (hasChanges && newSeedWords) {
-            // await importSeedWords(newSeedWords);
+            setShowConfirm(false);
+            await importSeedWords(newSeedWords);
         }
     }, [hasChanges, importSeedWords, newSeedWords]);
 
@@ -161,14 +163,17 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
             </Dialog>
             <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
                 <DialogContent>
-                    <Stack direction="column" alignItems="center" justifyContent="space-between" gap={10}>
+                    <Stack direction="column" alignItems="center" justifyContent="space-between" gap={16}>
                         <Typography variant="h3">{t('confirm-import-wallet')}</Typography>
-                        <Typography variant="p">{t('confirm-import-wallet-copy')}</Typography>
-                    </Stack>
-                    <Stack direction="row" justifyContent="space-between" gap={8}>
-                        <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
-
-                        <SquaredButton color="orange">{t('yes')}</SquaredButton>
+                        <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
+                            {t('confirm-import-wallet-copy')}
+                        </Typography>
+                        <Stack direction="row" gap={8}>
+                            <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
+                            <SquaredButton color="orange" onClick={handleConfrimed}>
+                                {t('yes')}
+                            </SquaredButton>
+                        </Stack>
                     </Stack>
                 </DialogContent>
             </Dialog>
