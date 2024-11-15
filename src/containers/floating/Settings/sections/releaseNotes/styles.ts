@@ -46,7 +46,7 @@ export const MarkdownWrapper = styled('div')`
     overflow-y: auto;
     height: calc(70vh - 110px);
 
-    padding: 30px 20px 60px 0;
+    padding: 0px 20px 60px 0;
 
     &::-webkit-scrollbar {
         width: 8px;
@@ -60,27 +60,6 @@ export const MarkdownWrapper = styled('div')`
 
     &::-webkit-scrollbar-track {
         background-color: rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-        color: #000;
-        font-size: 18px;
-        font-weight: 600;
-        line-height: 110%;
-        margin: 0;
-        padding: 0;
-    }
-
-    p {
-        margin: 0;
-        margin-bottom: 20px;
-    }
-
-    em {
-        color: #797979;
-        font-size: 12px;
-        font-weight: 500;
-        line-height: 116.667%;
     }
 
     h2 {
