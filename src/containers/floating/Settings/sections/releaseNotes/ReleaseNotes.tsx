@@ -5,19 +5,17 @@ import { AccordionItem } from './AccordionItem/AccordionItem';
 import tariIcon from './tari-icon.png';
 
 const parseMarkdownSections = (markdown: string): ReleaseSection[] => {
-    const parts = markdown.split(/\n---\n/);
-    return parts.map((part) => {
-        const lines = part.trim().split('\n');
+    const sections = markdown.split(/\n---\n/);
+
+    return sections.map((block) => {
+        const lines = block.trim().split('\n');
         const title = lines[0].replace(/^#+\s*/, '').trim();
 
-        const paragraphStart = lines.findIndex((line, i) => i > 0 && line.trim() !== '');
-        const date = paragraphStart > 0 ? lines[paragraphStart].trim().replace(/^_|_$/g, '') : '';
+        const dateLine = lines.find((line, index) => index > 0 && line.trim().match(/^_.*_$/));
+        const date = dateLine?.replace(/^_|_$/g, '').trim() || '';
 
-        const contentLines = [...lines];
-        if (paragraphStart > 0) {
-            contentLines.splice(paragraphStart, 1);
-        }
-        const content = contentLines.slice(1).join('\n').trim();
+        const contentStartIndex = lines.findIndex((line) => line === dateLine) + 1;
+        const content = lines.slice(contentStartIndex).join('\n').trim();
 
         return { title, date, content };
     });
