@@ -41,6 +41,7 @@ const Bar = styled(m.div)<{ $variant?: 'primary' | 'small' | 'tiny' }>`
     border-radius: 50px;
     background: ${({ theme }) => theme.palette.contrast};
     height: ${({ $variant }) => ($variant ? '5px' : '10px')};
+    will-change: width;
 `;
 
 export function LinearProgress({

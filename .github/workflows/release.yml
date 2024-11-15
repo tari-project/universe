@@ -157,7 +157,7 @@ jobs:
                     jq '.bundle .windows += {"signCommand": "${{ env.WINDOWS_SIGN_COMMAND }}"}' > \
                       ./tauri.windows.conf.json
                   cat ./tauri.windows.conf.json
-                  cargo install trusted-signing-cli
+                  cargo install trusted-signing-cli@0.3.0 --locked
 
             - name: Install dependencies (node)
               run: |
