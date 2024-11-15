@@ -445,6 +445,23 @@ async fn setup_inner(
         })
         .await?;
     mm_proxy_manager.wait_ready().await?;
+
+    let mvhandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            // TODO: REMOVE THIS INFO IT'S JUST FOR TESTING
+            info!(target: LOG_TARGET, "Checking for MINER METRICS");
+            let app_state = mvhandle.state::<UniverseAppState>().clone();
+            if let Ok(ret) = commands::get_miner_metrics(app_state, mvhandle.clone()).await {
+                if mvhandle.emit("miner_metrics", &ret).is_ok() {
+                    // TODO: REMOVE THIS INFO IT'S JUST FOR TESTING
+                    info!(target: LOG_TARGET, "METRICS SENT");
+                }
+            };
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+    });
+
     *state.is_setup_finished.write().await = true;
     drop(
         app.emit(
