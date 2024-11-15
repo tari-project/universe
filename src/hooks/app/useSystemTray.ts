@@ -1,61 +1,28 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
+import { MinerMetrics } from '@app/types/app-status';
+import { menu, about, separator, minimize } from '@app/utils';
+import { listen } from '@tauri-apps/api/event';
+import { PredefinedMenuItem } from '@tauri-apps/api/menu/predefinedMenuItem';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MenuOptions } from '@tauri-apps/api/menu/menu';
-import { TrayIcon } from '@tauri-apps/api/tray';
-import { Menu } from '@tauri-apps/api/menu';
 
-import { useMiningStore } from '@app/store/useMiningStore';
 import { formatHashrate } from '@app/utils/formatHashrate';
-import { useFormatBalance } from '@app/utils/formatBalance';
-import { useHardwareStats } from '../app/useHardwareStats';
+import { useBalanceFormatter } from '@app/utils/formatBalance';
 
-const TRAY_ID = 'universe-tray-icon';
-const defaultIconPath = 'icons/systray_icon.ico';
-const darkIconPath = 'icons/icon.png';
+const currItems = await menu.get('Separator');
+export function useUpdateSystemTray() {
+    const [metrics, setMetrics] = useState<MinerMetrics>();
+    const formatBalance = useBalanceFormatter();
 
-const about = {
-    item: { About: null },
-} as PredefinedMenuItemOptions;
-const separator = {
-    item: 'Separator',
-} as PredefinedMenuItemOptions;
-const minimize = {
-    item: 'Minimize',
-    text: 'Minimize',
-} as PredefinedMenuItemOptions;
+    const totalEarningsFormatted = useMemo(() => {
+        const cpu_est = metrics?.cpu?.mining?.estimated_earnings || 0;
+        const gpu_est = metrics?.gpu?.mining?.estimated_earnings || 0;
+        return formatBalance(cpu_est + gpu_est);
+    }, [formatBalance, metrics]);
 
-const tray = await TrayIcon.getById(TRAY_ID);
-const menu = await Menu.new({
-    id: 'systray-menu',
-});
-
-export function useSystemTray() {
-    const hasUpdates = useRef(false);
-    const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const { cpu: cpuHardware, gpu: gpuHardware } = useHardwareStats();
-    const { cpu_est, cpu_h } = useMiningStore((s) => ({
-        cpu_est: s.cpu.mining.estimated_earnings,
-        cpu_h: s.cpu.mining.hash_rate,
-    }));
-    const { gpu_est, gpu_h } = useMiningStore((s) => ({
-        gpu_est: s.gpu.mining.estimated_earnings,
-        gpu_h: s.gpu.mining.hash_rate,
-    }));
-    const totalEarningsFormatted = useFormatBalance(cpu_est + gpu_est);
-    const gpuUsage = gpuHardware
-        ? gpuHardware?.reduce((acc, current) => acc + current.usage_percentage, 0) / (gpuHardware?.length || 1)
-        : 0;
-
-    const cpuUsage = cpuHardware
-        ? cpuHardware?.reduce((acc, current) => acc + current.usage_percentage, 0) / (cpuHardware?.length || 1)
-        : 0;
-
-    const menuItems = useMemo(() => {
-        // TODO use listener
-        hasUpdates.current = Boolean(totalEarningsFormatted || gpuUsage || cpuUsage || cpu_h || gpu_h);
+    const updatedMenuItems = useMemo(() => {
+        const cpu_h = metrics?.cpu?.mining?.hash_rate || 0;
+        const gpu_h = metrics?.gpu?.mining?.hash_rate || 0;
         return [
-            about,
-            separator,
             {
                 id: 'cpu_hashrate',
                 text: `CPU Hashrate: ${cpu_h ? `${formatHashrate(cpu_h)}` : '-'}`,
@@ -66,40 +33,33 @@ export function useSystemTray() {
                 text: `GPU Hashrate: ${gpu_h ? `${formatHashrate(gpu_h)}` : '-'}`,
                 enabled: false,
             },
-            separator,
-            {
-                id: 'cpu_usage',
-                text: `CPU Usage: ${cpuUsage || '-'}`,
-                enabled: false,
-            },
-            {
-                id: 'gpu_usage',
-                text: `GPU Usage: ${gpuUsage || '-'}`,
-                enabled: false,
-            },
-            separator,
             {
                 id: 'estimated_earning',
                 text: `Est earning: ${totalEarningsFormatted !== '0' ? totalEarningsFormatted : '-'} tXTM/day`,
                 enabled: false,
             },
-            minimize,
         ] as MenuOptions['items'];
-    }, [cpuUsage, cpu_h, gpuUsage, gpu_h, totalEarningsFormatted]);
-
-    const setTray = useCallback(async () => {
-        const icon = prefersDarkMode() ? darkIconPath : defaultIconPath;
-        if (menu) {
-            const items = await menu.items();
-            if (!items.length && menuItems) {
-                await menu.append(menuItems);
-            }
-            await tray?.setMenu(menu);
-        }
-        await tray?.setIcon(icon);
-    }, [menuItems]);
-
+    }, [totalEarningsFormatted]);
     useEffect(() => {
-        void setTray();
-    }, [setTray]);
+        const ul = listen('miner_metrics', ({ payload }) => {
+            if (payload) {
+                setMetrics(payload as MinerMetrics);
+            }
+        });
+        return () => {
+            ul.then((unlisten) => unlisten());
+        };
+    }, []);
+
+    // const updateMenu = useCallback(async () => {
+    //     if (menu) {
+    //         if (updatedMenuItems) {
+    //             // await menu.insert(updatedMenuItems, 1);
+    //         }
+    //     }
+    // }, []);
+    //
+    // useEffect(() => {
+    //     updateMenu();
+    // }, []);
 }

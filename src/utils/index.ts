@@ -1,5 +1,3 @@
-import { initTray } from '@app/utils/init-tray';
-
 export * from './calculateTimeSince.ts';
 export * from './convertHex.ts';
 export * from './formatBalance.ts';
@@ -7,4 +5,4 @@ export * from './formatHashrate.ts';
 export * from './formatNumber.ts';
 export * from './shared-logger.ts';
 export * from './truncateString.ts';
-export { initTray };
+export * from './systray.ts';

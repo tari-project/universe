@@ -1,6 +1,6 @@
-import { initTray } from '@app/utils';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
+import { initSystray } from '@app/utils';
 
 import {
     useDetectMode,
@@ -31,7 +31,7 @@ const sentryOptions = {
     enabled: environment !== 'development',
 };
 
-await initTray();
+await initSystray();
 setupLogger();
 
 export default function AppWrapper() {

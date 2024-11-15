@@ -9,12 +9,17 @@ export default function formatBalance(value: number, locale?: string, maxDigitsA
 }
 
 export const useFormatBalance = (value: number, maxDigitsArg?: number) => {
-    const locale = useAppConfigStore((s) => s.application_language);
-    const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
-    const handler = useCallback(
-        () => formatBalance(value, systemLang ? undefined : locale, maxDigitsArg),
-        [locale, maxDigitsArg, value, systemLang]
-    );
+    const format = useBalanceFormatter();
+    const handler = useCallback(() => format(value, maxDigitsArg), [format, value, maxDigitsArg]);
 
     return handler();
+};
+
+export const useBalanceFormatter = () => {
+    const locale = useAppConfigStore((s) => s.application_language);
+    const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
+    return useCallback(
+        (value: number, maxDigitsArg?: number) => formatBalance(value, systemLang ? undefined : locale, maxDigitsArg),
+        [locale, systemLang]
+    );
 };
