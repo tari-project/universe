@@ -1,6 +1,6 @@
+import { initSystray } from '@app/utils';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
-import { initSystray } from '@app/utils';
 
 import {
     useDetectMode,
@@ -31,7 +31,6 @@ const sentryOptions = {
     enabled: environment !== 'development',
 };
 
-await initSystray();
 setupLogger();
 
 export default function AppWrapper() {
@@ -46,6 +45,7 @@ export default function AppWrapper() {
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
+            await initSystray();
         }
         initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps

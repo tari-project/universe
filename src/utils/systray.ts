@@ -1,9 +1,10 @@
-import { formatHashrate } from '@app/utils/formatHashrate';
 import { Menu } from '@tauri-apps/api/menu';
 import { TrayIcon } from '@tauri-apps/api/tray';
+import { MenuItemOptions } from '@tauri-apps/api/menu/menuItem';
 import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
 
-const TRAY_ID = 'universe-tray-icon';
+const TRAY_ID = 'universe-tray-id';
+const TRAY_MENU_ID = 'universe-tray-menu-id';
 const defaultIconPath = 'icons/systray_icon.ico';
 const darkIconPath = 'icons/icon.png';
 
@@ -25,12 +26,12 @@ export const minimize = {
 const dynamicItems = [
     {
         id: 'cpu_hashrate',
-        text: `-`,
+        text: `CPU Hashrate: -`,
         enabled: false,
     },
     {
         id: 'gpu_hashrate',
-        text: `-`,
+        text: `GPU Hashrate: -`,
         enabled: false,
     },
     separator,
@@ -39,18 +40,16 @@ const dynamicItems = [
         text: `Est earning: -`,
         enabled: false,
     },
-];
+] as MenuItemOptions[];
 
 export const menu = await Menu.new({
-    id: 'systray-menu',
-    items: [about, separator, dynamicItems, minimize],
+    id: TRAY_MENU_ID,
+    items: [about, separator, ...dynamicItems, minimize],
 });
 
 export const tray = await TrayIcon.getById(TRAY_ID);
-
 export async function initSystray() {
     await tray?.setIcon(icon);
-
     if (menu) {
         await tray?.setMenu(menu);
     }
