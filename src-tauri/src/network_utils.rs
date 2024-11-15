@@ -1,5 +1,3 @@
-use std::net::TcpListener;
-
 use serde::Deserialize;
 use std::fmt::Write as _;
 use tari_common::configuration::Network;
