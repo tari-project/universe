@@ -28,7 +28,7 @@ export const ExternalDependenciesDialog = () => {
     const handleRestart = useCallback(async () => {
         try {
             setIsRestarting(true);
-            await invoke('restart_application');
+            await invoke('restart_application', { shouldStopMiners: true });
         } catch (e) {
             Sentry.captureException(e);
             console.error('Error restarting application:', e);

@@ -29,7 +29,7 @@ export default function RestartDialog() {
     const handleRestart = useCallback(async () => {
         try {
             console.info('Restarting application.');
-            await invoke('restart_application');
+            await invoke('restart_application', { shouldStopMiners: true });
         } catch (error) {
             Sentry.captureException(error);
             console.error('Restart error: ', error);
