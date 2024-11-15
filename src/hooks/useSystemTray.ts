@@ -6,13 +6,27 @@ import { Menu } from '@tauri-apps/api/menu';
 import { MenuOptions } from '@tauri-apps/api/menu/menu';
 import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
 import { TrayIcon } from '@tauri-apps/api/tray';
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 const TRAY_ID = 'universe-tray-icon';
 const defaultIconPath = 'icons/systray_icon.ico';
 const darkIconPath = 'icons/icon.png';
-const appWindow = getCurrentWebviewWindow();
+
+const about = {
+    item: { About: null },
+} as PredefinedMenuItemOptions;
+const separator = {
+    item: 'Separator',
+} as PredefinedMenuItemOptions;
+const minimize = {
+    item: 'Minimize',
+    text: 'Minimize',
+} as PredefinedMenuItemOptions;
+
+const tray = await TrayIcon.getById(TRAY_ID);
+const menu = await Menu.new({
+    id: 'systray-menu',
+});
 
 export function useSystemTray() {
     const hasUpdates = useRef(false);
@@ -36,16 +50,11 @@ export function useSystemTray() {
         : 0;
 
     const menuItems = useMemo(() => {
-        const separator = {
-            item: 'Separator',
-        } as PredefinedMenuItemOptions;
-        const minimize = {
-            item: 'Minimize',
-            text: 'Minimize',
-        } as PredefinedMenuItemOptions;
         // TODO use listener
         hasUpdates.current = Boolean(totalEarningsFormatted || gpuUsage || cpuUsage || cpu_h || gpu_h);
         return [
+            about,
+            separator,
             {
                 id: 'cpu_hashrate',
                 text: `CPU Hashrate: ${cpu_h ? `${formatHashrate(cpu_h)}` : '-'}`,
@@ -70,26 +79,22 @@ export function useSystemTray() {
             separator,
             {
                 id: 'estimated_earning',
-                text: `Est earning: ${totalEarningsFormatted || '-'} tXTM/day`,
+                text: `Est earning: ${totalEarningsFormatted !== '0' ? totalEarningsFormatted : '-'} tXTM/day`,
                 enabled: false,
             },
             minimize,
-            {
-                id: 'unminimize',
-                text: 'Unminimize',
-                enabled: appWindow.isMinimized(),
-                action: () => {
-                    appWindow.unminimize();
-                },
-            },
         ] as MenuOptions['items'];
     }, [cpuUsage, cpu_h, gpuUsage, gpu_h, totalEarningsFormatted]);
 
     const setTray = useCallback(async () => {
-        const menu = await Menu.new({ items: menuItems });
         const icon = prefersDarkMode() ? darkIconPath : defaultIconPath;
-        const tray = await TrayIcon.getById(TRAY_ID);
-        await tray?.setMenu(menu);
+        if (menu) {
+            const items = await menu.items();
+            if (!items.length && menuItems) {
+                await menu.append(menuItems);
+            }
+            await tray?.setMenu(menu);
+        }
         await tray?.setIcon(icon);
     }, [menuItems]);
 
