@@ -1,7 +1,7 @@
 import { HiOutlineSelector } from 'react-icons/hi';
 import { useEffect, useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { SpinnerIcon } from '@app/components/elements/SpinnerIcon.tsx';
+
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 
 import {
@@ -14,6 +14,7 @@ import {
     Wrapper,
 } from './Select.styles.ts';
 import { autoUpdate, useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
+import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 
 export interface SelectOption {
     label: string;
@@ -59,7 +60,8 @@ export function Select({
         }
     }, [isOpen, elements, update]);
 
-    function handleChange(value: string) {
+    function handleChange(value: string, disableClick = false) {
+        if (disableClick) return;
         onChange(value);
         setIsOpen(false);
     }
@@ -98,11 +100,13 @@ export function Select({
             >
                 {options.map(({ label, value, iconSrc }) => {
                     const selected = value === selectedOption?.value;
+                    const disableClick = loading && !selected && value !== 'Custom';
                     return (
                         <StyledOption
-                            onClick={() => handleChange(value)}
+                            onClick={() => handleChange(value, disableClick)}
                             key={`opt-${value}-${label}`}
                             $selected={selected}
+                            $loading={loading && !selected}
                         >
                             <OptionLabelWrapper>
                                 {iconSrc ? <img src={iconSrc} alt={`Select option: ${value} icon `} /> : null}

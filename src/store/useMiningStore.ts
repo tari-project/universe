@@ -16,6 +16,7 @@ interface State extends MinerMetrics {
     isChangingMode: boolean;
     excludedGpuDevices: number[];
     counter: number;
+    customLevelsDialogOpen: boolean;
 }
 
 interface Actions {
@@ -23,14 +24,16 @@ interface Actions {
     startMining: () => Promise<void>;
     stopMining: () => Promise<void>;
     pauseMining: () => Promise<void>;
-    changeMiningMode: (mode: modeType) => Promise<void>;
+    changeMiningMode: (params: { mode: modeType; customGpuLevels?: number; customCpuLevels?: number }) => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
     setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
+    setCustomLevelsDialogOpen: (customLevelsDialogOpen: boolean) => void;
 }
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
+    customLevelsDialogOpen: false,
     sha_network_hash_rate: 0,
     randomx_network_hash_rate: 0,
     counter: 0,
@@ -40,7 +43,7 @@ const initialState: State = {
     miningControlsEnabled: true,
     excludedGpuDevices: [],
     cpu: {
-        hardware: undefined,
+        hardware: [],
         mining: {
             is_mining: false,
             hash_rate: 0,
@@ -68,6 +71,7 @@ const initialState: State = {
 
 export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     ...initialState,
+    setCustomLevelsDialogOpen: (customLevelsDialogOpen) => set({ customLevelsDialogOpen }),
     setMiningMetrics: (metrics) => set({ ...metrics }),
     startMining: async () => {
         console.info('Mining starting....');
@@ -113,26 +117,26 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             set({ miningInitiated: true });
         }
     },
-    changeMiningMode: async (mode: modeType) => {
-        console.info('Changing mode...');
+    changeMiningMode: async (params) => {
+        const { mode, customGpuLevels, customCpuLevels } = params;
+        console.info(`Changing mode to ${mode}...`);
         const state = getState();
-
         set({ isChangingMode: true });
+
         if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
             await state.pauseMining();
         }
         try {
             const appConfigState = useAppConfigStore.getState();
-            await appConfigState.setMode(mode as modeType);
+            await appConfigState.setMode({ mode: mode as modeType, customGpuLevels, customCpuLevels });
+            console.info(`Mode changed to ${mode}`);
             if (state.miningInitiated) {
                 await state.startMining();
             }
-
-            console.info(`Mode changed to ${mode}`);
-            set({ isChangingMode: false });
         } catch (e) {
             Sentry.captureException(e);
             console.error('Failed to change mode: ', e);
+        } finally {
             set({ isChangingMode: false });
         }
     },

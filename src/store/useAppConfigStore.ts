@@ -3,12 +3,18 @@ import { invoke } from '@tauri-apps/api';
 import { create } from './create';
 import { AppConfig } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
-import { modeType } from './types.ts';
+import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 type State = Partial<AppConfig>;
+interface SetModeProps {
+    mode: modeType;
+    customGpuLevels?: number;
+    customCpuLevels?: number;
+}
 
 interface Actions {
     fetchAppConfig: () => Promise<void>;
@@ -18,13 +24,15 @@ interface Actions {
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMineOnAppStart: (mineOnAppStart: boolean) => Promise<void>;
-    setMode: (mode: modeType) => Promise<void>;
+    setMode: (params: SetModeProps) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
     setUseTor: (useTor: boolean) => Promise<void>;
     setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
+    setTheme: (theme: displayMode) => Promise<void>;
+    setVisualMode: (enabled: boolean) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -42,20 +50,33 @@ const initialState: State = {
     monero_address: '',
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
+    sharing_enabled: true,
     airdrop_ui_enabled: false,
     paper_wallet_enabled: false,
+    custom_power_levels_enabled: true,
     use_tor: true,
     auto_update: false,
     mmproxy_use_monero_fail: false,
     mmproxy_monero_nodes: ['https://xmr-01.tari.com'],
+    visual_mode: true,
 };
 
-export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
+export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
     ...initialState,
     fetchAppConfig: async () => {
         try {
             const appConfig = await invoke('get_app_config');
             set(appConfig);
+            const configTheme = appConfig.display_mode?.toLowerCase();
+
+            const canvasElement = document.getElementById('canvas');
+            if (canvasElement && !appConfig.visual_mode) {
+                canvasElement.style.display = 'none';
+            }
+
+            if (configTheme) {
+                await getState().setTheme(configTheme as displayMode);
+            }
         } catch (e) {
             Sentry.captureException(e);
             console.error('Could not get app config: ', e);
@@ -124,8 +145,10 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         }
         invoke('set_cpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (enabled || miningState.gpu.mining.is_mining)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
@@ -150,10 +173,13 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
             await miningState.pauseMining();
         }
+
         invoke('set_gpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (miningState.cpu.mining.is_mining || enabled)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
@@ -193,10 +219,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             set({ monero_address: prevMoneroAddress });
         });
     },
-    setMode: async (mode) => {
+    setMode: async (params) => {
+        const { mode, customGpuLevels, customCpuLevels } = params;
         const prevMode = useAppConfigStore.getState().mode;
-        set({ mode });
-        invoke('set_mode', { mode }).catch((e) => {
+        set({ mode, custom_max_cpu_usage: customCpuLevels, custom_max_gpu_usage: customGpuLevels });
+        invoke('set_mode', {
+            mode,
+            customCpuUsage: customCpuLevels,
+            customGpuUsage: customGpuLevels,
+        }).catch((e) => {
             Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set mode', e);
@@ -232,6 +263,34 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set monerod config', e);
             appStateStore.setError('Could not change monerod config');
             set({ mmproxy_use_monero_fail: !useMoneroFail, mmproxy_monero_nodes: prevMoneroNodes });
+        });
+    },
+    setTheme: async (themeArg) => {
+        const display_mode = themeArg?.toLowerCase() as displayMode;
+        const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        const prevTheme = useAppConfigStore.getState().display_mode;
+        const setUITheme = useUIStore.getState().setTheme;
+        const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
+
+        setUITheme(uiTheme);
+
+        set({ display_mode });
+        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set theme', e);
+            appStateStore.setError('Could not change theme');
+            set({ display_mode: prevTheme });
+        });
+    },
+    setVisualMode: (enabled) => {
+        set({ visual_mode: enabled });
+        invoke('set_visual_mode', { enabled }).catch((e) => {
+            Sentry.captureException(e);
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set visual mode', e);
+            appStateStore.setError('Could not change visual mode');
+            set({ visual_mode: !enabled });
         });
     },
 }));

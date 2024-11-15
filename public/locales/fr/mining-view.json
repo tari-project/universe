@@ -1,4 +1,7 @@
 {
+  "cpu-power": "Puissance CPU",
+  "gpu-power": "Puissance GPU",
+  "estimated-day": "Est tXTM/jour",
   "connection-to-node-lost": "Connexion au mineur perdue. Attends que le mineur se reconnecte ou redémarre le mineur.",
   "current-block-time": "Temps actuelle du bloc",
   "day": "day",

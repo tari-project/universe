@@ -13,6 +13,7 @@ use tokio::sync::RwLock;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
+const ECO_MODE_CPU_USAGE: u32 = 30;
 
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
@@ -38,6 +39,7 @@ impl CpuMiner {
         config_path: PathBuf,
         log_dir: PathBuf,
         mode: MiningMode,
+        custom_cpu_threads: Option<u32>,
     ) -> Result<(), anyhow::Error> {
         let mut lock = self.watcher.write().await;
 
@@ -55,26 +57,37 @@ impl CpuMiner {
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
                 debug!(target:LOG_TARGET, "Available CPUs: {}", available_cpus);
-                isize::try_from(available_cpus.get()).unwrap_or(1)
+                u32::try_from(available_cpus.get()).unwrap_or(1)
             }
             Err(err) => {
                 error!("Available CPUs: Unknown, error: {}", err);
                 1
             }
         };
+
+        let eco_mode_threads = cpu_miner_config
+            .eco_mode_cpu_percentage
+            .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100u32);
+
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => cpu_miner_config
-                .eco_mode_cpu_percentage
-                .unwrap_or((30 * max_cpu_available) / 100isize),
-            MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_cpu_percentage.unwrap_or(-1), // Use all
+            MiningMode::Eco => Some(eco_mode_threads),
+            MiningMode::Custom => {
+                if custom_cpu_threads.unwrap_or(0) == max_cpu_available {
+                    None
+                } else {
+                    custom_cpu_threads
+                }
+            }
+            MiningMode::Ludicrous => None,
         };
 
         lock.adapter.node_connection = Some(xmrig_node_connection);
         lock.adapter.monero_address = Some(monero_address.clone());
-        lock.adapter.cpu_max_percentage = Some(cpu_max_percentage);
+        lock.adapter.cpu_threads = Some(cpu_max_percentage);
         lock.adapter.extra_options = match mode {
             MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
             MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
+            MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
         };
 
         lock.start(
@@ -95,7 +108,7 @@ impl CpuMiner {
     }
 
     pub async fn status(
-        &mut self,
+        &self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {

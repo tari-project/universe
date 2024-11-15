@@ -1,4 +1,7 @@
 {
+  "cpu-power": "CPU 전력",
+  "gpu-power": "GPU 전력",
+  "estimated-day": "Est tXTM/일",
   "connection-to-node-lost": "마이너와의 연결이 끊어졌습니다. 마이너가 다시 연결되거나 재시작될 때까지 기다려주세요.",
   "current-block-time": "현재 블록 시간",
   "day": "day",

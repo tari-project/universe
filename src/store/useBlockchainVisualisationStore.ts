@@ -40,11 +40,28 @@ const checkCanAnimate = async () => {
     return !minimized && (focused || documentIsVisible);
 };
 
+function getSuccessTier(earnings: number) {
+    const humanValue = earnings / 1_000_000;
+
+    if (humanValue < 100) {
+        return 'success';
+    }
+
+    if (humanValue <= 1000) {
+        return 'success2';
+    }
+
+    return 'success3';
+}
+
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set, getState) => ({
     recapIds: [],
     handleWinRecap: (recapData) => {
         useMiningStore.getState().setMiningControlsEnabled(false);
-        setAnimationState('success');
+
+        const successTier = getSuccessTier(recapData.totalEarnings);
+
+        setAnimationState(successTier);
 
         set({ recapData });
 
@@ -60,7 +77,8 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
-            setAnimationState('success');
+            const successTier = getSuccessTier(earnings);
+            setAnimationState(successTier);
             set({ earnings });
             setTimeout(() => {
                 useMiningStore.getState().setMiningControlsEnabled(true);
@@ -86,10 +104,8 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     handleNewBlock: async (newBlockHeight, isMining) => {
         if (isMining) {
             const canAnimate = await checkCanAnimate();
-
             const latestTransaction = useWalletStore.getState().transactions?.[0];
             const latestTxBlock = latestTransaction?.message?.split(': ')?.[1];
-
             if (latestTxBlock === newBlockHeight.toString()) {
                 await getState().handleWin(latestTransaction, canAnimate);
             } else {

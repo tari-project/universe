@@ -4,6 +4,7 @@ use sys_locale::get_locale;
 use anyhow::anyhow;
 use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 use tokio::fs;
 
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
@@ -17,8 +18,8 @@ pub struct AppConfigFromFile {
     version: u32,
     #[serde(default = "default_mode")]
     mode: String,
-    #[serde(default = "default_theme")]
-    theme: String,
+    #[serde(default = "default_display_mode")]
+    display_mode: String,
     #[serde(default = "default_true")]
     auto_mining: bool,
     #[serde(default = "default_true")]
@@ -53,16 +54,27 @@ pub struct AppConfigFromFile {
     paper_wallet_enabled: bool,
     #[serde(default = "default_false")]
     reset_earnings: bool,
-    eco_mode_cpu_threads: Option<isize>,
-    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_threads: Option<u32>,
+    ludicrous_mode_cpu_threads: Option<u32>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
+    custom_mode_cpu_options: Vec<String>,
     #[serde(default = "default_false")]
     mmproxy_use_monero_fail: bool,
     #[serde(default = "default_monero_nodes")]
     mmproxy_monero_nodes: Vec<String>,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_custom_max_cpu_usage")]
+    custom_max_cpu_usage: Option<u32>,
+    #[serde(default = "default_custom_max_gpu_usage")]
+    custom_max_gpu_usage: Option<u32>,
+    #[serde(default = "default_true")]
     auto_update: bool,
+    #[serde(default = "default_true")]
+    custom_power_levels_enabled: bool,
+    #[serde(default = "default_true")]
+    sharing_enabled: bool,
+    #[serde(default = "default_true")]
+    visual_mode: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -70,7 +82,7 @@ impl Default for AppConfigFromFile {
         Self {
             version: default_version(),
             mode: default_mode(),
-            theme: default_theme(),
+            display_mode: default_display_mode(),
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -84,43 +96,49 @@ impl Default for AppConfigFromFile {
             should_always_use_system_language: false,
             should_auto_launch: false,
             application_language: default_application_language(),
+            custom_max_cpu_usage: None,
+            custom_max_gpu_usage: None,
             airdrop_ui_enabled: true,
             paper_wallet_enabled: false,
             use_tor: true,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
+            custom_mode_cpu_options: Vec::new(),
             eco_mode_cpu_threads: None,
             ludicrous_mode_cpu_threads: None,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
-            auto_update: false,
+            auto_update: true,
             reset_earnings: false,
+            custom_power_levels_enabled: true,
+            sharing_enabled: true,
+            visual_mode: true,
         }
     }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
-pub enum Theme {
+pub enum DisplayMode {
     System,
     Dark,
     Light,
 }
 
-impl Theme {
-    pub fn from_str(s: &str) -> Option<Theme> {
+impl DisplayMode {
+    pub fn from_str(s: &str) -> Option<DisplayMode> {
         match s {
-            "system" => Some(Theme::System),
-            "dark" => Some(Theme::Dark),
-            "light" => Some(Theme::Light),
+            "system" => Some(DisplayMode::System),
+            "dark" => Some(DisplayMode::Dark),
+            "light" => Some(DisplayMode::Light),
             _ => None,
         }
     }
 
-    pub fn to_str(t: Theme) -> String {
+    pub fn to_str(t: DisplayMode) -> String {
         match t {
-            Theme::System => String::from("system"),
-            Theme::Dark => String::from("dark"),
-            Theme::Light => String::from("light"),
+            DisplayMode::System => String::from("system"),
+            DisplayMode::Dark => String::from("dark"),
+            DisplayMode::Light => String::from("light"),
         }
     }
 }
@@ -129,6 +147,7 @@ impl Theme {
 pub enum MiningMode {
     Eco,
     Ludicrous,
+    Custom,
 }
 
 impl MiningMode {
@@ -136,6 +155,7 @@ impl MiningMode {
         match s {
             "Eco" => Some(MiningMode::Eco),
             "Ludicrous" => Some(MiningMode::Ludicrous),
+            "Custom" => Some(MiningMode::Custom),
             _ => None,
         }
     }
@@ -144,6 +164,7 @@ impl MiningMode {
         match m {
             MiningMode::Eco => String::from("Eco"),
             MiningMode::Ludicrous => String::from("Ludicrous"),
+            MiningMode::Custom => String::from("Custom"),
         }
     }
 }
@@ -154,7 +175,7 @@ pub(crate) struct AppConfig {
     config_version: u32,
     config_file: Option<PathBuf>,
     mode: MiningMode,
-    theme: Theme,
+    display_mode: DisplayMode,
     auto_mining: bool,
     mine_on_app_start: bool,
     p2pool_enabled: bool,
@@ -172,13 +193,19 @@ pub(crate) struct AppConfig {
     paper_wallet_enabled: bool,
     use_tor: bool,
     reset_earnings: bool,
-    eco_mode_cpu_threads: Option<isize>,
-    ludicrous_mode_cpu_threads: Option<isize>,
+    eco_mode_cpu_threads: Option<u32>,
+    ludicrous_mode_cpu_threads: Option<u32>,
     eco_mode_cpu_options: Vec<String>,
     ludicrous_mode_cpu_options: Vec<String>,
+    custom_mode_cpu_options: Vec<String>,
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
+    custom_max_cpu_usage: Option<u32>,
+    custom_max_gpu_usage: Option<u32>,
     auto_update: bool,
+    custom_power_levels_enabled: bool,
+    sharing_enabled: bool,
+    visual_mode: bool,
 }
 
 impl AppConfig {
@@ -187,7 +214,7 @@ impl AppConfig {
             config_version: default_version(),
             config_file: None,
             mode: MiningMode::Eco,
-            theme: Theme::System,
+            display_mode: DisplayMode::Light,
             auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -203,15 +230,21 @@ impl AppConfig {
             application_language: default_application_language(),
             airdrop_ui_enabled: true,
             use_tor: true,
+            custom_max_cpu_usage: None,
+            custom_max_gpu_usage: None,
             paper_wallet_enabled: false,
             reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
+            custom_mode_cpu_options: Vec::new(),
             eco_mode_cpu_threads: None,
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
-            auto_update: false,
+            custom_power_levels_enabled: true,
+            auto_update: true,
+            sharing_enabled: true,
+            visual_mode: true,
         }
     }
 
@@ -236,7 +269,12 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
-                self.theme = Theme::from_str(&config.theme).unwrap_or(Theme::Light);
+                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
+                    self.display_mode =
+                        DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
+                } else {
+                    self.display_mode = DisplayMode::Light;
+                }
                 self.auto_mining = config.auto_mining;
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
@@ -257,10 +295,21 @@ impl AppConfig {
                 self.eco_mode_cpu_threads = config.eco_mode_cpu_threads;
                 self.ludicrous_mode_cpu_options = config.ludicrous_mode_cpu_options;
                 self.ludicrous_mode_cpu_threads = config.ludicrous_mode_cpu_threads;
+                self.custom_mode_cpu_options = config.custom_mode_cpu_options;
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
+                self.custom_max_cpu_usage = config.custom_max_cpu_usage;
+                self.custom_max_gpu_usage = config.custom_max_gpu_usage;
                 self.auto_update = config.auto_update;
                 self.reset_earnings = config.reset_earnings;
+                self.custom_power_levels_enabled = config.custom_power_levels_enabled;
+                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
+                    self.reset_earnings = config.reset_earnings;
+                } else {
+                    self.reset_earnings = false;
+                }
+                self.sharing_enabled = config.sharing_enabled;
+                self.visual_mode = config.visual_mode;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -281,6 +330,22 @@ impl AppConfig {
             self.config_version = 9;
             self.mine_on_app_start = true;
         }
+
+        if self.config_version <= 9 {
+            self.auto_update = true;
+            self.config_version = 10;
+        }
+
+        if self.config_version <= 10 {
+            self.custom_power_levels_enabled = true;
+            self.sharing_enabled = true;
+            self.config_version = 11;
+        }
+
+        if self.config_version <= 11 {
+            self.visual_mode = true;
+            self.config_version = 12;
+        }
     }
 
     pub fn mmproxy_monero_nodes(&self) -> &Vec<String> {
@@ -298,11 +363,16 @@ impl AppConfig {
     pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
         &self.ludicrous_mode_cpu_options
     }
-    pub fn eco_mode_cpu_threads(&self) -> Option<isize> {
+
+    pub fn custom_mode_cpu_options(&self) -> &Vec<String> {
+        &self.custom_mode_cpu_options
+    }
+
+    pub fn eco_mode_cpu_threads(&self) -> Option<u32> {
         self.eco_mode_cpu_threads
     }
 
-    pub fn ludicrous_mode_cpu_threads(&self) -> Option<isize> {
+    pub fn ludicrous_mode_cpu_threads(&self) -> Option<u32> {
         self.ludicrous_mode_cpu_threads
     }
 
@@ -310,30 +380,68 @@ impl AppConfig {
         &self.anon_id
     }
 
-    pub async fn set_mode(&mut self, mode: String) -> Result<(), anyhow::Error> {
+    pub async fn set_mode(
+        &mut self,
+        mode: String,
+        custom_max_cpu_usage: Option<u32>,
+        custom_max_gpu_usage: Option<u32>,
+    ) -> Result<(), anyhow::Error> {
         let new_mode = match mode.as_str() {
             "Eco" => MiningMode::Eco,
             "Ludicrous" => MiningMode::Ludicrous,
+            "Custom" => MiningMode::Custom,
             _ => return Err(anyhow!("Invalid mode")),
         };
         self.mode = new_mode;
         self.update_config_file().await?;
+        if let Some(custom_max_cpu_usage) = custom_max_cpu_usage {
+            self.set_max_cpu_usage(custom_max_cpu_usage).await?;
+        }
+        if let Some(custom_max_gpu_usage) = custom_max_gpu_usage {
+            self.set_max_gpu_usage(custom_max_gpu_usage).await?;
+        }
         Ok(())
     }
-    pub async fn set_theme(&mut self, theme: String) -> Result<(), anyhow::Error> {
-        let new_theme = match theme.as_str() {
-            "system" => Theme::Light,
-            "dark" => Theme::Light,
-            "light" => Theme::Light,
-            _ => return Err(anyhow!("Invalid theme")),
+    pub async fn set_display_mode(&mut self, display_mode: String) -> Result<(), anyhow::Error> {
+        let new_display_mode = match display_mode.as_str() {
+            "system" => DisplayMode::System,
+            "dark" => DisplayMode::Dark,
+            "light" => DisplayMode::Light,
+            _ => return Err(anyhow!("Invalid display_mode")),
         };
-        self.theme = new_theme;
+        self.display_mode = new_display_mode;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn mode(&self) -> MiningMode {
         self.mode
+    }
+
+    pub fn custom_gpu_usage(&self) -> Option<u32> {
+        self.custom_max_gpu_usage
+    }
+
+    pub async fn set_max_gpu_usage(
+        &mut self,
+        custom_max_gpu_usage: u32,
+    ) -> Result<(), anyhow::Error> {
+        self.custom_max_gpu_usage = Some(custom_max_gpu_usage);
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn custom_cpu_usage(&self) -> Option<u32> {
+        self.custom_max_cpu_usage
+    }
+
+    pub async fn set_max_cpu_usage(
+        &mut self,
+        custom_max_cpu_usage: u32,
+    ) -> Result<(), anyhow::Error> {
+        self.custom_max_cpu_usage = Some(custom_max_cpu_usage);
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
@@ -362,6 +470,12 @@ impl AppConfig {
 
     pub async fn set_p2pool_enabled(&mut self, p2pool_enabled: bool) -> Result<(), anyhow::Error> {
         self.p2pool_enabled = p2pool_enabled;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_visual_mode(&mut self, visual_mode: bool) -> Result<(), anyhow::Error> {
+        self.visual_mode = visual_mode;
         self.update_config_file().await?;
         Ok(())
     }
@@ -507,7 +621,7 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
-            theme: Theme::to_str(self.theme),
+            display_mode: DisplayMode::to_str(self.display_mode),
             auto_mining: self.auto_mining,
             mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
@@ -523,15 +637,21 @@ impl AppConfig {
             application_language: self.application_language.clone(),
             airdrop_ui_enabled: self.airdrop_ui_enabled,
             paper_wallet_enabled: self.paper_wallet_enabled,
+            custom_max_cpu_usage: self.custom_max_cpu_usage,
+            custom_max_gpu_usage: self.custom_max_gpu_usage,
             use_tor: self.use_tor,
             reset_earnings: self.reset_earnings,
             eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
             ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
+            custom_mode_cpu_options: self.custom_mode_cpu_options.clone(),
             eco_mode_cpu_threads: self.eco_mode_cpu_threads,
             ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
             auto_update: self.auto_update,
+            custom_power_levels_enabled: self.custom_power_levels_enabled,
+            sharing_enabled: self.sharing_enabled,
+            visual_mode: self.visual_mode,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -542,14 +662,22 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    9
+    11
+}
+
+fn default_custom_max_cpu_usage() -> Option<u32> {
+    None
+}
+
+fn default_custom_max_gpu_usage() -> Option<u32> {
+    None
 }
 
 fn default_mode() -> String {
     "Eco".to_string()
 }
 
-fn default_theme() -> String {
+fn default_display_mode() -> String {
     "light".to_string()
 }
 

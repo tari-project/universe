@@ -1,5 +1,5 @@
 import { Language } from '@app/i18initializer';
-import { modeType, themeType } from '../store/types';
+import { displayMode, modeType } from '../store/types';
 
 export interface TorConfig {
     control_port: number;
@@ -11,7 +11,7 @@ export interface AppConfig {
     config_version: number;
     config_file?: string;
     mode: modeType;
-    theme: themeType;
+    display_mode: displayMode;
     auto_mining: boolean;
     mine_on_app_start: boolean;
     p2pool_enabled: boolean;
@@ -29,8 +29,14 @@ export interface AppConfig {
     paper_wallet_enabled: boolean;
     use_tor: boolean;
     auto_update: boolean;
+    custom_max_cpu_usage: number;
+    custom_max_gpu_usage: number;
+    custom_power_levels_enabled: boolean;
+    reset_earnings: boolean;
     mmproxy_use_monero_fail: boolean;
     mmproxy_monero_nodes: string[];
+    sharing_enabled: boolean;
+    visual_mode: boolean;
 }
 
 export enum ExternalDependencyStatus {
@@ -55,12 +61,12 @@ export interface ExternalDependency {
 }
 
 export interface CpuMinerMetrics {
-    hardware?: HardwareParameters;
+    hardware: PublicDeviceParameters[];
     mining: CpuMinerStatus;
 }
 
 export interface GpuMinerMetrics {
-    hardware: HardwareParameters[];
+    hardware: PublicDeviceParameters[];
     mining: GpuMinerStatus;
 }
 
@@ -137,7 +143,30 @@ export interface P2poolBlockStats {
     rejected: number;
     submitted: number;
 }
+export enum HardwareVendor {
+    Nvidia = 'Nvidia',
+    Amd = 'Amd',
+    Intel = 'Intel',
+    Apple = 'Apple',
+    Unknown = 'Unknown',
+}
 
+export interface DeviceStatus {
+    is_available: boolean;
+    is_reader_implemented: boolean;
+}
+
+export interface DeviceParameters {
+    usage_percentage: number;
+    current_temperature: number;
+    max_temperature: number;
+}
+export interface PublicDeviceParameters {
+    vendor: HardwareVendor;
+    name: string;
+    status: DeviceStatus;
+    parameters?: DeviceParameters;
+}
 export interface HardwareParameters {
     label: string;
     usage_percentage: number;
@@ -190,4 +219,9 @@ export interface ApplicationsVersions {
 export interface PaperWalletDetails {
     qr_link: string;
     password: string;
+}
+
+export interface MaxConsumptionLevels {
+    max_cpu_available: number;
+    max_gpu_available: number;
 }
