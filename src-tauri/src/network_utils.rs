@@ -4,13 +4,6 @@ use serde::Deserialize;
 use std::fmt::Write as _;
 use tari_common::configuration::Network;
 
-pub(crate) fn get_free_port() -> Option<u16> {
-    match TcpListener::bind("127.0.0.1:0") {
-        Ok(listener) => listener.local_addr().ok().map(|addr| addr.port()),
-        Err(_) => None,
-    }
-}
-
 fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
     match network {
         Network::StageNet => format!(
