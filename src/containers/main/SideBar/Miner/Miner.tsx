@@ -22,9 +22,9 @@ import {
 import ModeSelect from './components/ModeSelect.tsx';
 
 export default function Miner() {
+    useMiningStatesSync();
     const theme = useTheme();
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    useMiningStatesSync();
 
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);

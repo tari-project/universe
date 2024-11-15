@@ -1,5 +1,12 @@
 import { MinerMetrics } from '@app/types/app-status';
-import { menu } from '@app/utils';
+import {
+    menu,
+    CPU_HASH_ITEM_ID,
+    GPU_HASH_ITEM_ID,
+    CPU_USAGE_ITEM_ID,
+    GPU_USAGE_ITEM_ID,
+    EARNINGS_ITEM_ID,
+} from '@app/utils';
 import { listen } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -8,6 +15,7 @@ import { useBalanceFormatter } from '@app/utils/formatBalance';
 
 export function useUpdateSystemTray() {
     const [metrics, setMetrics] = useState<MinerMetrics>();
+
     const formatBalance = useBalanceFormatter();
 
     const totalEarningsFormatted = useMemo(() => {
@@ -16,12 +24,40 @@ export function useUpdateSystemTray() {
         return formatBalance(cpu_est + gpu_est);
     }, [formatBalance, metrics]);
 
-    const updateMenuItem = useCallback(async (itemId: string, itemText: string) => {
+    const updateMenuItem = useCallback(async ({ itemId, itemText }: { itemId: string; itemText: string }) => {
         const item = await menu.get(itemId);
         if (item) {
             await item.setText(itemText);
         }
     }, []);
+
+    const items = useMemo(() => {
+        const { cpu, gpu } = metrics || {};
+        const cpu_h = cpu?.mining?.hash_rate || 0;
+        const gpu_h = gpu?.mining?.hash_rate || 0;
+        const cpu_u = cpu?.hardware?.[0]?.parameters?.usage_percentage || 0; // use 1st for now
+        const gpu_u = gpu?.hardware?.[0]?.parameters?.usage_percentage || 0;
+
+        const cpuHashItemText = `CPU Hashrate: ${cpu_h ? `${formatHashrate(cpu_h)}` : '-'}`;
+        const gpuHashItemText = `GPU Hashrate: ${gpu_h ? `${formatHashrate(gpu_h)}` : '-'}`;
+        const cpuUsageItemText = `CPU Usage: ${cpu_u ? `${cpu_u}%` : '-'}`;
+        const gpuUsageItemText = `GPU Usage: ${gpu_u ? `${gpu_u}%` : '-'}`;
+        const estEarningsItemText = `Est earning: ${totalEarningsFormatted !== '0' ? totalEarningsFormatted : '-'} tXTM/day`;
+
+        return [
+            { itemId: CPU_HASH_ITEM_ID, itemText: cpuHashItemText },
+            { itemId: GPU_HASH_ITEM_ID, itemText: gpuHashItemText },
+            { itemId: CPU_USAGE_ITEM_ID, itemText: cpuUsageItemText },
+            { itemId: GPU_USAGE_ITEM_ID, itemText: gpuUsageItemText },
+            { itemId: EARNINGS_ITEM_ID, itemText: estEarningsItemText },
+        ];
+    }, [metrics, totalEarningsFormatted]);
+
+    useEffect(() => {
+        items.forEach(async (item) => {
+            await updateMenuItem({ ...item });
+        });
+    }, [items, updateMenuItem]);
 
     useEffect(() => {
         const ul = listen('miner_metrics', ({ payload }) => {
@@ -33,27 +69,4 @@ export function useUpdateSystemTray() {
             ul.then((unlisten) => unlisten());
         };
     }, []);
-
-    useEffect(() => {
-        const cpu_h = metrics?.cpu?.mining?.hash_rate || 0;
-        if (cpu_h) {
-            const cpuHashItemText = `CPU Hashrate: ${formatHashrate(cpu_h)}`;
-            updateMenuItem('cpu_hashrate', cpuHashItemText);
-        }
-    }, [metrics?.cpu?.mining?.hash_rate, updateMenuItem]);
-
-    useEffect(() => {
-        const gpu_h = metrics?.gpu?.mining?.hash_rate || 0;
-        if (gpu_h) {
-            const gpuHashItemText = `GPU Hashrate: ${formatHashrate(gpu_h)}`;
-            updateMenuItem('gpu_hashrate', gpuHashItemText);
-        }
-    }, [metrics?.gpu?.mining?.hash_rate, updateMenuItem]);
-
-    useEffect(() => {
-        if (totalEarningsFormatted !== '0') {
-            const estEarningsItemText = `Est earning: ${totalEarningsFormatted} tXTM/day`;
-            updateMenuItem('estimated_earning', estEarningsItemText);
-        }
-    }, [totalEarningsFormatted, updateMenuItem]);
 }
