@@ -1,6 +1,6 @@
 import styled, { css } from 'styled-components';
 
-export const Section = styled.div`
+export const Wrapper = styled.div`
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 `;
 
@@ -45,6 +45,10 @@ export const Content = styled.div<{ $isOpen: boolean }>`
         css`
             max-height: 1000px;
         `}
+`;
+
+export const ContentPadding = styled.div`
+    padding: 0 0 10px 0;
 `;
 
 export const ChevronIcon = styled.span<{ $isOpen: boolean }>`

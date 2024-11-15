@@ -1,5 +1,5 @@
 import React from 'react';
-import { Section, Header, TextWrapper, Title, Subtitle, Content, ChevronIcon } from './styles';
+import { Wrapper, Header, TextWrapper, Title, Subtitle, Content, ChevronIcon, ContentPadding } from './styles';
 
 interface AccordionItemProps {
     title: React.ReactNode;
@@ -11,7 +11,7 @@ interface AccordionItemProps {
 
 export const AccordionItem = ({ title, subtitle, content, isOpen, onToggle }: AccordionItemProps) => {
     return (
-        <Section>
+        <Wrapper>
             <Header onClick={onToggle}>
                 <TextWrapper>
                     <Title>{title}</Title>
@@ -19,7 +19,9 @@ export const AccordionItem = ({ title, subtitle, content, isOpen, onToggle }: Ac
                 </TextWrapper>
                 <ChevronIcon $isOpen={isOpen} />
             </Header>
-            <Content $isOpen={isOpen}>{content}</Content>
-        </Section>
+            <Content $isOpen={isOpen}>
+                <ContentPadding>{content}</ContentPadding>
+            </Content>
+        </Wrapper>
     );
 };
