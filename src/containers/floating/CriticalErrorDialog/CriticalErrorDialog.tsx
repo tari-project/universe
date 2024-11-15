@@ -12,7 +12,7 @@ import { useCallback, useState } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { useCopyToClipboard } from '@app/hooks';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';

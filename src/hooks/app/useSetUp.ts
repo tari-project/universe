@@ -1,14 +1,14 @@
 import * as Sentry from '@sentry/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { TauriEvent } from '../types.ts';
+import { TauriEvent } from '../../types.ts';
 
 import { invoke } from '@tauri-apps/api/core';
 
-import { useAppStateStore } from '../store/appStateStore.ts';
+import { useAppStateStore } from '../../store/appStateStore.ts';
 
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
-import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
+import { useHandleAirdropTokensRefresh } from '../airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
     const isInitializingRef = useRef(false);

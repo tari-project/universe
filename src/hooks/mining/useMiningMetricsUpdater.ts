@@ -1,10 +1,12 @@
-import { useMiningStore } from '@app/store/useMiningStore';
+import * as Sentry from '@sentry/react';
 import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+
 import { setAnimationState } from '@app/visuals.ts';
+import { useMiningStore } from '@app/store/useMiningStore';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
-import useFetchTx from '@app/hooks/mining/useTransactions.ts';
-import * as Sentry from '@sentry/react';
+
+import useFetchTx from './useTransactions.ts';
 
 export default function useMiningMetricsUpdater() {
     const fetchTx = useFetchTx();

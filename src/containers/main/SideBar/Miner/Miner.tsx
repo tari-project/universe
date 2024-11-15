@@ -1,7 +1,6 @@
-import Tile from './components/Tile.tsx';
-import { MinerContainer, TileContainer, Unit } from './styles.ts';
+import { useTheme } from 'styled-components';
+import { Trans, useTranslation } from 'react-i18next';
 
-import ModeSelect from './components/ModeSelect.tsx';
 import { formatHashrate } from '@app/utils/formatHashrate.ts';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
@@ -10,14 +9,17 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
-import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
-import { useTheme } from 'styled-components';
-import { Trans, useTranslation } from 'react-i18next';
+import Tile from './components/Tile.tsx';
+import { MinerContainer, TileContainer, Unit } from './styles.ts';
+
+import { useMiningStatesSync } from '@app/hooks';
+
 import { ExpandableTile } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.tsx';
 import {
     ExpandableTileItem,
     ExpandedContentTile,
 } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.styles.ts';
+import ModeSelect from './components/ModeSelect.tsx';
 
 export default function Miner() {
     const theme = useTheme();

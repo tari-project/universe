@@ -4,7 +4,7 @@ import styled from 'styled-components';
 
 import { IoCopyOutline, IoCheckmarkOutline, IoPencil } from 'react-icons/io5';
 import { useCallback } from 'react';
-import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export interface SeedWordsProps {

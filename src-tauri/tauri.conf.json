@@ -55,7 +55,8 @@
         },
         "trayIcon": {
             "id": "universe-tray-icon",
-            "iconPath": "icons/systray_icon.ico"
+            "iconPath": "icons/systray_icon.ico",
+            "menuOnLeftClick": false
         },
         "macOSPrivateApi": true,
         "withGlobalTauri": true,

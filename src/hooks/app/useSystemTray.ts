@@ -1,12 +1,13 @@
-import { useHardwareStats } from '@app/hooks/useHardwareStats';
-import { useMiningStore } from '@app/store/useMiningStore';
-import { useFormatBalance } from '@app/utils/formatBalance';
-import { formatHashrate } from '@app/utils/formatHashrate';
-import { Menu } from '@tauri-apps/api/menu';
-import { MenuOptions } from '@tauri-apps/api/menu/menu';
-import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
-import { TrayIcon } from '@tauri-apps/api/tray';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
+import { MenuOptions } from '@tauri-apps/api/menu/menu';
+import { TrayIcon } from '@tauri-apps/api/tray';
+import { Menu } from '@tauri-apps/api/menu';
+
+import { useMiningStore } from '@app/store/useMiningStore';
+import { formatHashrate } from '@app/utils/formatHashrate';
+import { useFormatBalance } from '@app/utils/formatBalance';
+import { useHardwareStats } from '../app/useHardwareStats';
 
 const TRAY_ID = 'universe-tray-icon';
 const defaultIconPath = 'icons/systray_icon.ico';

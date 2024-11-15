@@ -1,13 +1,14 @@
-import { useUIStore } from '@app/store/useUIStore';
-
 import { useTranslation } from 'react-i18next';
 
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
+import { useUIStore } from '@app/store/useUIStore';
+import { useHandleUpdate } from '@app/hooks';
+
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Typography } from '@app/components/elements/Typography';
-import { ButtonsWrapper } from './AutoUpdateDialog.styles';
-import { useHandleUpdate } from '@app/hooks/useUpdateStatus';
+
 import { UpdatedStatus } from './UpdatedStatus';
+import { ButtonsWrapper } from './AutoUpdateDialog.styles';
 
 export default function AutoUpdateDialog() {
     const { t } = useTranslation('setup-view', { useSuspense: false });

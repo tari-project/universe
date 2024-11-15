@@ -1,8 +1,7 @@
-import { useShuttingDown } from '@app/hooks/useShuttingDown';
-import { useSystemTray } from '@app/hooks/useSystemTray';
-import { useAppStateStore } from '@app/store/appStateStore';
 import { LazyMotion, domMax, MotionConfig } from 'framer-motion';
 
+import { useAppStateStore } from '@app/store/appStateStore';
+import { useShuttingDown } from '@app/hooks';
 import ShuttingDownScreen from '../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import FloatingElements from '../containers/floating/FloatingElements.tsx';
 import MainView from '../containers/main/MainView.tsx';
@@ -15,7 +14,6 @@ import ThemeProvider from '../theme/ThemeProvider.tsx';
 import AppContent from './AppContent';
 
 export default function App() {
-    useSystemTray();
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     return (

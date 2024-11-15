@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
-import GemsAnimation from '../GemsAnimation/GemsAnimation';
-import { Background, Wrapper } from './styles';
-import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
 import { useTranslation } from 'react-i18next';
-import { useFormatNumber } from '@app/hooks/useFormatNumber';
+
+import { useFormatNumber } from '@app/hooks';
+
+import GemsAnimation from '../GemsAnimation/GemsAnimation';
+import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
+import { Background, Wrapper } from './styles';
 
 interface Props {
     gems: number;

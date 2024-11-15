@@ -3,10 +3,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { check, Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 
-import { useInterval } from '@app/hooks/useInterval';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useUIStore } from '@app/store/useUIStore';
+import { useInterval } from '../helpers/useInterval';
 
 const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60; // 1 hour
 
