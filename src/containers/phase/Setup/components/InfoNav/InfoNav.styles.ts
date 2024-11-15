@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
 export const Container = styled.div`
     display: flex;
@@ -60,12 +60,6 @@ export const NavItem = styled(m.div)<{ $selected?: boolean }>`
     &:hover {
         transform: scaleY(2);
     }
-
-    ${({ $selected }) =>
-        $selected &&
-        css`
-            pointer-events: none;
-        `};
 `;
 
 export const NavItemCurrent = styled(m.div)`
