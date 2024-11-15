@@ -1,4 +1,5 @@
-import styled, { css } from 'styled-components';
+import { m } from 'framer-motion';
+import styled from 'styled-components';
 
 export const Wrapper = styled.div`
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -35,16 +36,8 @@ export const Subtitle = styled.div`
     line-height: 116.667%;
 `;
 
-export const Content = styled.div<{ $isOpen: boolean }>`
-    max-height: 0;
+export const Content = styled(m.div)<{ $isOpen: boolean }>`
     overflow: hidden;
-    transition: max-height 0.3s ease-in-out;
-
-    ${({ $isOpen }) =>
-        $isOpen &&
-        css`
-            max-height: 1000px;
-        `}
 `;
 
 export const ContentPadding = styled.div`

@@ -19,7 +19,7 @@ export const AccordionItem = ({ title, subtitle, content, isOpen, onToggle }: Ac
                 </TextWrapper>
                 <ChevronIcon $isOpen={isOpen} />
             </Header>
-            <Content $isOpen={isOpen}>
+            <Content $isOpen={isOpen} initial={false} animate={{ height: isOpen ? 'auto' : 0 }}>
                 <ContentPadding>{content}</ContentPadding>
             </Content>
         </Wrapper>
