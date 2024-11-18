@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { useCallback } from 'react';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { Transaction } from '@app/types/wallet.ts';

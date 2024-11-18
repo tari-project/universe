@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { BackendInMemoryConfig, useAirdropStore } from '@app/store/useAirdropStore';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { useEffect } from 'react';
 
 export function useGetRustInMemoryConfig() {

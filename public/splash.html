@@ -35,7 +35,7 @@
         </main>
         <script>
             document.addEventListener('DOMContentLoaded', ()=> {
-                const invoke = window.__TAURI__.invoke;
+                const invoke = window.__TAURI__.core.invoke;
 
                 setTimeout(()=> {
                     invoke('close_splashscreen');
