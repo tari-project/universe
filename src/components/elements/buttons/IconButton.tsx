@@ -20,6 +20,9 @@ const BaseIconButton = styled.button<StyleProps>`
     &:hover {
         background-color: ${({ theme }) => theme.palette.primary.wisp};
     }
+    &:disabled {
+        opacity: 0.3;
+    }
 
     ${({ $size }) =>
         $size === 'small' &&
