@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled.div`
     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
@@ -44,11 +44,15 @@ export const ContentPadding = styled.div`
     padding: 0 0 10px 0;
 `;
 
-export const ChevronIcon = styled.span<{ $isOpen: boolean }>`
-    border: solid #000;
-    border-width: 0 2px 2px 0;
-    display: inline-block;
-    padding: 3px;
-    transform: ${({ $isOpen }) => ($isOpen ? 'rotate(-135deg)' : 'rotate(45deg)')};
+export const ChevronIcon = styled.svg<{ $isOpen: boolean }>`
+    width: 22px;
+    height: 22px;
+    transform: scaleY(1);
     transition: transform 0.3s ease;
+
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            transform: scaleY(-1);
+        `}
 `;

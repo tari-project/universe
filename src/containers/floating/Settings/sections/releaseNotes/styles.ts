@@ -42,10 +42,10 @@ export const Text = styled('div')`
 `;
 
 export const MarkdownWrapper = styled('div')`
+    position: relative;
     overflow: hidden;
     overflow-y: auto;
-    height: calc(70vh - 110px);
-
+    height: calc(70vh - 210px);
     padding: 0px 20px 60px 0;
 
     &::-webkit-scrollbar {

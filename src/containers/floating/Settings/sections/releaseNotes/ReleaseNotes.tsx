@@ -61,6 +61,7 @@ export const ReleaseNotes = () => {
                     <Text>Tari Universe - Testnet V0.6.4</Text>
                 </TextWrapper>
             </VersionWrapper>
+
             <MarkdownWrapper>
                 {sections.map((section, index) => (
                     <AccordionItem
