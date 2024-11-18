@@ -25,7 +25,6 @@ dyn-clone = "1.0.17"
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
 futures-util = "0.3.30"
-human_format = "1.1.0"
 jsonwebtoken = "9.3.0"
 keyring = { version = "3.0.5", features = [
   "windows-native",

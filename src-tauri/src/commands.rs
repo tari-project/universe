@@ -31,7 +31,7 @@ use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tauri::{Manager};
+use tauri::Manager;
 
 #[tauri::command]
 pub async fn set_mode(
