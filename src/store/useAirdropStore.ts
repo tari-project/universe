@@ -1,5 +1,7 @@
 import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
+import { invoke } from '@tauri-apps/api/tauri';
+import * as Sentry from '@sentry/react';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -96,7 +98,7 @@ export interface UserDetails {
     user: User;
 }
 
-interface AirdropTokens {
+export interface AirdropTokens {
     token: string;
     refreshToken: string;
     expiresAt?: number;
@@ -124,6 +126,7 @@ interface MiningPoint {
 
 interface AirdropState {
     authUuid: string;
+    syncedWithBackend: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -140,10 +143,10 @@ interface AirdropStore extends AirdropState {
     setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
     setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
-    setAirdropTokens: (airdropToken: AirdropTokens) => void;
+    setAirdropTokens: (airdropToken?: AirdropTokens) => Promise<void>;
     setUserDetails: (userDetails?: UserDetails) => void;
     setUserPoints: (userPoints: UserPoints) => void;
-    setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
+    fetchBackendInMemoryConfig: (config?: BackendInMemoryConfig) => Promise<BackendInMemoryConfig | undefined>;
     setReferralCount: (referralCount: ReferralCount) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
@@ -155,6 +158,7 @@ interface AirdropStore extends AirdropState {
 const initialState: AirdropState = {
     authUuid: '',
     seenPermissions: false,
+    syncedWithBackend: false,
 };
 
 const clearState: Partial<AirdropState> = {
@@ -174,13 +178,26 @@ export const useAirdropStore = create<AirdropStore>()(
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
-            setAirdropTokens: (airdropTokens) =>
-                set({
-                    airdropTokens: {
-                        ...airdropTokens,
-                        expiresAt: parseJwt(airdropTokens.token).exp,
-                    },
-                }),
+            setAirdropTokens: async (airdropTokens) => {
+                if (airdropTokens) {
+                    try {
+                        await invoke('set_airdrop_access_token', { token: airdropTokens.token });
+                    } catch (error) {
+                        Sentry.captureException(error);
+                        console.error('Error getting airdrop tokens', error);
+                    }
+                    set({
+                        syncedWithBackend: true,
+                        airdropTokens: {
+                            ...airdropTokens,
+                            expiresAt: parseJwt(airdropTokens.token).exp,
+                        },
+                    });
+                } else {
+                    // User not connected
+                    set({ syncedWithBackend: true });
+                }
+            },
             setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints }),
             setUserGems: (userGems: number) =>
@@ -194,7 +211,17 @@ export const useAirdropStore = create<AirdropStore>()(
                         userPoints: userPointsFormatted,
                     };
                 }),
-            setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
+            fetchBackendInMemoryConfig: async () => {
+                let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
+                try {
+                    backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
+                    set({ backendInMemoryConfig });
+                } catch (e) {
+                    Sentry.captureException(e);
+                    console.error('get_app_in_memory_config error:', e);
+                }
+                return backendInMemoryConfig;
+            },
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
             setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
             logout: () => set(clearState),
