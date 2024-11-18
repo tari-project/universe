@@ -5,10 +5,23 @@
   "applyInviteCode": "招待コードを適用",
   "cancel": "キャンセル",
   "change-language": "言語",
+  "confirm-import-wallet": "Abandon current wallet?",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "接続されたピア",
   "connected-to-tari": "Tariネットワークに接続されています",
   "control-port": "コントロールポート",
   "cpu-mining-enabled": "CPUマイニング",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "CPUをどれだけマイニングに割り当てるか選択 <span>({{current}}/{{max}} コア)</span>",
+    "choose-gpu-power-level": "GPUをどれだけマイニングに割り当てるか選択 <span>({{current}}/{{max}} スレッド)</span>",
+    "cpu-power-level": "CPUコア",
+    "cpu-warning": "高いCPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。",
+    "gpu-power-level": "GPUパワー％",
+    "gpu-warning": "高いGPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。",
+    "saved": "変更を適用中",
+    "title": "カスタムモード",
+    "warning": "警告"
+  },
   "debug-info": "デバッグ",
   "disconnect": "エアドロップから切断",
   "errors": {
@@ -115,16 +128,5 @@
   "visual-mode": "ビジュアルモード",
   "yes": "はい",
   "your-feedback": "問題を説明してください",
-  "your-reference": "あなたの参照",
-  "custom-power-levels": {
-    "title": "カスタムモード",
-    "warning": "警告",
-    "saved": "変更を適用中",
-    "gpu-power-level": "GPUパワー％",
-    "cpu-power-level": "CPUコア",
-    "choose-gpu-power-level": "GPUをどれだけマイニングに割り当てるか選択 <span>({{current}}/{{max}} スレッド)</span>",
-    "choose-cpu-power-level": "CPUをどれだけマイニングに割り当てるか選択 <span>({{current}}/{{max}} コア)</span>",
-    "cpu-warning": "高いCPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。",
-    "gpu-warning": "高いGPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。"
-  }
+  "your-reference": "あなたの参照"
 }
