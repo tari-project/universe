@@ -2,6 +2,7 @@ import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/tauri';
 import * as Sentry from '@sentry/react';
+import { useMiningStore } from './useMiningStore';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
