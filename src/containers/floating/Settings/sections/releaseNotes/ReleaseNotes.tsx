@@ -3,6 +3,11 @@ import ReactMarkdown from 'react-markdown';
 import { IconImage, MarkdownWrapper, Text, TextWrapper, Title, VersionWrapper, Wrapper } from './styles';
 import { AccordionItem } from './AccordionItem/AccordionItem';
 import tariIcon from './tari-icon.png';
+import packageInfo from '../../../../../../package.json';
+import { useTranslation } from 'react-i18next';
+
+const appVersion = packageInfo.version;
+const versionString = `v${appVersion}`;
 
 const parseMarkdownSections = (markdown: string): ReleaseSection[] => {
     const sections = markdown.split(/\n---\n/);
@@ -31,6 +36,8 @@ export const ReleaseNotes = () => {
     const [sections, setSections] = useState<ReleaseSection[]>([]);
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
 
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+
     useEffect(() => {
         const loadReleaseNotes = async () => {
             try {
@@ -57,8 +64,10 @@ export const ReleaseNotes = () => {
             <VersionWrapper>
                 <IconImage src={tariIcon} alt="Tari Icon" />
                 <TextWrapper>
-                    <Title>Release Notes</Title>
-                    <Text>Tari Universe - Testnet V0.6.4</Text>
+                    <Title>{t('settings:tabs.releaseNotes')}</Title>
+                    <Text>
+                        {t('tari-universe')} - {t('testnet')} {versionString}
+                    </Text>
                 </TextWrapper>
             </VersionWrapper>
 
