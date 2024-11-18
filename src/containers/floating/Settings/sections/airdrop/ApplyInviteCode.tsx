@@ -1,3 +1,4 @@
+import { Button } from '@app/components/elements/buttons/Button';
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -16,7 +17,7 @@ import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { open } from '@tauri-apps/plugin-shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
+
 import * as Sentry from '@sentry/react';
 
 export const ApplyInviteCode = () => {
@@ -107,9 +108,9 @@ export const ApplyInviteCode = () => {
                     {loading ? (
                         <CircularProgress />
                     ) : (
-                        <TextButton size="medium" onClick={() => handleAuth()} disabled={loading}>
+                        <Button size="medium" onClick={() => handleAuth()} disabled={loading}>
                             {t('applyInviteCode')}
-                        </TextButton>
+                        </Button>
                     )}
                 </SettingsGroupAction>
             </SettingsGroup>

@@ -28,7 +28,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                             size="small"
                             onClick={() => handleClick(type)}
                             variant={isActiveSection ? 'secondary' : 'primary'}
-                            color="transparent"
+                            disableColour
                         >
                             {name}
                         </SectionButton>
