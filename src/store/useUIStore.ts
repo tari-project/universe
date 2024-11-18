@@ -40,7 +40,7 @@ const initialState: State = {
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
-    enableReleaseNotes: true,
+    enableReleaseNotes: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
