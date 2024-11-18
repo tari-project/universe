@@ -2,6 +2,7 @@ import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/tauri';
 import * as Sentry from '@sentry/react';
+import { useMiningStore } from './useMiningStore';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -152,7 +153,7 @@ interface AirdropStore extends AirdropState {
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
     setSeenPermissions: (seenPermissions: boolean) => void;
     setUserGems: (userGems: number) => void;
-    logout: () => void;
+    logout: () => Promise<void>;
 }
 
 const initialState: AirdropState = {
@@ -224,7 +225,11 @@ export const useAirdropStore = create<AirdropStore>()(
             },
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
             setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
-            logout: () => set(clearState),
+
+            logout: async () => {
+                set(clearState);
+                await useMiningStore.getState().restartMining();
+            },
         }),
         {
             name: 'airdrop-store',
