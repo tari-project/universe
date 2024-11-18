@@ -5,16 +5,12 @@ import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 import { ButtonContainer, Container, SectionButton, TermsBtn } from './Navigation.styles.ts';
 
 import { open } from '@tauri-apps/api/shell';
-import { useUIStore } from '@app/store/useUIStore.ts';
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
 }
 export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const enableReleaseNotes = useUIStore((s) => s.enableReleaseNotes);
-
-    const filteredSettingButtons = SETTINGS_TYPES.filter((type) => enableReleaseNotes || type !== 'releaseNotes');
 
     function handleClick(section: SettingsType) {
         onChangeActiveSection(section);
@@ -23,7 +19,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
     return (
         <Container>
             <ButtonContainer>
-                {filteredSettingButtons.map((type: SettingsType) => {
+                {SETTINGS_TYPES.map((type: SettingsType) => {
                     const isActiveSection = activeSection === type;
                     const name = t(`tabs.${type}`);
                     return (

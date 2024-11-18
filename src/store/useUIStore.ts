@@ -16,7 +16,6 @@ interface State {
     showExperimental: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
-    enableReleaseNotes: boolean;
 }
 interface Actions {
     setTheme: (theme: Theme) => void;
@@ -27,7 +26,6 @@ interface Actions {
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
     setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
     setLatestVersion: (latestVersion: string) => void;
-    setEnableReleaseNotes: (enableReleaseNotes: boolean) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -40,7 +38,6 @@ const initialState: State = {
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
-    enableReleaseNotes: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -56,5 +53,4 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
     setLatestVersion: (latestVersion) => set({ latestVersion }),
-    setEnableReleaseNotes: (enableReleaseNotes) => set({ enableReleaseNotes }),
 }));
