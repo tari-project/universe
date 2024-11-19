@@ -16,7 +16,7 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::utils::file_utils::convert_to_string;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::windows_firewall::add_firewall_rule;
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
