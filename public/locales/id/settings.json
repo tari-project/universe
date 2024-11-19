@@ -46,6 +46,7 @@
   "importing-wallet": "Mengimpor dompet",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
   "inviteCode": "Kode Undangan",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
   "logs": "Log",
   "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",

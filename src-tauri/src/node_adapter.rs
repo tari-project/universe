@@ -10,10 +10,12 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::info;
 use minotari_node_grpc_client::grpc::{
-    Empty, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo, SyncState,
+    BlockHeader, Empty, GetBlocksRequest, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo,
+    SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
+use std::fmt::Write as _;
 use std::path::PathBuf;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -98,7 +100,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 self.required_initial_peers
             ),
             "-p".to_string(),
-            "base_node.grpc_server_allow_methods=\"list_connected_peers\"".to_string(),
+            "base_node.grpc_server_allow_methods=\"list_connected_peers, get_blocks\"".to_string(),
             "-p".to_string(),
             "base_node.p2p.allow_test_addresses=true".to_string(),
         ];
@@ -326,6 +328,36 @@ impl MinotariNodeStatusMonitor {
 
         self.last_block_height = block_height;
         Ok(result?)
+    }
+
+    pub async fn get_historical_blocks(
+        &self,
+        heights: Vec<u64>,
+    ) -> Result<Vec<(u64, String)>, Error> {
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
+        let mut res = client
+            .get_blocks(GetBlocksRequest { heights })
+            .await?
+            .into_inner();
+
+        let mut blocks: Vec<(u64, String)> = Vec::new();
+        while let Some(block) = res.message().await? {
+            let BlockHeader { height, hash, .. } = block
+                .block
+                .clone()
+                .expect("Failed to get block data")
+                .header
+                .expect("Failed to get block header data");
+            let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
+                write!(acc, "{:02x}", x).expect("Unable to write");
+                acc
+            });
+
+            blocks.push((height, hash));
+        }
+        Ok(blocks)
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
