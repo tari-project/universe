@@ -5,10 +5,23 @@
   "applyInviteCode": "Einladungscode anwenden",
   "cancel": "Abbrechen",
   "change-language": "Sprache",
+  "confirm-import-wallet": "Abandon current wallet?",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Verbundenen Peers",
   "connected-to-tari": "Mit dem Tari-Netzwerk verbunden",
   "control-port": "Steuerport",
   "cpu-mining-enabled": "CPU-Mining",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "Wählen Sie, wie viel Ihrer CPU für das Mining zugewiesen werden soll <span>({{current}} von {{max}} Kernen)</span>",
+    "choose-gpu-power-level": "Wählen Sie, wie viel Ihrer GPU für das Mining zugewiesen werden soll <span>({{current}} von {{max}} Threads)</span>",
+    "cpu-power-level": "CPU-Kerne",
+    "cpu-warning": "Hohe CPU-Nutzung kann Überhitzung verursachen, den Energieverbrauch erhöhen und im Laufe der Zeit zu Hardwareschäden führen. Bitte überwachen Sie die Nutzung, um einen sicheren und effizienten Betrieb zu gewährleisten.",
+    "gpu-power-level": "GPU-Leistung %",
+    "gpu-warning": "Hohe GPU-Nutzung kann Überhitzung verursachen, den Energieverbrauch erhöhen und im Laufe der Zeit zu Hardwareschäden führen. Bitte überwachen Sie die Nutzung, um einen sicheren und effizienten Betrieb zu gewährleisten.",
+    "saved": "Änderungen werden übernommen",
+    "title": "Benutzerdefinierter Modus",
+    "warning": "Warnung"
+  },
   "debug-info": "Debuggen",
   "disconnect": "Von Airdrop trennen",
   "errors": {
@@ -33,6 +46,7 @@
   "importing-wallet": "Wallet wird importiert",
   "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen",
   "inviteCode": "Einladungscode",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",
   "logs": "Protokolle",
   "low-hash-rate-warning": "Ihre Hashrate ist sehr niedrig. Versuchen Sie, alle Apps außer Tari Universe zu schließen",
@@ -115,16 +129,5 @@
   "visual-mode": "Visueller Modus",
   "yes": "Ja",
   "your-feedback": "Beschreibe dein Problem, einschließlich deines Telegram-Namens, falls vorhanden, damit wir dich mit Updates kontaktieren können.",
-  "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>",
-  "custom-power-levels": {
-    "title": "Benutzerdefinierter Modus",
-    "warning": "Warnung",
-    "saved": "Änderungen werden übernommen",
-    "gpu-power-level": "GPU-Leistung %",
-    "cpu-power-level": "CPU-Kerne",
-    "choose-gpu-power-level": "Wählen Sie, wie viel Ihrer GPU für das Mining zugewiesen werden soll <span>({{current}} von {{max}} Threads)</span>",
-    "choose-cpu-power-level": "Wählen Sie, wie viel Ihrer CPU für das Mining zugewiesen werden soll <span>({{current}} von {{max}} Kernen)</span>",
-    "cpu-warning": "Hohe CPU-Nutzung kann Überhitzung verursachen, den Energieverbrauch erhöhen und im Laufe der Zeit zu Hardwareschäden führen. Bitte überwachen Sie die Nutzung, um einen sicheren und effizienten Betrieb zu gewährleisten.",
-    "gpu-warning": "Hohe GPU-Nutzung kann Überhitzung verursachen, den Energieverbrauch erhöhen und im Laufe der Zeit zu Hardwareschäden führen. Bitte überwachen Sie die Nutzung, um einen sicheren und effizienten Betrieb zu gewährleisten."
-  }
+  "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>"
 }
