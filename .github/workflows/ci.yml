@@ -19,7 +19,7 @@ concurrency:
     cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/development' || github.ref != 'refs/heads/nextnet' || github.ref != 'refs/heads/stagenet' }}
 
 jobs:
-    cargo-check:
+    cargo-checks:
         name: cargo checks fmt, clippy, check)
         runs-on: ubuntu-latest
         steps:
@@ -82,3 +82,38 @@ jobs:
               run: |
                   cargo install cargo-machete
                   cargo machete
+
+    tauri-build:
+        name: tauri-build
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: install dependencies (linux)
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install --no-install-recommends --assume-yes \
+                    libwebkit2gtk-4.0-dev \
+                    libappindicator3-dev \
+                    librsvg2-dev \
+                    patchelf \
+                    libprotobuf-dev \
+                    protobuf-compiler
+
+            - name: install dependencies (linux/OpenCL)
+              run: |
+                  sudo apt-get install --no-install-recommends --assume-yes \
+                    opencl-headers \
+                    ocl-icd-opencl-dev
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: lts/*
+                  cache: 'npm'
+            - name: Install dependencies (node)
+              run: npm ci
+            - uses: dtolnay/rust-toolchain@stable
+            - uses: swatinem/rust-cache@v2.7.5
+              with:
+                  workspaces: './src-tauri -> target'
+            - name: NPM tauri build
+              run: npm run tauri build -- --ci
