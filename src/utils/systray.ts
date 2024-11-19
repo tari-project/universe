@@ -60,15 +60,20 @@ const dynamicItems = [
     },
 ] as MenuItemOptions[];
 
-export const menu = await Menu.new({
-    id: TRAY_MENU_ID,
-    items: [about, separator, ...dynamicItems, separator, minimize],
-});
-
-export const tray = await TrayIcon.getById(TRAY_ID);
+let tray: TrayIcon | null;
+let menu: Menu;
 export async function initSystray() {
+    menu = await Menu.new({
+        id: TRAY_MENU_ID,
+        items: [about, separator, ...dynamicItems, separator, minimize],
+    });
+
+    tray = await TrayIcon.getById(TRAY_ID);
+
     await tray?.setIcon(icon);
     if (menu) {
         await tray?.setMenu(menu);
     }
 }
+
+export { tray, menu };

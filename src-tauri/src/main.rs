@@ -449,8 +449,6 @@ async fn setup_inner(
     let mvhandle = app.clone();
     tauri::async_runtime::spawn(async move {
         loop {
-            // TODO: REMOVE THIS INFO IT'S JUST FOR TESTING
-            info!(target: LOG_TARGET, "Checking for MINER METRICS");
             let app_state = mvhandle.state::<UniverseAppState>().clone();
             if let Ok(ret) = commands::get_miner_metrics(app_state, mvhandle.clone()).await {
                 if mvhandle.emit("miner_metrics", &ret).is_ok() {
