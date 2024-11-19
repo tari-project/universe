@@ -1,8 +1,10 @@
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import styled from 'styled-components';
 
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { Controller, useForm } from 'react-hook-form';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
@@ -32,7 +34,7 @@ export const StyledTextArea = styled.textarea<{ $hasError: boolean }>(({ $hasErr
     padding: '20px',
 }));
 
-export const CopyIconContainer = styled.div(({ theme }) => ({
+export const IconContainer = styled.div(({ theme }) => ({
     color: theme.palette.text.primary,
 }));
 
@@ -49,6 +51,8 @@ export const GreyTypography = styled(Typography)(({ theme }) => ({
 const seedWordsRegex = /^(([a-zA-Z]+)\s){23}([a-zA-Z]+)$/;
 
 export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: SeedWordsEditProps) => {
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const importSeedWords = useWalletStore((s) => s.importSeedWords);
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
     const { t } = useTranslation('settings', { useSuspense: false });
@@ -60,9 +64,9 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
         setValue,
         reset,
         trigger,
-        formState: { errors },
+        formState: { errors, isDirty },
     } = useForm({
-        defaultValues: { seedWords: seedWords.join(' ') },
+        defaultValues: { seedWords: seedWords.join(' ').trim() },
     });
 
     const seedWordsValue = watch('seedWords');
@@ -71,12 +75,30 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
         trigger('seedWords');
     }, [seedWordsValue, trigger]);
 
+    const hasChanges = useMemo(() => {
+        const newStr = seedWordsValue.trim();
+        const oldStr = seedWords.join(' ').trim();
+
+        return newStr !== oldStr;
+    }, [seedWords, seedWordsValue]);
+
+    // await importSeedWords(data.seedWords.split(' '));
     const handleApply = useCallback(
-        async (data: { seedWords: string }) => {
-            await importSeedWords(data.seedWords.split(' '));
+        (data: { seedWords: string }) => {
+            if (hasChanges) {
+                setShowConfirm(true);
+                setNewSeedWords(data.seedWords.split(' '));
+            }
         },
-        [importSeedWords]
+        [hasChanges]
     );
+
+    const handleConfrimed = useCallback(async () => {
+        if (hasChanges && newSeedWords) {
+            setShowConfirm(false);
+            await importSeedWords(newSeedWords);
+        }
+    }, [hasChanges, importSeedWords, newSeedWords]);
 
     const handleReset = useCallback(() => {
         reset({ seedWords: seedWords.join(' ') });
@@ -118,16 +140,16 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
                         );
                     }}
                 />
-                <CopyIconContainer>
+                <IconContainer>
                     {!errors.seedWords && (
-                        <IconButton type="submit">
+                        <IconButton type="submit" disabled={!isDirty}>
                             <IoCheckmarkOutline />
                         </IconButton>
                     )}
                     <IconButton type="reset">
                         <IoCloseOutline />
                     </IconButton>
-                </CopyIconContainer>
+                </IconContainer>
             </WrapperForm>
             <ErrorTypography variant="p">{errors.seedWords && errors.seedWords.message}</ErrorTypography>
 
@@ -136,6 +158,22 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
                     <Stack direction="column" alignItems="center" justifyContent="space-between">
                         <Typography variant="h2">{t('importing-wallet')}</Typography>
                         <CircularProgress />
+                    </Stack>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+                <DialogContent>
+                    <Stack direction="column" alignItems="center" justifyContent="space-between" gap={16}>
+                        <Typography variant="h3">{t('confirm-import-wallet')}</Typography>
+                        <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
+                            {t('confirm-import-wallet-copy')}
+                        </Typography>
+                        <Stack direction="row" gap={8}>
+                            <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
+                            <SquaredButton color="orange" onClick={handleConfrimed}>
+                                {t('yes')}
+                            </SquaredButton>
+                        </Stack>
                     </Stack>
                 </DialogContent>
             </Dialog>
