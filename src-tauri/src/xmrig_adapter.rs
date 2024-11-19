@@ -66,8 +66,6 @@ impl ProcessAdapter for XmrigAdapter {
         log_dir: PathBuf,
         binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
-        self.kill_previous_instances(data_dir.clone())?;
-
         let xmrig_shutdown = Shutdown::new();
         let mut args = self
             .node_connection

@@ -46,6 +46,7 @@
   "importing-wallet": "지갑 가져오기",
   "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",
   "inviteCode": "초대 코드",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "마지막 블록 체인 추가 시간",
   "logs": "로그",
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
