@@ -5,10 +5,23 @@
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "cancel": "Cancel",
   "change-language": "Verander taal",
+  "confirm-import-wallet": "Abandon current wallet?",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Gekoppelde Eweknieë",
   "connected-to-tari": "Gekoppel aan die Tari Netwerk",
   "control-port": "Beheerpoort",
   "cpu-mining-enabled": "SVE Mynbou",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "Kies hoeveel jy wil hê jou SVE moet aan mynbou toegewys word <span>({{current}} uit {{max}} kerns)</span>",
+    "choose-gpu-power-level": "Kies hoeveel jy wil hê jou GPU moet aan mynbou toegewys word <span>({{current}} uit {{max}} drade)</span>",
+    "cpu-power-level": "SVE Kerns",
+    "cpu-warning": "Hoë SVE-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker.",
+    "gpu-power-level": "GPU Krag %",
+    "gpu-warning": "Hoë GPU-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker.",
+    "saved": "Veranderinge Toepas",
+    "title": "Pasgemaakte Modus",
+    "warning": "Waarskuwing"
+  },
   "debug-info": "Ontfoutingsinligting",
   "disconnect": "Ontkoppel van Airdrop",
   "errors": {
@@ -33,6 +46,7 @@
   "importing-wallet": "Beursie invoer",
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
   "inviteCode": "Uitnodigingskode",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
   "logs": "Verslae",
   "low-hash-rate-warning": "Jou hash rate is baie laag. Probeer om alle toepassings behalwe Tari Universe te sluit",
@@ -115,16 +129,5 @@
   "visual-mode": "Visuele modus",
   "yes": "Yes",
   "your-feedback": "Beskryf asseblief u probleem",
-  "your-reference": "U verwysing",
-  "custom-power-levels": {
-    "title": "Pasgemaakte Modus",
-    "warning": "Waarskuwing",
-    "saved": "Veranderinge Toepas",
-    "gpu-power-level": "GPU Krag %",
-    "cpu-power-level": "SVE Kerns",
-    "choose-gpu-power-level": "Kies hoeveel jy wil hê jou GPU moet aan mynbou toegewys word <span>({{current}} uit {{max}} drade)</span>",
-    "choose-cpu-power-level": "Kies hoeveel jy wil hê jou SVE moet aan mynbou toegewys word <span>({{current}} uit {{max}} kerns)</span>",
-    "cpu-warning": "Hoë SVE-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker.",
-    "gpu-warning": "Hoë GPU-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker."
-  }
+  "your-reference": "U verwysing"
 }
