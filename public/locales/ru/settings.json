@@ -46,6 +46,7 @@
   "importing-wallet": "Импорт кошелька",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
   "inviteCode": "Код приглашения",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Время добавления последнего блока в цепь",
   "logs": "Логи",
   "low-hash-rate-warning": "Ваш хешрейт очень низкий. Попробуйте закрыть все приложения, кроме Tari Universe",

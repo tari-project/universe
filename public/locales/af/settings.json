@@ -46,6 +46,7 @@
   "importing-wallet": "Beursie invoer",
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
   "inviteCode": "Uitnodigingskode",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
   "logs": "Verslae",
   "low-hash-rate-warning": "Jou hash rate is baie laag. Probeer om alle toepassings behalwe Tari Universe te sluit",
