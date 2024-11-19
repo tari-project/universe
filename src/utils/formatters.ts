@@ -21,10 +21,15 @@ const formatValue = (value: number, options: Intl.NumberFormatOptions = {}): str
 const formatPercent = (value = 0) => formatValue(value, { style: 'percent', maximumFractionDigits: 2 });
 
 const formatTXTMCompact = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(value), { maximumFractionDigits: 2, notation: 'compact', style: 'decimal' });
+    formatValue(removeTXTMCryptoDecimals(value), {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+        notation: 'compact',
+        style: 'decimal',
+    });
 
 const formatTXTMLong = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(value), { maximumFractionDigits: 2, notation: 'standard', style: 'decimal' });
+    formatValue(removeTXTMCryptoDecimals(value), { maximumFractionDigits: 6, notation: 'standard', style: 'decimal' });
 
 const formatDecimalCompact = (value: number) => formatValue(value, { maximumFractionDigits: 2, style: 'decimal' });
 
