@@ -118,45 +118,6 @@ export function CustomPowerLevelsDialog({
         [changeMiningMode]
     );
 
-    console.log('values', getValues());
-    console.log('max values', maxAvailableThreads);
-
-    // const gpuValue = useMemo(() => {
-    //     if (mode !== 'Custom' && maxLevels.max_gpu_available) {
-    //         return mode === 'Eco' ? 3 : Math.min(maxLevels.max_gpu_available, 800);
-    //     }
-    //     return configGpuLevels || 0;
-    // }, [mode, maxLevels.max_gpu_available, configGpuLevels]);
-
-    // const cpuValue = useMemo(() => {
-    //     if (mode !== 'Custom' && maxLevels.max_cpu_available) {
-    //         return mode === 'Eco' ? Math.round(maxLevels.max_cpu_available * 0.3) : maxLevels.max_cpu_available;
-    //     }
-    //     return configCpuLevels || 0;
-    // }, [mode, maxLevels.max_cpu_available, configCpuLevels]);
-
-    // const handleChangeCpu = useCallback(
-    //     (value: number) => {
-    //         changeMiningMode({
-    //             mode: 'Custom',
-    //             customCpuLevels: value,
-    //             customGpuLevels: gpuValue,
-    //         }).then(() => setSaved(true));
-    //     },
-    //     [changeMiningMode, gpuValue]
-    // );
-
-    // const handleChangeGpu = useCallback(
-    //     (value: number) => {
-    //         changeMiningMode({
-    //             mode: 'Custom',
-    //             customCpuLevels: cpuValue,
-    //             customGpuLevels: value,
-    //         }).then(() => setSaved(true));
-    //     },
-    //     [changeMiningMode, cpuValue]
-    // );
-
     if (!maxAvailableThreads) return <LinearProgress />;
 
     return (
