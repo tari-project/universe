@@ -24,6 +24,7 @@ interface Actions {
     startMining: () => Promise<void>;
     stopMining: () => Promise<void>;
     pauseMining: () => Promise<void>;
+    restartMining: () => Promise<void>;
     changeMiningMode: (params: { mode: modeType; customGpuLevels?: number; customCpuLevels?: number }) => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
@@ -119,26 +120,44 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     },
     changeMiningMode: async (params) => {
         const { mode, customGpuLevels, customCpuLevels } = params;
-        console.info('Changing mode...');
+        console.info(`Changing mode to ${mode}...`);
         const state = getState();
-
         set({ isChangingMode: true });
+
         if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
             await state.pauseMining();
         }
         try {
             const appConfigState = useAppConfigStore.getState();
             await appConfigState.setMode({ mode: mode as modeType, customGpuLevels, customCpuLevels });
+            console.info(`Mode changed to ${mode}`);
             if (state.miningInitiated) {
                 await state.startMining();
             }
-
-            console.info(`Mode changed to ${mode}`);
-            set({ isChangingMode: false });
         } catch (e) {
             Sentry.captureException(e);
             console.error('Failed to change mode: ', e);
+        } finally {
             set({ isChangingMode: false });
+        }
+    },
+    restartMining: async () => {
+        const state = getState();
+        if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
+            console.info('Restarting mining...');
+            try {
+                await state.pauseMining();
+            } catch (e) {
+                Sentry.captureException(e);
+                console.error('Failed to pause(restart) mining: ', e);
+            }
+
+            try {
+                await state.startMining();
+            } catch (e) {
+                Sentry.captureException(e);
+                console.error('Failed to start(restart) mining: ', e);
+            }
         }
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),

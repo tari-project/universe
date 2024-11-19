@@ -1,3 +1,4 @@
+import { CustomPowerLevelsDialog } from '@app/containers/main/SideBar/Miner/components/CustomPowerLevels/CustomPowerLevelsDialog';
 import { ModeSelectWrapper, TileItem } from '../styles';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -11,7 +12,6 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { modeType } from '@app/store/types';
-import { CustomPowerLevelsDialog } from './CustomPowerLevelsDialog';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -29,12 +29,12 @@ function ModeSelect() {
     const custom_power_levels_enabled = useAppConfigStore((s) => s.custom_power_levels_enabled);
 
     const handleChange = useCallback(
-        async (mode: string) => {
-            if (mode === 'Custom') {
+        async (newMode: string) => {
+            if (newMode === 'Custom') {
                 setCustomLevelsDialog(true);
                 return;
             }
-            await changeMiningMode({ mode: mode as modeType });
+            await changeMiningMode({ mode: newMode as modeType });
         },
         [changeMiningMode, setCustomLevelsDialog]
     );
@@ -61,8 +61,8 @@ function ModeSelect() {
             <Typography>{t('mode')}</Typography>
             <ModeSelectWrapper>
                 <Select
-                    disabled={isMiningLoading || isChangingMode || isSettingUp || !isMiningControlsEnabled}
-                    loading={isChangingMode}
+                    disabled={isSettingUp}
+                    loading={isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
                     onChange={handleChange}
                     selectedValue={mode}
                     options={tabOptions}

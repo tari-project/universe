@@ -5,10 +5,23 @@
   "applyInviteCode": "Terapkan Kode Undangan",
   "cancel": "Batal",
   "change-language": "Bahasa",
+  "confirm-import-wallet": "Abandon current wallet?",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Rekan Terhubung",
   "connected-to-tari": "Terhubung ke Jaringan Tari",
   "control-port": "Port Kontrol",
   "cpu-mining-enabled": "Penambangan CPU",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "Pilih seberapa banyak Anda ingin CPU Anda dialokasikan untuk menambang <span>({{current}} dari {{max}} inti)</span>",
+    "choose-gpu-power-level": "Pilih seberapa banyak Anda ingin GPU Anda dialokasikan untuk menambang <span>({{current}} dari {{max}} thread)</span>",
+    "cpu-power-level": "Inti CPU",
+    "cpu-warning": "Penggunaan CPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",
+    "gpu-power-level": "Daya GPU %",
+    "gpu-warning": "Penggunaan GPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",
+    "saved": "Menerapkan Perubahan",
+    "title": "Mode Kustom",
+    "warning": "Peringatan"
+  },
   "debug-info": "Debug",
   "disconnect": "Putuskan dari Airdrop",
   "errors": {
@@ -33,6 +46,7 @@
   "importing-wallet": "Mengimpor dompet",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
   "inviteCode": "Kode Undangan",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
   "logs": "Log",
   "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",
@@ -115,16 +129,5 @@
   "visual-mode": "Mode visual",
   "yes": "Ya",
   "your-feedback": "Silakan jelaskan masalah Anda",
-  "your-reference": "Referensi Anda",
-  "custom-power-levels": {
-    "title": "Mode Kustom",
-    "warning": "Peringatan",
-    "saved": "Menerapkan Perubahan",
-    "gpu-power-level": "Daya GPU %",
-    "cpu-power-level": "Inti CPU",
-    "choose-gpu-power-level": "Pilih seberapa banyak Anda ingin GPU Anda dialokasikan untuk menambang <span>({{current}} dari {{max}} thread)</span>",
-    "choose-cpu-power-level": "Pilih seberapa banyak Anda ingin CPU Anda dialokasikan untuk menambang <span>({{current}} dari {{max}} inti)</span>",
-    "cpu-warning": "Penggunaan CPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",
-    "gpu-warning": "Penggunaan GPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien."
-  }
+  "your-reference": "Referensi Anda"
 }

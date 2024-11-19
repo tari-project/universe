@@ -40,7 +40,6 @@ export const CardItemLabelWrapper = styled.div`
 export const CardItemLabel = styled(Typography)``;
 export const CardItemLabelValue = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
-    text-wrap: pretty;
     word-break: break-all;
 `;
 

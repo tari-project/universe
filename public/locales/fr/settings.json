@@ -5,10 +5,23 @@
   "applyInviteCode": "Appliquer le code d\"invitation",
   "cancel": "Cancel",
   "change-language": "Langue",
+  "confirm-import-wallet": "Abandon current wallet?",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Pairs connectés",
   "connected-to-tari": "Connecté au réseau Tari",
   "control-port": "Port de contrôle",
   "cpu-mining-enabled": "Minage CPU",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "Choisissez combien de votre CPU vous souhaitez allouer au minage <span>({{current}} sur {{max}} cœurs)</span>",
+    "choose-gpu-power-level": "Choisissez combien de votre GPU vous souhaitez allouer au minage <span>({{current}} sur {{max}} threads)</span>",
+    "cpu-power-level": "Cœurs CPU",
+    "cpu-warning": "Une utilisation élevée du CPU peut provoquer une surchauffe, augmenter la consommation d\"énergie et peut entraîner des dommages matériels au fil du temps. Veuillez surveiller l\"utilisation pour assurer un fonctionnement sûr et efficace.",
+    "gpu-power-level": "Puissance GPU %",
+    "gpu-warning": "Une utilisation élevée du GPU peut provoquer une surchauffe, augmenter la consommation d\"énergie et peut entraîner des dommages matériels au fil du temps. Veuillez surveiller l\"utilisation pour assurer un fonctionnement sûr et efficace.",
+    "saved": "Application des modifications",
+    "title": "Mode personnalisé",
+    "warning": "Avertissement"
+  },
   "debug-info": "Déboguer",
   "disconnect": "Se déconnecter de l\"Airdrop",
   "errors": {
@@ -33,6 +46,7 @@
   "importing-wallet": "Importation du portefeuille",
   "invalid-seed-words": "Entrez 24 mots séparés par des espaces",
   "inviteCode": "Code d\"invitation",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Heure du dernier bloc ajouté à la chaîne",
   "logs": "Journaux",
   "low-hash-rate-warning": "Votre hashrate est très bas. Essayez de fermer toutes les applications sauf Tari Universe",
@@ -115,16 +129,5 @@
   "visual-mode": "Mode visuel",
   "yes": "Yes",
   "your-feedback": "Veuillez décrire votre problème",
-  "your-reference": "Votre référence :<br/><bold>{{logRef}}</bold>",
-  "custom-power-levels": {
-    "title": "Mode personnalisé",
-    "warning": "Avertissement",
-    "saved": "Application des modifications",
-    "gpu-power-level": "Puissance GPU %",
-    "cpu-power-level": "Cœurs CPU",
-    "choose-gpu-power-level": "Choisissez combien de votre GPU vous souhaitez allouer au minage <span>({{current}} sur {{max}} threads)</span>",
-    "choose-cpu-power-level": "Choisissez combien de votre CPU vous souhaitez allouer au minage <span>({{current}} sur {{max}} cœurs)</span>",
-    "cpu-warning": "Une utilisation élevée du CPU peut provoquer une surchauffe, augmenter la consommation d\"énergie et peut entraîner des dommages matériels au fil du temps. Veuillez surveiller l\"utilisation pour assurer un fonctionnement sûr et efficace.",
-    "gpu-warning": "Une utilisation élevée du GPU peut provoquer une surchauffe, augmenter la consommation d\"énergie et peut entraîner des dommages matériels au fil du temps. Veuillez surveiller l\"utilisation pour assurer un fonctionnement sûr et efficace."
-  }
+  "your-reference": "Votre référence :<br/><bold>{{logRef}}</bold>"
 }
