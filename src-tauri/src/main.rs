@@ -109,7 +109,7 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
 #[derive(Debug, Serialize, Clone)]
-struct MaxConsumptionLevels {
+struct MaxUsageLevels {
     max_cpu_threads: i32,
     max_gpus_threads: Vec<GpuThreads>,
 }
@@ -194,7 +194,7 @@ async fn set_mode(
 #[tauri::command]
 async fn get_max_consumption_levels(
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<MaxConsumptionLevels, String> {
+) -> Result<MaxUsageLevels, String> {
     // CPU Detection
     let timer = Instant::now();
     let max_cpu_available = available_parallelism()
@@ -222,7 +222,7 @@ async fn get_max_consumption_levels(
         });
     }
 
-    Ok(MaxConsumptionLevels {
+    Ok(MaxUsageLevels {
         max_cpu_threads: max_cpu_available,
         max_gpus_threads,
     })

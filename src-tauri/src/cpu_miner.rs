@@ -3,7 +3,7 @@ use crate::binaries::Binaries;
 use crate::process_watcher::ProcessWatcher;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
@@ -131,7 +131,6 @@ impl CpuMiner {
             let (hash_rate, _hashrate_sum, estimated_earnings, is_connected) =
                 match client.summary().await {
                     Ok(xmrig_status) => {
-                        info!(target: LOG_TARGET, "Got xmrig summary: {:?}", xmrig_status);
                         let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
                         let estimated_earnings = if network_hash_rate == 0 {
                             0

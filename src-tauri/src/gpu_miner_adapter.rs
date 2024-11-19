@@ -1,5 +1,5 @@
 use crate::app_config::GpuThreads;
-use crate::gpu_miner::GpuDetectedSettings;
+use crate::gpu_miner::GpuConfig;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
@@ -37,11 +37,11 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
     pub(crate) excluded_gpu_devices: Vec<u8>,
-    pub(crate) gpu_devices: Vec<GpuDetectedSettings>,
+    pub(crate) gpu_devices: Vec<GpuConfig>,
 }
 
 impl GpuMinerAdapter {
-    pub fn new(gpu_devices: Vec<GpuDetectedSettings>) -> Self {
+    pub fn new(gpu_devices: Vec<GpuConfig>) -> Self {
         Self {
             tari_address: TariAddress::default(),
             gpu_grid_size: gpu_devices
@@ -128,7 +128,6 @@ impl ProcessAdapter for GpuMinerAdapter {
             .map(|x| x.max_gpu_threads.clone().to_string())
             .collect::<Vec<_>>()
             .join(",");
-        info!(target: LOG_TARGET, "Gpu miner grid size: {}", grid_size);
 
         let mut args: Vec<String> = vec![
             "--tari-address".to_string(),
@@ -284,8 +283,6 @@ impl GpuMinerStatusMonitor {
                 });
             }
         };
-
-        info!(target: LOG_TARGET, "XtrGpuMiner status: {:?}", body);
 
         Ok(GpuMinerStatus {
             is_mining: true,

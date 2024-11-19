@@ -22,11 +22,12 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 #[derive(Debug, Deserialize)]
 pub struct GpuStatusJson {
-    pub gpu_devices: Vec<GpuDetectedSettings>,
+    pub gpu_devices: Vec<GpuConfig>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub(crate) struct GpuDetectedSettings {
+#[allow(dead_code)]
+pub(crate) struct GpuConfig {
     pub device_index: u32,
     pub device_name: String,
     pub is_available: bool,
@@ -38,7 +39,7 @@ pub(crate) struct GpuDetectedSettings {
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
     is_available: bool,
-    gpu_devices: Vec<GpuDetectedSettings>,
+    gpu_devices: Vec<GpuConfig>,
     excluded_gpu_devices: Vec<u8>,
 }
 
@@ -118,9 +119,7 @@ impl GpuMiner {
         }
         match &process_watcher.status_monitor {
             Some(status_monitor) => {
-                // info!(target: LOG_TARGET, "Getting xtrgpuminer status");
                 let mut status = status_monitor.status().await?;
-                // info!(target: LOG_TARGET, "xtrgpuminer status: {:?}", status);
                 let hash_rate = status.hash_rate;
                 let estimated_earnings = if network_hash_rate == 0 {
                     0
@@ -205,7 +204,7 @@ impl GpuMiner {
         Ok(())
     }
 
-    pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDetectedSettings>, anyhow::Error> {
+    pub async fn get_gpu_devices(&self) -> Result<Vec<GpuConfig>, anyhow::Error> {
         Ok(self.gpu_devices.clone())
     }
 }
