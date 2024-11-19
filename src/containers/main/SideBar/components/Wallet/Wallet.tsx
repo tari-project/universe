@@ -32,12 +32,13 @@ export default function Wallet() {
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
 
-    const fetchTx = useFetchTx();
-    const formatted = formatNumber(balance || 0, FormatPreset.TXTM_COMPACT);
-    const sizing = formatted.length <= 6 ? 50 : formatted.length <= 8 ? 44 : 32;
-
     const [showBalance, setShowBalance] = useState(true);
     const [showHistory, setShowHistory] = useState(false);
+    const [showLongBalance, setShowLongBalance] = useState(false);
+
+    const fetchTx = useFetchTx();
+    const formatted = formatNumber(balance || 0, showLongBalance ? FormatPreset.TXTM_LONG : FormatPreset.TXTM_COMPACT);
+    const sizing = formatted.length <= 6 ? 50 : formatted.length <= 8 ? 44 : 32;
 
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
     const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
@@ -56,7 +57,10 @@ export default function Wallet() {
     };
 
     const balanceMarkup = (
-        <WalletBalanceContainer>
+        <WalletBalanceContainer
+            onMouseOver={() => setShowLongBalance(true)}
+            onMouseOut={() => setShowLongBalance(false)}
+        >
             <Stack direction="row" alignItems="center">
                 <Typography variant="span" style={{ fontSize: '15px' }}>
                     {t('wallet-balance')}

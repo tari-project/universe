@@ -29,7 +29,7 @@ const formatTXTMCompact = (value: number) =>
     });
 
 const formatTXTMLong = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(value), { maximumFractionDigits: 6, notation: 'standard', style: 'decimal' });
+    formatValue(removeTXTMCryptoDecimals(value), { maximumFractionDigits: 2, notation: 'standard', style: 'decimal' });
 
 const formatDecimalCompact = (value: number) => formatValue(value, { maximumFractionDigits: 2, style: 'decimal' });
 
