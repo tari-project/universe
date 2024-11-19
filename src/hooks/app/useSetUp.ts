@@ -20,16 +20,20 @@ export function useSetUp() {
     const setSettingUpFinished = useAppStateStore((s) => s.setSettingUpFinished);
     const setSeenPermissions = useAirdropStore((s) => s.setSeenPermissions);
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
+    const syncedAidropWithBackend = useAirdropStore((s) => s.syncedWithBackend);
 
-    const backendInMemoryConfig = useAirdropStore((s) => s.backendInMemoryConfig);
+    const fetchBackendInMemoryConfig = useAirdropStore((s) => s.fetchBackendInMemoryConfig);
 
     useEffect(() => {
-        if (backendInMemoryConfig?.airdropApiUrl) {
-            handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
-        }
+        const refreshTokens = async () => {
+            const backendInMemoryConfig = await fetchBackendInMemoryConfig();
+            if (backendInMemoryConfig?.airdropApiUrl) {
+                await handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
+            }
+        };
+        refreshTokens();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [backendInMemoryConfig?.airdropApiUrl]);
-
+    }, []);
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
         const airdropStorage = localStorage.getItem('airdrop-store');
@@ -59,7 +63,7 @@ export function useSetUp() {
                     break;
             }
         });
-        if (isAfterAutoUpdate && !isInitializingRef.current) {
+        if (isAfterAutoUpdate && syncedAidropWithBackend && !isInitializingRef.current) {
             isInitializingRef.current = true;
             clearStorage();
             invoke('setup_application').catch((e) => {
@@ -70,5 +74,13 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [clearStorage, handlePostSetup, isAfterAutoUpdate, setCriticalError, setSeenPermissions, setSetupDetails]);
+    }, [
+        clearStorage,
+        handlePostSetup,
+        isAfterAutoUpdate,
+        setCriticalError,
+        setSeenPermissions,
+        setSetupDetails,
+        syncedAidropWithBackend,
+    ]);
 }
