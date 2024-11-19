@@ -123,6 +123,7 @@ const WalletAddressMarkup = () => {
                             style={{
                                 color: '#b6b7c3',
                                 display: 'flex',
+                                lineHeight: '1.6',
                             }}
                         >
                             {isCondensed ? condenseEmojiAddress(walletAddressEmoji) : walletAddressEmoji}

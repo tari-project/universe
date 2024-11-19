@@ -4,10 +4,9 @@ import { Toast } from './Toast/Toast';
 import { useToastStore } from './useToastStore';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { Inside, Wrapper } from './styles';
-import { ToastTesting } from './ToastTesting';
 
 export const ToastStack = () => {
-    const { toasts, showToastTesting } = useToastStore();
+    const { toasts } = useToastStore();
     const { isSettingUp } = useAppStateStore();
     const [isHovered, setIsHovered] = useState(false);
 
@@ -41,8 +40,6 @@ export const ToastStack = () => {
                     </AnimatePresence>
                 </Inside>
             </Wrapper>
-
-            {showToastTesting && <ToastTesting />}
         </>
     );
 };
