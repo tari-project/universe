@@ -47,6 +47,7 @@
   "importing-wallet": "Importowanie portfela",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
   "inviteCode": "Kod Zaproszenia",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
   "logs": "Logi",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",

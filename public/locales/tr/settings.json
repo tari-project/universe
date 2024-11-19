@@ -46,6 +46,7 @@
   "importing-wallet": "Cüzdan İçe Aktarılıyor",
   "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",
   "inviteCode": "Davet Kodu",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Zincir zamanına eklenen son blok",
   "logs": "Günlükler",
   "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",
