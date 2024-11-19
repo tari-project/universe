@@ -46,6 +46,7 @@
   "importing-wallet": "正在导入钱包",
   "invalid-seed-words": "输入24个用空格分隔的单词",
   "inviteCode": "邀请代码",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "最后添加到链的块时间",
   "logs": "日志",
   "low-hash-rate-warning": "您的哈希率非常低。尝试关闭除Tari Universe以外的所有应用程序",

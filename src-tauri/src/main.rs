@@ -476,6 +476,13 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
+    let app_handle_clone: tauri::AppHandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        set_interval(
+            move || check_if_is_orphan_chain(app_handle_clone.clone()),
+            Duration::from_secs(30),
+        );
+    });
     Ok(())
 }
 
@@ -588,6 +595,22 @@ struct Payload {
     cwd: String,
 }
 
+async fn check_if_is_orphan_chain(app_handle: tauri::AppHandle) {
+    let state = app_handle.state::<UniverseAppState>().inner();
+    let check_if_orphan = state.node_manager.check_if_is_orphan_chain().await;
+    match check_if_orphan {
+        Ok(is_stuck) => {
+            if is_stuck {
+                error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+                drop(app_handle.emit_all("is_stuck", is_stuck));
+            }
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "{}", e);
+            drop(app_handle.emit_all("is_stuck", true));
+        }
+    }
+}
 #[allow(clippy::too_many_lines)]
 fn main() {
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
