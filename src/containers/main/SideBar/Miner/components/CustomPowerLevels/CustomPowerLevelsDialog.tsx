@@ -19,10 +19,6 @@ import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
-// took from gpu_miner_adapter.rs
-const ECO_MODE_GPU_GRID_SIZE = 2;
-const LUDICROUS_MODE_GPU_GRID_SIZE = 900;
-
 enum FormFields {
     CPU = 'cpu',
     GPUS = 'gpus',
@@ -33,12 +29,16 @@ interface FormValues {
     [FormFields.GPUS]: GpuThreads[];
 }
 
-const resolveCpuInitialThreads = (configCpuLevels: number | undefined, mode: modeType | undefined) => {
+const resolveCpuInitialThreads = (
+    configCpuLevels: number | undefined,
+    mode: modeType | undefined,
+    maxAvailableThreads: MaxConsumptionLevels
+) => {
     switch (mode) {
         case 'Eco':
-            return configCpuLevels || ECO_MODE_GPU_GRID_SIZE;
+            return configCpuLevels || Math.round(maxAvailableThreads.max_cpu_threads * 0.3);
         case 'Ludicrous':
-            return configCpuLevels || LUDICROUS_MODE_GPU_GRID_SIZE;
+            return configCpuLevels || Math.round(maxAvailableThreads.max_cpu_threads * 0.9);
         default:
             return 0;
     }
@@ -56,12 +56,12 @@ const resolveGpuInitialThreads = (
             case 'Eco':
                 return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
                     gpu_name: gpu.gpu_name,
-                    max_gpu_threads: ECO_MODE_GPU_GRID_SIZE,
+                    max_gpu_threads: Math.round(gpu.max_gpu_threads * 0.3),
                 }));
             case 'Ludicrous':
                 return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
                     gpu_name: gpu.gpu_name,
-                    max_gpu_threads: LUDICROUS_MODE_GPU_GRID_SIZE,
+                    max_gpu_threads: Math.round(gpu.max_gpu_threads * 0.9),
                 }));
             default:
                 return [];
@@ -88,7 +88,7 @@ export function CustomPowerLevelsDialog({
 
     const { control, handleSubmit, setValue, getValues } = useForm<FormValues>({
         defaultValues: {
-            [FormFields.CPU]: resolveCpuInitialThreads(configCpuLevels, mode),
+            [FormFields.CPU]: resolveCpuInitialThreads(configCpuLevels, mode, maxAvailableThreads),
             [FormFields.GPUS]: resolveGpuInitialThreads(configGpuLevels, mode, maxAvailableThreads),
         },
     });

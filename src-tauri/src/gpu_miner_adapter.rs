@@ -9,6 +9,8 @@ use async_trait::async_trait;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::ops::Div;
+use std::ops::Mul;
 use std::path::PathBuf;
 use std::time::Instant;
 use tari_common::configuration::Network;
@@ -21,9 +23,6 @@ use crate::{
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
-
-pub const ECO_MODE_GPU_GRID_SIZE: u32 = 2;
-pub const LUDICROUS_MODE_GPU_GRID_SIZE: u32 = 900; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
     BaseNode { port: u16 },
@@ -64,9 +63,9 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|x| GpuThreads {
-                        gpu_name: x.device_name.clone(),
-                        max_gpu_threads: ECO_MODE_GPU_GRID_SIZE,
+                    .map(|device| GpuThreads {
+                        gpu_name: device.device_name.clone(),
+                        max_gpu_threads: device.max_grid_size.mul(100).div(333),
                     })
                     .collect()
             }
@@ -74,9 +73,10 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|x| GpuThreads {
-                        gpu_name: x.device_name.clone(),
-                        max_gpu_threads: LUDICROUS_MODE_GPU_GRID_SIZE,
+                    .map(|device| GpuThreads {
+                        gpu_name: device.device_name.clone(),
+                        // get 90% of max grid size
+                        max_gpu_threads: device.max_grid_size.mul(100).div(111),
                     })
                     .collect()
             }
