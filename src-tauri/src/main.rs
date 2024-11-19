@@ -8,6 +8,7 @@ use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredEx
 use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
+use process_utils::set_interval;
 
 use log4rs::config::RawConfig;
 use regex::Regex;
@@ -71,6 +72,7 @@ mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
+mod network_utils;
 mod node_adapter;
 mod node_manager;
 mod p2pool;
@@ -951,6 +953,14 @@ async fn setup_inner(
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
+    let app_handle_clone: tauri::AppHandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        set_interval(
+            move || check_if_is_orphan_chain(app_handle_clone.clone()),
+            Duration::from_secs(30),
+        );
+    });
+
     Ok(())
 }
 
@@ -1591,6 +1601,23 @@ async fn get_app_config(
     _app: tauri::AppHandle,
 ) -> Result<AppConfig, String> {
     Ok(state.config.read().await.clone())
+}
+
+async fn check_if_is_orphan_chain(app_handle: tauri::AppHandle) {
+    let state = app_handle.state::<UniverseAppState>().inner();
+    let check_if_orphan = state.node_manager.check_if_is_orphan_chain().await;
+    match check_if_orphan {
+        Ok(is_stuck) => {
+            if is_stuck {
+                error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+                drop(app_handle.emit_all("is_stuck", is_stuck));
+            }
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "{}", e);
+            drop(app_handle.emit_all("is_stuck", true));
+        }
+    }
 }
 
 #[allow(clippy::too_many_lines)]

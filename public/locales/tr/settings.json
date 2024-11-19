@@ -5,10 +5,23 @@
   "applyInviteCode": "Davet Kodunu Uygula",
   "cancel": "İptal",
   "change-language": "Dil Değiştir",
+  "confirm-import-wallet": "Abandon current wallet?",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Bağlı Eşler",
   "connected-to-tari": "Tari Ağına Bağlı",
   "control-port": "Kontrol Portu",
   "cpu-mining-enabled": "CPU Madenciliği",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "CPU\"nuzun madenciliğe ne kadar ayrılmasını istediğinizi seçin <span>({{max}} çekirdekten {{current}})</span>",
+    "choose-gpu-power-level": "GPU\"nuzun madenciliğe ne kadar ayrılmasını istediğinizi seçin <span>({{max}} iş parçacığından {{current}})</span>",
+    "cpu-power-level": "CPU Çekirdekleri",
+    "cpu-warning": "Yüksek CPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
+    "gpu-power-level": "GPU Gücü %",
+    "gpu-warning": "Yüksek GPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
+    "saved": "Değişiklikler Uygulanıyor",
+    "title": "Özel Mod",
+    "warning": "Uyarı"
+  },
   "debug-info": "Hata Ayıklama",
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
   "errors": {
@@ -33,6 +46,7 @@
   "importing-wallet": "Cüzdan İçe Aktarılıyor",
   "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",
   "inviteCode": "Davet Kodu",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Zincir zamanına eklenen son blok",
   "logs": "Günlükler",
   "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",
@@ -115,16 +129,5 @@
   "visual-mode": "Görsel mod",
   "yes": "Evet",
   "your-feedback": "Lütfen sorununuzu açıklayın",
-  "your-reference": "Referansınız",
-  "custom-power-levels": {
-    "title": "Özel Mod",
-    "warning": "Uyarı",
-    "saved": "Değişiklikler Uygulanıyor",
-    "gpu-power-level": "GPU Gücü %",
-    "cpu-power-level": "CPU Çekirdekleri",
-    "choose-gpu-power-level": "GPU\"nuzun madenciliğe ne kadar ayrılmasını istediğinizi seçin <span>({{max}} iş parçacığından {{current}})</span>",
-    "choose-cpu-power-level": "CPU\"nuzun madenciliğe ne kadar ayrılmasını istediğinizi seçin <span>({{max}} çekirdekten {{current}})</span>",
-    "cpu-warning": "Yüksek CPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
-    "gpu-warning": "Yüksek GPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin."
-  }
+  "your-reference": "Referansınız"
 }

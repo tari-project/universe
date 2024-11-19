@@ -5,10 +5,23 @@
   "applyInviteCode": "应用邀请代码",
   "cancel": "取消",
   "change-language": "更改语言",
+  "confirm-import-wallet": "Abandon current wallet?",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "已连接的节点",
   "connected-to-tari": "已连接到Tari网络",
   "control-port": "控制端口",
   "cpu-mining-enabled": "CPU 挖矿",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "选择您希望分配给挖矿的CPU数量 <span>（{{current}} / {{max}} 核心）</span>",
+    "choose-gpu-power-level": "选择您希望分配给挖矿的GPU数量 <span>（{{current}} / {{max}} 线程）</span>",
+    "cpu-power-level": "CPU核心",
+    "cpu-warning": "高CPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
+    "gpu-power-level": "GPU功率%",
+    "gpu-warning": "高GPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
+    "saved": "应用更改",
+    "title": "自定义模式",
+    "warning": "警告"
+  },
   "debug-info": "调试信息",
   "disconnect": "断开与空投的连接",
   "errors": {
@@ -33,6 +46,7 @@
   "importing-wallet": "正在导入钱包",
   "invalid-seed-words": "输入24个用空格分隔的单词",
   "inviteCode": "邀请代码",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "最后添加到链的块时间",
   "logs": "日志",
   "low-hash-rate-warning": "您的哈希率非常低。尝试关闭除Tari Universe以外的所有应用程序",
@@ -115,16 +129,5 @@
   "visual-mode": "视觉模式",
   "yes": "是",
   "your-feedback": "请描述您的问题",
-  "your-reference": "您的参考",
-  "custom-power-levels": {
-    "title": "自定义模式",
-    "warning": "警告",
-    "saved": "应用更改",
-    "gpu-power-level": "GPU功率%",
-    "cpu-power-level": "CPU核心",
-    "choose-gpu-power-level": "选择您希望分配给挖矿的GPU数量 <span>（{{current}} / {{max}} 线程）</span>",
-    "choose-cpu-power-level": "选择您希望分配给挖矿的CPU数量 <span>（{{current}} / {{max}} 核心）</span>",
-    "cpu-warning": "高CPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
-    "gpu-warning": "高GPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。"
-  }
+  "your-reference": "您的参考"
 }

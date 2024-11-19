@@ -5,11 +5,24 @@
   "applyInviteCode": "Zastosuj Kod Zaproszenia",
   "cancel": "Anuluj",
   "change-language": "Zmień język",
+  "confirm-import-wallet": "Abandon current wallet?",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Połączone węzły",
   "connected-to-tari": "Połączono z siecią Tari",
   "connected-to-tari-network": null,
   "control-port": "Port kontrolny",
   "cpu-mining-enabled": "Wydobycie CPU",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "Wybierz, ile mocy CPU chcesz przeznaczyć na kopanie <span>({{current}} z {{max}} rdzeni)</span>",
+    "choose-gpu-power-level": "Wybierz, ile mocy GPU chcesz przeznaczyć na kopanie <span>({{current}} z {{max}} wątków)</span>",
+    "cpu-power-level": "Rdzenie CPU",
+    "cpu-warning": "Wysokie zużycie CPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
+    "gpu-power-level": "Moc GPU %",
+    "gpu-warning": "Wysokie zużycie GPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
+    "saved": "Zastosowanie zmian",
+    "title": "Tryb niestandardowy",
+    "warning": "Ostrzeżenie"
+  },
   "debug-info": "Informacje debugowania",
   "disconnect": "Odłącz od Airdrop",
   "errors": {
@@ -34,6 +47,7 @@
   "importing-wallet": "Importowanie portfela",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
   "inviteCode": "Kod Zaproszenia",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
   "logs": "Logi",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
@@ -117,16 +131,5 @@
   "visual-mode": "Tryb wizualny",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",
-  "your-reference": "Twoje odniesienie",
-  "custom-power-levels": {
-    "title": "Tryb niestandardowy",
-    "warning": "Ostrzeżenie",
-    "saved": "Zastosowanie zmian",
-    "gpu-power-level": "Moc GPU %",
-    "cpu-power-level": "Rdzenie CPU",
-    "choose-gpu-power-level": "Wybierz, ile mocy GPU chcesz przeznaczyć na kopanie <span>({{current}} z {{max}} wątków)</span>",
-    "choose-cpu-power-level": "Wybierz, ile mocy CPU chcesz przeznaczyć na kopanie <span>({{current}} z {{max}} rdzeni)</span>",
-    "cpu-warning": "Wysokie zużycie CPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
-    "gpu-warning": "Wysokie zużycie GPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę."
-  }
+  "your-reference": "Twoje odniesienie"
 }
