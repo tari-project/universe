@@ -1,9 +1,9 @@
 import { useWalletStore } from '@app/store/useWalletStore';
 import { BlackButton, Text, Title } from '../../styles';
 import { WalletText, Warning, Wrapper } from './styles';
-import { useFormatBalance } from '@app/utils/formatBalance';
 import { Trans, useTranslation } from 'react-i18next';
 import LoadingSvg from '@app/components/svgs/LoadingSvg';
+import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
 interface Props {
     onButtonClick: () => void;
@@ -14,7 +14,7 @@ export default function ProtectIntro({ onButtonClick, isLoading }: Props) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
 
     const balance = useWalletStore((state) => state.balance);
-    const formatted = useFormatBalance(balance || 0);
+    const formatted = formatNumber(balance || 0, FormatPreset.TXTM_COMPACT);
 
     return (
         <Wrapper>

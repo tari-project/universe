@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import {
     BalanceVisibilityButton,
@@ -22,6 +21,7 @@ import useFetchTx from '@app/hooks/mining/useTransactions.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
+import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 
 export default function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
@@ -33,7 +33,7 @@ export default function Wallet() {
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
 
     const fetchTx = useFetchTx();
-    const formatted = useFormatBalance(balance || 0);
+    const formatted = formatNumber(balance || 0, FormatPreset.TXTM_COMPACT);
     const sizing = formatted.length <= 6 ? 50 : formatted.length <= 8 ? 44 : 32;
 
     const [showBalance, setShowBalance] = useState(true);
