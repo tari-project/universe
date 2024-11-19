@@ -1,36 +1,8 @@
 /* eslint-disable i18next/no-literal-string */
+import { Button, ButtonGroup, CategoryLabel } from '../styles';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 
-import { addToast } from './useToastStore';
-import { styled } from 'styled-components';
-
-const TestingWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    pointer-events: all;
-    z-index: 999;
-`;
-
-const Button = styled.button`
-    padding: 8px 16px;
-    border-radius: 8px;
-    background: #342945;
-    color: white;
-    border: none;
-    cursor: pointer;
-
-    font-size: 12px;
-
-    &:hover {
-        background: #221f3e;
-    }
-`;
-
-export const ToastTesting = () => {
+export function ToastsGroup() {
     const showBasicToast = () => {
         addToast({
             title: 'Changes saved',
@@ -63,11 +35,14 @@ export const ToastTesting = () => {
     };
 
     return (
-        <TestingWrapper>
-            <Button onClick={showBasicToast}>Basic Toast</Button>
-            <Button onClick={showErrorToast}>Error Toast</Button>
-            <Button onClick={showWarningToast}>Warning Toast</Button>
-            <Button onClick={showSuccessToast}>Success Toast</Button>
-        </TestingWrapper>
+        <>
+            <CategoryLabel>Toasts</CategoryLabel>
+            <ButtonGroup>
+                <Button onClick={showBasicToast}>Basic Toast</Button>
+                <Button onClick={showErrorToast}>Error Toast</Button>
+                <Button onClick={showWarningToast}>Warning Toast</Button>
+                <Button onClick={showSuccessToast}>Success Toast</Button>
+            </ButtonGroup>
+        </>
     );
-};
+}
