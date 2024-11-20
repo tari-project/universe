@@ -206,12 +206,21 @@ impl NodeManager {
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
-        let status_monitor_lock = self.watcher.read().await;
+        let mut status_monitor_lock = self.watcher.write().await;
         let status_monitor = status_monitor_lock
             .status_monitor
-            .as_ref()
+            .as_mut()
             .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
-        let (_, _, _, _, _, is_synced) = self.get_network_hash_rate_and_block_reward().await?;
+        let (_, _, _, _, _, is_synced) = status_monitor
+            .get_network_hash_rate_and_block_reward()
+            .await
+            .map_err(|e| {
+                if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
+                    NodeManagerError::NodeNotStarted
+                } else {
+                    NodeManagerError::UnknownError(e.into())
+                }
+            })?;
         if !is_synced {
             warn!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
             return Ok(false);

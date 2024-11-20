@@ -1610,8 +1610,8 @@ async fn check_if_is_orphan_chain(app_handle: tauri::AppHandle) {
         Ok(is_stuck) => {
             if is_stuck {
                 error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-                drop(app_handle.emit_all("is_stuck", is_stuck));
             }
+            drop(app_handle.emit_all("is_stuck", is_stuck));
         }
         Err(e) => {
             error!(target: LOG_TARGET, "{}", e);
