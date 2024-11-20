@@ -20,7 +20,6 @@ export default function useEarningsRecap() {
             if (count > 0) {
                 const totalEarnings = missedWins.reduce((earnings, cur) => earnings + cur.amount, 0);
                 handleWinRecap({ count, totalEarnings });
-
                 const historyItemRecapData = missedWins.filter((tx) => !replayedIds?.includes(tx?.tx_id.toString()));
                 if (historyItemRecapData?.length) {
                     setHistoryItemRecapData(historyItemRecapData);

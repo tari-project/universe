@@ -16,7 +16,7 @@ import AppContent from './AppContent';
 export default function App() {
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
-
+    console.debug(`isSettingUp= ${isSettingUp}`);
     return (
         <ThemeProvider>
             <GlobalReset />
