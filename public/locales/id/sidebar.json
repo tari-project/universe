@@ -13,15 +13,16 @@
   "paper-wallet-tooltip-message": "Lacak XTM Anda di mana saja dengan menyinkronkan dompet Universe Anda ke Tari Aurora.",
   "paper-wallet-tooltip-title": "Sinkronkan dengan Ponsel",
   "recent-wins": "Kemenangan terbaru",
+  "rewards": "Rewards",
   "setup-scheduler": "Atur Penjadwal",
-  "show-history": "Tampilkan riwayat",
-  "wallet-balance": "Saldo Dompet",
   "share": {
-    "history-item-button": "Pamer & Undang",
-    "title": "Saya baru saja menambang tari",
-    "winner-pill": "Pemenang blok",
-    "copied": "Tautan Tersalin!",
     "button-text": "PAMER & UNDANG",
-    "reward": "hadiah saya"
-  }
+    "copied": "Tautan Tersalin!",
+    "history-item-button": "Pamer & Undang",
+    "reward": "hadiah saya",
+    "title": "Saya baru saja menambang tari",
+    "winner-pill": "Pemenang blok"
+  },
+  "show-history": "Tampilkan riwayat",
+  "wallet-balance": "Saldo Dompet"
 }

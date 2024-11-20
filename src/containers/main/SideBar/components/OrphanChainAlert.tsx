@@ -15,15 +15,13 @@ export const OrphanChainAlert = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
 
     useEffect(() => {
-        const unlistenPromise = listen('is_stuck', (event) => {
-            if (event.payload) {
-                setIsOrphanChain(true);
-            }
+        const unlistenPromise = listen<boolean>('is_stuck', (event) => {
+            setIsOrphanChain(event.payload);
         });
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    });
+    }, [setIsOrphanChain]);
 
     return isOrphanChain ? (
         <Stack direction="row" justifyContent="space-between" alignItems="center">

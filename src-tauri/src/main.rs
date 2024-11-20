@@ -1610,12 +1610,11 @@ async fn check_if_is_orphan_chain(app_handle: tauri::AppHandle) {
         Ok(is_stuck) => {
             if is_stuck {
                 error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-                drop(app_handle.emit_all("is_stuck", is_stuck));
             }
+            drop(app_handle.emit_all("is_stuck", is_stuck));
         }
         Err(e) => {
             error!(target: LOG_TARGET, "{}", e);
-            drop(app_handle.emit_all("is_stuck", true));
         }
     }
 }
@@ -1898,7 +1897,6 @@ async fn close_splashscreen(window: Window) {
         .show()
         .expect("could not show");
 }
-
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
     // hardware: Vec<PublicDeviceProperties>,
@@ -2208,53 +2206,52 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             close_splashscreen,
+            download_and_start_installer,
+            exit_application,
+            fetch_tor_bridges,
+            get_app_config,
+            get_app_id,
+            get_app_in_memory_config,
+            get_applications_versions,
+            get_external_dependencies,
+            get_max_consumption_levels,
+            get_miner_metrics,
+            get_p2pool_stats,
+            get_paper_wallet_details,
+            get_seed_words,
+            get_tari_wallet_details,
+            get_tor_config,
+            get_tor_entry_guards,
+            get_transaction_history,
+            import_seed_words,
+            log_web_message,
+            open_log_dir,
+            reset_settings,
+            resolve_application_language,
+            restart_application,
+            send_feedback,
+            set_airdrop_access_token,
+            set_allow_telemetry,
+            set_application_language,
+            set_auto_update,
+            set_cpu_mining_enabled,
+            set_display_mode,
+            set_excluded_gpu_devices,
+            set_gpu_mining_enabled,
+            set_mine_on_app_start,
+            set_mode,
+            set_monero_address,
+            set_monerod_config,
+            set_p2pool_enabled,
+            set_should_always_use_system_language,
+            set_should_auto_launch,
+            set_tor_config,
+            set_use_tor,
+            set_visual_mode,
             setup_application,
             start_mining,
             stop_mining,
-            set_p2pool_enabled,
-            set_mode,
-            set_display_mode,
-            open_log_dir,
-            get_seed_words,
-            get_applications_versions,
-            send_feedback,
             update_applications,
-            log_web_message,
-            set_allow_telemetry,
-            set_airdrop_access_token,
-            get_app_id,
-            get_app_in_memory_config,
-            set_monero_address,
-            update_applications,
-            reset_settings,
-            set_gpu_mining_enabled,
-            set_cpu_mining_enabled,
-            restart_application,
-            resolve_application_language,
-            set_application_language,
-            set_mine_on_app_start,
-            get_miner_metrics,
-            get_app_config,
-            get_p2pool_stats,
-            get_tari_wallet_details,
-            get_paper_wallet_details,
-            exit_application,
-            set_excluded_gpu_devices,
-            set_should_always_use_system_language,
-            set_should_auto_launch,
-            download_and_start_installer,
-            get_external_dependencies,
-            set_use_tor,
-            get_transaction_history,
-            import_seed_words,
-            set_auto_update,
-            get_tor_config,
-            get_max_consumption_levels,
-            set_tor_config,
-            fetch_tor_bridges,
-            set_monerod_config,
-            get_tor_entry_guards,
-            set_visual_mode
         ])
         .build(tauri::generate_context!())
         .inspect_err(

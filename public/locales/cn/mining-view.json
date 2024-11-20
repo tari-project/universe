@@ -1,12 +1,12 @@
 {
-  "cpu-power": "CPU 功率",
-  "gpu-power": "GPU 功率",
-  "estimated-day": "预估 tXTM/天",
   "connection-to-node-lost": "与矿工的连接丢失。请等待矿机重新连接或重启矿机.",
+  "cpu-power": "CPU 功率",
   "current-block-time": "当前区块时间",
   "day": "day",
+  "estimated-day": "预估 tXTM/天",
   "estimated-earnings": "预计收益",
   "floor": "地板",
+  "gpu-power": "GPU 功率",
   "mining-button-text": {
     "cancel-mining": "取消挖矿",
     "changing-mode": "更改模式",
@@ -18,6 +18,7 @@
     "waiting-for-idle": "等待空闲"
   },
   "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>您在离开时赢得了 {{ blocks }}</span>",
   "your-reward-is": "你的奖励是"
 }

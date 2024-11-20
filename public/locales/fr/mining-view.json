@@ -1,12 +1,12 @@
 {
-  "cpu-power": "Puissance CPU",
-  "gpu-power": "Puissance GPU",
-  "estimated-day": "Est tXTM/jour",
   "connection-to-node-lost": "Connexion au mineur perdue. Attends que le mineur se reconnecte ou redémarre le mineur.",
+  "cpu-power": "Puissance CPU",
   "current-block-time": "Temps actuelle du bloc",
   "day": "day",
+  "estimated-day": "Est tXTM/jour",
   "estimated-earnings": "Gains estimés",
   "floor": "Étage",
+  "gpu-power": "Puissance GPU",
   "mining-button-text": {
     "cancel-mining": "Annuler le minage",
     "changing-mode": "Changement de mode",
@@ -17,6 +17,7 @@
     "waiting-for-idle": "En attente d'inactivité"
   },
   "you-earn-rewards-separately": "Vous gagnez des récompenses pour le minage CPU et GPU séparément",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Vous avez gagné {{ blocks }}</span> pendant votre absence",
   "your-reward-is": "Votre récompense est"
 }
