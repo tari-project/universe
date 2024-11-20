@@ -1,3 +1,4 @@
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { Transaction } from '@app/types/wallet';
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
@@ -20,11 +21,18 @@ interface State {
     recapData?: Recap;
     historyItemRecapData?: Transaction[];
     recapIds: TransactionInfo['tx_id'][];
+    replayItem?: Transaction;
 }
 
+interface WinAnimation {
+    latestTx: TransactionInfo;
+    canAnimate?: boolean;
+    isRecap?: boolean;
+}
 interface Actions {
-    handleWin: (latestTx: TransactionInfo, canAnimate?: boolean) => Promise<void>;
+    handleWin: ({ latestTx, canAnimate, isRecap }: WinAnimation) => Promise<void>;
     handleWinRecap: (recapData: Recap) => void;
+    handleWinReplay: (txItem: Transaction) => void;
     handleFail: (blockHeight: number, canAnimate?: boolean) => Promise<void>;
     handleNewBlock: (newBlockHeight: number, isMining?: boolean) => Promise<void>;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
@@ -61,26 +69,40 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     recapIds: [],
     handleWinRecap: (recapData) => {
         useMiningStore.getState().setMiningControlsEnabled(false);
-
         const successTier = getSuccessTier(recapData.totalEarnings);
-
         setAnimationState(successTier);
-
         set({ recapData });
-
         setTimeout(() => {
             useMiningStore.getState().setMiningControlsEnabled(true);
             set({ recapData: undefined, recapIds: [] });
         }, 2000);
     },
-    handleWin: async (latestTx: TransactionInfo, canAnimate) => {
-        const blockHeight = Number(latestTx.message?.split(': ')[1]);
+    handleWinReplay: (txItem) => {
+        const isAnimating = window.glApp.stateManager.status !== 'not-started';
+        const earnings = txItem.amount;
+        if (!isAnimating) {
+            setAnimationState('start');
+        }
+
+        const successTier = getSuccessTier(earnings);
+        setAnimationState(successTier);
+        set({ replayItem: txItem });
+        useAppConfigStore.getState().setReplayedIds(txItem.tx_id.toString());
+
+        setTimeout(() => {
+            set({ replayItem: undefined });
+        }, 2000);
+    },
+    handleWin: async ({ latestTx, canAnimate }) => {
+        const blockHeight = Number(latestTx?.message?.split(': ')[1]);
         const earnings = latestTx.amount;
+
         console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
             const successTier = getSuccessTier(earnings);
+
             setAnimationState(successTier);
             set({ earnings });
             setTimeout(() => {
@@ -110,7 +132,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
             const latestTransaction = useWalletStore.getState().transactions?.[0];
             const latestTxBlock = latestTransaction?.message?.split(': ')?.[1];
             if (latestTxBlock === newBlockHeight.toString()) {
-                await getState().handleWin(latestTransaction, canAnimate);
+                await getState().handleWin({ latestTx: latestTransaction, canAnimate });
             } else {
                 await getState().handleFail(newBlockHeight, canAnimate);
             }

@@ -9,16 +9,14 @@ import {
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 
 import { useAirdropStore } from '@app/store/useAirdropStore';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { Trans, useTranslation } from 'react-i18next';
 
 export default function AirdropLogout() {
     const { t } = useTranslation(['common', 'airdrop'], { useSuspense: false });
 
-    const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
     const logout = useAirdropStore((state) => state.logout);
     const { authUuid, userDetails } = useAirdropStore();
-    if (!airdropUIEnabled || (!userDetails && !authUuid)) return null;
+    if (!userDetails && !authUuid) return null;
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>

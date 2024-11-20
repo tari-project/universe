@@ -52,8 +52,9 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
     const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
-    const setReplayedIds = useAppConfigStore((s) => s.setReplayedIds);
+
     const historyItemRecapData = useBlockchainVisualisationStore((s) => s.historyItemRecapData);
+    const handleWinReplay = useBlockchainVisualisationStore((s) => s.handleWinReplay);
 
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const earningsFormatted = useFormatBalance(item.amount).toLowerCase();
@@ -68,8 +69,8 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     }, []);
 
     const handleReplay = useCallback(() => {
-        setReplayedIds(item.tx_id.toString());
-    }, [item.tx_id, setReplayedIds]);
+        handleWinReplay(item);
+    }, [handleWinReplay, item]);
 
     if (!item.blockHeight || item.payment_id?.length > 0) {
         return null;
