@@ -33,7 +33,6 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'start_mining'): Promise<void>;
     function invoke(param: 'stop_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
-    function invoke(param: 'set_auto_mining', payload: { autoMining: boolean }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
     function invoke(param: 'update_applications'): Promise<void>;
     function invoke(
@@ -74,7 +73,7 @@ declare module '@tauri-apps/api/tauri' {
             useMoneroFail: boolean;
             moneroNodes: string[];
         }
-    );
+    ): Promise<void>;
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }

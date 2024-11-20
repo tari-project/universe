@@ -1,12 +1,12 @@
 {
-  "cpu-power": "Daya CPU",
-  "gpu-power": "Daya GPU",
-  "estimated-day": "Perkiraan tXTM/hari",
   "connection-to-node-lost": "Koneksi ke penambang terputus. Harap tunggu penambang untuk menyambung kembali atau mulai ulang penambang.",
+  "cpu-power": "Daya CPU",
   "current-block-time": "Waktu blok saat ini",
   "day": "day",
+  "estimated-day": "Perkiraan tXTM/hari",
   "estimated-earnings": "Perkiraan penghasilan",
   "floor": "Batas Bawah",
+  "gpu-power": "Daya GPU",
   "mining-button-text": {
     "cancel-mining": "Batalkan Penambangan",
     "changing-mode": "Mengubah mode",
@@ -18,6 +18,7 @@
     "waiting-for-idle": "Menunggu Tidak Aktif"
   },
   "you-earn-rewards-separately": "Anda mendapatkan hadiah untuk menambang CPU dan GPU secara terpisah",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Anda memenangkan {{ blocks }}</span> saat Anda pergi",
   "your-reward-is": "Hadiah Anda adalah"
 }

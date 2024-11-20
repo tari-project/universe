@@ -12,7 +12,6 @@ import {
 } from '../../components/SettingsGroup.styles.ts';
 
 export default function AirdropPermissionSettings() {
-    const airdropUIEnabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
@@ -26,11 +25,9 @@ export default function AirdropPermissionSettings() {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">
-                            {t(airdropUIEnabled ? 'permission.title' : 'permissionNoGems.title')}
-                        </Typography>
+                        <Typography variant="h6">{t('permission.title')}</Typography>
                     </SettingsGroupTitle>
-                    <Typography>{t(airdropUIEnabled ? 'permission.text' : 'permissionNoGems.text')}</Typography>
+                    <Typography>{t('permission.text')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch checked={allowTelemetry} onChange={handleChange} />

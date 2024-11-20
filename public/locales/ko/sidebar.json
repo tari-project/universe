@@ -13,15 +13,16 @@
   "paper-wallet-tooltip-message": "Universe 지갑을 Tari Aurora에 동기화하여 어디서든 XTM을 추적하세요.",
   "paper-wallet-tooltip-title": "휴대폰과 동기화",
   "recent-wins": "최근 승리",
+  "rewards": "Rewards",
   "setup-scheduler": "스케줄러 설정",
-  "show-history": "기록 보기",
-  "wallet-balance": "지갑 잔액",
   "share": {
-    "history-item-button": "자랑하고 초대하기",
-    "title": "방금 타리를 채굴했습니다",
-    "winner-pill": "블록 승자",
-    "copied": "링크가 복사되었습니다!",
     "button-text": "자랑하고 초대하기",
-    "reward": "내 보상"
-  }
+    "copied": "링크가 복사되었습니다!",
+    "history-item-button": "자랑하고 초대하기",
+    "reward": "내 보상",
+    "title": "방금 타리를 채굴했습니다",
+    "winner-pill": "블록 승자"
+  },
+  "show-history": "기록 보기",
+  "wallet-balance": "지갑 잔액"
 }

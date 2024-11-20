@@ -1,12 +1,12 @@
 {
-  "cpu-power": "Moc CPU",
-  "gpu-power": "Moc GPU",
-  "estimated-day": "Est tXTM/dzień",
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
+  "cpu-power": "Moc CPU",
   "current-block-time": "Aktualny czas bloku",
   "day": "day",
+  "estimated-day": "Est tXTM/dzień",
   "estimated-earnings": "Szacowane zarobki",
   "floor": "Poziom",
+  "gpu-power": "Moc GPU",
   "mining-button-text": {
     "cancel-mining": "Anuluj kopanie",
     "changing-mode": "Zmiana trybu",
@@ -18,6 +18,7 @@
     "waiting-for-idle": "Oczekiwanie na bezczynność"
   },
   "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Wygrałeś {{ blocks }}</span> podczas swojej nieobecności",
   "your-reward-is": "Twoja nagroda wynosi"
 }
