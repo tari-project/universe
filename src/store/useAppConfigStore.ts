@@ -1,3 +1,5 @@
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+
 import * as Sentry from '@sentry/react';
 import { invoke } from '@tauri-apps/api';
 import { create } from './create';
@@ -33,7 +35,7 @@ interface Actions {
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
     setTheme: (theme: displayMode) => Promise<void>;
     setVisualMode: (enabled: boolean) => void;
-    setReplayedIds: (replayedIds: string[]) => void;
+    setReplayedIds: (newId: string) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -294,10 +296,18 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             set({ visual_mode: !enabled });
         });
     },
-    setReplayedIds: (replayedIds) => {
+    setReplayedIds: (newId) => {
+        const current = getState().replayed_ids || [];
+        const currentReplayItems = useBlockchainVisualisationStore.getState().historyItemRecapData || [];
+        const replayedIds = [...current, newId];
         invoke('set_replayed_ids', { replayedIds })
             .then(() => {
-                set((state) => ({ ...state, replayed_ids: replayedIds }));
+                set({ replayed_ids: replayedIds });
+                if (currentReplayItems?.length) {
+                    const newItems = currentReplayItems.filter((item) => item.tx_id.toString() !== newId);
+
+                    useBlockchainVisualisationStore.getState().setHistoryItemRecapData(newItems);
+                }
             })
             .catch((e) => console.error('Could not set replayed_ids', e));
     },

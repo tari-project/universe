@@ -1,3 +1,4 @@
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import {
     EarningsWrapper,
     FlexButton,
@@ -16,7 +17,7 @@ import { TariSvg } from '@app/assets/icons/tari.tsx';
 
 import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import { useTranslation } from 'react-i18next';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
@@ -51,6 +52,8 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
     const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
+    const setReplayedIds = useAppConfigStore((s) => s.setReplayedIds);
+    const historyItemRecapData = useBlockchainVisualisationStore((s) => s.historyItemRecapData);
 
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const earningsFormatted = useFormatBalance(item.amount).toLowerCase();
@@ -63,6 +66,10 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const { colour, colour1, colour2 } = useMemo(() => {
         return randomGradientColours[getRandomInt(9)];
     }, []);
+
+    const handleReplay = useCallback(() => {
+        setReplayedIds(item.tx_id.toString());
+    }, [item.tx_id, setReplayedIds]);
 
     if (!item.blockHeight || item.payment_id?.length > 0) {
         return null;
@@ -78,8 +85,8 @@ export default function HistoryItem({ item }: HistoryItemProps) {
 
     const isLoggedIn = !!airdropTokens;
 
-    // const showShareButton = true;
     const showShareButton = sharingEnabled && isLoggedIn;
+    const showReplayButton = historyItemRecapData?.find((tx) => tx?.tx_id === item.tx_id);
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
             {showShareButton && (
@@ -97,9 +104,11 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                                     {gemsValue} <GemImage src={gemImage} alt="" />
                                 </GemPill>
                             </FlexButton>
-                            <ReplayButton>
-                                <ReplaySVG />
-                            </ReplayButton>
+                            {showReplayButton && (
+                                <ReplayButton onClick={handleReplay}>
+                                    <ReplaySVG />
+                                </ReplayButton>
+                            )}
                         </HoverWrapper>
                     )}
                 </AnimatePresence>
