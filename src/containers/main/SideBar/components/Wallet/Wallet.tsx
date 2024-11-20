@@ -33,7 +33,8 @@ export default function Wallet() {
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
-    const historyItemRecapData = useBlockchainVisualisationStore((s) => s.historyItemRecapData);
+    const replayedIds = useAppConfigStore((s) => s.replayed_ids);
+    const historyItemRecapData = transactions.filter((tx) => !replayedIds?.includes(tx.tx_id));
 
     const fetchTx = useFetchTx();
     const formatted = useFormatBalance(balance || 0);
@@ -78,7 +79,9 @@ export default function Wallet() {
         </WalletBalanceContainer>
     );
 
-    const rewardCount = historyItemRecapData?.count || 0;
+    console.debug(historyItemRecapData);
+
+    const rewardCount = historyItemRecapData?.length || 0;
     const showCount = rewardCount > 0 && !showHistory;
 
     return (

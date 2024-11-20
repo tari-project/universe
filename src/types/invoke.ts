@@ -33,7 +33,6 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'start_mining'): Promise<void>;
     function invoke(param: 'stop_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
-    function invoke(param: 'set_auto_mining', payload: { autoMining: boolean }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
     function invoke(param: 'update_applications'): Promise<void>;
     function invoke(
@@ -68,13 +67,14 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
     function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
     function invoke(param: 'set_visual_mode', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'set_replayed_ids', payload: { replayedIds: string[] }): Promise<void>;
     function invoke(
         param: 'set_monerod_config',
         payload: {
             useMoneroFail: boolean;
             moneroNodes: string[];
         }
-    );
+    ): Promise<void>;
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }

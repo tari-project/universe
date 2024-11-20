@@ -21,8 +21,6 @@ pub struct AppConfigFromFile {
     #[serde(default = "default_display_mode")]
     display_mode: String,
     #[serde(default = "default_true")]
-    auto_mining: bool,
-    #[serde(default = "default_true")]
     mine_on_app_start: bool,
     #[serde(default = "default_true")]
     p2pool_enabled: bool,
@@ -46,8 +44,6 @@ pub struct AppConfigFromFile {
     should_auto_launch: bool,
     #[serde(default = "default_application_language")]
     application_language: String,
-    #[serde(default = "default_true")]
-    airdrop_ui_enabled: bool,
     #[serde(default = "default_true")]
     use_tor: bool,
     #[serde(default = "default_false")]
@@ -75,6 +71,7 @@ pub struct AppConfigFromFile {
     sharing_enabled: bool,
     #[serde(default = "default_true")]
     visual_mode: bool,
+    replayed_ids: Vec<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -83,7 +80,6 @@ impl Default for AppConfigFromFile {
             version: default_version(),
             mode: default_mode(),
             display_mode: default_display_mode(),
-            auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
@@ -98,7 +94,6 @@ impl Default for AppConfigFromFile {
             application_language: default_application_language(),
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: None,
-            airdrop_ui_enabled: true,
             paper_wallet_enabled: false,
             use_tor: true,
             eco_mode_cpu_options: Vec::new(),
@@ -113,6 +108,7 @@ impl Default for AppConfigFromFile {
             custom_power_levels_enabled: true,
             sharing_enabled: true,
             visual_mode: true,
+            replayed_ids: Vec::new(),
         }
     }
 }
@@ -206,6 +202,7 @@ pub(crate) struct AppConfig {
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
+    replayed_ids: Vec<String>,
 }
 
 impl AppConfig {
@@ -245,6 +242,7 @@ impl AppConfig {
             auto_update: true,
             sharing_enabled: true,
             visual_mode: true,
+            replayed_ids: Vec::new(),
         }
     }
 
@@ -275,7 +273,6 @@ impl AppConfig {
                 } else {
                     self.display_mode = DisplayMode::Light;
                 }
-                self.auto_mining = config.auto_mining;
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
                 self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
@@ -288,7 +285,6 @@ impl AppConfig {
                 self.should_always_use_system_language = config.should_always_use_system_language;
                 self.should_auto_launch = config.should_auto_launch;
                 self.application_language = config.application_language;
-                self.airdrop_ui_enabled = config.airdrop_ui_enabled;
                 self.use_tor = config.use_tor;
                 self.paper_wallet_enabled = config.paper_wallet_enabled;
                 self.eco_mode_cpu_options = config.eco_mode_cpu_options;
@@ -484,12 +480,6 @@ impl AppConfig {
         self.auto_mining
     }
 
-    // pub async fn set_airdrop_ui_enabled(&mut self, airdrop_ui_enabled: bool) -> Result<(), anyhow::Error> {
-    //     self.airdrop_ui_enabled = airdrop_ui_enabled;
-    //     self.update_config_file().await?;
-    //     Ok(())
-    // }
-
     pub fn should_auto_launch(&self) -> bool {
         self.should_auto_launch
     }
@@ -508,6 +498,15 @@ impl AppConfig {
         mine_on_app_start: bool,
     ) -> Result<(), anyhow::Error> {
         self.mine_on_app_start = mine_on_app_start;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub async fn set_replayed_ids(
+        &mut self,
+        replayed_ids: Vec<String>,
+    ) -> Result<(), anyhow::Error> {
+        self.replayed_ids = replayed_ids;
         self.update_config_file().await?;
         Ok(())
     }
@@ -622,7 +621,6 @@ impl AppConfig {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
             display_mode: DisplayMode::to_str(self.display_mode),
-            auto_mining: self.auto_mining,
             mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
             last_binaries_update_timestamp: self.last_binaries_update_timestamp,
@@ -635,7 +633,6 @@ impl AppConfig {
             should_always_use_system_language: self.should_always_use_system_language,
             should_auto_launch: self.should_auto_launch,
             application_language: self.application_language.clone(),
-            airdrop_ui_enabled: self.airdrop_ui_enabled,
             paper_wallet_enabled: self.paper_wallet_enabled,
             custom_max_cpu_usage: self.custom_max_cpu_usage,
             custom_max_gpu_usage: self.custom_max_gpu_usage,
@@ -652,6 +649,7 @@ impl AppConfig {
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,
             visual_mode: self.visual_mode,
+            replayed_ids: self.replayed_ids.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

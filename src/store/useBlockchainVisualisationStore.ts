@@ -1,3 +1,4 @@
+import { Transaction } from '@app/types/wallet';
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 
@@ -17,7 +18,7 @@ interface State {
     displayBlockHeight?: number;
     earnings?: number;
     recapData?: Recap;
-    historyItemRecapData?: Recap;
+    historyItemRecapData?: Transaction[];
     recapIds: TransactionInfo['tx_id'][];
 }
 
@@ -29,6 +30,7 @@ interface Actions {
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
+    setHistoryItemRecapData: (historyItemRecap: Transaction[]) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -65,7 +67,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         setAnimationState(successTier);
 
         set({ recapData });
-        set({ historyItemRecapData: recapData });
 
         setTimeout(() => {
             useMiningStore.getState().setMiningControlsEnabled(true);
@@ -120,4 +121,5 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
+    setHistoryItemRecapData: (historyItemRecapData) => set({ historyItemRecapData }),
 }));

@@ -33,6 +33,7 @@ interface Actions {
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
     setTheme: (theme: displayMode) => Promise<void>;
     setVisualMode: (enabled: boolean) => void;
+    setReplayedIds: (replayedIds: string[]) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -41,7 +42,7 @@ const initialState: State = {
     config_version: 0,
     config_file: undefined,
     mode: 'Eco',
-    auto_mining: true,
+
     mine_on_app_start: false,
     p2pool_enabled: false,
     last_binaries_update_timestamp: '0',
@@ -51,7 +52,7 @@ const initialState: State = {
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
     sharing_enabled: true,
-    airdrop_ui_enabled: false,
+
     paper_wallet_enabled: false,
     custom_power_levels_enabled: true,
     use_tor: true,
@@ -292,5 +293,12 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             appStateStore.setError('Could not change visual mode');
             set({ visual_mode: !enabled });
         });
+    },
+    setReplayedIds: (replayedIds) => {
+        invoke('set_replayed_ids', { replayedIds })
+            .then(() => {
+                set((state) => ({ ...state, replayed_ids: replayedIds }));
+            })
+            .catch((e) => console.error('Could not set replayed_ids', e));
     },
 }));
