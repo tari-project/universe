@@ -34,7 +34,8 @@ export default function Wallet() {
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
 
-    const historyItemRecapData = useBlockchainVisualisationStore((s) => s.historyItemRecapData);
+    const recapCount = useBlockchainVisualisationStore((s) => s.recapCount);
+    const setRecapCount = useBlockchainVisualisationStore((s) => s.setRecapCount);
 
     const fetchTx = useFetchTx();
     const formatted = useFormatBalance(balance || 0);
@@ -52,8 +53,10 @@ export default function Wallet() {
             return;
         }
 
+        setRecapCount(undefined);
+
         setShowHistory((c) => !c);
-    }, [balance, fetchTx, isTransactionLoading, transactions.length]);
+    }, [balance, fetchTx, isTransactionLoading, setRecapCount, transactions?.length]);
 
     const handleSyncButtonClick = () => {
         setShowPaperWalletModal(true);
@@ -79,8 +82,7 @@ export default function Wallet() {
         </WalletBalanceContainer>
     );
 
-    const rewardCount = historyItemRecapData?.length || 0;
-    const showCount = rewardCount > 0 && !showHistory;
+    const showCount = Boolean(recapCount && recapCount > 0 && !showHistory);
 
     return (
         <>
@@ -99,7 +101,7 @@ export default function Wallet() {
                         <CornerButton onClick={handleShowClick} $hasReward={showCount}>
                             {showCount && (
                                 <CornerButtonBadge>
-                                    <span>{rewardCount}</span>
+                                    <span>{recapCount}</span>
                                 </CornerButtonBadge>
                             )}
                             {!showHistory ? t('rewards') : t('hide-history')}

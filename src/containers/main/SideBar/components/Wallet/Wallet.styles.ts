@@ -128,17 +128,7 @@ export const CornerButton = styled('button')<{ $hasReward?: boolean }>`
         background: rgba(255, 255, 255, 0.3);
     }
 `;
-export const ClearCTA = styled.div`
-    border-radius: 100%;
-    display: flex;
-    padding-right: 3px;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    svg {
-        display: flex;
-    }
-`;
+
 export const CornerButtonBadge = styled.div`
     background-color: ${({ theme }) => theme.colors.brightRed[500]};
     border-radius: 13px;

@@ -53,7 +53,6 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
     const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
 
-    const historyItemRecapData = useBlockchainVisualisationStore((s) => s.historyItemRecapData);
     const handleWinReplay = useBlockchainVisualisationStore((s) => s.handleWinReplay);
 
     const { t } = useTranslation('sidebar', { useSuspense: false });
@@ -87,7 +86,6 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const isLoggedIn = !!airdropTokens;
 
     const showShareButton = sharingEnabled && isLoggedIn;
-    const showReplayButton = historyItemRecapData?.find((tx) => tx?.tx_id === item.tx_id);
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
             {showShareButton && (
@@ -106,11 +104,9 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                                     {gemsValue} <GemImage src={gemImage} alt="" />
                                 </GemPill>
                             </FlexButton>
-                            {showReplayButton && (
-                                <ReplayButton onClick={handleReplay}>
-                                    <ReplaySVG />
-                                </ReplayButton>
-                            )}
+                            <ReplayButton onClick={handleReplay}>
+                                <ReplaySVG />
+                            </ReplayButton>
                         </HoverWrapper>
                     )}
                 </AnimatePresence>

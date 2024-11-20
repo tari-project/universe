@@ -67,7 +67,6 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
     function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
     function invoke(param: 'set_visual_mode', payload: { enabled: boolean }): Promise<void>;
-    function invoke(param: 'set_replayed_ids', payload: { replayedIds: string[] }): Promise<void>;
     function invoke(
         param: 'set_monerod_config',
         payload: {

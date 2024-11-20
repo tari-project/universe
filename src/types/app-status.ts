@@ -35,7 +35,6 @@ export interface AppConfig {
     should_auto_launch: boolean;
     use_tor: boolean;
     visual_mode: boolean;
-    replayed_ids: string[];
 }
 
 export enum ExternalDependencyStatus {

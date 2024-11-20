@@ -71,7 +71,6 @@ pub struct AppConfigFromFile {
     sharing_enabled: bool,
     #[serde(default = "default_true")]
     visual_mode: bool,
-    replayed_ids: Vec<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -108,7 +107,6 @@ impl Default for AppConfigFromFile {
             custom_power_levels_enabled: true,
             sharing_enabled: true,
             visual_mode: true,
-            replayed_ids: Vec::new(),
         }
     }
 }
@@ -201,7 +199,6 @@ pub(crate) struct AppConfig {
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
-    replayed_ids: Vec<String>,
 }
 
 impl AppConfig {
@@ -240,7 +237,6 @@ impl AppConfig {
             auto_update: true,
             sharing_enabled: true,
             visual_mode: true,
-            replayed_ids: Vec::new(),
         }
     }
 
@@ -356,10 +352,6 @@ impl AppConfig {
 
     pub fn eco_mode_cpu_options(&self) -> &Vec<String> {
         &self.eco_mode_cpu_options
-    }
-
-    pub fn replayed_ids(&self) -> &Vec<String> {
-        &self.replayed_ids
     }
 
     pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
@@ -508,15 +500,6 @@ impl AppConfig {
         Ok(())
     }
 
-    pub async fn set_replayed_ids(
-        &mut self,
-        replayed_ids: Vec<String>,
-    ) -> Result<(), anyhow::Error> {
-        self.replayed_ids = replayed_ids;
-        self.update_config_file().await?;
-        Ok(())
-    }
-
     pub async fn set_allow_telemetry(
         &mut self,
         allow_telemetry: bool,
@@ -655,7 +638,6 @@ impl AppConfig {
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,
             visual_mode: self.visual_mode,
-            replayed_ids: self.replayed_ids.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

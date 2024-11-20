@@ -1898,28 +1898,6 @@ async fn close_splashscreen(window: Window) {
         .show()
         .expect("could not show");
 }
-
-#[tauri::command]
-async fn set_replayed_ids<'r>(
-    replayed_ids: Vec<String>,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    let mut config = state.config.write().await;
-    config
-        .set_replayed_ids(replayed_ids)
-        .await
-        .inspect_err(|e| error!("error at set_replayed_ids {:?}", e))
-        .map_err(|e| e.to_string())?;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
-            "set_replayed_ids took too long: {:?}",
-            timer.elapsed()
-        );
-    }
-    Ok(())
-}
-
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
     // hardware: Vec<PublicDeviceProperties>,
@@ -2266,7 +2244,6 @@ fn main() {
             set_monero_address,
             set_monerod_config,
             set_p2pool_enabled,
-            set_replayed_ids,
             set_should_always_use_system_language,
             set_should_auto_launch,
             set_tor_config,

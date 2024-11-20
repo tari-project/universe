@@ -1,4 +1,3 @@
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { Transaction } from '@app/types/wallet';
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
@@ -19,7 +18,7 @@ interface State {
     displayBlockHeight?: number;
     earnings?: number;
     recapData?: Recap;
-    historyItemRecapData?: Transaction[];
+    recapCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: Transaction;
 }
@@ -38,7 +37,7 @@ interface Actions {
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
-    setHistoryItemRecapData: (historyItemRecap: Transaction[]) => void;
+    setRecapCount: (recapCount?: number) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -71,7 +70,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         useMiningStore.getState().setMiningControlsEnabled(false);
         const successTier = getSuccessTier(recapData.totalEarnings);
         setAnimationState(successTier);
-        set({ recapData });
+        set({ recapData, recapCount: recapData.count });
         setTimeout(() => {
             useMiningStore.getState().setMiningControlsEnabled(true);
             set({ recapData: undefined, recapIds: [] });
@@ -85,11 +84,10 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         const handleReplay = () => {
             set({ replayItem: txItem });
             setAnimationState(successTier);
-            useAppConfigStore.getState().setReplayedIds([txItem.tx_id.toString()]);
             setTimeout(() => {
                 set({ replayItem: undefined });
                 useMiningStore.getState().setIsReplaying(false);
-            }, 2000);
+            }, 1500);
         };
         if (!isAnimating) {
             setAnimationState('start');
@@ -150,5 +148,5 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
-    setHistoryItemRecapData: (historyItemRecapData) => set({ historyItemRecapData }),
+    setRecapCount: (recapCount) => set({ recapCount }),
 }));
