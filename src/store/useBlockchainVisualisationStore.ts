@@ -85,7 +85,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         const handleReplay = () => {
             set({ replayItem: txItem });
             setAnimationState(successTier);
-            useAppConfigStore.getState().setReplayedIds(txItem.tx_id.toString());
+            useAppConfigStore.getState().setReplayedIds([txItem.tx_id.toString()]);
             setTimeout(() => {
                 set({ replayItem: undefined });
                 useMiningStore.getState().setIsReplaying(false);
@@ -94,7 +94,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         if (!isAnimating) {
             setAnimationState('start');
             setTimeout(() => {
-                console.debug(`statusAFTER= ${window.glApp.stateManager.status}`);
                 handleReplay();
             }, 1500);
         } else {

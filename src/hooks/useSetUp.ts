@@ -52,7 +52,6 @@ export function useSetUp() {
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
             switch (p.event_type) {
                 case 'setup_status':
-                    console.debug(p);
                     if (p.progress > 0) {
                         setSetupDetails(p.title, p.title_params, p.progress);
                     }

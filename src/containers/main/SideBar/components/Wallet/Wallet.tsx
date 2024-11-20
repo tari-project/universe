@@ -1,5 +1,5 @@
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useCallback, useState } from 'react';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import {
@@ -33,6 +33,7 @@ export default function Wallet() {
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
+
     const historyItemRecapData = useBlockchainVisualisationStore((s) => s.historyItemRecapData);
 
     const fetchTx = useFetchTx();

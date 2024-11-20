@@ -35,7 +35,7 @@ interface Actions {
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
     setTheme: (theme: displayMode) => Promise<void>;
     setVisualMode: (enabled: boolean) => void;
-    setReplayedIds: (newId: string) => void;
+    setReplayedIds: (newIds: string[]) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -295,16 +295,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             set({ visual_mode: !enabled });
         });
     },
-    setReplayedIds: (newId) => {
+    setReplayedIds: (newIds) => {
         const current = getState().replayed_ids || [];
         const currentReplayItems = useBlockchainVisualisationStore.getState().historyItemRecapData || [];
-        const replayedIds = [...current, newId];
+        const replayedIds = [...current, ...newIds];
         invoke('set_replayed_ids', { replayedIds })
             .then(() => {
                 set({ replayed_ids: replayedIds });
                 if (currentReplayItems?.length) {
-                    const newItems = currentReplayItems.filter((item) => item.tx_id.toString() !== newId);
-
+                    const newItems = currentReplayItems.filter((item) => !replayedIds.includes(item.tx_id.toString()));
                     useBlockchainVisualisationStore.getState().setHistoryItemRecapData(newItems);
                 }
             })
