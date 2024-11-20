@@ -80,14 +80,20 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     handleWinReplay: (txItem) => {
         const isAnimating = window.glApp.stateManager.status !== 'not-started';
         const earnings = txItem.amount;
+        const successTier = getSuccessTier(earnings);
+        function handleReplay() {
+            setAnimationState(successTier);
+            set({ replayItem: txItem });
+            useAppConfigStore.getState().setReplayedIds(txItem.tx_id.toString());
+        }
         if (!isAnimating) {
             setAnimationState('start');
+            setTimeout(() => {
+                handleReplay();
+            }, 2000);
+        } else {
+            handleReplay();
         }
-
-        const successTier = getSuccessTier(earnings);
-        setAnimationState(successTier);
-        set({ replayItem: txItem });
-        useAppConfigStore.getState().setReplayedIds(txItem.tx_id.toString());
 
         setTimeout(() => {
             set({ replayItem: undefined });

@@ -140,12 +140,12 @@ export const FlexButton = styled(m.button)`
         linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
 
     position: relative;
-
     color: #000;
     font-size: 12px;
     font-weight: 600;
     line-height: normal;
     cursor: pointer;
+    right: 0;
 
     &:hover {
         box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);

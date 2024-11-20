@@ -185,7 +185,6 @@ pub(crate) struct AppConfig {
     should_always_use_system_language: bool,
     should_auto_launch: bool,
     application_language: String,
-    airdrop_ui_enabled: bool,
     paper_wallet_enabled: bool,
     use_tor: bool,
     reset_earnings: bool,
@@ -225,7 +224,6 @@ impl AppConfig {
             should_always_use_system_language: false,
             should_auto_launch: false,
             application_language: default_application_language(),
-            airdrop_ui_enabled: true,
             use_tor: true,
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: None,
@@ -320,7 +318,6 @@ impl AppConfig {
         }
         if self.config_version <= 7 {
             self.config_version = 8;
-            self.airdrop_ui_enabled = true;
         }
         if self.config_version <= 8 {
             self.config_version = 9;

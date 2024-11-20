@@ -97,6 +97,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                             <FlexButton
                                 initial={{ x: 20 }}
                                 animate={{ x: 0 }}
+                                transition={{ delay: 0.1 }}
                                 exit={{ x: 20 }}
                                 onClick={handleShareClick}
                             >
