@@ -1,5 +1,3 @@
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import * as Sentry from '@sentry/react';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api';
@@ -15,24 +13,17 @@ export default function useFetchTx() {
     const setTransactions = useWalletStore((s) => s.setTransactions);
     const setError = useAppStateStore((s) => s.setError);
 
-    const replayedIds = useAppConfigStore((s) => s.replayed_ids);
-    const setHistoryItemRecapData = useBlockchainVisualisationStore((s) => s.setHistoryItemRecapData);
-
     const setItems = useCallback(
         async (newTx: Transaction[]) => {
             const latestTx = newTx[0];
             const latestId = latestTx?.tx_id;
             const hasNewItems = !transactions?.find((tx) => tx.tx_id === latestId);
 
-            const historyItemRecapData = newTx.filter((tx) => !replayedIds?.includes(tx?.tx_id.toString()));
-            if (historyItemRecapData?.length) {
-                setHistoryItemRecapData(historyItemRecapData);
-            }
             if (hasNewItems) {
                 setTransactions(newTx);
             }
         },
-        [replayedIds, setHistoryItemRecapData, setTransactions, transactions]
+        [setTransactions, transactions]
     );
 
     return useCallback(async () => {

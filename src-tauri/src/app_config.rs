@@ -358,6 +358,10 @@ impl AppConfig {
         &self.eco_mode_cpu_options
     }
 
+    pub fn replayed_ids(&self) -> &Vec<String> {
+        &self.replayed_ids
+    }
+
     pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
         &self.ludicrous_mode_cpu_options
     }
