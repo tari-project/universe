@@ -6,6 +6,7 @@ import {
     HoverWrapper,
     InfoWrapper,
     LeftContent,
+    ReplayButton,
     SquadIconWrapper,
     Wrapper,
 } from './HistoryItem.styles.ts';
@@ -22,6 +23,9 @@ import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 import { Transaction } from '@app/types/wallet.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+
+import { ReplaySVG } from '@app/assets/icons/replay';
+
 interface HistoryItemProps {
     item: Transaction;
 }
@@ -74,8 +78,8 @@ export default function HistoryItem({ item }: HistoryItemProps) {
 
     const isLoggedIn = !!airdropTokens;
 
+    // const showShareButton = true;
     const showShareButton = sharingEnabled && isLoggedIn;
-
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
             {showShareButton && (
@@ -83,9 +87,9 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     {hovering && (
                         <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                             <FlexButton
-                                initial={{ x: 20, y: '-50%' }}
-                                animate={{ x: 0, y: '-50%' }}
-                                exit={{ x: 20, y: '-50%' }}
+                                initial={{ x: 20 }}
+                                animate={{ x: 0 }}
+                                exit={{ x: 20 }}
                                 onClick={handleShareClick}
                             >
                                 {t('share.history-item-button')}
@@ -93,6 +97,9 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                                     {gemsValue} <GemImage src={gemImage} alt="" />
                                 </GemPill>
                             </FlexButton>
+                            <ReplayButton>
+                                <ReplaySVG />
+                            </ReplayButton>
                         </HoverWrapper>
                     )}
                 </AnimatePresence>

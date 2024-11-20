@@ -100,7 +100,7 @@ export const WalletCornerButtons = styled('div')`
     gap: 3px;
 `;
 
-export const CornerButton = styled('button')`
+export const CornerButton = styled('button')<{ $hasReward?: boolean }>`
     color: #fff;
     font-size: 10px;
     font-style: normal;
@@ -112,7 +112,7 @@ export const CornerButton = styled('button')`
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(7px);
 
-    padding: 0 8px 0 3px;
+    padding: ${({ $hasReward = false }) => ($hasReward ? '0 8px 0 3px' : '0 8px')};
 
     display: flex;
     align-items: center;

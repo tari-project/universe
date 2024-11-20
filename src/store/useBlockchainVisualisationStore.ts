@@ -17,6 +17,7 @@ interface State {
     displayBlockHeight?: number;
     earnings?: number;
     recapData?: Recap;
+    historyItemRecapData?: Recap;
     recapIds: TransactionInfo['tx_id'][];
 }
 
@@ -64,6 +65,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         setAnimationState(successTier);
 
         set({ recapData });
+        set({ historyItemRecapData: recapData });
 
         setTimeout(() => {
             useMiningStore.getState().setMiningControlsEnabled(true);

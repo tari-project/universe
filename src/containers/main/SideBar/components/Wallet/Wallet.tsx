@@ -1,3 +1,4 @@
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useCallback, useState } from 'react';
 import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
@@ -32,6 +33,7 @@ export default function Wallet() {
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
+    const historyItemRecapData = useBlockchainVisualisationStore((s) => s.historyItemRecapData);
 
     const fetchTx = useFetchTx();
     const formatted = useFormatBalance(balance || 0);
@@ -76,6 +78,9 @@ export default function Wallet() {
         </WalletBalanceContainer>
     );
 
+    const rewardCount = historyItemRecapData?.count || 0;
+    const showCount = rewardCount > 0 && !showHistory;
+
     return (
         <>
             <WalletContainer>
@@ -90,10 +95,12 @@ export default function Wallet() {
                         />
                     )}
                     {balance ? (
-                        <CornerButton onClick={handleShowClick}>
-                            <CornerButtonBadge>
-                                <span>2</span>
-                            </CornerButtonBadge>
+                        <CornerButton onClick={handleShowClick} $hasReward={rewardCount > 0}>
+                            {showCount && (
+                                <CornerButtonBadge>
+                                    <span>{rewardCount}</span>
+                                </CornerButtonBadge>
+                            )}
                             {!showHistory ? t('rewards') : t('hide-history')}
                         </CornerButton>
                     ) : null}
