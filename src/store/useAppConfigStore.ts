@@ -52,7 +52,7 @@ const initialState: State = {
     cpu_mining_enabled: true,
     sharing_enabled: true,
     airdrop_ui_enabled: false,
-    paper_wallet_enabled: false,
+    paper_wallet_enabled: true,
     custom_power_levels_enabled: true,
     use_tor: true,
     auto_update: false,
