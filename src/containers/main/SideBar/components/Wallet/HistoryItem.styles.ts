@@ -92,6 +92,40 @@ export const HoverWrapper = styled(m.div)`
     inset: 0;
     z-index: 4;
     background-color: rgba(255, 255, 255, 0.1);
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 6px;
+    padding: 0 10px;
+    transition: background-color 2s ease;
+`;
+
+export const ReplayButton = styled(m.button)`
+    display: flex;
+    border-radius: 100%;
+    position: relative;
+    width: 31px;
+    height: 31px;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background-color: ${({ theme }) => theme.colors.grey[600]};
+    color: #fff;
+    box-sizing: border-box;
+    &:hover {
+        svg {
+            scale: 1.05;
+        }
+    }
+
+    svg {
+        // flex centering wasn't working:(
+        position: relative;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: scale 0.1s ease;
+    }
 `;
 
 export const FlexButton = styled(m.button)`
@@ -101,21 +135,17 @@ export const FlexButton = styled(m.button)`
     justify-content: center;
     align-items: center;
     gap: 8px;
-
-    border-radius: 158.799px;
+    border-radius: 159px;
     background: linear-gradient(0deg, #c9eb00 0%, #c9eb00 100%), linear-gradient(180deg, #755cff 0%, #2946d9 100%),
         linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
 
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-
+    position: relative;
     color: #000;
     font-size: 12px;
     font-weight: 600;
     line-height: normal;
     cursor: pointer;
+    right: 0;
 
     &:hover {
         box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);

@@ -1,12 +1,12 @@
 {
-  "cpu-power": "CPU Gücü",
-  "gpu-power": "GPU Gücü",
-  "estimated-day": "Est tXTM/gün",
   "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
+  "cpu-power": "CPU Gücü",
   "current-block-time": "Geçerli blok zamanı",
   "day": "day",
+  "estimated-day": "Est tXTM/gün",
   "estimated-earnings": "Tahmini kazançlar",
   "floor": "Zemin",
+  "gpu-power": "GPU Gücü",
   "mining-button-text": {
     "cancel-mining": "Madenciyi İptal Et",
     "changing-mode": "Mod değiştirme",
@@ -18,6 +18,7 @@
     "waiting-for-idle": "Boşta Bekliyor"
   },
   "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Uzakta olduğunuzda {{ blocks }} kazandınız</span>",
   "your-reward-is": "Ödülünüz"
 }
