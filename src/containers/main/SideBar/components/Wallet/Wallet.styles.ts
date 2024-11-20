@@ -129,8 +129,8 @@ export const CornerButton = styled('button')<{ $hasReward?: boolean }>`
     }
 `;
 export const CornerButtonBadge = styled.div`
-    border-radius: 50%;
     background-color: ${({ theme }) => theme.colors.brightRed[500]};
+    border-radius: 13px;
     height: 13px;
     min-width: 13px;
     display: flex;
@@ -143,6 +143,7 @@ export const CornerButtonBadge = styled.div`
         text-align: center;
         line-height: 10px;
         height: 11px;
+        padding: 0 3px;
     }
 `;
 export const SidebarCover = styled(m.div)`

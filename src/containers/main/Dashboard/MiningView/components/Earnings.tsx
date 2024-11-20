@@ -53,7 +53,16 @@ export default function Earnings() {
 
     const replayText =
         replayItem?.amount && replayItem.blockHeight ? (
-            <RecapText>{`You were the winner of Block #${replayItem.blockHeight}`}</RecapText>
+            <RecapText>
+                <Trans
+                    ns="mining-view"
+                    i18nKey={'you-won-block'}
+                    values={{
+                        blockHeight: replayItem.blockHeight,
+                    }}
+                    components={{ span: <span /> }}
+                />
+            </RecapText>
         ) : null;
 
     return (
