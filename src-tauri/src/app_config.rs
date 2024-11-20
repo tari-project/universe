@@ -46,7 +46,7 @@ pub struct AppConfigFromFile {
     application_language: String,
     #[serde(default = "default_true")]
     use_tor: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     paper_wallet_enabled: bool,
     #[serde(default = "default_false")]
     reset_earnings: bool,
@@ -94,7 +94,7 @@ impl Default for AppConfigFromFile {
             application_language: default_application_language(),
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: None,
-            paper_wallet_enabled: false,
+            paper_wallet_enabled: true,
             use_tor: true,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
@@ -227,7 +227,7 @@ impl AppConfig {
             use_tor: true,
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: None,
-            paper_wallet_enabled: false,
+            paper_wallet_enabled: true,
             reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
@@ -338,6 +338,11 @@ impl AppConfig {
         if self.config_version <= 11 {
             self.visual_mode = true;
             self.config_version = 12;
+        }
+
+        if self.config_version <= 12 {
+            self.paper_wallet_enabled = true;
+            self.config_version = 13;
         }
     }
 
@@ -657,7 +662,7 @@ impl AppConfig {
 }
 
 fn default_version() -> u32 {
-    11
+    13
 }
 
 fn default_custom_max_cpu_usage() -> Option<u32> {
