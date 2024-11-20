@@ -10,7 +10,6 @@ export default function useFetchTx() {
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const setTransactionsLoading = useWalletStore((s) => s.setTransactionsLoading);
     const setupProgress = useAppStateStore((s) => s.setupProgress);
-
     const setTransactions = useWalletStore((s) => s.setTransactions);
     const setError = useAppStateStore((s) => s.setError);
 

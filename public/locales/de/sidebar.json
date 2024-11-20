@@ -13,15 +13,16 @@
   "paper-wallet-tooltip-message": "Verfolgen Sie Ihr XTM überall, indem Sie Ihr Universum-Wallet mit Tari Aurora synchronisieren.",
   "paper-wallet-tooltip-title": "Mit Telefon synchronisieren",
   "recent-wins": "Kürzliche Gewinne",
+  "rewards": "Rewards",
   "setup-scheduler": "Scheduler einrichten",
-  "show-history": "Verlauf anzeigen",
-  "wallet-balance": "Wallet-Balance",
   "share": {
-    "history-item-button": "Flex & Einladen",
-    "title": "Ich habe gerade Tari gemined",
-    "winner-pill": "Gewinner des Blocks",
-    "copied": "Link kopiert!",
     "button-text": "FLEX & EINLADEN",
-    "reward": "meine Belohnung"
-  }
+    "copied": "Link kopiert!",
+    "history-item-button": "Flex & Einladen",
+    "reward": "meine Belohnung",
+    "title": "Ich habe gerade Tari gemined",
+    "winner-pill": "Gewinner des Blocks"
+  },
+  "show-history": "Verlauf anzeigen",
+  "wallet-balance": "Wallet-Balance"
 }

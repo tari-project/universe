@@ -13,15 +13,16 @@
   "paper-wallet-tooltip-message": "Śledź swoje XTM wszędzie, synchronizując portfel Universe z Tari Aurora.",
   "paper-wallet-tooltip-title": "Synchronizuj z telefonem",
   "recent-wins": "Ostanie wygrane",
+  "rewards": "Rewards",
   "setup-scheduler": "Ustawienia harmonogramu",
-  "show-history": "Pokaż historię",
-  "wallet-balance": "Saldo portfela",
   "share": {
-    "history-item-button": "Pochwal się i zaproś",
-    "title": "Właśnie wykopałem tari",
-    "winner-pill": "Zwycięzca bloku",
-    "copied": "Link skopiowany!",
     "button-text": "POCHWAL SIĘ I ZAPROŚ",
-    "reward": "moja nagroda"
-  }
+    "copied": "Link skopiowany!",
+    "history-item-button": "Pochwal się i zaproś",
+    "reward": "moja nagroda",
+    "title": "Właśnie wykopałem tari",
+    "winner-pill": "Zwycięzca bloku"
+  },
+  "show-history": "Pokaż historię",
+  "wallet-balance": "Saldo portfela"
 }
