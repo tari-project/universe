@@ -13,15 +13,16 @@
   "paper-wallet-tooltip-message": "Отслеживайте свои XTM в любом месте, синхронизируя кошелек Universe с Tari Aurora.",
   "paper-wallet-tooltip-title": "Синхронизировать с телефоном",
   "recent-wins": "Последние выигрыши",
+  "rewards": "Rewards",
   "setup-scheduler": "Настройка планировщика",
-  "show-history": "Показать историю",
-  "wallet-balance": "Баланс кошелька",
   "share": {
-    "history-item-button": "Похвастаться и пригласить",
-    "title": "Я только что намайнил Tari",
-    "winner-pill": "Победитель блока",
-    "copied": "Ссылка скопирована!",
     "button-text": "ПОХВАСТАТЬСЯ И ПРИГЛАСИТЬ",
-    "reward": "моя награда"
-  }
+    "copied": "Ссылка скопирована!",
+    "history-item-button": "Похвастаться и пригласить",
+    "reward": "моя награда",
+    "title": "Я только что намайнил Tari",
+    "winner-pill": "Победитель блока"
+  },
+  "show-history": "Показать историю",
+  "wallet-balance": "Баланс кошелька"
 }

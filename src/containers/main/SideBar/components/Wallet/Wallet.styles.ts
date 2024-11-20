@@ -112,7 +112,7 @@ export const CornerButton = styled('button')`
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(7px);
 
-    padding: 0 8px;
+    padding: 0 8px 0 3px;
 
     display: flex;
     align-items: center;
@@ -121,13 +121,30 @@ export const CornerButton = styled('button')`
     cursor: pointer;
     transition: all 0.2s ease;
     pointer-events: all;
+    gap: 3px;
 
     &:hover {
         border: 1px solid rgba(156, 156, 156, 0.18);
         background: rgba(255, 255, 255, 0.3);
     }
 `;
-
+export const CornerButtonBadge = styled.div`
+    border-radius: 50%;
+    background-color: ${({ theme }) => theme.colors.brightRed[500]};
+    height: 13px;
+    min-width: 13px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    span {
+        display: flex;
+        font-weight: 600;
+        font-size: 10px;
+        text-align: center;
+        line-height: 10px;
+        height: 11px;
+    }
+`;
 export const SidebarCover = styled(m.div)`
     position: absolute;
     inset: 0;
@@ -135,5 +152,4 @@ export const SidebarCover = styled(m.div)`
     background: rgba(0, 0, 0, 0.3);
 
     cursor: pointer;
-    z-index: 1;
 `;

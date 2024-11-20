@@ -4,6 +4,7 @@ import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import {
     BalanceVisibilityButton,
     CornerButton,
+    CornerButtonBadge,
     ScrollMask,
     SidebarCover,
     WalletBalance,
@@ -90,7 +91,10 @@ export default function Wallet() {
                     )}
                     {balance ? (
                         <CornerButton onClick={handleShowClick}>
-                            {!showHistory ? t('show-history') : t('hide-history')}
+                            <CornerButtonBadge>
+                                <span>2</span>
+                            </CornerButtonBadge>
+                            {!showHistory ? t('rewards') : t('hide-history')}
                         </CornerButton>
                     ) : null}
                 </WalletCornerButtons>
