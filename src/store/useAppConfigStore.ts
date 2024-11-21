@@ -222,7 +222,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         const { mode, customGpuLevels, customCpuLevels } = params;
         const prevMode = useAppConfigStore.getState().mode;
         set({ mode, custom_max_cpu_usage: customCpuLevels, custom_max_gpu_usage: customGpuLevels });
-        console.log('Setting mode', mode, customCpuLevels, customGpuLevels);
+        console.info('Setting mode', mode, customCpuLevels, customGpuLevels);
         invoke('set_mode', {
             mode,
             customCpuUsage: customCpuLevels,

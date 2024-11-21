@@ -120,7 +120,9 @@ jobs:
             - uses: swatinem/rust-cache@v2.7.5
               with:
                   workspaces: './src-tauri -> target'
-            - name: test tauri build
+            - name: cargo tauri build
+              working-directory: ./src-tauri
               run: |
-                  npm install @tauri-apps/cli@latest 
-                  npm run tauri build -- --ci --bundles deb
+                  cargo install tauri-cli --version "^2" --locked
+                  cargo tauri --version
+                  cargo tauri build --ci --bundles deb
