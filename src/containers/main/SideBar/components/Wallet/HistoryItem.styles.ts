@@ -22,12 +22,6 @@ export const Wrapper = styled(m.div)`
     font-family:
         GTAmerica Standard,
         sans-serif;
-
-    &:hover {
-        .hover-target {
-            opacity: 0.2;
-        }
-    }
 `;
 
 export const LeftContent = styled.div`
@@ -35,6 +29,11 @@ export const LeftContent = styled.div`
     display: flex;
     gap: 10px;
     flex-shrink: 0;
+    transition: opacity 0.2s ease-in;
+
+    ${Wrapper}:hover & {
+        opacity: 0.2;
+    }
 `;
 
 export const SquadIconWrapper = styled.div<{ $colour: string; $colour1: string; $colour2: string }>`
@@ -77,6 +76,10 @@ export const EarningsWrapper = styled.div`
     flex-shrink: 0;
     font-weight: 600;
     font-size: 16px;
+    transition: opacity 0.2s ease-in;
+    ${Wrapper}:hover & {
+        opacity: 0.2;
+    }
 `;
 
 export const ListLabel = styled.div`
@@ -110,6 +113,7 @@ export const ReplayButton = styled(m.button)`
     height: 31px;
     justify-content: center;
     border: 1px solid rgba(255, 255, 255, 0.15);
+
     background-color: ${({ theme }) => theme.colors.grey[600]};
     color: #fff;
     box-sizing: border-box;
@@ -145,7 +149,6 @@ export const FlexButton = styled(m.button)`
     font-weight: 600;
     line-height: normal;
     cursor: pointer;
-    right: 0;
 
     &:hover {
         box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);

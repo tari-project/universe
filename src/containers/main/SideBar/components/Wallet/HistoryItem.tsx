@@ -88,15 +88,14 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const showShareButton = sharingEnabled && isLoggedIn;
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-            {showShareButton && (
-                <AnimatePresence>
-                    {hovering && (
-                        <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <AnimatePresence>
+                {hovering && (
+                    <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        {showShareButton && (
                             <FlexButton
-                                initial={{ x: 20 }}
+                                initial={{ x: 10 }}
                                 animate={{ x: 0 }}
-                                transition={{ delay: 0.1 }}
-                                exit={{ x: 20 }}
+                                exit={{ x: 10 }}
                                 onClick={handleShareClick}
                             >
                                 {t('share.history-item-button')}
@@ -104,15 +103,15 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                                     {gemsValue} <GemImage src={gemImage} alt="" />
                                 </GemPill>
                             </FlexButton>
-                            <ReplayButton onClick={handleReplay}>
-                                <ReplaySVG />
-                            </ReplayButton>
-                        </HoverWrapper>
-                    )}
-                </AnimatePresence>
-            )}
+                        )}
+                        <ReplayButton onClick={handleReplay}>
+                            <ReplaySVG />
+                        </ReplayButton>
+                    </HoverWrapper>
+                )}
+            </AnimatePresence>
 
-            <LeftContent className={showShareButton ? 'hover-target' : ''}>
+            <LeftContent>
                 <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
                     <TariSvg />
                 </SquadIconWrapper>
