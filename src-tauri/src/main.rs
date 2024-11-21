@@ -1204,10 +1204,6 @@ async fn get_monero_seed_words(
         .app_config_dir()
         .expect("Could not get config dir");
 
-    let network = Network::get_current_or_user_setting_or_default()
-        .to_string()
-        .to_lowercase();
-
     let cm = CredentialManager::default_with_dir(config_path);
     let cred = match cm.get_credentials() {
         Ok(cred) => cred,
