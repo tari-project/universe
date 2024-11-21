@@ -19,9 +19,6 @@ export const Wrapper = styled(m.div)`
     flex-shrink: 0;
     flex-grow: 0;
     max-height: 269px;
-    font-family:
-        GTAmerica Standard,
-        sans-serif;
 
     &:hover {
         .hover-target {
@@ -35,6 +32,11 @@ export const LeftContent = styled.div`
     display: flex;
     gap: 10px;
     flex-shrink: 0;
+    transition: opacity 0.2s ease-in;
+
+    ${Wrapper}:hover & {
+        opacity: 0.2;
+    }
 `;
 
 export const SquadIconWrapper = styled.div<{ $colour: string; $colour1: string; $colour2: string }>`
@@ -77,6 +79,10 @@ export const EarningsWrapper = styled.div`
     flex-shrink: 0;
     font-weight: 600;
     font-size: 16px;
+    transition: opacity 0.2s ease-in;
+    ${Wrapper}:hover & {
+        opacity: 0.2;
+    }
 `;
 
 export const ListLabel = styled.div`
@@ -91,18 +97,12 @@ export const HoverWrapper = styled(m.div)`
     position: absolute;
     inset: 0;
     z-index: 4;
-    background-color: rgba(255, 255, 255, 0.1);
-    align-items: center;
-    display: flex;
-    flex-direction: row;
-    justify-content: flex-end;
-    height: 100%;
-    gap: 6px;
-    padding: 0 10px;
     transition: background-color 2s ease;
+    background-color: rgba(255, 255, 255, 0.1);
+    height: 100%;
 `;
 
-export const ReplayButton = styled(m.button)`
+export const ReplayButton = styled.button`
     display: flex;
     border-radius: 100%;
     position: relative;
@@ -113,10 +113,10 @@ export const ReplayButton = styled(m.button)`
     background-color: ${({ theme }) => theme.colors.grey[600]};
     color: #fff;
     box-sizing: border-box;
+    transition: opacity 0.2s ease;
+
     &:hover {
-        svg {
-            scale: 1.05;
-        }
+        opacity: 0.8;
     }
 
     svg {
@@ -124,11 +124,20 @@ export const ReplayButton = styled(m.button)`
         position: relative;
         top: 50%;
         transform: translateY(-50%);
-        transition: scale 0.1s ease;
     }
 `;
 
-export const FlexButton = styled(m.button)`
+export const ButtonWrapper = styled(m.div)`
+    position: relative;
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    padding: 0 10px;
+    justify-content: flex-end;
+    height: 100%;
+    gap: 6px;
+`;
+export const FlexButton = styled.button`
     display: flex;
     height: 31px;
     padding: 8px 5px 8px 18px;
@@ -143,10 +152,9 @@ export const FlexButton = styled(m.button)`
     color: #000;
     font-size: 12px;
     font-weight: 600;
-    line-height: normal;
+    line-height: 1;
     cursor: pointer;
-    right: 0;
-
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0);
     &:hover {
         box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
     }
@@ -155,17 +163,20 @@ export const FlexButton = styled(m.button)`
 export const GemPill = styled.div`
     border-radius: 60px;
     background: #000;
-
+    justify-content: center;
     display: flex;
     height: 20px;
-    padding: 7px 5px 7px 8px;
+    padding: 0 5px 0 8px;
     align-items: center;
     gap: 4px;
 
-    color: #fff;
-    font-size: 10px;
-    font-weight: 600;
-    line-height: normal;
+    span {
+        color: #fff;
+        display: flex;
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.1;
+    }
 `;
 
 export const GemImage = styled.img`
