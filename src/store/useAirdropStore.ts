@@ -1,5 +1,6 @@
 import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
+import { Socket } from 'socket.io-client';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -134,6 +135,7 @@ interface AirdropState {
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
     seenPermissions: boolean;
+    websocket: Socket | null;
 }
 
 interface AirdropStore extends AirdropState {
@@ -149,11 +151,13 @@ interface AirdropStore extends AirdropState {
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
     setSeenPermissions: (seenPermissions: boolean) => void;
     setUserGems: (userGems: number) => void;
+    setWebsocket: (socket: Socket | null) => void;
     logout: () => void;
 }
 
 const initialState: AirdropState = {
     authUuid: '',
+    websocket: null,
     seenPermissions: false,
 };
 
@@ -197,6 +201,7 @@ export const useAirdropStore = create<AirdropStore>()(
             setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
             setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
+            setWebsocket: (websocket) => set({ websocket }),
             logout: () => set(clearState),
         }),
         {
