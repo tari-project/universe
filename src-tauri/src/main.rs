@@ -13,7 +13,6 @@ use process_utils::set_interval;
 use log4rs::config::RawConfig;
 use regex::Regex;
 use serde::Serialize;
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -31,7 +30,7 @@ use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
 use wallet_adapter::TransactionInfo;
 
-use app_config::AppConfig;
+use app_config::{AppConfig, GpuThreads};
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
@@ -112,6 +111,12 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
 #[derive(Debug, Serialize, Clone)]
+struct MaxUsageLevels {
+    max_cpu_threads: i32,
+    max_gpus_threads: Vec<GpuThreads>,
+}
+
+#[derive(Debug, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct UpdateProgressRustEvent {
     chunk_length: usize,
@@ -167,7 +172,7 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
 async fn set_mode(
     mode: String,
     custom_cpu_usage: Option<u32>,
-    custom_gpu_usage: Option<u32>,
+    custom_gpu_usage: Vec<GpuThreads>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
@@ -189,9 +194,9 @@ async fn set_mode(
 }
 
 #[tauri::command]
-async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
-    let mut result = HashMap::new();
-
+async fn get_max_consumption_levels(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<MaxUsageLevels, String> {
     // CPU Detection
     let timer = Instant::now();
     let max_cpu_available = available_parallelism()
@@ -202,14 +207,27 @@ async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
         warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
     }
 
-    result.insert("max_cpu_available".to_string(), max_cpu_available);
+    let gpu_devices = state
+        .gpu_miner
+        .read()
+        .await
+        .get_gpu_devices()
+        .await
+        .map_err(|e| e.to_string())?;
 
-    // At some point we should split this per card and allow the user to choose
-    let gpu_threads = 1024;
+    let mut max_gpus_threads = Vec::new();
+    for gpu_device in gpu_devices {
+        let max_gpu_threads = gpu_device.max_grid_size;
+        max_gpus_threads.push(GpuThreads {
+            gpu_name: gpu_device.device_name,
+            max_gpu_threads,
+        });
+    }
 
-    result.insert("max_gpu_available".to_string(), gpu_threads);
-
-    Ok(result)
+    Ok(MaxUsageLevels {
+        max_cpu_threads: max_cpu_available,
+        max_gpus_threads,
+    })
 }
 
 #[tauri::command]
@@ -1177,9 +1195,7 @@ async fn start_mining<'r>(
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
     let custom_cpu_usage = config.custom_cpu_usage();
-    let custom_gpu_usage = config.custom_gpu_usage().map(|custom_gpu_usage| {
-        u16::try_from(custom_gpu_usage).expect("Failed to convert custom_gpu_usage to u16")
-    });
+    let custom_gpu_usage = config.custom_gpu_usage();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let tari_address = cpu_miner_config.tari_address.clone();

@@ -1,4 +1,3 @@
-import { CustomPowerLevelsDialog } from '@app/containers/main/SideBar/Miner/components/CustomPowerLevels/CustomPowerLevelsDialog';
 import { ModeSelectWrapper, TileItem } from '../styles';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -12,6 +11,7 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { modeType } from '@app/store/types';
+import { CustomPowerLevelsDialogContainer } from './CustomPowerLevels/CustomPowerLevelsDialogContainer';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -69,7 +69,7 @@ function ModeSelect() {
                     forceHeight={21}
                 />
             </ModeSelectWrapper>
-            <CustomPowerLevelsDialog />
+            <CustomPowerLevelsDialogContainer />
         </TileItem>
     );
 }
