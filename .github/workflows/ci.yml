@@ -122,5 +122,5 @@ jobs:
                   workspaces: './src-tauri -> target'
             - name: test tauri build
               run: |
-                  npm install tauri-cli@latest
+                  npm install @tauri-apps/cli@latest 
                   npm run tauri build -- --ci --bundles deb
