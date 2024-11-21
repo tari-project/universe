@@ -98,6 +98,19 @@ export const RangeInputComponent = ({
         };
     }, [currentValue, isHover, maxLevel]);
     if (!maxLevel) return null;
+
+    console.log('RangeInputComponent', {
+        label,
+        maxLevel,
+        value,
+        desc,
+        warning,
+        isLoading,
+        usePercentage,
+        step,
+        onChange,
+    });
+
     return (
         <>
             <InputContainer>
