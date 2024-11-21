@@ -16,7 +16,6 @@ export default function useEarningsRecap() {
             const count = missedWins.length;
             if (count > 0) {
                 const totalEarnings = missedWins.reduce((earnings, cur) => earnings + cur.amount, 0);
-
                 handleWinRecap({ count, totalEarnings });
             }
         }

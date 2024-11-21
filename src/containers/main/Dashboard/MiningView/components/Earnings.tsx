@@ -30,30 +30,48 @@ const variants = {
 export default function Earnings() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
+    const replayItem = useBlockchainVisualisationStore((s) => s.replayItem);
     const earnings = useBlockchainVisualisationStore((s) => s.earnings);
     const recapData = useBlockchainVisualisationStore((s) => s.recapData);
 
-    const displayEarnings = recapData?.totalEarnings || earnings;
+    const displayEarnings = replayItem?.amount || recapData?.totalEarnings || earnings;
 
     const formatted = formatNumber(displayEarnings || 0, FormatPreset.TXTM_COMPACT);
+
+    const recapText = recapData?.totalEarnings ? (
+        <RecapText>
+            <Trans
+                ns="mining-view"
+                i18nKey={'you-won-while-away'}
+                values={{
+                    blocks: `${recapData.count} block${recapData.count === 1 ? `` : 's'}`,
+                }}
+                components={{ span: <span /> }}
+            />
+        </RecapText>
+    ) : null;
+
+    const replayText =
+        replayItem?.amount && replayItem.blockHeight ? (
+            <RecapText>
+                <Trans
+                    ns="mining-view"
+                    i18nKey={'you-won-block'}
+                    values={{
+                        blockHeight: replayItem.blockHeight,
+                    }}
+                    components={{ span: <span /> }}
+                />
+            </RecapText>
+        ) : null;
 
     return (
         <EarningsContainer>
             <AnimatePresence mode="wait">
                 {displayEarnings ? (
                     <EarningsWrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
-                        {recapData?.totalEarnings ? (
-                            <RecapText>
-                                <Trans
-                                    ns="mining-view"
-                                    i18nKey={'you-won-while-away'}
-                                    values={{
-                                        blocks: `${recapData.count} block${recapData.count === 1 ? `` : 's'}`,
-                                    }}
-                                    components={{ span: <span /> }}
-                                />
-                            </RecapText>
-                        ) : null}
+                        {replayText}
+                        {recapText}
                         <WinWrapper>
                             <WinText>{t('your-reward-is')}</WinText>
                             <CharSpinner value={formatted.toString()} fontSize={76} XTMAlignment="center" />

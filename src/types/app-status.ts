@@ -8,34 +8,32 @@ export interface TorConfig {
 }
 
 export interface AppConfig {
-    config_version: number;
-    config_file?: string;
-    mode: modeType;
-    display_mode: displayMode;
-    auto_mining: boolean;
-    mine_on_app_start: boolean;
-    p2pool_enabled: boolean;
-    last_binaries_update_timestamp: string;
-    has_system_language_been_proposed: boolean;
-    should_always_use_system_language: boolean;
-    should_auto_launch: boolean;
-    application_language: Language;
     allow_telemetry: boolean;
     anon_id: string;
-    monero_address: string;
-    gpu_mining_enabled: boolean;
-    cpu_mining_enabled: boolean;
-    airdrop_ui_enabled: boolean;
-    paper_wallet_enabled: boolean;
-    use_tor: boolean;
+    application_language: Language;
     auto_update: boolean;
+    config_file?: string;
+    config_version: number;
+    cpu_mining_enabled: boolean;
     custom_max_cpu_usage: number;
-    custom_max_gpu_usage: number;
+    custom_max_gpu_usage: GpuThreads[];
     custom_power_levels_enabled: boolean;
-    reset_earnings: boolean;
-    mmproxy_use_monero_fail: boolean;
+    display_mode: displayMode;
+    gpu_mining_enabled: boolean;
+    has_system_language_been_proposed: boolean;
+    last_binaries_update_timestamp: string;
+    mine_on_app_start: boolean;
     mmproxy_monero_nodes: string[];
+    mmproxy_use_monero_fail: boolean;
+    mode: modeType;
+    monero_address: string;
+    p2pool_enabled: boolean;
+    paper_wallet_enabled: boolean;
+    reset_earnings: boolean;
     sharing_enabled: boolean;
+    should_always_use_system_language: boolean;
+    should_auto_launch: boolean;
+    use_tor: boolean;
     visual_mode: boolean;
 }
 
@@ -221,7 +219,11 @@ export interface PaperWalletDetails {
     password: string;
 }
 
+export interface GpuThreads {
+    gpu_name: string;
+    max_gpu_threads: number;
+}
 export interface MaxConsumptionLevels {
-    max_cpu_available: number;
-    max_gpu_available: number;
+    max_cpu_threads: number;
+    max_gpus_threads: GpuThreads[];
 }

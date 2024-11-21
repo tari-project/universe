@@ -18,6 +18,7 @@
     "cpu-warning": "Sustained high CPU usage may cause overheating, and hardware failure.",
     "gpu-power-level": "GPU Power",
     "gpu-warning": "Sustained high GPU usage may cause overheating, and hardware failure.",
+    "save-changes": "Save Changes",
     "saved": "Applying Changes",
     "title": "Custom Mode",
     "warning": "Warning"

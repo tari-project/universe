@@ -1,4 +1,6 @@
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import {
+    ButtonWrapper,
     EarningsWrapper,
     FlexButton,
     GemImage,
@@ -6,6 +8,7 @@ import {
     HoverWrapper,
     InfoWrapper,
     LeftContent,
+    ReplayButton,
     SquadIconWrapper,
     Wrapper,
 } from './HistoryItem.styles.ts';
@@ -14,14 +17,16 @@ import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
 
 import { useTranslation } from 'react-i18next';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 import { Transaction } from '@app/types/wallet.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { ReplaySVG } from '@app/assets/icons/replay';
 import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
+
 interface HistoryItemProps {
     item: Transaction;
 }
@@ -48,6 +53,8 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
     const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
 
+    const handleWinReplay = useBlockchainVisualisationStore((s) => s.handleWinReplay);
+
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
@@ -59,6 +66,10 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const { colour, colour1, colour2 } = useMemo(() => {
         return randomGradientColours[getRandomInt(9)];
     }, []);
+
+    const handleReplay = useCallback(() => {
+        handleWinReplay(item);
+    }, [handleWinReplay, item]);
 
     if (!item.blockHeight || item.payment_id?.length > 0) {
         return null;
@@ -75,30 +86,34 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const isLoggedIn = !!airdropTokens;
 
     const showShareButton = sharingEnabled && isLoggedIn;
-
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-            {showShareButton && (
-                <AnimatePresence>
-                    {hovering && (
-                        <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            <FlexButton
-                                initial={{ x: 20, y: '-50%' }}
-                                animate={{ x: 0, y: '-50%' }}
-                                exit={{ x: 20, y: '-50%' }}
-                                onClick={handleShareClick}
-                            >
-                                {t('share.history-item-button')}
-                                <GemPill>
-                                    {gemsValue} <GemImage src={gemImage} alt="" />
-                                </GemPill>
-                            </FlexButton>
-                        </HoverWrapper>
-                    )}
-                </AnimatePresence>
-            )}
+            <AnimatePresence>
+                {hovering && (
+                    <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <ButtonWrapper
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 5 }}
+                        >
+                            {showShareButton && (
+                                <FlexButton onClick={handleShareClick}>
+                                    {t('share.history-item-button')}
+                                    <GemPill>
+                                        <span>{gemsValue}</span>
+                                        <GemImage src={gemImage} alt="" />
+                                    </GemPill>
+                                </FlexButton>
+                            )}
+                            <ReplayButton onClick={handleReplay}>
+                                <ReplaySVG />
+                            </ReplayButton>
+                        </ButtonWrapper>
+                    </HoverWrapper>
+                )}
+            </AnimatePresence>
 
-            <LeftContent className={showShareButton ? 'hover-target' : ''}>
+            <LeftContent>
                 <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
                     <TariSvg />
                 </SquadIconWrapper>
