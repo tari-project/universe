@@ -8,8 +8,8 @@
   "estimated-earnings": "Geskatte verdienste",
   "floor": "Vloer",
   "gpu-hashrate": "GPU Hashrate",
-  "gpu-usage": "GPU Usage",
   "gpu-power": "GPU Krag",
+  "gpu-usage": "GPU Usage",
   "mining-button-text": {
     "cancel-mining": "Kanselleer myn",
     "changing-mode": "Verander modus",

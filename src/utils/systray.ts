@@ -10,8 +10,6 @@ const darkIconPath = 'icons/icon.png';
 
 export const CPU_HASH_ITEM_ID = 'cpu_hashrate';
 export const GPU_HASH_ITEM_ID = 'gpu_hashrate';
-export const CPU_USAGE_ITEM_ID = 'cpu_usage';
-export const GPU_USAGE_ITEM_ID = 'gpu_usage';
 export const EARNINGS_ITEM_ID = 'estimated_earning';
 
 const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -43,32 +41,26 @@ const dynamicItems = [
     },
     separator,
     {
-        id: CPU_USAGE_ITEM_ID,
-        text: `CPU usage: -`,
-        enabled: false,
-    },
-    {
-        id: GPU_USAGE_ITEM_ID,
-        text: `GPU usage: -`,
-        enabled: false,
-    },
-    separator,
-    {
         id: EARNINGS_ITEM_ID,
         text: `Est earning: -`,
         enabled: false,
     },
 ] as MenuItemOptions[];
 
-export const menu = await Menu.new({
-    id: TRAY_MENU_ID,
-    items: [about, separator, ...dynamicItems, separator, minimize],
-});
-
-export const tray = await TrayIcon.getById(TRAY_ID);
+let tray: TrayIcon | null;
+let menu: Menu;
 export async function initSystray() {
+    menu = await Menu.new({
+        id: TRAY_MENU_ID,
+        items: [about, separator, ...dynamicItems, separator, minimize],
+    });
+
+    tray = await TrayIcon.getById(TRAY_ID);
+
     await tray?.setIcon(icon);
     if (menu) {
         await tray?.setMenu(menu);
     }
 }
+
+export { tray, menu };

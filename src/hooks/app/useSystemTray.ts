@@ -1,12 +1,5 @@
 import { MinerMetrics } from '@app/types/app-status';
-import {
-    menu,
-    CPU_HASH_ITEM_ID,
-    GPU_HASH_ITEM_ID,
-    CPU_USAGE_ITEM_ID,
-    GPU_USAGE_ITEM_ID,
-    EARNINGS_ITEM_ID,
-} from '@app/utils';
+import { menu, CPU_HASH_ITEM_ID, GPU_HASH_ITEM_ID, EARNINGS_ITEM_ID } from '@app/utils';
 import { listen } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -35,20 +28,14 @@ export function useUpdateSystemTray() {
         const { cpu, gpu } = metrics || {};
         const cpu_h = cpu?.mining?.hash_rate || 0;
         const gpu_h = gpu?.mining?.hash_rate || 0;
-        const cpu_u = cpu?.hardware?.[0]?.parameters?.usage_percentage || 0; // use 1st for now
-        const gpu_u = gpu?.hardware?.[0]?.parameters?.usage_percentage || 0;
 
         const cpuHashItemText = `CPU Hashrate: ${cpu_h ? `${formatHashrate(cpu_h)}` : '-'}`;
         const gpuHashItemText = `GPU Hashrate: ${gpu_h ? `${formatHashrate(gpu_h)}` : '-'}`;
-        const cpuUsageItemText = `CPU Usage: ${cpu_u ? `${cpu_u}%` : '-'}`;
-        const gpuUsageItemText = `GPU Usage: ${gpu_u ? `${gpu_u}%` : '-'}`;
         const estEarningsItemText = `Est earning: ${totalEarningsFormatted !== '0' ? totalEarningsFormatted : '-'} tXTM/day`;
 
         return [
             { itemId: CPU_HASH_ITEM_ID, itemText: cpuHashItemText },
             { itemId: GPU_HASH_ITEM_ID, itemText: gpuHashItemText },
-            { itemId: CPU_USAGE_ITEM_ID, itemText: cpuUsageItemText },
-            { itemId: GPU_USAGE_ITEM_ID, itemText: gpuUsageItemText },
             { itemId: EARNINGS_ITEM_ID, itemText: estEarningsItemText },
         ];
     }, [metrics, totalEarningsFormatted]);
