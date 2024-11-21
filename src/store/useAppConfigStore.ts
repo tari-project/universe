@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { invoke } from '@tauri-apps/api/core';
 import { create } from './create';
-import { AppConfig } from '../types/app-status.ts';
+import { AppConfig, GpuThreads } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
 import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
@@ -12,7 +12,7 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 type State = Partial<AppConfig>;
 interface SetModeProps {
     mode: modeType;
-    customGpuLevels?: number;
+    customGpuLevels?: GpuThreads[];
     customCpuLevels?: number;
 }
 
@@ -57,6 +57,8 @@ const initialState: State = {
     mmproxy_use_monero_fail: false,
     mmproxy_monero_nodes: ['https://xmr-01.tari.com'],
     visual_mode: true,
+    custom_max_cpu_usage: undefined,
+    custom_max_gpu_usage: [],
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
@@ -220,6 +222,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         const { mode, customGpuLevels, customCpuLevels } = params;
         const prevMode = useAppConfigStore.getState().mode;
         set({ mode, custom_max_cpu_usage: customCpuLevels, custom_max_gpu_usage: customGpuLevels });
+        console.log('Setting mode', mode, customCpuLevels, customGpuLevels);
         invoke('set_mode', {
             mode,
             customCpuUsage: customCpuLevels,

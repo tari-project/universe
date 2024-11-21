@@ -1,4 +1,4 @@
-import { MinerMetrics } from '@app/types/app-status';
+import { GpuThreads, MaxConsumptionLevels, MinerMetrics } from '@app/types/app-status';
 import { create } from './create';
 
 import { invoke } from '@tauri-apps/api/core';
@@ -18,6 +18,7 @@ interface State extends MinerMetrics {
     excludedGpuDevices: number[];
     counter: number;
     customLevelsDialogOpen: boolean;
+    maxAvailableThreads?: MaxConsumptionLevels;
 }
 
 interface Actions {
@@ -26,12 +27,17 @@ interface Actions {
     stopMining: () => Promise<void>;
     pauseMining: () => Promise<void>;
     restartMining: () => Promise<void>;
-    changeMiningMode: (params: { mode: modeType; customGpuLevels?: number; customCpuLevels?: number }) => Promise<void>;
+    changeMiningMode: (params: {
+        mode: modeType;
+        customGpuLevels?: GpuThreads[];
+        customCpuLevels?: number;
+    }) => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
     setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
     setCustomLevelsDialogOpen: (customLevelsDialogOpen: boolean) => void;
     setIsReplaying: (isReplaying: boolean) => void;
+    getMaxAvailableThreads: () => void;
 }
 type MiningStoreState = State & Actions;
 
@@ -39,6 +45,7 @@ const initialState: State = {
     customLevelsDialogOpen: false,
     sha_network_hash_rate: 0,
     randomx_network_hash_rate: 0,
+    maxAvailableThreads: undefined,
     counter: 0,
     hashrateReady: false,
     miningInitiated: false,
@@ -121,6 +128,18 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             set({ miningInitiated: true });
         }
     },
+    getMaxAvailableThreads: async () => {
+        console.info('Getting max available threads...');
+        try {
+            const maxAvailableThreads = await invoke('get_max_consumption_levels');
+            set({ maxAvailableThreads });
+        } catch (e) {
+            Sentry.captureException(e);
+            const appStateStore = useAppStateStore.getState();
+            console.error('Failed to get max available threads: ', e);
+            appStateStore.setError(e as string);
+        }
+    },
     changeMiningMode: async (params) => {
         const { mode, customGpuLevels, customCpuLevels } = params;
         console.info(`Changing mode to ${mode}...`);
@@ -128,13 +147,19 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
         set({ isChangingMode: true });
 
         if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
+            console.log('Pausing mining...');
             await state.pauseMining();
         }
         try {
             const appConfigState = useAppConfigStore.getState();
-            await appConfigState.setMode({ mode: mode as modeType, customGpuLevels, customCpuLevels });
+            await appConfigState.setMode({
+                mode: mode as modeType,
+                customGpuLevels: customGpuLevels || [],
+                customCpuLevels,
+            });
             console.info(`Mode changed to ${mode}`);
             if (state.miningInitiated) {
+                console.log('Restarting mining...');
                 await state.startMining();
             }
         } catch (e) {

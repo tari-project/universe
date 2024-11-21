@@ -17,7 +17,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 
 use crate::cpu_miner::CpuMiner;
 #[cfg(target_os = "windows")]
@@ -564,6 +564,7 @@ struct CpuMinerConfig {
 
 #[derive(Clone)]
 struct UniverseAppState {
+    stop_start_mutex: Arc<Mutex<()>>,
     is_getting_wallet_balance: Arc<AtomicBool>,
     is_getting_p2pool_stats: Arc<AtomicBool>,
     is_getting_miner_metrics: Arc<AtomicBool>,
@@ -667,6 +668,7 @@ fn main() {
 
     let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
+        stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
         is_getting_wallet_balance: Arc::new(AtomicBool::new(false)),

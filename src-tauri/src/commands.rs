@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::app_config::AppConfig;
+use crate::app_config::{AppConfig, GpuThreads};
 use crate::app_in_memory_config::AirdropInMemoryConfig;
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -25,6 +25,7 @@ use crate::{
 use log::{debug, error, info, warn};
 use regex::Regex;
 use sentry::integrations::anyhow::capture_anyhow;
+use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -33,11 +34,17 @@ use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::Manager;
 
+#[derive(Debug, Serialize, Clone)]
+struct MaxUsageLevels {
+    max_cpu_threads: i32,
+    max_gpus_threads: Vec<GpuThreads>,
+}
+
 #[tauri::command]
 pub async fn set_mode(
     mode: String,
     custom_cpu_usage: Option<u32>,
-    custom_gpu_usage: Option<u32>,
+    custom_gpu_usage: Vec<GpuThreads>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
@@ -57,7 +64,6 @@ pub async fn set_mode(
 
     Ok(())
 }
-
 #[tauri::command]
 pub async fn set_display_mode(
     display_mode: String,
@@ -655,17 +661,24 @@ pub async fn start_mining<'r>(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    let _lock = state.stop_start_mutex.lock().await;
     let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
     let custom_cpu_usage = config.custom_cpu_usage();
-    let custom_gpu_usage = config.custom_gpu_usage().map(|custom_gpu_usage| {
-        u16::try_from(custom_gpu_usage).expect("Failed to convert custom_gpu_usage to u16")
-    });
+    let custom_gpu_usage = config.custom_gpu_usage();
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
+    let tari_address = cpu_miner_config.tari_address.clone();
+    let p2pool_enabled = config.p2pool_enabled();
     let monero_address = config.monero_address().to_string();
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
     if cpu_mining_enabled {
         let mm_proxy_port = state
             .mm_proxy_manager
@@ -709,11 +722,12 @@ pub async fn start_mining<'r>(
     }
 
     let gpu_available = state.gpu_miner.read().await.is_gpu_mining_available();
-    info!(target: LOG_TARGET, "Gpu availability {:?}", gpu_available.clone());
+    info!(target: LOG_TARGET, "Gpu availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
 
     if gpu_mining_enabled && gpu_available {
-        let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
-        let p2pool_enabled = state.config.read().await.p2pool_enabled();
+        info!(target: LOG_TARGET, "1. Starting gpu miner");
+        // let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
+        // let p2pool_enabled = state.config.read().await.p2pool_enabled();
         let source = if p2pool_enabled {
             let p2pool_port = state.p2pool_manager.grpc_port().await;
             GpuNodeSource::P2Pool { port: p2pool_port }
@@ -727,16 +741,13 @@ pub async fn start_mining<'r>(
             GpuNodeSource::BaseNode { port: grpc_port }
         };
 
-        let mut telemetry_id = state
-            .telemetry_manager
-            .read()
-            .await
-            .get_unique_string()
-            .await;
+        info!(target: LOG_TARGET, "2 Starting gpu miner");
+
         if telemetry_id.is_empty() {
             telemetry_id = "tari-universe".to_string();
         }
 
+        info!(target: LOG_TARGET, "3. Starting gpu miner");
         let res = state
             .gpu_miner
             .write()
@@ -758,11 +769,12 @@ pub async fn start_mining<'r>(
             )
             .await;
 
+        info!(target: LOG_TARGET, "4. Starting gpu miner");
         if let Err(e) = res {
             error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
             drop(
-                state.cpu_miner.write().await.stop().await.inspect_err(
-                    |e| error!(target: LOG_TARGET, "Could not stop cpu miner: {:?}", e),
+                state.gpu_miner.write().await.stop().await.inspect_err(
+                    |e| error!(target: LOG_TARGET, "Could not stop gpu miner: {:?}", e),
                 ),
             );
             return Err(e.to_string());
@@ -775,6 +787,7 @@ pub async fn start_mining<'r>(
 }
 #[tauri::command]
 pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let _lock = state.stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
         .cpu_miner
@@ -1299,9 +1312,9 @@ pub async fn reset_settings<'r>(
 }
 
 #[tauri::command]
-pub async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String> {
-    let mut result = HashMap::new();
-
+pub async fn get_max_consumption_levels(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<MaxUsageLevels, String> {
     // CPU Detection
     let timer = Instant::now();
     let max_cpu_available = available_parallelism()
@@ -1312,14 +1325,27 @@ pub async fn get_max_consumption_levels() -> Result<HashMap<String, i32>, String
         warn!(target: LOG_TARGET, "get_available_cpu_cores took too long: {:?}", timer.elapsed());
     }
 
-    result.insert("max_cpu_available".to_string(), max_cpu_available);
+    let gpu_devices = state
+        .gpu_miner
+        .read()
+        .await
+        .get_gpu_devices()
+        .await
+        .map_err(|e| e.to_string())?;
 
-    // At some point we should split this per card and allow the user to choose
-    let gpu_threads = 1024;
+    let mut max_gpus_threads = Vec::new();
+    for gpu_device in gpu_devices {
+        let max_gpu_threads = gpu_device.max_grid_size;
+        max_gpus_threads.push(GpuThreads {
+            gpu_name: gpu_device.device_name,
+            max_gpu_threads,
+        });
+    }
 
-    result.insert("max_gpu_available".to_string(), gpu_threads);
-
-    Ok(result)
+    Ok(MaxUsageLevels {
+        max_cpu_threads: max_cpu_available,
+        max_gpus_threads,
+    })
 }
 
 #[tauri::command]
