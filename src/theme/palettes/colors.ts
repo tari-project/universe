@@ -205,6 +205,20 @@ const red = {
     950: '#450F0A',
 };
 
+const brightRed = {
+    50: '#FEF3F2',
+    100: '#ffd3d3',
+    200: '#ffa8a8',
+    300: '#fe7c7c',
+    400: '#fe5050',
+    500: '#fe2727',
+    600: '#e70101',
+    700: '#ae0101',
+    800: '#740101',
+    900: '#450F0A',
+    950: '#3a0000',
+};
+
 const ramp = {
     1: '#1CCF31',
     2: '#50CC27',
@@ -223,6 +237,7 @@ export const colors = {
     orange,
     green,
     red,
+    brightRed,
     teal,
     gothic,
     tariPurple,
