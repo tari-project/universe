@@ -1,5 +1,6 @@
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import {
+    ButtonWrapper,
     EarningsWrapper,
     FlexButton,
     GemImage,
@@ -88,31 +89,32 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const showShareButton = sharingEnabled && isLoggedIn;
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-            {showShareButton && (
-                <AnimatePresence>
-                    {hovering && (
-                        <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            <FlexButton
-                                initial={{ x: 20 }}
-                                animate={{ x: 0 }}
-                                transition={{ delay: 0.1 }}
-                                exit={{ x: 20 }}
-                                onClick={handleShareClick}
-                            >
-                                {t('share.history-item-button')}
-                                <GemPill>
-                                    {gemsValue} <GemImage src={gemImage} alt="" />
-                                </GemPill>
-                            </FlexButton>
+            <AnimatePresence>
+                {hovering && (
+                    <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <ButtonWrapper
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 5 }}
+                        >
+                            {showShareButton && (
+                                <FlexButton onClick={handleShareClick}>
+                                    {t('share.history-item-button')}
+                                    <GemPill>
+                                        <span>{gemsValue}</span>
+                                        <GemImage src={gemImage} alt="" />
+                                    </GemPill>
+                                </FlexButton>
+                            )}
                             <ReplayButton onClick={handleReplay}>
                                 <ReplaySVG />
                             </ReplayButton>
-                        </HoverWrapper>
-                    )}
-                </AnimatePresence>
-            )}
+                        </ButtonWrapper>
+                    </HoverWrapper>
+                )}
+            </AnimatePresence>
 
-            <LeftContent className={showShareButton ? 'hover-target' : ''}>
+            <LeftContent>
                 <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
                     <TariSvg />
                 </SquadIconWrapper>
