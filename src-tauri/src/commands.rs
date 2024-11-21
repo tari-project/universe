@@ -316,7 +316,7 @@ pub fn restart_application(
     _state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    // This restart doesn't need to shutdown all the miners
+    // This restart doesn't need to shut down all the miners
     app.restart();
 }
 

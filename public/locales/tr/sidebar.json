@@ -13,15 +13,16 @@
   "paper-wallet-tooltip-message": "Universe cüzdanınızı Tari Aurora ile senkronize ederek XTM\"inizi her yerde takip edin.",
   "paper-wallet-tooltip-title": "Telefonla Senkronize Et",
   "recent-wins": "Son Kazançlar",
+  "rewards": "Rewards",
   "setup-scheduler": "Kurulum Planlayıcısı",
-  "show-history": "Geçmişi göster",
-  "wallet-balance": "Cüzdan Bakiyesi",
   "share": {
-    "history-item-button": "Göster ve Davet Et",
-    "title": "Az önce tari madenciliği yaptım",
-    "winner-pill": "Blok Kazananı",
-    "copied": "Bağlantı Kopyalandı!",
     "button-text": "GÖSTER VE DAVET ET",
-    "reward": "ödülüm"
-  }
+    "copied": "Bağlantı Kopyalandı!",
+    "history-item-button": "Göster ve Davet Et",
+    "reward": "ödülüm",
+    "title": "Az önce tari madenciliği yaptım",
+    "winner-pill": "Blok Kazananı"
+  },
+  "show-history": "Geçmişi göster",
+  "wallet-balance": "Cüzdan Bakiyesi"
 }

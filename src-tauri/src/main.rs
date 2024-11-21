@@ -38,11 +38,11 @@ use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::GpuMinerStatus;
 use node_manager::NodeManagerError;
+use process_utils::set_interval;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
 use telemetry_manager::TelemetryManager;
 use utils::logging_utils::setup_logging;
-
 mod app_config;
 mod app_in_memory_config;
 mod auto_launcher;
@@ -61,6 +61,7 @@ mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
+mod network_utils;
 mod node_adapter;
 mod node_manager;
 mod p2pool;
@@ -602,12 +603,12 @@ async fn check_if_is_orphan_chain(app_handle: tauri::AppHandle) {
         Ok(is_stuck) => {
             if is_stuck {
                 error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-                drop(app_handle.emit_all("is_stuck", is_stuck));
+                drop(app_handle.emit("is_stuck", is_stuck));
             }
         }
         Err(e) => {
             error!(target: LOG_TARGET, "{}", e);
-            drop(app_handle.emit_all("is_stuck", true));
+            drop(app_handle.emit("is_stuck", true));
         }
     }
 }

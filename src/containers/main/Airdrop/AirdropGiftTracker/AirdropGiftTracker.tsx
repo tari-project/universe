@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
 import { useAirdropStore } from '@app/store/useAirdropStore';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useAirdropSyncState } from '@app/hooks/airdrop/useAirdropSyncState';
 import { useWebsocket } from '@app/hooks/airdrop/useWebsocket.ts';
 
@@ -15,10 +14,7 @@ export default function AirdropGiftTracker() {
     useWebsocket();
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const airdrop_ui_enabled = useAppConfigStore((s) => s.airdrop_ui_enabled);
     const { airdropTokens } = useAirdropStore();
-
-    if (!airdrop_ui_enabled) return null;
     const isLoggedIn = !!airdropTokens;
 
     return (

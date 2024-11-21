@@ -41,7 +41,6 @@ const initialState: State = {
     config_version: 0,
     config_file: undefined,
     mode: 'Eco',
-    auto_mining: true,
     mine_on_app_start: false,
     p2pool_enabled: false,
     last_binaries_update_timestamp: '0',
@@ -51,8 +50,7 @@ const initialState: State = {
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
     sharing_enabled: true,
-    airdrop_ui_enabled: false,
-    paper_wallet_enabled: false,
+    paper_wallet_enabled: true,
     custom_power_levels_enabled: true,
     use_tor: true,
     auto_update: false,
@@ -68,7 +66,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             const appConfig = await invoke('get_app_config');
             set(appConfig);
             const configTheme = appConfig.display_mode?.toLowerCase();
-
             const canvasElement = document.getElementById('canvas');
             if (canvasElement && !appConfig.visual_mode) {
                 canvasElement.style.display = 'none';

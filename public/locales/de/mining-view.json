@@ -1,16 +1,12 @@
 {
   "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
-  "cpu-hashrate": "CPU Hashrate",
   "cpu-power": "CPU-Leistung",
-  "cpu-usage": "CPU Usage",
   "current-block-time": "Aktuelle Blockzeit",
   "day": "day",
   "estimated-day": "Geschätzte tXTM/Tag",
   "estimated-earnings": "Geschätzte Einnahmen",
   "floor": "Stockwerk",
-  "gpu-hashrate": "GPU Hashrate",
   "gpu-power": "GPU-Leistung",
-  "gpu-usage": "GPU Usage",
   "mining-button-text": {
     "cancel-mining": "Mining abbrechen",
     "changing-mode": "Modus wird geändert",
@@ -21,6 +17,7 @@
     "waiting-for-idle": "Warten auf Leerlauf"
   },
   "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Sie haben {{ blocks }} gewonnen</span>, während Sie weg waren",
   "your-reward-is": "Deine Belohnung ist"
 }
