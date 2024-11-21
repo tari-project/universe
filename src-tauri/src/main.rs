@@ -1208,8 +1208,6 @@ async fn get_monero_seed_words(
         .to_string()
         .to_lowercase();
 
-    let path = config_path.join(network);
-
     let cm = CredentialManager::default_with_dir(config_path);
     let cred = match cm.get_credentials() {
         Ok(cred) => cred,
