@@ -209,9 +209,7 @@ impl CredentialManager {
     }
 
     fn load_from_file(&self) -> Result<Credential, CredentialError> {
-        let mut file = OpenOptions::new()
-            .read(true)
-            .open(self.fallback_file())?;
+        let mut file = OpenOptions::new().read(true).open(self.fallback_file())?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
         let credential: Credential = serde_cbor::from_slice(&buffer)?;
