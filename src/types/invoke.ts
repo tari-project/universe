@@ -8,6 +8,7 @@ import {
     TorConfig,
     TransactionInfo,
     MaxConsumptionLevels,
+    GpuThreads,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -37,7 +38,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'update_applications'): Promise<void>;
     function invoke(
         param: 'set_mode',
-        payload: { mode: modeType; customCpuUsage: number; customGpuUsage: number }
+        payload: { mode: modeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
     ): Promise<void>;
     function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
     function invoke(param: 'set_display_mode', payload: { displayMode: displayMode }): Promise<void>;

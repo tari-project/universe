@@ -67,7 +67,7 @@ pub struct AppConfigFromFile {
     #[serde(default = "default_custom_max_cpu_usage")]
     custom_max_cpu_usage: Option<u32>,
     #[serde(default = "default_custom_max_gpu_usage")]
-    custom_max_gpu_usage: Option<u32>,
+    custom_max_gpu_usage: Vec<GpuThreads>,
     #[serde(default = "default_true")]
     auto_update: bool,
     #[serde(default = "default_false")]
@@ -100,7 +100,7 @@ impl Default for AppConfigFromFile {
             should_auto_launch: false,
             application_language: default_application_language(),
             custom_max_cpu_usage: None,
-            custom_max_gpu_usage: None,
+            custom_max_gpu_usage: vec![],
             paper_wallet_enabled: true,
             use_tor: true,
             eco_mode_cpu_options: Vec::new(),
@@ -172,6 +172,12 @@ impl MiningMode {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GpuThreads {
+    pub gpu_name: String,
+    pub max_gpu_threads: u32,
+}
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct AppConfig {
@@ -204,7 +210,7 @@ pub(crate) struct AppConfig {
     mmproxy_use_monero_fail: bool,
     mmproxy_monero_nodes: Vec<String>,
     custom_max_cpu_usage: Option<u32>,
-    custom_max_gpu_usage: Option<u32>,
+    custom_max_gpu_usage: Vec<GpuThreads>,
     auto_update: bool,
     keyring_accessed: bool,
     custom_power_levels_enabled: bool,
@@ -235,7 +241,7 @@ impl AppConfig {
             application_language: default_application_language(),
             use_tor: true,
             custom_max_cpu_usage: None,
-            custom_max_gpu_usage: None,
+            custom_max_gpu_usage: vec![],
             paper_wallet_enabled: true,
             reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
@@ -307,7 +313,7 @@ impl AppConfig {
                 self.mmproxy_monero_nodes = config.mmproxy_monero_nodes;
                 self.mmproxy_use_monero_fail = config.mmproxy_use_monero_fail;
                 self.custom_max_cpu_usage = config.custom_max_cpu_usage;
-                self.custom_max_gpu_usage = config.custom_max_gpu_usage;
+                self.custom_max_gpu_usage = config.custom_max_gpu_usage.clone();
                 self.auto_update = config.auto_update;
                 self.reset_earnings = config.reset_earnings;
                 self.custom_power_levels_enabled = config.custom_power_levels_enabled;
@@ -401,7 +407,7 @@ impl AppConfig {
         &mut self,
         mode: String,
         custom_max_cpu_usage: Option<u32>,
-        custom_max_gpu_usage: Option<u32>,
+        custom_max_gpu_usage: Vec<GpuThreads>,
     ) -> Result<(), anyhow::Error> {
         let new_mode = match mode.as_str() {
             "Eco" => MiningMode::Eco,
@@ -413,10 +419,8 @@ impl AppConfig {
         self.update_config_file().await?;
         if let Some(custom_max_cpu_usage) = custom_max_cpu_usage {
             self.set_max_cpu_usage(custom_max_cpu_usage).await?;
-        }
-        if let Some(custom_max_gpu_usage) = custom_max_gpu_usage {
-            self.set_max_gpu_usage(custom_max_gpu_usage).await?;
-        }
+        };
+        self.set_max_gpu_usage(custom_max_gpu_usage).await?;
         Ok(())
     }
     pub async fn set_display_mode(&mut self, display_mode: String) -> Result<(), anyhow::Error> {
@@ -435,15 +439,15 @@ impl AppConfig {
         self.mode
     }
 
-    pub fn custom_gpu_usage(&self) -> Option<u32> {
-        self.custom_max_gpu_usage
+    pub fn custom_gpu_usage(&self) -> Vec<GpuThreads> {
+        self.custom_max_gpu_usage.clone()
     }
 
     pub async fn set_max_gpu_usage(
         &mut self,
-        custom_max_gpu_usage: u32,
+        custom_max_gpu_usage: Vec<GpuThreads>,
     ) -> Result<(), anyhow::Error> {
-        self.custom_max_gpu_usage = Some(custom_max_gpu_usage);
+        self.custom_max_gpu_usage = custom_max_gpu_usage.clone();
         self.update_config_file().await?;
         Ok(())
     }
@@ -654,7 +658,7 @@ impl AppConfig {
             application_language: self.application_language.clone(),
             paper_wallet_enabled: self.paper_wallet_enabled,
             custom_max_cpu_usage: self.custom_max_cpu_usage,
-            custom_max_gpu_usage: self.custom_max_gpu_usage,
+            custom_max_gpu_usage: self.custom_max_gpu_usage.clone(),
             use_tor: self.use_tor,
             reset_earnings: self.reset_earnings,
             eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
@@ -686,8 +690,8 @@ fn default_custom_max_cpu_usage() -> Option<u32> {
     None
 }
 
-fn default_custom_max_gpu_usage() -> Option<u32> {
-    None
+fn default_custom_max_gpu_usage() -> Vec<GpuThreads> {
+    vec![]
 }
 
 fn default_mode() -> String {
