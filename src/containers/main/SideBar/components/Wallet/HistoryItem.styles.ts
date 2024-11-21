@@ -19,9 +19,12 @@ export const Wrapper = styled(m.div)`
     flex-shrink: 0;
     flex-grow: 0;
     max-height: 269px;
-    font-family:
-        GTAmerica Standard,
-        sans-serif;
+
+    &:hover {
+        .hover-target {
+            opacity: 0.2;
+        }
+    }
 `;
 
 export const LeftContent = styled.div`
