@@ -20,8 +20,9 @@ export const COLOUR_TYPES = [
 ] as const;
 type ColourTuple = typeof COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
-export type Colour = { [key in ColourKey]?: string };
-export type Gradients = { [key in ColourKey]?: string };
+
+export type Colour = Partial<Record<ColourKey, string>>;
+export type Gradients = Partial<Record<ColourKey, string>>;
 
 export interface ThemePalette {
     mode: Theme;

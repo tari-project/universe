@@ -3,8 +3,9 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use log::{debug, error};
+use log::{error, info};
 use minotari_node_grpc_client::grpc::Peer;
+use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
@@ -12,6 +13,7 @@ use tari_utilities::hex::Hex;
 use tokio::fs;
 use tokio::sync::RwLock;
 
+use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 use crate::node_adapter::{MinotariNodeAdapter, MinotariNodeStatusMonitorError};
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
@@ -91,6 +93,7 @@ impl NodeManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn start(
         &self,
         app_shutdown: ShutdownSignal,
@@ -160,6 +163,7 @@ impl NodeManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn try_get_listening_port(&self) -> Result<u16, anyhow::Error> {
         // todo!()
         Ok(0)
@@ -169,10 +173,10 @@ impl NodeManager {
     pub async fn get_network_hash_rate_and_block_reward(
         &self,
     ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), NodeManagerError> {
-        let status_monitor_lock = self.watcher.read().await;
+        let mut status_monitor_lock = self.watcher.write().await;
         let status_monitor = status_monitor_lock
             .status_monitor
-            .as_ref()
+            .as_mut()
             .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
         status_monitor
             .get_network_hash_rate_and_block_reward()
@@ -201,6 +205,53 @@ impl NodeManager {
         Ok(exit_code)
     }
 
+    pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
+        let mut status_monitor_lock = self.watcher.write().await;
+        let status_monitor = status_monitor_lock
+            .status_monitor
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
+        let (_, _, _, _, _, is_synced) = status_monitor
+            .get_network_hash_rate_and_block_reward()
+            .await
+            .map_err(|e| {
+                if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
+                    NodeManagerError::NodeNotStarted
+                } else {
+                    NodeManagerError::UnknownError(e.into())
+                }
+            })?;
+        if !is_synced {
+            info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
+            return Ok(false);
+        }
+
+        let network = Network::get_current_or_user_setting_or_default();
+        let block_scan_tip = get_best_block_from_block_scan(network).await?;
+        let heights: Vec<u64> = vec![
+            block_scan_tip.saturating_sub(50),
+            block_scan_tip.saturating_sub(100),
+            block_scan_tip.saturating_sub(200),
+        ];
+        let mut block_scan_blocks: Vec<(u64, String)> = vec![];
+
+        for height in &heights {
+            let block_scan_block = get_block_info_from_block_scan(network, height).await?;
+            block_scan_blocks.push(block_scan_block);
+        }
+
+        let local_blocks = status_monitor.get_historical_blocks(heights).await?;
+        for block_scan_block in &block_scan_blocks {
+            if !local_blocks
+                .iter()
+                .any(|local_block| block_scan_block.1 == local_block.1)
+            {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
         let status_monitor_lock = self.watcher.read().await;
         let status_monitor = status_monitor_lock
@@ -222,8 +273,8 @@ impl NodeManager {
                     "%Y-%m-%d %H:%M:%S%.f",
                 ) {
                     Ok(datetime) => datetime,
-                    Err(e) => {
-                        debug!(target: LOG_TARGET, "Error parsing datetime: {}", e);
+                    Err(_e) => {
+                        // debug!(target: LOG_TARGET, "Error parsing datetime: {}", e);
                         return false;
                     }
                 };

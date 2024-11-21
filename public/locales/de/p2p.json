@@ -1,0 +1,9 @@
+{
+  "miners": "Miner",
+  "p2pool-chain-tip": "P2Pool-Ketten-Tipp",
+  "p2pool-connected": "P2Pool Verbunden",
+  "p2pool-connection-info": "Verbindung",
+  "p2pool-connection-info-more": "Verbindungsdetails",
+  "p2pool-stats": "Pool-Mining-Statistiken",
+  "tribe": "Tribe"
+}

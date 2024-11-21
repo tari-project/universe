@@ -5,6 +5,8 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 const Wrapper = styled.label<{ $disabled?: boolean }>`
     display: flex;
     cursor: pointer;
+    position: relative;
+
     ${({ $disabled }) =>
         $disabled &&
         css`
@@ -63,11 +65,23 @@ const Switch = styled.div`
 `;
 
 const Input = styled.input<{ $isSolid?: boolean }>`
-    display: none;
+    position: absolute;
+    opacity: 0;
+    width: 36px;
+    height: 20px;
+    margin: 0;
+    cursor: pointer;
+
     &:disabled {
         pointer-events: none;
         cursor: not-allowed;
     }
+
+    &:focus + ${Switch} {
+        outline: 3px solid #c9eb00;
+        outline-offset: 2px;
+    }
+
     &:disabled:not(:checked) + ${Switch} {
         background: ${({ theme }) => theme.colorsAlpha.darkAlpha[20]};
     }
@@ -97,8 +111,15 @@ interface ToggleSwitchProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     variant?: 'solid' | 'gradient';
 }
-export function ToggleSwitch({ label, variant = 'solid', disabled, ...props }: ToggleSwitchProps) {
+export function ToggleSwitch({ label, variant = 'solid', disabled, onChange, ...props }: ToggleSwitchProps) {
     const isSolid = variant === 'solid';
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            onChange?.({ target: { checked: !props.checked } } as React.ChangeEvent<HTMLInputElement>);
+        }
+    };
 
     const switchMarkup = (
         <Wrapper $disabled={disabled}>
@@ -106,8 +127,10 @@ export function ToggleSwitch({ label, variant = 'solid', disabled, ...props }: T
                 disabled={disabled}
                 checked={props.checked || false}
                 type="checkbox"
-                onChange={props.onChange}
+                onChange={onChange}
+                onKeyDown={handleKeyDown}
                 $isSolid={isSolid}
+                {...props}
             />
             <Switch />
         </Wrapper>

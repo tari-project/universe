@@ -1,9 +1,11 @@
 import { ApplicationsVersions, ExternalDependency } from '@app/types/app-status';
+import { setAnimationState } from '@app/visuals';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api';
 import { useAppConfigStore } from './useAppConfigStore';
 import { useMiningStore } from './useMiningStore';
 import * as Sentry from '@sentry/react';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 
 interface AppState {
     isAfterAutoUpdate: boolean;
@@ -21,7 +23,8 @@ interface AppState {
     isSettingsOpen: boolean;
     setIsSettingsOpen: (value: boolean) => void;
     isSettingUp: boolean;
-    settingUpFinished: () => Promise<void>;
+    setIsSettingUp: (value: boolean) => void;
+    setSettingUpFinished: () => Promise<void>;
     externalDependencies: ExternalDependency[];
     fetchExternalDependencies: () => Promise<void>;
     loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
@@ -37,7 +40,14 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     criticalError: undefined,
     setCriticalError: (criticalError) => set({ criticalError }),
     error: undefined,
-    setError: (error) => set({ error }),
+    setError: (error) => {
+        set({ error });
+        addToast({
+            title: 'Error',
+            text: error,
+            type: 'error',
+        });
+    },
     topStatus: 'Not mining',
     setTopStatus: (value) => set({ topStatus: value }),
     setupTitle: '',
@@ -48,13 +58,15 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     isSettingsOpen: false,
     setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
     isSettingUp: true,
-    settingUpFinished: async () => {
+    setIsSettingUp: (value: boolean) => set({ isSettingUp: value }),
+    setSettingUpFinished: async () => {
         set({ isSettingUp: false });
+        setAnimationState('showVisual');
 
         // Proceed with auto mining when enabled
         const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
         if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-            const { startMining } = useMiningStore.getState();
+            const startMining = useMiningStore.getState().startMining;
             await startMining();
         }
     },
@@ -78,7 +90,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             }
 
             try {
-                console.info('Fetching applications versions');
                 await getState().fetchApplicationsVersions();
                 retries--;
             } catch (error) {

@@ -1,14 +1,28 @@
 {
   "auto-miner": "自動マイナー",
   "auto-miner-description": "自動マイナーは、マシンがアイドル状態のときにマイナーを起動します",
-  "next-milestone": "次のマイルストーン",
-  "wallet-balance": "ウォレット残高",
-  "setup-scheduler": "スケジューラの設定",
+  "block": "ブロック",
+  "hide-history": "履歴を隠す",
+  "history-hide-button": "履歴を隠す",
+  "history-show-button": "履歴",
+  "lost-connection": "Tariネットワークへの接続が失われました。再接続中..",
   "mining-schedules": "マイニングスケジュール",
   "mining-schedules-description": "マイニング活動をスケジュールする",
-  "lost-connection": "Tariネットワークへの接続が失われました。再接続中..",
-  "block": "ブロック",
+  "next-milestone": "次のマイルストーン",
+  "paper-wallet-button": "電話と同期",
+  "paper-wallet-tooltip-message": "Tari AuroraにUniverseウォレットを同期して、どこでもXTMを追跡できます。",
+  "paper-wallet-tooltip-title": "電話と同期",
   "recent-wins": "最近の勝利",
-  "show-history": "Show history",
-  "hide-history": "Hide history"
+  "rewards": "Rewards",
+  "setup-scheduler": "スケジューラの設定",
+  "share": {
+    "button-text": "フレックス＆招待",
+    "copied": "リンクをコピーしました！",
+    "history-item-button": "フレックス＆招待",
+    "reward": "私の報酬",
+    "title": "Tariをマイニングしました",
+    "winner-pill": "ブロックの勝者"
+  },
+  "show-history": "履歴を表示",
+  "wallet-balance": "ウォレット残高"
 }

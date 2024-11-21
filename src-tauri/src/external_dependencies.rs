@@ -12,6 +12,7 @@ use winreg::enums::HKEY_LOCAL_MACHINE;
 #[cfg(target_os = "windows")]
 use winreg::RegKey;
 
+#[allow(dead_code)]
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<ExternalDependencies> = LazyLock::new(ExternalDependencies::new);
 
@@ -246,6 +247,7 @@ impl ExternalDependencies {
         self.external_dependencies.read().await.clone()
     }
 
+    #[allow(dead_code)]
     pub async fn check_if_some_dependency_is_not_installed(&self) -> bool {
         let registry_application_entry = self.get_external_dependencies().await;
 
@@ -255,6 +257,7 @@ impl ExternalDependencies {
                 == ExternalDependencyStatus::NotInstalled
     }
 
+    #[allow(dead_code)]
     async fn download_installer(&self, app: &ExternalDependency) -> Result<String, Error> {
         info!(target: LOG_TARGET, "Downloading installer for {}", app.display_name);
         let response = reqwest::get(&app.download_url).await?;
@@ -276,12 +279,29 @@ impl ExternalDependencies {
         Ok(installer_path.clone())
     }
 
+    #[allow(dead_code)]
     pub async fn install_missing_dependencies(
         &self,
         missing_dependency: ExternalDependency,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Installing missing dependency: {}", missing_dependency.display_name);
         let installer_path = self.download_installer(&missing_dependency).await?;
+
+        #[cfg(target_os = "windows")]
+        use crate::consts::PROCESS_CREATION_NO_WINDOW;
+        #[cfg(target_os = "windows")]
+        let mut thread = tokio::process::Command::new(installer_path)
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
+            .spawn()
+            .map_err(|e| {
+                anyhow!(
+                    "Failed to start installer for {}: {}",
+                    missing_dependency.display_name,
+                    e
+                )
+            })?;
+
+        #[cfg(not(target_os = "windows"))]
         let mut thread = tokio::process::Command::new(installer_path)
             .spawn()
             .map_err(|e| {

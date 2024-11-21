@@ -1,19 +1,23 @@
 {
-    "floor": "Floor",
-    "current-block-time": "Current block time",
-    "your-reward-is": "Your reward is",
-    "you-won-while-away": "<span>You won {{ blocks }}</span> while you were away",
-    "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
-    "mining-button-text": {
-        "starting-mining": "Starting Mining",
-        "start-mining": "Start Mining",
-        "stop-mining": "Stop Mining",
-        "changing-mode": "Changing mode",
-        "cancel-mining": "Cancel Mining",
-        "waiting-for-idle": "Waiting for Idle",
-        "started-auto-mining": "Auto Mining Started"
-    },
-    "estimated-earnings": "Estimated earnings",
-    "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
-    "day": "day"
+  "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
+  "cpu-power": "CPU Power",
+  "current-block-time": "Current block time",
+  "day": "day",
+  "estimated-day": "Est tXTM/day",
+  "estimated-earnings": "Estimated earnings",
+  "floor": "Floor",
+  "gpu-power": "GPU Power",
+  "mining-button-text": {
+    "cancel-mining": "Cancel Mining",
+    "changing-mode": "Changing mode",
+    "start-mining": "Start Mining",
+    "started-auto-mining": "Auto Mining Started",
+    "starting-mining": "Starting Mining",
+    "stop-mining": "Stop Mining",
+    "waiting-for-idle": "Waiting for Idle"
+  },
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>You won {{ blocks }}</span> while you were away",
+  "your-reward-is": "Your reward is"
 }

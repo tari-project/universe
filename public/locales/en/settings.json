@@ -1,129 +1,134 @@
 {
-    "action-requires-restart": "This action requires restart to apply changes",
-    "action-restart-copy": "Your preference will be saved and applied the next time Tari Universe is started.",
-    "applyInviteCode": "Apply Invite Code",
-
-    "cancel": "Cancel",
-    "change-language": "Language",
-    "connected-peers": "Connected Peers",
-    "connected-to-tari": "Connected to the Tari Network",
-    "cpu-mining-enabled": "CPU Mining",
-
-    "debug-info": "Debug",
-    "disconnect": "Disconnect from Airdrop",
-
-    "experimental-title": "Experimental Features",
-    "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
-
-    "feedback-required": "Feedback is required",
-
-    "gpu-device-enabled": "GPU Mining devices",
-    "gpu-device-enabled-description": "Enable or disable specific GPU device.",
-    "gpu-device-no-found": "⚠️ No GPU devices found",
-    "gpu-mining-enabled": "GPU Mining",
-    "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
-
-    "hardware-status": "Hardware status",
-
-    "idle-timeout": {
-        "max": "Maximum is 21600 seconds",
-        "min": "Minimum is 1 second",
-        "placeholder": "Enter idle timeout in seconds",
-        "title": "Time after which mdchine is considered idle"
-    },
-    "importing-wallet": "Importing wallet",
-    "inviteCode": "Invite Code",
-    "invalid-seed-words": "Enter 24 words separated by spaces",
-
-    "last-block-added-time": "Last block added to chain time",
-    "logs": "Logs",
-    "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
-
-    "miners": "Miners",
-    "mining-toggle-warning": "Mining will be paused while the changes take effect.",
-    "monero-address": {
-        "title": "Monero address",
-        "placeholder": "Enter Monero address"
-    },
-    "monero-seed-words": "Monero Seed Words",
-
-    "mine-on-app-start": {
-        "title": "Mining on startup",
-        "description": "When enabled, the app will start mining automatically when it is launched."
-    },
-    "should-auto-start": {
-        "title": "Auto-start on system boot",
-        "description": "When enabled, the app will start automatically when you log in to your computer."
-    },
-    "use-auto-update": {
-        "title": "Update Tari Universe automatically",
-        "description": "When enabled, the app will check for updates and install them automatically."
-    },
-
-    "not-connected-to-tari": "Not connected to the Tari Network",
-
-    "open-logs-directory": "Open logs directory",
-
-    "p2pool-chain-tip": "Tip of chains",
-    "p2pool-hash-rate": "Squad hash rates",
-    "p2pool-stats": "Squad Stats",
-    "p2pool-total-earnings": "Squad total earnings",
-    "p2pool-user-total-earnings": "Total earnings",
-    "pool-mining": "Pool Mining",
-    "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
-
-    "refresh-versions": "Refresh versions",
-    "report-issue": "Report an issue",
-    "restart-later": "Restart Later",
-    "restart-now": "Restart Now",
-
-    "restart-universe": "Restart Tari Universe?",
-    "reset-permanently": "Are you sure you want to reset all settings permanently?",
-    "reset-settings": "Reset Settings",
-    "reset-wallet": "Reset wallet",
-
-    "tari-wallet-address": "Tari Wallet Address",
-    "seed-words": "Seed words",
-    "send-logs": "Submit an Issue & Logs",
-    "settings": "Settings",
-    "should-use-system-language": "Use system language",
-
-    "tabs": {
-        "airdrop": "Airdrop",
-        "general": "General",
-        "mining": "Mining",
-        "wallet": "Wallet",
-        "experimental": "Experimental",
-        "very_experimental": "Very Experimental"
-    },
-    "tor-bridges": "Tor Bridges",
-    "theme": "Theme",
-    "tribe": "Squad",
-    "tribe-earnings": "Squad earnings",
-    "tribe-pool-height": "Squad height",
-
-    "update-versions": "Update versions",
-    "use-tor": "Use Tor",
-    "sha-network-hash-rate": "Sha3 network hashrate",
-    "randomx-network-hash-rate": "Randomx network hashrate",
-    "network": "Network",
-    "visual-mode": "Visual mode",
-    "yes": "Yes",
-    "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
-    "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
-    "app-restart-required": "App restart required",
-    "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
-    "control-port": "Control Port",
-    "save": "Save",
-    "errors": {
-        "invalid-control-port": "Control Port configuration is invalid",
-        "invalid-bridge": "Bridge configuration is invalid"
-    },
-    "paper-wallet": {
-        "link-tari-aurora": "Link Tari Aurora",
-        "connect-wallet-to-phone": "Connect your Tari Universe wallet to your phone",
-        "load-qr-code": "Load QR code",
-        "do-not-share-this-code": "Don&apos;t share this code with anyone",
-        "passphrase": "Passphrase"
-    }
+  "action-requires-restart": "This action requires restart to apply changes",
+  "action-restart-copy": "Your preference will be saved and applied the next time Tari Universe is started.",
+  "app-restart-required": "App restart required",
+  "applyInviteCode": "Apply Invite Code",
+  "cancel": "Cancel",
+  "change-language": "Language",
+  "confirm-import-wallet": "Import new wallet",
+  "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?\nYour current wallet will be abandoned.",
+  "connected-peers": "Connected Peers",
+  "connected-to-tari": "Connected to the Tari Network",
+  "control-port": "Control Port",
+  "cpu-mining-enabled": "CPU Mining",
+  "custom-power-levels": {
+    "choose-cpu-power-level": "Choose how much you want your CPU to be allocated to mining <span>({{current}} out of {{max}} cores)</span>",
+    "choose-gpu-power-level": "Choose how much you want your GPU to be allocated to mining <span>({{current}} out of {{max}} threads)</span>",
+    "cpu-power-level": "CPU Cores",
+    "cpu-warning": "Sustained high CPU usage may cause overheating, and hardware failure.",
+    "gpu-power-level": "GPU Power",
+    "gpu-warning": "Sustained high GPU usage may cause overheating, and hardware failure.",
+    "saved": "Applying Changes",
+    "title": "Custom Mode",
+    "warning": "Warning"
+  },
+  "debug-info": "Debug",
+  "disconnect": "Disconnect from Airdrop",
+  "errors": {
+    "invalid-bridge": "Bridge configuration is invalid",
+    "invalid-control-port": "Control Port configuration is invalid"
+  },
+  "experimental-title": "Experimental Features",
+  "experimental-warning": "⚠️ Warning: These features are under active development and could behave unpredictably. Please proceed carefully.",
+  "feedback-required": "Feedback is required",
+  "gpu-device-enabled": "GPU Mining devices",
+  "gpu-device-enabled-description": "Enable or disable specific GPU device.",
+  "gpu-device-no-found": "⚠️ No GPU devices found",
+  "gpu-mining-enabled": "GPU Mining",
+  "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
+  "hardware-status": "Hardware status",
+  "idle-timeout": {
+    "max": "Maximum is 21600 seconds",
+    "min": "Minimum is 1 second",
+    "placeholder": "Enter idle timeout in seconds",
+    "title": "Time after which mdchine is considered idle"
+  },
+  "importing-wallet": "Importing wallet",
+  "invalid-seed-words": "Enter 24 words separated by spaces",
+  "inviteCode": "Invite Code",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
+  "last-block-added-time": "Last block added to chain time",
+  "logs": "Logs",
+  "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",
+  "mine-on-app-start": {
+    "description": "When enabled, the app will start mining automatically when it is launched.",
+    "title": "Mining on startup"
+  },
+  "miners": "Miners",
+  "mining-toggle-warning": "Mining will be paused while the changes take effect.",
+  "monero-address": {
+    "placeholder": "Enter Monero address",
+    "title": "Monero address"
+  },
+  "monero-seed-words": "Monero Seed Words",
+  "network": "Network",
+  "no-entry-guard": "No Entry Guard connected!",
+  "not-connected-to-tari": "Not connected to the Tari Network",
+  "open-logs-directory": "Open logs directory",
+  "p2pool-chain-tip": "Tip of chains",
+  "p2pool-hash-rate": "Squad hash rates",
+  "p2pool-stats": "Squad Stats",
+  "p2pool-total-earnings": "Squad total earnings",
+  "p2pool-user-total-earnings": "Total earnings",
+  "paper-wallet": {
+    "connect-wallet-to-phone": "Track your tXTM balance on your phone",
+    "do-not-share-this-code": "Don&apos;t share this code with anyone",
+    "link-tari-aurora": "Link Tari Aurora",
+    "load-qr-code": "Load QR code",
+    "passphrase": "Passphrase"
+  },
+  "pool-mining": "Pool Mining",
+  "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
+  "randomx-network-hash-rate": "Randomx network hashrate",
+  "refresh-versions": "Refresh versions",
+  "report-issue": "Report an issue",
+  "reset-permanently": "Are you sure you want to reset all settings permanently?",
+  "reset-settings": "Reset Settings",
+  "reset-wallet": "Reset wallet",
+  "restart-later": "Restart Later",
+  "restart-now": "Restart Now",
+  "restart-universe": "Restart Tari Universe?",
+  "save": "Save",
+  "seed-words": "Seed words",
+  "send-logs": "Submit an Issue & Logs",
+  "set-dynamic-fail-data": "Set custom urls for monero nodes",
+  "settings": "Settings",
+  "setup-tor-settings": "Setup Tor Settings for Privacy Control and Connectivity",
+  "sha-network-hash-rate": "Sha3 network hashrate",
+  "should-auto-start": {
+    "description": "When enabled, the app will start automatically when you log in to your computer.",
+    "title": "Auto-start on system boot"
+  },
+  "should-use-system-language": "Use system language",
+  "tabs": {
+    "airdrop": "Airdrop",
+    "connections": "Connections",
+    "experimental": "Experimental",
+    "general": "General",
+    "mining": "Mining",
+    "p2p": "Pool Mining",
+    "very_experimental": "Very Experimental",
+    "wallet": "Wallet"
+  },
+  "tari-wallet-address": "Tari Wallet Address",
+  "terms-and-conditions": "Terms & Conditions",
+  "theme": "Theme",
+  "tor-bridges": "Tor Bridges",
+  "tor-entry-guards": "Tor Entry Guards",
+  "tribe": "Squad",
+  "tribe-earnings": "Squad earnings",
+  "tribe-pool-height": "Squad height",
+  "update-versions": "Update versions",
+  "use-auto-update": {
+    "description": "When enabled, the app will check for updates and install them automatically.",
+    "title": "Update Tari Universe automatically"
+  },
+  "use-dynamic-fail-data": "Use dynamic fail data",
+  "use-random-control-port": "Use random control port",
+  "use-tor": "Use Tor",
+  "use-tor-bridges": "Use Tor Bridges",
+  "visual-mode": "Visual mode",
+  "yes": "Yes",
+  "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
+  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"
 }

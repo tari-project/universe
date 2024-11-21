@@ -10,10 +10,12 @@ interface RequestProps {
 
 export const useAirdropRequest = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
+    const airdropTokenExpiration = useAirdropStore((state) => state.airdropTokens?.expiresAt);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
 
     return async <T>({ body, method, path, onError }: RequestProps) => {
-        if (!baseUrl || !airdropToken) return;
+        const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
+        if (!baseUrl || !airdropToken || isTokenExpired) return;
 
         const fullUrl = `${baseUrl}${path}`;
 

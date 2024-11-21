@@ -72,6 +72,7 @@ impl Binaries {
         }
     }
 
+    #[allow(dead_code)]
     pub fn iterator() -> impl Iterator<Item = Binaries> {
         [
             Binaries::Xmrig,

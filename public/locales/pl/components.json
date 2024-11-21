@@ -1,11 +1,11 @@
 {
   "field-error-message": {
+    "integers-only": "Dozwolone są tylko liczby całkowite",
     "invalid": "Nieprawidłowe pole",
-    "required": "Pole wymagane",
-    "password-too-short": "Hasło musi mieć co najmniej 8 znaków",
-    "invalid-url": "Musisz podać poprawny adres URL",
-    "invalid-email": "Podaj poprawny adres e-mail",
     "invalid-date": "Data jest nieprawidłowa",
-    "integers-only": "Dozwolone są tylko liczby całkowite"
+    "invalid-email": "Podaj poprawny adres e-mail",
+    "invalid-url": "Musisz podać poprawny adres URL",
+    "password-too-short": "Hasło musi mieć co najmniej 8 znaków",
+    "required": "Pole wymagane"
   }
 }

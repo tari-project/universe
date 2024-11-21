@@ -1,18 +1,23 @@
 {
-  "floor": "Étage",
-  "current-block-time": "Temps actuelle du bloc",
-  "your-reward-is": "Votre récompense est",
   "connection-to-node-lost": "Connexion au mineur perdue. Attends que le mineur se reconnecte ou redémarre le mineur.",
+  "cpu-power": "Puissance CPU",
+  "current-block-time": "Temps actuelle du bloc",
+  "day": "day",
+  "estimated-day": "Est tXTM/jour",
+  "estimated-earnings": "Gains estimés",
+  "floor": "Étage",
+  "gpu-power": "Puissance GPU",
   "mining-button-text": {
-    "starting-mining": "Minage en cours de démarrage",
-    "start-mining": "Démarrer le minage",
-    "stop-mining": "Arrêtez le minage",
-    "changing-mode": "Changement de mode",
     "cancel-mining": "Annuler le minage",
-    "waiting-for-idle": "En attente d'inactivité",
-    "started-auto-mining": "Démarrage du minage automatique"
+    "changing-mode": "Changement de mode",
+    "start-mining": "Démarrer le minage",
+    "started-auto-mining": "Démarrage du minage automatique",
+    "starting-mining": "Minage en cours de démarrage",
+    "stop-mining": "Arrêtez le minage",
+    "waiting-for-idle": "En attente d'inactivité"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
-  "day": "day"
+  "you-earn-rewards-separately": "Vous gagnez des récompenses pour le minage CPU et GPU séparément",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>Vous avez gagné {{ blocks }}</span> pendant votre absence",
+  "your-reward-is": "Votre récompense est"
 }

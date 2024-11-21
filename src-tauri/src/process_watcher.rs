@@ -1,8 +1,8 @@
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
+use crate::process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor};
 use log::{error, info, warn};
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
@@ -16,6 +16,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
     pub health_timeout: tokio::time::Duration,
+    pub expected_startup_time: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
 }
 
@@ -27,6 +28,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(5),
             health_timeout: tokio::time::Duration::from_secs(4),
+            expected_startup_time: tokio::time::Duration::from_secs(20),
             status_monitor: None,
         }
     }
@@ -37,7 +39,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         &mut self,
         base_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
-        self.adapter.kill_previous_instances(base_path)?;
+        self.adapter.kill_previous_instances(base_path).await?;
         Ok(())
     }
 
@@ -74,9 +76,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
 
+        let expected_startup_time = self.expected_startup_time;
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             child.start().await?;
+            let mut uptime = Instant::now();
             sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET, "Starting process watcher for {}", name);
             let mut watch_timer = tokio::time::interval(poll_time);
@@ -86,58 +90,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             loop {
                 select! {
                       _ = watch_timer.tick() => {
-                            let mut is_healthy = false;
+                        let status_monitor3 = status_monitor2.clone();
 
-                            if child.ping() {
-                                if let Ok(inner) = timeout(health_timeout, status_monitor2.check_health()).await.inspect_err(|_|
-                                error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name)) {
-                                            match inner {
-                                                HealthStatus::Healthy => {
-                                                    warning_count = 0;
-                                                    is_healthy = true;
-                                            },
-                                            HealthStatus::Warning => {
-                                                warning_count += 1;
-                                                if warning_count > 10 {
-                                                    error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
-                                                    warning_count = 0;
-                                                }
-                                                else {
-                                                   is_healthy = true;
-                                                }
-                                            },
-                                            HealthStatus::Unhealthy => {
+                        let exit_code = do_health_check(&mut child, status_monitor3, name.clone(), &mut uptime, expected_startup_time, health_timeout, app_shutdown.clone(), inner_shutdown.clone(), &mut warning_count).await?;
+                            if exit_code != 0 {
+                            return Ok(exit_code);
 
-                                                error!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
-                                            }
-                                    }
-                            }
                         }
-
-                            if !is_healthy && !child.shutdown.is_triggered() && !app_shutdown.is_triggered() && !inner_shutdown.is_triggered(){
-                               match child.stop().await {
-                                   Ok(exit_code) => {
-                                      if exit_code != 0 {
-                                          error!(target: LOG_TARGET, "{} exited with error code: {}", name, exit_code);
-                                        //   return Ok(exit_code);
-                                      }
-                                      else {
-                                        info!(target: LOG_TARGET, "{} exited successfully", name);
-                                      }
-                                   }
-                                   Err(e) => {
-                                      error!(target: LOG_TARGET, "{} exited with error: {}", name, e);
-                                    //   return Err(e);
-                                   }
-                               }
-                               // Restart dead app
-                                sleep(Duration::from_secs(2)).await;
-                                warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
-                                child.start().await?;
-                                // Wait for a bit before checking health again
-                                sleep(Duration::from_secs(10)).await;
-
-                               }
                             //    break;
                       },
                     _ = inner_shutdown.wait() => {
@@ -181,4 +140,89 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
         Ok(0)
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn do_health_check<T: StatusMonitor>(
+    child: &mut ProcessInstance,
+    status_monitor3: T,
+    name: String,
+    uptime: &mut Instant,
+    expected_startup_time: Duration,
+    health_timeout: Duration,
+    app_shutdown: ShutdownSignal,
+    inner_shutdown: ShutdownSignal,
+    warning_count: &mut u32,
+) -> Result<i32, anyhow::Error> {
+    let mut is_healthy = false;
+
+    if child.ping() {
+        let mut inner_shutdown2 = inner_shutdown.clone();
+        let mut app_shutdown2 = app_shutdown.clone();
+        if let Ok(inner) = timeout(health_timeout, async {
+            select! {
+                r = status_monitor3.check_health() => r,
+                // Watch for shutdown signals
+                _ = inner_shutdown2.wait() => HealthStatus::Healthy,
+                _ = app_shutdown2.wait() => HealthStatus::Healthy
+            }
+        })
+        .await
+        .inspect_err(
+            |_| error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name),
+        ) {
+            match inner {
+                HealthStatus::Healthy => {
+                    *warning_count = 0;
+                    is_healthy = true;
+                }
+                HealthStatus::Warning => {
+                    *warning_count += 1;
+                    if *warning_count > 10 {
+                        error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
+                        *warning_count = 0;
+                    } else {
+                        is_healthy = true;
+                    }
+                }
+                HealthStatus::Unhealthy => {
+                    error!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
+                }
+            }
+        }
+    }
+
+    if !is_healthy
+        && !child.shutdown.is_triggered()
+        && !app_shutdown.is_triggered()
+        && !inner_shutdown.is_triggered()
+    {
+        if uptime.elapsed() < expected_startup_time {
+            warn!(target: LOG_TARGET, "{} is not healthy. Waiting for startup time to elapse", name);
+        } else {
+            match child.stop().await {
+                Ok(exit_code) => {
+                    if exit_code != 0 {
+                        error!(target: LOG_TARGET, "{} exited with error code: {}", name, exit_code);
+                        // Do not restart on non-zero exit code. This will just keep happening.
+                        return Ok(exit_code);
+                    } else {
+                        info!(target: LOG_TARGET, "{} exited successfully", name);
+                    }
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET, "{} exited with error: {}", name, e);
+                    //   return Err(e);
+                }
+            }
+            // Restart dead app
+            sleep(Duration::from_secs(1)).await;
+            warn!(target: LOG_TARGET, "Restarting {} after health check failure", name);
+            *uptime = Instant::now();
+            child.start().await?;
+            // Wait for a bit before checking health again
+            // sleep(Duration::from_secs(10)).await;
+        }
+    }
+    Ok(0)
 }

@@ -1,5 +1,5 @@
 import { Language } from '@app/i18initializer';
-import { modeType, themeType } from '../store/types';
+import { displayMode, modeType } from '../store/types';
 
 export interface TorConfig {
     control_port: number;
@@ -8,27 +8,33 @@ export interface TorConfig {
 }
 
 export interface AppConfig {
-    config_version: number;
-    config_file?: string;
-    mode: modeType;
-    theme: themeType;
-    auto_mining: boolean;
-    mine_on_app_start: boolean;
-    p2pool_enabled: boolean;
-    last_binaries_update_timestamp: string;
-    has_system_language_been_proposed: boolean;
-    should_always_use_system_language: boolean;
-    should_auto_launch: boolean;
-    application_language: Language;
     allow_telemetry: boolean;
     anon_id: string;
-    monero_address: string;
-    gpu_mining_enabled: boolean;
-    cpu_mining_enabled: boolean;
-    airdrop_ui_enabled: boolean;
-    paper_wallet_enabled: boolean;
-    use_tor: boolean;
+    application_language: Language;
     auto_update: boolean;
+    config_file?: string;
+    config_version: number;
+    cpu_mining_enabled: boolean;
+    custom_max_cpu_usage: number;
+    custom_max_gpu_usage: number;
+    custom_power_levels_enabled: boolean;
+    display_mode: displayMode;
+    gpu_mining_enabled: boolean;
+    has_system_language_been_proposed: boolean;
+    last_binaries_update_timestamp: string;
+    mine_on_app_start: boolean;
+    mmproxy_monero_nodes: string[];
+    mmproxy_use_monero_fail: boolean;
+    mode: modeType;
+    monero_address: string;
+    p2pool_enabled: boolean;
+    paper_wallet_enabled: boolean;
+    reset_earnings: boolean;
+    sharing_enabled: boolean;
+    should_always_use_system_language: boolean;
+    should_auto_launch: boolean;
+    use_tor: boolean;
+    visual_mode: boolean;
     monero_address_is_generated?: boolean;
 }
 
@@ -53,17 +59,13 @@ export interface ExternalDependency {
     status: ExternalDependencyStatus;
 }
 
-export interface ExternalDependencies {
-    additional_runtime: ExternalDependency;
-    minimum_runtime: ExternalDependency;
-}
 export interface CpuMinerMetrics {
-    hardware?: HardwareParameters;
+    hardware: PublicDeviceParameters[];
     mining: CpuMinerStatus;
 }
 
 export interface GpuMinerMetrics {
-    hardware: HardwareParameters[];
+    hardware: PublicDeviceParameters[];
     mining: GpuMinerStatus;
 }
 
@@ -140,32 +142,35 @@ export interface P2poolBlockStats {
     rejected: number;
     submitted: number;
 }
-
-export interface P2poolEstimatedEarnings {
-    one_minute: number;
-    one_hour: number;
-    one_day: number;
-    one_week: number;
-    one_month: number;
+export enum HardwareVendor {
+    Nvidia = 'Nvidia',
+    Amd = 'Amd',
+    Intel = 'Intel',
+    Apple = 'Apple',
+    Unknown = 'Unknown',
 }
 
-export interface P2poolStatsBlock {
-    hash: string;
-    height: number;
-    timestamp: number;
-    miner_wallet_address?: string;
+export interface DeviceStatus {
+    is_available: boolean;
+    is_reader_implemented: boolean;
 }
 
+export interface DeviceParameters {
+    usage_percentage: number;
+    current_temperature: number;
+    max_temperature: number;
+}
+export interface PublicDeviceParameters {
+    vendor: HardwareVendor;
+    name: string;
+    status: DeviceStatus;
+    parameters?: DeviceParameters;
+}
 export interface HardwareParameters {
     label: string;
     usage_percentage: number;
     current_temperature: number;
     max_temperature: number;
-}
-
-export interface HardwareStatus {
-    cpu: HardwareParameters;
-    gpu: HardwareParameters[];
 }
 
 export interface CpuMinerStatus {
@@ -177,10 +182,6 @@ export interface CpuMinerStatus {
 
 export interface CpuMinerConnectionStatus {
     is_connected: boolean;
-}
-
-export interface EstimatedEarnings {
-    estimated_earnings: number;
 }
 
 export interface GpuMinerStatus {
@@ -217,4 +218,9 @@ export interface ApplicationsVersions {
 export interface PaperWalletDetails {
     qr_link: string;
     password: string;
+}
+
+export interface MaxConsumptionLevels {
+    max_cpu_available: number;
+    max_gpu_available: number;
 }

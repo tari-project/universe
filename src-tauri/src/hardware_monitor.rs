@@ -77,6 +77,7 @@ pub struct HardwareMonitor {
     gpu_devices: Vec<GpuStatus>,
 }
 
+#[allow(dead_code)]
 impl HardwareMonitor {
     pub fn new() -> Self {
         HardwareMonitor {
@@ -132,8 +133,8 @@ impl HardwareMonitor {
 
     pub fn read_hardware_parameters(&mut self) -> HardwareStatus {
         // USED FOR DEBUGGING
-        // println!("Reading hardware parameters for {}", self.current_implementation.get_implementation_name());
-        // self.current_implementation.log_all_components();
+        // println!("Reading hardware parameters for {}", self.current_implementation._get_implementation_name());
+        // self.current_implementation._log_all_components();
         let cpu = Some(
             self.current_implementation
                 .read_cpu_parameters(self.cpu.clone()),
@@ -164,6 +165,7 @@ impl HardwareMonitor {
     }
 }
 
+#[allow(dead_code)]
 struct WindowsHardwareMonitor {
     nvml: Option<Nvml>,
     gpu_status_file: Option<PathBuf>,
@@ -311,6 +313,7 @@ impl HardwareMonitorImpl for WindowsHardwareMonitor {
     }
 }
 
+#[allow(dead_code)]
 struct LinuxHardwareMonitor {
     nvml: Option<Nvml>,
     gpu_status_file: Option<PathBuf>,
@@ -485,6 +488,7 @@ impl HardwareMonitorImpl for LinuxHardwareMonitor {
     }
 }
 
+#[allow(dead_code)]
 struct MacOSHardwareMonitor {
     gpu_status_file: Option<PathBuf>,
 }

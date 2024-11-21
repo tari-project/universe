@@ -45,8 +45,6 @@ pub(crate) struct ConnectionCounters {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Stats {
-    pub connected: bool,
-    pub peer_count: u64,
     pub connection_info: ConnectionInfo,
     pub connected_since: Option<EpochTime>,
     pub randomx_stats: ChainStats,
@@ -55,10 +53,10 @@ pub struct Stats {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChainStats {
-    pub squad: SquadDetails,
+    // pub squad: SquadDetails,
     // pub num_of_miners: usize,
-    pub share_chain_height: u64,
-    pub share_chain_length: u64,
+    pub height: u64,
+    // pub share_chain_length: u64,
     // pub miner_block_stats: BlockStats,
     // pub p2pool_block_stats: BlockStats,
 }

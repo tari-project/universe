@@ -4,9 +4,42 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/tari.svg" />
+
+    <!-- Preload Poppins fonts -->
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-ExtraLight.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Light.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Medium.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Black.woff2" as="font" type="font/woff2" crossorigin>
+
+    <!-- Preload Druk fonts -->
+    <link rel="preload" href="/assets/fonts/Druk/DrukLCG-Medium.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/assets/fonts/Druk/DrukLCG-Bold.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/assets/fonts/Druk/DrukLCG-Heavy.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Medium.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Bold.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Heavy.ttf" as="font" type="font/ttf" crossorigin>
+
+    <!-- Preload GT America fonts -->
+    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Light-Trial.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Regular-Trial.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Medium-Trial.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Bold-Trial.otf" as="font" type="font/otf" crossorigin>
+    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Black-Trial.otf" as="font" type="font/otf" crossorigin>
+
     <script type="module" crossorigin src="/assets/glApp.js"></script>
     <title>Tari Universe | Testnet</title>
     <style>
+      body,
+      main,
+      #root {
+        padding: 0;
+        margin: 0;
+      }
+
       #canvas {
         position: absolute;
         pointer-events: auto;
@@ -62,13 +95,6 @@
           glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
           glApp.setSize(window.innerWidth, window.innerHeight);
         }
-
-
-        document.addEventListener("contextmenu", (e) => {
-          if (window.location.hostname !== "localhost") {
-            e.preventDefault();
-          }
-        });
 
         document.addEventListener('DOMContentLoaded', preload);
       </script>

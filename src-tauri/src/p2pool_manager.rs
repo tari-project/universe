@@ -2,15 +2,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::anyhow;
 use log::warn;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
-use crate::network_utils;
 use crate::p2pool::models::Stats;
 use crate::p2pool_adapter::P2poolAdapter;
+use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
@@ -40,10 +39,8 @@ impl P2poolConfigBuilder {
     }
 
     pub fn build(&self) -> Result<P2poolConfig, anyhow::Error> {
-        let grpc_port =
-            network_utils::get_free_port().ok_or_else(|| anyhow!("Could not assign free port"))?;
-        let stats_server_port = network_utils::get_free_port()
-            .ok_or_else(|| anyhow!("Could not assign free port for stats server"))?;
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
+        let stats_server_port = PortAllocator::new().assign_port_with_fallback();
         Ok(P2poolConfig {
             grpc_port,
             stats_server_port,
@@ -120,6 +117,8 @@ impl P2poolManager {
             return Ok(());
         }
         process_watcher.adapter.config = Some(config);
+        process_watcher.health_timeout = Duration::from_secs(28);
+        process_watcher.poll_time = Duration::from_secs(30);
         process_watcher
             .start(
                 app_shutdown,

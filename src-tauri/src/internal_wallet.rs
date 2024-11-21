@@ -243,6 +243,7 @@ impl InternalWallet {
         self.config.spend_public_key_hex.clone()
     }
 
+    #[allow(dead_code)]
     pub fn get_network(&self) -> Result<Network, TariAddressError> {
         let address = TariAddress::from_base58(&self.config.tari_address_base58);
         address.map(|a| a.network())

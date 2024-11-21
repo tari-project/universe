@@ -90,12 +90,12 @@ export const OptionLabelWrapper = styled.div`
         display: flex;
     }
 `;
-export const StyledOption = styled.div<{ $selected?: boolean }>`
+export const StyledOption = styled.div<{ $selected?: boolean; $loading?: boolean }>`
     display: flex;
     font-size: 14px;
     background: ${({ theme }) => theme.palette.background.paper};
     line-height: 1;
-    cursor: pointer;
+    cursor: ${({ $loading }) => ($loading ? 'wait' : 'pointer')};
     border-radius: 10px;
     transition: all 0.2s ease-in-out;
 

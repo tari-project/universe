@@ -23,7 +23,7 @@ export const useWebsocket = () => {
             socket.emit('auth', airdropToken);
             socket.on(userId as string, (msg: string) => {
                 const msgParsed = JSON.parse(msg) as QuestCompletedEvent;
-                if (msgParsed.data.userPoints?.gems) {
+                if (msgParsed?.data?.userPoints?.gems) {
                     setUserGems(msgParsed.data.userPoints?.gems);
                 }
             });

@@ -1,4 +1,3 @@
-import { modeType } from '@app/store/types';
 import {
     AppConfig,
     ApplicationsVersions,
@@ -8,10 +7,11 @@ import {
     TariWalletDetails,
     TorConfig,
     TransactionInfo,
+    MaxConsumptionLevels,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { themeType } from '@app/store/types.ts';
+import { displayMode, modeType } from '@app/store/types.ts';
 
 declare module '@tauri-apps/api/tauri' {
     function invoke(
@@ -33,11 +33,14 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'start_mining'): Promise<void>;
     function invoke(param: 'stop_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
-    function invoke(param: 'set_auto_mining', payload: { autoMining: boolean }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
     function invoke(param: 'update_applications'): Promise<void>;
-    function invoke(param: 'set_mode', payload: { mode: modeType }): Promise<void>;
-    function invoke(param: 'set_theme', payload: { theme: themeType }): Promise<void>;
+    function invoke(
+        param: 'set_mode',
+        payload: { mode: modeType; customCpuUsage: number; customGpuUsage: number }
+    ): Promise<void>;
+    function invoke(param: 'get_max_consumption_levels'): Promise<MaxConsumptionLevels>;
+    function invoke(param: 'set_display_mode', payload: { displayMode: displayMode }): Promise<void>;
     function invoke(param: 'get_seed_words'): Promise<string[]>;
     function invoke(param: 'get_monero_seed_words'): Promise<string[]>;
     function invoke(param: 'get_applications_versions'): Promise<ApplicationsVersions>;
@@ -56,13 +59,22 @@ declare module '@tauri-apps/api/tauri' {
     ): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
-    function invoke(param: 'restart_application'): Promise<string>;
+    function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
     function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;
     function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
+    function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
+    function invoke(param: 'set_visual_mode', payload: { enabled: boolean }): Promise<void>;
+    function invoke(
+        param: 'set_monerod_config',
+        payload: {
+            useMoneroFail: boolean;
+            moneroNodes: string[];
+        }
+    ): Promise<void>;
     function invoke(
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }

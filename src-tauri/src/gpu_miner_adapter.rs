@@ -1,3 +1,4 @@
+use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use anyhow::anyhow;
@@ -14,14 +15,13 @@ use tari_shutdown::Shutdown;
 
 use crate::{
     app_config::MiningMode,
-    network_utils::get_free_port,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
-pub const ECO_MODE_GPU_PERCENTAGE: u16 = 2;
-pub const LUDICROUS_MODE_GPU_PERCENTAGE: u16 = 800; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
+pub const ECO_MODE_GPU_GRID_SIZE: u16 = 2;
+pub const LUDICROUS_MODE_GPU_GRID_SIZE: u16 = 900; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
     BaseNode { port: u16 },
@@ -31,7 +31,7 @@ pub enum GpuNodeSource {
 pub(crate) struct GpuMinerAdapter {
     pub(crate) tari_address: TariAddress,
     // Value ranges 1 - 1000
-    pub(crate) gpu_percentage: u16,
+    pub(crate) gpu_grid_size: u16,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
     pub(crate) excluded_gpu_devices: Vec<u8>,
@@ -41,17 +41,20 @@ impl GpuMinerAdapter {
     pub fn new() -> Self {
         Self {
             tari_address: TariAddress::default(),
-            gpu_percentage: ECO_MODE_GPU_PERCENTAGE,
+            gpu_grid_size: ECO_MODE_GPU_GRID_SIZE,
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
             excluded_gpu_devices: vec![],
         }
     }
 
-    pub fn set_mode(&mut self, mode: MiningMode) {
+    pub fn set_mode(&mut self, mode: MiningMode, custom_max_gpu_grid_size: Option<u16>) {
         match mode {
-            MiningMode::Eco => self.gpu_percentage = ECO_MODE_GPU_PERCENTAGE,
-            MiningMode::Ludicrous => self.gpu_percentage = LUDICROUS_MODE_GPU_PERCENTAGE,
+            MiningMode::Eco => self.gpu_grid_size = ECO_MODE_GPU_GRID_SIZE,
+            MiningMode::Ludicrous => self.gpu_grid_size = LUDICROUS_MODE_GPU_GRID_SIZE,
+            MiningMode::Custom => {
+                self.gpu_grid_size = custom_max_gpu_grid_size.unwrap_or(ECO_MODE_GPU_GRID_SIZE)
+            }
         }
     }
 
@@ -74,7 +77,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
 
-        let http_api_port = get_free_port().unwrap_or(18000);
+        let http_api_port = PortAllocator::new().assign_port_with_fallback();
         let working_dir = data_dir.join("gpuminer");
         std::fs::create_dir_all(&working_dir)?;
         std::fs::create_dir_all(config_dir.join("gpuminer"))?;
@@ -104,8 +107,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                 .to_string(),
             "--http-server-port".to_string(),
             http_api_port.to_string(),
-            "--gpu-percentage".to_string(),
-            self.gpu_percentage.to_string(),
+            "--grid-size".to_string(),
+            self.gpu_grid_size.to_string(),
             "--log-config-file".to_string(),
             config_dir
                 .join("gpuminer")

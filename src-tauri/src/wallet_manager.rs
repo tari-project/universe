@@ -126,6 +126,7 @@ impl WalletManager {
     #[deprecated(
         note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
     )]
+    #[allow(dead_code)]
     pub async fn wallet_address(&self) -> Result<String, WalletManagerError> {
         panic!("Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet.");
         // In future the wallet might return the correct address. View only wallets have the same offline address, but different online addresses.

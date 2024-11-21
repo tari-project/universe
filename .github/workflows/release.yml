@@ -149,6 +149,13 @@ jobs:
             libprotobuf-dev \
             protobuf-compiler
 
+      - name: Install dependencies (linux/OpenCL)
+        if: startsWith(runner.os,'Linux')
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
       - name: Install dependencies (macOS)
         if: startsWith(runner.os,'macOS')
         run: |
@@ -167,11 +174,17 @@ jobs:
           vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
           choco upgrade protoc -y
 
+      - name: Install dependencies (windows/OpenCL)
+        if: startsWith(runner.os,'Windows')
+        run: |
+          vcpkg.exe --triplet=x64-windows install opencl
+
       - name: Set environment variables (windows)
         if: startsWith(runner.os,'Windows')
         shell: bash
         run: |
           echo "SQLITE3_LIB_DIR=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
+          echo "LIB=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
 
       - name: Azure code-signing setup (windows only)
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
@@ -185,7 +198,7 @@ jobs:
             jq '.tauri .bundle .windows += {"signCommand": "${{ env.WINDOWS_SIGN_COMMAND }}"}' > \
               ./tauri.windows.conf.json
           cat ./tauri.windows.conf.json
-          cargo install trusted-signing-cli
+          cargo install trusted-signing-cli@0.3.0 --locked
 
       - name: Install dependencies (node)
         run: |
@@ -209,6 +222,8 @@ jobs:
           AZURE_CLIENT_SECRET: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_SECRET }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          NODE_OPTIONS: '--max_old_space_size=4096'
         with:
           tagName: ${{ env.tagName }}
           releaseName: ${{ env.releaseName }}

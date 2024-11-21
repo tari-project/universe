@@ -1,19 +1,24 @@
 {
-  "floor": "न्यूनतम स्तर",
-  "current-block-time": "वर्तमान ब्लॉक समय",
-  "your-reward-is": "आपका इनाम है",
   "connection-to-node-lost": "माइनर से कनेक्शन खो गया। कृपया माइनर के पुनः कनेक्ट होने या पुनः आरंभ करने की प्रतीक्षा करें।",
+  "cpu-power": "CPU पावर",
+  "current-block-time": "वर्तमान ब्लॉक समय",
+  "day": "day",
+  "estimated-day": "Est tXTM/दिन",
+  "estimated-earnings": "अनुमानित कमाई",
+  "floor": "न्यूनतम स्तर",
+  "gpu-power": "GPU पावर",
   "mining-button-text": {
-    "starting-mining": "माइनिंग शुरू हो रही है",
-    "start-mining": "माइनिंग शुरू करें",
-    "pause-mining": "माइनिंग रोकें",
-    "changing-mode": "मोड बदल रहा है",
     "cancel-mining": "माइनिंग रद्द करें",
-    "waiting-for-idle": "निष्क्रिय होने की प्रतीक्षा",
+    "changing-mode": "मोड बदल रहा है",
+    "pause-mining": "माइनिंग रोकें",
+    "start-mining": "माइनिंग शुरू करें",
     "started-auto-mining": "स्वचालित माइनिंग शुरू हुई",
-    "stop-mining": "माइनिंग रोकें"
+    "starting-mining": "माइनिंग शुरू हो रही है",
+    "stop-mining": "माइनिंग रोकें",
+    "waiting-for-idle": "निष्क्रिय होने की प्रतीक्षा"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
-  "day": "day"
+  "you-earn-rewards-separately": "आप CPU और GPU माइनिंग के लिए अलग-अलग पुरस्कार अर्जित करते हैं",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>आपने {{ blocks }} जीते</span> जब आप दूर थे",
+  "your-reward-is": "आपका इनाम है"
 }

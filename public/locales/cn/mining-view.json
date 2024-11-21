@@ -1,19 +1,24 @@
 {
-  "floor": "地板",
-  "current-block-time": "当前区块时间",
-  "your-reward-is": "你的奖励是",
   "connection-to-node-lost": "与矿工的连接丢失。请等待矿机重新连接或重启矿机.",
+  "cpu-power": "CPU 功率",
+  "current-block-time": "当前区块时间",
+  "day": "day",
+  "estimated-day": "预估 tXTM/天",
+  "estimated-earnings": "预计收益",
+  "floor": "地板",
+  "gpu-power": "GPU 功率",
   "mining-button-text": {
-    "starting-mining": "开始挖矿",
-    "start-mining": "开始挖矿",
-    "pause-mining": "暂停挖矿",
-    "changing-mode": "更改模式",
     "cancel-mining": "取消挖矿",
-    "waiting-for-idle": "等待空闲",
+    "changing-mode": "更改模式",
+    "pause-mining": "暂停挖矿",
+    "start-mining": "开始挖矿",
     "started-auto-mining": "自动挖矿开始",
-    "stop-mining": "停止挖矿"
+    "starting-mining": "开始挖矿",
+    "stop-mining": "停止挖矿",
+    "waiting-for-idle": "等待空闲"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
-  "day": "day"
+  "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>您在离开时赢得了 {{ blocks }}</span>",
+  "your-reward-is": "你的奖励是"
 }

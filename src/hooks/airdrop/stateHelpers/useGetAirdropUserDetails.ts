@@ -20,7 +20,7 @@ export const useGetAirdropUserDetails = () => {
             method: 'GET',
             onError: logout,
         }).then((data) => {
-            if (data?.user.id) {
+            if (data?.user?.id) {
                 setUserDetails(data);
                 return data.user;
             }
@@ -33,7 +33,7 @@ export const useGetAirdropUserDetails = () => {
             path: '/user/score',
             method: 'GET',
         });
-        if (!data?.entry.gems) return;
+        if (!data?.entry || !data?.entry?.gems) return;
         setUserPoints({
             base: {
                 gems: data.entry.gems,
@@ -74,7 +74,7 @@ export const useGetAirdropUserDetails = () => {
             if (!details) return;
 
             const requests: Promise<void>[] = [];
-            if (!details?.rank.gems) {
+            if (!details?.rank?.gems) {
                 requests.push(fetchUserPoints());
             }
             requests.push(fetchUserReferralPoints());

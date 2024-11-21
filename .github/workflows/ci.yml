@@ -212,6 +212,12 @@ jobs:
             libprotobuf-dev \
             protobuf-compiler
 
+      - name: install dependencies (linux/OpenCL)
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
       - name: Node.js setup
         uses: actions/setup-node@v4
         with:
@@ -235,6 +241,6 @@ jobs:
       - name: cargo tauri build
         working-directory: ./src-tauri
         run: |
-          cargo install tauri-cli --version "1.6.2"
+          cargo install tauri-cli --version "1.6.4"
           cargo tauri --version
           cargo tauri build --ci --bundles deb
