@@ -1210,7 +1210,7 @@ async fn get_monero_seed_words(
 
     let path = config_path.join(network);
 
-    let cm = CredentialManager::default_with_dir(path);
+    let cm = CredentialManager::default_with_dir(config_path);
     let cred = match cm.get_credentials() {
         Ok(cred) => cred,
         Err(e @ CredentialError::PreviouslyUsedKeyring) => {

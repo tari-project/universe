@@ -5,7 +5,7 @@ use log::info;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tari_utilities::SafePassword;
 use thiserror::Error;
@@ -48,7 +48,8 @@ pub struct CredentialManager {
 
 impl CredentialManager {
     fn new(service_name: String, username: String, fallback_dir: PathBuf) -> Self {
-        let fallback_mode = AtomicBool::new(Self::fallback_exists());
+        let fallback_file_exists = fallback_dir.join(FALLBACK_FILE_PATH).exists();
+        let fallback_mode = AtomicBool::new(fallback_file_exists);
         CredentialManager {
             service_name,
             username,
@@ -106,12 +107,8 @@ impl CredentialManager {
         Ok(())
     }
 
-    fn fallback_exists() -> bool {
-        Path::new(FALLBACK_FILE_PATH).exists()
-    }
-
     fn use_fallback(&self) -> bool {
-        self.fallback_mode.load(Ordering::SeqCst) || Self::fallback_exists()
+        self.fallback_mode.load(Ordering::SeqCst) || self.fallback_file().exists()
     }
 
     fn set_fallback_mode(&self) -> bool {
@@ -206,7 +203,7 @@ impl CredentialManager {
             .write(true)
             .create(true)
             .truncate(true)
-            .open(self.fallback_dir.join(FALLBACK_FILE_PATH))?;
+            .open(self.fallback_file())?;
         file.write_all(&serialized)?;
         Ok(())
     }
@@ -214,7 +211,7 @@ impl CredentialManager {
     fn load_from_file(&self) -> Result<Credential, CredentialError> {
         let mut file = OpenOptions::new()
             .read(true)
-            .open(self.fallback_dir.join(FALLBACK_FILE_PATH))?;
+            .open(self.fallback_file())?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
         let credential: Credential = serde_cbor::from_slice(&buffer)?;
@@ -225,5 +222,9 @@ impl CredentialManager {
         let entry = Entry::new(&self.service_name, KEYCHAIN_USERNAME_LEGACY)?;
         let pw = SafePassword::from(entry.get_password()?);
         Ok(pw)
+    }
+
+    fn fallback_file(&self) -> PathBuf {
+        self.fallback_dir.join(FALLBACK_FILE_PATH)
     }
 }

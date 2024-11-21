@@ -57,7 +57,7 @@ impl InternalWallet {
                 Ok(mut config) => {
                     config.config_path = Some(file_parent.to_path_buf());
 
-                    let cm = CredentialManager::default_with_dir(file_parent.to_path_buf());
+                    let cm = CredentialManager::default_with_dir(config_path.clone());
                     if let Err(e) = cm.migrate(&config) {
                         warn!(target: LOG_TARGET, "Failed to migrate wallet credentials: {}", e.to_string());
                     }
