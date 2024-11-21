@@ -1,16 +1,12 @@
 {
   "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
-  "cpu-hashrate": "CPU Hashrate",
   "cpu-power": "CPU Power",
-  "cpu-usage": "CPU Usage",
   "current-block-time": "Current block time",
   "day": "day",
   "estimated-day": "Est tXTM/day",
   "estimated-earnings": "Estimated earnings",
   "floor": "Floor",
-  "gpu-hashrate": "GPU Hashrate",
   "gpu-power": "GPU Power",
-  "gpu-usage": "GPU Usage",
   "mining-button-text": {
     "cancel-mining": "Cancel Mining",
     "changing-mode": "Changing mode",
@@ -21,6 +17,7 @@
     "waiting-for-idle": "Waiting for Idle"
   },
   "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>You won {{ blocks }}</span> while you were away",
   "your-reward-is": "Your reward is"
 }

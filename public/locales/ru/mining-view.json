@@ -1,16 +1,12 @@
 {
   "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",
-  "cpu-hashrate": "CPU Hashrate",
   "cpu-power": "ЦП Мощность",
-  "cpu-usage": "CPU Usage",
   "current-block-time": "Текущее время блока",
   "day": "day",
   "estimated-day": "Est tXTM/день",
   "estimated-earnings": "Ожидаемый доход",
   "floor": "Минимум",
-  "gpu-hashrate": "GPU Hashrate",
   "gpu-power": "ГПУ Мощность",
-  "gpu-usage": "GPU Usage",
   "mining-button-text": {
     "cancel-mining": "Отмена майнинга",
     "changing-mode": "Изменение режима",
@@ -22,6 +18,7 @@
     "waiting-for-idle": "Ожидание простоя"
   },
   "you-earn-rewards-separately": "Вы получаете награды за майнинг на CPU и GPU отдельно",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Вы выиграли {{ blocks }}</span>, пока вас не было",
   "your-reward-is": "Ваше вознаграждение"
 }
