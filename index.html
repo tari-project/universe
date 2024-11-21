@@ -23,16 +23,148 @@
     <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Bold.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Heavy.ttf" as="font" type="font/ttf" crossorigin>
 
-    <!-- Preload GT America fonts -->
-    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Light-Trial.otf" as="font" type="font/otf" crossorigin>
-    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Regular-Trial.otf" as="font" type="font/otf" crossorigin>
-    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Medium-Trial.otf" as="font" type="font/otf" crossorigin>
-    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Bold-Trial.otf" as="font" type="font/otf" crossorigin>
-    <link rel="preload" href="/assets/fonts/GT-America/GT-America-Standard-Black-Trial.otf" as="font" type="font/otf" crossorigin>
-
     <script type="module" crossorigin src="/assets/glApp.js"></script>
     <title>Tari Universe | Testnet</title>
     <style>
+      /* Poppins Font Faces */
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 200;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-ExtraLight.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-ExtraLight.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-ExtraLight.ttf") format("truetype");
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 300;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-Light.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-Light.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-Light.ttf") format("truetype");
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 400;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-Regular.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-Regular.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 500;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-Medium.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-Medium.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-Medium.ttf") format("truetype");
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 600;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-SemiBold.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-SemiBold.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-SemiBold.ttf") format("truetype");
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 700;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-Bold.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-Bold.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-Bold.ttf") format("truetype");
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 800;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-ExtraBold.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-ExtraBold.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-ExtraBold.ttf") format("truetype");
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 900;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-Black.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-Black.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-Black.ttf") format("truetype");
+        font-display: block;
+      }
+
+      /* Druk Font Faces */
+      @font-face {
+        font-family: "Druk";
+        src:
+          url("/assets/fonts/Druk/DrukLCG-Medium.ttf"),
+          url("/assets/fonts/Druk/DrukLCG-MediumItalic.ttf") format("truetype");
+        font-weight: 500;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Druk";
+        src:
+          url("/assets/fonts/Druk/DrukLCG-Bold.ttf"),
+          url("/assets/fonts/Druk/DrukLCG-BoldItalic.ttf") format("truetype");
+        font-weight: 700;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "Druk";
+        src:
+          url("/assets/fonts/Druk/DrukLCG-Heavy.ttf"),
+          url("/assets/fonts/Druk/DrukLCG-HeavyItalic.ttf") format("truetype");
+        font-weight: 900;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "DrukWide";
+        src:
+          url("/assets/fonts/Druk/DrukWideLCG-Medium.ttf"),
+          url("/assets/fonts/Druk/DrukWideLCG-MediumItalic.ttf") format("truetype");
+        font-weight: 500;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "DrukWide";
+        src:
+          url("/assets/fonts/Druk/DrukWideLCG-Bold.ttf"),
+          url("/assets/fonts/Druk/DrukWideLCG-BoldItalic.ttf") format("truetype");
+        font-weight: 700;
+        font-style: normal;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "DrukWide";
+        src:
+          url("/assets/fonts/Druk/DrukWideLCG-Heavy.ttf"),
+          url("/assets/fonts/Druk/DrukWideLCG-HeavyItalic.ttf") format("truetype");
+        font-weight: 900;
+        font-style: normal;
+        font-display: block;
+      }
+
+      /* Existing styles */
       body,
       main,
       #root {
@@ -44,8 +176,8 @@
         position: absolute;
         pointer-events: auto;
       }
-  </style>
-</head>
+    </style>
+  </head>
   <body>
     <main>
       <canvas id="canvas"></canvas>
