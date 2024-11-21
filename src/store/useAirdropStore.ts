@@ -1,6 +1,6 @@
 import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import * as Sentry from '@sentry/react';
 import { useMiningStore } from './useMiningStore';
 

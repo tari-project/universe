@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::app_config::{AppConfig, GpuThreads};
 use crate::app_in_memory_config::AirdropInMemoryConfig;
 use crate::auto_launcher::AutoLauncher;
@@ -35,7 +33,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::Manager;
 
 #[derive(Debug, Serialize, Clone)]
-struct MaxUsageLevels {
+pub struct MaxUsageLevels {
     max_cpu_threads: i32,
     max_gpus_threads: Vec<GpuThreads>,
 }
