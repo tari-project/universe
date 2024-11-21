@@ -137,6 +137,7 @@ interface AirdropState {
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
     seenPermissions: boolean;
+    websocket: Socket | null;
 }
 
 interface AirdropStore extends AirdropState {
@@ -157,6 +158,7 @@ interface AirdropStore extends AirdropState {
 
 const initialState: AirdropState = {
     authUuid: '',
+    websocket: null,
     seenPermissions: false,
     syncedWithBackend: false,
 };
