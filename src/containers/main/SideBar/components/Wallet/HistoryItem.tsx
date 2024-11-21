@@ -1,5 +1,6 @@
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import {
+    ButtonWrapper,
     EarningsWrapper,
     FlexButton,
     GemImage,
@@ -91,22 +92,24 @@ export default function HistoryItem({ item }: HistoryItemProps) {
             <AnimatePresence>
                 {hovering && (
                     <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        {showShareButton && (
-                            <FlexButton
-                                initial={{ x: 10 }}
-                                animate={{ x: 0 }}
-                                exit={{ x: 10 }}
-                                onClick={handleShareClick}
-                            >
-                                {t('share.history-item-button')}
-                                <GemPill>
-                                    {gemsValue} <GemImage src={gemImage} alt="" />
-                                </GemPill>
-                            </FlexButton>
-                        )}
-                        <ReplayButton onClick={handleReplay}>
-                            <ReplaySVG />
-                        </ReplayButton>
+                        <ButtonWrapper
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 5 }}
+                        >
+                            {showShareButton && (
+                                <FlexButton onClick={handleShareClick}>
+                                    {t('share.history-item-button')}
+                                    <GemPill>
+                                        <span>{gemsValue}</span>
+                                        <GemImage src={gemImage} alt="" />
+                                    </GemPill>
+                                </FlexButton>
+                            )}
+                            <ReplayButton onClick={handleReplay}>
+                                <ReplaySVG />
+                            </ReplayButton>
+                        </ButtonWrapper>
                     </HoverWrapper>
                 )}
             </AnimatePresence>
