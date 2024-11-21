@@ -41,9 +41,6 @@ minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", 
 minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 monero-address-creator = { git = "https://github.com/tari-project/monero-address-creator.git", rev = "6129ca0" }
 nix = { version = "0.29.0", features = ["signal"] }
-minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", branch = "development" }
-minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", branch = "development" }
-nix = { version = "0.29.0", features = ["signal"] }
 nvml-wrapper = "0.10.0"
 open = "5"
 phraze = "0.3.15"
