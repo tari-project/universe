@@ -4,9 +4,9 @@
 use ::sentry::integrations::anyhow::capture_anyhow;
 use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
-use keyring::Entry;
 #[allow(unused_imports)]
 use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use keyring::Entry;
 use log::trace;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
