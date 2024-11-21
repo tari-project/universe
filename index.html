@@ -6,47 +6,22 @@
     <link rel="icon" type="image/svg+xml" href="/tari.svg" />
 
     <!-- Preload Poppins fonts -->
-    <link rel="preload" href="/assets/fonts/Poppins/Poppins-ExtraLight.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Light.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/Poppins/Poppins-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/Poppins/Poppins-Medium.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/Poppins/Poppins-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/Poppins/Poppins-Bold.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/Poppins/Poppins-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Black.woff2" as="font" type="font/woff2" crossorigin>
 
     <!-- Preload Druk fonts -->
-    <link rel="preload" href="/assets/fonts/Druk/DrukLCG-Medium.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="preload" href="/assets/fonts/Druk/DrukLCG-Bold.ttf" as="font" type="font/ttf" crossorigin>
-    <link rel="preload" href="/assets/fonts/Druk/DrukLCG-Heavy.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Medium.ttf" as="font" type="font/ttf" crossorigin>
     <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Bold.ttf" as="font" type="font/ttf" crossorigin>
-    <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Heavy.ttf" as="font" type="font/ttf" crossorigin>
 
     <script type="module" crossorigin src="/assets/glApp.js"></script>
     <title>Tari Universe | Testnet</title>
     <style>
       /* Poppins Font Faces */
-      @font-face {
-        font-family: "Poppins";
-        font-weight: 200;
-        font-style: normal;
-        src:
-          url("/assets/fonts/Poppins/Poppins-ExtraLight.woff2") format("woff2"),
-          url("/assets/fonts/Poppins/Poppins-ExtraLight.woff") format("woff"),
-          url("/assets/fonts/Poppins/Poppins-ExtraLight.ttf") format("truetype");
-        font-display: block;
-      }
-      @font-face {
-        font-family: "Poppins";
-        font-weight: 300;
-        font-style: normal;
-        src:
-          url("/assets/fonts/Poppins/Poppins-Light.woff2") format("woff2"),
-          url("/assets/fonts/Poppins/Poppins-Light.woff") format("woff"),
-          url("/assets/fonts/Poppins/Poppins-Light.ttf") format("truetype");
-        font-display: block;
-      }
+
       @font-face {
         font-family: "Poppins";
         font-weight: 400;
@@ -55,7 +30,7 @@
           url("/assets/fonts/Poppins/Poppins-Regular.woff2") format("woff2"),
           url("/assets/fonts/Poppins/Poppins-Regular.woff") format("woff"),
           url("/assets/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
-        font-display: block;
+        font-display: swap;
       }
       @font-face {
         font-family: "Poppins";
@@ -65,7 +40,7 @@
           url("/assets/fonts/Poppins/Poppins-Medium.woff2") format("woff2"),
           url("/assets/fonts/Poppins/Poppins-Medium.woff") format("woff"),
           url("/assets/fonts/Poppins/Poppins-Medium.ttf") format("truetype");
-        font-display: block;
+        font-display: swap;
       }
       @font-face {
         font-family: "Poppins";
@@ -75,7 +50,7 @@
           url("/assets/fonts/Poppins/Poppins-SemiBold.woff2") format("woff2"),
           url("/assets/fonts/Poppins/Poppins-SemiBold.woff") format("woff"),
           url("/assets/fonts/Poppins/Poppins-SemiBold.ttf") format("truetype");
-        font-display: block;
+        font-display: swap;
       }
       @font-face {
         font-family: "Poppins";
@@ -85,7 +60,7 @@
           url("/assets/fonts/Poppins/Poppins-Bold.woff2") format("woff2"),
           url("/assets/fonts/Poppins/Poppins-Bold.woff") format("woff"),
           url("/assets/fonts/Poppins/Poppins-Bold.ttf") format("truetype");
-        font-display: block;
+        font-display: swap;
       }
       @font-face {
         font-family: "Poppins";
@@ -95,62 +70,34 @@
           url("/assets/fonts/Poppins/Poppins-ExtraBold.woff2") format("woff2"),
           url("/assets/fonts/Poppins/Poppins-ExtraBold.woff") format("woff"),
           url("/assets/fonts/Poppins/Poppins-ExtraBold.ttf") format("truetype");
-        font-display: block;
-      }
-      @font-face {
-        font-family: "Poppins";
-        font-weight: 900;
-        font-style: normal;
-        src:
-          url("/assets/fonts/Poppins/Poppins-Black.woff2") format("woff2"),
-          url("/assets/fonts/Poppins/Poppins-Black.woff") format("woff"),
-          url("/assets/fonts/Poppins/Poppins-Black.ttf") format("truetype");
-        font-display: block;
+        font-display: swap;
       }
 
+
       /* Druk Font Faces */
-      @font-face {
-        font-family: "Druk";
-        src: url("/assets/fonts/Druk/DrukLCG-Medium.ttf") format("truetype");
-        font-weight: 500;
-        font-style: normal;
-        font-display: block;
-      }
+
       @font-face {
         font-family: "Druk";
         src: url("/assets/fonts/Druk/DrukLCG-Bold.ttf") format("truetype");
         font-weight: 700;
         font-style: normal;
-        font-display: block;
-      }
-      @font-face {
-        font-family: "Druk";
-        src: url("/assets/fonts/Druk/DrukLCG-Heavy.ttf") format("truetype");
-        font-weight: 900;
-        font-style: normal;
-        font-display: block;
+        font-display: swap;
       }
       @font-face {
         font-family: "DrukWide";
         src: url("/assets/fonts/Druk/DrukWideLCG-Medium.ttf") format("truetype");
         font-weight: 500;
         font-style: normal;
-        font-display: block;
+        font-display: swap;
       }
       @font-face {
         font-family: "DrukWide";
         src: url("/assets/fonts/Druk/DrukWideLCG-Bold.ttf") format("truetype");
         font-weight: 700;
         font-style: normal;
-        font-display: block;
+        font-display: swap;
       }
-      @font-face {
-        font-family: "DrukWide";
-        src: url("/assets/fonts/Druk/DrukWideLCG-Heavy.ttf") format("truetype");
-        font-weight: 900;
-        font-style: normal;
-        font-display: block;
-      }
+
 
       /* Existing styles */
       body,
