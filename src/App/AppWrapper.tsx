@@ -1,3 +1,4 @@
+import { IGNORE_FETCHING } from '@app/App/sentryIgnore';
 import { useDisableRefresh } from '@app/hooks/useDisableRefresh';
 import { useListenForExternalDependencies } from '@app/hooks/useListenForExternalDependencies';
 import { useUpdateListener } from '@app/hooks/useUpdateStatus';
@@ -16,7 +17,7 @@ import App from './App.tsx';
 const environment = import.meta.env.MODE;
 const sentryOptions = {
     dsn: 'https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760',
-    integrations: [Sentry.captureConsoleIntegration({ levels: ['warn', 'error'] })],
+    integrations: [Sentry.captureConsoleIntegration({ levels: ['warn', 'error'] }), Sentry.extraErrorDataIntegration()],
     release: packageInfo.version,
     environment,
     // Set tracesSampleRate to 1.0 to capture 100%
@@ -24,6 +25,7 @@ const sentryOptions = {
     tracesSampleRate: 1.0,
     attachStacktrace: true,
     autoSessionTracking: false,
+    ignoreErrors: [...IGNORE_FETCHING],
     enabled: environment !== 'development',
 };
 
@@ -37,7 +39,6 @@ export default function AppWrapper() {
     useUpdateListener();
     useLangaugeResolver();
     useListenForExternalDependencies();
-
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();

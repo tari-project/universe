@@ -1,10 +1,10 @@
+import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api';
 import { setAnimationState } from '@app/visuals.ts';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import useFetchTx from '@app/hooks/mining/useTransactions.ts';
-import * as Sentry from '@sentry/react';
 
 export default function useMiningMetricsUpdater() {
     const fetchTx = useFetchTx();
@@ -44,9 +44,10 @@ export default function useMiningMetricsUpdater() {
                 setIsFetchingMetrics(false);
             }
         } catch (e) {
-            Sentry.captureException(e);
-            console.error('Fetch mining metrics error: ', e);
             setIsFetchingMetrics(false);
+            if (e !== ALREADY_FETCHING.METRICS) {
+                console.error('Fetch mining metrics error:', e);
+            }
         }
     }, [
         baseNodeConnected,

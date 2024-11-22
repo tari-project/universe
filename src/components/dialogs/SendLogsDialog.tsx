@@ -11,7 +11,6 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
-import * as Sentry from '@sentry/react';
 
 export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference: string) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -46,7 +45,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                 onSetReference?.(r);
             })
             .catch((error) => {
-                Sentry.captureException(error);
+                console.error('Error sending feedback: ', error);
                 setError(error.toString());
             })
             .finally(() => {
