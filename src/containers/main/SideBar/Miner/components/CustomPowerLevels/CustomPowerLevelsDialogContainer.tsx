@@ -19,7 +19,7 @@ export const CustomPowerLevelsDialogContainer = () => {
         if (!maxThreads) {
             fetchMaxThreads();
         }
-    }, [maxThreads]);
+    }, [fetchMaxThreads, maxThreads]);
 
     return (
         <Dialog

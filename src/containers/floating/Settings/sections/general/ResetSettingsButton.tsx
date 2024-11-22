@@ -1,8 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api';
-import * as Sentry from '@sentry/react';
-
 import { useAppStateStore } from '@app/store/appStateStore';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
@@ -36,7 +34,6 @@ export const ResetSettingsButton = () => {
                 setOpen(false);
             })
             .catch((e) => {
-                Sentry.captureException(e);
                 console.error('Error when resetting settings: ', e);
                 setError('Resetting settings failed: ' + e);
                 setLoading(false);
