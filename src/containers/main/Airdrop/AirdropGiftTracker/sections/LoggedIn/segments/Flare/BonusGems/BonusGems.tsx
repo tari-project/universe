@@ -3,7 +3,7 @@ import GemsAnimation from '../GemsAnimation/GemsAnimation';
 import { Background, Wrapper } from './styles';
 import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
 import { useTranslation } from 'react-i18next';
-import { useFormatNumber } from '@app/hooks/useFormatNumber';
+import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
 interface Props {
     gems: number;
@@ -12,7 +12,7 @@ interface Props {
 
 export default function BonusGems({ gems, onAnimationComplete }: Props) {
     const { t } = useTranslation('airdrop', { useSuspense: false });
-    const formatNumber = useFormatNumber();
+    const formattedNumber = formatNumber(gems, FormatPreset.DECIMAL_COMPACT);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -30,7 +30,7 @@ export default function BonusGems({ gems, onAnimationComplete }: Props) {
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ delay: 0.5 }}
             >
-                {formatNumber(gems, 1)}
+                {formattedNumber}
             </Number>
 
             <Text
