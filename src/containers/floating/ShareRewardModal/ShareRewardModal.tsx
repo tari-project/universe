@@ -21,7 +21,7 @@ import gemImage from '../../main/Airdrop/AirdropGiftTracker/images/gem.png';
 import { useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import formatBalance from '@app/utils/formatBalance';
+import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
 export type PaperWalletModalSectionType = 'Connect' | 'QRCode';
 
@@ -54,7 +54,7 @@ export default function ShareRewardModal() {
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
     const block = item?.blockHeight || 0;
     const reward = item?.amount || 0;
-    const earningsFormatted = useMemo(() => formatBalance(reward).toLowerCase(), [reward]);
+    const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.TXTM_COMPACT).toLowerCase(), [reward]);
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
