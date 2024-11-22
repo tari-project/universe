@@ -1,7 +1,6 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
-import { useState } from 'react';
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -18,13 +17,15 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import * as Sentry from '@sentry/react';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const { isCopied, copyToClipboard } = useCopyToClipboard();
-
-    const [reference, setReference] = useState('');
+    const issueReference = useAppStateStore((s) => s.issueReference);
+    const setIssueReference = useAppStateStore((s) => s.setIssueReference);
 
     const openLogsDirectory = () => {
         invoke('open_log_dir')
@@ -43,7 +44,7 @@ export default function LogsSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('report-issue', { ns: 'settings' })}</Typography>
                     </SettingsGroupTitle>
-                    {reference && (
+                    {issueReference && (
                         <Stack direction="row" alignItems="center" justifyContent="flex-start" gap={5}>
                             {/* TODO: consider moving reference to dialog?*/}
                             <Typography>
@@ -51,11 +52,11 @@ export default function LogsSettings() {
                                     t={t}
                                     i18nKey="your-reference"
                                     ns="settings"
-                                    values={{ logRef: reference }}
+                                    values={{ logRef: issueReference }}
                                     components={{ bold: <strong />, br: <br /> }}
                                 />
                             </Typography>
-                            <IconButton onClick={() => copyToClipboard(reference)} size="small">
+                            <IconButton onClick={() => copyToClipboard(issueReference)} size="small">
                                 {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                             </IconButton>
                         </Stack>
@@ -66,7 +67,7 @@ export default function LogsSettings() {
                     <Button onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</Button>
                     <Button onClick={() => setDialogToShow('logs')}>{t('send-logs', { ns: 'settings' })}</Button>
                 </SettingsGroupAction>
-                <SendLogsDialog onSetReference={setReference} />
+                <SendLogsDialog onSetReference={setIssueReference} />
             </SettingsGroup>
         </SettingsGroupWrapper>
     );
