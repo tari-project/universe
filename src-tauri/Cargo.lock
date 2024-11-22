@@ -6598,6 +6598,7 @@ dependencies = [
  "device_query",
  "dunce",
  "dyn-clone",
+ "embed-resource",
  "flate2",
  "futures-lite 2.4.0",
  "futures-util",
