@@ -23,5 +23,6 @@
   "usage": "Penggunaan",
   "utilization": "Pemanfaatan",
   "version": "Versi",
-  "versions": "Versi"
+  "versions": "Versi",
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
 }

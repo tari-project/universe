@@ -1,7 +1,6 @@
 import { AnimatePresence } from 'framer-motion';
 
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { SettingsGroup, SettingsGroupAction } from '../../components/SettingsGroup.styles.ts';
 import VisualMode from '@app/containers/main/Dashboard/components/VisualMode';
 import AppVersions from './AppVersions.tsx';
 import DebugSettings from './DebugSettings.tsx';
@@ -23,12 +22,7 @@ export const ExperimentalSettings = () => {
                         <TorMarkup />
                         <MonerodMarkup />
                         <br />
-                        <SettingsGroup>
-                            <div />
-                            <SettingsGroupAction>
-                                <VisualMode />
-                            </SettingsGroupAction>
-                        </SettingsGroup>
+                        <VisualMode />
                     </>
                 )}
             </AnimatePresence>
