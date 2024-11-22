@@ -163,7 +163,14 @@
           glApp.setSize(window.innerWidth, window.innerHeight);
         }
 
-        document.addEventListener('DOMContentLoaded', preload);
+        document.addEventListener('DOMContentLoaded', () => {
+          if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
+            console.error('WebGL not supported!');
+            return;
+          }
+
+          preload();
+        });
       </script>
     </main>
 </body>
