@@ -9,8 +9,6 @@ use async_trait::async_trait;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::ops::Div;
-use std::ops::Mul;
 use std::path::PathBuf;
 use std::time::Instant;
 use tari_common::configuration::Network;
