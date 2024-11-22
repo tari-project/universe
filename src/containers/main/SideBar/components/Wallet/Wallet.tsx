@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
-import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import {
     BalanceVisibilityButton,
@@ -24,6 +23,7 @@ import useFetchTx from '@app/hooks/mining/useTransactions.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
+import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 
 export default function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
@@ -37,12 +37,13 @@ export default function Wallet() {
     const recapCount = useBlockchainVisualisationStore((s) => s.recapCount);
     const setRecapCount = useBlockchainVisualisationStore((s) => s.setRecapCount);
 
-    const fetchTx = useFetchTx();
-    const formatted = useFormatBalance(balance || 0);
-    const sizing = formatted.length <= 6 ? 50 : formatted.length <= 8 ? 44 : 32;
-
     const [showBalance, setShowBalance] = useState(true);
     const [showHistory, setShowHistory] = useState(false);
+    const [showLongBalance, setShowLongBalance] = useState(false);
+
+    const fetchTx = useFetchTx();
+    const formatted = formatNumber(balance || 0, showLongBalance ? FormatPreset.TXTM_LONG : FormatPreset.TXTM_COMPACT);
+    const sizing = formatted.length <= 6 ? 50 : formatted.length <= 8 ? 44 : 32;
 
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
     const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
@@ -63,7 +64,10 @@ export default function Wallet() {
     };
 
     const balanceMarkup = (
-        <WalletBalanceContainer>
+        <WalletBalanceContainer
+            onMouseOver={() => setShowLongBalance(true)}
+            onMouseOut={() => setShowLongBalance(false)}
+        >
             <Stack direction="row" alignItems="center">
                 <Typography variant="span" style={{ fontSize: '15px' }}>
                     {t('wallet-balance')}

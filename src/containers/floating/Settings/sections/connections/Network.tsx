@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { formatHashrate } from '@app/utils/formatHashrate.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import ConnectionStatus from '../connections/ConnectionStatus.tsx';
 
@@ -12,6 +11,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
+import { formatHashrate } from '@app/utils/formatters.ts';
 
 export default function Network() {
     const { t } = useTranslation('settings');

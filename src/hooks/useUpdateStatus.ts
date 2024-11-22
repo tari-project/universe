@@ -3,7 +3,6 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { checkUpdate, installUpdate, onUpdaterEvent } from '@tauri-apps/api/updater';
 import { useUIStore } from '@app/store/useUIStore';
-import * as Sentry from '@sentry/react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/tauri';
 
@@ -79,7 +78,6 @@ export const useHandleUpdate = () => {
             console.info('Restarting application after update');
             await invoke('restart_application', { shouldStopMiners: false });
         } catch (e) {
-            Sentry.captureException(e);
             console.error('Relaunch error', e);
         }
         handleClose();
@@ -114,7 +112,6 @@ export function useUpdateListener() {
                 setIsAfterAutoUpdate(true);
             }
         } catch (error) {
-            Sentry.captureException(error);
             console.error('AutoUpdate error:', error);
             setIsAfterAutoUpdate(true);
         }
@@ -134,6 +131,8 @@ export function useUpdateListener() {
 
     useEffect(() => {
         if (initialCheck.current) return;
-        checkUpdateTariUniverse().then(() => (initialCheck.current = true));
+        initialCheck.current = true;
+
+        checkUpdateTariUniverse();
     }, [checkUpdateTariUniverse]);
 }
