@@ -1,10 +1,6 @@
-import * as Sentry from '@sentry/react';
 import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-<<<<<<< HEAD
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-=======
->>>>>>> main
 
 export function useGetSeedWords() {
     const [seedWords, setSeedWords] = useState<string[]>([]);
