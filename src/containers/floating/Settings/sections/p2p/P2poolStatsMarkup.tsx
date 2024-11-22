@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import * as Sentry from '@sentry/react';
 
 import { CardComponent } from '@app/containers/floating/Settings/components/Card.component';
 import { CardContainer } from '@app/containers/floating/Settings/components/Settings.styles';
@@ -30,7 +29,6 @@ const P2PoolStats = () => {
             try {
                 await fetchP2pStats();
             } catch (error) {
-                Sentry.captureException(error);
                 console.error('Error fetching p2pool stats:', error);
             }
         }, 5000);

@@ -23,5 +23,6 @@
   "usage": "Gebruik",
   "utilization": "Benutting",
   "version": "Weergawe",
-  "versions": "Weergawes"
+  "versions": "Weergawes",
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
 }
