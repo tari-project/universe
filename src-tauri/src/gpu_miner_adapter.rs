@@ -9,8 +9,6 @@ use async_trait::async_trait;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::ops::Div;
-use std::ops::Mul;
 use std::path::PathBuf;
 use std::time::Instant;
 use tari_common::configuration::Network;
@@ -68,7 +66,7 @@ impl GpuMinerAdapter {
                     .iter()
                     .map(|device| GpuThreads {
                         gpu_name: device.device_name.clone(),
-                        max_gpu_threads: device.max_grid_size.mul(100).div(333),
+                        max_gpu_threads: 2,
                     })
                     .collect()
             }
@@ -79,7 +77,7 @@ impl GpuMinerAdapter {
                     .map(|device| GpuThreads {
                         gpu_name: device.device_name.clone(),
                         // get 90% of max grid size
-                        max_gpu_threads: device.max_grid_size.mul(100).div(111),
+                        max_gpu_threads: 1024,
                     })
                     .collect()
             }
