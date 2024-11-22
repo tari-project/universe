@@ -23,5 +23,6 @@
   "usage": "Использование",
   "utilization": "Использование",
   "version": "Версия",
-  "versions": "Версии"
+  "versions": "Версии",
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
 }
