@@ -40,7 +40,7 @@ const resolveCpuInitialThreads = (
         case 'Ludicrous':
             return configCpuLevels || Math.round(maxAvailableThreads.max_cpu_threads * 0.9);
         default:
-            return 0;
+            return configCpuLevels || 0;
     }
 };
 
@@ -64,7 +64,7 @@ const resolveGpuInitialThreads = (
                     max_gpu_threads: Math.round(gpu.max_gpu_threads * 0.9),
                 }));
             default:
-                return [];
+                return configGpuLevels || [];
         }
     }
 };
