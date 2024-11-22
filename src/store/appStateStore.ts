@@ -32,6 +32,8 @@ interface AppState {
     fetchApplicationsVersions: () => Promise<void>;
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
+    issueReference?: string;
+    setIssueReference: (value: string) => void;
 }
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
@@ -119,4 +121,5 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     },
     missingExternalDependencies: [],
     loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
+    setIssueReference: (issueReference) => set({ issueReference }),
 }));
