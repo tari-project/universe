@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
-import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import {
     BalanceVisibilityButton,
@@ -37,10 +36,6 @@ export default function Wallet() {
 
     const recapCount = useBlockchainVisualisationStore((s) => s.recapCount);
     const setRecapCount = useBlockchainVisualisationStore((s) => s.setRecapCount);
-
-    const fetchTx = useFetchTx();
-    const formatted = useFormatBalance(balance || 0);
-    const sizing = formatted.length <= 6 ? 50 : formatted.length <= 8 ? 44 : 32;
 
     const [showBalance, setShowBalance] = useState(true);
     const [showHistory, setShowHistory] = useState(false);
