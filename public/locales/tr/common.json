@@ -23,5 +23,6 @@
   "usage": "Kullanım",
   "utilization": "Fayda",
   "version": "Versiyon",
-  "versions": "Versiyon"
+  "versions": "Versiyon",
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
 }
