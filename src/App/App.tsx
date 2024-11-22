@@ -8,7 +8,6 @@ import MainView from '../containers/main/MainView.tsx';
 import Setup from '../containers/phase/Setup/Setup';
 
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
-import { GlobalFontFace } from '../theme/fonts/GlobalFontFaces.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
 
 import AppContent from './AppContent';
@@ -16,11 +15,9 @@ import AppContent from './AppContent';
 export default function App() {
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
-
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalFontFace />
             <GlobalStyle />
             <LazyMotion features={domMax} strict>
                 {/*

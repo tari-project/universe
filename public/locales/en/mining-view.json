@@ -1,12 +1,12 @@
 {
-  "cpu-power": "CPU Power",
-  "gpu-power": "GPU Power",
-  "estimated-day":"Est tXTM/day",
   "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
+  "cpu-power": "CPU Power",
   "current-block-time": "Current block time",
   "day": "day",
+  "estimated-day": "Est tXTM/day",
   "estimated-earnings": "Estimated earnings",
   "floor": "Floor",
+  "gpu-power": "GPU Power",
   "mining-button-text": {
     "cancel-mining": "Cancel Mining",
     "changing-mode": "Changing mode",
@@ -17,6 +17,7 @@
     "waiting-for-idle": "Waiting for Idle"
   },
   "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>You won {{ blocks }}</span> while you were away",
   "your-reward-is": "Your reward is"
 }

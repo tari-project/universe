@@ -1,12 +1,12 @@
 {
-  "cpu-power": "CPUパワー",
-  "gpu-power": "GPUパワー",
-  "estimated-day": "推定 tXTM/日",
   "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",
+  "cpu-power": "CPUパワー",
   "current-block-time": "現在のブロック時間",
   "day": "day",
+  "estimated-day": "推定 tXTM/日",
   "estimated-earnings": "推定収益",
   "floor": "フロア",
+  "gpu-power": "GPUパワー",
   "mining-button-text": {
     "cancel-mining": "マイニングをキャンセル",
     "changing-mode": "モードを変更中",
@@ -18,6 +18,7 @@
     "waiting-for-idle": "アイドル待機中"
   },
   "you-earn-rewards-separately": "CPUとGPUのマイニングで別々に報酬を得ます",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>不在中に{{ blocks }}を獲得しました</span>",
   "your-reward-is": "あなたの報酬は"
 }
