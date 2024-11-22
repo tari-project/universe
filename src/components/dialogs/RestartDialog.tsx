@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
@@ -34,7 +33,6 @@ export default function RestartDialog() {
             console.info('Restarting application.');
             await invoke('restart_application', { shouldStopMiners: true });
         } catch (error) {
-            Sentry.captureException(error);
             console.error('Restart error: ', error);
         }
     }, []);

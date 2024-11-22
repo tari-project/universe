@@ -18,7 +18,6 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import * as Sentry from '@sentry/react';
 
 export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -33,7 +32,6 @@ export default function LogsSettings() {
                 console.info('Opening logs directory');
             })
             .catch((error) => {
-                Sentry.captureException(error);
                 console.error('Error opening logs directory: ', error);
             });
     };
