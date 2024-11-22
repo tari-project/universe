@@ -18,6 +18,9 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
 
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
 pub struct WalletAdapter {
@@ -144,6 +147,12 @@ impl ProcessAdapter for WalletAdapter {
         if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
             warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
         }
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule(
+            "minotari_console_wallet.exe".to_string(),
+            binary_version_path.clone(),
+        )?;
 
         Ok((
             ProcessInstance {

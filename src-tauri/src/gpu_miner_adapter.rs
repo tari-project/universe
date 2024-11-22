@@ -17,6 +17,9 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+
 use crate::{
     app_config::MiningMode,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
@@ -190,6 +193,9 @@ impl ProcessAdapter for GpuMinerAdapter {
                 return Err(anyhow!("Unsupported network"));
             }
         }
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule("xtrgpuminer.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {
