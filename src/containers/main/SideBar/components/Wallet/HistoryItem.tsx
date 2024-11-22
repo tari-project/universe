@@ -16,7 +16,6 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
 
-import { useFormatBalance } from '@app/utils/formatBalance.ts';
 import { useTranslation } from 'react-i18next';
 import { useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
@@ -25,8 +24,8 @@ import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 import { Transaction } from '@app/types/wallet.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-
 import { ReplaySVG } from '@app/assets/icons/replay';
+import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 
 interface HistoryItemProps {
     item: Transaction;
@@ -57,7 +56,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const handleWinReplay = useBlockchainVisualisationStore((s) => s.handleWinReplay);
 
     const { t } = useTranslation('sidebar', { useSuspense: false });
-    const earningsFormatted = useFormatBalance(item.amount).toLowerCase();
+    const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
 
