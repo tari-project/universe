@@ -65,7 +65,7 @@ impl GpuMinerAdapter {
                     .iter()
                     .map(|device| GpuThreads {
                         gpu_name: device.device_name.clone(),
-                        max_gpu_threads: device.max_grid_size.mul(100).div(333),
+                        max_gpu_threads: 2,
                     })
                     .collect()
             }
@@ -76,7 +76,7 @@ impl GpuMinerAdapter {
                     .map(|device| GpuThreads {
                         gpu_name: device.device_name.clone(),
                         // get 90% of max grid size
-                        max_gpu_threads: device.max_grid_size.mul(100).div(111),
+                        max_gpu_threads: 1024,
                     })
                     .collect()
             }
