@@ -4,7 +4,6 @@ import { create } from './create';
 import { invoke } from '@tauri-apps/api';
 import { useAppConfigStore } from './useAppConfigStore';
 import { useMiningStore } from './useMiningStore';
-import * as Sentry from '@sentry/react';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 
 interface AppState {
@@ -77,7 +76,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             const applications_versions = await invoke('get_applications_versions');
             set({ applications_versions });
         } catch (error) {
-            Sentry.captureException(error);
             console.error('Error getting applications versions', error);
         }
     },
@@ -93,7 +91,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
                 await getState().fetchApplicationsVersions();
                 retries--;
             } catch (error) {
-                Sentry.captureException(error);
                 console.error('Error getting applications versions', error);
             }
         }
@@ -103,7 +100,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             await invoke('update_applications');
             await getState().fetchApplicationsVersions();
         } catch (error) {
-            Sentry.captureException(error);
             console.error('Error updating applications versions', error);
         }
     },
@@ -113,7 +109,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             const externalDependencies = await invoke('get_external_dependencies');
             set({ externalDependencies });
         } catch (error) {
-            Sentry.captureException(error);
             console.error('Error loading missing external dependencies', error);
         }
     },
