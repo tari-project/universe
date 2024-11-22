@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import * as Sentry from '@sentry/react';
 import { Trans, useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '@app/store/useUIStore.ts';
@@ -75,8 +74,7 @@ export const TorMarkup = () => {
                 setIsRandomControlPort(!torConfig?.control_port);
             })
             .catch((e) => {
-                Sentry.captureException(e);
-                console.error(e);
+                console.error('Get Tor config error:', e);
             });
     }, []);
 
@@ -99,7 +97,6 @@ export const TorMarkup = () => {
                 });
                 setDefaultTorConfig(updatedConfig);
             } catch (error) {
-                Sentry.captureException(error);
                 console.error('Update Tor config error:', error);
             }
         }

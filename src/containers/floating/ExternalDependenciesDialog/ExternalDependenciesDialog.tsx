@@ -1,5 +1,3 @@
-import * as Sentry from '@sentry/react';
-
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Divider } from '@app/components/elements/Divider';
@@ -30,7 +28,6 @@ export const ExternalDependenciesDialog = () => {
             setIsRestarting(true);
             await invoke('restart_application', { shouldStopMiners: true });
         } catch (e) {
-            Sentry.captureException(e);
             console.error('Error restarting application:', e);
         }
         setIsRestarting(false);
@@ -42,7 +39,6 @@ export const ExternalDependenciesDialog = () => {
         setIsInitializing(true);
         invoke('setup_application')
             .catch((e) => {
-                Sentry.captureException(e);
                 setCriticalError(`Failed to setup application: ${e}`);
                 setView('mining');
             })

@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
-import * as Sentry from '@sentry/react';
 
 export function useGetSeedWords() {
     const [seedWords, setSeedWords] = useState<string[]>([]);
@@ -12,7 +11,6 @@ export function useGetSeedWords() {
             const seedWords = await invoke('get_seed_words');
             setSeedWords(seedWords);
         } catch (e) {
-            Sentry.captureException(e);
             console.error('Could not get seed words', e);
         } finally {
             setSeedWordsFetching(false);
