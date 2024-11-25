@@ -46,6 +46,7 @@
   "importing-wallet": "ウォレットのインポート",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
   "inviteCode": "招待コード",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
   "logs": "ログ",
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",

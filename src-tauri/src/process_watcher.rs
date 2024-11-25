@@ -39,7 +39,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         &mut self,
         base_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
-        self.adapter.kill_previous_instances(base_path)?;
+        self.adapter.kill_previous_instances(base_path).await?;
         Ok(())
     }
 
@@ -92,7 +92,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                       _ = watch_timer.tick() => {
                         let status_monitor3 = status_monitor2.clone();
 
-                        do_health_check(&mut child, status_monitor3, name.clone(), &mut uptime, expected_startup_time, health_timeout, app_shutdown.clone(), inner_shutdown.clone(), &mut warning_count).await?;
+                        let exit_code = do_health_check(&mut child, status_monitor3, name.clone(), &mut uptime, expected_startup_time, health_timeout, app_shutdown.clone(), inner_shutdown.clone(), &mut warning_count).await?;
+                            if exit_code != 0 {
+                            return Ok(exit_code);
+
+                        }
                             //    break;
                       },
                     _ = inner_shutdown.wait() => {
@@ -149,7 +153,7 @@ async fn do_health_check<T: StatusMonitor>(
     app_shutdown: ShutdownSignal,
     inner_shutdown: ShutdownSignal,
     warning_count: &mut u32,
-) -> Result<(), anyhow::Error> {
+) -> Result<i32, anyhow::Error> {
     let mut is_healthy = false;
 
     if child.ping() {
@@ -200,7 +204,8 @@ async fn do_health_check<T: StatusMonitor>(
                 Ok(exit_code) => {
                     if exit_code != 0 {
                         error!(target: LOG_TARGET, "{} exited with error code: {}", name, exit_code);
-                        //   return Ok(exit_code);
+                        // Do not restart on non-zero exit code. This will just keep happening.
+                        return Ok(exit_code);
                     } else {
                         info!(target: LOG_TARGET, "{} exited successfully", name);
                     }
@@ -219,5 +224,5 @@ async fn do_health_check<T: StatusMonitor>(
             // sleep(Duration::from_secs(10)).await;
         }
     }
-    Ok(())
+    Ok(0)
 }

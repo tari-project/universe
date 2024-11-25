@@ -1,7 +1,7 @@
+import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
 import { create } from './create';
 import { WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api';
-import * as Sentry from '@sentry/react';
 import { Transaction } from '@app/types/wallet.ts';
 
 interface State extends WalletBalance {
@@ -56,8 +56,9 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
                 balance: tari_wallet_details?.wallet_balance ? newBalance : null,
             });
         } catch (error) {
-            Sentry.captureException(error);
-            console.error('Could not get tari wallet details: ', error);
+            if (error !== ALREADY_FETCHING.BALANCE) {
+                console.error('Could not get tari wallet details: ', error);
+            }
         }
     },
     setTransactions: (transactions) => set({ transactions }),
@@ -67,7 +68,6 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
             set({ is_wallet_importing: true });
             await invoke('import_seed_words', { seedWords });
         } catch (error) {
-            Sentry.captureException(error);
             console.error('Could not import seed words: ', error);
         }
     },

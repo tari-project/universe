@@ -18,8 +18,6 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { open } from '@tauri-apps/api/shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 
-import * as Sentry from '@sentry/react';
-
 export const ApplyInviteCode = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
@@ -58,7 +56,7 @@ export const ApplyInviteCode = () => {
                     }
                 })
                 .catch((e) => {
-                    Sentry.captureException(e);
+                    console.error('Backend memory config error:', e);
                     return false;
                 });
 

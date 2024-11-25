@@ -1,3 +1,5 @@
+use crate::app_config::GpuThreads;
+use crate::gpu_miner::GpuConfig;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
@@ -13,15 +15,15 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+
 use crate::{
     app_config::MiningMode,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
-
-pub const ECO_MODE_GPU_GRID_SIZE: u16 = 2;
-pub const LUDICROUS_MODE_GPU_GRID_SIZE: u16 = 900; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
     BaseNode { port: u16 },
@@ -31,29 +33,56 @@ pub enum GpuNodeSource {
 pub(crate) struct GpuMinerAdapter {
     pub(crate) tari_address: TariAddress,
     // Value ranges 1 - 1000
-    pub(crate) gpu_grid_size: u16,
+    pub(crate) gpu_grid_size: Vec<GpuThreads>,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
     pub(crate) excluded_gpu_devices: Vec<u8>,
+    pub(crate) gpu_devices: Vec<GpuConfig>,
 }
 
 impl GpuMinerAdapter {
-    pub fn new() -> Self {
+    pub fn new(gpu_devices: Vec<GpuConfig>) -> Self {
         Self {
             tari_address: TariAddress::default(),
-            gpu_grid_size: ECO_MODE_GPU_GRID_SIZE,
+            gpu_grid_size: gpu_devices
+                .iter()
+                .map(|x| GpuThreads {
+                    gpu_name: x.device_name.clone(),
+                    max_gpu_threads: x.max_grid_size,
+                })
+                .collect(),
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
             excluded_gpu_devices: vec![],
+            gpu_devices,
         }
     }
 
-    pub fn set_mode(&mut self, mode: MiningMode, custom_max_gpu_grid_size: Option<u16>) {
+    pub fn set_mode(&mut self, mode: MiningMode, custom_max_gpus_grid_size: Vec<GpuThreads>) {
         match mode {
-            MiningMode::Eco => self.gpu_grid_size = ECO_MODE_GPU_GRID_SIZE,
-            MiningMode::Ludicrous => self.gpu_grid_size = LUDICROUS_MODE_GPU_GRID_SIZE,
+            MiningMode::Eco => {
+                self.gpu_grid_size = self
+                    .gpu_devices
+                    .iter()
+                    .map(|device| GpuThreads {
+                        gpu_name: device.device_name.clone(),
+                        max_gpu_threads: 2,
+                    })
+                    .collect()
+            }
+            MiningMode::Ludicrous => {
+                self.gpu_grid_size = self
+                    .gpu_devices
+                    .iter()
+                    .map(|device| GpuThreads {
+                        gpu_name: device.device_name.clone(),
+                        // get 90% of max grid size
+                        max_gpu_threads: 1024,
+                    })
+                    .collect()
+            }
             MiningMode::Custom => {
-                self.gpu_grid_size = custom_max_gpu_grid_size.unwrap_or(ECO_MODE_GPU_GRID_SIZE)
+                self.gpu_grid_size = custom_max_gpus_grid_size;
             }
         }
     }
@@ -94,9 +123,16 @@ impl ProcessAdapter for GpuMinerAdapter {
             }
         };
 
+        let grid_size = self
+            .gpu_grid_size
+            .iter()
+            .map(|x| x.max_gpu_threads.clone().to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+
         let mut args: Vec<String> = vec![
             "--tari-address".to_string(),
-            self.tari_address.to_string(),
+            self.tari_address.to_base58(),
             "--tari-node-url".to_string(),
             format!("http://127.0.0.1:{}", tari_node_port),
             "--config".to_string(),
@@ -108,7 +144,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--http-server-port".to_string(),
             http_api_port.to_string(),
             "--grid-size".to_string(),
-            self.gpu_grid_size.to_string(),
+            grid_size.clone(),
             "--log-config-file".to_string(),
             config_dir
                 .join("gpuminer")
@@ -155,6 +191,9 @@ impl ProcessAdapter for GpuMinerAdapter {
                 return Err(anyhow!("Unsupported network"));
             }
         }
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule("xtrgpuminer.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {
@@ -248,6 +287,7 @@ impl GpuMinerStatusMonitor {
                 });
             }
         };
+
         Ok(GpuMinerStatus {
             is_mining: true,
             estimated_earnings: 0,

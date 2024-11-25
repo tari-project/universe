@@ -41,13 +41,13 @@ pub(crate) trait ProcessAdapter {
 
     fn pid_file_name(&self) -> &str;
 
-    fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
+    async fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
             Ok(pid) => match pid.trim().parse::<i32>() {
                 Ok(pid) => {
                     warn!(target: LOG_TARGET, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
-                    kill_process(pid)?;
+                    kill_process(pid).await?;
                 }
                 Err(e) => {
                     let error_msg =

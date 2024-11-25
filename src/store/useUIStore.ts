@@ -2,6 +2,7 @@ import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
 import { animationDarkBg, animationLightBg, setAnimationProperties } from '@app/visuals.ts';
+import { useAppConfigStore } from './useAppConfigStore.ts';
 
 export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate'] as const;
 type DialogTypeTuple = typeof DIALOG_TYPES;
@@ -16,6 +17,7 @@ interface State {
     showExperimental: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
+    isWebglNotSupported: boolean;
 }
 interface Actions {
     setTheme: (theme: Theme) => void;
@@ -26,11 +28,13 @@ interface Actions {
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
     setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
     setLatestVersion: (latestVersion: string) => void;
+    setIsWebglNotSupported: (isWebglNotSupported: boolean) => void;
 }
 
 type UIStoreState = State & Actions;
 
 const initialState: State = {
+    isWebglNotSupported: false,
     theme: 'light',
     background: 'onboarding',
     view: 'setup',
@@ -53,4 +57,8 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
     setLatestVersion: (latestVersion) => set({ latestVersion }),
+    setIsWebglNotSupported: (isWebglNotSupported) => {
+        useAppConfigStore.getState().setVisualMode(false);
+        set({ isWebglNotSupported });
+    },
 }));

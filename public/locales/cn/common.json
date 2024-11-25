@@ -23,5 +23,6 @@
   "usage": "使用",
   "utilization": "利用率",
   "version": "版本",
-  "versions": "版本"
+  "versions": "版本",
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
 }

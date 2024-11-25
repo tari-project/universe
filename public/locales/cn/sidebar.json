@@ -13,15 +13,16 @@
   "paper-wallet-tooltip-message": "通过将您的宇宙钱包同步到 Tari Aurora，随时随地跟踪您的 XTM。",
   "paper-wallet-tooltip-title": "与手机同步",
   "recent-wins": "最近的胜利",
+  "rewards": "Rewards",
   "setup-scheduler": "安装计划程序",
-  "show-history": "显示历史记录",
-  "wallet-balance": "钱包余额",
   "share": {
-    "history-item-button": "炫耀并邀请",
-    "title": "我刚刚挖掘了Tari",
-    "winner-pill": "区块赢家",
-    "copied": "链接已复制！",
     "button-text": "炫耀并邀请",
-    "reward": "我的奖励"
-  }
+    "copied": "链接已复制！",
+    "history-item-button": "炫耀并邀请",
+    "reward": "我的奖励",
+    "title": "我刚刚挖掘了Tari",
+    "winner-pill": "区块赢家"
+  },
+  "show-history": "显示历史记录",
+  "wallet-balance": "钱包余额"
 }

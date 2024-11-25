@@ -286,6 +286,22 @@ impl ExternalDependencies {
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Installing missing dependency: {}", missing_dependency.display_name);
         let installer_path = self.download_installer(&missing_dependency).await?;
+
+        #[cfg(target_os = "windows")]
+        use crate::consts::PROCESS_CREATION_NO_WINDOW;
+        #[cfg(target_os = "windows")]
+        let mut thread = tokio::process::Command::new(installer_path)
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
+            .spawn()
+            .map_err(|e| {
+                anyhow!(
+                    "Failed to start installer for {}: {}",
+                    missing_dependency.display_name,
+                    e
+                )
+            })?;
+
+        #[cfg(not(target_os = "windows"))]
         let mut thread = tokio::process::Command::new(installer_path)
             .spawn()
             .map_err(|e| {

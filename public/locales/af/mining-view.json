@@ -1,12 +1,12 @@
 {
-  "cpu-power": "CPU Krag",
-  "gpu-power": "GPU Krag",
-  "estimated-day": "Est tXTM/dag",
   "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
+  "cpu-power": "CPU Krag",
   "current-block-time": "Huidige bloktyd",
   "day": "day",
+  "estimated-day": "Est tXTM/dag",
   "estimated-earnings": "Geskatte verdienste",
   "floor": "Vloer",
+  "gpu-power": "GPU Krag",
   "mining-button-text": {
     "cancel-mining": "Kanselleer myn",
     "changing-mode": "Verander modus",
@@ -18,6 +18,7 @@
     "waiting-for-idle": "Wag tot onaktief"
   },
   "you-earn-rewards-separately": "Jy verdien belonings vir die myn van CPU en GPU afsonderlik",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Jy het {{ blocks }} gewen</span> terwyl jy weg was",
   "your-reward-is": "Jou beloning is"
 }

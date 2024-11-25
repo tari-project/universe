@@ -98,6 +98,7 @@ export const RangeInputComponent = ({
         };
     }, [currentValue, isHover, maxLevel]);
     if (!maxLevel) return null;
+
     return (
         <>
             <InputContainer>

@@ -18,6 +18,7 @@
     "cpu-warning": "Sustained high CPU usage may cause overheating, and hardware failure.",
     "gpu-power-level": "GPU Power",
     "gpu-warning": "Sustained high GPU usage may cause overheating, and hardware failure.",
+    "save-changes": "Save Changes",
     "saved": "Applying Changes",
     "title": "Custom Mode",
     "warning": "Warning"
@@ -46,6 +47,7 @@
   "importing-wallet": "Importing wallet",
   "invalid-seed-words": "Enter 24 words separated by spaces",
   "inviteCode": "Invite Code",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Last block added to chain time",
   "logs": "Logs",
   "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",

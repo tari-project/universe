@@ -1,17 +1,20 @@
-#[cfg(target_os = "windows")]
-const LOG_TARGET: &str = "tari::universe::process_killer";
+use anyhow::Result;
 
-pub fn kill_process(pid: i32) -> Result<(), anyhow::Error> {
+pub async fn kill_process(pid: i32) -> Result<(), anyhow::Error> {
     #[cfg(target_os = "windows")]
     {
-        use log::warn;
-        use std::process::Command;
-        let output = Command::new("taskkill")
-            .args(["/F", "/PID", &pid.to_string()])
-            .output()?;
-        if !output.status.success() {
-            warn!(target: LOG_TARGET, "Failed to kill process: {:?}", output);
-        }
+        use crate::consts::PROCESS_CREATION_NO_WINDOW;
+        use anyhow::Context;
+        let command = format!("taskkill /F /PID {}", pid);
+
+        let mut child = tokio::process::Command::new("cmd")
+            .arg("/C")
+            .arg(command)
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
+            .spawn()
+            .context(format!("Failed to start taskkill for PID {}: {}", pid, pid))?;
+
+        child.wait().await?;
     }
 
     #[cfg(not(target_os = "windows"))]

@@ -46,6 +46,7 @@
   "importing-wallet": "वॉलेट आयात किया जा रहा है",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
   "inviteCode": "आमंत्रण कोड",
+  "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
   "logs": "लॉग्स",
   "low-hash-rate-warning": "आपकी हैश रेट बहुत कम है। Tari Universe के अलावा सभी ऐप्स को बंद करने का प्रयास करें",

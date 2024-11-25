@@ -1,6 +1,10 @@
+import * as Sentry from '@sentry/react';
+import { useEffect } from 'react';
 import { useShuttingDown } from '@app/hooks/useShuttingDown';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { LazyMotion, domMax, MotionConfig } from 'framer-motion';
+import { useUIStore } from '@app/store/useUIStore.ts';
+import { useTranslation } from 'react-i18next';
 
 import ShuttingDownScreen from '../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import FloatingElements from '../containers/floating/FloatingElements.tsx';
@@ -8,7 +12,6 @@ import MainView from '../containers/main/MainView.tsx';
 import Setup from '../containers/phase/Setup/Setup';
 
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
-import { GlobalFontFace } from '../theme/fonts/GlobalFontFaces.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
 
 import AppContent from './AppContent';
@@ -16,11 +19,22 @@ import AppContent from './AppContent';
 export default function App() {
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
+    const setError = useAppStateStore((s) => s.setError);
+    const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
+    const { t } = useTranslation('common', { useSuspense: false });
+
+    useEffect(() => {
+        if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
+            Sentry.captureMessage('WebGL not supported by the browser', { extra: { userAgent: navigator.userAgent } });
+            setIsWebglNotSupported(true);
+            setError(t('webgl-not-supported'));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalFontFace />
             <GlobalStyle />
             <LazyMotion features={domMax} strict>
                 {/*
