@@ -6,8 +6,13 @@ import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 
+const environment = import.meta.env.MODE;
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
+const CHANGELOG_URL =
+    environment === 'development'
+        ? 'https://cdn.jsdelivr.net/gh/tari-project/universe@a5802cbf819e0e1a00cb83a2b354b09def25752e/CHANGELOG.md'
+        : `https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md`;
 
 const parseMarkdownSections = (markdown: string): ReleaseSection[] => {
     const sections = markdown.split(/\n---\n/);
@@ -41,7 +46,7 @@ export const ReleaseNotes = () => {
     useEffect(() => {
         const loadReleaseNotes = async () => {
             try {
-                const response = await fetch('/CHANGELOG.md');
+                const response = await fetch(CHANGELOG_URL);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
