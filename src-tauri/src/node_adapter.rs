@@ -22,6 +22,9 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::ByteArray;
 
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub(crate) struct MinotariNodeAdapter {
@@ -159,6 +162,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
             // "base_node.p2p.dht.excluded_dial_addresses=/ip4/127.*.*.*/tcp/0:18188".to_string(),
             // );
         }
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule("minotari_node.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {
