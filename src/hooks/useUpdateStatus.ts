@@ -131,6 +131,8 @@ export function useUpdateListener() {
 
     useEffect(() => {
         if (initialCheck.current) return;
-        checkUpdateTariUniverse().then(() => (initialCheck.current = true));
+        initialCheck.current = true;
+
+        checkUpdateTariUniverse();
     }, [checkUpdateTariUniverse]);
 }
