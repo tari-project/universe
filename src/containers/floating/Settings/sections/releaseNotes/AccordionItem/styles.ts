@@ -2,7 +2,7 @@ import { m } from 'framer-motion';
 import styled, { css } from 'styled-components';
 
 export const Wrapper = styled.div`
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
 `;
 
 export const Header = styled.div`
@@ -21,7 +21,6 @@ export const TextWrapper = styled.div`
 `;
 
 export const Title = styled.div`
-    color: #000;
     font-size: 18px;
     font-weight: 600;
     line-height: 110%;
@@ -30,7 +29,7 @@ export const Title = styled.div`
 `;
 
 export const Subtitle = styled.div`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-weight: 500;
     line-height: 116.667%;

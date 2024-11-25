@@ -12,7 +12,7 @@ export const VersionWrapper = styled('div')`
     align-items: center;
     gap: 20px;
 
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
     margin-bottom: 5px;
     padding-bottom: 30px;
 `;
@@ -29,14 +29,13 @@ export const TextWrapper = styled('div')`
 `;
 
 export const Title = styled('div')`
-    color: #000;
     font-size: 14px;
     font-weight: 500;
     line-height: 110%;
 `;
 
 export const Text = styled('div')`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-weight: 500;
     line-height: 116.667%;
@@ -68,7 +67,6 @@ export const MarkdownWrapper = styled('div')`
     }
 
     h2 {
-        color: #000;
         font-size: 14px;
         font-weight: 600;
         line-height: 110%;
@@ -80,7 +78,7 @@ export const MarkdownWrapper = styled('div')`
         padding-left: 24px;
 
         li {
-            color: #797979;
+            color: ${({ theme }) => theme.palette.text.secondary};
             font-size: 12px;
             font-weight: 500;
             line-height: 141.667%;
@@ -95,7 +93,7 @@ export const MarkdownWrapper = styled('div')`
 `;
 
 export const LoadingText = styled('div')`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-weight: 500;
     line-height: 116.667%;
