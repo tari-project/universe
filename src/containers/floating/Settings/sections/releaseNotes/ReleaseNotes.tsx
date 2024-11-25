@@ -41,7 +41,7 @@ export const ReleaseNotes = () => {
     useEffect(() => {
         const loadReleaseNotes = async () => {
             try {
-                const response = await fetch('/ReleaseNotes.md');
+                const response = await fetch('/CHANGELOG.md');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
