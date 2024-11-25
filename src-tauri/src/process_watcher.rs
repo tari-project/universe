@@ -18,6 +18,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub health_timeout: tokio::time::Duration,
     pub expected_startup_time: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
+    pub stop_on_exit_codes: Vec<i32>,
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -30,6 +31,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             health_timeout: tokio::time::Duration::from_secs(4),
             expected_startup_time: tokio::time::Duration::from_secs(20),
             status_monitor: None,
+            stop_on_exit_codes: Vec::new(),
         }
     }
 }
@@ -78,6 +80,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         let expected_startup_time = self.expected_startup_time;
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
+        let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             child.start().await?;
             let mut uptime = Instant::now();
@@ -93,8 +96,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         let status_monitor3 = status_monitor2.clone();
 
                         let exit_code = do_health_check(&mut child, status_monitor3, name.clone(), &mut uptime, expected_startup_time, health_timeout, app_shutdown.clone(), inner_shutdown.clone(), &mut warning_count).await?;
-                            if exit_code != 0 {
-                            return Ok(exit_code);
+                        if exit_code != 0 {
+                                if stop_on_exit_codes.contains(&exit_code) {
+                                    return Ok(exit_code);
+                                }
+                                warn!(target: LOG_TARGET, "{} exited with error code: {}, restarting because it is not a listed exit code to list for", name, exit_code);
 
                         }
                             //    break;
