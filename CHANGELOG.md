@@ -1,4 +1,4 @@
-# Tari Universe - Testnet V0.6.4
+# Tari Universe - Testnet v0.6.4
 
 _November 12, 2024_
 
@@ -21,7 +21,7 @@ _November 12, 2024_
 
 ---
 
-# Tari Universe - Testnet V0.6.3
+# Tari Universe - Testnet v0.6.3
 
 _November 1, 2024_
 
@@ -41,7 +41,7 @@ _November 1, 2024_
 
 ---
 
-# Tari Universe - Testnet V0.6.2
+# Tari Universe - Testnet v0.6.2
 
 _October 15, 2024_
 
@@ -65,7 +65,7 @@ _October 15, 2024_
 
 ---
 
-# Tari Universe - Testnet V0.6.1
+# Tari Universe - Testnet v0.6.1
 
 _October 1, 2024_
 
@@ -85,7 +85,7 @@ _October 1, 2024_
 
 ---
 
-# Tari Universe - Testnet V0.6.0
+# Tari Universe - Testnet v0.6.0
 
 _September 15, 2024_
 

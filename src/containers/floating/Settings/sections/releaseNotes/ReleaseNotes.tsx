@@ -1,10 +1,22 @@
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { IconImage, MarkdownWrapper, Text, TextWrapper, Title, VersionWrapper, Wrapper } from './styles';
+import {
+    IconImage,
+    LoadingText,
+    MarkdownWrapper,
+    Text,
+    TextWrapper,
+    Title,
+    UpgradeButton,
+    VersionWrapper,
+    Wrapper,
+} from './styles';
 import { AccordionItem } from './AccordionItem/AccordionItem';
 import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
+import { useUIStore } from '@app/store/useUIStore';
+import { checkUpdate } from '@tauri-apps/api/updater';
 
 const environment = import.meta.env.MODE;
 const appVersion = packageInfo.version;
@@ -38,26 +50,42 @@ interface ReleaseSection {
 }
 
 export const ReleaseNotes = () => {
+    const { setDialogToShow } = useUIStore();
     const [sections, setSections] = useState<ReleaseSection[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
+    const [needsUpgrade, setNeedsUpgrade] = useState(false);
 
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
     useEffect(() => {
         const loadReleaseNotes = async () => {
             try {
+                setIsLoading(true);
                 const response = await fetch(CHANGELOG_URL);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const text = await response.text();
-                setSections(parseMarkdownSections(text));
+                const parsedSections = parseMarkdownSections(text);
+                setSections(parsedSections);
             } catch (err) {
                 console.error('Error loading release notes:', err);
+            } finally {
+                setIsLoading(false);
             }
         };
 
         loadReleaseNotes();
+    }, []);
+
+    useEffect(() => {
+        const checkForUpdates = async () => {
+            const { shouldUpdate } = await checkUpdate();
+            setNeedsUpgrade(shouldUpdate);
+        };
+
+        checkForUpdates();
     }, []);
 
     const toggleSection = (index: number) => {
@@ -74,19 +102,27 @@ export const ReleaseNotes = () => {
                         {t('tari-universe')} - {t('testnet')} {versionString}
                     </Text>
                 </TextWrapper>
+
+                {needsUpgrade && !isLoading && (
+                    <UpgradeButton onClick={() => setDialogToShow('autoUpdate')}>⚠️ Upgrade Available</UpgradeButton>
+                )}
             </VersionWrapper>
 
             <MarkdownWrapper>
-                {sections.map((section, index) => (
-                    <AccordionItem
-                        key={index}
-                        title={section.title}
-                        subtitle={section.date}
-                        content={<ReactMarkdown>{section.content}</ReactMarkdown>}
-                        isOpen={openSectionIndex === index}
-                        onToggle={() => toggleSection(index)}
-                    />
-                ))}
+                {isLoading ? (
+                    <LoadingText>Loading Release Notes...</LoadingText>
+                ) : (
+                    sections.map((section, index) => (
+                        <AccordionItem
+                            key={index}
+                            title={section.title}
+                            subtitle={section.date}
+                            content={<ReactMarkdown>{section.content}</ReactMarkdown>}
+                            isOpen={openSectionIndex === index}
+                            onToggle={() => toggleSection(index)}
+                        />
+                    ))
+                )}
             </MarkdownWrapper>
         </Wrapper>
     );
