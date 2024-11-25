@@ -2170,8 +2170,6 @@ fn main() {
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
-            // let window = app.get_window("main").unwrap();
-            // let window_clone = window.clone();
             let config_path = app
                 .path_resolver()
                 .app_config_dir()
@@ -2181,18 +2179,6 @@ fn main() {
                 tauri::async_runtime::spawn(async move {
                     let mut app_conf = app_config.write().await;
                     app_conf.load_or_create(config_path).await?;
-
-                    // // Set previous window position and size
-                    // let window_settings = app_conf.window_settings();
-                    // window_clone
-                    //     .set_position(LogicalPosition::new(window_settings.x, window_settings.y))
-                    //     .expect("Could not set window position");
-                    // window_clone
-                    //     .set_size(LogicalSize::new(
-                    //         window_settings.width,
-                    //         window_settings.height,
-                    //     ))
-                    //     .expect("Could not set window size");
 
                     let mut cpu_conf = cpu_config2.write().await;
                     cpu_conf.eco_mode_cpu_percentage = app_conf.eco_mode_cpu_threads();
