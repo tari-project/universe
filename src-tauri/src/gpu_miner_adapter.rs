@@ -132,7 +132,7 @@ impl ProcessAdapter for GpuMinerAdapter {
 
         let mut args: Vec<String> = vec![
             "--tari-address".to_string(),
-            self.tari_address.to_string(),
+            self.tari_address.to_base58(),
             "--tari-node-url".to_string(),
             format!("http://127.0.0.1:{}", tari_node_port),
             "--config".to_string(),
