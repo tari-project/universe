@@ -131,5 +131,9 @@
   "visual-mode": "Visual mode",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
-  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"
+  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
+  "release-notes": {
+    "upgrade-available": "⚠️ Upgrade Available",
+    "loading": "Loading release notes..."
+  }
 }

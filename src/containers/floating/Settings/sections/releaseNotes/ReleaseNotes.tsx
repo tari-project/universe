@@ -104,13 +104,15 @@ export const ReleaseNotes = () => {
                 </TextWrapper>
 
                 {needsUpgrade && !isLoading && (
-                    <UpgradeButton onClick={() => setDialogToShow('autoUpdate')}>⚠️ Upgrade Available</UpgradeButton>
+                    <UpgradeButton onClick={() => setDialogToShow('autoUpdate')}>
+                        {t('settings:release-notes.upgrade-available')}
+                    </UpgradeButton>
                 )}
             </VersionWrapper>
 
             <MarkdownWrapper>
                 {isLoading ? (
-                    <LoadingText>Loading Release Notes...</LoadingText>
+                    <LoadingText>{t('settings:release-notes.loading')}</LoadingText>
                 ) : (
                     sections.map((section, index) => (
                         <AccordionItem
