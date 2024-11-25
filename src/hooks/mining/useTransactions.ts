@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/react';
+import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
@@ -49,9 +49,10 @@ export default function useFetchTx() {
             setTransactionsLoading(false);
         } catch (error) {
             setTransactionsLoading(false);
-            Sentry.captureException(error);
             setError('Could not get transaction history');
-            console.error('Could not get transaction history: ', error);
+            if (error !== ALREADY_FETCHING.HISTORY) {
+                console.error('Could not get transaction history: ', error);
+            }
         }
     }, [isTransactionLoading, setError, setItems, setTransactionsLoading, setupProgress]);
 }

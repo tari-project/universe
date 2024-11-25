@@ -1,6 +1,6 @@
 import { Typography } from '@app/components/elements/Typography';
 import { useMiningStore } from '@app/store/useMiningStore';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { GpuThreads, MaxConsumptionLevels } from '@app/types/app-status';
 import { RangeInputComponent } from './RangeInput';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
@@ -38,9 +38,9 @@ const resolveCpuInitialThreads = (
         case 'Eco':
             return configCpuLevels || Math.round(maxAvailableThreads.max_cpu_threads * 0.3);
         case 'Ludicrous':
-            return configCpuLevels || Math.round(maxAvailableThreads.max_cpu_threads * 0.9);
+            return configCpuLevels || maxAvailableThreads.max_cpu_threads;
         default:
-            return 0;
+            return configCpuLevels || 0;
     }
 };
 
@@ -56,15 +56,15 @@ const resolveGpuInitialThreads = (
             case 'Eco':
                 return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
                     gpu_name: gpu.gpu_name,
-                    max_gpu_threads: Math.round(gpu.max_gpu_threads * 0.3),
+                    max_gpu_threads: 2,
                 }));
             case 'Ludicrous':
                 return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
                     gpu_name: gpu.gpu_name,
-                    max_gpu_threads: Math.round(gpu.max_gpu_threads * 0.9),
+                    max_gpu_threads: 1024,
                 }));
             default:
-                return [];
+                return configGpuLevels || [];
         }
     }
 };
@@ -86,7 +86,7 @@ export function CustomPowerLevelsDialog({
     const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
-    const { control, handleSubmit, setValue, getValues } = useForm<FormValues>({
+    const { control, handleSubmit, setValue } = useForm<FormValues>({
         defaultValues: {
             [FormFields.CPU]: resolveCpuInitialThreads(configCpuLevels, mode, maxAvailableThreads),
             [FormFields.GPUS]: resolveGpuInitialThreads(configGpuLevels, mode, maxAvailableThreads),
@@ -155,7 +155,7 @@ export function CustomPowerLevelsDialog({
                         key={gpu.id}
                         control={control}
                         name={`${FormFields.GPUS}.${index}.gpu_name`}
-                        render={({ field }) => (
+                        render={({ field: _field }) => (
                             <RangeInputComponent
                                 label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
                                 maxLevel={maxAvailableThreads.max_gpus_threads[index].max_gpu_threads}

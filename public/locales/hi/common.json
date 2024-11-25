@@ -23,5 +23,6 @@
   "usage": "उपयोग",
   "utilization": "उपयोग",
   "version": "संस्करण",
-  "versions": "संस्करण"
+  "versions": "संस्करण",
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
 }
