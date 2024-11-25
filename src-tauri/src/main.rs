@@ -24,13 +24,13 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Manager, RunEvent, UpdaterEvent, Window};
+use tauri::{LogicalPosition, LogicalSize, Manager, RunEvent, UpdaterEvent, Window, WindowEvent};
 use tokio::sync::{Mutex, RwLock};
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
 use wallet_adapter::TransactionInfo;
 
-use app_config::{AppConfig, GpuThreads};
+use app_config::{AppConfig, GpuThreads, WindowSettings};
 use app_in_memory_config::{AirdropInMemoryConfig, AppInMemoryConfig};
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
@@ -1901,17 +1901,33 @@ async fn reset_settings<'r>(
     Ok(())
 }
 #[tauri::command]
-async fn close_splashscreen(window: Window) {
+async fn close_splashscreen(
+    window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
     window
         .get_window("splashscreen")
         .expect("no window labeled 'splashscreen' found")
         .close()
         .expect("could not close");
-    window
-        .get_window("main")
-        .expect("no window labeled 'main' found")
-        .show()
-        .expect("could not show");
+
+    // Set previous window position and size
+    let config = state.config.read().await;
+    let window_settings = config.window_settings();
+    let main_window = window.get_window("main").expect("Main window not found");
+    main_window
+        .set_position(LogicalPosition::new(window_settings.x, window_settings.y))
+        .expect("Could not set window position");
+    main_window
+        .set_size(LogicalSize::new(
+            window_settings.width,
+            window_settings.height,
+        ))
+        .expect("Could not set window size");
+    main_window.show().expect("could not show");
+
+    Ok(())
 }
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
@@ -2151,6 +2167,8 @@ fn main() {
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
+            // let window = app.get_window("main").unwrap();
+            // let window_clone = window.clone();
             let config_path = app
                 .path_resolver()
                 .app_config_dir()
@@ -2160,6 +2178,18 @@ fn main() {
                 tauri::async_runtime::spawn(async move {
                     let mut app_conf = app_config.write().await;
                     app_conf.load_or_create(config_path).await?;
+
+                    // // Set previous window position and size
+                    // let window_settings = app_conf.window_settings();
+                    // window_clone
+                    //     .set_position(LogicalPosition::new(window_settings.x, window_settings.y))
+                    //     .expect("Could not set window position");
+                    // window_clone
+                    //     .set_size(LogicalSize::new(
+                    //         window_settings.width,
+                    //         window_settings.height,
+                    //     ))
+                    //     .expect("Could not set window size");
 
                     let mut cpu_conf = cpu_config2.write().await;
                     cpu_conf.eco_mode_cpu_percentage = app_conf.eco_mode_cpu_threads();
@@ -2282,7 +2312,7 @@ fn main() {
     );
 
     let mut downloaded: u64 = 0;
-    app.run(move |_app_handle, event| match event {
+    app.run(move |app_handle, event| match event {
         tauri::RunEvent::Updater(updater_event) => match updater_event {
             UpdaterEvent::Error(e) => {
                 error!(target: LOG_TARGET, "Updater error: {:?}", e);
@@ -2296,7 +2326,7 @@ fn main() {
 
                 info!(target: LOG_TARGET, "Chunk Length: {} | Download progress: {} / {}", chunk_length, downloaded, content_length);
 
-                if let Some(window) = _app_handle.get_window("main") {
+                if let Some(window) = app_handle.get_window("main") {
                     drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded: downloaded.min(content_length) }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
                     );
                 }
@@ -2317,13 +2347,28 @@ fn main() {
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
             let _unused = block_on(stop_all_miners(app_state.clone(), 2));
-            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
+            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
         RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
+            if let WindowEvent::CloseRequested { .. } = event {
+                if label == "main" {
+                    let window = app_handle.get_window("main").expect("Window already closed");
+                    let window_position = window.inner_position().unwrap();
+                    let window_size = window.inner_size().unwrap();
+                    let window_settings = WindowSettings {
+                        x: window_position.x,
+                        y: window_position.y,
+                        width: window_size.width,
+                        height: window_size.height,
+                    };
+                    let mut app_config = block_on(app_state.config.write());
+                    block_on(app_config.set_window_settings(window_settings.clone())).expect("Could not set window settings");
+                }
+            }
         }
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);

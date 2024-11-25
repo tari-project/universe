@@ -71,6 +71,8 @@ pub struct AppConfigFromFile {
     sharing_enabled: bool,
     #[serde(default = "default_true")]
     visual_mode: bool,
+    #[serde(default = "default_window_settings")]
+    window_settings: WindowSettings,
 }
 
 impl Default for AppConfigFromFile {
@@ -107,6 +109,7 @@ impl Default for AppConfigFromFile {
             custom_power_levels_enabled: true,
             sharing_enabled: true,
             visual_mode: true,
+            window_settings: default_window_settings(),
         }
     }
 }
@@ -164,6 +167,14 @@ impl MiningMode {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WindowSettings {
+    pub width: u32,
+    pub height: u32,
+    pub x: i32,
+    pub y: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GpuThreads {
     pub gpu_name: String,
     pub max_gpu_threads: u32,
@@ -205,6 +216,7 @@ pub(crate) struct AppConfig {
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
+    window_settings: WindowSettings,
 }
 
 impl AppConfig {
@@ -243,6 +255,7 @@ impl AppConfig {
             auto_update: true,
             sharing_enabled: true,
             visual_mode: true,
+            window_settings: default_window_settings(),
         }
     }
 
@@ -306,6 +319,7 @@ impl AppConfig {
                 }
                 self.sharing_enabled = config.sharing_enabled;
                 self.visual_mode = config.visual_mode;
+                self.window_settings = config.window_settings;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -478,6 +492,19 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_window_settings(
+        &mut self,
+        window_settings: WindowSettings,
+    ) -> Result<(), anyhow::Error> {
+        self.window_settings = window_settings;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn window_settings(&self) -> &WindowSettings {
+        &self.window_settings
+    }
+
     pub fn auto_mining(&self) -> bool {
         self.auto_mining
     }
@@ -642,6 +669,7 @@ impl AppConfig {
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,
             visual_mode: self.visual_mode,
+            window_settings: self.window_settings.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -697,4 +725,13 @@ fn default_application_language() -> String {
 
 fn default_monero_nodes() -> Vec<String> {
     vec!["https://xmr-01.tari.com".to_string()]
+}
+
+fn default_window_settings() -> WindowSettings {
+    WindowSettings {
+        width: 1380,
+        height: 780,
+        x: 0,
+        y: 0,
+    }
 }
