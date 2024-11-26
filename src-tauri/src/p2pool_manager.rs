@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures_util::future::FusedFuture;
 use log::warn;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
@@ -121,7 +122,7 @@ impl P2poolManager {
         process_watcher.poll_time = Duration::from_secs(30);
         process_watcher
             .start(
-                app_shutdown,
+                app_shutdown.clone(),
                 base_path,
                 config_path,
                 log_path,
@@ -131,10 +132,14 @@ impl P2poolManager {
         process_watcher.wait_ready().await?;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {
+                if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+                    break;
+                }
                 sleep(Duration::from_secs(5)).await;
                 if let Ok(_stats) = status_monitor.status().await {
                     break;
-                } else {
+                }
+                 else {
                     warn!(target: LOG_TARGET, "P2pool stats not available yet");
                 }
             } // wait until we have stats from p2pool, so its started
