@@ -17,7 +17,7 @@ export function useSetUp() {
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
     const setSettingUpFinished = useAppStateStore((s) => s.setSettingUpFinished);
-    const setSeenPermissions = useAirdropStore((s) => s.setSeenPermissions);
+
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
     const syncedAidropWithBackend = useAirdropStore((s) => s.syncedWithBackend);
 
@@ -55,7 +55,7 @@ export function useSetUp() {
                         setSetupDetails(p.title, p.title_params, p.progress);
                     }
                     if (p.progress >= 1) {
-                        handlePostSetup().finally(() => setSeenPermissions(true));
+                        handlePostSetup();
                     }
                     break;
                 default:
@@ -74,13 +74,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [
-        syncedAidropWithBackend,
-        clearStorage,
-        handlePostSetup,
-        isAfterAutoUpdate,
-        setCriticalError,
-        setSeenPermissions,
-        setSetupDetails,
-    ]);
+    }, [syncedAidropWithBackend, clearStorage, handlePostSetup, isAfterAutoUpdate, setCriticalError, setSetupDetails]);
 }

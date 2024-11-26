@@ -2,6 +2,7 @@
   "action-requires-restart": "Cette action nécessite un redémarrage pour appliquer les modifications",
   "action-restart-copy": "Votre préférence sera enregistrée et appliquée lors du prochain démarrage de Tari Universe.",
   "app-restart-required": "Redémarrage de l\"application requis",
+  "application-info": "Application Information",
   "applyInviteCode": "Appliquer le code d\"invitation",
   "cancel": "Cancel",
   "change-language": "Langue",
@@ -18,6 +19,7 @@
     "cpu-warning": "Une utilisation élevée du CPU peut provoquer une surchauffe, augmenter la consommation d\"énergie et peut entraîner des dommages matériels au fil du temps. Veuillez surveiller l\"utilisation pour assurer un fonctionnement sûr et efficace.",
     "gpu-power-level": "Puissance GPU %",
     "gpu-warning": "Une utilisation élevée du GPU peut provoquer une surchauffe, augmenter la consommation d\"énergie et peut entraîner des dommages matériels au fil du temps. Veuillez surveiller l\"utilisation pour assurer un fonctionnement sûr et efficace.",
+    "save-changes": "Save Changes",
     "saved": "Application des modifications",
     "title": "Mode personnalisé",
     "warning": "Avertissement"

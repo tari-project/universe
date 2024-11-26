@@ -13,6 +13,7 @@ export const SettingsGroupWrapper = styled.div<{ $advanced?: boolean }>`
     ${({ $advanced }) =>
         $advanced &&
         css`
+            margin-top: 10px;
             &:before {
                 content: 'Advanced';
                 position: absolute;

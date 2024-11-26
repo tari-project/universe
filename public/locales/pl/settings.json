@@ -2,6 +2,7 @@
   "action-requires-restart": "Ta akcja wymaga ponownego uruchomienia, aby wprowadzić zmiany",
   "action-restart-copy": "Twoje preferencje zostaną zapisane i zastosowane przy następnym uruchomieniu Tari Universe.",
   "app-restart-required": "Wymagany restart aplikacji",
+  "application-info": "Application Information",
   "applyInviteCode": "Zastosuj Kod Zaproszenia",
   "cancel": "Anuluj",
   "change-language": "Zmień język",
@@ -19,6 +20,7 @@
     "cpu-warning": "Wysokie zużycie CPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
     "gpu-power-level": "Moc GPU %",
     "gpu-warning": "Wysokie zużycie GPU może powodować przegrzewanie, zwiększać zużycie energii i prowadzić do uszkodzenia sprzętu z czasem. Proszę monitorować zużycie, aby zapewnić bezpieczną i efektywną pracę.",
+    "save-changes": "Save Changes",
     "saved": "Zastosowanie zmian",
     "title": "Tryb niestandardowy",
     "warning": "Ostrzeżenie"

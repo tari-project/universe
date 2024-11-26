@@ -136,7 +136,6 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
-    seenPermissions: boolean;
 }
 
 interface AirdropStore extends AirdropState {
@@ -150,14 +149,12 @@ interface AirdropStore extends AirdropState {
     setReferralCount: (referralCount: ReferralCount) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
-    setSeenPermissions: (seenPermissions: boolean) => void;
     setUserGems: (userGems: number) => void;
     logout: () => Promise<void>;
 }
 
 const initialState: AirdropState = {
     authUuid: '',
-    seenPermissions: false,
     syncedWithBackend: false,
 };
 
@@ -221,7 +218,6 @@ export const useAirdropStore = create<AirdropStore>()(
                 return backendInMemoryConfig;
             },
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
-            setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
 
             logout: async () => {
                 set(clearState);
@@ -234,11 +230,7 @@ export const useAirdropStore = create<AirdropStore>()(
                 airdropTokens: s.airdropTokens,
                 miningRewardPoints: s.miningRewardPoints,
                 referralQuestPoints: s.referralQuestPoints,
-                seenPermissions: s.seenPermissions,
             }),
         }
     )
 );
-useAirdropStore
-    .getState()
-    .setSeenPermissions(useAirdropStore.getState().seenPermissions || initialState.seenPermissions); // https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#persist-middlware-no-longer-stores-item-at-store-creation

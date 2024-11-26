@@ -17,7 +17,6 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import * as Sentry from '@sentry/react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 export default function LogsSettings() {

@@ -2,6 +2,7 @@
   "action-requires-restart": "Hierdie aksie vereis \"n herbegin om veranderinge toe te pas",
   "action-restart-copy": "Jou voorkeur sal gestoor word en toegepas word die volgende keer as Tari Universe begin word.",
   "app-restart-required": "App herbegin benodig",
+  "application-info": "Application Information",
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "cancel": "Cancel",
   "change-language": "Verander taal",
@@ -18,6 +19,7 @@
     "cpu-warning": "Hoë SVE-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker.",
     "gpu-power-level": "GPU Krag %",
     "gpu-warning": "Hoë GPU-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker.",
+    "save-changes": "Save Changes",
     "saved": "Veranderinge Toepas",
     "title": "Pasgemaakte Modus",
     "warning": "Waarskuwing"

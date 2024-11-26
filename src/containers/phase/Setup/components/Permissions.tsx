@@ -23,17 +23,25 @@ export default function Permissions() {
     const { t } = useTranslation('airdrop');
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
+    const config_creation = useAppConfigStore((s) => s.config_creation);
+    const now = new Date();
+    const config_creation_date = config_creation?.secs_since_epoch
+        ? new Date(config_creation?.secs_since_epoch * 1000)
+        : null;
+
+    const diff = config_creation_date ? now.getTime() - config_creation_date.getTime() : 0;
+    const isFirstLoad = diff > 0 && diff < 1000 * 60; // 1 min buffer
 
     const handleChange = useCallback(async () => {
         await setAllowTelemetry(!allowTelemetry);
     }, [allowTelemetry, setAllowTelemetry]);
 
-    return (
+    return isFirstLoad ? (
         <Wrapper>
             <Typography variant="p">
                 <Trans>{t('permission.setup')}</Trans>
             </Typography>
             <ToggleSwitch checked={allowTelemetry} onChange={handleChange} />
         </Wrapper>
-    );
+    ) : null;
 }

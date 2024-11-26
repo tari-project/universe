@@ -2,6 +2,7 @@
   "action-requires-restart": "この操作には再起動が必要です。変更を適用します",
   "action-restart-copy": "設定は保存され、次回Tari Universeを起動したときに適用されます。",
   "app-restart-required": "アプリの再起動が必要です",
+  "application-info": "Application Information",
   "applyInviteCode": "招待コードを適用",
   "cancel": "キャンセル",
   "change-language": "言語",
@@ -18,6 +19,7 @@
     "cpu-warning": "高いCPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。",
     "gpu-power-level": "GPUパワー％",
     "gpu-warning": "高いGPU使用率は過熱を引き起こし、エネルギー消費を増加させ、時間とともにハードウェアの損傷を引き起こす可能性があります。安全で効率的な操作を確保するために使用状況を監視してください。",
+    "save-changes": "Save Changes",
     "saved": "変更を適用中",
     "title": "カスタムモード",
     "warning": "警告"

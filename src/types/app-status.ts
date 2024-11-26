@@ -35,6 +35,10 @@ export interface AppConfig {
     should_auto_launch: boolean;
     use_tor: boolean;
     visual_mode: boolean;
+    config_creation: {
+        nanos_since_epoch: number;
+        secs_since_epoch: number;
+    };
 }
 
 export enum ExternalDependencyStatus {
