@@ -125,6 +125,29 @@ struct UpdateProgressRustEvent {
 }
 
 async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(), String> {
+
+    let is_cpu_miner_running = state.cpu_miner.read().await.is_running().await;
+    info!(target: LOG_TARGET, "CPU Miner is running: {}", is_cpu_miner_running);
+
+    let is_gpu_miner_running = state.gpu_miner.read().await.is_running().await;
+    info!(target: LOG_TARGET, "GPU Miner is running: {}", is_gpu_miner_running);
+
+    let is_wallet_manager_running = state.wallet_manager.is_running().await;
+    info!(target: LOG_TARGET, "Wallet Manager is running: {}", is_wallet_manager_running);
+
+    let is_mm_proxy_manager_running = state.mm_proxy_manager.is_running().await;
+    info!(target: LOG_TARGET, "MM Proxy Manager is running: {}", is_mm_proxy_manager_running);
+
+    let is_node_manager_running = state.node_manager.is_running().await;
+    info!(target: LOG_TARGET, "Node Manager is running: {}", is_node_manager_running);
+
+    let is_p2pool_manager_running = state.p2pool_manager.is_running().await.map_err(
+        |e| e.to_string())?;
+    info!(target: LOG_TARGET, "P2Pool Manager is running: {}", is_p2pool_manager_running);
+
+    let is_tor_manager_running = state.tor_manager.is_running().await;
+    info!(target: LOG_TARGET, "Tor Manager is running: {}", is_tor_manager_running);
+
     state
         .cpu_miner
         .write()
@@ -162,6 +185,28 @@ async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(),
     let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
     state.shutdown.clone().trigger();
+
+    let is_cpu_miner_running = state.cpu_miner.read().await.is_running().await;
+    info!(target: LOG_TARGET, "CPU Miner is running: {}", is_cpu_miner_running);
+
+    let is_gpu_miner_running = state.gpu_miner.read().await.is_running().await;
+    info!(target: LOG_TARGET, "GPU Miner is running: {}", is_gpu_miner_running);
+
+    let is_wallet_manager_running = state.wallet_manager.is_running().await;
+    info!(target: LOG_TARGET, "Wallet Manager is running: {}", is_wallet_manager_running);
+
+    let is_mm_proxy_manager_running = state.mm_proxy_manager.is_running().await;
+    info!(target: LOG_TARGET, "MM Proxy Manager is running: {}", is_mm_proxy_manager_running);
+
+    let is_node_manager_running = state.node_manager.is_running().await;
+    info!(target: LOG_TARGET, "Node Manager is running: {}", is_node_manager_running);
+    
+    let is_p2pool_manager_running = state.p2pool_manager.is_running().await.map_err(
+        |e| e.to_string())?;
+    info!(target: LOG_TARGET, "P2Pool Manager is running: {}", is_p2pool_manager_running);
+
+    let is_tor_manager_running = state.tor_manager.is_running().await;
+    info!(target: LOG_TARGET, "Tor Manager is running: {}", is_tor_manager_running);
 
     // TODO: Find a better way of knowing that all miners have stopped
     sleep(std::time::Duration::from_secs(sleep_secs));

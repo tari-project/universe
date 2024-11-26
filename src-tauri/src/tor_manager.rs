@@ -102,4 +102,9 @@ impl TorManager {
         let exit_code = process_watcher.stop().await?;
         Ok(exit_code)
     }
+
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
 }

@@ -135,4 +135,9 @@ impl MmProxyManager {
         process_watcher.stop().await?;
         Ok(())
     }
+
+    pub async fn is_running(&self) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_running()
+    }
 }

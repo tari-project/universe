@@ -206,6 +206,11 @@ impl NodeManager {
         Ok(exit_code)
     }
 
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
+
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
         let mut status_monitor_lock = self.watcher.write().await;
         let status_monitor = status_monitor_lock

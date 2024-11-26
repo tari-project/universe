@@ -103,6 +103,11 @@ impl GpuMiner {
         Ok(())
     }
 
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
+
     pub async fn status(
         &self,
         network_hash_rate: u64,

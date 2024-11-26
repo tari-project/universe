@@ -123,6 +123,11 @@ impl WalletManager {
             .map_err(WalletManagerError::UnknownError)
     }
 
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
+
     #[deprecated(
         note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
     )]
