@@ -76,7 +76,7 @@ pub struct AppConfigFromFile {
     visual_mode: bool,
     #[serde(default = "default_window_settings")]
     window_settings: WindowSettings,
-    #[serde(default = "default_true")]
+    #[serde(default = "default_false")]
     show_experimental_settings: bool,
 }
 
