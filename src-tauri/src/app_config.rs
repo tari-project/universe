@@ -76,6 +76,8 @@ pub struct AppConfigFromFile {
     visual_mode: bool,
     #[serde(default = "default_window_settings")]
     window_settings: WindowSettings,
+    #[serde(default = "default_true")]
+    show_experimental_settings: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -113,6 +115,7 @@ impl Default for AppConfigFromFile {
             sharing_enabled: true,
             visual_mode: true,
             window_settings: default_window_settings(),
+            show_experimental_settings: false,
         }
     }
 }
@@ -220,6 +223,7 @@ pub(crate) struct AppConfig {
     sharing_enabled: bool,
     visual_mode: bool,
     window_settings: WindowSettings,
+    show_experimental_settings: bool,
 }
 
 impl AppConfig {
@@ -259,6 +263,7 @@ impl AppConfig {
             sharing_enabled: true,
             visual_mode: true,
             window_settings: default_window_settings(),
+            show_experimental_settings: false,
         }
     }
 
@@ -323,6 +328,7 @@ impl AppConfig {
                 self.sharing_enabled = config.sharing_enabled;
                 self.visual_mode = config.visual_mode;
                 self.window_settings = config.window_settings;
+                self.show_experimental_settings = config.show_experimental_settings;
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -508,6 +514,15 @@ impl AppConfig {
         &self.window_settings
     }
 
+    pub async fn set_show_experimental_settings(
+        &mut self,
+        show_experimental_settings: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.show_experimental_settings = show_experimental_settings;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub fn auto_mining(&self) -> bool {
         self.auto_mining
     }
@@ -673,6 +688,7 @@ impl AppConfig {
             sharing_enabled: self.sharing_enabled,
             visual_mode: self.visual_mode,
             window_settings: self.window_settings.clone(),
+            show_experimental_settings: self.show_experimental_settings,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

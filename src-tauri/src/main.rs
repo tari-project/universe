@@ -628,6 +628,22 @@ async fn set_should_auto_launch(
 }
 
 #[tauri::command]
+async fn set_show_experimental_settings(
+    show_experimental_settings: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_show_experimental_settings(show_experimental_settings)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn setup_application(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
@@ -1904,33 +1920,17 @@ async fn reset_settings<'r>(
     Ok(())
 }
 #[tauri::command]
-async fn close_splashscreen(
-    window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
+async fn close_splashscreen(window: Window) {
     window
         .get_window("splashscreen")
         .expect("no window labeled 'splashscreen' found")
         .close()
         .expect("could not close");
-
-    // Set previous window position and size
-    let config = state.config.read().await;
-    let window_settings = config.window_settings();
-    let main_window = window.get_window("main").expect("Main window not found");
-    main_window
-        .set_position(LogicalPosition::new(window_settings.x, window_settings.y))
-        .expect("Could not set window position");
-    main_window
-        .set_size(LogicalSize::new(
-            window_settings.width,
-            window_settings.height,
-        ))
-        .expect("Could not set window size");
-    main_window.show().expect("could not show");
-
-    Ok(())
+    window
+        .get_window("main")
+        .expect("no window labeled 'main' found")
+        .show()
+        .expect("could not show");
 }
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
@@ -2170,6 +2170,10 @@ fn main() {
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
+            let splash_window = app
+                .get_window("splashscreen")
+                .expect("Main window not found");
+            let main_window = app.get_window("main").expect("Main window not found");
             let config_path = app
                 .path_resolver()
                 .app_config_dir()
@@ -2187,6 +2191,17 @@ fn main() {
                     cpu_conf.ludicrous_mode_xmrig_options =
                         app_conf.ludicrous_mode_cpu_options().clone();
                     cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
+
+                    // Set tauri windows position and size
+                    let w_settings = app_conf.window_settings();
+                    let window_position = LogicalPosition::new(w_settings.x, w_settings.y);
+                    let window_size = LogicalSize::new(w_settings.width, w_settings.height);
+                    if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
+                        error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
+                    }
+                    if let Err(e) = main_window.set_position(window_position).and_then(|_| main_window.set_size(window_size)) {
+                        error!(target: LOG_TARGET, "Could not set main window position or size: {:?}", e);
+                    }
                     Ok(())
                 });
 
@@ -2287,6 +2302,7 @@ fn main() {
             start_mining,
             stop_mining,
             update_applications,
+            set_show_experimental_settings,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
@@ -2345,17 +2361,24 @@ fn main() {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
             if let WindowEvent::CloseRequested { .. } = event {
                 if label == "main" {
-                    let window = app_handle.get_window("main").expect("Window already closed");
-                    let window_position = window.inner_position().unwrap();
-                    let window_size = window.inner_size().unwrap();
-                    let window_settings = WindowSettings {
-                        x: window_position.x,
-                        y: window_position.y,
-                        width: window_size.width,
-                        height: window_size.height,
-                    };
-                    let mut app_config = block_on(app_state.config.write());
-                    block_on(app_config.set_window_settings(window_settings.clone())).expect("Could not set window settings");
+                    if let Some(window) = app_handle.get_window("main") {
+                        if let (Ok(window_position), Ok(window_size)) = (window.inner_position(), window.inner_size()) {
+                            let window_settings = WindowSettings {
+                                x: window_position.x,
+                                y: window_position.y,
+                                width: window_size.width,
+                                height: window_size.height,
+                            };
+                            let mut app_config = block_on(app_state.config.write());
+                            if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
+                                error!(target: LOG_TARGET, "Could not set window settings: {:?}", e);
+                            }
+                        } else {
+                            error!(target: LOG_TARGET, "Could not get window position or size");
+                        }
+                    } else {
+                        error!(target: LOG_TARGET, "Could not get main window");
+                    }
                 }
             }
         }

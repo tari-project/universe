@@ -69,6 +69,10 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
     function invoke(param: 'set_visual_mode', payload: { enabled: boolean }): Promise<void>;
     function invoke(
+        param: 'set_show_experimental_settings',
+        payload: { showExperimentalSettings: boolean }
+    ): Promise<void>;
+    function invoke(
         param: 'set_monerod_config',
         payload: {
             useMoneroFail: boolean;
