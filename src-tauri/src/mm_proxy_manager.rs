@@ -88,6 +88,7 @@ impl MmProxyManager {
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
+        
         let new_config = MergeMiningProxyConfig {
             tari_address: config.tari_address.clone(),
             base_node_grpc_port: config.base_node_grpc_port,

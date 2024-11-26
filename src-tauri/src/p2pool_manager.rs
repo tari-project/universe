@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use futures_util::future::FusedFuture;
-use log::warn;
+use log::{warn,info};
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -114,7 +114,8 @@ impl P2poolManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        if process_watcher.is_running() {
+        info!(target: LOG_TARGET, "Ensuring p2pool is started, app_shutdown_terminated={}, app_shutdown_triggered={}", app_shutdown.is_terminated(), app_shutdown.is_triggered());
+        if process_watcher.is_running() || app_shutdown.is_terminated() || app_shutdown.is_triggered() {
             return Ok(());
         }
         process_watcher.adapter.config = Some(config);

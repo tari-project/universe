@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::SystemTime;
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
+use futures_util::future::FusedFuture;
 use log::{error, info};
 use minotari_node_grpc_client::grpc::Peer;
 use tari_common::configuration::Network;
@@ -77,6 +78,9 @@ impl NodeManager {
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
+            if process_watcher.is_running() || app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+                return Ok(());
+            }
             process_watcher.adapter.use_tor = use_tor;
             process_watcher.adapter.tor_control_port = tor_control_port;
             process_watcher.stop_on_exit_codes = vec![114];

@@ -1,4 +1,5 @@
 use std::{path::PathBuf, sync::Arc};
+use futures_util::future::FusedFuture;
 use tokio::sync::RwLock;
 
 use crate::process_watcher::ProcessWatcher;
@@ -36,6 +37,11 @@ impl TorManager {
     ) -> Result<(), anyhow::Error> {
         {
             let mut process_watcher = self.watcher.write().await;
+
+            if process_watcher.is_running() || app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+                return Ok(());
+            }
+
             process_watcher
                 .adapter
                 .load_or_create_config(config_path.clone())
