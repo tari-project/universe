@@ -160,6 +160,7 @@ export function CustomPowerLevelsDialog({
                                 label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
                                 maxLevel={maxAvailableThreads.max_gpus_threads[index].max_gpu_threads}
                                 value={gpu.max_gpu_threads}
+                                step={2}
                                 desc={'custom-power-levels.choose-gpu-power-level'}
                                 warning={t('custom-power-levels.gpu-warning')}
                                 onChange={(value: number) => {
