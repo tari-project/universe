@@ -33,44 +33,56 @@ export const useWebsocket = () => {
 
     useEffect(() => {
         loadAppId().catch(console.error).then();
-    }, []);
+    }, [loadAppId]);
 
     useEffect(() => {
         const func = async () => {
             try {
                 if (socket) {
-                    emitWithRetry(socket, 'mining-status', {
-                        isMining,
-                        userId,
-                        network: 'esmeralda',
-                        appId: appId,
-                    });
+                    emitWithCallback(
+                        socket,
+                        'mining-status',
+                        {
+                            isMining,
+                            userId,
+                            network: 'esmeralda',
+                            appId: appId,
+                        },
+                        // eslint-disable-next-line no-console
+                        console.log
+                    );
                 }
             } catch (e) {
                 console.error(e);
             }
         };
         func().catch(console.error);
-    }, [airdropToken, isMining, userId]);
+    }, [airdropToken, appId, isMining, userId]);
 
     useEffect(() => {
         const intervalId = setInterval(() => {
             try {
-                if (socket) {
+                if (socket && isMining) {
                     console.log('Sending regular mining status', baseUrl);
-                    emitWithRetry(socket, 'mining-status', {
-                        isMining,
-                        userId,
-                        network: 'esmeralda',
-                        appId,
-                    });
+                    emitWithCallback(
+                        socket,
+                        'mining-status',
+                        {
+                            isMining,
+                            userId,
+                            network: 'esmeralda',
+                            appId,
+                        },
+                        // eslint-disable-next-line no-console
+                        console.log
+                    );
                 }
             } catch (e) {
                 console.error(e);
             }
         }, 5000);
         return () => clearInterval(intervalId);
-    }, [isMining, userId]);
+    }, [appId, baseUrl, isMining, userId]);
 
     const init = () => {
         try {
@@ -107,12 +119,18 @@ export const useWebsocket = () => {
     const disconnect = () => {
         try {
             if (socket) {
-                emitWithRetry(socket, 'mining-status', {
-                    isMining: false,
-                    userId,
-                    network: 'esmeralda',
-                    appId: invoke('get_app_id'),
-                });
+                emitWithCallback(
+                    socket,
+                    'mining-status',
+                    {
+                        isMining: false,
+                        userId,
+                        network: 'esmeralda',
+                        appId: invoke('get_app_id'),
+                    },
+                    // eslint-disable-next-line no-console
+                    console.log
+                );
                 socket.disconnect();
                 socket = null;
             }
@@ -138,13 +156,8 @@ export const useWebsocket = () => {
     return { init, disconnect, socket };
 };
 
-function emitWithRetry(socket, event, arg, func?: (value: any) => void) {
-    socket.emit(event, arg, (err, value) => {
-        if (err) {
-            // no ack from the server, let's retry
-            // emitWithRetry(socket, event, arg);c
-            console.error('Failed to emit with ack: ', err);
-        }
+function emitWithCallback(socket, event, arg, func?: (value: any) => void) {
+    socket.emit(event, arg, (value) => {
         if (value && func) {
             func(value);
         }
