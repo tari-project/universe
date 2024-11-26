@@ -1920,17 +1920,35 @@ async fn reset_settings<'r>(
     Ok(())
 }
 #[tauri::command]
-async fn close_splashscreen(window: Window) {
+async fn close_splashscreen(
+    window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<(), String> {
     window
         .get_window("splashscreen")
         .expect("no window labeled 'splashscreen' found")
         .close()
         .expect("could not close");
-    window
-        .get_window("main")
-        .expect("no window labeled 'main' found")
-        .show()
-        .expect("could not show");
+
+    // We need to set the main window position and size here since it's overridden
+    let config = state.config.read().await;
+    let window_settings = config.window_settings();
+    let main_window = window.get_window("main").expect("Main window not found");
+    if let Err(e) =
+        main_window.set_position(LogicalPosition::new(window_settings.x, window_settings.y))
+    {
+        error!(target: LOG_TARGET, "Could not set window position: {:?}", e);
+    }
+    if let Err(e) = main_window.set_size(LogicalSize::new(
+        window_settings.width,
+        window_settings.height,
+    )) {
+        error!(target: LOG_TARGET, "Could not set window size: {:?}", e);
+    }
+    main_window.show().expect("could not show");
+
+    Ok(())
 }
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
@@ -2173,7 +2191,6 @@ fn main() {
             let splash_window = app
                 .get_window("splashscreen")
                 .expect("Main window not found");
-            let main_window = app.get_window("main").expect("Main window not found");
             let config_path = app
                 .path_resolver()
                 .app_config_dir()
@@ -2192,15 +2209,12 @@ fn main() {
                         app_conf.ludicrous_mode_cpu_options().clone();
                     cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
 
-                    // Set tauri windows position and size
+                    // Set splashscreen windows position and size here so it won't jump around
                     let w_settings = app_conf.window_settings();
                     let window_position = LogicalPosition::new(w_settings.x, w_settings.y);
                     let window_size = LogicalSize::new(w_settings.width, w_settings.height);
                     if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
                         error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
-                    }
-                    if let Err(e) = main_window.set_position(window_position).and_then(|_| main_window.set_size(window_size)) {
-                        error!(target: LOG_TARGET, "Could not set main window position or size: {:?}", e);
                     }
                     Ok(())
                 });
