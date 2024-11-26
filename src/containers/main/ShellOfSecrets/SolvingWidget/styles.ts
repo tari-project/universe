@@ -35,3 +35,8 @@ export const GateImage = styled('img')`
     transform: translateY(-50%);
     z-index: 2;
 `;
+
+export const ContentLayer = styled('div')`
+    position: relative;
+    z-index: 3;
+`;
