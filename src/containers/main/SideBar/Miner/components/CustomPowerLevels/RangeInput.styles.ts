@@ -40,7 +40,6 @@ export const RangeInput = styled.input<{ $thumbLeft?: number }>`
     border-radius: 5px;
     outline: none;
     -webkit-transition: 0.2s;
-    transition: opacity 0.2s;
 
     &::-webkit-slider-thumb {
         appearance: none;
@@ -48,21 +47,22 @@ export const RangeInput = styled.input<{ $thumbLeft?: number }>`
         width: ${SLIDER_THUMB_WIDTH}px;
         height: ${SLIDER_THUMB_WIDTH}px;
         z-index: 5;
-        background: white;
         border-radius: 50%;
         border: 2px solid #813bf5;
+        background-color: #fff;
         cursor: pointer;
         position: absolute;
         left: calc(${({ $thumbLeft = 0 }) => `${$thumbLeft}% - ${SLIDER_THUMB_WIDTH / 2}px`});
         bottom: -50%;
+        transition: border 0.2s;
     }
 
     &:disabled {
-        opacity: 0.6;
         pointer-events: none;
 
         &::-webkit-slider-thumb {
             pointer-events: none;
+            border: 2px solid rgba(129, 59, 245, 0.47);
         }
     }
 `;
