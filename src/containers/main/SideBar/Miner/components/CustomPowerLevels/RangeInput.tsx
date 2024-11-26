@@ -30,6 +30,10 @@ function convertToPercentage(value: number, max: number): number {
     return Math.ceil((value * 100) / max);
 }
 
+function getSafeStepValue(step: number, value: number): number {
+    return value % step === 0 ? value : value + (value % step);
+}
+
 export const RangeInputComponent = ({
     label,
     maxLevel,
@@ -45,7 +49,8 @@ export const RangeInputComponent = ({
     const [isHover, setIsHover] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: true });
     const inputRef = useRef<HTMLInputElement>(null);
-    const [currentValue, setCurrentValue] = useState(value);
+
+    const [currentValue, setCurrentValue] = useState(getSafeStepValue(step, value));
 
     const hasChanges = useRef(false);
 
@@ -68,10 +73,11 @@ export const RangeInputComponent = ({
     const handleChange = useCallback(
         (event: ChangeEvent<HTMLInputElement>) => {
             const newValue = Number(event.target.value);
-            setCurrentValue(newValue >= min ? newValue : min);
+            const safeValue = getSafeStepValue(step, newValue);
+            setCurrentValue(safeValue >= min ? safeValue : min);
             hasChanges.current = true;
         },
-        [min]
+        [min, step]
     );
 
     const valueBasedStyles = useMemo(() => {
