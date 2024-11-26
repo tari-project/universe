@@ -15,6 +15,7 @@ use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::utils::file_utils::convert_to_string;
 
+use crate::utils::hardware_utils;
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 
@@ -81,7 +82,10 @@ impl ProcessAdapter for P2poolAdapter {
         let pid_file_name = self.pid_file_name().to_string();
 
         args.push("--squad".to_string());
-        args.push("default_2".to_string());
+
+        let squad = determine_squad();
+
+        args.push(squad);
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => {
@@ -153,5 +157,15 @@ impl StatusMonitor for P2poolStatusMonitor {
 impl P2poolStatusMonitor {
     pub async fn status(&self) -> Result<Stats, Error> {
         self.stats_client.stats().await
+    }
+}
+
+fn determine_squad() -> String {
+    let cpu_category = hardware_utils::get_cpu_category();
+    match cpu_category {
+        hardware_utils::CpuCategory::LowEnd => "cpu_low".to_string(),
+        hardware_utils::CpuCategory::MidEnd => "cpu_mid".to_string(),
+        hardware_utils::CpuCategory::HighEnd => "cpu_high".to_string(),
+        hardware_utils::CpuCategory::Unknown => "default_3".to_string(),
     }
 }
