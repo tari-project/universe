@@ -18,6 +18,7 @@
     "cpu-warning": "Penggunaan CPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",
     "gpu-power-level": "Daya GPU %",
     "gpu-warning": "Penggunaan GPU yang tinggi dapat menyebabkan panas berlebih, meningkatkan konsumsi energi, dan dapat menyebabkan kerusakan perangkat keras seiring waktu. Harap pantau penggunaan untuk memastikan operasi yang aman dan efisien.",
+    "save-changes": "Save Changes",
     "saved": "Menerapkan Perubahan",
     "title": "Mode Kustom",
     "warning": "Peringatan"
@@ -60,6 +61,7 @@
     "placeholder": "Masukkan alamat Monero",
     "title": "Alamat Monero"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "Jaringan",
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
