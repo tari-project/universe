@@ -15,7 +15,7 @@ export default function AirdropPermission() {
     }, [allowTelemetry, setAllowTelemetry]);
 
     return (
-        <Position initial={{ x: -200, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
+        <Position initial={{ x: 100, opacity: 0 }} animate={{ x: 0, opacity: 1 }}>
             <BoxWrapper>
                 <Gem1 src={gemImage} alt="" />
                 <Gem2 src={gemImage} alt="" />

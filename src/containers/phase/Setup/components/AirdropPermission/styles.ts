@@ -30,10 +30,6 @@ export const BoxWrapper = styled('div')`
 
     pointer-events: all;
     width: 460px;
-
-    @media (max-width: 974px) {
-        width: 380px;
-    }
 `;
 
 export const TextWrapper = styled('div')`
