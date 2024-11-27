@@ -125,7 +125,6 @@ struct UpdateProgressRustEvent {
 }
 
 async fn stop_all_miners(state: UniverseAppState, should_shutdown: bool) -> Result<(), String> {
-
     info!(target: LOG_TARGET, "Stopping all miners");
     info!(target: LOG_TARGET, "Entering shutdown sequence");
     if should_shutdown {
@@ -134,48 +133,63 @@ async fn stop_all_miners(state: UniverseAppState, should_shutdown: bool) -> Resu
 
     let mut cpu_miner = state.cpu_miner.write().await;
     // if cpu_miner.is_running().await {
-        cpu_miner.stop().await.map_err(|e| e.to_string())?;
-        drop(cpu_miner);
+    cpu_miner.stop().await.map_err(|e| e.to_string())?;
+    drop(cpu_miner);
     // }
 
     let gpu_miner = state.gpu_miner.read().await;
     // if gpu_miner.is_running().await {
-        gpu_miner.stop().await.map_err(|e| e.to_string())?;
-        drop(gpu_miner);
+    gpu_miner.stop().await.map_err(|e| e.to_string())?;
+    drop(gpu_miner);
     // }
 
     // if state.wallet_manager.is_running().await {
-        let exit_code = state.wallet_manager.stop().await.map_err(|e| e.to_string())?;
-        info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
+    let exit_code = state
+        .wallet_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
     // }
 
     // if state.node_manager.is_running().await {
-        let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
-        info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
+    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
     // }
 
     // if state.mm_proxy_manager.is_running().await {
-        state.mm_proxy_manager.stop().await.map_err(|e| e.to_string())?;
+    state
+        .mm_proxy_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
     // }
 
     // let is_p2pool_manager_running = state.p2pool_manager.is_running().await.map_err(
     //     |e| e.to_string())?;
     // if is_p2pool_manager_running {
-        let exit_code = state.p2pool_manager.stop().await.map_err(|e| e.to_string())?;
-        info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
+    let exit_code = state
+        .p2pool_manager
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
     // }
 
     // if state.tor_manager.is_running().await {
-        let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
-        info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
+    let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
     // }
 
     if should_shutdown {
         state.shutdown.clone().trigger();
     }
 
-    let is_p2pool_manager_running = state.p2pool_manager.is_running().await.map_err(
-        |e| e.to_string())?;
+    let is_p2pool_manager_running = state
+        .p2pool_manager
+        .is_running()
+        .await
+        .map_err(|e| e.to_string())?;
 
     info!(target: LOG_TARGET, "Processes statuses after stop sequence:");
     info!(target: LOG_TARGET, "CPU Miner: {}", state.cpu_miner.read().await.is_running().await);
@@ -681,7 +695,6 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-
     window
         .emit(
             "message",

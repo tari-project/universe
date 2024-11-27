@@ -1,10 +1,10 @@
-use std::{path::PathBuf, sync::Arc};
-use futures_util::future::FusedFuture;
-use tokio::sync::RwLock;
-use log::info;
 use crate::process_watcher::ProcessWatcher;
 use crate::tor_adapter::{TorAdapter, TorConfig};
+use futures_util::future::FusedFuture;
+use log::info;
+use std::{path::PathBuf, sync::Arc};
 use tari_shutdown::ShutdownSignal;
+use tokio::sync::RwLock;
 
 pub(crate) struct TorManager {
     watcher: Arc<RwLock<ProcessWatcher<TorAdapter>>>,
@@ -38,8 +38,15 @@ impl TorManager {
         {
             let mut process_watcher = self.watcher.write().await;
 
-            info!("Ensuring p2pool is started, app_shutdown_terminated={}, app_shutdown_triggered={}", app_shutdown.is_terminated(), app_shutdown.is_triggered());
-            if process_watcher.is_running() || app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+            info!(
+                "Ensuring p2pool is started, app_shutdown_terminated={}, app_shutdown_triggered={}",
+                app_shutdown.is_terminated(),
+                app_shutdown.is_triggered()
+            );
+            if process_watcher.is_running()
+                || app_shutdown.is_terminated()
+                || app_shutdown.is_triggered()
+            {
                 return Ok(());
             }
 

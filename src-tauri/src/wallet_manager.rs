@@ -4,9 +4,9 @@ use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};
+use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
-use futures_util::future::FusedFuture;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
@@ -61,7 +61,10 @@ impl WalletManager {
 
         let mut process_watcher = self.watcher.write().await;
 
-        if process_watcher.is_running() || app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+        if process_watcher.is_running()
+            || app_shutdown.is_terminated()
+            || app_shutdown.is_triggered()
+        {
             return Ok(());
         }
 

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use futures_util::future::FusedFuture;
-use log::{warn,info};
+use log::{info, warn};
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -115,7 +115,10 @@ impl P2poolManager {
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         info!(target: LOG_TARGET, "Ensuring p2pool is started, app_shutdown_terminated={}, app_shutdown_triggered={}", app_shutdown.is_terminated(), app_shutdown.is_triggered());
-        if process_watcher.is_running() || app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+        if process_watcher.is_running()
+            || app_shutdown.is_terminated()
+            || app_shutdown.is_triggered()
+        {
             return Ok(());
         }
         process_watcher.adapter.config = Some(config);
@@ -139,8 +142,7 @@ impl P2poolManager {
                 sleep(Duration::from_secs(5)).await;
                 if let Ok(_stats) = status_monitor.status().await {
                     break;
-                }
-                 else {
+                } else {
                     warn!(target: LOG_TARGET, "P2pool stats not available yet");
                 }
             } // wait until we have stats from p2pool, so its started

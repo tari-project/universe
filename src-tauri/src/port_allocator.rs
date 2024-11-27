@@ -7,7 +7,6 @@ const ADDRESS: &str = "127.0.0.1";
 const MAX_RETRIES: u16 = 10;
 const FALLBACK_PORT_RANGE: std::ops::Range<u16> = 49152..65535;
 
-
 pub struct PortAllocator {}
 
 impl PortAllocator {
