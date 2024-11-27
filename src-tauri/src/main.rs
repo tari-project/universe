@@ -13,7 +13,6 @@ use monero_address_creator::Seed as MoneroSeed;
 
 use log4rs::config::RawConfig;
 use regex::Regex;
-use sentry::protocol::Event;
 use serde::Serialize;
 use std::convert::TryFrom;
 use std::fs::{read_dir, remove_dir_all, remove_file};
@@ -983,25 +982,21 @@ async fn setup_inner(
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;
-        let error_msg = "Miner is stuck on orphan chain".to_string();
 
         loop {
             interval.tick().await;
 
             let state = app_handle_clone.state::<UniverseAppState>().inner();
-            let check_if_orphan = state.node_manager.check_if_is_orphan_chain().await;
+            let check_if_orphan = state
+                .node_manager
+                .check_if_is_orphan_chain(!has_send_error)
+                .await;
             match check_if_orphan {
                 Ok(is_stuck) => {
                     if is_stuck {
                         error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
                     }
                     if is_stuck && !has_send_error {
-                        sentry::capture_event(Event {
-                            message: Some(error_msg.clone()),
-                            level: sentry::Level::Error,
-                            culprit: Some("orphan-chain".to_string()),
-                            ..Default::default()
-                        });
                         has_send_error = true;
                     }
                     drop(app_handle_clone.emit_all("is_stuck", is_stuck));
