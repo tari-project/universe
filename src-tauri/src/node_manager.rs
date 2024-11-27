@@ -78,12 +78,12 @@ impl NodeManager {
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
-            if process_watcher.is_running()
-                || app_shutdown.is_terminated()
-                || app_shutdown.is_triggered()
-            {
-                return Ok(());
-            }
+            // if process_watcher.is_running()
+            //     || app_shutdown.is_terminated()
+            //     || app_shutdown.is_triggered()
+            // {
+            //     return Ok(());
+            // }
             process_watcher.adapter.use_tor = use_tor;
             process_watcher.adapter.tor_control_port = tor_control_port;
             process_watcher.stop_on_exit_codes = vec![114];

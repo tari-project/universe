@@ -38,12 +38,12 @@ impl TorManager {
         {
             let mut process_watcher = self.watcher.write().await;
 
-            if process_watcher.is_running()
-                || app_shutdown.is_terminated()
-                || app_shutdown.is_triggered()
-            {
-                return Ok(());
-            }
+            // if process_watcher.is_running()
+            //     || app_shutdown.is_terminated()
+            //     || app_shutdown.is_triggered()
+            // {
+            //     return Ok(());
+            // }
 
             process_watcher
                 .adapter

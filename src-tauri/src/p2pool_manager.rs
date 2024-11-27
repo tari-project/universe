@@ -116,13 +116,13 @@ impl P2poolManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        
-        if process_watcher.is_running()
-            || app_shutdown.is_terminated()
-            || app_shutdown.is_triggered()
-        {
-            return Ok(());
-        }
+
+        // if process_watcher.is_running()
+        //     || app_shutdown.is_terminated()
+        //     || app_shutdown.is_triggered()
+        // {
+        //     return Ok(());
+        // }
         process_watcher.adapter.config = Some(config);
         process_watcher.health_timeout = Duration::from_secs(28);
         process_watcher.poll_time = Duration::from_secs(30);
