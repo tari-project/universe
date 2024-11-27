@@ -1,11 +1,14 @@
 import { io } from 'socket.io-client';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { QuestCompletedEvent } from '@app/types/ws';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 let socket: ReturnType<typeof io> | null;
+
+const MINING_EVENT_INTERVAL = 5000;
+const MINING_EVENT_NAME = 'mining-status';
 
 export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
@@ -18,60 +21,41 @@ export const useWebsocket = () => {
     const network = useMiningStore((state) => state.network);
     const appId = useAppConfigStore((state) => state.anon_id);
     const base_node = useMiningStore((state) => state.base_node);
+    const [connectedSocket, setConnectedSocket] = useState(false);
+
     const isMining = useMemo(() => {
         const isMining = (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
         return isMining;
     }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
 
-    useEffect(() => {
-        const func = async () => {
+    const handleEmitMiningStatus = useCallback(
+        (isMining: boolean) => {
+            if (!socket || !connectedSocket) return;
+            const arg = { isMining };
             try {
-                if (socket) {
-                    emitWithCallback(
-                        socket,
-                        'mining-status',
-                        {
-                            isMining,
-                        },
-                        // eslint-disable-next-line no-console
-                        console.log
-                    );
-                }
+                // eslint-disable-next-line no-console
+                socket.emit(MINING_EVENT_NAME, arg, console.log);
             } catch (e) {
                 console.error(e);
             }
-        };
-        func().catch(console.error);
-    }, [airdropToken, appId, isMining, userId]);
+        },
+        [connectedSocket]
+    );
 
     useEffect(() => {
-        const intervalId = setInterval(() => {
-            try {
-                if (socket && isMining) {
-                    console.log('Sending regular mining status', baseUrl, network);
-                    emitWithCallback(
-                        socket,
-                        'mining-status',
-                        {
-                            isMining,
-                        },
-                        // eslint-disable-next-line no-console
-                        console.log
-                    );
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }, 5000);
-        return () => clearInterval(intervalId);
-    }, [appId, baseUrl, isMining, network, userId]);
+        if (isMining) {
+            const intervalId = setInterval(() => {
+                handleEmitMiningStatus(isMining);
+            }, MINING_EVENT_INTERVAL);
+            return () => clearInterval(intervalId);
+        } else {
+            handleEmitMiningStatus(isMining);
+        }
+    }, [baseUrl, handleEmitMiningStatus, network, isMining]);
 
     const init = () => {
         try {
-            console.log('Connecting to websocket', baseUrl);
             if (!socket && baseUrl) {
-                console.log('creating a new connection', baseUrl);
-
                 socket = io(baseUrl, {
                     secure: true,
                     transports: ['websocket', 'polling'],
@@ -85,6 +69,7 @@ export const useWebsocket = () => {
             socket.emit('subscribe-to-gem-updates');
             socket.on('connect', () => {
                 if (!socket) return;
+                setConnectedSocket(true);
                 // socket.emit('auth', airdropToken);
                 socket.on(userId as string, (msg: string) => {
                     const msgParsed = JSON.parse(msg) as QuestCompletedEvent;
@@ -101,15 +86,8 @@ export const useWebsocket = () => {
     const disconnect = () => {
         try {
             if (socket) {
-                emitWithCallback(
-                    socket,
-                    'mining-status',
-                    {
-                        isMining: false,
-                    },
-                    // eslint-disable-next-line no-console
-                    console.log
-                );
+                setConnectedSocket(false);
+                handleEmitMiningStatus(false);
                 socket.disconnect();
                 socket = null;
             }
@@ -134,20 +112,3 @@ export const useWebsocket = () => {
 
     return { init, disconnect, socket };
 };
-
-function emitWithCallback(socket, event, arg, func?: (value: any) => void) {
-    socket.emit(event, arg, (value) => {
-        if (value && func) {
-            func(value);
-        }
-    });
-}
-
-// async function emitWithAck(socket, event, arg) {
-//     try {
-//         socket.timeout(5000).emitWithAck(event, arg);
-//     } catch (e) {
-//         emitWithAck(socket, event, arg);
-//         console.error('Failed to emit with ack: ', e);
-//     }
-// }
