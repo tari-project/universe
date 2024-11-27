@@ -18,6 +18,7 @@ interface State extends MinerMetrics {
     counter: number;
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
+    network: string;
 }
 
 interface Actions {
@@ -31,6 +32,7 @@ interface Actions {
         customGpuLevels?: GpuThreads[];
         customCpuLevels?: number;
     }) => Promise<void>;
+    setMiningNetwork: () => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
     setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
@@ -51,6 +53,7 @@ const initialState: State = {
     isChangingMode: false,
     miningControlsEnabled: true,
     isReplaying: false,
+    network: 'unknown',
     excludedGpuDevices: [],
     cpu: {
         hardware: [],
@@ -83,6 +86,18 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     ...initialState,
     setCustomLevelsDialogOpen: (customLevelsDialogOpen) => set({ customLevelsDialogOpen }),
     setMiningMetrics: (metrics) => set({ ...metrics }),
+    setMiningNetwork: async () => {
+        try {
+            const network = (await invoke('get_network', {})) as string;
+            set({ network });
+        } catch (e) {
+            Sentry.captureException(e);
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not get network: ', e);
+            appStateStore.setError(e as string);
+            set({ excludedGpuDevices: undefined });
+        }
+    },
     startMining: async () => {
         console.info('Mining starting....');
         set({ miningInitiated: true });

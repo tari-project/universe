@@ -325,6 +325,15 @@ pub async fn get_max_consumption_levels(
     })
 }
 
+#[tauri::command]
+pub async fn get_network(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<String, ()> {
+    Ok(Network::get_current_or_user_setting_or_default().to_string())
+}
+
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn get_miner_metrics(
