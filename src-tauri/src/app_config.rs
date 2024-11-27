@@ -281,7 +281,7 @@ impl AppConfig {
                 self.monero_address_is_generated = true;
             }
 
-            if let Ok(..) = self.update_config_file().await {
+            if self.update_config_file().await.is_ok() {
                 self.created_at = Some(file.clone().metadata()?.created()?.into());
             }
         }
