@@ -30,11 +30,18 @@ export const WalletContainer = styled(m.div)`
     }
 `;
 
-export const WalletBalance = styled.div`
+export const WalletBalance = styled(m.div)`
     display: flex;
     justify-content: flex-start;
     color: #fff;
     width: 100%;
+`;
+
+export const WalletBalanceWrapper = styled.div`
+    height: 51px;
+
+    display: flex;
+    align-items: center;
 `;
 
 export const WalletBalanceContainer = styled(m.div)`
