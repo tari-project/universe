@@ -6630,7 +6630,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.7.4"
+version = "0.7.8"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6642,6 +6642,7 @@ dependencies = [
  "device_query",
  "dunce",
  "dyn-clone",
+ "embed-resource",
  "flate2",
  "futures-lite 2.4.0",
  "futures-util",

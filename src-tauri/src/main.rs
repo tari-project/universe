@@ -221,7 +221,10 @@ async fn get_max_consumption_levels(
 
     let mut max_gpus_threads = Vec::new();
     for gpu_device in gpu_devices {
-        let max_gpu_threads = gpu_device.max_grid_size;
+        // let max_gpu_threads = gpu_device.max_grid_size;
+        // For some reason this is always return 256, even when the cards can do more like
+        // 4096 or 8192
+        let max_gpu_threads = 8192;
         max_gpus_threads.push(GpuThreads {
             gpu_name: gpu_device.device_name,
             max_gpu_threads,

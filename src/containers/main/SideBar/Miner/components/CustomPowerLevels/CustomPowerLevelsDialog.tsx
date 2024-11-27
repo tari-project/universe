@@ -38,7 +38,7 @@ const resolveCpuInitialThreads = (
         case 'Eco':
             return configCpuLevels || Math.round(maxAvailableThreads.max_cpu_threads * 0.3);
         case 'Ludicrous':
-            return configCpuLevels || Math.round(maxAvailableThreads.max_cpu_threads * 0.9);
+            return configCpuLevels || maxAvailableThreads.max_cpu_threads;
         default:
             return configCpuLevels || 0;
     }
@@ -56,12 +56,12 @@ const resolveGpuInitialThreads = (
             case 'Eco':
                 return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
                     gpu_name: gpu.gpu_name,
-                    max_gpu_threads: Math.round(gpu.max_gpu_threads * 0.3),
+                    max_gpu_threads: 2,
                 }));
             case 'Ludicrous':
                 return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
                     gpu_name: gpu.gpu_name,
-                    max_gpu_threads: Math.round(gpu.max_gpu_threads * 0.9),
+                    max_gpu_threads: 1024,
                 }));
             default:
                 return configGpuLevels || [];
@@ -160,6 +160,7 @@ export function CustomPowerLevelsDialog({
                                 label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
                                 maxLevel={maxAvailableThreads.max_gpus_threads[index].max_gpu_threads}
                                 value={gpu.max_gpu_threads}
+                                step={2}
                                 desc={'custom-power-levels.choose-gpu-power-level'}
                                 warning={t('custom-power-levels.gpu-warning')}
                                 onChange={(value: number) => {

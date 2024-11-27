@@ -1,11 +1,11 @@
 import { AnimatePresence } from 'framer-motion';
 
 import { EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
-import { useFormatBalance } from '@app/utils/formatBalance.ts';
 
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
+import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 
 const variants = {
     visible: {
@@ -36,7 +36,7 @@ export default function Earnings() {
 
     const displayEarnings = replayItem?.amount || recapData?.totalEarnings || earnings;
 
-    const formatted = useFormatBalance(displayEarnings || 0, 1);
+    const formatted = formatNumber(displayEarnings || 0, FormatPreset.TXTM_COMPACT);
 
     const recapText = recapData?.totalEarnings ? (
         <RecapText>
