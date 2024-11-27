@@ -18,6 +18,7 @@
     "cpu-warning": "Hoë SVE-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker.",
     "gpu-power-level": "GPU Krag %",
     "gpu-warning": "Hoë GPU-gebruik kan oorverhitting veroorsaak, energieverbruik verhoog, en kan oor tyd tot hardeware skade lei. Monitor asseblief gebruik om veilige en doeltreffende werking te verseker.",
+    "save-changes": "Save Changes",
     "saved": "Veranderinge Toepas",
     "title": "Pasgemaakte Modus",
     "warning": "Waarskuwing"
@@ -60,6 +61,7 @@
     "placeholder": "Voer Monero-adres in",
     "title": "Monero-adres"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "Netwerk",
   "no-entry-guard": "Geen Toegangsbewaarder verbind nie!",
   "not-connected-to-tari": "Nie aan die Tari Netwerk gekoppel nie",

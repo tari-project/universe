@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api/tauri';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 export function useGetSeedWords() {
     const [seedWords, setSeedWords] = useState<string[]>([]);
     const [seedWordsFetching, setSeedWordsFetching] = useState(false);
+    const setError = useAppStateStore((s) => s.setError);
 
     const getSeedWords = useCallback(async () => {
         setSeedWordsFetching(true);
@@ -15,7 +17,7 @@ export function useGetSeedWords() {
         } finally {
             setSeedWordsFetching(false);
         }
-    }, []);
+    }, [setError]);
 
     return {
         seedWords,
