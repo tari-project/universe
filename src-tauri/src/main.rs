@@ -28,6 +28,7 @@ use tauri::{Manager, RunEvent, UpdaterEvent, Window};
 use tokio::sync::{Mutex, RwLock};
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
+use utils::shutdown_utils::stop_all_processes;
 use wallet_adapter::TransactionInfo;
 
 use app_config::{AppConfig, GpuThreads};
@@ -122,85 +123,6 @@ struct UpdateProgressRustEvent {
     chunk_length: usize,
     content_length: u64,
     downloaded: u64,
-}
-
-async fn stop_all_miners(state: UniverseAppState, should_shutdown: bool) -> Result<(), String> {
-    info!(target: LOG_TARGET, "Stopping all miners");
-    info!(target: LOG_TARGET, "Entering shutdown sequence");
-    if should_shutdown {
-        state.shutdown.clone().trigger();
-    }
-
-    let mut cpu_miner = state.cpu_miner.write().await;
-    // if cpu_miner.is_running().await {
-    cpu_miner.stop().await.map_err(|e| e.to_string())?;
-    drop(cpu_miner);
-    // }
-
-    let gpu_miner = state.gpu_miner.read().await;
-    // if gpu_miner.is_running().await {
-    gpu_miner.stop().await.map_err(|e| e.to_string())?;
-    drop(gpu_miner);
-    // }
-
-    // if state.wallet_manager.is_running().await {
-    let exit_code = state
-        .wallet_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
-    // }
-
-    // if state.node_manager.is_running().await {
-    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
-    // }
-
-    // if state.mm_proxy_manager.is_running().await {
-    state
-        .mm_proxy_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    // }
-
-    // let is_p2pool_manager_running = state.p2pool_manager.is_running().await.map_err(
-    //     |e| e.to_string())?;
-    // if is_p2pool_manager_running {
-    let exit_code = state
-        .p2pool_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
-    // }
-
-    // if state.tor_manager.is_running().await {
-    let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
-    // }
-
-    if should_shutdown {
-        state.shutdown.clone().trigger();
-    }
-
-    let is_p2pool_manager_running = state
-        .p2pool_manager
-        .is_running()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    info!(target: LOG_TARGET, "Processes statuses after stop sequence:");
-    info!(target: LOG_TARGET, "CPU Miner: {}", state.cpu_miner.read().await.is_running().await);
-    info!(target: LOG_TARGET, "GPU Miner: {}", state.gpu_miner.read().await.is_running().await);
-    info!(target: LOG_TARGET, "Wallet Manager: {}", state.wallet_manager.is_running().await);
-    info!(target: LOG_TARGET, "MM Proxy Manager: {}", state.mm_proxy_manager.is_running().await);
-    info!(target: LOG_TARGET, "Node Manager: {}", state.node_manager.is_running().await);
-    info!(target: LOG_TARGET, "P2Pool Manager: {}", is_p2pool_manager_running);
-    info!(target: LOG_TARGET, "Tor Manager: {}", state.tor_manager.is_running().await);
-
-    Ok(())
 }
 
 #[tauri::command]
@@ -532,7 +454,7 @@ async fn restart_application(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_miners(state.inner().clone(), true).await?;
+        stop_all_processes(state.inner().clone(), true).await?;
     }
 
     app.restart();
@@ -545,7 +467,7 @@ async fn exit_application(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_miners(state.inner().clone(), true).await?;
+    stop_all_processes(state.inner().clone(), true).await?;
 
     app.exit(0);
     Ok(())
@@ -1151,7 +1073,7 @@ async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_miners(state.inner().clone(), false).await?;
+    stop_all_processes(state.inner().clone(), false).await?;
 
     tauri::async_runtime::spawn(async move {
         match InternalWallet::create_from_seed(config_path, seed_words).await {
@@ -1849,7 +1771,7 @@ async fn reset_settings<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_miners(state.inner().clone(), true).await?;
+    stop_all_processes(state.inner().clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path_resolver().app_config_dir();
@@ -2349,12 +2271,12 @@ fn main() {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_miners(app_state.clone(), true));
+            let _unused = block_on(stop_all_processes(app_state.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_miners(app_state.clone(), true));
+            let _unused = block_on(stop_all_processes(app_state.clone(), true));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {

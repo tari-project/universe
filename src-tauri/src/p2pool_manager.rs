@@ -97,12 +97,14 @@ impl P2poolManager {
         }
     }
 
-    pub async fn is_running(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
-        if process_watcher.is_running() {
-            return Ok(true);
-        }
-        Ok(false)
+        process_watcher.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
     }
 
     pub async fn ensure_started(

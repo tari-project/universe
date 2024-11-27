@@ -137,6 +137,11 @@ impl WalletManager {
         process_watcher.is_running()
     }
 
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
+    }
+
     #[deprecated(
         note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
     )]
