@@ -7,6 +7,8 @@ import { invoke } from '@tauri-apps/api/tauri';
 
 let socket: ReturnType<typeof io> | null;
 
+const NETWORK = 'esmeralda';
+
 export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userId = useAirdropStore((state) => state.userDetails?.user?.id);
@@ -17,79 +19,61 @@ export const useWebsocket = () => {
     const gpu = useMiningStore((state) => state.gpu);
     const base_node = useMiningStore((state) => state.base_node);
     const [appId, setAppId] = useState<string | null>(null);
+    const [socketConnected, setSocketConnected] = useState<boolean>(false);
     const isMining = useMemo(() => {
         const isMining = (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
         return isMining;
     }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
 
-    const loadAppId = useCallback(async () => {
-        try {
-            const appId = (await invoke('get_app_id')) as string;
-            setAppId(appId);
-        } catch (e) {
-            console.error('Failed to get appId');
-        }
+    useEffect(() => {
+        invoke('get_app_id')
+            .then((appId) => {
+                setAppId(appId);
+            })
+            .catch(console.error);
     }, []);
 
-    useEffect(() => {
-        loadAppId().catch(console.error).then();
-    }, [loadAppId]);
-
-    useEffect(() => {
-        const func = async () => {
+    const handleMiningEvent = useCallback(
+        (isMining = false) => {
             try {
-                if (socket) {
-                    emitWithCallback(
-                        socket,
+                if (socket && socketConnected) {
+                    socket.emit(
                         'mining-status',
                         {
                             isMining,
                             userId,
-                            network: 'esmeralda',
+                            network: NETWORK,
                             appId: appId,
                         },
-                        // eslint-disable-next-line no-console
-                        console.log
+                        (value: unknown) => {
+                            // eslint-disable-next-line no-console
+                            console.log('mining-status', value);
+                        }
                     );
                 }
             } catch (e) {
                 console.error(e);
             }
-        };
-        func().catch(console.error);
-    }, [airdropToken, appId, isMining, userId]);
+        },
+        [appId, userId, socketConnected]
+    );
 
     useEffect(() => {
-        const intervalId = setInterval(() => {
-            try {
-                if (socket && isMining) {
-                    console.log('Sending regular mining status', baseUrl);
-                    emitWithCallback(
-                        socket,
-                        'mining-status',
-                        {
-                            isMining,
-                            userId,
-                            network: 'esmeralda',
-                            appId,
-                        },
-                        // eslint-disable-next-line no-console
-                        console.log
-                    );
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }, 5000);
-        return () => clearInterval(intervalId);
-    }, [appId, baseUrl, isMining, userId]);
+        // Initial call to handleMiningEvent
+        // (would probably have isMining === false in the first call)
+        handleMiningEvent(isMining);
+        if (isMining) {
+            const intervalId = setInterval(() => {
+                // Send regular mining status
+                handleMiningEvent(isMining);
+            }, 5000);
+            return () => clearInterval(intervalId);
+        }
+    }, [appId, baseUrl, handleMiningEvent, isMining, userId]);
 
     const init = () => {
         try {
-            console.log('Connecting to websocket', baseUrl);
             if (!socket && baseUrl) {
-                console.log('creating a new connection', baseUrl);
-
                 socket = io(baseUrl, {
                     secure: true,
                     transports: ['websocket', 'polling'],
@@ -103,6 +87,7 @@ export const useWebsocket = () => {
             socket.emit('subscribe-to-gem-updates');
             socket.on('connect', () => {
                 if (!socket) return;
+                setSocketConnected(true);
                 // socket.emit('auth', airdropToken);
                 socket.on(userId as string, (msg: string) => {
                     const msgParsed = JSON.parse(msg) as QuestCompletedEvent;
@@ -119,20 +104,10 @@ export const useWebsocket = () => {
     const disconnect = () => {
         try {
             if (socket) {
-                emitWithCallback(
-                    socket,
-                    'mining-status',
-                    {
-                        isMining: false,
-                        userId,
-                        network: 'esmeralda',
-                        appId: invoke('get_app_id'),
-                    },
-                    // eslint-disable-next-line no-console
-                    console.log
-                );
+                handleMiningEvent(false);
                 socket.disconnect();
                 socket = null;
+                setSocketConnected(false);
             }
         } catch (e) {
             console.error(e);
@@ -155,20 +130,3 @@ export const useWebsocket = () => {
 
     return { init, disconnect, socket };
 };
-
-function emitWithCallback(socket, event, arg, func?: (value: any) => void) {
-    socket.emit(event, arg, (value) => {
-        if (value && func) {
-            func(value);
-        }
-    });
-}
-
-// async function emitWithAck(socket, event, arg) {
-//     try {
-//         socket.timeout(5000).emitWithAck(event, arg);
-//     } catch (e) {
-//         emitWithAck(socket, event, arg);
-//         console.error('Failed to emit with ack: ', e);
-//     }
-// }

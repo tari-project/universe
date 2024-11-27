@@ -31,6 +31,7 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_mining'): Promise<void>;
+    function invoke(param: 'get_app_id'): Promise<string>;
     function invoke(param: 'stop_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
     function invoke(param: 'set_auto_mining', payload: { autoMining: boolean }): Promise<void>;
