@@ -2,9 +2,8 @@
 import {
     Wrapper,
     VerticalText,
-    Divider,
-    DividerLineTop,
-    DividerLineBottom,
+    DividerLineLeft,
+    DividerLineRight,
     TimerColumn,
     NumberGroup,
     Number,
@@ -14,12 +13,11 @@ import {
 export default function Timer() {
     return (
         <Wrapper>
-            <VerticalText>You’re getting close</VerticalText>
-
-            <Divider>
-                <DividerLineTop />
-                <DividerLineBottom />
-            </Divider>
+            <VerticalText>
+                You’re getting close
+                <DividerLineLeft />
+                <DividerLineRight />
+            </VerticalText>
 
             <TimerColumn>
                 <NumberGroup>

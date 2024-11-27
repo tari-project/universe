@@ -14,9 +14,18 @@ export const BlackBox = styled('div')`
     width: 417px;
     height: 208px;
     flex-shrink: 0;
+    padding: 34px;
 
     border-radius: 10px;
     overflow: hidden;
+    box-shadow:
+        0 10px 25px -12.5px rgba(0, 0, 0, 0.07),
+        0 13px 33px -16.66px rgba(0, 0, 0, 0.05),
+        0 15px 50px -25px rgba(0, 0, 0, 0.035);
+
+    display: flex;
+    align-items: center;
+    gap: 20px;
 `;
 
 export const JewelImage = styled('img')`
@@ -39,4 +48,8 @@ export const GateImage = styled('img')`
 export const ContentLayer = styled('div')`
     position: relative;
     z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
 `;

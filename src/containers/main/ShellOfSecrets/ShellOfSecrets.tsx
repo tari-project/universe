@@ -1,9 +1,9 @@
-import SolvingWidget from './SolvingWidget/SolvingWidget';
+import SoSWidget from './SoSWidget/SoSWidget';
 
 export default function ShellOfSecrets() {
     return (
         <>
-            <SolvingWidget />
+            <SoSWidget />
         </>
     );
 }
