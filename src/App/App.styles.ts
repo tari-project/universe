@@ -5,9 +5,9 @@ export const AppContentWrapper = styled.div``;
 
 const transition = {
     ease: 'easeIn',
-    duration: 0.5,
+    duration: 0.3,
     x: {
-        duration: 0.4,
+        duration: 0.2,
     },
 };
 const variants = {
@@ -24,7 +24,7 @@ const variants = {
     exit: {
         x: -10,
         opacity: 0,
-        transition: { duration: 0.2, ease: 'easeOut' },
+        transition: { duration: 0.15, ease: 'easeOut' },
     },
 };
 

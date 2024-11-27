@@ -49,7 +49,7 @@ export default function App() {
                 <Setup />
             </AppContentContainer>
         ) : null;
-
+    console.log(`isShuttingDown= ${isShuttingDown}`);
     const shutdownMarkup = isShuttingDown ? (
         <AppContentContainer key="shutdown" initial="hidden">
             <ShuttingDownScreen />

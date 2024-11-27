@@ -17,7 +17,9 @@
         },
         "updater": {
             "active": true,
-            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
+            "endpoints": [
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
+            ],
             "dialog": false,
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
         },
@@ -55,6 +57,8 @@
                 "label": "main",
                 "width": 1380,
                 "height": 780,
+                "minWidth": 1144,
+                "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
