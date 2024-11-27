@@ -222,9 +222,13 @@ impl InternalWallet {
 
     pub fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
         let path = match &self.config.config_path {
-            Some(p) => p.clone(),
+            Some(p) => match p.parent() {
+                Some(p) => p.to_path_buf(),
+                None => return Err(anyhow!("No config path found")),
+            }
             None => return Err(anyhow!("No config path found")),
         };
+
         let passphrase = CredentialManager::default_with_dir(path)
             .get_credentials()?
             .tari_seed_passphrase;
