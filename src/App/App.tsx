@@ -45,7 +45,7 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
                     <AppContent key="app-content">
-                        {isSettingUp ? <Setup /> : null}
+                        {!isShuttingDown && isSettingUp ? <Setup /> : null}
                         {isShuttingDown || isSettingUp ? null : <MainView />}
                         {isShuttingDown ? <ShuttingDownScreen /> : null}
                     </AppContent>
