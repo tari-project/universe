@@ -15,6 +15,7 @@ export const useWebsocket = () => {
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
     const cpu = useMiningStore((state) => state.cpu);
     const gpu = useMiningStore((state) => state.gpu);
+    const network = useMiningStore((state) => state.network);
     const base_node = useMiningStore((state) => state.base_node);
     const [appId, setAppId] = useState<string | null>(null);
     const isMining = useMemo(() => {
@@ -44,9 +45,6 @@ export const useWebsocket = () => {
                         'mining-status',
                         {
                             isMining,
-                            userId,
-                            network: 'esmeralda',
-                            appId: appId,
                         },
                         // eslint-disable-next-line no-console
                         console.log
@@ -63,15 +61,12 @@ export const useWebsocket = () => {
         const intervalId = setInterval(() => {
             try {
                 if (socket && isMining) {
-                    console.log('Sending regular mining status', baseUrl);
+                    console.log('Sending regular mining status', baseUrl, network);
                     emitWithCallback(
                         socket,
                         'mining-status',
                         {
                             isMining,
-                            userId,
-                            network: 'esmeralda',
-                            appId,
                         },
                         // eslint-disable-next-line no-console
                         console.log
@@ -93,7 +88,7 @@ export const useWebsocket = () => {
                 socket = io(baseUrl, {
                     secure: true,
                     transports: ['websocket', 'polling'],
-                    auth: { token: airdropToken },
+                    auth: { token: airdropToken, appId: appId, network: network },
                 });
             }
 
@@ -124,9 +119,6 @@ export const useWebsocket = () => {
                     'mining-status',
                     {
                         isMining: false,
-                        userId,
-                        network: 'esmeralda',
-                        appId: invoke('get_app_id'),
                     },
                     // eslint-disable-next-line no-console
                     console.log
