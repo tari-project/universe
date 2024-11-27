@@ -86,7 +86,7 @@ export const useWebsocket = () => {
     const disconnect = () => {
         try {
             if (socket) {
-                setConnectedSocket(true);
+                setConnectedSocket(false);
                 handleEmitMiningStatus(false);
                 socket.disconnect();
                 socket = null;
