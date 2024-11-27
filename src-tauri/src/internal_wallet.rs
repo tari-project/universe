@@ -225,7 +225,7 @@ impl InternalWallet {
             Some(p) => match p.parent() {
                 Some(p) => p.to_path_buf(),
                 None => return Err(anyhow!("No config path found")),
-            }
+            },
             None => return Err(anyhow!("No config path found")),
         };
 
