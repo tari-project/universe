@@ -43,7 +43,6 @@ export const useWebsocket = () => {
     );
 
     useEffect(() => {
-        // Initial emit
         if (isMining) {
             const intervalId = setInterval(() => {
                 handleEmitMiningStatus(isMining);
