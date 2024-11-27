@@ -11,6 +11,7 @@ import { useAppConfigStore } from '../store/useAppConfigStore.ts';
 import { setupLogger } from '../utils/shared-logger.ts';
 import { useDetectMode } from '../hooks/helpers/useDetectMode.ts';
 import App from './App.tsx';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
 
@@ -34,6 +35,8 @@ setupLogger();
 export default function AppWrapper() {
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
+    const setMiningNetwork = useMiningStore((s) => s.setMiningNetwork);
+
     useDetectMode();
     useDisableRefresh();
     useUpdateListener();
@@ -42,6 +45,7 @@ export default function AppWrapper() {
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
+            await setMiningNetwork();
         }
         initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps
