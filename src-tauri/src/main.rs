@@ -24,7 +24,7 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{LogicalPosition, LogicalSize, Manager, RunEvent, UpdaterEvent, Window, WindowEvent};
+use tauri::{Manager, PhysicalPosition, PhysicalSize, RunEvent, UpdaterEvent, WindowEvent};
 use tokio::sync::{Mutex, RwLock};
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
@@ -1935,18 +1935,18 @@ async fn close_splashscreen(
     let config = state.config.read().await;
     let window_settings = config.window_settings();
     let main_window = window.get_window("main").expect("Main window not found");
-    if let Err(e) =
-        main_window.set_position(LogicalPosition::new(window_settings.x, window_settings.y))
-    {
-        error!(target: LOG_TARGET, "Could not set window position: {:?}", e);
-    }
-    if let Err(e) = main_window.set_size(LogicalSize::new(
-        window_settings.width,
-        window_settings.height,
-    )) {
-        error!(target: LOG_TARGET, "Could not set window size: {:?}", e);
-    }
     main_window.show().expect("could not show");
+    if let Err(e) = main_window
+        .set_position(PhysicalPosition::new(window_settings.x, window_settings.y))
+        .and_then(|_| {
+            main_window.set_size(PhysicalSize::new(
+                window_settings.width,
+                window_settings.height,
+            ))
+        })
+    {
+        error!(target: LOG_TARGET, "Could not set window position or size: {:?}", e);
+    }
 
     Ok(())
 }
@@ -2211,8 +2211,8 @@ fn main() {
 
                     // Set splashscreen windows position and size here so it won't jump around
                     let w_settings = app_conf.window_settings();
-                    let window_position = LogicalPosition::new(w_settings.x, w_settings.y);
-                    let window_size = LogicalSize::new(w_settings.width, w_settings.height);
+                    let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
+                    let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
                     if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
                         error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
                     }
@@ -2374,25 +2374,23 @@ fn main() {
         RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
             if let WindowEvent::CloseRequested { .. } = event {
-                if label == "main" {
-                    if let Some(window) = app_handle.get_window("main") {
-                        if let (Ok(window_position), Ok(window_size)) = (window.inner_position(), window.inner_size()) {
-                            let window_settings = WindowSettings {
-                                x: window_position.x,
-                                y: window_position.y,
-                                width: window_size.width,
-                                height: window_size.height,
-                            };
-                            let mut app_config = block_on(app_state.config.write());
-                            if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
-                                error!(target: LOG_TARGET, "Could not set window settings: {:?}", e);
-                            }
-                        } else {
-                            error!(target: LOG_TARGET, "Could not get window position or size");
+                if let Some(window) = app_handle.get_window("main") {
+                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.outer_size()) {
+                        let window_settings = WindowSettings {
+                            x: window_position.x,
+                            y: window_position.y,
+                            width: window_size.width,
+                            height: window_size.height,
+                        };
+                        let mut app_config = block_on(app_state.config.write());
+                        if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
+                            error!(target: LOG_TARGET, "Could not set window settings: {:?}", e);
                         }
                     } else {
-                        error!(target: LOG_TARGET, "Could not get main window");
+                        error!(target: LOG_TARGET, "Could not get window position or size");
                     }
+                } else {
+                    error!(target: LOG_TARGET, "Could not get main window");
                 }
             }
         }
