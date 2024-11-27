@@ -53,6 +53,7 @@ const initialState: State = {
     custom_power_levels_enabled: true,
     use_tor: true,
     auto_update: false,
+    monero_address_is_generated: false,
     mmproxy_use_monero_fail: false,
     mmproxy_monero_nodes: ['https://xmr-01.tari.com'],
     visual_mode: true,
