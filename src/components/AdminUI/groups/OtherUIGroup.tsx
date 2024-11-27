@@ -1,17 +1,19 @@
 /* eslint-disable i18next/no-literal-string */
+import { useUIStore } from '@app/store/useUIStore';
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
-import { useAppStateStore } from '@app/store/appStateStore';
 
 export function OtherUIGroup() {
-    const { isSettingUp, setIsSettingUp } = useAppStateStore();
+    const setAdminShow = useUIStore((s) => s.setAdminShow); // prevent messing up the actual setup progress value
+    const adminShow = useUIStore((s) => s.adminShow);
 
     return (
         <>
             <CategoryLabel>Other UI</CategoryLabel>
             <ButtonGroup>
-                <Button onClick={() => setIsSettingUp(!isSettingUp)} $isActive={isSettingUp}>
+                <Button onClick={() => setAdminShow('setup')} $isActive={adminShow === 'setup'}>
                     Startup Screen
                 </Button>
+                {/* TODO: add the other sections if we want */}
             </ButtonGroup>
         </>
     );
