@@ -17,6 +17,7 @@ export const useWebsocket = () => {
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
     const cpu = useMiningStore((state) => state.cpu);
     const gpu = useMiningStore((state) => state.gpu);
+    const network = useMiningStore((state) => state.network);
     const base_node = useMiningStore((state) => state.base_node);
     const [appId, setAppId] = useState<string | null>(null);
     const [socketConnected, setSocketConnected] = useState<boolean>(false);
@@ -77,7 +78,7 @@ export const useWebsocket = () => {
                 socket = io(baseUrl, {
                     secure: true,
                     transports: ['websocket', 'polling'],
-                    auth: { token: airdropToken },
+                    auth: { token: airdropToken, appId: appId, network: network },
                 });
             }
 

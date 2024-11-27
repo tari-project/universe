@@ -335,6 +335,15 @@ async fn get_app_id(
 }
 
 #[tauri::command]
+async fn get_network(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<String, ()> {
+    Ok(Network::get_current_or_user_setting_or_default().to_string())
+}
+
+#[tauri::command]
 async fn set_airdrop_access_token(
     token: String,
     _window: tauri::Window,
@@ -2227,7 +2236,8 @@ fn main() {
             fetch_tor_bridges,
             set_monerod_config,
             get_tor_entry_guards,
-            set_visual_mode
+            set_visual_mode,
+            get_network
         ])
         .build(tauri::generate_context!())
         .inspect_err(
