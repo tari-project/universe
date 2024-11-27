@@ -38,11 +38,6 @@ impl TorManager {
         {
             let mut process_watcher = self.watcher.write().await;
 
-            info!(
-                "Ensuring p2pool is started, app_shutdown_terminated={}, app_shutdown_triggered={}",
-                app_shutdown.is_terminated(),
-                app_shutdown.is_triggered()
-            );
             if process_watcher.is_running()
                 || app_shutdown.is_terminated()
                 || app_shutdown.is_triggered()

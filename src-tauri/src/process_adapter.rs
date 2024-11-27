@@ -121,12 +121,12 @@ impl ProcessInstance {
             warn!(target: LOG_TARGET, "Process is already running");
             return Ok(());
         }
-        info!(target: LOG_TARGET, "Starting {} process with args: {}, file_name: {}, data_dir: {}, file_path: {}", self.startup_spec.name, self.startup_spec.args.join(" "),self.startup_spec.pid_file_name,self.startup_spec.data_dir.display(),self.startup_spec.file_path.display());
+        info!(target: LOG_TARGET, "Starting {} process with args: {}", self.startup_spec.name, self.startup_spec.args.join(" "));
         let spec = self.startup_spec.clone();
         // Reset the shutdown each time.
         self.shutdown = Shutdown::new();
         let shutdown_signal = self.shutdown.to_signal();
-        info!(target: LOG_TARGET, "App shutdown triggered or terminated status for {} = {} | {}", spec.name, shutdown_signal.is_triggered(), shutdown_signal.is_terminated());
+
         if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
             warn!(target: LOG_TARGET, "Shutdown signal is triggered. Not starting process");
             return Ok(());

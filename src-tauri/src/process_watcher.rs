@@ -214,8 +214,6 @@ async fn do_health_check<T: StatusMonitor>(
         && !inner_shutdown.is_triggered()
     {
         if uptime.elapsed() < expected_startup_time {
-            info!(target: LOG_TARGET, "App shutdown details for {} = {} | {}", name, app_shutdown.is_triggered(), app_shutdown.is_terminated());
-            info!(target: LOG_TARGET, "App inner shutdown details for {} = {} | {}", name, inner_shutdown.is_triggered(), inner_shutdown.is_terminated());
             warn!(target: LOG_TARGET, "{} is not healthy. Waiting for startup time to elapse", name);
         } else {
             match child.stop().await {
