@@ -1,8 +1,6 @@
 import { m } from 'framer-motion';
 import styled from 'styled-components';
 
-export const AppContentWrapper = styled.div``;
-
 const transition = {
     ease: 'easeIn',
     duration: 0.3,
@@ -17,7 +15,7 @@ const variants = {
         transition,
     },
     visible: {
-        y: 0,
+        x: 0,
         opacity: 1,
         transition,
     },

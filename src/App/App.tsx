@@ -1,3 +1,4 @@
+import { AppContentContainer } from '@app/App/App.styles';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import { useShuttingDown } from '@app/hooks/useShuttingDown';
@@ -14,15 +15,11 @@ import Setup from '../containers/phase/Setup/Setup';
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
 
-import AppContent from './AppContent';
-import { AppContentContainer } from './App.styles';
-
 export default function App() {
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
-    const adminShow = useUIStore((s) => s.adminShow);
     const { t } = useTranslation('common', { useSuspense: false });
 
     useEffect(() => {
@@ -34,33 +31,12 @@ export default function App() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const showMain = !isSettingUp && adminShow !== 'setup' && !isSettingUp;
-
     useEffect(() => {
         const canvasElement = document.getElementById('canvas');
         if (canvasElement) {
-            canvasElement.style.opacity = showMain ? '1' : '0';
+            canvasElement.style.opacity = isShuttingDown || isSettingUp ? '0' : '1';
         }
-    }, [showMain]);
-
-    const setupMarkup =
-        !isShuttingDown && (isSettingUp || adminShow === 'setup') ? (
-            <AppContentContainer key="setup" initial="entered">
-                <Setup />
-            </AppContentContainer>
-        ) : null;
-    console.log(`isShuttingDown= ${isShuttingDown}`);
-    const shutdownMarkup = isShuttingDown ? (
-        <AppContentContainer key="shutdown" initial="hidden">
-            <ShuttingDownScreen />
-        </AppContentContainer>
-    ) : null;
-
-    const mainMarkup = showMain ? (
-        <AppContentContainer key="main" initial="hidden">
-            <MainView />
-        </AppContentContainer>
-    ) : null;
+    }, [isShuttingDown, isSettingUp]);
 
     return (
         <ThemeProvider>
@@ -74,13 +50,23 @@ export default function App() {
                  */}
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
-                    <AppContent key="app-content">
-                        <AnimatePresence>
-                            {setupMarkup}
-                            {mainMarkup}
-                            {shutdownMarkup}
-                        </AnimatePresence>
-                    </AppContent>
+                    <AnimatePresence>
+                        {isSettingUp ? (
+                            <AppContentContainer key="setup" initial="visible">
+                                <Setup />
+                            </AppContentContainer>
+                        ) : null}
+                        {isShuttingDown || isSettingUp ? null : (
+                            <AppContentContainer key="main" initial="hidden">
+                                <MainView />
+                            </AppContentContainer>
+                        )}
+                        {isShuttingDown ? (
+                            <AppContentContainer key="shutdown" initial="hidden">
+                                <ShuttingDownScreen />
+                            </AppContentContainer>
+                        ) : null}
+                    </AnimatePresence>
                 </MotionConfig>
             </LazyMotion>
         </ThemeProvider>
