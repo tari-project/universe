@@ -267,19 +267,22 @@ impl AppConfig {
 
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
         let file: PathBuf = config_path.join("app_config.json");
-        let created_at = file.metadata()?.created()?.clone();
         self.config_file = Some(file.clone());
-        self.created_at = Some(created_at.into());
 
         if file.exists() {
             debug!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
+            self.created_at = Some(file.clone().metadata()?.created()?.into());
             self.apply_loaded_config(config);
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
             if let Ok(address) = create_monereo_address(config_path).await {
                 self.monero_address = address;
                 self.monero_address_is_generated = true;
+            }
+
+            if let Ok(..) = self.update_config_file().await {
+                self.created_at = Some(file.clone().metadata()?.created()?.into());
             }
         }
         self.update_config_file().await?;
