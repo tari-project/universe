@@ -70,7 +70,7 @@ export const useWebsocket = () => {
             socket.on('connect', () => {
                 if (!socket) return;
                 setConnectedSocket(true);
-                // socket.emit('auth', airdropToken);
+                socket.emit('auth', airdropToken);
                 socket.on(userId as string, (msg: string) => {
                     const msgParsed = JSON.parse(msg) as QuestCompletedEvent;
                     if (msgParsed?.data?.userPoints?.gems) {
