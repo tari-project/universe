@@ -6,8 +6,10 @@ use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 #[allow(unused_imports)]
 use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use keyring::Entry;
 use log::trace;
 use log::{debug, error, info, warn};
+use monero_address_creator::Seed as MoneroSeed;
 use process_utils::set_interval;
 
 use log4rs::config::RawConfig;
@@ -42,6 +44,7 @@ use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
 
 use crate::cpu_miner::CpuMiner;
+use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
@@ -60,6 +63,7 @@ mod auto_launcher;
 mod binaries;
 mod consts;
 mod cpu_miner;
+mod credential_manager;
 mod download_utils;
 mod external_dependencies;
 mod feedback;
@@ -1185,6 +1189,49 @@ async fn get_seed_words(
     Ok(res)
 }
 
+#[tauri::command]
+async fn get_monero_seed_words(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+
+    if !state.config.read().await.monero_address_is_generated() {
+        return Err(
+            "Monero seed words are not available when a Monero address is provided".to_string(),
+        );
+    }
+
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    let cm = CredentialManager::default_with_dir(config_path);
+    let cred = match cm.get_credentials() {
+        Ok(cred) => cred,
+        Err(e @ CredentialError::PreviouslyUsedKeyring) => {
+            return Err(e.to_string());
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Could not get credentials: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
+
+    let seed = cred
+        .monero_seed
+        .expect("Couldn't get seed from credentials");
+
+    let seed = MoneroSeed::new(seed);
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
+    }
+
+    seed.seed_words().map_err(|e| e.to_string())
+}
+
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 async fn start_mining<'r>(
@@ -1898,6 +1945,12 @@ async fn reset_settings<'r>(
             }
         }
     }
+
+    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+        let _unused = entry.delete_credential();
+    }
+
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 
@@ -2271,6 +2324,7 @@ fn main() {
             start_mining,
             stop_mining,
             update_applications,
+            get_monero_seed_words
         ])
         .build(tauri::generate_context!())
         .inspect_err(

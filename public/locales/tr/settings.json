@@ -18,6 +18,7 @@
     "cpu-warning": "Yüksek CPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
     "gpu-power-level": "GPU Gücü %",
     "gpu-warning": "Yüksek GPU kullanımı aşırı ısınmaya, enerji tüketiminin artmasına ve zamanla donanım hasarına yol açabilir. Güvenli ve verimli bir çalışma sağlamak için kullanımı izleyin.",
+    "save-changes": "Save Changes",
     "saved": "Değişiklikler Uygulanıyor",
     "title": "Özel Mod",
     "warning": "Uyarı"
@@ -60,6 +61,7 @@
     "placeholder": "Monero adresini girin",
     "title": "Monero Adresi"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "Ağ",
   "no-entry-guard": "Giriş Koruması bağlı değil!",
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",
