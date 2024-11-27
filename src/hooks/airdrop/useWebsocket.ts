@@ -1,9 +1,9 @@
 import { io } from 'socket.io-client';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { QuestCompletedEvent } from '@app/types/ws';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { invoke } from '@tauri-apps/api/tauri';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 let socket: ReturnType<typeof io> | null;
 
@@ -16,25 +16,12 @@ export const useWebsocket = () => {
     const cpu = useMiningStore((state) => state.cpu);
     const gpu = useMiningStore((state) => state.gpu);
     const network = useMiningStore((state) => state.network);
+    const appId = useAppConfigStore((state) => state.anon_id);
     const base_node = useMiningStore((state) => state.base_node);
-    const [appId, setAppId] = useState<string | null>(null);
     const isMining = useMemo(() => {
         const isMining = (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
         return isMining;
     }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
-
-    const loadAppId = useCallback(async () => {
-        try {
-            const appId = (await invoke('get_app_id')) as string;
-            setAppId(appId);
-        } catch (e) {
-            console.error('Failed to get appId');
-        }
-    }, []);
-
-    useEffect(() => {
-        loadAppId().catch(console.error).then();
-    }, [loadAppId]);
 
     useEffect(() => {
         const func = async () => {
@@ -77,7 +64,7 @@ export const useWebsocket = () => {
             }
         }, 5000);
         return () => clearInterval(intervalId);
-    }, [appId, baseUrl, isMining, userId]);
+    }, [appId, baseUrl, isMining, network, userId]);
 
     const init = () => {
         try {
