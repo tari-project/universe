@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Error};
 use log::{error, info, warn};
-use std::{collections::HashMap, net::TcpListener};
+use std::net::TcpListener;
 
 const LOG_TARGET: &str = "tari::universe::port_allocator";
 const ADDRESS: &str = "127.0.0.1";

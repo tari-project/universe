@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
@@ -119,6 +120,12 @@ impl ProcessInstance {
         // Reset the shutdown each time.
         self.shutdown = Shutdown::new();
         let shutdown_signal = self.shutdown.to_signal();
+        info!(target: LOG_TARGET, "App shutdown triggered or terminated status for {} = {} | {}", spec.name, shutdown_signal.is_triggered(), shutdown_signal.is_terminated());
+        if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
+            warn!(target: LOG_TARGET, "Shutdown signal is triggered. Not starting process");
+            return Ok(());
+        };
+
         self.handle = Some(tokio::spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
