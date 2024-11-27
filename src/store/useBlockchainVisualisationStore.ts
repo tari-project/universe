@@ -134,11 +134,8 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     handleNewBlock: async (newBlockHeight, isMining) => {
         if (isMining) {
             const canAnimate = await checkCanAnimate();
-            console.debug(`canAnimate= ${canAnimate}`);
             const latestTransaction = useWalletStore.getState().transactions?.[0];
             const latestTxBlock = latestTransaction?.message?.split(': ')?.[1];
-            console.debug(`latestTxBlock= ${latestTxBlock}`);
-            console.debug(`newBlockHeight= ${newBlockHeight}`);
             if (latestTxBlock === newBlockHeight.toString()) {
                 await getState().handleWin({ latestTx: latestTransaction, canAnimate });
             } else {

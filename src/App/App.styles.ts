@@ -5,14 +5,14 @@ export const AppContentWrapper = styled.div``;
 
 const transition = {
     ease: 'easeIn',
-    duration: 0.6,
-    y: {
-        duration: 0.25,
+    duration: 0.5,
+    x: {
+        duration: 0.4,
     },
 };
 const variants = {
     hidden: {
-        y: 20,
+        x: -10,
         opacity: 0,
         transition,
     },
@@ -22,9 +22,9 @@ const variants = {
         transition,
     },
     exit: {
-        y: 0,
-        opacity: 1,
-        transition: { ...transition, duration: 0.3, ease: 'easeOut' },
+        x: -10,
+        opacity: 0,
+        transition: { duration: 0.2, ease: 'easeOut' },
     },
 };
 

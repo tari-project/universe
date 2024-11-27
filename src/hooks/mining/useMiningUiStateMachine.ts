@@ -18,7 +18,6 @@ export const useUiMiningStateMachine = () => {
         const status = window?.glApp?.stateManager?.status;
         const notStarted = !status || status == 'not-started' || status == 'stop';
         if (isMining && notStarted) {
-            console.log(`was notStarted= ${notStarted}: ${status}`);
             setAnimationState('start');
         }
     }, [statusIndex, isMining]);
@@ -28,7 +27,6 @@ export const useUiMiningStateMachine = () => {
         const preventStop = isSettingUp || isMiningInitiated || isChangingMode || isReplaying;
         const shouldStop = !isMining && notStopped && !preventStop;
         if (shouldStop) {
-            console.log(`was notStopped= ${notStopped}`, preventStop);
             setAnimationState('stop');
         }
     }, [statusIndex, isSettingUp, isMiningInitiated, isMining, isChangingMode, isReplaying]);

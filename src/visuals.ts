@@ -27,10 +27,7 @@ export const animationDarkBg = [
 ];
 
 export function setAnimationState(newState: GlAppState) {
-    console.log('==========================================START==========================================');
-    console.log(`new state= ${newState}`);
     window.glApp.setState(newState);
-    console.log('==========================================END==========================================');
 }
 
 interface Property {

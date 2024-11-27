@@ -22,6 +22,7 @@ export default function App() {
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
+    const adminShow = useUIStore((s) => s.adminShow);
     const { t } = useTranslation('common', { useSuspense: false });
 
     useEffect(() => {
@@ -32,6 +33,34 @@ export default function App() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    const showMain = !isSettingUp && adminShow !== 'setup' && !isSettingUp;
+
+    useEffect(() => {
+        const canvasElement = document.getElementById('canvas');
+        if (canvasElement) {
+            canvasElement.style.opacity = showMain ? '1' : '0';
+        }
+    }, [showMain]);
+
+    const setupMarkup =
+        !isShuttingDown && (isSettingUp || adminShow === 'setup') ? (
+            <AppContentContainer key="setup" initial="entered">
+                <Setup />
+            </AppContentContainer>
+        ) : null;
+
+    const shutdownMarkup = isShuttingDown ? (
+        <AppContentContainer key="shutdown" initial="hidden">
+            <ShuttingDownScreen />
+        </AppContentContainer>
+    ) : null;
+
+    const mainMarkup = showMain ? (
+        <AppContentContainer key="main" initial="hidden">
+            <MainView />
+        </AppContentContainer>
+    ) : null;
 
     return (
         <ThemeProvider>
@@ -46,22 +75,10 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
                     <AppContent key="app-content">
-                        <AnimatePresence mode="wait">
-                            {isSettingUp ? (
-                                <AppContentContainer key="setup" initial="visible">
-                                    <Setup />
-                                </AppContentContainer>
-                            ) : null}
-                            {isShuttingDown || isSettingUp ? null : (
-                                <AppContentContainer key="main" initial="hidden">
-                                    <MainView />
-                                </AppContentContainer>
-                            )}
-                            {isShuttingDown ? (
-                                <AppContentContainer key="shutdown" initial="hidden">
-                                    <ShuttingDownScreen />
-                                </AppContentContainer>
-                            ) : null}
+                        <AnimatePresence>
+                            {setupMarkup}
+                            {mainMarkup}
+                            {shutdownMarkup}
                         </AnimatePresence>
                     </AppContent>
                 </MotionConfig>
