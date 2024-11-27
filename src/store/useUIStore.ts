@@ -18,6 +18,7 @@ interface State {
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
     isWebglNotSupported: boolean;
+    adminShow?: 'setup' | 'main' | 'shutdown' | null;
 }
 interface Actions {
     setTheme: (theme: Theme) => void;
@@ -29,6 +30,7 @@ interface Actions {
     setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
     setLatestVersion: (latestVersion: string) => void;
     setIsWebglNotSupported: (isWebglNotSupported: boolean) => void;
+    setAdminShow: (adminShow: State['adminShow']) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -61,4 +63,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
         useAppConfigStore.getState().setVisualMode(false);
         set({ isWebglNotSupported });
     },
+    setAdminShow: (adminShow) => set({ adminShow }),
 }));
