@@ -1,9 +1,9 @@
 import Lottie from 'react-lottie';
-import Permissions from '@app/containers/phase/Setup/components/Permissions';
 import SetupProgress from './SetupProgress';
 
 import { Container, LottieWrapper, StatusWrapper } from './Footer.styles';
 import animationData from './lil-soon-cookies.json';
+import AirdropPermission from './AirdropPermission/AirdropPermission';
 
 export default function Footer() {
     const defaultOptions = {
@@ -22,7 +22,7 @@ export default function Footer() {
                 </LottieWrapper>
                 <SetupProgress />
             </StatusWrapper>
-            <Permissions />
+            <AirdropPermission />
         </Container>
     );
 }
