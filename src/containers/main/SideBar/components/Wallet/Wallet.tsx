@@ -95,7 +95,7 @@ export default function Wallet() {
     }, [animateNumbers]);
 
     const balanceMarkup = (
-        <WalletBalanceContainer onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>
+        <WalletBalanceContainer>
             <Stack direction="row" alignItems="center">
                 <Typography variant="span" style={{ fontSize: '15px' }}>
                     {t('wallet-balance')}
@@ -108,7 +108,7 @@ export default function Wallet() {
                     )}
                 </BalanceVisibilityButton>
             </Stack>
-            <WalletBalanceWrapper>
+            <WalletBalanceWrapper onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>
                 <AnimatePresence mode="popLayout">
                     {!showLongBalance || !showBalance ? (
                         <WalletBalance

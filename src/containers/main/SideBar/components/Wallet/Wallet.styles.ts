@@ -38,6 +38,7 @@ export const WalletBalance = styled(m.div)`
 `;
 
 export const WalletBalanceWrapper = styled.div`
+    width: 100%;
     height: 51px;
 
     display: flex;
