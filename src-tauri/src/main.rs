@@ -1920,35 +1920,33 @@ async fn reset_settings<'r>(
     Ok(())
 }
 #[tauri::command]
-async fn close_splashscreen(
-    window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
-    window
+async fn close_splashscreen(window: tauri::Window) {
+    let splashscreen_window = window
         .get_window("splashscreen")
-        .expect("no window labeled 'splashscreen' found")
-        .close()
-        .expect("could not close");
+        .expect("no window labeled 'splashscreen' found");
+    let main_window = window
+        .get_window("main")
+        .expect("no window labeled 'main' found");
 
-    // We need to set the main window position and size here since it's overridden
-    let config = state.config.read().await;
-    let window_settings = config.window_settings();
-    let main_window = window.get_window("main").expect("Main window not found");
-    main_window.show().expect("could not show");
-    if let Err(e) = main_window
-        .set_position(PhysicalPosition::new(window_settings.x, window_settings.y))
-        .and_then(|_| {
-            main_window.set_size(PhysicalSize::new(
-                window_settings.width,
-                window_settings.height,
-            ))
-        })
-    {
-        error!(target: LOG_TARGET, "Could not set window position or size: {:?}", e);
+    if let (Ok(window_position), Ok(window_size)) = (
+        splashscreen_window.outer_position(),
+        splashscreen_window.outer_size(),
+    ) {
+        splashscreen_window.close().expect("could not close");
+        main_window.show().expect("could not show");
+        if let Err(e) = main_window
+            .set_position(PhysicalPosition::new(window_position.x, window_position.y))
+            .and_then(|_| {
+                main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
+            })
+        {
+            error!(target: LOG_TARGET, "Could not set window position or size: {:?}", e);
+        }
+    } else {
+        error!(target: LOG_TARGET, "Could not get window position or size");
+        splashscreen_window.close().expect("could not close");
+        main_window.show().expect("could not show");
     }
-
-    Ok(())
 }
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerMetrics {
@@ -2374,7 +2372,7 @@ fn main() {
         RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
             if let WindowEvent::CloseRequested { .. } = event {
-                if let Some(window) = app_handle.get_window("main") {
+                if let Some(window) = app_handle.get_window(&label) {
                     if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.outer_size()) {
                         let window_settings = WindowSettings {
                             x: window_position.x,
