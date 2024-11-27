@@ -1,7 +1,5 @@
 use crate::process_watcher::ProcessWatcher;
 use crate::tor_adapter::{TorAdapter, TorConfig};
-use futures_util::future::FusedFuture;
-use log::info;
 use std::{path::PathBuf, sync::Arc};
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
@@ -37,13 +35,6 @@ impl TorManager {
     ) -> Result<(), anyhow::Error> {
         {
             let mut process_watcher = self.watcher.write().await;
-
-            // if process_watcher.is_running()
-            //     || app_shutdown.is_terminated()
-            //     || app_shutdown.is_triggered()
-            // {
-            //     return Ok(());
-            // }
 
             process_watcher
                 .adapter

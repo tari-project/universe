@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use futures_util::future::FusedFuture;
-use log::{info, warn};
+use log::warn;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -117,12 +117,6 @@ impl P2poolManager {
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
 
-        // if process_watcher.is_running()
-        //     || app_shutdown.is_terminated()
-        //     || app_shutdown.is_triggered()
-        // {
-        //     return Ok(());
-        // }
         process_watcher.adapter.config = Some(config);
         process_watcher.health_timeout = Duration::from_secs(28);
         process_watcher.poll_time = Duration::from_secs(30);

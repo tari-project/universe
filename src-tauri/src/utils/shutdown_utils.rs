@@ -1,5 +1,5 @@
 use crate::{UniverseAppState, APPLICATION_FOLDER_ID};
-use log::{info, warn};
+use log::info;
 use tauri::api::path::local_data_dir;
 
 static LOG_TARGET: &str = "tari::universe::shutdown_utils";
