@@ -62,6 +62,7 @@
     "placeholder": "输入 Monero 地址",
     "title": "Monero 地址"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "网络",
   "no-entry-guard": "未连接入口守卫！",
   "not-connected-to-tari": "未连接到Tari网络",

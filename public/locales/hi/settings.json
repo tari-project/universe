@@ -62,6 +62,7 @@
     "placeholder": "मोनरो पता दर्ज करें",
     "title": "मोनरो पता"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "नेटवर्क",
   "no-entry-guard": "कोई एंट्री गार्ड कनेक्ट नहीं है!",
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",

@@ -62,6 +62,7 @@
     "placeholder": "Entrez l\"adresse Monero",
     "title": "Adresse Monero"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "Réseau",
   "no-entry-guard": "Aucun Entry Guard connecté !",
   "not-connected-to-tari": "Non connecté au réseau Tari",

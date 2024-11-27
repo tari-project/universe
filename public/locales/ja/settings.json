@@ -62,6 +62,7 @@
     "placeholder": "Moneroアドレスを入力",
     "title": "Moneroアドレス"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "ネットワーク",
   "no-entry-guard": "エントリーガードが接続されていません！",
   "not-connected-to-tari": "Tariネットワークに接続されていません",

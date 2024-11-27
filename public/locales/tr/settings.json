@@ -62,6 +62,7 @@
     "placeholder": "Monero adresini girin",
     "title": "Monero Adresi"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "Ağ",
   "no-entry-guard": "Giriş Koruması bağlı değil!",
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",

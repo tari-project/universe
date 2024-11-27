@@ -35,6 +35,7 @@ export interface AppConfig {
     should_auto_launch: boolean;
     use_tor: boolean;
     visual_mode: boolean;
+    monero_address_is_generated?: boolean;
     config_creation: {
         nanos_since_epoch: number;
         secs_since_epoch: number;

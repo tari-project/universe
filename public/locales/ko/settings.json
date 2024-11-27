@@ -62,6 +62,7 @@
     "placeholder": "모네로 주소 입력",
     "title": "모네로 주소"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "네트워크",
   "no-entry-guard": "엔트리 가드가 연결되지 않았습니다!",
   "not-connected-to-tari": "Tari 네트워크에 연결되지 않음",

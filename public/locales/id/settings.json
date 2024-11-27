@@ -62,6 +62,7 @@
     "placeholder": "Masukkan alamat Monero",
     "title": "Alamat Monero"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "Jaringan",
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
