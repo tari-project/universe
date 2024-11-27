@@ -55,8 +55,6 @@
                 "label": "main",
                 "width": 1380,
                 "height": 780,
-                "minWidth": 1144,
-                "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,

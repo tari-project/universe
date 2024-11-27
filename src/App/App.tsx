@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import { useShuttingDown } from '@app/hooks/useShuttingDown';
 import { useAppStateStore } from '@app/store/appStateStore';
-import { LazyMotion, domMax, MotionConfig } from 'framer-motion';
+import { LazyMotion, domMax, MotionConfig, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +15,7 @@ import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
 
 import AppContent from './AppContent';
+import { AppContentContainer } from './App.styles';
 
 export default function App() {
     const isShuttingDown = useShuttingDown();
@@ -45,9 +46,23 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
                     <AppContent key="app-content">
-                        {isSettingUp ? <Setup /> : null}
-                        {isShuttingDown || isSettingUp ? null : <MainView />}
-                        {isShuttingDown ? <ShuttingDownScreen /> : null}
+                        <AnimatePresence mode="wait">
+                            {isSettingUp ? (
+                                <AppContentContainer key="setup" initial="visible">
+                                    <Setup />
+                                </AppContentContainer>
+                            ) : null}
+                            {isShuttingDown || isSettingUp ? null : (
+                                <AppContentContainer key="main" initial="hidden">
+                                    <MainView />
+                                </AppContentContainer>
+                            )}
+                            {isShuttingDown ? (
+                                <AppContentContainer key="shutdown" initial="hidden">
+                                    <ShuttingDownScreen />
+                                </AppContentContainer>
+                            ) : null}
+                        </AnimatePresence>
                     </AppContent>
                 </MotionConfig>
             </LazyMotion>

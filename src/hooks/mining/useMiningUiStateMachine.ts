@@ -15,13 +15,20 @@ export const useUiMiningStateMachine = () => {
     const statusIndex = window?.glApp?.stateManager?.statusIndex;
 
     useEffect(() => {
-        if (isMining) {
+        const status = window?.glApp?.stateManager?.status;
+        const notStarted = !status || status == 'not-started' || status == 'stop';
+        if (isMining && notStarted) {
+            console.log(`was notStarted= ${notStarted}: ${status}`);
             setAnimationState('start');
         }
     }, [statusIndex, isMining]);
 
     useEffect(() => {
-        if (!isSettingUp && !isMiningInitiated && !isMining && !isChangingMode && !isReplaying) {
+        const notStopped = window?.glApp?.stateManager?.status !== 'not-started';
+        const preventStop = isSettingUp || isMiningInitiated || isChangingMode || isReplaying;
+        const shouldStop = !isMining && notStopped && !preventStop;
+        if (shouldStop) {
+            console.log(`was notStopped= ${notStopped}`, preventStop);
             setAnimationState('stop');
         }
     }, [statusIndex, isSettingUp, isMiningInitiated, isMining, isChangingMode, isReplaying]);
