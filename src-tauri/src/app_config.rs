@@ -5,6 +5,7 @@ use sys_locale::get_locale;
 use crate::credential_manager::CredentialManager;
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 use anyhow::anyhow;
+use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
@@ -23,8 +24,6 @@ pub struct AppConfigFromFile {
     mode: String,
     #[serde(default = "default_display_mode")]
     display_mode: String,
-    #[serde(default = "default_system_time")]
-    config_creation: SystemTime,
     #[serde(default = "default_true")]
     mine_on_app_start: bool,
     #[serde(default = "default_true")]
@@ -90,7 +89,6 @@ impl Default for AppConfigFromFile {
         Self {
             version: default_version(),
             mode: default_mode(),
-            config_creation: default_system_time(),
             display_mode: default_display_mode(),
             mine_on_app_start: true,
             p2pool_enabled: true,
@@ -189,7 +187,7 @@ pub struct GpuThreads {
 pub(crate) struct AppConfig {
     config_version: u32,
     config_file: Option<PathBuf>,
-    config_creation: SystemTime,
+    created_at: Option<DateTime<Utc>>,
     mode: MiningMode,
     display_mode: DisplayMode,
     auto_mining: bool,
@@ -230,7 +228,7 @@ impl AppConfig {
         Self {
             config_version: default_version(),
             config_file: None,
-            config_creation: SystemTime::now(),
+            created_at: None,
             mode: MiningMode::Eco,
             display_mode: DisplayMode::Light,
             auto_mining: true,
@@ -269,7 +267,9 @@ impl AppConfig {
 
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
         let file: PathBuf = config_path.join("app_config.json");
+        let created_at = file.metadata()?.created()?.clone();
         self.config_file = Some(file.clone());
+        self.created_at = Some(created_at.into());
 
         if file.exists() {
             debug!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
@@ -650,7 +650,6 @@ impl AppConfig {
         let config = &AppConfigFromFile {
             version: self.config_version,
             mode: MiningMode::to_str(self.mode),
-            config_creation: self.config_creation,
             display_mode: DisplayMode::to_str(self.display_mode),
             mine_on_app_start: self.mine_on_app_start,
             p2pool_enabled: self.p2pool_enabled,
