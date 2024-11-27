@@ -15,6 +15,8 @@ use process_utils::set_interval;
 use log4rs::config::RawConfig;
 use regex::Regex;
 use serde::Serialize;
+#[cfg(target_os = "macos")]
+use utils::macos_utils::check_if_app_in_applications_folder;
 use std::convert::TryFrom;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -2206,6 +2208,12 @@ fn main() {
             let config: RawConfig = serde_yaml::from_str(&contents)
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
+
+            #[cfg(target_os = "macos")] {
+                let main_window = app.get_window("main").expect("Could not get main window");
+                check_if_app_in_applications_folder(main_window);
+            }
+
 
             let config_path = app
                 .path_resolver()
