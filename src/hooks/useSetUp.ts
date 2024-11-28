@@ -1,3 +1,4 @@
+import { useUIStore } from '@app/store/useUIStore';
 import { useCallback, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/tauri';
@@ -12,7 +13,7 @@ import { useHandleAirdropTokensRefresh } from '@app/hooks/airdrop/stateHelpers/u
 export function useSetUp() {
     const isInitializingRef = useRef(false);
     const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
-
+    const adminShow = useUIStore((s) => s.adminShow);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
@@ -48,6 +49,7 @@ export function useSetUp() {
     }, [fetchApplicationsVersionsWithRetry, setSettingUpFinished]);
 
     useEffect(() => {
+        if (adminShow === 'setup') return;
         const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
             switch (p.event_type) {
                 case 'setup_status':
@@ -82,5 +84,6 @@ export function useSetUp() {
         setCriticalError,
         setSeenPermissions,
         setSetupDetails,
+        adminShow,
     ]);
 }
