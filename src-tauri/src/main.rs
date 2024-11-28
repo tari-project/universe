@@ -10,7 +10,6 @@ use keyring::Entry;
 use log::trace;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
-use process_utils::set_interval;
 
 use log4rs::config::RawConfig;
 use regex::Regex;
@@ -28,6 +27,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Manager, RunEvent, UpdaterEvent, Window};
 use tokio::sync::{Mutex, RwLock};
+use tokio::time;
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
 use utils::shutdown_utils::stop_all_processes;
@@ -937,10 +937,32 @@ async fn setup_inner(
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
-        set_interval(
-            move || check_if_is_orphan_chain(app_handle_clone.clone()),
-            Duration::from_secs(30),
-        );
+        let mut interval: time::Interval = time::interval(Duration::from_secs(30));
+        let mut has_send_error = false;
+
+        loop {
+            interval.tick().await;
+
+            let state = app_handle_clone.state::<UniverseAppState>().inner();
+            let check_if_orphan = state
+                .node_manager
+                .check_if_is_orphan_chain(!has_send_error)
+                .await;
+            match check_if_orphan {
+                Ok(is_stuck) => {
+                    if is_stuck {
+                        error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+                    }
+                    if is_stuck && !has_send_error {
+                        has_send_error = true;
+                    }
+                    drop(app_handle_clone.emit_all("is_stuck", is_stuck));
+                }
+                Err(ref e) => {
+                    error!(target: LOG_TARGET, "{}", e);
+                }
+            }
+        }
     });
 
     Ok(())
@@ -1624,22 +1646,6 @@ async fn get_app_config(
     _app: tauri::AppHandle,
 ) -> Result<AppConfig, String> {
     Ok(state.config.read().await.clone())
-}
-
-async fn check_if_is_orphan_chain(app_handle: tauri::AppHandle) {
-    let state = app_handle.state::<UniverseAppState>().inner();
-    let check_if_orphan = state.node_manager.check_if_is_orphan_chain().await;
-    match check_if_orphan {
-        Ok(is_stuck) => {
-            if is_stuck {
-                error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-            }
-            drop(app_handle.emit_all("is_stuck", is_stuck));
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET, "{}", e);
-        }
-    }
 }
 
 #[allow(clippy::too_many_lines)]

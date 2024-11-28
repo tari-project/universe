@@ -5,6 +5,7 @@ use std::time::SystemTime;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info};
 use minotari_node_grpc_client::grpc::Peer;
+use sentry::protocol::Event;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -217,13 +218,16 @@ impl NodeManager {
         lock.is_pid_file_exists(base_path)
     }
 
-    pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
+    pub async fn check_if_is_orphan_chain(
+        &self,
+        report_to_sentry: bool,
+    ) -> Result<bool, anyhow::Error> {
         let mut status_monitor_lock = self.watcher.write().await;
         let status_monitor = status_monitor_lock
             .status_monitor
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
-        let (_, _, _, _, _, is_synced) = status_monitor
+        let (_, _, _, local_tip, _, is_synced) = status_monitor
             .get_network_hash_rate_and_block_reward()
             .await
             .map_err(|e| {
@@ -258,6 +262,18 @@ impl NodeManager {
                 .iter()
                 .any(|local_block| block_scan_block.1 == local_block.1)
             {
+                if report_to_sentry {
+                    let error_msg = format!(
+                        "Orphan chain detected: block {} at height {} not found in local chain. Block scan tip height: {} - Local tip height: {}",
+                        block_scan_block.1, block_scan_block.0, block_scan_tip, local_tip
+                    );
+                    sentry::capture_event(Event {
+                        message: Some(error_msg),
+                        level: sentry::Level::Error,
+                        culprit: Some("orphan-chain".to_string()),
+                        ..Default::default()
+                    });
+                }
                 return Ok(true);
             }
         }
