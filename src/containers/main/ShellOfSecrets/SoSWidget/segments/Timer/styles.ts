@@ -9,6 +9,8 @@ export const Wrapper = styled('div')`
     display: flex;
     align-items: center;
     position: relative;
+
+    transform: translateY(-2px);
 `;
 
 export const VerticalText = styled('div')`

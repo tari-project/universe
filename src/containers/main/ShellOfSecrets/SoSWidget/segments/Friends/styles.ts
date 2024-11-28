@@ -55,8 +55,6 @@ export const Text = styled('div')`
     line-height: 129.623%;
     text-transform: uppercase;
     max-width: 164px;
-
-    margin-bottom: 4px;
 `;
 
 export const Buttons = styled('div')`
@@ -141,6 +139,6 @@ export const GrowButton = styled('div')`
 
 export const PositionArrows = styled('div')`
     position: absolute;
-    top: -24px;
-    right: 10px;
+    top: -20px;
+    right: 12px;
 `;

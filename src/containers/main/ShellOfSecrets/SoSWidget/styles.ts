@@ -1,6 +1,7 @@
+import { m } from 'framer-motion';
 import styled from 'styled-components';
 
-export const Wrapper = styled('div')`
+export const Wrapper = styled(m.div)`
     position: fixed;
     top: 30px;
     right: 30px;
