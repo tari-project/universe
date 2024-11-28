@@ -7,6 +7,8 @@ export const Wrapper = styled('div')`
     font-weight: 700;
 
     display: flex;
+    align-items: center;
+    position: relative;
 `;
 
 export const VerticalText = styled('div')`
@@ -23,11 +25,11 @@ export const VerticalText = styled('div')`
     flex-shrink: 0;
     align-self: flex-start;
     padding-bottom: 8px;
-    width: 120px;
+    width: 110px;
 
     position: absolute;
-    top: 0;
-    left: -100px;
+    top: -8px;
+    left: -90px;
 `;
 
 export const DividerLineLeft = styled('div')`
@@ -54,6 +56,7 @@ export const TimerColumn = styled('div')`
     display: flex;
     flex-direction: column;
     padding-left: 30px;
+    gap: 4px;
 `;
 
 export const NumberGroup = styled('div')`
@@ -64,7 +67,7 @@ export const NumberGroup = styled('div')`
 
 export const Number = styled('div')`
     font-size: 64px;
-    line-height: 100%;
+    line-height: 80%;
     text-transform: uppercase;
 `;
 
@@ -72,5 +75,4 @@ export const Label = styled('div')`
     font-size: 16px;
     line-height: 100%;
     text-transform: uppercase;
-    transform: translateY(-6px);
 `;
