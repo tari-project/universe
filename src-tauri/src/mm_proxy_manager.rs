@@ -88,6 +88,7 @@ impl MmProxyManager {
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
+
         let new_config = MergeMiningProxyConfig {
             tari_address: config.tari_address.clone(),
             base_node_grpc_port: config.base_node_grpc_port,
@@ -134,5 +135,15 @@ impl MmProxyManager {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.stop().await?;
         Ok(())
+    }
+
+    pub async fn is_running(&self) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
     }
 }

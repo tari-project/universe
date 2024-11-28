@@ -14,12 +14,13 @@ use crate::p2pool::models::Stats;
 use crate::progress_tracker::ProgressTracker;
 use crate::systemtray_manager::{SystemtrayManager, SystrayData};
 use crate::tor_adapter::TorConfig;
+use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::{
-    setup_inner, stop_all_miners, ApplicationsVersions, BaseNodeStatus, CpuMinerMetrics,
-    GpuMinerMetrics, MaxUsageLevels, MinerMetrics, TariWalletDetails, UniverseAppState,
-    APPLICATION_FOLDER_ID, MAX_ACCEPTABLE_COMMAND_TIME,
+    setup_inner, ApplicationsVersions, BaseNodeStatus, CpuMinerMetrics, GpuMinerMetrics,
+    MaxUsageLevels, MinerMetrics, TariWalletDetails, UniverseAppState, APPLICATION_FOLDER_ID,
+    MAX_ACCEPTABLE_COMMAND_TIME,
 };
 use keyring::Entry;
 use log::{debug, error, info, warn};
@@ -83,7 +84,7 @@ pub async fn exit_application(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_miners(state.inner().clone(), 5).await?;
+    stop_all_processes(state.inner().clone(), true).await?;
 
     app.exit(0);
     Ok(())
@@ -635,7 +636,7 @@ pub async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_miners(state.inner().clone(), 5).await?;
+    stop_all_processes(state.inner().clone(), false).await?;
 
     tauri::async_runtime::spawn(async move {
         match InternalWallet::create_from_seed(config_path, seed_words).await {
@@ -687,7 +688,7 @@ pub async fn reset_settings<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_miners(state.inner().clone(), 5).await?;
+    stop_all_processes(state.inner().clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path_resolver().app_config_dir();
@@ -801,7 +802,7 @@ pub async fn restart_application(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_miners(state.inner().clone(), 5).await?;
+        stop_all_processes(state.inner().clone(), true).await?;
     }
 
     app.restart();

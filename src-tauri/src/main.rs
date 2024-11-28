@@ -46,6 +46,7 @@ use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
 use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
+use utils::shutdown_utils::stop_all_processes;
 
 mod app_config;
 mod app_in_memory_config;
@@ -115,50 +116,6 @@ struct UpdateProgressRustEvent {
     chunk_length: usize,
     content_length: u64,
     downloaded: u64,
-}
-
-async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(), String> {
-    state
-        .cpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    state
-        .gpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    let exit_code = state
-        .wallet_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
-    state
-        .mm_proxy_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
-    let exit_code = state
-        .p2pool_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
-
-    let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
-    state.shutdown.clone().trigger();
-
-    // TODO: Find a better way of knowing that all miners have stopped
-    sleep(std::time::Duration::from_secs(sleep_secs));
-    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
@@ -906,12 +863,12 @@ fn main() {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
+            let _unused = block_on(stop_all_processes(app_state.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
+            let _unused = block_on(stop_all_processes(app_state.clone(), true));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
