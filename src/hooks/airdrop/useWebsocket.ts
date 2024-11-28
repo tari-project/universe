@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
-import { QuestCompletedEvent } from '@app/types/ws';
+import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
@@ -72,9 +72,15 @@ export const useWebsocket = () => {
                 setConnectedSocket(true);
                 socket.emit('auth', airdropToken);
                 socket.on(userId as string, (msg: string) => {
-                    const msgParsed = JSON.parse(msg) as QuestCompletedEvent;
-                    if (msgParsed?.data?.userPoints?.gems) {
+                    const msgParsed = JSON.parse(msg) as WebsocketUserEvent;
+                    if (msgParsed.name === WebsocketEventNames.COMPLETED_QUEST && msgParsed?.data?.userPoints?.gems) {
                         setUserGems(msgParsed.data.userPoints?.gems);
+                    }
+                    if (
+                        msgParsed.name === WebsocketEventNames.MINING_STATUS_CREW_UPDATE &&
+                        msgParsed?.data?.totalTimeBonusMs
+                    ) {
+                        //update value
                     }
                 });
             });
@@ -87,7 +93,7 @@ export const useWebsocket = () => {
         try {
             if (socket) {
                 setConnectedSocket(false);
-                handleEmitMiningStatus(false);
+                handleEmitMiningStatus(isMining);
                 socket.disconnect();
                 socket = null;
             }
