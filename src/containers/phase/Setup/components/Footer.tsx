@@ -14,7 +14,6 @@ export default function Footer() {
     const diff = config_creation_date ? now.getTime() - config_creation_date.getTime() : 0;
     const isFirstLoad = diff > 0 && diff < 1000 * 60; // 1 min buffer
 
-
     return (
         <Container>
             <StatusWrapper>
