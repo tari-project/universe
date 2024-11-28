@@ -1,4 +1,5 @@
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
+import { TextArea } from '@app/components/elements/inputs/TextArea';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import styled from 'styled-components';
@@ -26,12 +27,14 @@ export const WrapperForm = styled.form(() => ({
     gap: '10px',
 }));
 
-export const StyledTextArea = styled.textarea<{ $hasError: boolean }>(({ $hasError, theme }) => ({
+export const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>(({ $hasError, theme }) => ({
     backgroundColor: theme.palette.background.default,
     width: '100%',
     borderRadius: '10px',
     border: `1px solid ${$hasError ? theme.palette.error.main : theme.colorsAlpha.darkAlpha[10]}`,
-    padding: '20px',
+    padding: '10px',
+    fontSize: theme.typography.h6.fontSize,
+    lineHeight: theme.typography.h6.lineHeight,
 }));
 
 export const IconContainer = styled.div(({ theme }) => ({
@@ -82,7 +85,6 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
         return newStr !== oldStr;
     }, [seedWords, seedWordsValue]);
 
-    // await importSeedWords(data.seedWords.split(' '));
     const handleApply = useCallback(
         (data: { seedWords: string }) => {
             if (hasChanges) {
@@ -132,9 +134,11 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
                         const { ref: _ref, ...rest } = field;
                         return (
                             <StyledTextArea
+                                variant="secondary"
                                 $hasError={!!errors.seedWords}
                                 disabled={seedWordsFetching}
                                 onPaste={handlePaste}
+                                minHeight="80px"
                                 {...rest}
                             />
                         );
@@ -142,11 +146,11 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
                 />
                 <IconContainer>
                     {!errors.seedWords && (
-                        <IconButton type="submit" disabled={!isDirty}>
+                        <IconButton size="small" type="submit" disabled={!isDirty && !hasChanges}>
                             <IoCheckmarkOutline />
                         </IconButton>
                     )}
-                    <IconButton type="reset">
+                    <IconButton size="small" type="reset">
                         <IoCloseOutline />
                     </IconButton>
                 </IconContainer>

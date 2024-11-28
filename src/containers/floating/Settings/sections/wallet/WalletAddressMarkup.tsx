@@ -32,22 +32,21 @@ const DotContainer = styled.div`
 
 const AddressContainer = styled.div`
     overflow-x: auto;
-    font-size: 14px;
+    font-size: 12px;
     letter-spacing: 1px;
-    font-weight: 500;
     line-height: 1.3;
     width: 100%;
     height: 40px;
     align-items: center;
     display: flex;
-    padding: 10px;
+    padding: 8px;
     background-color: ${({ theme }) => theme.palette.background.default};
     border: 1px solid ${({ theme }) => theme.colorsAlpha.darkAlpha[10]};
     border-radius: 10px;
 `;
 
 const AddressInner = styled.div`
-    width: max-content;
+    //width: max-content;
     display: flex;
 `;
 
@@ -62,7 +61,7 @@ const CopyToClipboard = ({ text }: { text: string | undefined }) => {
     );
 
     return (
-        <IconButton onClick={() => handleCopy(text)}>
+        <IconButton size="small" onClick={() => handleCopy(text)}>
             {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
         </IconButton>
     );
@@ -110,13 +109,13 @@ const WalletAddressMarkup = () => {
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
-            <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={10}>
                 <AddressContainer>
                     <Typography>{walletAddress}</Typography>
                 </AddressContainer>
                 <CopyToClipboard text={walletAddress} />
             </Stack>
-            <Stack direction="row" justifyContent="space-between" alignItems={isCondensed ? 'center' : 'flex-start'}>
+            <Stack direction="row" justifyContent="stretch" alignItems={isCondensed ? 'center' : 'flex-start'} gap={10}>
                 <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
                     <AddressInner>
                         <Typography
@@ -131,13 +130,8 @@ const WalletAddressMarkup = () => {
                     </AddressInner>
                 </AddressContainer>
                 <Stack direction="row" gap={4}>
-                    <IconButton
-                        onClick={() => setIsCondensed(!isCondensed)}
-                        style={{
-                            minWidth: 34,
-                        }}
-                    >
-                        {isCondensed ? <BsArrowsExpandVertical size={16} /> : <BsArrowsCollapseVertical size={16} />}
+                    <IconButton size="small" onClick={() => setIsCondensed(!isCondensed)}>
+                        {isCondensed ? <BsArrowsExpandVertical /> : <BsArrowsCollapseVertical />}
                     </IconButton>
                     <CopyToClipboard text={walletAddressEmoji} />
                 </Stack>

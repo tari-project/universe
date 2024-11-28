@@ -10,6 +10,10 @@ export function useGetSeedWords() {
         try {
             const seedWords = await invoke('get_seed_words');
             setSeedWords(seedWords);
+
+            if (seedWords) {
+                return seedWords;
+            }
         } catch (e) {
             console.error('Could not get seed words', e);
         } finally {
