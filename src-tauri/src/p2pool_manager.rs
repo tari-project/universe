@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures_util::future::FusedFuture;
 use log::warn;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
@@ -96,12 +97,14 @@ impl P2poolManager {
         }
     }
 
-    pub async fn is_running(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
-        if process_watcher.is_running() {
-            return Ok(true);
-        }
-        Ok(false)
+        process_watcher.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
     }
 
     pub async fn ensure_started(
@@ -113,15 +116,13 @@ impl P2poolManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        if process_watcher.is_running() {
-            return Ok(());
-        }
+
         process_watcher.adapter.config = Some(config);
         process_watcher.health_timeout = Duration::from_secs(28);
         process_watcher.poll_time = Duration::from_secs(30);
         process_watcher
             .start(
-                app_shutdown,
+                app_shutdown.clone(),
                 base_path,
                 config_path,
                 log_path,
@@ -131,6 +132,9 @@ impl P2poolManager {
         process_watcher.wait_ready().await?;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {
+                if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+                    break;
+                }
                 sleep(Duration::from_secs(5)).await;
                 if let Ok(_stats) = status_monitor.status().await {
                     break;

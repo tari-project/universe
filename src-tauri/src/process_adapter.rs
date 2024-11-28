@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use sentry::protocol::Event;
 use sentry_tauri::sentry;
@@ -40,6 +41,12 @@ pub(crate) trait ProcessAdapter {
     }
 
     fn pid_file_name(&self) -> &str;
+
+    fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
+        std::path::Path::new(&base_folder)
+            .join(self.pid_file_name())
+            .exists()
+    }
 
     async fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
@@ -119,6 +126,12 @@ impl ProcessInstance {
         // Reset the shutdown each time.
         self.shutdown = Shutdown::new();
         let shutdown_signal = self.shutdown.to_signal();
+
+        if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
+            warn!(target: LOG_TARGET, "Shutdown signal is triggered. Not starting process");
+            return Ok(());
+        };
+
         self.handle = Some(tokio::spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start

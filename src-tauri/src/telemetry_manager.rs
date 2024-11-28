@@ -467,8 +467,7 @@ async fn get_telemetry_data(
 
     // let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
     // let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
-    let p2pool_enabled =
-        config_guard.p2pool_enabled() && p2pool_manager.is_running().await.unwrap_or(false);
+    let p2pool_enabled = config_guard.p2pool_enabled() && p2pool_manager.is_running().await;
     // let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
     //     if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
     //         (
