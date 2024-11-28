@@ -62,14 +62,27 @@ const SeedWordsMarkup = () => {
                         {seedWordsFetching && !copyFetchLoading ? (
                             <CircularProgress />
                         ) : showSeedWords ? (
-                            <IoEyeOffOutline size={18} />
+                            <IoEyeOffOutline />
                         ) : (
-                            <IoEyeOutline size={18} />
+                            <IoEyeOutline />
                         )}
                     </IconButton>
                 )}
+            </Stack>
+            {isEditing ? (
+                <SeedWordsEdit seedWordsFetching={seedWordsFetching} seedWords={seedWords} toggleEdit={toggleEdit} />
+            ) : null}
+            <Stack direction="row" justifyContent="stretch" alignItems="center" style={{ width: '100%' }}>
+                {!isEditing ? (
+                    <SeedWords
+                        showSeedWords={showSeedWords && !!seedWords?.length}
+                        seedWords={seedWords}
+                        editable
+                        onToggleEdit={toggleEdit}
+                    />
+                ) : null}
                 {showCopy && (
-                    <IconButton onClick={() => handleCopyClick()}>
+                    <IconButton size="small" onClick={() => handleCopyClick()}>
                         {!isCopied ? (
                             copyFetchLoading ? (
                                 <CircularProgress />
@@ -82,16 +95,6 @@ const SeedWordsMarkup = () => {
                     </IconButton>
                 )}
             </Stack>
-            {isEditing ? (
-                <SeedWordsEdit seedWordsFetching={seedWordsFetching} seedWords={seedWords} toggleEdit={toggleEdit} />
-            ) : (
-                <SeedWords
-                    showSeedWords={showSeedWords && !!seedWords?.length}
-                    seedWords={seedWords}
-                    editable
-                    onToggleEdit={toggleEdit}
-                />
-            )}
         </SettingsGroupWrapper>
     );
 };

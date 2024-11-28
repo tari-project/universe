@@ -29,13 +29,13 @@ export const SeedWords = ({ seedWords, onToggleEdit, showSeedWords = false, edit
     });
 
     const editCTAMarkup = editable ? (
-        <IconButton onClick={onToggleEdit}>
+        <IconButton size="small" onClick={onToggleEdit}>
             <IoPencil />
         </IconButton>
     ) : null;
 
     const copyCTAMarkup = seedWords ? (
-        <IconButton onClick={() => copyToClipboard(seedWords.join(' '))}>
+        <IconButton size="small" onClick={() => copyToClipboard(seedWords.join(' '))}>
             {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
         </IconButton>
     ) : null;
@@ -61,5 +61,5 @@ export const SeedWords = ({ seedWords, onToggleEdit, showSeedWords = false, edit
             </IconContainer>
         </>
     );
-    return <Wrapper>{showSeedWords ? visibleMarkup : hiddenMarkup}</Wrapper>;
+    return <Wrapper $seedWordsVisible={showSeedWords}>{showSeedWords ? visibleMarkup : hiddenMarkup}</Wrapper>;
 };
