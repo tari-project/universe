@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import {
     Wrapper,
     VerticalText,
@@ -9,12 +8,15 @@ import {
     Number,
     Label,
 } from './styles';
+import { useTranslation } from 'react-i18next';
 
 export default function Timer() {
+    const { t } = useTranslation('sos', { useSuspense: false });
+
     return (
         <Wrapper>
             <VerticalText>
-                You’re getting close
+                {t('widget.timer.gettingClose')}
                 <DividerLineLeft />
                 <DividerLineRight />
             </VerticalText>
@@ -22,12 +24,12 @@ export default function Timer() {
             <TimerColumn>
                 <NumberGroup>
                     <Number>87</Number>
-                    <Label>days</Label>
+                    <Label>{t('widget.timer.days')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
                     <Number>12</Number>
-                    <Label>hours</Label>
+                    <Label>{t('widget.timer.hours')}</Label>
                 </NumberGroup>
             </TimerColumn>
         </Wrapper>

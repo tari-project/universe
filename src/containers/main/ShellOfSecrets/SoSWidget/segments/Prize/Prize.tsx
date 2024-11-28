@@ -1,12 +1,14 @@
-/* eslint-disable i18next/no-literal-string */
 import { Wrapper } from './styles';
 import gemImage from '../../images/gem-green.png';
+import { useTranslation } from 'react-i18next';
 
 export default function Prize() {
+    const { t } = useTranslation('sos', { useSuspense: false });
+
     return (
         <Wrapper>
             <img src={gemImage} alt="" />
-            upcoming reward / macbook pro 16’
+            {t('widget.prize.upcomingReward')}
         </Wrapper>
     );
 }
