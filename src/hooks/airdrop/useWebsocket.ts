@@ -4,6 +4,7 @@ import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 
 let socket: ReturnType<typeof io> | null;
 
@@ -14,6 +15,7 @@ export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userId = useAirdropStore((state) => state.userDetails?.user?.id);
     const setUserGems = useAirdropStore((state) => state.setUserGems);
+    const setTotalBonusTimeMs = useShellOfSecretsStore((state) => state.setTotalBonusTimeMs);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
     const cpu = useMiningStore((state) => state.cpu);
     const gpu = useMiningStore((state) => state.gpu);
@@ -33,7 +35,7 @@ export const useWebsocket = () => {
             const arg = { isMining, timestamp: new Date().toISOString() };
             try {
                 // eslint-disable-next-line no-console
-                socket.emit(MINING_EVENT_NAME, arg, console.log);
+                socket.emit(MINING_EVENT_NAME, arg);
             } catch (e) {
                 console.error(e);
             }
@@ -75,10 +77,11 @@ export const useWebsocket = () => {
                         setUserGems(msgParsed.data.userPoints?.gems);
                     }
                     if (
-                        msgParsed.name === WebsocketEventNames.MINING_STATUS_CREW_UPDATE &&
+                        (msgParsed.name === WebsocketEventNames.MINING_STATUS_CREW_UPDATE ||
+                            msgParsed.name === WebsocketEventNames.MINING_STATUS_USER_UPDATE) &&
                         msgParsed?.data?.totalTimeBonusMs
                     ) {
-                        //update value
+                        setTotalBonusTimeMs(msgParsed.data.totalTimeBonusMs);
                     }
                 });
             });
