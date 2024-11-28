@@ -1,9 +1,10 @@
 import styled from 'styled-components';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $seedWordsVisible?: boolean }>`
     display: flex;
-    align-items: flex-start;
+    align-items: ${({ $seedWordsVisible }) => ($seedWordsVisible ? 'flex-start' : 'center')};
     justify-content: space-between;
+    width: 100%;
     gap: 10px;
 `;
 export const HiddenContainer = styled.div`

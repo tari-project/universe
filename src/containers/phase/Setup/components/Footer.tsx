@@ -1,4 +1,4 @@
-import Lottie from 'react-lottie';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import SetupProgress from './SetupProgress';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
@@ -13,20 +13,12 @@ export default function Footer() {
 
     const diff = config_creation_date ? now.getTime() - config_creation_date.getTime() : 0;
     const isFirstLoad = diff > 0 && diff < 1000 * 60; // 1 min buffer
-    const defaultOptions = {
-        loop: true,
-        autoplay: true,
-        animationData,
-        rendererSettings: {
-            preserveAspectRatio: 'xMidYMid slice',
-        },
-    };
 
     return (
         <Container>
             <StatusWrapper>
                 <LottieWrapper>
-                    <Lottie options={defaultOptions} height={100} width={100} />
+                    <DotLottieReact data={animationData} autoplay loop />
                 </LottieWrapper>
                 <SetupProgress />
             </StatusWrapper>
