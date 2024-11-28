@@ -2,6 +2,7 @@
   "action-requires-restart": "此操作需要重启以应用更改",
   "action-restart-copy": "您的偏好将被保存，并在下次启动 Tari 宇宙时应用。",
   "app-restart-required": "需要重启应用",
+  "application-info": "Application Information",
   "applyInviteCode": "应用邀请代码",
   "cancel": "取消",
   "change-language": "更改语言",
