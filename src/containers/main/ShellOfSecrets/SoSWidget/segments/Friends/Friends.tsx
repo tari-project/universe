@@ -8,8 +8,8 @@ import {
     FriendCount,
     CopyButtton,
     GrowButton,
-    ArrowAnimation,
     Copied,
+    PositionArrows,
 } from './styles';
 
 import friendImage1 from '../../images/friend1.png';
@@ -18,6 +18,7 @@ import friendImage3 from '../../images/friend3.png';
 
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import AnimatedArrows from './AnimatedArrows/AnimatedArrows';
 
 export default function Friends() {
     const [copied, setCopied] = useState(false);
@@ -64,7 +65,9 @@ export default function Friends() {
                 <GrowButton>grow your crew</GrowButton>
             </Buttons>
 
-            <ArrowAnimation />
+            <PositionArrows>
+                <AnimatedArrows />
+            </PositionArrows>
         </Wrapper>
     );
 }

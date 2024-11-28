@@ -139,4 +139,8 @@ export const GrowButton = styled('div')`
     }
 `;
 
-export const ArrowAnimation = styled('div')``;
+export const PositionArrows = styled('div')`
+    position: absolute;
+    top: -24px;
+    right: 10px;
+`;

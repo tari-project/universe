@@ -14,7 +14,7 @@ export const BlackBox = styled('div')`
     width: 417px;
     height: 208px;
     flex-shrink: 0;
-    padding: 34px;
+    padding: 10px;
 
     border-radius: 10px;
     overflow: hidden;
@@ -51,7 +51,18 @@ export const ContentLayer = styled('div')`
     position: relative;
     z-index: 3;
     display: flex;
+    flex-direction: column;
+    gap: 18px;
+    width: 100%;
+    height: 100%;
+`;
+
+export const TopGroup = styled('div')`
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 20px;
     width: 100%;
+    height: 100%;
+    padding: 20px 24px 0 24px;
 `;

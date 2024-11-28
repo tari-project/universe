@@ -1,10 +1,11 @@
 import Scanlines from '../components/Scanlines/Scanlines';
-import Timer from './components/Timer/Timer';
-import { BlackBox, ContentLayer, GateImage, JewelImage, Wrapper } from './styles';
+import Timer from './segments/Timer/Timer';
+import { BlackBox, ContentLayer, GateImage, JewelImage, TopGroup, Wrapper } from './styles';
 
 import jewelImage from './images/jewel.png';
 import gateImage from './images/gate.png';
-import Friends from './components/Friends/Friends';
+import Friends from './segments/Friends/Friends';
+import Prize from './segments/Prize/Prize';
 
 export default function SoSWidget() {
     return (
@@ -13,8 +14,12 @@ export default function SoSWidget() {
             <GateImage src={gateImage} alt="" />
             <BlackBox>
                 <ContentLayer>
-                    <Timer />
-                    <Friends />
+                    <TopGroup>
+                        <Timer />
+                        <Friends />
+                    </TopGroup>
+
+                    <Prize />
                 </ContentLayer>
                 <Scanlines />
             </BlackBox>
