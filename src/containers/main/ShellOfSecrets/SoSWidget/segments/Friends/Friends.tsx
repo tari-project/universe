@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import {
     Wrapper,
     FriendsWrapper,
@@ -19,8 +18,10 @@ import friendImage3 from '../../images/friend3.png';
 import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import AnimatedArrows from './AnimatedArrows/AnimatedArrows';
+import { useTranslation } from 'react-i18next';
 
 export default function Friends() {
+    const { t } = useTranslation('sos', { useSuspense: false });
     const [copied, setCopied] = useState(false);
 
     const shareLink = 'https://universe.tari.com';
@@ -41,7 +42,7 @@ export default function Friends() {
                 <FriendCount>+14</FriendCount>
             </FriendsWrapper>
 
-            <Text>Reduce your timer by inviting friends</Text>
+            <Text>{t('widget.friends.reduceTimer')}</Text>
 
             <Buttons>
                 <CopyButtton onClick={handleCopy}>
@@ -57,12 +58,12 @@ export default function Friends() {
                                 animate={{ opacity: 1, y: 0, x: '-50%' }}
                                 exit={{ opacity: 0, x: '-50%' }}
                             >
-                                Link copied!
+                                {t('widget.friends.linkCopied')}
                             </Copied>
                         )}
                     </AnimatePresence>
                 </CopyButtton>
-                <GrowButton>grow your crew</GrowButton>
+                <GrowButton>{t('widget.friends.growCrew')}</GrowButton>
             </Buttons>
 
             <PositionArrows>
