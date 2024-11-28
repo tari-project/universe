@@ -26,6 +26,8 @@ export const BlackBox = styled('div')`
     display: flex;
     align-items: center;
     gap: 20px;
+
+    pointer-events: all;
 `;
 
 export const JewelImage = styled('img')`
@@ -34,7 +36,7 @@ export const JewelImage = styled('img')`
     right: 100%;
     transform: translateY(-50%) rotate(-90deg);
     z-index: 3;
-    margin-right: -16px;
+    margin-right: -10px;
 `;
 
 export const GateImage = styled('img')`
