@@ -1,9 +1,8 @@
-use std::{path::PathBuf, sync::Arc};
-use tokio::sync::RwLock;
-
 use crate::process_watcher::ProcessWatcher;
 use crate::tor_adapter::{TorAdapter, TorConfig};
+use std::{path::PathBuf, sync::Arc};
 use tari_shutdown::ShutdownSignal;
+use tokio::sync::RwLock;
 
 pub(crate) struct TorManager {
     watcher: Arc<RwLock<ProcessWatcher<TorAdapter>>>,
@@ -36,6 +35,7 @@ impl TorManager {
     ) -> Result<(), anyhow::Error> {
         {
             let mut process_watcher = self.watcher.write().await;
+
             process_watcher
                 .adapter
                 .load_or_create_config(config_path.clone())
@@ -101,5 +101,15 @@ impl TorManager {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
         Ok(exit_code)
+    }
+
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
     }
 }
