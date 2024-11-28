@@ -1,6 +1,7 @@
 export enum WebsocketEventNames {
     COMPLETED_QUEST = 'completed_quest',
     MINING_STATUS_CREW_UPDATE = 'mining_status_crew_update',
+    MINING_STATUS_USER_UPDATE = 'mining_status_user_update',
 }
 
 export interface QuestCompletedEvent {
@@ -25,4 +26,11 @@ export interface MiningStatusCrewUpdateEvent {
     };
 }
 
-export type WebsocketUserEvent = QuestCompletedEvent | MiningStatusCrewUpdateEvent;
+export interface MiningStatusUserUpdateEvent {
+    name: WebsocketEventNames.MINING_STATUS_USER_UPDATE;
+    data: {
+        totalTimeBonusMs: number;
+    };
+}
+
+export type WebsocketUserEvent = QuestCompletedEvent | MiningStatusCrewUpdateEvent | MiningStatusUserUpdateEvent;
