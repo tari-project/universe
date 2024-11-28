@@ -1,5 +1,6 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor};
+use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -53,6 +54,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         log_path: PathBuf,
         binary: Binaries,
     ) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "App shutdown triggered or terminated status for {} = {} | {}", self.adapter.name(),app_shutdown.is_triggered(),app_shutdown.is_terminated());
+        if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+            return Ok(());
+        }
+
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
             warn!(target: LOG_TARGET, "Tried to start process watcher for {} twice", name);
@@ -120,6 +126,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         } else {
             false
         }
+    }
+
+    pub fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        self.adapter.pid_file_exisits(base_path)
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
