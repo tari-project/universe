@@ -15,8 +15,6 @@ use process_utils::set_interval;
 use log4rs::config::RawConfig;
 use regex::Regex;
 use serde::Serialize;
-#[cfg(target_os = "macos")]
-use utils::macos_utils::check_if_app_in_applications_folder;
 use std::convert::TryFrom;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -32,6 +30,8 @@ use tauri::{Manager, RunEvent, UpdaterEvent, Window};
 use tokio::sync::{Mutex, RwLock};
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
+#[cfg(target_os = "macos")]
+use utils::macos_utils::is_app_in_applications_folder;
 use wallet_adapter::TransactionInfo;
 
 use app_config::{AppConfig, GpuThreads};
@@ -128,6 +128,12 @@ struct UpdateProgressRustEvent {
     chunk_length: usize,
     content_length: u64,
     downloaded: u64,
+}
+#[derive(Debug, Serialize, Clone)]
+#[allow(dead_code)]
+struct CriticalProblemEvent {
+    title: Option<String>,
+    description: Option<String>,
 }
 
 async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(), String> {
@@ -677,6 +683,22 @@ async fn setup_inner(
             },
         )
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+
+    #[cfg(target_os = "macos")]
+    if !cfg!(dev) && !is_app_in_applications_folder {
+        window
+            .emit(
+                "critical_problem",
+                CriticalProblemEvent {
+                    title: None,
+                    description: Some("not-installed-in-applications-directory".to_string()),
+                },
+            )
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not emit event 'critical_problem': {:?}", e),
+            )?;
+        return Ok(());
+    }
 
     let data_dir = app
         .path_resolver()
@@ -2208,12 +2230,6 @@ fn main() {
             let config: RawConfig = serde_yaml::from_str(&contents)
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
-
-            #[cfg(target_os = "macos")] {
-                let main_window = app.get_window("main").expect("Could not get main window");
-                check_if_app_in_applications_folder(main_window);
-            }
-
 
             let config_path = app
                 .path_resolver()

@@ -1,4 +1,4 @@
-import { ApplicationsVersions, ExternalDependency } from '@app/types/app-status';
+import { ApplicationsVersions, CriticalProblem, ExternalDependency } from '@app/types/app-status';
 import { setAnimationState } from '@app/visuals';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api';
@@ -13,6 +13,8 @@ interface AppState {
     setCriticalError: (value: string | undefined) => void;
     error?: string;
     setError: (value: string | undefined) => void;
+    criticalProblem?: Partial<CriticalProblem>;
+    setCriticalProblem: (value?: Partial<CriticalProblem>) => void;
     topStatus: string;
     setTopStatus: (value: string) => void;
     setupTitle: string;
@@ -49,6 +51,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             type: 'error',
         });
     },
+    setCriticalProblem: (criticalProblem) => set({ criticalProblem }),
     topStatus: 'Not mining',
     setTopStatus: (value) => set({ topStatus: value }),
     setupTitle: '',
