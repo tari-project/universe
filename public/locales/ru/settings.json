@@ -2,6 +2,7 @@
   "action-requires-restart": "Для применения изменений требуется перезапуск",
   "action-restart-copy": "Ваши предпочтения будут сохранены и применены при следующем запуске Tari Universe.",
   "app-restart-required": "Требуется перезапуск приложения",
+  "application-info": "Application Information",
   "applyInviteCode": "Применить код приглашения",
   "cancel": "Отмена",
   "change-language": "Язык",
