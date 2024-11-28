@@ -2,6 +2,7 @@
   "action-requires-restart": "Cette action nécessite un redémarrage pour appliquer les modifications",
   "action-restart-copy": "Votre préférence sera enregistrée et appliquée lors du prochain démarrage de Tari Universe.",
   "app-restart-required": "Redémarrage de l\"application requis",
+  "application-info": "Application Information",
   "applyInviteCode": "Appliquer le code d\"invitation",
   "cancel": "Cancel",
   "change-language": "Langue",
