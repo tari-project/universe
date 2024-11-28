@@ -82,7 +82,6 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
         return newStr !== oldStr;
     }, [seedWords, seedWordsValue]);
 
-    // await importSeedWords(data.seedWords.split(' '));
     const handleApply = useCallback(
         (data: { seedWords: string }) => {
             if (hasChanges) {
@@ -142,7 +141,7 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
                 />
                 <IconContainer>
                     {!errors.seedWords && (
-                        <IconButton type="submit" disabled={!isDirty}>
+                        <IconButton type="submit" disabled={!isDirty && !hasChanges}>
                             <IoCheckmarkOutline />
                         </IconButton>
                     )}

@@ -17,7 +17,7 @@ export const SeedWords = ({ seedWords, onToggleEdit, showSeedWords = false, edit
     const wordMarkup = seedWords?.map((word, i) => {
         const count = i + 1;
         return (
-            <Stack key={`seed-word-${word}`} direction="row" justifyContent="flex-start">
+            <Stack key={`seed-word-${count}-${word}`} direction="row" justifyContent="flex-start">
                 <Typography key={`seed-no-${i}`} variant="p" style={{ minWidth: 15 }}>
                     {count}.
                 </Typography>
