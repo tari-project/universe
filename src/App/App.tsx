@@ -54,8 +54,8 @@ export default function App() {
                         {!isShuttingDown && isSettingUp ? (
                             <AppContentContainer key="setup" initial="visible">
                                 <Setup />
-                            </AppContentContainer>                      
-                         ) : null}
+                            </AppContentContainer>
+                        ) : null}
                         {isShuttingDown || isSettingUp ? null : (
                             <AppContentContainer key="main" initial="hidden">
                                 <MainView />
