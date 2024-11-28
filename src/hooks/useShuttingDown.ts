@@ -9,6 +9,7 @@ export function useShuttingDown() {
         appWindow.onCloseRequested(async (e) => {
             if (!isShuttingDown) {
                 setIsShuttingDown(true);
+                e.preventDefault();
             }
         });
     }, [isShuttingDown]);

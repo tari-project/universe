@@ -36,6 +36,7 @@ export interface AppConfig {
     use_tor: boolean;
     visual_mode: boolean;
     monero_address_is_generated?: boolean;
+    created_at: string;
 }
 
 export enum ExternalDependencyStatus {

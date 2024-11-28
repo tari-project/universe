@@ -1,8 +1,9 @@
+import { AppContentContainer } from '@app/App/App.styles';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 import { useShuttingDown } from '@app/hooks/useShuttingDown';
 import { useAppStateStore } from '@app/store/appStateStore';
-import { LazyMotion, domMax, MotionConfig } from 'framer-motion';
+import { LazyMotion, domMax, MotionConfig, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useTranslation } from 'react-i18next';
 
@@ -13,8 +14,6 @@ import Setup from '../containers/phase/Setup/Setup';
 
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
-
-import AppContent from './AppContent';
 
 export default function App() {
     const isShuttingDown = useShuttingDown();
@@ -32,6 +31,13 @@ export default function App() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    useEffect(() => {
+        const canvasElement = document.getElementById('canvas');
+        if (canvasElement) {
+            canvasElement.style.opacity = isShuttingDown || isSettingUp ? '0' : '1';
+        }
+    }, [isShuttingDown, isSettingUp]);
+
     return (
         <ThemeProvider>
             <GlobalReset />
@@ -44,11 +50,23 @@ export default function App() {
                  */}
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
-                    <AppContent key="app-content">
-                        {!isShuttingDown && isSettingUp ? <Setup /> : null}
-                        {isShuttingDown || isSettingUp ? null : <MainView />}
-                        {isShuttingDown ? <ShuttingDownScreen /> : null}
-                    </AppContent>
+                    <AnimatePresence>
+                        {!isShuttingDown && isSettingUp ? (
+                            <AppContentContainer key="setup" initial="visible">
+                                <Setup />
+                            </AppContentContainer>                      
+                         ) : null}
+                        {isShuttingDown || isSettingUp ? null : (
+                            <AppContentContainer key="main" initial="hidden">
+                                <MainView />
+                            </AppContentContainer>
+                        )}
+                        {isShuttingDown ? (
+                            <AppContentContainer key="shutdown" initial="hidden">
+                                <ShuttingDownScreen />
+                            </AppContentContainer>
+                        ) : null}
+                    </AnimatePresence>
                 </MotionConfig>
             </LazyMotion>
         </ThemeProvider>

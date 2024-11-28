@@ -2,6 +2,7 @@
   "action-requires-restart": "この操作には再起動が必要です。変更を適用します",
   "action-restart-copy": "設定は保存され、次回Tari Universeを起動したときに適用されます。",
   "app-restart-required": "アプリの再起動が必要です",
+  "application-info": "Application Information",
   "applyInviteCode": "招待コードを適用",
   "cancel": "キャンセル",
   "change-language": "言語",
