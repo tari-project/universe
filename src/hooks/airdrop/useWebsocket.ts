@@ -14,7 +14,6 @@ export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userId = useAirdropStore((state) => state.userDetails?.user?.id);
     const setUserGems = useAirdropStore((state) => state.setUserGems);
-    const setWebsocket = useAirdropStore((state) => state.setWebsocket);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
     const cpu = useMiningStore((state) => state.cpu);
     const gpu = useMiningStore((state) => state.gpu);
@@ -65,7 +64,6 @@ export const useWebsocket = () => {
 
             if (!socket) return;
 
-            setWebsocket(socket);
             socket.emit('subscribe-to-gem-updates');
             socket.on('connect', () => {
                 if (!socket) return;
