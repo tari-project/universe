@@ -9,7 +9,7 @@ import Prize from './segments/Prize/Prize';
 
 export default function SoSWidget() {
     return (
-        <Wrapper>
+        <Wrapper initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }}>
             <JewelImage src={jewelImage} alt="" />
             <GateImage src={gateImage} alt="" />
             <BlackBox>

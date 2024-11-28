@@ -33,12 +33,11 @@ const Scanlines = () => {
 
             // Draw scanlines
             for (let y = scanlineOffset; y < canvas.height; y += 3) {
-                // Increased space between scanlines
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
                 ctx.fillRect(0, y, canvas.width, 1);
             }
 
-            scanlineOffset = (scanlineOffset + 0.1) % 4; // Adjusted to match the new spacing
+            scanlineOffset = (scanlineOffset + 0.1) % 4;
 
             animationFrameId = requestAnimationFrame(drawScanlines);
         };
