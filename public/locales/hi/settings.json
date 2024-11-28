@@ -2,6 +2,7 @@
   "action-requires-restart": "इस क्रिया के लिए परिवर्तनों को लागू करने हेतु पुनः आरंभ करना आवश्यक है",
   "action-restart-copy": "आपकी पसंद को सहेजा जाएगा और अगली बार जब तारी यूनिवर्स शुरू होगा, तब लागू किया जाएगा।",
   "app-restart-required": "ऐप पुनः प्रारंभ आवश्यक है",
+  "application-info": "Application Information",
   "applyInviteCode": "आमंत्रण कोड लागू करें",
   "cancel": "रद्द करें",
   "change-language": "भाषा",
