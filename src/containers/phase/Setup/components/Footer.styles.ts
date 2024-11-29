@@ -20,5 +20,6 @@ export const StatusWrapper = styled.div`
 
 export const LottieWrapper = styled.div`
     display: flex;
-    max-height: 100%;
+    height: 100px;
+    width: 100px;
 `;

@@ -5,6 +5,7 @@ use sys_locale::get_locale;
 use crate::credential_manager::CredentialManager;
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 use anyhow::anyhow;
+use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
@@ -200,6 +201,7 @@ pub struct GpuThreads {
 pub(crate) struct AppConfig {
     config_version: u32,
     config_file: Option<PathBuf>,
+    created_at: Option<DateTime<Utc>>,
     mode: MiningMode,
     display_mode: DisplayMode,
     auto_mining: bool,
@@ -242,6 +244,7 @@ impl AppConfig {
         Self {
             config_version: default_version(),
             config_file: None,
+            created_at: None,
             mode: MiningMode::Eco,
             display_mode: DisplayMode::Light,
             auto_mining: true,
@@ -287,12 +290,17 @@ impl AppConfig {
         if file.exists() {
             debug!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
+            self.created_at = Some(file.clone().metadata()?.created()?.into());
             self.apply_loaded_config(config);
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
             if let Ok(address) = create_monereo_address(config_path).await {
                 self.monero_address = address;
                 self.monero_address_is_generated = true;
+            }
+
+            if self.update_config_file().await.is_ok() {
+                self.created_at = Some(file.clone().metadata()?.created()?.into());
             }
         }
         self.update_config_file().await?;

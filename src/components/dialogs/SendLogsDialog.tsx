@@ -61,6 +61,8 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                     <TextArea
                         onChange={(e) => setFeedback(e.target.value)}
                         placeholder={t('your-feedback', { ns: 'settings' })}
+                        minWidth="500px"
+                        minHeight="200px"
                         value={feedback}
                     />
                     <Typography variant={'p'} color={'red'}>

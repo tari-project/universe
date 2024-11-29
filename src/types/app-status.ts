@@ -45,6 +45,7 @@ export interface AppConfig {
     window_settings: WindowSettings;
     show_experimental_settings: boolean;
     monero_address_is_generated?: boolean;
+    created_at: string;
 }
 
 export enum ExternalDependencyStatus {
