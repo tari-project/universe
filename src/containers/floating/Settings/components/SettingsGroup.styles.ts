@@ -9,7 +9,7 @@ export const SettingsGroupWrapper = styled.div<{ $advanced?: boolean; $subGroup?
     justify-content: center;
     gap: 10px;
     position: relative;
-    margin-top: ${({ $subGroup }) => ($subGroup ? '-10px' : '0')};
+    margin-top: ${({ $subGroup }) => ($subGroup ? '-5px' : '0')};
 
     ${({ $advanced }) =>
         $advanced &&
