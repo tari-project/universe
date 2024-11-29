@@ -141,11 +141,9 @@ impl ProcessAdapter for WalletAdapter {
             args.push(format!(
                 "{}.p2p.seeds.dns_seeds=\"{},{}\"",
                 network.as_key_str(),
-                "ip4.seeds.esmerelda.tari.com",
-                "ip6.seeds.esmerelda.tari.com",
+                format!("ip4.seeds.{}.tari.com", network.as_key_str()),
+                format!("ip6.seeds.{}.tari.com", network.as_key_str()),
             ));
-
-            // todo!()
         }
 
         if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
