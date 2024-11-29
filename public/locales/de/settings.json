@@ -2,6 +2,7 @@
   "action-requires-restart": "Diese Aktion erfordert einen Neustart, um Änderungen anzuwenden",
   "action-restart-copy": "Ihre Einstellungen werden gespeichert und beim nächsten Start des Tari-Universums angewendet.",
   "app-restart-required": "App-Neustart erforderlich",
+  "application-info": "Application Information",
   "applyInviteCode": "Einladungscode anwenden",
   "cancel": "Abbrechen",
   "change-language": "Sprache",

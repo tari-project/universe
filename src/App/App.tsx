@@ -51,7 +51,7 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
                     <AnimatePresence>
-                        {isSettingUp ? (
+                        {!isShuttingDown && isSettingUp ? (
                             <AppContentContainer key="setup" initial="visible">
                                 <Setup />
                             </AppContentContainer>
