@@ -23,7 +23,7 @@ export const useHandleWsUserIdEvent = () => {
                 handleFetchUserDetails();
                 break;
             case WebsocketEventNames.MINING_STATUS_USER_UPDATE:
-                useShellOfSecretsStore.setState({ totalBonusTimeMs: eventParsed.data.totalTimeBonusMs });
+                setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
                 break;
             default:
                 // eslint-disable-next-line no-console
