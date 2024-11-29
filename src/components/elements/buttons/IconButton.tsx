@@ -29,6 +29,10 @@ const BaseIconButton = styled.button<StyleProps>`
         css`
             height: 24px;
             width: 24px;
+            padding: 4px;
+            svg {
+                height: 14px;
+            }
         `}
 `;
 

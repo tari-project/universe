@@ -1,13 +1,17 @@
+use crate::credential_manager::{Credential, KEYRING_ACCESSED};
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
+use crate::credential_manager::CredentialManager;
+use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 use anyhow::anyhow;
+use chrono::{DateTime, Utc};
 use log::{debug, info, warn};
+use monero_address_creator::network::Mainnet;
+use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tokio::fs;
-
-use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 
 const LOG_TARGET: &str = "tari::universe::app_config";
 
@@ -32,6 +36,8 @@ pub struct AppConfigFromFile {
     anon_id: String,
     #[serde(default = "default_monero_address")]
     monero_address: String,
+    #[serde(default = "default_false")]
+    monero_address_is_generated: bool,
     #[serde(default = "default_true")]
     gpu_mining_enabled: bool,
     #[serde(default = "default_true")]
@@ -68,6 +74,8 @@ pub struct AppConfigFromFile {
     custom_max_gpu_usage: Option<Vec<GpuThreads>>,
     #[serde(default = "default_true")]
     auto_update: bool,
+    #[serde(default = "default_false")]
+    keyring_accessed: bool,
     #[serde(default = "default_true")]
     custom_power_levels_enabled: bool,
     #[serde(default = "default_true")]
@@ -88,6 +96,7 @@ impl Default for AppConfigFromFile {
             allow_telemetry: false,
             anon_id: default_anon_id(),
             monero_address: default_monero_address(),
+            monero_address_is_generated: false,
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -105,6 +114,7 @@ impl Default for AppConfigFromFile {
             ludicrous_mode_cpu_threads: None,
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
+            keyring_accessed: false,
             auto_update: true,
             reset_earnings: false,
             custom_power_levels_enabled: true,
@@ -177,6 +187,7 @@ pub struct GpuThreads {
 pub(crate) struct AppConfig {
     config_version: u32,
     config_file: Option<PathBuf>,
+    created_at: Option<DateTime<Utc>>,
     mode: MiningMode,
     display_mode: DisplayMode,
     auto_mining: bool,
@@ -186,6 +197,7 @@ pub(crate) struct AppConfig {
     allow_telemetry: bool,
     anon_id: String,
     monero_address: String,
+    monero_address_is_generated: bool,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
@@ -205,6 +217,7 @@ pub(crate) struct AppConfig {
     custom_max_cpu_usage: Option<u32>,
     custom_max_gpu_usage: Vec<GpuThreads>,
     auto_update: bool,
+    keyring_accessed: bool,
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
@@ -215,6 +228,7 @@ impl AppConfig {
         Self {
             config_version: default_version(),
             config_file: None,
+            created_at: None,
             mode: MiningMode::Eco,
             display_mode: DisplayMode::Light,
             auto_mining: true,
@@ -223,7 +237,8 @@ impl AppConfig {
             last_binaries_update_timestamp: default_system_time(),
             allow_telemetry: true,
             anon_id: generate_password(20),
-            monero_address: DEFAULT_MONERO_ADDRESS.to_string(),
+            monero_address: default_monero_address(),
+            monero_address_is_generated: false,
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             has_system_language_been_proposed: false,
@@ -246,6 +261,7 @@ impl AppConfig {
             auto_update: true,
             sharing_enabled: true,
             visual_mode: true,
+            keyring_accessed: false,
         }
     }
 
@@ -256,9 +272,18 @@ impl AppConfig {
         if file.exists() {
             debug!(target: LOG_TARGET, "Loading app config from file: {:?}", file);
             let config = fs::read_to_string(&file).await?;
+            self.created_at = Some(file.clone().metadata()?.created()?.into());
             self.apply_loaded_config(config);
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
+            if let Ok(address) = create_monereo_address(config_path).await {
+                self.monero_address = address;
+                self.monero_address_is_generated = true;
+            }
+
+            if self.update_config_file().await.is_ok() {
+                self.created_at = Some(file.clone().metadata()?.created()?.into());
+            }
         }
         self.update_config_file().await?;
         Ok(())
@@ -282,6 +307,7 @@ impl AppConfig {
                 self.allow_telemetry = config.allow_telemetry;
                 self.anon_id = config.anon_id;
                 self.monero_address = config.monero_address;
+                self.monero_address_is_generated = config.monero_address_is_generated;
                 self.gpu_mining_enabled = config.gpu_mining_enabled;
                 self.cpu_mining_enabled = config.cpu_mining_enabled;
                 self.has_system_language_been_proposed = config.has_system_language_been_proposed;
@@ -309,6 +335,11 @@ impl AppConfig {
                 }
                 self.sharing_enabled = config.sharing_enabled;
                 self.visual_mode = config.visual_mode;
+
+                KEYRING_ACCESSED.store(
+                    config.keyring_accessed,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -519,14 +550,20 @@ impl AppConfig {
     pub fn allow_telemetry(&self) -> bool {
         self.allow_telemetry
     }
+
     pub fn monero_address(&self) -> &str {
         &self.monero_address
     }
 
     pub async fn set_monero_address(&mut self, address: String) -> Result<(), anyhow::Error> {
+        self.monero_address_is_generated = false;
         self.monero_address = address;
         self.update_config_file().await?;
         Ok(())
+    }
+
+    pub fn monero_address_is_generated(&self) -> bool {
+        self.monero_address_is_generated
     }
 
     pub fn last_binaries_update_timestamp(&self) -> SystemTime {
@@ -623,6 +660,7 @@ impl AppConfig {
             allow_telemetry: self.allow_telemetry,
             anon_id: self.anon_id.clone(),
             monero_address: self.monero_address.clone(),
+            monero_address_is_generated: self.monero_address_is_generated,
             gpu_mining_enabled: self.gpu_mining_enabled,
             cpu_mining_enabled: self.cpu_mining_enabled,
             has_system_language_been_proposed: self.has_system_language_been_proposed,
@@ -641,6 +679,7 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
+            keyring_accessed: KEYRING_ACCESSED.load(std::sync::atomic::Ordering::Relaxed),
             auto_update: self.auto_update,
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,
@@ -692,6 +731,33 @@ fn default_system_time() -> SystemTime {
 
 fn default_monero_address() -> String {
     DEFAULT_MONERO_ADDRESS.to_string()
+}
+
+async fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {
+    let cm = CredentialManager::default_with_dir(path);
+
+    if let Ok(cred) = cm.get_credentials() {
+        if let Some(seed) = cred.monero_seed {
+            info!(target: LOG_TARGET, "Found monero seed in credential manager");
+            let seed = MoneroSeed::new(seed);
+            return Ok(seed
+                .to_address::<Mainnet>()
+                .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()));
+        }
+    }
+
+    let monero_seed = MoneroSeed::generate()?;
+    let cred = Credential {
+        tari_seed_passphrase: None,
+        monero_seed: Some(*monero_seed.inner()),
+    };
+
+    info!(target: LOG_TARGET, "Setting monero seed in credential manager");
+    cm.set_credentials(&cred)?;
+
+    Ok(monero_seed
+        .to_address::<Mainnet>()
+        .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
 }
 
 fn default_vec_string() -> Vec<String> {

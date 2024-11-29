@@ -35,6 +35,8 @@ export interface AppConfig {
     should_auto_launch: boolean;
     use_tor: boolean;
     visual_mode: boolean;
+    monero_address_is_generated?: boolean;
+    created_at: string;
 }
 
 export enum ExternalDependencyStatus {

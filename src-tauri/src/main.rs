@@ -6,9 +6,10 @@ use auto_launcher::AutoLauncher;
 use external_dependencies::{ExternalDependencies, ExternalDependency, RequiredExternalDependency};
 #[allow(unused_imports)]
 use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use keyring::Entry;
 use log::trace;
 use log::{debug, error, info, warn};
-use process_utils::set_interval;
+use monero_address_creator::Seed as MoneroSeed;
 
 use log4rs::config::RawConfig;
 use regex::Regex;
@@ -26,8 +27,10 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Manager, RunEvent, UpdaterEvent, Window};
 use tokio::sync::{Mutex, RwLock};
+use tokio::time;
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
+use utils::shutdown_utils::stop_all_processes;
 use wallet_adapter::TransactionInfo;
 
 use app_config::{AppConfig, GpuThreads};
@@ -42,6 +45,7 @@ use telemetry_manager::TelemetryManager;
 use wallet_manager::WalletManagerError;
 
 use crate::cpu_miner::CpuMiner;
+use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
@@ -60,6 +64,7 @@ mod auto_launcher;
 mod binaries;
 mod consts;
 mod cpu_miner;
+mod credential_manager;
 mod download_utils;
 mod external_dependencies;
 mod feedback;
@@ -122,50 +127,6 @@ struct UpdateProgressRustEvent {
     chunk_length: usize,
     content_length: u64,
     downloaded: u64,
-}
-
-async fn stop_all_miners(state: UniverseAppState, sleep_secs: u64) -> Result<(), String> {
-    state
-        .cpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    state
-        .gpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    let exit_code = state
-        .wallet_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Wallet manager stopped with exit code: {}", exit_code);
-    state
-        .mm_proxy_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    let exit_code = state.node_manager.stop().await.map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Node manager stopped with exit code: {}", exit_code);
-    let exit_code = state
-        .p2pool_manager
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "P2Pool manager stopped with exit code: {}", exit_code);
-
-    let exit_code = state.tor_manager.stop().await.map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Tor manager stopped with exit code: {}", exit_code);
-    state.shutdown.clone().trigger();
-
-    // TODO: Find a better way of knowing that all miners have stopped
-    sleep(std::time::Duration::from_secs(sleep_secs));
-    Ok(())
 }
 
 #[tauri::command]
@@ -497,7 +458,7 @@ async fn restart_application(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_miners(state.inner().clone(), 5).await?;
+        stop_all_processes(state.inner().clone(), true).await?;
     }
 
     app.restart();
@@ -510,7 +471,7 @@ async fn exit_application(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_miners(state.inner().clone(), 5).await?;
+    stop_all_processes(state.inner().clone(), true).await?;
 
     app.exit(0);
     Ok(())
@@ -976,10 +937,32 @@ async fn setup_inner(
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
-        set_interval(
-            move || check_if_is_orphan_chain(app_handle_clone.clone()),
-            Duration::from_secs(30),
-        );
+        let mut interval: time::Interval = time::interval(Duration::from_secs(30));
+        let mut has_send_error = false;
+
+        loop {
+            interval.tick().await;
+
+            let state = app_handle_clone.state::<UniverseAppState>().inner();
+            let check_if_orphan = state
+                .node_manager
+                .check_if_is_orphan_chain(!has_send_error)
+                .await;
+            match check_if_orphan {
+                Ok(is_stuck) => {
+                    if is_stuck {
+                        error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+                    }
+                    if is_stuck && !has_send_error {
+                        has_send_error = true;
+                    }
+                    drop(app_handle_clone.emit_all("is_stuck", is_stuck));
+                }
+                Err(ref e) => {
+                    error!(target: LOG_TARGET, "{}", e);
+                }
+            }
+        }
     });
 
     Ok(())
@@ -1116,7 +1099,7 @@ async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_miners(state.inner().clone(), 5).await?;
+    stop_all_processes(state.inner().clone(), false).await?;
 
     tauri::async_runtime::spawn(async move {
         match InternalWallet::create_from_seed(config_path, seed_words).await {
@@ -1183,6 +1166,49 @@ async fn get_seed_words(
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
+}
+
+#[tauri::command]
+async fn get_monero_seed_words(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<Vec<String>, String> {
+    let timer = Instant::now();
+
+    if !state.config.read().await.monero_address_is_generated() {
+        return Err(
+            "Monero seed words are not available when a Monero address is provided".to_string(),
+        );
+    }
+
+    let config_path = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    let cm = CredentialManager::default_with_dir(config_path);
+    let cred = match cm.get_credentials() {
+        Ok(cred) => cred,
+        Err(e @ CredentialError::PreviouslyUsedKeyring) => {
+            return Err(e.to_string());
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET, "Could not get credentials: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
+
+    let seed = cred
+        .monero_seed
+        .expect("Couldn't get seed from credentials");
+
+    let seed = MoneroSeed::new(seed);
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
+    }
+
+    seed.seed_words().map_err(|e| e.to_string())
 }
 
 #[allow(clippy::too_many_lines)]
@@ -1622,22 +1648,6 @@ async fn get_app_config(
     Ok(state.config.read().await.clone())
 }
 
-async fn check_if_is_orphan_chain(app_handle: tauri::AppHandle) {
-    let state = app_handle.state::<UniverseAppState>().inner();
-    let check_if_orphan = state.node_manager.check_if_is_orphan_chain().await;
-    match check_if_orphan {
-        Ok(is_stuck) => {
-            if is_stuck {
-                error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-            }
-            drop(app_handle.emit_all("is_stuck", is_stuck));
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET, "{}", e);
-        }
-    }
-}
-
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 async fn get_tor_entry_guards(
@@ -1814,7 +1824,7 @@ async fn reset_settings<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_miners(state.inner().clone(), 5).await?;
+    stop_all_processes(state.inner().clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path_resolver().app_config_dir();
@@ -1898,6 +1908,12 @@ async fn reset_settings<'r>(
             }
         }
     }
+
+    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+        let _unused = entry.delete_credential();
+    }
+
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 
@@ -2271,6 +2287,7 @@ fn main() {
             start_mining,
             stop_mining,
             update_applications,
+            get_monero_seed_words
         ])
         .build(tauri::generate_context!())
         .inspect_err(
@@ -2314,12 +2331,12 @@ fn main() {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
+            let _unused = block_on(stop_all_processes(app_state.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_miners(app_state.clone(), 2));
+            let _unused = block_on(stop_all_processes(app_state.clone(), true));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {

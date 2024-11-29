@@ -4,6 +4,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletBalance};
+use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
@@ -59,6 +60,14 @@ impl WalletManager {
         let base_node_tcp_port = self.node_manager.get_tcp_listener_port().await;
 
         let mut process_watcher = self.watcher.write().await;
+
+        if process_watcher.is_running()
+            || app_shutdown.is_terminated()
+            || app_shutdown.is_triggered()
+        {
+            return Ok(());
+        }
+
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
         process_watcher.adapter.base_node_address =
             Some(format!("/ip4/127.0.0.1/tcp/{}", base_node_tcp_port));
@@ -121,6 +130,16 @@ impl WalletManager {
             .stop()
             .await
             .map_err(WalletManagerError::UnknownError)
+    }
+
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
     }
 
     #[deprecated(

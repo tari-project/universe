@@ -107,6 +107,16 @@ impl CpuMiner {
         Ok(())
     }
 
+    pub async fn is_running(&self) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
+    }
+
     pub async fn status(
         &self,
         network_hash_rate: u64,

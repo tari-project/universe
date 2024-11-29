@@ -2,6 +2,7 @@
   "action-requires-restart": "This action requires restart to apply changes",
   "action-restart-copy": "Your preference will be saved and applied the next time Tari Universe is started.",
   "app-restart-required": "App restart required",
+  "application-info": "Application Information",
   "applyInviteCode": "Apply Invite Code",
   "cancel": "Cancel",
   "change-language": "Language",
@@ -61,6 +62,7 @@
     "placeholder": "Enter Monero address",
     "title": "Monero address"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "Network",
   "no-entry-guard": "No Entry Guard connected!",
   "not-connected-to-tari": "Not connected to the Tari Network",

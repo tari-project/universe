@@ -1,3 +1,5 @@
+import { SettingsGroupWrapper } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
+import AppDataSettings from './AppDataSettings';
 import ThemeSettings from './ThemeSettings';
 import AirdropPermissionSettings from './AirdropPermissionSettings.tsx';
 import LogsSettings from './LogsSettings.tsx';
@@ -11,11 +13,14 @@ export const GeneralSettings = () => {
         <>
             <StartApplicationOnBootSettings />
             <AutoUpdate />
+            <AirdropPermissionSettings />
             <LanguageSettings />
             <ThemeSettings />
             <LogsSettings />
-            <AirdropPermissionSettings />
-            <ResetSettingsButton />
+            <SettingsGroupWrapper $advanced>
+                <AppDataSettings />
+                <ResetSettingsButton />
+            </SettingsGroupWrapper>
         </>
     );
 };

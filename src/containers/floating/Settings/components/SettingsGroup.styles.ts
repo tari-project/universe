@@ -1,18 +1,20 @@
 import styled, { css } from 'styled-components';
 
-export const SettingsGroupWrapper = styled.div<{ $advanced?: boolean }>`
+export const SettingsGroupWrapper = styled.div<{ $advanced?: boolean; $subGroup?: boolean }>`
     display: flex;
     flex-direction: column;
     width: 100%;
-    border-top: 1px solid ${({ theme }) => theme.palette.divider};
-    padding: 20px 0;
+    border-top: ${({ theme, $subGroup }) => ($subGroup ? 'none' : `1px solid ${theme.palette.divider}`)};
+    padding: ${({ $subGroup }) => ($subGroup ? '0 0 20px 0' : '20px 0')};
     justify-content: center;
     gap: 10px;
     position: relative;
+    margin-top: ${({ $subGroup }) => ($subGroup ? '-5px' : '0')};
 
     ${({ $advanced }) =>
         $advanced &&
         css`
+            margin-top: 20px;
             &:before {
                 content: 'Advanced';
                 position: absolute;

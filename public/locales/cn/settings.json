@@ -2,6 +2,7 @@
   "action-requires-restart": "此操作需要重启以应用更改",
   "action-restart-copy": "您的偏好将被保存，并在下次启动 Tari 宇宙时应用。",
   "app-restart-required": "需要重启应用",
+  "application-info": "Application Information",
   "applyInviteCode": "应用邀请代码",
   "cancel": "取消",
   "change-language": "更改语言",
@@ -18,6 +19,7 @@
     "cpu-warning": "高CPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
     "gpu-power-level": "GPU功率%",
     "gpu-warning": "高GPU使用率可能导致过热、增加能耗，并可能导致硬件损坏。请监控使用情况以确保安全高效的操作。",
+    "save-changes": "Save Changes",
     "saved": "应用更改",
     "title": "自定义模式",
     "warning": "警告"
@@ -60,6 +62,7 @@
     "placeholder": "输入 Monero 地址",
     "title": "Monero 地址"
   },
+  "monero-seed-words": "Monero Seed Words",
   "network": "网络",
   "no-entry-guard": "未连接入口守卫！",
   "not-connected-to-tari": "未连接到Tari网络",
