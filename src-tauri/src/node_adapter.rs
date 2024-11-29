@@ -162,10 +162,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
             let network = Network::get_current_or_user_setting_or_default();
             args.push("-p".to_string());
             args.push(format!(
-                "{}.p2p.seeds.dns_seeds={},{}",
-                network.as_key_str(),
-                format!("ip4.seeds.{}.tari.com", network.as_key_str()),
-                format!("ip6.seeds.{}.tari.com", network.as_key_str()),
+                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                key = network.as_key_str(),
             ));
         }
 
