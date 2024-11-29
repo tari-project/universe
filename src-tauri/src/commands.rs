@@ -3,6 +3,7 @@ use crate::app_in_memory_config::AirdropInMemoryConfig;
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::credential_manager::{CredentialError, CredentialManager};
+#[allow(unused_imports)]
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
