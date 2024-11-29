@@ -6,7 +6,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { useWalletStore } from './useWalletStore.ts';
 const appWindow = getCurrentWebviewWindow();
 
 interface Recap {
@@ -135,7 +135,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     handleNewBlock: async (newBlockHeight, isMining) => {
         if (isMining) {
             const canAnimate = await checkCanAnimate();
-            console.debug(`canAnimate= ${canAnimate}`);
             const latestTransaction = useWalletStore.getState().transactions?.[0];
             const latestTxBlock = latestTransaction?.message?.split(': ')?.[1];
             if (latestTxBlock === newBlockHeight.toString()) {

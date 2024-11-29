@@ -21,7 +21,7 @@ impl Clone for ProgressTracker {
 }
 
 impl ProgressTracker {
-    pub fn new(app_handle: &AppHandle) -> Self {
+    pub fn new(app_handle: AppHandle) -> Self {
         Self {
             inner: Arc::new(RwLock::new(ProgressTrackerInner::new(app_handle))),
         }
@@ -51,7 +51,7 @@ pub struct ProgressTrackerInner {
 }
 
 impl ProgressTrackerInner {
-    pub fn new(app_handle: &AppHandle) -> Self {
+    pub fn new(app_handle: AppHandle) -> Self {
         Self {
             app_handle: app_handle.clone(),
             min: 0,

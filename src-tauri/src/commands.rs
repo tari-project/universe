@@ -17,10 +17,11 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
+#[allow(unused_imports)]
 use crate::{
-    setup_inner, ApplicationsVersions, BaseNodeStatus, CpuMinerMetrics, GpuMinerMetrics,
-    MaxUsageLevels, MinerMetrics, TariWalletDetails, UniverseAppState, APPLICATION_FOLDER_ID,
-    MAX_ACCEPTABLE_COMMAND_TIME,
+    external_dependencies, setup_inner, ApplicationsVersions, BaseNodeStatus, CpuMinerMetrics,
+    GpuMinerMetrics, MaxUsageLevels, MinerMetrics, TariWalletDetails, UniverseAppState,
+    APPLICATION_FOLDER_ID,
 };
 use keyring::Entry;
 use log::{debug, error, info, warn};
@@ -37,6 +38,8 @@ use tauri::Manager;
 
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
+
+const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
 #[tauri::command]
 pub fn close_splashscreen(app: tauri::AppHandle) {
@@ -243,13 +246,12 @@ pub async fn get_max_consumption_levels(
 #[tauri::command]
 pub async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
     if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
         let read = state.cached_miner_metrics.read().await;
         if let Some(metrics) = &*read {
-            warn!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
+            debug!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
             return Ok(metrics.clone());
         }
         warn!(target: LOG_TARGET, "Already getting miner metrics");
@@ -257,7 +259,6 @@ pub async fn get_miner_metrics(
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
-    // info!(target: LOG_TARGET, "1 elapsed {:?}", timer.elapsed());
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -269,7 +270,6 @@ pub async fn get_miner_metrics(
                 }
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
-    // info!(target: LOG_TARGET, "2 elapsed {:?}", timer.elapsed());
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
@@ -287,8 +287,6 @@ pub async fn get_miner_metrics(
         }
     };
     drop(cpu_miner);
-
-    // info!(target: LOG_TARGET, "3 elapsed {:?}", timer.elapsed());
 
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_mining_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
@@ -318,7 +316,7 @@ pub async fn get_miner_metrics(
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
 
-    let ret = MinerMetrics {
+    let metrics_ret = MinerMetrics {
         sha_network_hash_rate: sha_hash_rate,
         randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
@@ -337,13 +335,14 @@ pub async fn get_miner_metrics(
             connected_peers,
         },
     };
+
     let mut lock = state.cached_miner_metrics.write().await;
-    *lock = Some(ret.clone());
+    *lock = Some(metrics_ret.clone());
     state
         .is_getting_miner_metrics
         .store(false, Ordering::SeqCst);
 
-    Ok(ret)
+    Ok(metrics_ret)
 }
 
 #[tauri::command]
@@ -1390,7 +1389,7 @@ pub async fn update_applications(
         )
         .map_err(|e| e.to_string())?;
 
-    let progress_tracker = ProgressTracker::new(&app.clone());
+    let progress_tracker = ProgressTracker::new(app.clone());
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
         .await

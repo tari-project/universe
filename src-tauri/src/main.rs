@@ -91,8 +91,6 @@ mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
 
-const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
-
 const LOG_TARGET: &str = "tari::universe::main";
 #[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
@@ -169,9 +167,7 @@ async fn setup_inner(
         .initialize_auto_launcher(is_auto_launcher_enabled)
         .await?;
 
-    let app_handle_clone: tauri::AppHandle = app.clone();
-
-    let progress = ProgressTracker::new(&app_handle_clone);
+    let progress = ProgressTracker::new(app.clone());
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
@@ -288,7 +284,7 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
     HardwareStatusMonitor::current()
-        .initialize(&app_handle_clone)
+        .initialize(config_dir.clone())
         .await?;
 
     let mut tor_control_port = None;
@@ -429,17 +425,19 @@ async fn setup_inner(
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
-    let mvhandle = app.clone();
+    let move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
+        let mut interval: time::Interval = time::interval(Duration::from_secs(1));
         loop {
-            let app_state = mvhandle.state::<UniverseAppState>().clone();
-            if let Ok(ret) = commands::get_miner_metrics(app_state, mvhandle.clone()).await {
-                drop(mvhandle.emit("miner_metrics", ret));
-            };
-            tokio::time::sleep(Duration::from_secs(1)).await;
+            interval.tick().await;
+            let app_state = move_handle.state::<UniverseAppState>().clone();
+            if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
+                drop(move_handle.clone().emit("miner_metrics", metrics_ret));
+            }
         }
     });
 
+    let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;

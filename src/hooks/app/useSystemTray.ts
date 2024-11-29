@@ -22,7 +22,8 @@ export function useUpdateSystemTray() {
     const totalEarningsFormatted = useMemo(() => {
         const cpu_est = metrics?.cpu?.mining?.estimated_earnings || 0;
         const gpu_est = metrics?.gpu?.mining?.estimated_earnings || 0;
-        return formatNumber(cpu_est + gpu_est, FormatPreset.TXTM_COMPACT);
+        const total = cpu_est + gpu_est;
+        return total > 0 ? formatNumber(total, FormatPreset.TXTM_COMPACT) : '0';
     }, [metrics]);
 
     const updateMenuItemEnabled = useCallback(async (itemId: string, enabled: boolean) => {
@@ -68,6 +69,7 @@ export function useUpdateSystemTray() {
     useEffect(() => {
         const ul = listen('miner_metrics', async ({ payload }) => {
             const minimized = await currentWindow.isMinimized();
+
             if (payload) {
                 setMetrics(payload as MinerMetrics);
             }

@@ -18,7 +18,6 @@ use anyhow::Error;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
-use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 const LOG_TARGET: &str = "tari::universe::auto_launcher";
@@ -145,13 +144,8 @@ impl HardwareStatusMonitor {
 
     async fn load_gpu_devices_from_status_file(
         &self,
-        app_handle: &AppHandle,
+        config_dir: PathBuf,
     ) -> Result<GpuStatusFileContent, Error> {
-        let config_dir = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not find app config dir");
-
         let file: PathBuf = config_dir.join("gpuminer").join("gpu_status.json");
         if file.exists() {
             info!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
@@ -182,9 +176,9 @@ impl HardwareStatusMonitor {
 
     async fn initialize_gpu_devices(
         &self,
-        app_handle: &AppHandle,
+        config_dir: PathBuf,
     ) -> Result<Vec<GpuDeviceProperties>, Error> {
-        let gpu_status_file_content = self.load_gpu_devices_from_status_file(app_handle).await?;
+        let gpu_status_file_content = self.load_gpu_devices_from_status_file(config_dir).await?;
         let mut platform_devices = Vec::new();
 
         for gpu_device in &gpu_status_file_content.gpu_devices {
@@ -272,8 +266,8 @@ impl HardwareStatusMonitor {
         Ok(cpu_devices)
     }
 
-    pub async fn initialize(&self, app_handle: &AppHandle) -> Result<(), Error> {
-        let gpu_devices = self.initialize_gpu_devices(app_handle).await?;
+    pub async fn initialize(&self, config_dir: PathBuf) -> Result<(), Error> {
+        let gpu_devices = self.initialize_gpu_devices(config_dir).await?;
         let cpu_devices = self.initialize_cpu_devices().await?;
 
         let mut gpu_devices_lock = self.gpu_devices.write().await;

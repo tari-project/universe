@@ -1,11 +1,8 @@
 import { Menu } from '@tauri-apps/api/menu';
 import { TrayIcon } from '@tauri-apps/api/tray';
-import { MenuItem, MenuItemOptions } from '@tauri-apps/api/menu/menuItem';
-import { PredefinedMenuItem, PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
+import { MenuItemOptions } from '@tauri-apps/api/menu/menuItem';
+import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Submenu } from '@tauri-apps/api/menu/submenu';
-import { CheckMenuItem } from '@tauri-apps/api/menu/checkMenuItem';
-import { IconMenuItem } from '@tauri-apps/api/menu/iconMenuItem';
 
 const TRAY_ID = 'universe-tray-id';
 const TRAY_MENU_ID = 'universe-tray-menu-id';
