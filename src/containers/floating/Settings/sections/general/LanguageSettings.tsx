@@ -1,8 +1,10 @@
-import React from 'react';
+import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import LanguageDropdown from '../../components/LanguageDropdown.tsx';
 import {
+    SettingsGroup,
+    SettingsGroupAction,
     SettingsGroupContent,
     SettingsGroupTitle,
     SettingsGroupWrapper,
@@ -18,26 +20,29 @@ export default function LanguageSettings() {
     }));
 
     return (
-        <React.Fragment>
-            <SettingsGroupWrapper>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{t('change-language')}</Typography>
-                </SettingsGroupTitle>
-                <SettingsGroupContent>
-                    <LanguageDropdown />
-                </SettingsGroupContent>
-            </SettingsGroupWrapper>
-            <SettingsGroupWrapper>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{t('should-use-system-language')}</Typography>
-                </SettingsGroupTitle>
-                <SettingsGroupContent>
-                    <ToggleSwitch
-                        checked={shouldAlwaysUseSystemLanguage}
-                        onChange={(event) => setShouldAlwaysUseSystemLanguage(event.target.checked)}
-                    />
-                </SettingsGroupContent>
-            </SettingsGroupWrapper>
-        </React.Fragment>
+        <SettingsGroupWrapper>
+            <SettingsGroupTitle>
+                <Typography variant="h6">{t('change-language')}</Typography>
+                <SettingsGroup>
+                    <Stack direction="row" gap={8}>
+                        <SettingsGroupContent>
+                            <SettingsGroupTitle>
+                                <Typography variant="h6">{t('should-use-system-language')}</Typography>
+                            </SettingsGroupTitle>
+                        </SettingsGroupContent>
+                        <SettingsGroupAction>
+                            <ToggleSwitch
+                                checked={shouldAlwaysUseSystemLanguage}
+                                onChange={(event) => setShouldAlwaysUseSystemLanguage(event.target.checked)}
+                            />
+                        </SettingsGroupAction>
+                    </Stack>
+                </SettingsGroup>
+            </SettingsGroupTitle>
+
+            <SettingsGroupContent>
+                <LanguageDropdown />
+            </SettingsGroupContent>
+        </SettingsGroupWrapper>
     );
 }

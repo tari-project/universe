@@ -17,7 +17,7 @@ export const SeedWords = ({ seedWords, onToggleEdit, showSeedWords = false, edit
     const wordMarkup = seedWords?.map((word, i) => {
         const count = i + 1;
         return (
-            <Stack key={`seed-word-${word}`} direction="row" justifyContent="flex-start">
+            <Stack key={`seed-word-${count}-${word}`} direction="row" justifyContent="flex-start">
                 <Typography key={`seed-no-${i}`} variant="p" style={{ minWidth: 15 }}>
                     {count}.
                 </Typography>
@@ -29,13 +29,13 @@ export const SeedWords = ({ seedWords, onToggleEdit, showSeedWords = false, edit
     });
 
     const editCTAMarkup = editable ? (
-        <IconButton onClick={onToggleEdit}>
+        <IconButton size="small" onClick={onToggleEdit}>
             <IoPencil />
         </IconButton>
     ) : null;
 
     const copyCTAMarkup = seedWords ? (
-        <IconButton onClick={() => copyToClipboard(seedWords.join(' '))}>
+        <IconButton size="small" onClick={() => copyToClipboard(seedWords.join(' '))}>
             {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
         </IconButton>
     ) : null;
@@ -61,5 +61,5 @@ export const SeedWords = ({ seedWords, onToggleEdit, showSeedWords = false, edit
             </IconContainer>
         </>
     );
-    return <Wrapper>{showSeedWords ? visibleMarkup : hiddenMarkup}</Wrapper>;
+    return <Wrapper $seedWordsVisible={showSeedWords}>{showSeedWords ? visibleMarkup : hiddenMarkup}</Wrapper>;
 };

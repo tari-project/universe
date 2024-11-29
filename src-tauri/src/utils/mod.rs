@@ -4,3 +4,4 @@ pub mod logging_utils;
 pub mod macos_utils;
 pub mod platform_utils;
 pub mod setup_utils;
+pub mod shutdown_utils;

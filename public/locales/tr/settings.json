@@ -2,6 +2,7 @@
   "action-requires-restart": "Bu işlem değişikliklerin uygulanması için yeniden başlatma gerektirir",
   "action-restart-copy": "Tercihiniz kaydedilecek ve bir sonraki Tari Universe başlatıldığında uygulanacaktır.",
   "app-restart-required": "Uygulama yeniden başlatılması gerekiyor",
+  "application-info": "Application Information",
   "applyInviteCode": "Davet Kodunu Uygula",
   "cancel": "İptal",
   "change-language": "Dil Değiştir",
