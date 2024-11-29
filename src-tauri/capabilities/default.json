@@ -12,6 +12,8 @@
     "core:window:allow-close",
     "core:window:allow-destroy",
     "core:window:allow-minimize",
-    "core:window:allow-unminimize"
+    "core:window:allow-unminimize",
+    "shell:allow-open",
+    "process:default"
   ]
 }
