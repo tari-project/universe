@@ -136,6 +136,15 @@ impl ProcessAdapter for WalletAdapter {
                 self.tcp_listener_port
             ));
 
+            let network = Network::get_current_or_user_setting_or_default();
+            args.push("-p".to_string());
+            args.push(format!(
+                "{}.p2p.seeds.dns_seeds=\"{},{}\"",
+                network.as_key_str(),
+                "ip4.seeds.esmerelda.tari.com",
+                "ip6.seeds.esmerelda.tari.com",
+            ));
+
             // todo!()
         }
 
