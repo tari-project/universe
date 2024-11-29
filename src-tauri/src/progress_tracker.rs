@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use log::error;
-use tauri::Emitter;
+use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
 
 use crate::setup_status_event::SetupStatusEvent;
@@ -21,7 +21,7 @@ impl Clone for ProgressTracker {
 }
 
 impl ProgressTracker {
-    pub fn new(app_handle: tauri::AppHandle) -> Self {
+    pub fn new(app_handle: &AppHandle) -> Self {
         Self {
             inner: Arc::new(RwLock::new(ProgressTrackerInner::new(app_handle))),
         }
@@ -45,15 +45,15 @@ impl ProgressTracker {
 }
 
 pub struct ProgressTrackerInner {
-    app_handle: tauri::AppHandle,
+    app_handle: AppHandle,
     min: u64,
     next_max: u64,
 }
 
 impl ProgressTrackerInner {
-    pub fn new(app_handle: tauri::AppHandle) -> Self {
+    pub fn new(app_handle: &AppHandle) -> Self {
         Self {
-            app_handle,
+            app_handle: app_handle.clone(),
             min: 0,
             next_max: 0,
         }

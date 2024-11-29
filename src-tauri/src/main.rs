@@ -32,7 +32,8 @@ use setup_status_event::SetupStatusEvent;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
-
+#[allow(unused_imports)]
+use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -136,18 +137,18 @@ async fn setup_inner(
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") && !cfg!(dev) {
-        external_dependencies::ExternalDependencies::current()
+        ExternalDependencies::current()
             .read_registry_installed_applications()
             .await?;
-        let is_missing = external_dependencies::ExternalDependencies::current()
+        let is_missing = ExternalDependencies::current()
             .check_if_some_dependency_is_not_installed()
             .await;
-        let external_dependencies = external_dependencies::ExternalDependencies::current()
+        let external_dependencies = ExternalDependencies::current()
             .get_external_dependencies()
             .await;
 
         if is_missing {
-            app
+            window
                 .emit(
                     "missing-applications",
                     external_dependencies
@@ -167,7 +168,9 @@ async fn setup_inner(
         .initialize_auto_launcher(is_auto_launcher_enabled)
         .await?;
 
-    let progress = ProgressTracker::new(app.clone());
+    let app_handle_clone: tauri::AppHandle = app.clone();
+
+    let progress = ProgressTracker::new(&app_handle_clone);
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
@@ -284,7 +287,7 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
     HardwareStatusMonitor::current()
-        .initialize(config_dir.clone())
+        .initialize(&app_handle_clone)
         .await?;
 
     let mut tor_control_port = None;
@@ -412,19 +415,19 @@ async fn setup_inner(
     mm_proxy_manager.wait_ready().await?;
     *state.is_setup_finished.write().await = true;
     drop(
-        app.emit(
-            "message",
-            SetupStatusEvent {
-                event_type: "setup_status".to_string(),
-                title: "application-started".to_string(),
-                title_params: None,
-                progress: 1.0,
-            },
-        )
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
+        window
+            .emit(
+                "message",
+                SetupStatusEvent {
+                    event_type: "setup_status".to_string(),
+                    title: "application-started".to_string(),
+                    title_params: None,
+                    progress: 1.0,
+                },
+            )
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
-    let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;
