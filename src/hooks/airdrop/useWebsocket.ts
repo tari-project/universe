@@ -8,7 +8,7 @@ import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 
 let socket: ReturnType<typeof io> | null;
 
-const MINING_EVENT_INTERVAL = 5000;
+const MINING_EVENT_INTERVAL = 15000;
 const MINING_EVENT_NAME = 'mining-status';
 
 export const useWebsocket = () => {
