@@ -83,7 +83,7 @@ pub struct AppConfigFromFile {
     #[serde(default = "default_true")]
     visual_mode: bool,
     #[serde(default = "default_window_settings")]
-    window_settings: WindowSettings,
+    window_settings: Option<WindowSettings>,
     #[serde(default = "default_false")]
     show_experimental_settings: bool,
 }
@@ -235,7 +235,7 @@ pub(crate) struct AppConfig {
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
-    window_settings: WindowSettings,
+    window_settings: Option<WindowSettings>,
     show_experimental_settings: bool,
 }
 
@@ -536,12 +536,12 @@ impl AppConfig {
         &mut self,
         window_settings: WindowSettings,
     ) -> Result<(), anyhow::Error> {
-        self.window_settings = window_settings;
+        self.window_settings = Some(window_settings);
         self.update_config_file().await?;
         Ok(())
     }
 
-    pub fn window_settings(&self) -> &WindowSettings {
+    pub fn window_settings(&self) -> &Option<WindowSettings> {
         &self.window_settings
     }
 
@@ -816,11 +816,6 @@ fn default_monero_nodes() -> Vec<String> {
     vec!["https://xmr-01.tari.com".to_string()]
 }
 
-fn default_window_settings() -> WindowSettings {
-    WindowSettings {
-        width: 1380,
-        height: 780,
-        x: 0,
-        y: 0,
-    }
+fn default_window_settings() -> Option<WindowSettings> {
+    None
 }

@@ -2224,11 +2224,12 @@ fn main() {
                     cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
 
                     // Set splashscreen windows position and size here so it won't jump around
-                    let w_settings = app_conf.window_settings();
-                    let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
-                    let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
-                    if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
-                        error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
+                    if let Some(w_settings) = app_conf.window_settings() {
+                        let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
+                        let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
+                        if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
+                            error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
+                        }
                     }
                     Ok(())
                 });
