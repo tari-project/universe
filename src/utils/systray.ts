@@ -1,7 +1,11 @@
 import { Menu } from '@tauri-apps/api/menu';
 import { TrayIcon } from '@tauri-apps/api/tray';
-import { MenuItemOptions } from '@tauri-apps/api/menu/menuItem';
-import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
+import { MenuItem, MenuItemOptions } from '@tauri-apps/api/menu/menuItem';
+import { PredefinedMenuItem, PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { Submenu } from '@tauri-apps/api/menu/submenu';
+import { CheckMenuItem } from '@tauri-apps/api/menu/checkMenuItem';
+import { IconMenuItem } from '@tauri-apps/api/menu/iconMenuItem';
 
 const TRAY_ID = 'universe-tray-id';
 const TRAY_MENU_ID = 'universe-tray-menu-id';
@@ -9,6 +13,8 @@ const TRAY_MENU_ID = 'universe-tray-menu-id';
 export const CPU_HASH_ITEM_ID = 'cpu_hashrate';
 export const GPU_HASH_ITEM_ID = 'gpu_hashrate';
 export const EARNINGS_ITEM_ID = 'estimated_earning';
+export const UNMINIMIZE_ITEM_ID = 'unminimize';
+export const MINIMIZE_ITEM_ID = 'minimize';
 
 const about = {
     item: { About: null },
@@ -17,10 +23,17 @@ const separator = {
     item: 'Separator',
 } as PredefinedMenuItemOptions;
 
-const minimize = {
-    item: 'Minimize',
-    text: 'Minimize',
-} as PredefinedMenuItemOptions;
+const currentWindow = getCurrentWindow();
+
+async function handleMinimize(itemId: string): Promise<void> {
+    if (itemId === UNMINIMIZE_ITEM_ID) {
+        await currentWindow.unminimize();
+    }
+
+    if (itemId === MINIMIZE_ITEM_ID) {
+        await currentWindow.minimize();
+    }
+}
 
 // TODO use translations
 const dynamicItems = [
@@ -40,6 +53,19 @@ const dynamicItems = [
         text: `Est earning: -`,
         enabled: false,
     },
+    separator,
+    {
+        id: UNMINIMIZE_ITEM_ID,
+        text: 'Uninimize',
+        enabled: false,
+        action: handleMinimize,
+    },
+    {
+        id: MINIMIZE_ITEM_ID,
+        text: 'Minimize',
+        enabled: true,
+        action: handleMinimize,
+    },
 ] as MenuItemOptions[];
 
 let tray: TrayIcon | null;
@@ -49,7 +75,7 @@ export async function initSystray() {
     try {
         menu = await Menu.new({
             id: TRAY_MENU_ID,
-            items: [about, separator, ...dynamicItems, separator, minimize],
+            items: [about, separator, ...dynamicItems],
         });
     } catch (e) {
         console.error('Menu error: ', e);

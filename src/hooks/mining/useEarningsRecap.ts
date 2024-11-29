@@ -23,15 +23,17 @@ export default function useEarningsRecap() {
     }, [handleWinRecap, recapIds, transactions]);
 
     useEffect(() => {
-        const listener = listen<string>('tauri://focus', async () => {
-            const minimized = await appWindow?.isMinimized();
-            const documentIsVisible = document?.visibilityState === 'visible' || false;
-            if (documentIsVisible && !minimized) {
+        const listener = listen<string>(
+            'tauri://focus',
+            async () => {
+                const minimized = await appWindow?.isMinimized();
+                const documentIsVisible = document?.visibilityState === 'visible' || false;
                 if (documentIsVisible && !minimized) {
                     getMissedEarnings();
                 }
-            }
-        });
+            },
+            { target: { kind: 'WebviewWindow', label: 'main' } }
+        );
 
         return () => {
             listener.then((unlisten) => unlisten());
