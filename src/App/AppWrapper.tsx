@@ -1,15 +1,19 @@
 import { IGNORE_FETCHING } from '@app/App/sentryIgnore';
-import { useDisableRefresh } from '@app/hooks/useDisableRefresh';
-import { useListenForExternalDependencies } from '@app/hooks/useListenForExternalDependencies';
-import { useUpdateListener } from '@app/hooks/useUpdateStatus';
+import { initSystray } from '@app/utils';
 import * as Sentry from '@sentry/react';
 import { useEffect } from 'react';
 
+import {
+    useDetectMode,
+    useDisableRefresh,
+    useLangaugeResolver,
+    useListenForExternalDependencies,
+    useUpdateListener,
+} from '@app/hooks';
+
 import packageInfo from '../../package.json';
-import { useLangaugeResolver } from '../hooks/useLanguageResolver.ts';
 import { useAppConfigStore } from '../store/useAppConfigStore.ts';
-import { setupLogger } from '../utils/shared-logger.ts';
-import { useDetectMode } from '../hooks/helpers/useDetectMode.ts';
+import setupLogger from '../utils/shared-logger.ts';
 import App from './App.tsx';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
@@ -42,6 +46,7 @@ export default function AppWrapper() {
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
+            await initSystray();
         }
         initialize();
         // eslint-disable-next-line react-hooks/exhaustive-deps

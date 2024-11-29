@@ -1,15 +1,17 @@
-import Tile from './components/Tile.tsx';
-import { MinerContainer, TileContainer, Unit } from './styles.ts';
-
-import ModeSelect from './components/ModeSelect.tsx';
+import ModeSelect from '@app/containers/main/SideBar/Miner/components/ModeSelect';
+import { useTheme } from 'styled-components';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import useMiningStatesSync from '@app/hooks/mining/useMiningStatesSync.ts';
-import { useTheme } from 'styled-components';
-import { Trans, useTranslation } from 'react-i18next';
+
+import Tile from './components/Tile.tsx';
+import { MinerContainer, TileContainer, Unit } from './styles.ts';
+
+import { useMiningStatesSync } from '@app/hooks';
+
 import { ExpandableTile } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.tsx';
 import {
     ExpandableTileItem,
@@ -18,9 +20,9 @@ import {
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 
 export default function Miner() {
+    useMiningStatesSync();
     const theme = useTheme();
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    useMiningStatesSync();
 
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);

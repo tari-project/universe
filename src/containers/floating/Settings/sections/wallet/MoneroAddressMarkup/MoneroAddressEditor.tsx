@@ -4,7 +4,7 @@ import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/i
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input';
 import styled from 'styled-components';
-import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 const moneroAddressRegex = /^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/;

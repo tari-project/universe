@@ -1,7 +1,8 @@
 import { AppContentContainer } from '@app/App/App.styles';
+import { useShuttingDown } from '@app/hooks';
 import * as Sentry from '@sentry/react';
-import { useEffect } from 'react';
-import { useShuttingDown } from '@app/hooks/useShuttingDown';
+import { useEffect, useRef } from 'react';
+
 import { useAppStateStore } from '@app/store/appStateStore';
 import { LazyMotion, domMax, MotionConfig, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@app/store/useUIStore.ts';
@@ -18,6 +19,16 @@ import ThemeProvider from '../theme/ThemeProvider.tsx';
 export default function App() {
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
+    const hasCompletedSetup = useRef(false);
+
+    useEffect(() => {
+        if (!isSettingUp) {
+            hasCompletedSetup.current = true;
+        }
+    }, [isSettingUp]);
+
+    const showSetup = isSettingUp && !hasCompletedSetup.current && !isShuttingDown;
+
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
     const { t } = useTranslation('common', { useSuspense: false });
@@ -51,12 +62,12 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
                     <AnimatePresence>
-                        {!isShuttingDown && isSettingUp ? (
+                        {showSetup ? (
                             <AppContentContainer key="setup" initial="visible">
                                 <Setup />
                             </AppContentContainer>
                         ) : null}
-                        {isShuttingDown || isSettingUp ? null : (
+                        {isShuttingDown || showSetup ? null : (
                             <AppContentContainer key="main" initial="hidden">
                                 <MainView />
                             </AppContentContainer>

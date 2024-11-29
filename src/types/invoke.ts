@@ -14,7 +14,7 @@ import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 
-declare module '@tauri-apps/api/tauri' {
+declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }

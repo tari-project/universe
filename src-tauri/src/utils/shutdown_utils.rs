@@ -1,10 +1,11 @@
 use crate::{UniverseAppState, APPLICATION_FOLDER_ID};
 use log::info;
-use tauri::api::path::local_data_dir;
+use tauri::{AppHandle, Manager};
 
 static LOG_TARGET: &str = "tari::universe::shutdown_utils";
 
 pub async fn stop_all_processes(
+    app_handle: AppHandle,
     state: UniverseAppState,
     should_shutdown: bool,
 ) -> Result<(), String> {
@@ -15,7 +16,9 @@ pub async fn stop_all_processes(
         state.shutdown.clone().trigger();
     }
 
-    let base_path = local_data_dir()
+    let base_path = app_handle
+        .path()
+        .local_data_dir()
         .expect("Could not get data dir")
         .join(APPLICATION_FOLDER_ID);
 

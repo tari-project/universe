@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { create } from './create';
 import { P2poolStats, P2poolStatsResult } from '../types/app-status.ts';
 

@@ -1,8 +1,10 @@
-import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useEffect, useMemo, useRef } from 'react';
-import { useInterval } from '@app/hooks/useInterval';
+
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+
+import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
+import { useInterval } from '../helpers/useInterval';
 
 const INTERVAL = 1000; // 1 sec
 
