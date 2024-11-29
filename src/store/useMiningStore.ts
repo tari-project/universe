@@ -1,6 +1,6 @@
 import { GpuThreads, MaxConsumptionLevels, MinerMetrics } from '@app/types/app-status';
 import { create } from './create';
-
+import * as Sentry from '@sentry/react';
 import { invoke } from '@tauri-apps/api';
 import { useAppStateStore } from './appStateStore';
 import { useAppConfigStore } from './useAppConfigStore';

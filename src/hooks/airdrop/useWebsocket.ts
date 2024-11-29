@@ -34,7 +34,6 @@ export const useWebsocket = () => {
             if (!socket || !connectedSocket) return;
             const arg = { isMining, timestamp: new Date().toISOString() };
             try {
-                // eslint-disable-next-line no-console
                 socket.emit(MINING_EVENT_NAME, arg);
             } catch (e) {
                 console.error(e);
