@@ -28,7 +28,7 @@ export const CriticalProblemDialog = () => {
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4}>
-                        <Typography variant="h4">{t(criticalProblem?.title || 'critical-problem-found')}</Typography>
+                        <Typography variant="h4">{t(criticalProblem?.title || 'critical-problem')}</Typography>
                         <Typography variant="p">{t(criticalProblem?.description || 'critical-problem')}</Typography>
                     </Stack>
                     <Stack direction="row" justifyContent="center" gap={8}>
