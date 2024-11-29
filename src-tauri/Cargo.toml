@@ -91,6 +91,7 @@ tauri = { version = "1.8.0", features = [
   "process-command-api",
 ] }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 thiserror = "1.0.26"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.11", features = ["compat"] }

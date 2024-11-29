@@ -2044,6 +2044,8 @@ struct Payload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    let _unused = fix_path_env::fix();
+
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
     let client = sentry_tauri::sentry::init((
