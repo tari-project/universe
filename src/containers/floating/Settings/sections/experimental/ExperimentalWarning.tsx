@@ -2,8 +2,8 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
 import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
-import { useUIStore } from '@app/store/useUIStore';
 import styled from 'styled-components';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 const ExperimentalContainer = styled.div`
     padding: 15px;
@@ -17,10 +17,8 @@ const ExperimentalContainer = styled.div`
 
 export default function ExperimentalWarning() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const { showExperimental, setShowExperimental } = useUIStore((s) => ({
-        showExperimental: s.showExperimental,
-        setShowExperimental: s.setShowExperimental,
-    }));
+    const showExperimental = useAppConfigStore((s) => s.show_experimental_settings);
+    const setShowExperimental = useAppConfigStore((s) => s.setShowExperimentalSettings);
 
     return (
         <ExperimentalContainer>
