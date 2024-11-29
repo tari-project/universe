@@ -685,7 +685,7 @@ async fn setup_inner(
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
     #[cfg(target_os = "macos")]
-    if !cfg!(dev) && !is_app_in_applications_folder {
+    if !cfg!(dev) && !is_app_in_applications_folder() {
         window
             .emit(
                 "critical_problem",
