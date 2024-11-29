@@ -2,6 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+#[allow(unused_imports)]
+use external_dependencies::RequiredExternalDependency;
 use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use log::trace;
 use log::{debug, error, info, warn};
@@ -32,8 +34,7 @@ use setup_status_event::SetupStatusEvent;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
-#[allow(unused_imports)]
-use crate::external_dependencies::ExternalDependencies;
+
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -137,18 +138,18 @@ async fn setup_inner(
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") && !cfg!(dev) {
-        ExternalDependencies::current()
+        external_dependencies::ExternalDependencies::current()
             .read_registry_installed_applications()
             .await?;
-        let is_missing = ExternalDependencies::current()
+        let is_missing = external_dependencies::ExternalDependencies::current()
             .check_if_some_dependency_is_not_installed()
             .await;
-        let external_dependencies = ExternalDependencies::current()
+        let external_dependencies = external_dependencies::ExternalDependencies::current()
             .get_external_dependencies()
             .await;
 
         if is_missing {
-            window
+            app
                 .emit(
                     "missing-applications",
                     external_dependencies
@@ -415,7 +416,7 @@ async fn setup_inner(
     mm_proxy_manager.wait_ready().await?;
     *state.is_setup_finished.write().await = true;
     drop(
-        window
+        app.clone()
             .emit(
                 "message",
                 SetupStatusEvent {
@@ -427,6 +428,17 @@ async fn setup_inner(
             )
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
+
+    let mvhandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            let app_state = mvhandle.state::<UniverseAppState>().clone();
+            if let Ok(ret) = commands::get_miner_metrics(app_state, mvhandle.clone()).await {
+                drop(mvhandle.emit("miner_metrics", ret));
+            };
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
+    });
 
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
@@ -583,7 +595,7 @@ fn main() {
     ));
     let _guard = minidump::init(&client);
 
-    let shutdown = Shutdown::new();
+    let mut shutdown = Shutdown::new();
 
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.

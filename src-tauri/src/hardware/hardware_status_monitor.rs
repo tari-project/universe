@@ -1,8 +1,7 @@
 use std::{path::PathBuf, sync::LazyLock};
 
-use crate::{
-    hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
-    APPLICATION_FOLDER_ID,
+use crate::hardware::{
+    cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader,
 };
 
 use super::{
