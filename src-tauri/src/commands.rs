@@ -143,7 +143,7 @@ pub async fn download_and_start_installer(
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") {
-        external_dependencies::ExternalDependencies::current()
+        ExternalDependencies::current()
             .install_missing_dependencies(_missing_dependency)
             .await
             .map_err(|e| {
