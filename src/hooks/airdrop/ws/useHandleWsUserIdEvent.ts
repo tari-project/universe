@@ -26,6 +26,7 @@ export const useHandleWsUserIdEvent = () => {
 
             case WebsocketEventNames.MINING_STATUS_CREW_DISCONNECTED:
                 if (referrals?.activeReferrals) {
+                    const totalActiveReferrals = (referrals?.totalActiveReferrals || 1) - 1;
                     const referralsUpdated = referrals?.activeReferrals.map((x) => {
                         if (x.id === eventParsed.data.crewMemberId) {
                             return { ...x, active: false };
@@ -35,6 +36,7 @@ export const useHandleWsUserIdEvent = () => {
 
                     setReferrals({
                         ...referrals,
+                        totalActiveReferrals,
                         activeReferrals: referralsUpdated,
                     });
                 }

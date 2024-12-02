@@ -22,14 +22,20 @@ export const useGetSosReferrals = () => {
 
     const fetchCrewMemberDetails = useCallback(
         async (userId: string) => {
-            const data = await handleRequest<CrewMember>({
-                path: `/sos/crew-member-data/${userId}/`,
-                method: 'GET',
-            });
+            const existingReferral = referrals?.activeReferrals?.find((x) => x.id === userId);
+            let updatedReferrals = referrals?.activeReferrals || [];
+            let totalActiveReferrals = referrals?.totalActiveReferrals || 0;
 
-            if (data && data.id) {
-                if (referrals?.activeReferrals?.every((x) => x.id !== data.id)) {
-                    const updatedReferrals = [...(referrals?.activeReferrals || []), data];
+            if (!referrals) return;
+
+            if (!existingReferral) {
+                const data = await handleRequest<CrewMember>({
+                    path: `/sos/crew-member-data/${userId}/`,
+                    method: 'GET',
+                });
+
+                if (data && data.id) {
+                    updatedReferrals.push(data);
 
                     // Remove referrals if there are too many saved crew members
                     if (updatedReferrals.length > MAX_REFERRALS) {
@@ -40,13 +46,22 @@ export const useGetSosReferrals = () => {
                             updatedReferrals.splice(15, 1);
                         }
                     }
-                    setReferrals({
-                        ...referrals,
-                        activeReferrals: updatedReferrals,
-                    });
                 }
-                return data;
+            } else {
+                totalActiveReferrals += 1;
+                updatedReferrals = updatedReferrals.map((x) => {
+                    if (x.id === userId) {
+                        return { ...x, active: true };
+                    }
+                    return x;
+                });
             }
+
+            setReferrals({
+                ...referrals,
+                totalActiveReferrals,
+                activeReferrals: updatedReferrals,
+            });
         },
         [handleRequest, referrals, setReferrals]
     );
