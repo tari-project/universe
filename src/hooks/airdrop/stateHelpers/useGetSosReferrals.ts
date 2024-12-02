@@ -26,9 +26,11 @@ export const useGetSosReferrals = () => {
             let updatedReferrals = referrals?.activeReferrals || [];
             let totalActiveReferrals = referrals?.totalActiveReferrals || 0;
 
+            let shouldUpdate = false;
             if (!referrals) return;
 
             if (!existingReferral) {
+                shouldUpdate = true;
                 totalActiveReferrals += 1;
 
                 const data = await handleRequest<CrewMember>({
@@ -49,7 +51,8 @@ export const useGetSosReferrals = () => {
                         }
                     }
                 }
-            } else {
+            } else if (existingReferral.active) {
+                shouldUpdate = true;
                 updatedReferrals = updatedReferrals.map((x) => {
                     if (x.id === userId) {
                         return { ...x, active: true };
@@ -58,11 +61,13 @@ export const useGetSosReferrals = () => {
                 });
             }
 
-            setReferrals({
-                ...referrals,
-                totalActiveReferrals,
-                activeReferrals: updatedReferrals,
-            });
+            if (shouldUpdate) {
+                setReferrals({
+                    ...referrals,
+                    totalActiveReferrals,
+                    activeReferrals: updatedReferrals,
+                });
+            }
         },
         [handleRequest, referrals, setReferrals]
     );
