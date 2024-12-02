@@ -10,7 +10,7 @@ version = "0.8.2"
 
 [build-dependencies]
 embed-resource = "2.5.0"
-tauri-build = { version = "2", features = ["isolation"] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
 anyhow = "1"
@@ -75,7 +75,6 @@ tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "de
 tari_utilities = "0.8.0"
 tauri = { version = "2", features = [
   "macos-private-api",
-  "isolation",
   "image-png",
   "image-ico",
   "tray-icon",
