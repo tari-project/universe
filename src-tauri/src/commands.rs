@@ -24,7 +24,7 @@ use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use sentry::integrations::anyhow::capture_anyhow;
 use serde::Serialize;
-use std::fs::{read_dir, remove_dir_all, remove_file};
+use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
@@ -1293,6 +1293,7 @@ pub async fn set_tor_config(
 pub async fn set_use_tor(
     use_tor: bool,
     state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
     state
@@ -1303,6 +1304,17 @@ pub async fn set_use_tor(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_use_tor {:?}", e))
         .map_err(|e| e.to_string())?;
+
+    let config_dir = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    if config_dir.exists() {
+        let tcp_tor_toggled_file = config_dir.join("tcp_tor_toggled");
+        File::create(tcp_tor_toggled_file).map_err(|e| e.to_string())?;
+    }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_use_tor took too long: {:?}", timer.elapsed());
     }

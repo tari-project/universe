@@ -5,6 +5,7 @@ import { useAppStateStore } from '@app/store/appStateStore';
 
 export function DialogsGroup() {
     const { setCriticalError, criticalError } = useAppStateStore();
+    const { setCriticalProblem, criticalProblem } = useAppStateStore();
     const { setDialogToShow, dialogToShow, showExternalDependenciesDialog, setShowExternalDependenciesDialog } =
         useUIStore();
 
@@ -17,6 +18,21 @@ export function DialogsGroup() {
                     $isActive={!!criticalError}
                 >
                     Critical Error
+                </Button>
+                <Button
+                    onClick={() =>
+                        setCriticalProblem(
+                            criticalProblem
+                                ? undefined
+                                : {
+                                      title: 'This is a critical problem description',
+                                      description: 'This is a critical problem description',
+                                  }
+                        )
+                    }
+                    $isActive={!!criticalProblem}
+                >
+                    Critical Problem
                 </Button>
                 <Button
                     onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}

@@ -17,6 +17,7 @@ use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::path::PathBuf;
+use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -157,10 +158,13 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 "base_node.p2p.transport.tcp.listener_address=/ip4/127.0.0.1/tcp/{}",
                 self.tcp_listener_port
             ));
-            // args.push("-p".to_string());
-            // args.push(
-            // "base_node.p2p.dht.excluded_dial_addresses=/ip4/127.*.*.*/tcp/0:18188".to_string(),
-            // );
+
+            let network = Network::get_current_or_user_setting_or_default();
+            args.push("-p".to_string());
+            args.push(format!(
+                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                key = network.as_key_str(),
+            ));
         }
 
         #[cfg(target_os = "windows")]
