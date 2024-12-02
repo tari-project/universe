@@ -1,10 +1,9 @@
 import { io } from 'socket.io-client';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
-import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
+import { useHandleWsUserIdEvent } from './ws/useHandleWsUserIdEvent';
 
 let socket: ReturnType<typeof io> | null;
 
@@ -14,14 +13,13 @@ const MINING_EVENT_NAME = 'mining-status';
 export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userId = useAirdropStore((state) => state.userDetails?.user?.id);
-    const setUserGems = useAirdropStore((state) => state.setUserGems);
-    const setTotalBonusTimeMs = useShellOfSecretsStore((state) => state.setTotalBonusTimeMs);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
     const cpu = useMiningStore((state) => state.cpu);
     const gpu = useMiningStore((state) => state.gpu);
     const network = useMiningStore((state) => state.network);
     const appId = useAppConfigStore((state) => state.anon_id);
     const base_node = useMiningStore((state) => state.base_node);
+    const handleWsUserIdEvent = useHandleWsUserIdEvent();
     const [connectedSocket, setConnectedSocket] = useState(false);
 
     const isMining = useMemo(() => {
@@ -70,19 +68,7 @@ export const useWebsocket = () => {
                 if (!socket) return;
                 setConnectedSocket(true);
                 socket.emit('auth', airdropToken);
-                socket.on(userId as string, (msg: string) => {
-                    const msgParsed = JSON.parse(msg) as WebsocketUserEvent;
-                    if (msgParsed.name === WebsocketEventNames.COMPLETED_QUEST && msgParsed?.data?.userPoints?.gems) {
-                        setUserGems(msgParsed.data.userPoints?.gems);
-                    }
-                    if (
-                        (msgParsed.name === WebsocketEventNames.MINING_STATUS_CREW_UPDATE ||
-                            msgParsed.name === WebsocketEventNames.MINING_STATUS_USER_UPDATE) &&
-                        msgParsed?.data?.totalTimeBonusMs
-                    ) {
-                        setTotalBonusTimeMs(msgParsed.data.totalTimeBonusMs);
-                    }
-                });
+                socket.on(userId as string, handleWsUserIdEvent);
             });
         } catch (e) {
             console.error(e);
