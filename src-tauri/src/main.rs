@@ -4,7 +4,7 @@
 use auto_launcher::AutoLauncher;
 #[allow(unused_imports)]
 use external_dependencies::RequiredExternalDependency;
-use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
 
@@ -23,10 +23,10 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_config::{AppConfig, GpuThreads};
+use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
-use gpu_miner_adapter::GpuMinerStatus;
+
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
@@ -36,6 +36,7 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::app_config::WindowSettings;
+use crate::commands::{CpuMinerConnection, MinerMetrics, TariWalletDetails};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -45,7 +46,7 @@ use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
-use crate::wallet_adapter::WalletBalance;
+
 use crate::wallet_manager::WalletManager;
 use utils::shutdown_utils::stop_all_processes;
 
@@ -93,8 +94,6 @@ mod wallet_manager;
 mod xmrig;
 mod xmrig_adapter;
 
-const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
-
 const LOG_TARGET: &str = "tari::universe::main";
 #[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
@@ -105,10 +104,14 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 #[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
-#[derive(Debug, Serialize, Clone)]
-struct MaxUsageLevels {
-    max_cpu_threads: i32,
-    max_gpus_threads: Vec<GpuThreads>,
+pub struct CpuMinerConfig {
+    node_connection: CpuMinerConnection,
+    tari_address: TariAddress,
+    eco_mode_xmrig_options: Vec<String>,
+    ludicrous_mode_xmrig_options: Vec<String>,
+    custom_mode_xmrig_options: Vec<String>,
+    eco_mode_cpu_percentage: Option<u32>,
+    ludicrous_mode_cpu_percentage: Option<u32>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -470,81 +473,6 @@ async fn setup_inner(
     });
 
     Ok(())
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct CpuMinerMetrics {
-    // hardware: Vec<PublicDeviceProperties>,
-    mining: CpuMinerStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct GpuMinerMetrics {
-    hardware: Vec<PublicDeviceProperties>,
-    mining: GpuMinerStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct MinerMetrics {
-    sha_network_hash_rate: u64,
-    randomx_network_hash_rate: u64,
-    cpu: CpuMinerMetrics,
-    gpu: GpuMinerMetrics,
-    base_node: BaseNodeStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct TariWalletDetails {
-    wallet_balance: Option<WalletBalance>,
-    tari_address_base58: String,
-    tari_address_emoji: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ApplicationsVersions {
-    tari_universe: String,
-    xmrig: String,
-    minotari_node: String,
-    mm_proxy: String,
-    wallet: String,
-    sha_p2pool: String,
-    xtrgpuminer: String,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct BaseNodeStatus {
-    block_height: u64,
-    block_time: u64,
-    is_synced: bool,
-    is_connected: bool,
-    connected_peers: Vec<String>,
-}
-#[derive(Debug, Serialize, Clone)]
-pub struct CpuMinerStatus {
-    pub is_mining: bool,
-    pub hash_rate: f64,
-    pub estimated_earnings: u64,
-    pub connection: CpuMinerConnectionStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct CpuMinerConnectionStatus {
-    pub is_connected: bool,
-    // pub error: Option<String>,
-}
-
-pub enum CpuMinerConnection {
-    BuiltInProxy,
-}
-
-struct CpuMinerConfig {
-    node_connection: CpuMinerConnection,
-    tari_address: TariAddress,
-    eco_mode_xmrig_options: Vec<String>,
-    ludicrous_mode_xmrig_options: Vec<String>,
-    custom_mode_xmrig_options: Vec<String>,
-    eco_mode_cpu_percentage: Option<u32>,
-    ludicrous_mode_cpu_percentage: Option<u32>,
 }
 
 #[derive(Clone)]

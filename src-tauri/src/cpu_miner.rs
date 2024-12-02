@@ -1,8 +1,9 @@
 use crate::app_config::MiningMode;
 use crate::binaries::Binaries;
+use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::process_watcher::ProcessWatcher;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use crate::CpuMinerConfig;
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;

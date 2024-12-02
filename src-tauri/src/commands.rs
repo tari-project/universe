@@ -6,8 +6,8 @@ use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
-use crate::gpu_miner_adapter::GpuNodeSource;
-use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
+use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
+use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
 use crate::p2pool::models::Stats;
@@ -15,18 +15,15 @@ use crate::progress_tracker::ProgressTracker;
 use crate::systemtray_manager::{SystemtrayManager, SystrayData};
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
-use crate::wallet_adapter::TransactionInfo;
+use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{
-    setup_inner, ApplicationsVersions, BaseNodeStatus, CpuMinerMetrics, GpuMinerMetrics,
-    MaxUsageLevels, MinerMetrics, TariWalletDetails, UniverseAppState, APPLICATION_FOLDER_ID,
-    MAX_ACCEPTABLE_COMMAND_TIME,
-};
+use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use sentry::integrations::anyhow::capture_anyhow;
+use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -35,8 +32,80 @@ use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 
+const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
+
+#[derive(Debug, Serialize, Clone)]
+pub struct MaxUsageLevels {
+    max_cpu_threads: i32,
+    max_gpus_threads: Vec<GpuThreads>,
+}
+
+pub enum CpuMinerConnection {
+    BuiltInProxy,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ApplicationsVersions {
+    tari_universe: String,
+    xmrig: String,
+    minotari_node: String,
+    mm_proxy: String,
+    wallet: String,
+    sha_p2pool: String,
+    xtrgpuminer: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct CpuMinerMetrics {
+    // hardware: Vec<PublicDeviceProperties>,
+    mining: CpuMinerStatus,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GpuMinerMetrics {
+    hardware: Vec<PublicDeviceProperties>,
+    mining: GpuMinerStatus,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct MinerMetrics {
+    sha_network_hash_rate: u64,
+    randomx_network_hash_rate: u64,
+    cpu: CpuMinerMetrics,
+    gpu: GpuMinerMetrics,
+    base_node: BaseNodeStatus,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TariWalletDetails {
+    wallet_balance: Option<WalletBalance>,
+    tari_address_base58: String,
+    tari_address_emoji: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct BaseNodeStatus {
+    block_height: u64,
+    block_time: u64,
+    is_synced: bool,
+    is_connected: bool,
+    connected_peers: Vec<String>,
+}
+#[derive(Debug, Serialize, Clone)]
+pub struct CpuMinerStatus {
+    pub is_mining: bool,
+    pub hash_rate: f64,
+    pub estimated_earnings: u64,
+    pub connection: CpuMinerConnectionStatus,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct CpuMinerConnectionStatus {
+    pub is_connected: bool,
+    // pub error: Option<String>,
+}
 
 #[tauri::command]
 pub async fn close_splashscreen(window: tauri::Window) {
@@ -455,13 +524,10 @@ pub async fn get_p2pool_stats(
         return Err("Already getting p2pool stats".to_string());
     }
     state.is_getting_p2pool_stats.store(true, Ordering::SeqCst);
-    let p2pool_stats = match state.p2pool_manager.get_stats().await {
-        Ok(s) => s,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
-            None
-        }
-    };
+    let p2pool_stats = state.p2pool_manager.get_stats().await.unwrap_or_else(|e| {
+        warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
+        None
+    });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
@@ -614,15 +680,16 @@ pub async fn get_transaction_history(
     state
         .is_getting_transaction_history
         .store(true, Ordering::SeqCst);
-    let transactions = match state.wallet_manager.get_transaction_history().await {
-        Ok(t) => t,
-        Err(e) => {
+    let transactions = state
+        .wallet_manager
+        .get_transaction_history()
+        .await
+        .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
                 warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
             }
             vec![]
-        }
-    };
+        });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_transaction_history took too long: {:?}", timer.elapsed());
