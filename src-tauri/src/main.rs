@@ -19,13 +19,13 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, RunEvent, WindowEvent};
+use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, RunEvent, WindowEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_config::{AppConfig, GpuThreads};
+use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
@@ -698,6 +698,15 @@ fn main() {
                     cpu_conf.ludicrous_mode_xmrig_options =
                         app_conf.ludicrous_mode_cpu_options().clone();
                     cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
+
+                    // Set splashscreen windows position and size here so it won't jump around
+                    if let Some(w_settings) = app_conf.window_settings() {
+                        let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
+                        let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
+                        if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
+                            error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
+                        }
+                    }
                     Ok(())
                 });
 
