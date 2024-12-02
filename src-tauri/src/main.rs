@@ -30,6 +30,8 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
+#[cfg(target_os = "macos")]
+use utils::macos_utils::is_app_in_applications_folder;
 use utils::shutdown_utils::stop_all_processes;
 use wallet_adapter::TransactionInfo;
 
@@ -127,6 +129,12 @@ struct UpdateProgressRustEvent {
     chunk_length: usize,
     content_length: u64,
     downloaded: u64,
+}
+#[derive(Debug, Serialize, Clone)]
+#[allow(dead_code)]
+struct CriticalProblemEvent {
+    title: Option<String>,
+    description: Option<String>,
 }
 
 #[tauri::command]
@@ -648,6 +656,22 @@ async fn setup_inner(
             },
         )
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+
+    #[cfg(target_os = "macos")]
+    if !cfg!(dev) && !is_app_in_applications_folder() {
+        window
+            .emit(
+                "critical_problem",
+                CriticalProblemEvent {
+                    title: None,
+                    description: Some("not-installed-in-applications-directory".to_string()),
+                },
+            )
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not emit event 'critical_problem': {:?}", e),
+            )?;
+        return Ok(());
+    }
 
     let data_dir = app
         .path_resolver()
