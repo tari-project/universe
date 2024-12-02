@@ -20,7 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use base64::prelude::*;
+use ring::signature::Ed25519KeyPair;
 use serde::{Deserialize, Serialize};
+use tari_utilities::message_format::MessageFormat;
 
 #[cfg(feature = "airdrop-env")]
 const AIRDROP_BASE_URL: &str =
@@ -71,6 +74,23 @@ impl Default for AppInMemoryConfig {
             airdrop_access_token: None,
         }
     }
+}
+
+const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = match option_env!("AIRDROP_WEBSOCKET_CRYPTO_KEY") {
+    Some(value) => value,
+    None => "default_crypto_key",
+};
+
+pub fn get_websocket_key() -> Ed25519KeyPair {
+    let binary = AIRDROP_WEBSOCKET_CRYPTO_KEY
+        .to_owned()
+        .to_binary()
+        .expect("airdrop websocket crypto key cannot be converted to binary");
+    let bytes = BASE64_STANDARD
+        .decode(&binary)
+        .expect("airdrop websocket crypto key cannot be decoded");
+
+    Ed25519KeyPair::from_pkcs8(&bytes).expect("airdrop websocket crypto key is invalid")
 }
 
 impl AppInMemoryConfig {

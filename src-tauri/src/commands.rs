@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::app_config::{AppConfig, GpuThreads};
-use crate::app_in_memory_config::AirdropInMemoryConfig;
+use crate::app_in_memory_config::{get_websocket_key, AirdropInMemoryConfig};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::credential_manager::{CredentialError, CredentialManager};
@@ -39,11 +39,12 @@ use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use base64::prelude::*;
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -1045,6 +1046,26 @@ pub async fn set_cpu_mining_enabled<'r>(
         );
     }
     Ok(())
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SignWsDataResponse<T> {
+    data: T,
+    signature: String,
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub async fn sign_ws_data<R: 'static + Serialize>(
+    data: R,
+) -> Result<SignWsDataResponse<R>, String> {
+    let key = get_websocket_key();
+    let json_vec = serde_json::to_vec(&data).map_err(|e| e.to_string())?;
+    let signature = key.sign(&json_vec);
+
+    Ok(SignWsDataResponse {
+        data,
+        signature: BASE64_STANDARD.encode(signature.as_ref()),
+    })
 }
 
 #[tauri::command]
