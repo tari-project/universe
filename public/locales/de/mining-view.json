@@ -17,7 +17,7 @@
     "waiting-for-idle": "Warten auf Leerlauf"
   },
   "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
-  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-block": "Sie waren der Gewinner von <span>Block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Sie haben {{ blocks }} gewonnen</span>, während Sie weg waren",
   "your-reward-is": "Deine Belohnung ist"
 }
