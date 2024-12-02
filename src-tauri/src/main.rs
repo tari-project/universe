@@ -4,9 +4,10 @@
 use auto_launcher::AutoLauncher;
 #[allow(unused_imports)]
 use external_dependencies::RequiredExternalDependency;
-use hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
+use std::fs::{remove_dir_all, remove_file};
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -18,7 +19,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{Emitter, Manager, RunEvent, WindowEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
@@ -27,7 +28,7 @@ use utils::logging_utils::setup_logging;
 use app_config::{AppConfig, GpuThreads};
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
-use gpu_miner_adapter::GpuMinerStatus;
+
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
@@ -35,6 +36,8 @@ use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
 
+use crate::app_config::WindowSettings;
+use crate::commands::{CpuMinerConnection, MinerMetrics, TariWalletDetails};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -44,8 +47,9 @@ use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
-use crate::wallet_adapter::WalletBalance;
 use crate::wallet_manager::WalletManager;
+#[cfg(target_os = "macos")]
+use utils::macos_utils::is_app_in_applications_folder;
 use utils::shutdown_utils::stop_all_processes;
 
 mod app_config;
@@ -101,10 +105,21 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 #[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
+struct CpuMinerConfig {
+    node_connection: CpuMinerConnection,
+    tari_address: TariAddress,
+    eco_mode_xmrig_options: Vec<String>,
+    ludicrous_mode_xmrig_options: Vec<String>,
+    custom_mode_xmrig_options: Vec<String>,
+    eco_mode_cpu_percentage: Option<u32>,
+    ludicrous_mode_cpu_percentage: Option<u32>,
+}
+
 #[derive(Debug, Serialize, Clone)]
-struct MaxUsageLevels {
-    max_cpu_threads: i32,
-    max_gpus_threads: Vec<GpuThreads>,
+#[allow(dead_code)]
+struct CriticalProblemEvent {
+    title: Option<String>,
+    description: Option<String>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -124,6 +139,21 @@ async fn setup_inner(
     )
     .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
+    #[cfg(target_os = "macos")]
+    if !cfg!(dev) && !is_app_in_applications_folder() {
+        app.emit(
+            "critical_problem",
+            CriticalProblemEvent {
+                title: None,
+                description: Some("not-installed-in-applications-directory".to_string()),
+            },
+        )
+        .inspect_err(
+            |e| error!(target: LOG_TARGET, "Could not emit event 'critical_problem': {:?}", e),
+        )?;
+        return Ok(());
+    }
+
     let data_dir = app
         .path()
         .app_local_data_dir()
@@ -136,19 +166,18 @@ async fn setup_inner(
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") && !cfg!(dev) {
-        external_dependencies::ExternalDependencies::current()
+        ExternalDependencies::current()
             .read_registry_installed_applications()
             .await?;
-        let is_missing = external_dependencies::ExternalDependencies::current()
+        let is_missing = ExternalDependencies::current()
             .check_if_some_dependency_is_not_installed()
             .await;
-        let external_dependencies = external_dependencies::ExternalDependencies::current()
+        let external_dependencies = ExternalDependencies::current()
             .get_external_dependencies()
             .await;
 
         if is_missing {
-            app
-                .emit(
+            app.emit(
                     "missing-applications",
                     external_dependencies
                 ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
@@ -470,81 +499,6 @@ async fn setup_inner(
     Ok(())
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct CpuMinerMetrics {
-    // hardware: Vec<PublicDeviceProperties>,
-    mining: CpuMinerStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct GpuMinerMetrics {
-    hardware: Vec<PublicDeviceProperties>,
-    mining: GpuMinerStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct MinerMetrics {
-    sha_network_hash_rate: u64,
-    randomx_network_hash_rate: u64,
-    cpu: CpuMinerMetrics,
-    gpu: GpuMinerMetrics,
-    base_node: BaseNodeStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct TariWalletDetails {
-    wallet_balance: Option<WalletBalance>,
-    tari_address_base58: String,
-    tari_address_emoji: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ApplicationsVersions {
-    tari_universe: String,
-    xmrig: String,
-    minotari_node: String,
-    mm_proxy: String,
-    wallet: String,
-    sha_p2pool: String,
-    xtrgpuminer: String,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct BaseNodeStatus {
-    block_height: u64,
-    block_time: u64,
-    is_synced: bool,
-    is_connected: bool,
-    connected_peers: Vec<String>,
-}
-#[derive(Debug, Serialize, Clone)]
-pub struct CpuMinerStatus {
-    pub is_mining: bool,
-    pub hash_rate: f64,
-    pub estimated_earnings: u64,
-    pub connection: CpuMinerConnectionStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct CpuMinerConnectionStatus {
-    pub is_connected: bool,
-    // pub error: Option<String>,
-}
-
-pub enum CpuMinerConnection {
-    BuiltInProxy,
-}
-
-struct CpuMinerConfig {
-    node_connection: CpuMinerConnection,
-    tari_address: TariAddress,
-    eco_mode_xmrig_options: Vec<String>,
-    ludicrous_mode_xmrig_options: Vec<String>,
-    custom_mode_xmrig_options: Vec<String>,
-    eco_mode_cpu_percentage: Option<u32>,
-    ludicrous_mode_cpu_percentage: Option<u32>,
-}
-
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
@@ -582,6 +536,7 @@ struct Payload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
     let client = sentry::init((
@@ -593,7 +548,7 @@ fn main() {
     ));
     let _guard = minidump::init(&client);
 
-    let mut shutdown = Shutdown::new();
+    let shutdown = Shutdown::new();
 
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.
@@ -694,10 +649,42 @@ fn main() {
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
+            let splash_window = app
+                .get_webview_window("splashscreen")
+                .expect("Main window not found");
+
             let config_path = app
                 .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
+
+            // The start of needed restart operations. Break this out into a module if we need n+1
+            let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
+            if tcp_tor_toggled_file.exists() {
+                let network = Network::default().as_key_str();
+
+                let node_peer_db = config_path.join("node").join(network).join("peer_db");
+                let wallet_peer_db = config_path.join("wallet").join(network).join("peer_db");
+
+                // They may not exist. This could be first run.
+                if node_peer_db.exists() {
+                    if let Err(e) = remove_dir_all(node_peer_db) {
+                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                    }
+                }
+
+                if wallet_peer_db.exists() {
+                    if let Err(e) = remove_dir_all(wallet_peer_db) {
+                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                    }
+                }
+
+                remove_file(tcp_tor_toggled_file).map_err(|e| {
+                    error!(target: LOG_TARGET, "Could not remove tcp_tor_toggled file: {}", e);
+                    e.to_string()
+                })?;
+            }
+
             let cpu_config2 = cpu_config.clone();
             let thread_config: JoinHandle<Result<(), anyhow::Error>> =
                 tauri::async_runtime::spawn(async move {
@@ -802,6 +789,7 @@ fn main() {
             commands::set_monero_address,
             commands::set_monerod_config,
             commands::set_p2pool_enabled,
+            commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
             commands::set_should_auto_launch,
             commands::set_tor_config,
@@ -825,23 +813,42 @@ fn main() {
     );
 
     // let mut downloaded: u64 = 0;
-    app.run(move |_app_handle, event| match event {
+    app.run(move |app_handle, event| match event {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
-            // api.prevent_exit();
             info!(target: LOG_TARGET, "App shutdown request caught");
-            let _unused = block_on(stop_all_processes(_app_handle.clone(), app_state.clone(), true));
+            let _unused = block_on(stop_all_processes(app_handle.clone(), app_state.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(_app_handle.clone(), app_state.clone(), true));
-            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
+            let _unused = block_on(stop_all_processes(app_handle.clone(), app_state.clone(), true));
+            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
         RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
+            if let WindowEvent::CloseRequested { .. } = event {
+                if let Some(window) = app_handle.get_window(&label) {
+                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.outer_size()) {
+                        let window_settings = WindowSettings {
+                            x: window_position.x,
+                            y: window_position.y,
+                            width: window_size.width,
+                            height: window_size.height,
+                        };
+                        let mut app_config = block_on(app_state.config.write());
+                        if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
+                            error!(target: LOG_TARGET, "Could not set window settings: {:?}", e);
+                        }
+                    } else {
+                        error!(target: LOG_TARGET, "Could not get window position or size");
+                    }
+                } else {
+                    error!(target: LOG_TARGET, "Could not get main window");
+                }
+            }
         }
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);

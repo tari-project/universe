@@ -8,9 +8,11 @@
   "day": "Hari",
   "disconnect": "Putuskan Koneksi",
   "hashrate": "Hashrate",
+  "installation-problem": "Installation problem",
   "max-temperature": "Suhu maksimum",
   "minimize": "Minimize",
   "mode": "Mode",
+  "not-installed-in-applications-directory": "Oops! Tari Universe needs to live in the Applications directory. Mind installing it there?",
   "please-try-again-later": "Silakan coba lagi nanti. Jika masalah berlanjut, silakan hubungi kami.",
   "resources": "Sumber daya",
   "restart": "Mulai Ulang",
@@ -26,5 +28,5 @@
   "utilization": "Pemanfaatan",
   "version": "Versi",
   "versions": "Versi",
-  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
+  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan."
 }

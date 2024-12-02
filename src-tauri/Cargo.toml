@@ -10,7 +10,7 @@ version = "0.8.2"
 
 [build-dependencies]
 embed-resource = "2.5.0"
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2" }
 
 [dependencies]
 anyhow = "1"
@@ -23,6 +23,7 @@ chrono = "0.4.38"
 device_query = "2.1.0"
 dunce = "1.0.5"
 dyn-clone = "1.0.17"
+fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
 futures-util = "0.3.30"

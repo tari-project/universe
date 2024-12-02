@@ -7,52 +7,135 @@ use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
-use crate::gpu_miner_adapter::GpuNodeSource;
-use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
+use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
+use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
 use crate::p2pool::models::Stats;
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
-use crate::wallet_adapter::TransactionInfo;
+use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-#[allow(unused_imports)]
-use crate::{
-    external_dependencies, setup_inner, ApplicationsVersions, BaseNodeStatus, CpuMinerMetrics,
-    GpuMinerMetrics, MaxUsageLevels, MinerMetrics, TariWalletDetails, UniverseAppState,
-    APPLICATION_FOLDER_ID,
-};
+use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use sentry::integrations::anyhow::capture_anyhow;
-use std::fs::{read_dir, remove_dir_all, remove_file};
+use serde::Serialize;
+use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tauri::Manager;
+use tauri::{Manager, PhysicalPosition, PhysicalSize};
 
+const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
-const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
-
-#[tauri::command]
-pub fn close_splashscreen(app: tauri::AppHandle) {
-    let splash_window = app
-        .get_webview_window("splashscreen")
-        .expect("Could not get splashscreen window");
-    let main_window = app
-        .get_webview_window("main")
-        .expect("Could not get webview window");
-    splash_window.close().expect("Could not close window");
-    main_window.show().expect("Could not show window");
+#[derive(Debug, Serialize, Clone)]
+pub struct MaxUsageLevels {
+    max_cpu_threads: i32,
+    max_gpus_threads: Vec<GpuThreads>,
 }
 
+pub enum CpuMinerConnection {
+    BuiltInProxy,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ApplicationsVersions {
+    tari_universe: String,
+    xmrig: String,
+    minotari_node: String,
+    mm_proxy: String,
+    wallet: String,
+    sha_p2pool: String,
+    xtrgpuminer: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct CpuMinerMetrics {
+    // hardware: Vec<PublicDeviceProperties>,
+    mining: CpuMinerStatus,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct GpuMinerMetrics {
+    hardware: Vec<PublicDeviceProperties>,
+    mining: GpuMinerStatus,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct MinerMetrics {
+    sha_network_hash_rate: u64,
+    randomx_network_hash_rate: u64,
+    cpu: CpuMinerMetrics,
+    gpu: GpuMinerMetrics,
+    base_node: BaseNodeStatus,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TariWalletDetails {
+    wallet_balance: Option<WalletBalance>,
+    tari_address_base58: String,
+    tari_address_emoji: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct BaseNodeStatus {
+    block_height: u64,
+    block_time: u64,
+    is_synced: bool,
+    is_connected: bool,
+    connected_peers: Vec<String>,
+}
+#[derive(Debug, Serialize, Clone)]
+pub struct CpuMinerStatus {
+    pub is_mining: bool,
+    pub hash_rate: f64,
+    pub estimated_earnings: u64,
+    pub connection: CpuMinerConnectionStatus,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct CpuMinerConnectionStatus {
+    pub is_connected: bool,
+    // pub error: Option<String>,
+}
+
+#[tauri::command]
+pub async fn close_splashscreen(app: tauri::AppHandle) {
+    let splashscreen_window = app
+        .get_webview_window("splashscreen")
+        .expect("no window labeled 'splashscreen' found");
+    let main_window = app
+        .get_webview_window("main")
+        .expect("no window labeled 'main' found");
+
+    if let (Ok(window_position), Ok(window_size)) = (
+        splashscreen_window.outer_position(),
+        splashscreen_window.outer_size(),
+    ) {
+        splashscreen_window.close().expect("could not close");
+        main_window.show().expect("could not show");
+        if let Err(e) = main_window
+            .set_position(PhysicalPosition::new(window_position.x, window_position.y))
+            .and_then(|_| {
+                main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
+            })
+        {
+            error!(target: LOG_TARGET, "Could not set window position or size: {:?}", e);
+        }
+    } else {
+        error!(target: LOG_TARGET, "Could not get window position or size");
+        splashscreen_window.close().expect("could not close");
+        main_window.show().expect("could not show");
+    }
+}
 #[tauri::command]
 pub async fn download_and_start_installer(
     _missing_dependency: ExternalDependency,
@@ -403,13 +486,10 @@ pub async fn get_p2pool_stats(
         return Err("Already getting p2pool stats".to_string());
     }
     state.is_getting_p2pool_stats.store(true, Ordering::SeqCst);
-    let p2pool_stats = match state.p2pool_manager.get_stats().await {
-        Ok(s) => s,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
-            None
-        }
-    };
+    let p2pool_stats = state.p2pool_manager.get_stats().await.unwrap_or_else(|e| {
+        warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
+        None
+    });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
@@ -562,15 +642,16 @@ pub async fn get_transaction_history(
     state
         .is_getting_transaction_history
         .store(true, Ordering::SeqCst);
-    let transactions = match state.wallet_manager.get_transaction_history().await {
-        Ok(t) => t,
-        Err(e) => {
+    let transactions = state
+        .wallet_manager
+        .get_transaction_history()
+        .await
+        .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
                 warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
             }
             vec![]
-        }
-    };
+        });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_transaction_history took too long: {:?}", timer.elapsed());
@@ -775,11 +856,13 @@ pub async fn send_feedback(
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let timer = Instant::now();
+    let app_log_dir = Some(app.path().app_log_dir().expect("Could not get log dir."));
+
     let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs, app.path().app_log_dir().ok())
+        .send_feedback(feedback, include_logs, app_log_dir)
         .await
         .inspect_err(|e| error!("error at send_feedback {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -1080,6 +1163,22 @@ pub async fn set_p2pool_enabled(
 }
 
 #[tauri::command]
+pub async fn set_show_experimental_settings(
+    show_experimental_settings: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_show_experimental_settings(show_experimental_settings)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_should_always_use_system_language(
     should_always_use_system_language: bool,
     state: tauri::State<'_, UniverseAppState>,
@@ -1148,6 +1247,7 @@ pub async fn set_tor_config(
 pub async fn set_use_tor(
     use_tor: bool,
     state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
     state
@@ -1158,6 +1258,17 @@ pub async fn set_use_tor(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_use_tor {:?}", e))
         .map_err(|e| e.to_string())?;
+
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    if config_dir.exists() {
+        let tcp_tor_toggled_file = config_dir.join("tcp_tor_toggled");
+        File::create(tcp_tor_toggled_file).map_err(|e| e.to_string())?;
+    }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_use_tor took too long: {:?}", timer.elapsed());
     }

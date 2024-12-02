@@ -18,7 +18,7 @@
     "waiting-for-idle": "Oczekiwanie na bezczynność"
   },
   "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
-  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-block": "Byłeś zwycięzcą <span>bloku #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Wygrałeś {{ blocks }}</span> podczas swojej nieobecności",
   "your-reward-is": "Twoja nagroda wynosi"
 }

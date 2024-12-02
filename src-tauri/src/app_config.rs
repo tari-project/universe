@@ -82,6 +82,10 @@ pub struct AppConfigFromFile {
     sharing_enabled: bool,
     #[serde(default = "default_true")]
     visual_mode: bool,
+    #[serde(default = "default_window_settings")]
+    window_settings: Option<WindowSettings>,
+    #[serde(default = "default_false")]
+    show_experimental_settings: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -120,6 +124,8 @@ impl Default for AppConfigFromFile {
             custom_power_levels_enabled: true,
             sharing_enabled: true,
             visual_mode: true,
+            window_settings: default_window_settings(),
+            show_experimental_settings: false,
         }
     }
 }
@@ -177,6 +183,14 @@ impl MiningMode {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WindowSettings {
+    pub width: u32,
+    pub height: u32,
+    pub x: i32,
+    pub y: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GpuThreads {
     pub gpu_name: String,
     pub max_gpu_threads: u32,
@@ -221,6 +235,8 @@ pub(crate) struct AppConfig {
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
+    window_settings: Option<WindowSettings>,
+    show_experimental_settings: bool,
 }
 
 impl AppConfig {
@@ -261,6 +277,8 @@ impl AppConfig {
             auto_update: true,
             sharing_enabled: true,
             visual_mode: true,
+            window_settings: default_window_settings(),
+            show_experimental_settings: false,
             keyring_accessed: false,
         }
     }
@@ -335,6 +353,8 @@ impl AppConfig {
                 }
                 self.sharing_enabled = config.sharing_enabled;
                 self.visual_mode = config.visual_mode;
+                self.window_settings = config.window_settings;
+                self.show_experimental_settings = config.show_experimental_settings;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -512,6 +532,28 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_window_settings(
+        &mut self,
+        window_settings: WindowSettings,
+    ) -> Result<(), anyhow::Error> {
+        self.window_settings = Some(window_settings);
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn window_settings(&self) -> &Option<WindowSettings> {
+        &self.window_settings
+    }
+
+    pub async fn set_show_experimental_settings(
+        &mut self,
+        show_experimental_settings: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.show_experimental_settings = show_experimental_settings;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub fn auto_mining(&self) -> bool {
         self.auto_mining
     }
@@ -684,6 +726,8 @@ impl AppConfig {
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,
             visual_mode: self.visual_mode,
+            window_settings: self.window_settings.clone(),
+            show_experimental_settings: self.show_experimental_settings,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -770,4 +814,8 @@ fn default_application_language() -> String {
 
 fn default_monero_nodes() -> Vec<String> {
     vec!["https://xmr-01.tari.com".to_string()]
+}
+
+fn default_window_settings() -> Option<WindowSettings> {
+    None
 }

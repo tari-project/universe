@@ -8,9 +8,11 @@
   "day": "Gün",
   "disconnect": "Bağlantıyı Kes",
   "hashrate": "Hashrate",
+  "installation-problem": "Installation problem",
   "max-temperature": "Maks. Sıcaklık",
   "minimize": "Minimize",
   "mode": "Mod",
+  "not-installed-in-applications-directory": "Oops! Tari Universe needs to live in the Applications directory. Mind installing it there?",
   "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse, lütfen bizimle iletişime geçin.",
   "resources": "Kaynaklar",
   "restart": "Yeniden Başlat",
@@ -26,5 +28,5 @@
   "utilization": "Fayda",
   "version": "Versiyon",
   "versions": "Versiyon",
-  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
+  "webgl-not-supported": "WebGL desteklenmiyor. Görsel mod devre dışı bırakıldı."
 }

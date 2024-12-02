@@ -21,7 +21,7 @@
     "waiting-for-idle": "Wag tot onaktief"
   },
   "you-earn-rewards-separately": "Jy verdien belonings vir die myn van CPU en GPU afsonderlik",
-  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-block": "Jy was die wenner van <span>blok #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Jy het {{ blocks }} gewen</span> terwyl jy weg was",
   "your-reward-is": "Jou beloning is"
 }
