@@ -11,6 +11,7 @@ import { useAppConfigStore } from '../store/useAppConfigStore.ts';
 import { setupLogger } from '../utils/shared-logger.ts';
 import { useDetectMode } from '../hooks/helpers/useDetectMode.ts';
 import App from './App.tsx';
+import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.tsx';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
 
@@ -39,6 +40,7 @@ export default function AppWrapper() {
     useUpdateListener();
     useLangaugeResolver();
     useListenForExternalDependencies();
+    useListenForCriticalProblem();
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();

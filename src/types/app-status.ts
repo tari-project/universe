@@ -69,6 +69,11 @@ export interface ExternalDependency {
     status: ExternalDependencyStatus;
 }
 
+export interface CriticalProblem {
+    title: string;
+    description: string;
+}
+
 export interface CpuMinerMetrics {
     hardware: PublicDeviceParameters[];
     mining: CpuMinerStatus;
