@@ -2,8 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
-#[allow(unused_imports)]
-use external_dependencies::{ExternalDependencies, RequiredExternalDependency};
+
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
@@ -38,6 +37,8 @@ use crate::cpu_miner::CpuMiner;
 
 use crate::app_config::WindowSettings;
 use crate::commands::{CpuMinerConnection, MinerMetrics, TariWalletDetails};
+#[allow(unused_imports)]
+use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
