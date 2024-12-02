@@ -33,25 +33,40 @@ use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tauri::{Manager, Window};
+use tauri::{Manager, PhysicalPosition, PhysicalSize};
 
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[tauri::command]
-pub async fn close_splashscreen(window: Window) {
-    window
+pub async fn close_splashscreen(window: tauri::Window) {
+    let splashscreen_window = window
         .get_window("splashscreen")
-        .expect("no window labeled 'splashscreen' found")
-        .close()
-        .expect("could not close");
-    window
+        .expect("no window labeled 'splashscreen' found");
+    let main_window = window
         .get_window("main")
-        .expect("no window labeled 'main' found")
-        .show()
-        .expect("could not show");
-}
+        .expect("no window labeled 'main' found");
 
+    if let (Ok(window_position), Ok(window_size)) = (
+        splashscreen_window.outer_position(),
+        splashscreen_window.outer_size(),
+    ) {
+        splashscreen_window.close().expect("could not close");
+        main_window.show().expect("could not show");
+        if let Err(e) = main_window
+            .set_position(PhysicalPosition::new(window_position.x, window_position.y))
+            .and_then(|_| {
+                main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
+            })
+        {
+            error!(target: LOG_TARGET, "Could not set window position or size: {:?}", e);
+        }
+    } else {
+        error!(target: LOG_TARGET, "Could not get window position or size");
+        splashscreen_window.close().expect("could not close");
+        main_window.show().expect("could not show");
+    }
+}
 #[tauri::command]
 pub async fn download_and_start_installer(
     _missing_dependency: ExternalDependency,
@@ -1123,6 +1138,22 @@ pub async fn set_p2pool_enabled(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_show_experimental_settings(
+    show_experimental_settings: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_show_experimental_settings(show_experimental_settings)
+        .await
+        .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 

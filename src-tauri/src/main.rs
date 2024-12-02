@@ -18,7 +18,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Manager, RunEvent, UpdaterEvent};
+use tauri::{Manager, PhysicalPosition, PhysicalSize, RunEvent, UpdaterEvent, WindowEvent};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
@@ -35,6 +35,7 @@ use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
 
+use crate::app_config::WindowSettings;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -709,6 +710,9 @@ fn main() {
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
+            let splash_window = app
+                .get_window("splashscreen")
+                .expect("Main window not found");
             let config_path = app
                 .path_resolver()
                 .app_config_dir()
@@ -726,6 +730,15 @@ fn main() {
                     cpu_conf.ludicrous_mode_xmrig_options =
                         app_conf.ludicrous_mode_cpu_options().clone();
                     cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
+
+                    // Set splashscreen windows position and size here so it won't jump around
+                    if let Some(w_settings) = app_conf.window_settings() {
+                        let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
+                        let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
+                        if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
+                            error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
+                        }
+                    }
                     Ok(())
                 });
 
@@ -817,6 +830,7 @@ fn main() {
             commands::set_monero_address,
             commands::set_monerod_config,
             commands::set_p2pool_enabled,
+            commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
             commands::set_should_auto_launch,
             commands::set_tor_config,
@@ -838,9 +852,8 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
-
     let mut downloaded: u64 = 0;
-    app.run(move |_app_handle, event| match event {
+    app.run(move |app_handle, event| match event {
         tauri::RunEvent::Updater(updater_event) => match updater_event {
             UpdaterEvent::Error(e) => {
                 error!(target: LOG_TARGET, "Updater error: {:?}", e);
@@ -854,7 +867,7 @@ fn main() {
 
                 info!(target: LOG_TARGET, "Chunk Length: {} | Download progress: {} / {}", chunk_length, downloaded, content_length);
 
-                if let Some(window) = _app_handle.get_window("main") {
+                if let Some(window) = app_handle.get_window("main") {
                     drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded: downloaded.min(content_length) }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
                     );
                 }
@@ -875,13 +888,33 @@ fn main() {
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
             let _unused = block_on(stop_all_processes(app_state.clone(), true));
-            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", _app_handle.package_info().version);
+            info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
         RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
+            if let WindowEvent::CloseRequested { .. } = event {
+                if let Some(window) = app_handle.get_window(&label) {
+                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.outer_size()) {
+                        let window_settings = WindowSettings {
+                            x: window_position.x,
+                            y: window_position.y,
+                            width: window_size.width,
+                            height: window_size.height,
+                        };
+                        let mut app_config = block_on(app_state.config.write());
+                        if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
+                            error!(target: LOG_TARGET, "Could not set window settings: {:?}", e);
+                        }
+                    } else {
+                        error!(target: LOG_TARGET, "Could not get window position or size");
+                    }
+                } else {
+                    error!(target: LOG_TARGET, "Could not get main window");
+                }
+            }
         }
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
