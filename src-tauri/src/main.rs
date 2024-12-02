@@ -15,7 +15,7 @@ use log4rs::config::RawConfig;
 use regex::Regex;
 use serde::Serialize;
 use std::convert::TryFrom;
-use std::fs::{read_dir, remove_dir_all, remove_file};
+use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{available_parallelism, sleep};
@@ -30,6 +30,8 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use tor_adapter::TorConfig;
 use utils::logging_utils::setup_logging;
+#[cfg(target_os = "macos")]
+use utils::macos_utils::is_app_in_applications_folder;
 use utils::shutdown_utils::stop_all_processes;
 use wallet_adapter::TransactionInfo;
 
@@ -128,6 +130,12 @@ struct UpdateProgressRustEvent {
     content_length: u64,
     downloaded: u64,
 }
+#[derive(Debug, Serialize, Clone)]
+#[allow(dead_code)]
+struct CriticalProblemEvent {
+    title: Option<String>,
+    description: Option<String>,
+}
 
 #[tauri::command]
 async fn set_mode(
@@ -219,6 +227,7 @@ async fn set_display_mode(
 async fn set_use_tor(
     use_tor: bool,
     state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
     state
@@ -229,6 +238,17 @@ async fn set_use_tor(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_use_tor {:?}", e))
         .map_err(|e| e.to_string())?;
+
+    let config_dir = app
+        .path_resolver()
+        .app_config_dir()
+        .expect("Could not get config dir");
+
+    if config_dir.exists() {
+        let tcp_tor_toggled_file = config_dir.join("tcp_tor_toggled");
+        File::create(tcp_tor_toggled_file).map_err(|e| e.to_string())?;
+    }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_use_tor took too long: {:?}", timer.elapsed());
     }
@@ -648,6 +668,22 @@ async fn setup_inner(
             },
         )
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+
+    #[cfg(target_os = "macos")]
+    if !cfg!(dev) && !is_app_in_applications_folder() {
+        window
+            .emit(
+                "critical_problem",
+                CriticalProblemEvent {
+                    title: None,
+                    description: Some("not-installed-in-applications-directory".to_string()),
+                },
+            )
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not emit event 'critical_problem': {:?}", e),
+            )?;
+        return Ok(());
+    }
 
     let data_dir = app
         .path_resolver()
@@ -2076,6 +2112,8 @@ struct Payload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    let _unused = fix_path_env::fix();
+
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
     let client = sentry_tauri::sentry::init((
@@ -2209,6 +2247,34 @@ fn main() {
                 .path_resolver()
                 .app_config_dir()
                 .expect("Could not get config dir");
+
+            // The start of needed restart operations. Break this out into a module if we need n+1
+            let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
+            if tcp_tor_toggled_file.exists() {
+                let network = Network::default().as_key_str();
+
+                let node_peer_db = config_path.join("node").join(network).join("peer_db");
+                let wallet_peer_db = config_path.join("wallet").join(network).join("peer_db");
+
+                // They may not exist. This could be first run.
+                if node_peer_db.exists() {
+                    if let Err(e) = remove_dir_all(node_peer_db) {
+                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                    }
+                }
+
+                if wallet_peer_db.exists() {
+                    if let Err(e) = remove_dir_all(wallet_peer_db) {
+                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                    }
+                }
+
+                remove_file(tcp_tor_toggled_file).map_err(|e| {
+                    error!(target: LOG_TARGET, "Could not remove tcp_tor_toggled file: {}", e);
+                    e.to_string()
+                })?;
+            }
+
             let cpu_config2 = cpu_config.clone();
             let thread_config: JoinHandle<Result<(), anyhow::Error>> =
                 tauri::async_runtime::spawn(async move {
