@@ -29,6 +29,8 @@ export const useGetSosReferrals = () => {
             if (!referrals) return;
 
             if (!existingReferral) {
+                totalActiveReferrals += 1;
+
                 const data = await handleRequest<CrewMember>({
                     path: `/sos/crew-member-data/${userId}/`,
                     method: 'GET',
@@ -48,7 +50,6 @@ export const useGetSosReferrals = () => {
                     }
                 }
             } else {
-                totalActiveReferrals += 1;
                 updatedReferrals = updatedReferrals.map((x) => {
                     if (x.id === userId) {
                         return { ...x, active: true };
