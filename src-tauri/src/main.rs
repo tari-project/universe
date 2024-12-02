@@ -664,9 +664,9 @@ fn main() {
     };
 
     let app = tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 

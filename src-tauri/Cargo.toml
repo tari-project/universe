@@ -82,7 +82,7 @@ tauri = { version = "2", features = [
   "unstable",
 ] }
 tauri-plugin-os = "2"
-tauri-plugin-sentry = "0.2.0"
+tauri-plugin-sentry = "=0.2.0"
 tauri-plugin-shell = "2"
 tauri-plugin-single-instance = "^2"
 tauri-plugin-updater = "^2"
