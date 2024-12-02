@@ -1,4 +1,3 @@
-use base64::{prelude::BASE64_STANDARD, Engine};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "airdrop-env")]
