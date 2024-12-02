@@ -26,13 +26,14 @@ export interface CrewMember {
     name: string;
     profileImageUrl: string | null;
     lastHandshakeAt: Date | null;
+    active?: boolean;
 }
 
 export interface MiningStatusCrewUpdateEvent {
     name: WebsocketEventNames.MINING_STATUS_CREW_UPDATE;
     data: {
         totalTimeBonusMs: number;
-        crewMember: CrewMember;
+        crewMember: { id: string };
     };
 }
 

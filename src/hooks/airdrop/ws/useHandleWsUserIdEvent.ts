@@ -1,12 +1,14 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
+import { useGetSosReferrals } from '../stateHelpers/useGetSosReferrals';
 
 export const useHandleWsUserIdEvent = () => {
     const setTotalBonusTimeMs = useShellOfSecretsStore((state) => state.setTotalBonusTimeMs);
     const referrals = useShellOfSecretsStore((state) => state.referrals);
     const setReferrals = useShellOfSecretsStore((state) => state.setReferrals);
     const setUserGems = useAirdropStore((state) => state.setUserGems);
+    const { fetchCrewMemberDetails } = useGetSosReferrals();
 
     return (event: string) => {
         const eventParsed = JSON.parse(event) as WebsocketUserEvent;
@@ -17,27 +19,19 @@ export const useHandleWsUserIdEvent = () => {
                 }
                 break;
             case WebsocketEventNames.MINING_STATUS_CREW_UPDATE: {
-                if ((referrals?.activeReferrals?.length || 0) < 15) {
-                    const existingReferral = referrals?.activeReferrals?.find(
-                        (x) => x.id === eventParsed.data.crewMember.id
-                    );
-
-                    if (!existingReferral && referrals) {
-                        const newActiveReferrals = [...(referrals?.activeReferrals || []), eventParsed.data.crewMember];
-                        setReferrals({
-                            ...referrals,
-                            activeReferrals: newActiveReferrals,
-                        });
-                    }
-                }
+                fetchCrewMemberDetails(eventParsed.data.crewMember.id);
                 setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
                 break;
             }
+
             case WebsocketEventNames.MINING_STATUS_CREW_DISCONNECTED:
                 if (referrals?.activeReferrals) {
-                    const referralsUpdated = referrals?.activeReferrals.filter(
-                        (x) => x.id !== eventParsed.data.crewMemberId
-                    );
+                    const referralsUpdated = referrals?.activeReferrals.map((x) => {
+                        if (x.id === eventParsed.data.crewMemberId) {
+                            return { ...x, active: false };
+                        }
+                        return x;
+                    });
 
                     setReferrals({
                         ...referrals,
