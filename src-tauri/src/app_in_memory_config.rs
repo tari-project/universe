@@ -15,15 +15,6 @@ const AIRDROP_TWITTER_AUTH_URL: &str = std::env!(
     "AIRDROP_TWITTER_AUTH_URL env var not defined"
 );
 
-// pub const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = match option_env!("AIRDROP_WEBSOCKET_CRYPTO_KEY") {
-//     Some(value) => value,
-//     None => "default_crypto_key",
-// };
-
-// pub fn get_websocket_pub_key() -> String {
-//     BASE64_STANDARD.decode("")
-// }
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
     pub airdrop_url: String,
