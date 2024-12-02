@@ -71,10 +71,10 @@ jobs:
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".productName = \"Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE} \"" -i tauri.conf.json
-          yq eval ".mainBinaryName = \"Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE} \"" -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE} | Testnet\"" -i tauri.conf.json
-          yq eval ".app.windows[1].title = \"Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE} | Testnet\"" -i tauri.conf.json
+          yq eval ".productName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
+          yq eval ".mainBinaryName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" -i tauri.conf.json
+          yq eval ".app.windows[1].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.beta\"" -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
             -i tauri.conf.json
