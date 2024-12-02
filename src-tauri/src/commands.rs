@@ -17,8 +17,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-#[allow(unused_imports)]
-use crate::{external_dependencies, setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
@@ -145,7 +144,7 @@ pub async fn download_and_start_installer(
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") {
-        external_dependencies::ExternalDependencies::current()
+        ExternalDependencies::current()
             .install_missing_dependencies(_missing_dependency)
             .await
             .map_err(|e| {
