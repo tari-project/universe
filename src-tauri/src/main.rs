@@ -2,8 +2,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
-#[allow(unused_imports)]
-use external_dependencies::RequiredExternalDependency;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
@@ -38,6 +36,8 @@ use crate::cpu_miner::CpuMiner;
 
 use crate::app_config::WindowSettings;
 use crate::commands::{CpuMinerConnection, MinerMetrics, TariWalletDetails};
+#[allow(unused_imports)]
+use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -47,7 +47,6 @@ use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
-
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
