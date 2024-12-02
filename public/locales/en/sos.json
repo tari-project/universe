@@ -1,0 +1,17 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "upcoming reward / macbook pro 16’"
+    },
+    "timer": {
+      "gettingClose": "You’re getting close",
+      "days": "days",
+      "hours": "hours"
+    },
+    "friends": {
+      "reduceTimer": "Reduce your timer by inviting friends",
+      "linkCopied": "Link copied!",
+      "growCrew": "grow your crew"
+    }
+  }
+}

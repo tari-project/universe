@@ -325,6 +325,15 @@ pub async fn get_max_consumption_levels(
     })
 }
 
+#[tauri::command]
+pub async fn get_network(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<String, ()> {
+    Ok(Network::get_current_or_user_setting_or_default().to_string())
+}
+
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn get_miner_metrics(
@@ -862,7 +871,7 @@ pub async fn send_feedback(
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs, app_log_dir)
+        .send_feedback(feedback, include_logs, app_log_dir.clone())
         .await
         .inspect_err(|e| error!("error at send_feedback {:?}", e))
         .map_err(|e| e.to_string())?;

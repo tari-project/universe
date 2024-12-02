@@ -136,6 +136,7 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
+    seenPermissions: boolean;
 }
 
 interface AirdropStore extends AirdropState {
@@ -155,6 +156,7 @@ interface AirdropStore extends AirdropState {
 
 const initialState: AirdropState = {
     authUuid: '',
+    seenPermissions: false,
     syncedWithBackend: false,
 };
 

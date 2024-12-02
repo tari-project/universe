@@ -771,6 +771,7 @@ fn main() {
             commands::get_max_consumption_levels,
             commands::get_miner_metrics,
             commands::get_monero_seed_words,
+            commands::get_network,
             commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
@@ -821,7 +822,6 @@ fn main() {
         app.package_info().version
     );
 
-    // let mut downloaded: u64 = 0;
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
