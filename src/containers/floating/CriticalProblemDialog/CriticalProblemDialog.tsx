@@ -28,8 +28,8 @@ export const CriticalProblemDialog = () => {
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4}>
-                        <Typography variant="h4">{t(criticalProblem?.title || 'critical-problem')}</Typography>
-                        <Typography variant="p">{t(criticalProblem?.description || 'critical-problem')}</Typography>
+                        <Typography variant="h4">{t(criticalProblem?.title || 'installation-problem')}</Typography>
+                        <Typography variant="p">{t(criticalProblem?.description || 'installation-problem')}</Typography>
                     </Stack>
                     <Stack direction="row" justifyContent="center" gap={8}>
                         {isExiting ? (
