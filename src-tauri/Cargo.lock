@@ -6682,6 +6682,7 @@ dependencies = [
  "rand 0.8.5",
  "regex",
  "reqwest 0.12.9",
+ "ring",
  "sanitize-filename",
  "semver",
  "sentry",
