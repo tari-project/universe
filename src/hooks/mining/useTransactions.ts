@@ -11,7 +11,6 @@ export default function useFetchTx() {
     const setTransactionsLoading = useWalletStore((s) => s.setTransactionsLoading);
     const setupProgress = useAppStateStore((s) => s.setupProgress);
     const setTransactions = useWalletStore((s) => s.setTransactions);
-    const setError = useAppStateStore((s) => s.setError);
 
     const setItems = useCallback(
         async (newTx: Transaction[]) => {
@@ -48,10 +47,12 @@ export default function useFetchTx() {
             setTransactionsLoading(false);
         } catch (error) {
             setTransactionsLoading(false);
-            setError('Could not get transaction history');
+            console.debug(error);
             if (error !== ALREADY_FETCHING.HISTORY) {
                 console.error('Could not get transaction history: ', error);
             }
+        } finally {
+            setTransactionsLoading(false);
         }
-    }, [isTransactionLoading, setError, setItems, setTransactionsLoading, setupProgress]);
+    }, [isTransactionLoading, setItems, setTransactionsLoading, setupProgress]);
 }

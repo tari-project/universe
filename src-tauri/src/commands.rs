@@ -163,12 +163,8 @@ pub async fn download_and_start_installer(
 }
 
 #[tauri::command]
-pub async fn exit_application(
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
-    stop_all_processes(app.clone(), state.inner().clone(), true).await?;
+pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
+    stop_all_processes(app.clone(), true).await?;
 
     app.exit(0);
     Ok(())
@@ -676,7 +672,6 @@ pub async fn get_transaction_history(
 pub async fn import_seed_words(
     seed_words: Vec<String>,
     _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
@@ -689,7 +684,7 @@ pub async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_processes(app.clone(), state.inner().clone(), false).await?;
+    stop_all_processes(app.clone(), false).await?;
 
     tauri::async_runtime::spawn(async move {
         match InternalWallet::create_from_seed(config_path, seed_words).await {
@@ -735,10 +730,9 @@ pub fn open_log_dir(app: tauri::AppHandle) {
 pub async fn reset_settings<'r>(
     reset_wallet: bool,
     _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_processes(app.clone(), state.inner().clone(), true).await?;
+    stop_all_processes(app.clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path().app_config_dir();
@@ -846,11 +840,10 @@ pub async fn resolve_application_language(
 pub async fn restart_application(
     should_stop_miners: bool,
     _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_processes(app.clone(), state.inner().clone(), true).await?;
+        stop_all_processes(app.clone(), true).await?;
     }
 
     app.restart();

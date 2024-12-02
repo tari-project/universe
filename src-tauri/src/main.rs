@@ -3,7 +3,7 @@
 
 use auto_launcher::AutoLauncher;
 #[allow(unused_imports)]
-use external_dependencies::RequiredExternalDependency;
+use external_dependencies::{ExternalDependencies, RequiredExternalDependency};
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
@@ -825,12 +825,12 @@ fn main() {
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone(), app_state.clone(), true));
+            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone(), app_state.clone(), true));
+            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
