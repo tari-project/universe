@@ -1,21 +1,12 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
-import { useGetSosReferrals } from '../stateHelpers/useGetSosReferrals';
-import { useCallback, useRef } from 'react';
 
 export const useHandleWsUserIdEvent = () => {
     const setTotalBonusTimeMs = useShellOfSecretsStore((state) => state.setTotalBonusTimeMs);
     const referrals = useShellOfSecretsStore((state) => state.referrals);
     const setReferrals = useShellOfSecretsStore((state) => state.setReferrals);
     const setUserGems = useAirdropStore((state) => state.setUserGems);
-
-    const { handleFetchUserDetails } = useGetSosReferrals();
-    const fetchTimeout = useRef<NodeJS.Timeout>();
-    const handleFetchUserDetailsDebounced = useCallback(() => {
-        clearTimeout(fetchTimeout.current);
-        fetchTimeout.current = setTimeout(handleFetchUserDetails, 1500);
-    }, [handleFetchUserDetails]);
 
     return (event: string) => {
         const eventParsed = JSON.parse(event) as WebsocketUserEvent;
@@ -26,8 +17,18 @@ export const useHandleWsUserIdEvent = () => {
                 }
                 break;
             case WebsocketEventNames.MINING_STATUS_CREW_UPDATE: {
-                if ((referrals?.activeReferrals?.length || 0) < 10) {
-                    handleFetchUserDetailsDebounced();
+                if ((referrals?.activeReferrals?.length || 0) < 15) {
+                    const existingReferral = referrals?.activeReferrals?.find(
+                        (x) => x.id === eventParsed.data.crewMember.id
+                    );
+
+                    if (!existingReferral && referrals) {
+                        const newActiveReferrals = [...(referrals?.activeReferrals || []), eventParsed.data.crewMember];
+                        setReferrals({
+                            ...referrals,
+                            activeReferrals: newActiveReferrals,
+                        });
+                    }
                 }
                 setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
                 break;

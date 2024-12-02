@@ -1,15 +1,7 @@
+import { CrewMember } from '@app/types/ws.ts';
 import { create } from './create.ts';
 
 const SOS_GAME_ENDING_DATE = new Date('2025-01-30');
-
-// Type for each referral in activeReferrals
-export interface CrewMember {
-    imageUrl: string | null; // assuming image_url can be null
-    id: string; // assuming user.id is a string
-    name: string;
-    profileImageUrl: string | null; // assuming profileImageUrl can be null
-    lastHandshakeAt: Date | null; // assuming lastHandshakeAt can be null
-}
 
 // Type for the response structure
 export interface ReferralsResponse {

@@ -20,11 +20,19 @@ export interface QuestCompletedEvent {
     };
 }
 
+export interface CrewMember {
+    imageUrl: string | null;
+    id: string;
+    name: string;
+    profileImageUrl: string | null;
+    lastHandshakeAt: Date | null;
+}
+
 export interface MiningStatusCrewUpdateEvent {
     name: WebsocketEventNames.MINING_STATUS_CREW_UPDATE;
     data: {
         totalTimeBonusMs: number;
-        crewMemberId: string;
+        crewMember: CrewMember;
     };
 }
 
