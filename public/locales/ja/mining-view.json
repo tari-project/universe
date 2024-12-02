@@ -18,7 +18,7 @@
     "waiting-for-idle": "アイドル待機中"
   },
   "you-earn-rewards-separately": "CPUとGPUのマイニングで別々に報酬を得ます",
-  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-block": "<span>ブロック #{{ blockHeight }}</span> の勝者です",
   "you-won-while-away": "<span>不在中に{{ blocks }}を獲得しました</span>",
   "your-reward-is": "あなたの報酬は"
 }
