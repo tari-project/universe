@@ -821,6 +821,7 @@ fn main() {
             commands::start_mining,
             commands::stop_mining,
             commands::update_applications,
+            commands::get_network
         ])
         .build(tauri::generate_context!())
         .inspect_err(

@@ -10,6 +10,7 @@ import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
 import { ToastStack } from '@app/components/ToastStack/ToastStack.tsx';
 import { CriticalProblemDialog } from './CriticalProblemDialog/CriticalProblemDialog.tsx';
+import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -23,6 +24,7 @@ export default function FloatingElements() {
             <ExternalDependenciesDialog />
             <PaperWalletModal />
             <ShareRewardModal />
+            <ShellOfSecrets />
             <ToastStack />
             <CriticalProblemDialog />
             {environment === 'development' && <AdminUI />}

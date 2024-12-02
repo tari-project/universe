@@ -2,6 +2,7 @@ import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useMiningStore } from './useMiningStore';
+import { Socket } from 'socket.io-client';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -136,6 +137,7 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
+    seenPermissions: boolean;
 }
 
 interface AirdropStore extends AirdropState {
@@ -155,6 +157,7 @@ interface AirdropStore extends AirdropState {
 
 const initialState: AirdropState = {
     authUuid: '',
+    seenPermissions: false,
     syncedWithBackend: false,
 };
 
