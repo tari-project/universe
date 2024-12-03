@@ -47,7 +47,7 @@ export default function useFetchTx() {
             setTransactionsLoading(false);
         } catch (error) {
             setTransactionsLoading(false);
-            console.debug(error);
+
             if (error !== ALREADY_FETCHING.HISTORY) {
                 console.error('Could not get transaction history: ', error);
             }

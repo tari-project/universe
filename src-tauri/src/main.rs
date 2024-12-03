@@ -839,7 +839,7 @@ fn main() {
         RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
             if let WindowEvent::CloseRequested { .. } = event {
-                if let Some(window) = app_handle.get_window(&label) {
+                if let Some(window) = app_handle.get_webview_window(&label) {
                     if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.outer_size()) {
                         let window_settings = WindowSettings {
                             x: window_position.x,

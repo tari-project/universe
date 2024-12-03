@@ -29,8 +29,17 @@ export default function useMiningMetricsUpdater() {
 
                 const blockHeight = metrics.base_node.block_height;
                 if (blockHeight > 0 && currentBlockHeight > 0 && blockHeight > currentBlockHeight) {
-                    await fetchTx();
-                    await handleNewBlock(blockHeight, isMining);
+                    try {
+                        fetchTx()
+                            .then(async () => {
+                                await handleNewBlock(blockHeight, isMining);
+                            })
+                            .catch(() => {
+                                setDisplayBlockHeight(blockHeight);
+                            });
+                    } catch (_) {
+                        setDisplayBlockHeight(blockHeight);
+                    }
                 } else {
                     if (blockHeight && !displayBlockHeight) {
                         setDisplayBlockHeight(blockHeight);
