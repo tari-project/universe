@@ -89,8 +89,6 @@ jobs:
           cargo machete
 
   tauri-test-build:
-    strategy:
-      fail-fast: true
     name: tauri-build
     runs-on: ubuntu-latest
     steps:
