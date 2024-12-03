@@ -688,18 +688,15 @@ pub async fn import_seed_words(
     tauri::async_runtime::spawn(async move {
         match InternalWallet::create_from_seed(config_path, seed_words).await {
             Ok(_wallet) => {
-                if InternalWallet::clear_wallet_local_data(data_dir)
+                InternalWallet::clear_wallet_local_data(data_dir)
                     .await
-                    .is_ok()
-                {
-                    info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
-                    app.restart();
-                }
-                Ok(())
+                    .map_err(|e| e.to_string())?;
+                info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
+                app.restart();
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-                Err(e)
+                Err::<(), std::string::String>(e.to_string())
             }
         }
     });

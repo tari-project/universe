@@ -312,9 +312,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
-    HardwareStatusMonitor::current()
-        .initialize(config_dir.clone())
-        .await?;
+    HardwareStatusMonitor::current().initialize().await?;
 
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
