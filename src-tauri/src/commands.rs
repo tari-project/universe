@@ -589,14 +589,14 @@ pub async fn set_p2pool_stats_server_port(
     port: Option<u16>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-    let res = state
+    state
         .config
         .write()
         .await
         .set_p2pool_stats_server_port(port)
         .await
         .map_err(|e| e.to_string())?;
-    Ok(res)
+    Ok(())
 }
 
 #[tauri::command]
