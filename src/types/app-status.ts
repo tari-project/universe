@@ -7,6 +7,13 @@ export interface TorConfig {
     bridges: string[];
 }
 
+export interface WindowSettings {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+}
+
 export interface AppConfig {
     allow_telemetry: boolean;
     anon_id: string;
@@ -35,7 +42,10 @@ export interface AppConfig {
     should_auto_launch: boolean;
     use_tor: boolean;
     visual_mode: boolean;
+    window_settings: WindowSettings;
+    show_experimental_settings: boolean;
     monero_address_is_generated?: boolean;
+    created_at: string;
 }
 
 export enum ExternalDependencyStatus {
@@ -57,6 +67,11 @@ export interface ExternalDependency {
     version?: string;
     manufacturer: Manufacturer;
     status: ExternalDependencyStatus;
+}
+
+export interface CriticalProblem {
+    title: string;
+    description: string;
 }
 
 export interface CpuMinerMetrics {

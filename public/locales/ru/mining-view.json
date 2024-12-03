@@ -18,7 +18,7 @@
     "waiting-for-idle": "Ожидание простоя"
   },
   "you-earn-rewards-separately": "Вы получаете награды за майнинг на CPU и GPU отдельно",
-  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-block": "Вы выиграли <span>блок #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Вы выиграли {{ blocks }}</span>, пока вас не было",
   "your-reward-is": "Ваше вознаграждение"
 }

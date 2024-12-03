@@ -2,6 +2,7 @@ import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/tauri';
 import { useMiningStore } from './useMiningStore';
+import { Socket } from 'socket.io-client';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -150,7 +151,6 @@ interface AirdropStore extends AirdropState {
     setReferralCount: (referralCount: ReferralCount) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
-    setSeenPermissions: (seenPermissions: boolean) => void;
     setUserGems: (userGems: number) => void;
     logout: () => Promise<void>;
 }
@@ -221,7 +221,6 @@ export const useAirdropStore = create<AirdropStore>()(
                 return backendInMemoryConfig;
             },
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
-            setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
 
             logout: async () => {
                 set(clearState);
@@ -234,11 +233,7 @@ export const useAirdropStore = create<AirdropStore>()(
                 airdropTokens: s.airdropTokens,
                 miningRewardPoints: s.miningRewardPoints,
                 referralQuestPoints: s.referralQuestPoints,
-                seenPermissions: s.seenPermissions,
             }),
         }
     )
 );
-useAirdropStore
-    .getState()
-    .setSeenPermissions(useAirdropStore.getState().seenPermissions || initialState.seenPermissions); // https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#persist-middlware-no-longer-stores-item-at-store-creation

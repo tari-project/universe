@@ -2,9 +2,9 @@ use anyhow::{anyhow, Error};
 use log::{error, info, warn};
 use std::net::TcpListener;
 
-const LOG_TARGET: &str = "tari::universe::systemtray_manager";
+const LOG_TARGET: &str = "tari::universe::port_allocator";
 const ADDRESS: &str = "127.0.0.1";
-const MAX_TRIES: u16 = 10;
+const MAX_RETRIES: u16 = 10;
 const FALLBACK_PORT_RANGE: std::ops::Range<u16> = 49152..65535;
 
 pub struct PortAllocator {}
@@ -55,9 +55,9 @@ impl PortAllocator {
         while !self.check_if_port_is_free(port) {
             port = self.get_port()?;
             tries += 1;
-            if tries >= MAX_TRIES {
-                warn!(target: LOG_TARGET, "Failed to assign port after {} tries", MAX_TRIES);
-                return Err(anyhow!("Failed to assign port after {} tries", MAX_TRIES));
+            if tries >= MAX_RETRIES {
+                warn!(target: LOG_TARGET, "Failed to assign port after {} tries", MAX_RETRIES);
+                return Err(anyhow!("Failed to assign port after {} tries", MAX_RETRIES));
             }
         }
 
@@ -76,8 +76,8 @@ impl PortAllocator {
                 .get_port()
                 .unwrap_or_else(|_| self.asign_port_from_fallback_range());
             tries += 1;
-            if tries >= MAX_TRIES {
-                warn!(target: LOG_TARGET, "Failed to assign port after {} tries", MAX_TRIES);
+            if tries >= MAX_RETRIES {
+                warn!(target: LOG_TARGET, "Failed to assign port after {} tries", MAX_RETRIES);
                 info!(target: LOG_TARGET, "Assigning port from fallback range");
                 return self.asign_port_from_fallback_range();
             }

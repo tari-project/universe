@@ -1,8 +1,9 @@
 use crate::app_config::MiningMode;
 use crate::binaries::Binaries;
+use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::process_watcher::ProcessWatcher;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use crate::CpuMinerConfig;
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -105,6 +106,16 @@ impl CpuMiner {
         let mut lock = self.watcher.write().await;
         lock.stop().await?;
         Ok(())
+    }
+
+    pub async fn is_running(&self) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
     }
 
     pub async fn status(

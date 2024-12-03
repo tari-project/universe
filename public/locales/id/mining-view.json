@@ -18,7 +18,7 @@
     "waiting-for-idle": "Menunggu Tidak Aktif"
   },
   "you-earn-rewards-separately": "Anda mendapatkan hadiah untuk menambang CPU dan GPU secara terpisah",
-  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-block": "Anda adalah pemenang dari <span>blok #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Anda memenangkan {{ blocks }}</span> saat Anda pergi",
   "your-reward-is": "Hadiah Anda adalah"
 }

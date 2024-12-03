@@ -8,8 +8,10 @@
   "day": "Tag",
   "disconnect": "Trennen",
   "hashrate": "Hashrate",
+  "installation-problem": "Installation problem",
   "max-temperature": "Maximaltemperatur",
   "mode": "Modus",
+  "not-installed-in-applications-directory": "Oops! Tari Universe needs to live in the Applications directory. Mind installing it there?",
   "please-try-again-later": "Bitte versuche es später erneut. Wenn das Problem weiterhin besteht, kontaktiere uns bitte.",
   "resources": "Ressourcen",
   "restart": "Neustarten",
@@ -24,5 +26,5 @@
   "utilization": "Auslastung",
   "version": "Version",
   "versions": "Versionen",
-  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
+  "webgl-not-supported": "WebGL wird nicht unterstützt. Visueller Modus deaktiviert."
 }

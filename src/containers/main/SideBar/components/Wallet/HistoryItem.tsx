@@ -76,15 +76,20 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     }
 
     const itemTitle = `${t('block')} #${item.blockHeight}`;
+    const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
+        month: 'short',
+        day: '2-digit',
+        hourCycle: 'h23',
+        hour: 'numeric',
+        minute: 'numeric',
+    });
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 
     const handleShareClick = () => {
         setShowModal(true);
         setItemData(item);
     };
-
     const isLoggedIn = !!airdropTokens;
-
     const showShareButton = sharingEnabled && isLoggedIn;
     return (
         <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
@@ -119,15 +124,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                 </SquadIconWrapper>
                 <InfoWrapper>
                     <Typography>{itemTitle}</Typography>
-                    <Typography variant="p">
-                        {new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
-                            month: 'short',
-                            day: '2-digit',
-                            hourCycle: 'h24',
-                            hour: 'numeric',
-                            minute: 'numeric',
-                        })}
-                    </Typography>
+                    <Typography variant="p">{itemTime}</Typography>
                 </InfoWrapper>
             </LeftContent>
             <EarningsWrapper>

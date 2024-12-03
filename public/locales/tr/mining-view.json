@@ -18,7 +18,7 @@
     "waiting-for-idle": "Boşta Bekliyor"
   },
   "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
-  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-block": "<span>blok #{{ blockHeight }}</span> kazananı siz oldunuz",
   "you-won-while-away": "<span>Uzakta olduğunuzda {{ blocks }} kazandınız</span>",
   "your-reward-is": "Ödülünüz"
 }
