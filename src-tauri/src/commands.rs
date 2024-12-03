@@ -144,7 +144,7 @@ pub async fn download_and_start_installer(
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") {
-        external_dependencies::ExternalDependencies::current()
+        ExternalDependencies::current()
             .install_missing_dependencies(_missing_dependency)
             .await
             .map_err(|e| {
@@ -323,6 +323,15 @@ pub async fn get_max_consumption_levels(
         max_cpu_threads: max_cpu_available,
         max_gpus_threads,
     })
+}
+
+#[tauri::command]
+pub async fn get_network(
+    _window: tauri::Window,
+    _state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<String, ()> {
+    Ok(Network::get_current_or_user_setting_or_default().to_string())
 }
 
 #[allow(clippy::too_many_lines)]

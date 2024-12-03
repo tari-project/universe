@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.8.2"
+version = "0.8.4"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -23,6 +23,7 @@ chrono = "0.4.38"
 device_query = "2.1.0"
 dunce = "1.0.5"
 dyn-clone = "1.0.17"
+fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
 futures-util = "0.3.30"
@@ -91,7 +92,6 @@ tauri = { version = "1.8.0", features = [
   "process-command-api",
 ] }
 tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
-fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 thiserror = "1.0.26"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.11", features = ["compat"] }
