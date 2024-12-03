@@ -18,6 +18,7 @@ import {
     ExperimentalSettings,
     GeneralSettings,
     MiningSettings,
+    OotleSettings,
     PoolMiningSettings,
     WalletSettings,
 } from './sections';
@@ -32,6 +33,7 @@ const markups = {
     wallet: <WalletSettings />,
     airdrop: <AirdropSettings />,
     experimental: <ExperimentalSettings />,
+    ootle: <OotleSettings />,
 };
 
 export default function SettingsModal() {

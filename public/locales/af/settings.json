@@ -33,6 +33,7 @@
   "experimental-title": "Eksperimentele Kenmerke",
   "experimental-warning": "⚠️ Waarskuwing: Hierdie kenmerke is onder aktiewe ontwikkeling en kan onvoorspelbaar optree. Gaan asseblief versigtig voort.",
   "feedback-required": "Terugvoer is vereis",
+  "fetch-registered-tapplets": "Fetch registered Tapplets",
   "gpu-device-enabled": "GPU Myn toestelle",
   "gpu-device-enabled-description": "Aktiveer of deaktiveer spesifieke GPU toestel.",
   "gpu-device-no-found": "⚠️ Geen GPU toestelle gevind nie",
@@ -83,6 +84,7 @@
   "pool-mining-description": "Wanneer geaktiveer, sal u in \"n poel myn en by \"n groep mynwerkers aansluit.",
   "randomx-network-hash-rate": "Randomx netwerk hashrate",
   "refresh-versions": "Verfris weergawes",
+  "registered-tapplets": "Registered Tapplets",
   "report-issue": "Rapporteer \"n probleem",
   "reset-permanently": "Is jy seker jy wil alle instellings permanent terugstel?",
   "reset-settings": "Stel Instellings Terug",
@@ -108,6 +110,7 @@
     "experimental": "Eksperimenteel",
     "general": "Algemeen",
     "mining": "Mynbou",
+    "ootle": "Tari Ootle",
     "p2p": "Poel Mynbou",
     "very_experimental": "Baie Eksperimenteel",
     "wallet": "Beursie"

@@ -33,6 +33,7 @@
   "experimental-title": "实验性功能",
   "experimental-warning": "⚠️ 警告：这些功能正在积极开发中，可能会表现得不可预测。请谨慎操作。",
   "feedback-required": "反馈是必需的",
+  "fetch-registered-tapplets": "Fetch registered Tapplets",
   "gpu-device-enabled": "GPU 挖矿设备",
   "gpu-device-enabled-description": "启用或禁用特定的 GPU 设备。",
   "gpu-device-no-found": "⚠️ 未找到 GPU 设备",
@@ -83,6 +84,7 @@
   "pool-mining-description": "启用后，您将在矿池中挖矿并加入一组矿工（部落）。",
   "randomx-network-hash-rate": "Randomx 网络算力",
   "refresh-versions": "刷新版本",
+  "registered-tapplets": "Registered Tapplets",
   "report-issue": "报告问题",
   "reset-permanently": "您确定要永久重置所有设置吗？",
   "reset-settings": "重置设置",
@@ -108,6 +110,7 @@
     "experimental": "实验性",
     "general": "常规",
     "mining": "挖矿",
+    "ootle": "Tari Ootle",
     "p2p": "矿池挖矿",
     "very_experimental": "非常实验性",
     "wallet": "钱包"

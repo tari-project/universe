@@ -33,6 +33,7 @@
   "experimental-title": "Экспериментальные функции",
   "experimental-warning": "⚠️ Внимание: Эти функции находятся в активной разработке и могут работать непредсказуемо. Пожалуйста, будьте осторожны.",
   "feedback-required": "Требуется обратная связь",
+  "fetch-registered-tapplets": "Fetch registered Tapplets",
   "gpu-device-enabled": "Устройства для майнинга на GPU",
   "gpu-device-enabled-description": "Включить или отключить конкретное устройство GPU.",
   "gpu-device-no-found": "⚠️ Устройства GPU не найдены",
@@ -83,6 +84,7 @@
   "pool-mining-description": "При включении вы будете майнить в пуле и присоединитесь к группе майнеров.",
   "randomx-network-hash-rate": "Хэшрейт сети Randomx",
   "refresh-versions": "Обновить версии",
+  "registered-tapplets": "Registered Tapplets",
   "report-issue": "Сообщить о проблеме",
   "reset-permanently": "Вы уверены, что хотите сбросить все настройки навсегда?",
   "reset-settings": "Сбросить настройки",
@@ -108,6 +110,7 @@
     "experimental": "Экспериментальные",
     "general": "Общие",
     "mining": "Майнинг",
+    "ootle": "Tari Ootle",
     "p2p": "Майнинг в пуле",
     "very_experimental": "Очень экспериментальные",
     "wallet": "Кошелек"

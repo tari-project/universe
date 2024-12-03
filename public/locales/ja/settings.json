@@ -33,6 +33,7 @@
   "experimental-title": "実験的機能",
   "experimental-warning": "⚠️ 警告: これらの機能は開発中であり、予測不可能な動作をする可能性があります。慎重に進めてください。",
   "feedback-required": "フィードバックが必要です",
+  "fetch-registered-tapplets": "Fetch registered Tapplets",
   "gpu-device-enabled": "GPUマイニングデバイス",
   "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
   "gpu-device-no-found": "⚠️ GPUデバイスが見つかりません",
@@ -83,6 +84,7 @@
   "pool-mining-description": "有効にすると、プールでマイニングし、マイナーのグループに参加します。",
   "randomx-network-hash-rate": "Randomxネットワークのハッシュレート",
   "refresh-versions": "バージョンを更新",
+  "registered-tapplets": "Registered Tapplets",
   "report-issue": "問題を報告する",
   "reset-permanently": "すべての設定を永久にリセットしてもよろしいですか？",
   "reset-settings": "設定をリセット",
@@ -108,6 +110,7 @@
     "experimental": "実験的",
     "general": "一般",
     "mining": "マイニング",
+    "ootle": "Tari Ootle",
     "p2p": "プールマイニング",
     "very_experimental": "非常に実験的",
     "wallet": "ウォレット"

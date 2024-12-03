@@ -34,6 +34,7 @@
   "experimental-title": "Funkcje eksperymentalne",
   "experimental-warning": "⚠️ Ostrzeżenie: Te funkcje są w trakcie aktywnego rozwoju i mogą działać nieprzewidywalnie. Proszę postępować ostrożnie.",
   "feedback-required": "Wymagana jest opinia",
+  "fetch-registered-tapplets": "Fetch registered Tapplets",
   "gpu-device-enabled": "Urządzenia do kopania GPU",
   "gpu-device-enabled-description": "Włącz lub wyłącz konkretne urządzenie GPU.",
   "gpu-device-no-found": "⚠️ Nie znaleziono urządzeń GPU",
@@ -85,6 +86,7 @@
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
   "randomx-network-hash-rate": "Hashrate sieci Randomx",
   "refresh-versions": "Odśwież wersje",
+  "registered-tapplets": "Registered Tapplets",
   "report-issue": "Zgłoś problem",
   "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
   "reset-settings": "Resetuj ustawienia",
@@ -110,6 +112,7 @@
     "experimental": "Eksperymentalne",
     "general": "Ogólne",
     "mining": "Wydobycie",
+    "ootle": "Tari Ootle",
     "p2p": "Kopanie w puli",
     "very_experimental": "Bardzo Eksperymentalne",
     "wallet": "Portfel"

@@ -33,6 +33,7 @@
   "experimental-title": "Experimentelle Funktionen",
   "experimental-warning": "⚠️ Warnung: Diese Funktionen befinden sich in aktiver Entwicklung und könnten unberechenbar reagieren. Bitte gehe vorsichtig vor.",
   "feedback-required": "Feedback ist erforderlich",
+  "fetch-registered-tapplets": "Fetch registered Tapplets",
   "gpu-device-enabled": "GPU-Mining-Geräte",
   "gpu-device-enabled-description": "Bestimmtes GPU-Gerät aktivieren oder deaktivieren.",
   "gpu-device-no-found": "⚠️ Keine GPU-Geräte gefunden",
@@ -83,6 +84,7 @@
   "pool-mining-description": "Wenn aktiviert, wirst du in einem Pool minen und einer Gruppe von Minern beitreten.",
   "randomx-network-hash-rate": "Randomx-Netzwerk-Hashrate",
   "refresh-versions": "Versionen aktualisieren",
+  "registered-tapplets": "Registered Tapplets",
   "report-issue": "Ein Problem melden",
   "reset-permanently": "Bist du sicher, dass du alle Einstellungen dauerhaft zurücksetzen möchtest?",
   "reset-settings": "Einstellungen zurücksetzen",
@@ -108,6 +110,7 @@
     "experimental": "Experimentell",
     "general": "Allgemein",
     "mining": "Mining",
+    "ootle": "Tari Ootle",
     "p2p": "Pool-Mining",
     "very_experimental": "Sehr experimentell",
     "wallet": "Wallet"
