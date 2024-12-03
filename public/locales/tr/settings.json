@@ -47,6 +47,7 @@
   },
   "importing-wallet": "Cüzdan İçe Aktarılıyor",
   "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Davet Kodu",
   "is-on-orphan-chain": "Bir çatal ile bağlantılı görünüyorsunuz, ana zincirle değil. Kazandığınız bloklar geçersiz kılınabilir.",
   "last-block-added-time": "Zincir zamanına eklenen son blok",
@@ -102,6 +103,7 @@
     "title": "Sistem açılışında otomatik başlat"
   },
   "should-use-system-language": "Sistem Dilini Kullan",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Bağlantılar",
@@ -127,6 +129,7 @@
   },
   "use-dynamic-fail-data": "Dinamik hata verilerini kullan",
   "use-random-control-port": "Rastgele kontrol portu kullan",
+  "use-random-port": "Use random port",
   "use-tor": "Tor Kullan",
   "use-tor-bridges": "Tor Köprülerini Kullan",
   "visual-mode": "Görsel mod",

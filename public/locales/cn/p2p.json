@@ -1,9 +1,14 @@
 {
+  "listener-addresses": "Listener addresses",
   "miners": "矿工",
+  "network-info": "Network info",
   "p2pool-chain-tip": "P2Pool链顶",
   "p2pool-connected": "P2Pool已连接",
   "p2pool-connection-info": "连接",
   "p2pool-connection-info-more": "连接详情",
+  "p2pool-peers": "P2pool peers",
   "p2pool-stats": "矿池挖矿统计",
+  "randomx-stats": "RandomX Stats",
+  "sha3-stats": "SHA3 Stats",
   "tribe": "部落"
 }
