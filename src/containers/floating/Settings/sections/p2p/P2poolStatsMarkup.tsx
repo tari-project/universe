@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { CardComponent } from '@app/containers/floating/Settings/components/Card.component';
 import { CardContainer } from '@app/containers/floating/Settings/components/Settings.styles';
@@ -8,6 +8,34 @@ import { SettingsGroupWrapper } from '@app/containers/floating/Settings/componen
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
+import styled from 'styled-components';
+
+function timeAgo(timestamp = 0) {
+    const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const secondsAgo = now - timestamp;
+
+    if (secondsAgo < 60) {
+        return `${secondsAgo} secs ago`;
+    } else if (secondsAgo < 3600) {
+        const minutesAgo = Math.floor(secondsAgo / 60);
+        return `${minutesAgo} min${minutesAgo !== 1 ? 's' : ''} ago`;
+    } else if (secondsAgo < 86400) {
+        const hoursAgo = Math.floor(secondsAgo / 3600);
+        return `${hoursAgo} hr${hoursAgo !== 1 ? 's' : ''} ago`;
+    } else {
+        const daysAgo = Math.floor(secondsAgo / 86400);
+        return `${daysAgo} day${daysAgo !== 1 ? 's' : ''} ago`;
+    }
+}
+
+const Table = styled.table``;
+const Tbody = styled.tbody``;
+const Thead = styled.thead``;
+const Th = styled.th`
+    text-align: left;
+`;
+const Tr = styled.tr``;
+const Td = styled.td``;
 
 const P2PoolStats = () => {
     const { t } = useTranslation('p2p', { useSuspense: false });
@@ -105,32 +133,60 @@ const P2PoolStats = () => {
             </Stack>
             <Stack>
                 <Typography variant="h6">{t('p2pool-peers')}</Typography>
-                <CardContainer>
-                    {peers?.map((peer, index) => (
-                        <CardComponent
-                            key={peer.peer_id}
-                            heading={`#${++index} Peer`}
-                            labels={[
-                                {
-                                    labelText: 'id',
-                                    labelValue: peer.peer_id || '-',
-                                },
-                                {
-                                    labelText: 'randomx height',
-                                    labelValue: peer.peer_info?.current_random_x_height || '-',
-                                },
-                                {
-                                    labelText: 'sha3x height',
-                                    labelValue: peer.peer_info?.current_sha3x_height || '-',
-                                },
-                                {
-                                    labelText: 'last ping',
-                                    labelValue: peer.last_ping || '-',
-                                },
-                            ]}
-                        />
-                    ))}
-                </CardContainer>
+                {Number(peers?.length) > 0 && (
+                    <Table>
+                        <Thead>
+                            <Tr>
+                                <Th>
+                                    <Typography>
+                                        <Trans>#</Trans>
+                                    </Typography>
+                                </Th>
+                                <Th>
+                                    <Typography>
+                                        <Trans>id</Trans>
+                                    </Typography>
+                                </Th>
+                                <Th>
+                                    <Typography>
+                                        <Trans>randomx height</Trans>
+                                    </Typography>
+                                </Th>
+                                <Th>
+                                    <Typography>
+                                        <Trans>sha3x height</Trans>
+                                    </Typography>
+                                </Th>
+                                <Th>
+                                    <Typography>
+                                        <Trans>last ping</Trans>
+                                    </Typography>
+                                </Th>
+                            </Tr>
+                        </Thead>
+                        <Tbody>
+                            {peers?.map((peer, index) => (
+                                <Tr key={peer.peer_id}>
+                                    <Td>
+                                        <Typography>{index + 1}</Typography>
+                                    </Td>
+                                    <Td>
+                                        <Typography>{peer.peer_id || '-'}</Typography>
+                                    </Td>
+                                    <Td>
+                                        <Typography>{peer.peer_info?.current_random_x_height || '-'}</Typography>
+                                    </Td>
+                                    <Td>
+                                        <Typography>{peer.peer_info?.current_sha3x_height || '-'}</Typography>
+                                    </Td>
+                                    <Td>
+                                        <Typography>{peer.last_ping ? timeAgo(+peer.last_ping) : '-'}</Typography>
+                                    </Td>
+                                </Tr>
+                            ))}
+                        </Tbody>
+                    </Table>
+                )}
             </Stack>
         </SettingsGroupWrapper>
     );
