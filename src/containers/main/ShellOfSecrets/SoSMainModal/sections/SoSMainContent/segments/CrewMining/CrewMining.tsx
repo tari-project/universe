@@ -1,13 +1,21 @@
 /* eslint-disable i18next/no-literal-string */
 import GrowCrew from '@app/containers/main/ShellOfSecrets/SoSWidget/segments/Friends/GrowCrew/GrowCrew';
-import { SectionTitle, TopRow, Wrapper } from './styles';
+import { Divider, LeftSide, Mining, Rate, SectionTitle, TopRow, Wrapper } from './styles';
+import GreenArrowIcon from './icons/GreenArrowIcon';
 
 export default function CrewMining() {
     return (
         <Wrapper>
             <TopRow>
-                <SectionTitle>Crew mining</SectionTitle>
-
+                <LeftSide>
+                    <SectionTitle>Crew mining</SectionTitle>
+                    <Divider />
+                    <Rate>+45min/hr</Rate>
+                    <Mining>
+                        6/32 Mining
+                        <GreenArrowIcon />
+                    </Mining>
+                </LeftSide>
                 <GrowCrew />
             </TopRow>
         </Wrapper>
