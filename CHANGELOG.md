@@ -1,23 +1,35 @@
-# Tari Universe - Testnet v0.6.4
+# Tari Universe - Testnet v0.8.5
 
-_November 12, 2024_
+_December 5, 2024_
 
-## 🛠 Bug Fixes
+## 📊 P2Pool Progress Updates
 
--   Fixed Tor Bridges on Mac
--   Miner settings doesn't crash the app
--   Stuck at 30%? This should be fixed (more fixes coming)
--   Settings should be persisted between releases
--   opencl.dll no longer an install dependency
+-   Achieving over 70% wins per day for networks with up to ~200 miners.
+-   Consistent fragmentation issues arise beyond the ~200 miner threshold:
+    -   Results in many orphan pools.
+    -   Reduces overall p2pool performance.
+-   Contributors are actively conducting behind-the-scenes diagnostics.
+-   Stay tuned for updates throughout the week as we work toward a solution.
 
-## ⭐ Feature Enhancements
+## 🛠 Universe Stability Improvements
 
--   Custom Power Levels - with great power comes great responsibility
--   New intro sync experience teaches you about Tari Universe
--   Enhanced block win celebrations - bigger wins, bigger celebrations!
--   New long block time animation for more engaging experience
--   Added floating particles for visual enhancement
--   Temporarily removed CPU usage % to improve UI responsiveness
+-   **Network Connectivity**  
+    -   Enhanced TCP connectivity using both IPv4 and IPv6 DNS seed addresses.  
+    -   Improved connection stability.
+
+-   **Platform-Specific Fixes**  
+    -   **Mac**: Resolved app launch issues.  
+    -   **Windows**: Fixed install location permissions.
+
+-   **Interface Improvements**  
+    -   Wallet and seed word styling enhancements.  
+    -   Smarter analytics permission requests (no repeat prompts if already addressed).  
+    -   General settings now include a copyable anonymous ID to explore your mining history easily.  
+    -   Window position and size are now remembered across sessions.
+
+-   **Performance**  
+    -   Reduced long shutdown times.  
+    -   Resolved exit errors.
 
 ---
 
