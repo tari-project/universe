@@ -10,8 +10,8 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { useRegisteredTappletsStore } from '@app/store/useRegisteredTappletsStore.ts';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { useInstalledTappletsStore } from '@app/store/useInstalledTappletsStore.ts';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -28,14 +28,14 @@ const Count = styled.div<{ $count: number }>`
     font-size: ${({ $count }) => ($count > 999 ? '10px' : '11px')};
 `;
 
-export default function TappletsRegistered() {
+export default function TappletsInstalled() {
     const { t } = useTranslation('ootle');
-    const fetchTapplets = useRegisteredTappletsStore((s) => s?.fetchRegisteredTapplets);
-    const registeredTapplets = useRegisteredTappletsStore((state) => state.registeredTapplets);
-    const registeredTappletsCount = registeredTapplets?.length || 0;
-    console.log('fethch registered tapp', registeredTapplets);
-    const listMarkup = registeredTappletsCount
-        ? registeredTapplets.map((tapp, i) => <li key={`tapp-${tapp}:${i}`}>{tapp.display_name}</li>)
+    const fetchTapplets = useInstalledTappletsStore((s) => s?.fetchInstalledTapplets);
+    const installedTapplets = useInstalledTappletsStore((state) => state.installedTapplets);
+    const installedTappletsCount = installedTapplets?.length || 0;
+    console.log('fethch installed tapp', installedTapplets);
+    const listMarkup = installedTappletsCount
+        ? installedTapplets.map((tapp, i) => <li key={`tapp-${tapp}:${i}`}>{tapp.display_name}</li>)
         : null;
 
     // TODO can be used if fetching from db works
@@ -44,7 +44,7 @@ export default function TappletsRegistered() {
     //         try {
     //             await fetchTapplets();
     //         } catch (error) {
-    //             console.error('Error fetching registered tapplets:', error);
+    //             console.error('Error fetching installed tapplets:', error);
     //         }
     //     }, 5000);
 
@@ -66,10 +66,10 @@ export default function TappletsRegistered() {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{t('registered-tapplets')}</Typography>
-                        {registeredTappletsCount ? (
-                            <Count $count={registeredTappletsCount}>
-                                <Typography>{registeredTappletsCount}</Typography>
+                        <Typography variant="h6">{t('installed-tapplets')}</Typography>
+                        {installedTappletsCount ? (
+                            <Count $count={installedTappletsCount}>
+                                <Typography>{installedTappletsCount}</Typography>
                             </Count>
                         ) : null}
                     </SettingsGroupTitle>

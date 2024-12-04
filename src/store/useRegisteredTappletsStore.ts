@@ -42,7 +42,7 @@ export const useRegisteredTappletsStore = create<RegisteredTappletsStoreState>()
                     id: 'test',
                     registry_id: '0',
                     package_name: '',
-                    display_name: 'Test display tapp name',
+                    display_name: 'Registered tapp display name',
                     author_name: '',
                     author_website: '',
                     about_summary: '',
