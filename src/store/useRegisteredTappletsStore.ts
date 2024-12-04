@@ -39,10 +39,23 @@ export const useRegisteredTappletsStore = create<RegisteredTappletsStoreState>()
             // TODO tmp solution
             const tappletsWithAssets: RegisteredTappletWithAssets[] = [
                 {
-                    id: 'test',
+                    id: 'test0',
                     registry_id: '0',
                     package_name: '',
                     display_name: 'Registered tapp display name',
+                    author_name: '',
+                    author_website: '',
+                    about_summary: '',
+                    about_description: '',
+                    category: '',
+                    logoAddr: '',
+                    backgroundAddr: '',
+                },
+                {
+                    id: 'test1',
+                    registry_id: '1',
+                    package_name: '',
+                    display_name: 'Registered tapp awesome name',
                     author_name: '',
                     author_website: '',
                     about_summary: '',
