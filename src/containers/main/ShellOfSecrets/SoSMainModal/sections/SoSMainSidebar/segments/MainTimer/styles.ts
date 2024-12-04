@@ -1,12 +1,6 @@
 import styled from 'styled-components';
 
-export const Wrapper = styled('div')`
-    color: #e6ff47;
-    font-family: 'IBM Plex Mono', sans-serif;
-    font-weight: 700;
-
-    border: 1px solis red;
-`;
+export const Wrapper = styled('div')``;
 
 export const SectionLabel = styled('div')`
     font-size: 23px;

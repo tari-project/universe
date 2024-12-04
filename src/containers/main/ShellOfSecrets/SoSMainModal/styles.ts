@@ -97,5 +97,7 @@ export const ContentLayer = styled('div')`
     width: 100%;
     height: 100%;
 
-    color: #fff;
+    color: #e6ff47;
+    font-family: 'IBM Plex Mono', sans-serif;
+    font-weight: 700;
 `;
