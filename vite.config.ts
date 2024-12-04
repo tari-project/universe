@@ -36,7 +36,33 @@ const devOptions: UserConfig = {
 
 export default defineConfig(({ command, mode }) => {
     if (command === 'serve') {
-        return { ...devOptions, ...baseOptions };
+        return {
+            ...devOptions,
+            ...baseOptions,
+            plugins: [
+                ...plugins,
+                sentryVitePlugin({
+                    org: 'tari-labs',
+                    project: 'tari-universe',
+                    release: {
+                        name: packageInfo.version,
+                    },
+                    reactComponentAnnotation: { enabled: true },
+                    authToken: process.env.SENTRY_AUTH_TOKEN,
+                    // disable: mode === 'development',
+                    telemetry: false,
+                    sourcemaps: {
+                        assets: ['./dist/**'],
+                        ignore: [
+                            'node_modules',
+                            './dist/assets/textures/**',
+                            './dist/assets/models/**',
+                            './dist/assets/glApp.js',
+                        ],
+                    },
+                }),
+            ],
+        };
     }
     return {
         ...baseOptions,
@@ -53,7 +79,7 @@ export default defineConfig(({ command, mode }) => {
                 },
                 reactComponentAnnotation: { enabled: true },
                 authToken: process.env.SENTRY_AUTH_TOKEN,
-                disable: mode === 'development',
+                // disable: mode === 'development',
                 telemetry: false,
                 sourcemaps: {
                     assets: ['./dist/**'],

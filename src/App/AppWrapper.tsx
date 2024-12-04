@@ -1,7 +1,7 @@
+import { useEffect } from 'react';
+import * as Sentry from '@sentry/react';
 import { IGNORE_FETCHING } from '@app/App/sentryIgnore';
 import { initSystray } from '@app/utils';
-import * as Sentry from '@sentry/react';
-import { useEffect } from 'react';
 
 import {
     useDetectMode,
@@ -32,7 +32,7 @@ const sentryOptions = {
     attachStacktrace: true,
     autoSessionTracking: false,
     ignoreErrors: [...IGNORE_FETCHING],
-    enabled: environment !== 'development',
+    // enabled: environment !== 'development',
 };
 
 setupLogger();

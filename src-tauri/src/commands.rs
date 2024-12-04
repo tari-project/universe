@@ -21,7 +21,6 @@ use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
-use sentry::integrations::anyhow::capture_anyhow;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -30,6 +29,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri_plugin_sentry::sentry;
+use tauri_plugin_sentry::sentry::protocol::Event;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -1315,7 +1316,12 @@ pub async fn setup_application(
     rollback.set_value(true, Duration::from_millis(1000)).await;
     setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        capture_anyhow(&e);
+        sentry::capture_event(Event {
+            level: sentry::Level::Error,
+            message: Some(e.to_string()),
+            culprit: Some("setup-inner".to_string()),
+            ..Default::default()
+        });
         e.to_string()
     })?;
 

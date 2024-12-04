@@ -5,12 +5,13 @@ use std::time::SystemTime;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info};
 use minotari_node_grpc_client::grpc::Peer;
-use sentry::protocol::Event;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
+use tauri_plugin_sentry::sentry;
+use tauri_plugin_sentry::sentry::protocol::Event;
 use tokio::fs;
 use tokio::sync::RwLock;
 

@@ -537,10 +537,13 @@ fn main() {
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
+
     let client = sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
         sentry::ClientOptions {
             release: sentry::release_name!(),
+            debug: true,
+            attach_stacktrace: true,
             ..Default::default()
         },
     ));
@@ -617,8 +620,8 @@ fn main() {
     };
 
     let app = tauri::Builder::default()
-        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);

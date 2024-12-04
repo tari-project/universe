@@ -51,7 +51,6 @@ regex = "1.10.5"
 reqwest = { version = "0.12.5", features = ["stream", "json", "multipart"] }
 sanitize-filename = "0.5"
 semver = "1.0.23"
-sentry = { version = "0.34.0", features = ["anyhow"] }
 serde = { version = "1", features = ["derive"] }
 serde_cbor = "0.11.2"
 serde_json = "1"
@@ -82,7 +81,7 @@ tauri = { version = "2", features = [
 
 ] }
 tauri-plugin-os = "2"
-tauri-plugin-sentry = "=0.2.0"
+tauri-plugin-sentry = "0.2.0"
 tauri-plugin-shell = "2"
 tauri-plugin-single-instance = "^2"
 tauri-plugin-updater = "^2"
