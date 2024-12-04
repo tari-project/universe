@@ -18,13 +18,9 @@ import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore';
 import { checkUpdate } from '@tauri-apps/api/updater';
 
-const environment = import.meta.env.MODE;
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
-const CHANGELOG_URL =
-    environment === 'development'
-        ? 'https://cdn.jsdelivr.net/gh/tari-project/universe@a5802cbf819e0e1a00cb83a2b354b09def25752e/CHANGELOG.md'
-        : `https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md`;
+const CHANGELOG_URL = `https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md`;
 
 const parseMarkdownSections = (markdown: string): ReleaseSection[] => {
     const sections = markdown.split(/\n---\n/);
