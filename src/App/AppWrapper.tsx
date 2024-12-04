@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { defaultOptions } from 'tauri-plugin-sentry-api';
 import * as Sentry from '@sentry/react';
 import { IGNORE_FETCHING } from '@app/App/sentryIgnore';
 import { initSystray } from '@app/utils';
@@ -22,6 +23,7 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 const environment = import.meta.env.MODE;
 const sentryOptions = {
+    ...defaultOptions,
     dsn: 'https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760',
     integrations: [Sentry.captureConsoleIntegration({ levels: ['warn', 'error'] }), Sentry.extraErrorDataIntegration()],
     release: packageInfo.version,
@@ -32,7 +34,7 @@ const sentryOptions = {
     attachStacktrace: true,
     autoSessionTracking: false,
     ignoreErrors: [...IGNORE_FETCHING],
-    // enabled: environment !== 'development',
+    enabled: environment !== 'development',
 };
 
 setupLogger();
@@ -48,6 +50,7 @@ export default function AppWrapper() {
     useLangaugeResolver();
     useListenForExternalDependencies();
     useListenForCriticalProblem();
+
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
