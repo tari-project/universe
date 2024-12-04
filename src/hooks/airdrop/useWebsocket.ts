@@ -4,11 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useHandleWsUserIdEvent } from './ws/useHandleWsUserIdEvent';
+import { invoke } from '@tauri-apps/api/core';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { useAppStateStore } from '@app/store/appStateStore';
 
 let socket: ReturnType<typeof io> | null;
 
 const MINING_EVENT_INTERVAL = 15000;
 const MINING_EVENT_NAME = 'mining-status';
+
+interface SignData {
+    signature: string;
+}
 
 export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
@@ -21,6 +28,8 @@ export const useWebsocket = () => {
     const base_node = useMiningStore((state) => state.base_node);
     const handleWsUserIdEvent = useHandleWsUserIdEvent();
     const [connectedSocket, setConnectedSocket] = useState(false);
+    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const applicationsVersions = useAppStateStore((state) => state.applications_versions);
 
     const isMining = useMemo(() => {
         const isMining = (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
@@ -28,16 +37,20 @@ export const useWebsocket = () => {
     }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
 
     const handleEmitMiningStatus = useCallback(
-        (isMining: boolean) => {
+        async (isMining: boolean) => {
             if (!socket || !connectedSocket) return;
-            const arg = { isMining, timestamp: new Date().toISOString() };
+            const payload = { isMining, appId, blockHeight: height, version: applicationsVersions?.tari_universe };
             try {
-                socket.emit(MINING_EVENT_NAME, arg);
+                const transformedPayload = btoa(JSON.stringify(payload));
+                const signatureData = (await invoke('sign_ws_data', {
+                    dataBase64: transformedPayload,
+                })) as SignData;
+                socket.emit(MINING_EVENT_NAME, { data: payload, signature: signatureData.signature });
             } catch (e) {
                 console.error(e);
             }
         },
-        [connectedSocket]
+        [appId, connectedSocket, height, applicationsVersions?.tari_universe]
     );
 
     useEffect(() => {
@@ -57,7 +70,12 @@ export const useWebsocket = () => {
                 socket = io(baseUrl, {
                     secure: true,
                     transports: ['websocket', 'polling'],
-                    auth: { token: airdropToken, appId: appId, network: network },
+                    auth: {
+                        token: airdropToken,
+                        appId: appId,
+                        network: network,
+                        version: applicationsVersions?.tari_universe,
+                    },
                 });
             }
 

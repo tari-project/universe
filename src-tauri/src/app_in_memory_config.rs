@@ -20,10 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use anyhow::anyhow;
 use base64::prelude::*;
 use ring::signature::Ed25519KeyPair;
 use serde::{Deserialize, Serialize};
-use tari_utilities::message_format::MessageFormat;
 
 #[cfg(feature = "airdrop-env")]
 const AIRDROP_BASE_URL: &str =
@@ -78,19 +78,18 @@ impl Default for AppInMemoryConfig {
 
 const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = match option_env!("AIRDROP_WEBSOCKET_CRYPTO_KEY") {
     Some(value) => value,
-    None => "default_crypto_key",
+    None => "4d43344341514177425159444b32567742434945494f543067614b2f464f4549444c54395a546152714349774b536c5362686a696d4f425171485769704e674b",
 };
 
-pub fn get_websocket_key() -> Ed25519KeyPair {
-    let binary = AIRDROP_WEBSOCKET_CRYPTO_KEY
-        .to_owned()
-        .to_binary()
-        .expect("airdrop websocket crypto key cannot be converted to binary");
-    let bytes = BASE64_STANDARD
-        .decode(&binary)
-        .expect("airdrop websocket crypto key cannot be decoded");
+pub fn get_websocket_key() -> anyhow::Result<Ed25519KeyPair> {
+    let decoded_str = hex::decode(AIRDROP_WEBSOCKET_CRYPTO_KEY)?;
+    let utf8_str = String::from_utf8(decoded_str)?;
+    let key_bytes = BASE64_STANDARD.decode(utf8_str)?;
 
-    Ed25519KeyPair::from_pkcs8(&bytes).expect("airdrop websocket crypto key is invalid")
+    match Ed25519KeyPair::from_pkcs8_maybe_unchecked(&key_bytes) {
+        Ok(key) => Ok(key),
+        Err(e) => Err(anyhow!(e.to_string())),
+    }
 }
 
 impl AppInMemoryConfig {
