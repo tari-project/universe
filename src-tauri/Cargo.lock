@@ -6666,6 +6666,7 @@ dependencies = [
  "flate2",
  "futures-lite 2.4.0",
  "futures-util",
+ "hex",
  "human_format",
  "jsonwebtoken",
  "keyring",
