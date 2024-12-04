@@ -6762,6 +6762,7 @@ dependencies = [
  "flate2",
  "futures-lite",
  "futures-util",
+ "hex",
  "jsonwebtoken",
  "keyring",
  "libsqlite3-sys",

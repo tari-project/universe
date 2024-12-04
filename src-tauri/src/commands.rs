@@ -45,6 +45,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -128,6 +129,12 @@ pub struct CpuMinerStatus {
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
     // pub error: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SignWsDataResponse {
+    signature: String,
 }
 
 #[tauri::command]
@@ -1048,24 +1055,27 @@ pub async fn set_cpu_mining_enabled<'r>(
     Ok(())
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct SignWsDataResponse<T> {
-    data: T,
-    signature: String,
-}
+#[tauri::command]
+pub async fn sign_ws_data(data_base64: String) -> Result<SignWsDataResponse, String> {
+    let key: ring::signature::Ed25519KeyPair = get_websocket_key().map_err(|e| {
+        warn!(target: LOG_TARGET,
+            "error ws key handling:{:?}",
+            e.to_string()
+        );
+        "sign_ws_data: error ws key handling"
+    })?;
 
-#[tauri::command(rename_all = "snake_case")]
-pub async fn sign_ws_data<R: 'static + Serialize>(
-    data: R,
-) -> Result<SignWsDataResponse<R>, String> {
-    let key = get_websocket_key();
-    let json_vec = serde_json::to_vec(&data).map_err(|e| e.to_string())?;
-    let signature = key.sign(&json_vec);
+    let decoded_args = BASE64_STANDARD.decode(data_base64.clone()).map_err(|e| {
+        format!(
+            "sign_ws_data: input data is not valid base64. Error: {:?}",
+            e.to_string()
+        )
+    })?;
+    let signature = key.sign(&decoded_args);
 
-    Ok(SignWsDataResponse {
-        data,
+    return Ok(SignWsDataResponse {
         signature: BASE64_STANDARD.encode(signature.as_ref()),
-    })
+    });
 }
 
 #[tauri::command]
