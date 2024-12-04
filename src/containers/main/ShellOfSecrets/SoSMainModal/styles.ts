@@ -1,5 +1,5 @@
 import { m } from 'framer-motion';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
 export const Wrapper = styled('div')`
     position: fixed;
@@ -18,7 +18,7 @@ export const Wrapper = styled('div')`
     overflow: hidden;
     overflow-y: auto;
 
-    padding: 40px;
+    padding: 41px 64px;
 `;
 
 export const Cover = styled(m.div)`
@@ -67,16 +67,22 @@ export const CloseButton = styled('button')`
     cursor: pointer;
     position: absolute;
     top: -20px;
-    left: 100%;
-    margin-left: 5px;
+    right: -20px;
+    z-index: 4;
     transition: transform 0.2s ease;
-    color: rgba(255, 255, 255, 0.5);
-    transition:
-        color 0.2s ease,
-        transform 0.2s ease;
+    color: #fff;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    width: 49px;
+    height: 49px;
+    border-radius: 50%;
+
+    background-color: #36373a;
 
     &:hover {
-        color: #fff;
         transform: scale(1.1);
     }
 `;

@@ -25,7 +25,7 @@ export default function SoSMainModal() {
                         <SoSMainSidebar />
                         <SoSMainContent />
                     </ContentLayer>
-                    <Scanlines />
+                    {/*}<Scanlines />{*/}
                 </BoxContent>
             </BoxWrapper>
 
