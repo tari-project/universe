@@ -1,0 +1,22 @@
+{
+  "add-dev-taplet-description": "To add tapplet in developer mode please enter the endpoint of the tapplet.",
+  "taplet-obtain-failure": "Failed to obtain tapplet endpoint",
+  "add-dev-taplet": "Add dev tapplet",
+  "installed-taplets": "Installed Tapplets",
+  "dev-taplets": "Dev Tapplets",
+  "registered-taplets": "Registered Tapplets",
+  "registered-taplets-list-empty": "Registered tapplets list is empty",
+  "fetch-taplet-list": "Fetch Tapplet List",
+  "transaction-confirmation": "Transaction confirmation",
+  "method-name": "Method name: {{ methodName }}",
+  "tari-wallet-daemon": "Tari wallet daemon",
+  "get-free-coins": " Get free coins",
+  "get-balances": "Get balances",
+  "balance-updates": "Balance updates",
+  "create-account": "New account",
+  "simulation-status": "Simulation status",
+  "simulation-error-msg": "Simulation error message",
+  "tx-simulation-status": "Simulated transaction status",
+  "tx-simulation-error-msg": "Simulated tx error message",
+  "no-balance-update": "No balance updates available."
+}

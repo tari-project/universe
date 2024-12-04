@@ -1,0 +1,22 @@
+{
+  "add-dev-taplet-description": "",
+  "taplet-obtain-failure": "",
+  "add-dev-taplet": "",
+  "installed-taplets": "",
+  "dev-taplets": "",
+  "registered-taplets": "",
+  "registered-taplets-list-empty": "",
+  "fetch-taplet-list": "",
+  "transaction-confirmation": "",
+  "method-name": "",
+  "tari-wallet-daemon": "",
+  "get-free-coins": "",
+  "get-balances": "",
+  "balance-updates": "",
+  "create-account": "",
+  "simulation-status": "",
+  "simulation-error-msg": "",
+  "tx-simulation-status": "",
+  "tx-simulation-error-msg": "",
+  "no-balance-update": ""
+}
