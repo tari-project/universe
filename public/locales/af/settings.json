@@ -47,6 +47,7 @@
   },
   "importing-wallet": "Beursie invoer",
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Uitnodigingskode",
   "is-on-orphan-chain": "Dit lyk of jy aan \"n vurk gekoppel is, en nie die hoofketting nie. Enige blokke wat jy wen, mag ongeldig verklaar word.",
   "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
@@ -102,6 +103,7 @@
     "title": "Outomatiese begin by stelsel opstart"
   },
   "should-use-system-language": "Gebruik stelsel taal",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Verbindings",
@@ -127,6 +129,7 @@
   },
   "use-dynamic-fail-data": "Gebruik dinamiese mislukdata",
   "use-random-control-port": "Gebruik ewekansige beheerpoort",
+  "use-random-port": "Use random port",
   "use-tor": "Gebruik Tor",
   "use-tor-bridges": "Gebruik Tor Brûe",
   "visual-mode": "Visuele modus",
