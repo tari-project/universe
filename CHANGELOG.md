@@ -33,90 +33,27 @@ _December 5, 2024_
 
 ---
 
-# Tari Universe - Testnet v0.6.3
+# Tari Universe - Testnet v0.8.0: "The Shell’s Dominion"
 
-_November 1, 2024_
+_November 29, 2024_
 
-## 🛠 Bug Fixes
+## 🔄 Staged Rollout
 
--   Fixed memory leaks in blockchain sync
--   Resolved wallet connection timeout issues
--   Improved error handling for mining operations
--   Fixed transaction history pagination
+-   Rolling out gradually to maintain network stability.
 
-## ⭐ Feature Enhancements
+## 🆕 What's New
 
--   Added network health monitoring
--   New wallet backup system
--   Improved mining difficulty adjustment
--   Enhanced peer discovery mechanism
+-   Major p2pool distribution improvements, fixing the "reorg" problem plaguing 0.7.x.
+-   SHA3/GPU miner fixes.
 
----
+### 📈 Early Results
 
-# Tari Universe - Testnet v0.6.2
+-   70% of miners winning daily (!!!).  
+-   Stable pool formation.  
+-   More equitable reward distribution.
 
-_October 15, 2024_
+## ⚠️ Important Notes
 
-## 🚀 Major Updates
-
--   Completely redesigned mining interface
--   New blockchain explorer features
--   Enhanced wallet security
-
-## 🛠 Bug Fixes
-
--   Fixed cross-platform UI inconsistencies
--   Resolved node synchronization issues
--   Improved transaction validation speed
-
-## ⭐ Feature Enhancements
-
--   Added mining pool statistics
--   New transaction confirmation animations
--   Improved network status indicators
-
----
-
-# Tari Universe - Testnet v0.6.1
-
-_October 1, 2024_
-
-## 🛠 Bug Fixes
-
--   Fixed memory leak in block validation process
--   Resolved connectivity issues with remote nodes
--   Fixed wallet balance sync delays
--   Corrected mining reward calculations
-
-## ⭐ Feature Enhancements
-
--   Improved network latency detection
--   Added mining pool statistics dashboard
--   Enhanced transaction history filtering
--   New dark mode optimization
-
----
-
-# Tari Universe - Testnet v0.6.0
-
-_September 15, 2024_
-
-## 🚀 Major Updates
-
--   Complete UI/UX overhaul
--   New blockchain explorer integration
--   Improved mining algorithm efficiency
--   Enhanced security features
-
-## 🛠 Bug Fixes
-
--   Fixed cross-platform compatibility issues
--   Resolved multiple wallet connection bugs
--   Fixed transaction fee calculation errors
-
-## ⭐ Feature Enhancements
-
--   Added multi-language support
--   New transaction confirmation animations
--   Improved network status indicators
--   Enhanced error reporting system
+-   Updates will arrive automatically based on the rollout phase.  
+-   No action needed—just keep mining.  
+-   Gem rebalancing will be rescheduled for Friday or Monday after the 0.8.x network stabilizes.
