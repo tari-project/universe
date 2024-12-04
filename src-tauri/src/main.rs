@@ -7,6 +7,7 @@ use log::trace;
 use log::{debug, error, info, warn};
 use p2pool::models::Connections;
 use std::fs::{remove_dir_all, remove_file};
+use tokio::sync::watch::Sender;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -136,6 +137,7 @@ async fn setup_inner(
     window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
+    progress_channel: Sender<String>,
 ) -> Result<(), anyhow::Error> {
     window
         .emit(
@@ -229,6 +231,9 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
+    progress_channel
+        .send("Checking latest version of tor".to_string())
+        .ok();
     if use_tor && !cfg!(target_os = "macos") {
         progress.set_max(5).await;
         progress
@@ -240,6 +245,9 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
     }
 
+    progress_channel
+        .send("Checking latest version of node".to_string())
+        .ok();
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -253,6 +261,9 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
+    progress_channel
+        .send("Checking latest version of wallet".to_string())
+        .ok();
     progress.set_max(15).await;
     progress
         .update("checking-latest-version-mmproxy".to_string(), None, 0)
@@ -265,6 +276,10 @@ async fn setup_inner(
         )
         .await?;
     sleep(Duration::from_secs(1));
+
+    progress_channel
+        .send("Checking latest version of wallet".to_string())
+        .ok();
     progress.set_max(20).await;
     progress
         .update("checking-latest-version-wallet".to_string(), None, 0)
@@ -272,8 +287,11 @@ async fn setup_inner(
     binary_resolver
         .initalize_binary(Binaries::Wallet, progress.clone(), should_check_for_update)
         .await?;
-
     sleep(Duration::from_secs(1));
+
+    progress_channel
+        .send("Checking latest version of xmrig".to_string())
+        .ok();
     progress.set_max(25).await;
     progress
         .update("checking-latest-version-gpuminer".to_string(), None, 0)
@@ -287,6 +305,9 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
+    progress_channel
+        .send("Checking latest version of xmrig".to_string())
+        .ok();
     progress.set_max(30).await;
     progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)
@@ -295,6 +316,10 @@ async fn setup_inner(
         .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
         .await?;
     sleep(Duration::from_secs(1));
+
+    progress_channel
+        .send("Checking latest version of sha-p2pool".to_string())
+        .ok();
     progress.set_max(35).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
@@ -307,6 +332,10 @@ async fn setup_inner(
         )
         .await?;
     sleep(Duration::from_secs(1));
+
+    progress_channel
+        .send("Checking for update".to_string())
+        .ok();
     if should_check_for_update {
         state
             .config
@@ -371,8 +400,10 @@ async fn setup_inner(
             }
         }
     }
-
     info!(target: LOG_TARGET, "Node has started and is ready");
+    progress_channel
+        .send("Node has started and is ready".to_string())
+        .ok();
 
     progress.set_max(40).await;
     progress
@@ -387,7 +418,13 @@ async fn setup_inner(
             log_dir.clone(),
         )
         .await?;
+    progress_channel
+        .send("Wallet has started and is ready".to_string())
+        .ok();
 
+    progress_channel
+        .send("Waiting for initial sync".to_string())
+        .ok();
     progress.set_max(75).await;
     progress
         .update("preparing-for-initial-sync".to_string(), None, 0)
@@ -395,6 +432,7 @@ async fn setup_inner(
     state.node_manager.wait_synced(progress.clone()).await?;
 
     if state.config.read().await.p2pool_enabled() {
+        progress_channel.send("Starting p2pool".to_string()).ok();
         progress.set_max(85).await;
         progress
             .update("starting-p2pool".to_string(), None, 0)
@@ -418,6 +456,7 @@ async fn setup_inner(
             .await?;
     }
 
+    progress_channel.send("Starting mmproxy".to_string()).ok();
     progress.set_max(100).await;
     progress
         .update("starting-mmproxy".to_string(), None, 0)

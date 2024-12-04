@@ -31,6 +31,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tokio::sync::watch;
+use tokio::time::timeout;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -1425,11 +1427,23 @@ pub async fn setup_application(
         return Ok(res);
     }
     rollback.set_value(true, Duration::from_millis(1000)).await;
-    setup_inner(window, state.clone(), app).await.map_err(|e| {
-        warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        capture_anyhow(&e);
-        e.to_string()
-    })?;
+    let (tx, rx) = watch::channel("".to_string());
+
+    if let Err(_) = timeout(
+        Duration::from_secs(60 * 1),
+        setup_inner(window, state.clone(), app, tx),
+    )
+    .await
+    {
+        println!("Setup took too long");
+        let last_msg = rx.borrow().clone();
+        error!(target: LOG_TARGET, "Setup took too long: {:?}", last_msg);
+    }
+    // setup_inner(window, state.clone(), app).await.map_err(|e| {
+    //     warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
+    //     capture_anyhow(&e);
+    //     e.to_string()
+    // })?;
 
     let res = state.config.read().await.auto_mining();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
