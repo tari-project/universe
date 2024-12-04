@@ -9,6 +9,7 @@ import {
     TransactionInfo,
     MaxConsumptionLevels,
     GpuThreads,
+    P2poolConnections,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -51,6 +52,8 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_app_config'): Promise<AppConfig>;
     function invoke(param: 'set_p2pool_enabled', payload: { p2pool_enabled: boolean }): Promise<void>;
     function invoke(param: 'get_p2pool_stats'): Promise<P2poolStatsResult>;
+    function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
+    function invoke(param: 'get_used_p2pool_stats_server_port'): Promise<number>;
     function invoke(param: 'get_tari_wallet_details'): Promise<TariWalletDetails>;
     function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;

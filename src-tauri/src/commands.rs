@@ -10,7 +10,7 @@ use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::{Connections, Stats};
 use crate::progress_tracker::ProgressTracker;
 use crate::systemtray_manager::{SystemtrayManager, SystrayData};
 use crate::tor_adapter::TorConfig;
@@ -545,6 +545,65 @@ pub async fn get_p2pool_stats(
     *lock = Some(p2pool_stats.clone());
     state.is_getting_p2pool_stats.store(false, Ordering::SeqCst);
     Ok(p2pool_stats)
+}
+
+#[tauri::command]
+pub async fn get_p2pool_connections(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Option<Connections>, String> {
+    let timer = Instant::now();
+    if state.is_getting_p2pool_connections.load(Ordering::SeqCst) {
+        let read = state.cached_p2pool_connections.read().await;
+        if let Some(connections) = &*read {
+            warn!(target: LOG_TARGET, "Already getting p2pool connections, returning cached value");
+            return Ok(connections.clone());
+        }
+        warn!(target: LOG_TARGET, "Already getting p2pool connections");
+        return Err("Already getting p2pool connections".to_string());
+    }
+    state
+        .is_getting_p2pool_connections
+        .store(true, Ordering::SeqCst);
+    let p2pool_connections = state
+        .p2pool_manager
+        .get_connections()
+        .await
+        .unwrap_or_else(|e| {
+            warn!(target: LOG_TARGET, "Error getting p2pool connections: {}", e);
+            None
+        });
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_p2pool_connections took too long: {:?}", timer.elapsed());
+    }
+    let mut lock = state.cached_p2pool_connections.write().await;
+    *lock = Some(p2pool_connections.clone());
+    state
+        .is_getting_p2pool_connections
+        .store(false, Ordering::SeqCst);
+    Ok(p2pool_connections)
+}
+
+#[tauri::command]
+pub async fn set_p2pool_stats_server_port(
+    port: Option<u16>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_p2pool_stats_server_port(port)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_used_p2pool_stats_server_port(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<u16, String> {
+    Ok(state.p2pool_manager.stats_server_port().await)
 }
 
 #[tauri::command]

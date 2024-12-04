@@ -86,6 +86,8 @@ pub struct AppConfigFromFile {
     window_settings: Option<WindowSettings>,
     #[serde(default = "default_false")]
     show_experimental_settings: bool,
+    #[serde(default = "default_p2pool_stats_server_port")]
+    p2pool_stats_server_port: Option<u16>,
 }
 
 impl Default for AppConfigFromFile {
@@ -126,6 +128,7 @@ impl Default for AppConfigFromFile {
             visual_mode: true,
             window_settings: default_window_settings(),
             show_experimental_settings: false,
+            p2pool_stats_server_port: default_p2pool_stats_server_port(),
         }
     }
 }
@@ -237,6 +240,7 @@ pub(crate) struct AppConfig {
     visual_mode: bool,
     window_settings: Option<WindowSettings>,
     show_experimental_settings: bool,
+    p2pool_stats_server_port: Option<u16>,
 }
 
 impl AppConfig {
@@ -280,6 +284,7 @@ impl AppConfig {
             window_settings: default_window_settings(),
             show_experimental_settings: false,
             keyring_accessed: false,
+            p2pool_stats_server_port: default_p2pool_stats_server_port(),
         }
     }
 
@@ -355,6 +360,7 @@ impl AppConfig {
                 self.visual_mode = config.visual_mode;
                 self.window_settings = config.window_settings;
                 self.show_experimental_settings = config.show_experimental_settings;
+                self.p2pool_stats_server_port = config.p2pool_stats_server_port;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -683,6 +689,19 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn p2pool_stats_server_port(&self) -> Option<u16> {
+        self.p2pool_stats_server_port
+    }
+
+    pub async fn set_p2pool_stats_server_port(
+        &mut self,
+        port: Option<u16>,
+    ) -> Result<(), anyhow::Error> {
+        self.p2pool_stats_server_port = port;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -728,6 +747,7 @@ impl AppConfig {
             visual_mode: self.visual_mode,
             window_settings: self.window_settings.clone(),
             show_experimental_settings: self.show_experimental_settings,
+            p2pool_stats_server_port: self.p2pool_stats_server_port,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -817,5 +837,9 @@ fn default_monero_nodes() -> Vec<String> {
 }
 
 fn default_window_settings() -> Option<WindowSettings> {
+    None
+}
+
+fn default_p2pool_stats_server_port() -> Option<u16> {
     None
 }
