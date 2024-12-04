@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import { CardComponent } from '@app/containers/floating/Settings/components/Card.component';
 import { CardContainer } from '@app/containers/floating/Settings/components/Settings.styles';
@@ -7,140 +7,189 @@ import { SettingsGroupWrapper } from '@app/containers/floating/Settings/componen
 
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
+import styled from 'styled-components';
+
+function timeAgo(timestamp = 0) {
+    const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const secondsAgo = now - timestamp;
+
+    if (secondsAgo < 60) {
+        return `${secondsAgo} secs ago`;
+    } else if (secondsAgo < 3600) {
+        const minutesAgo = Math.floor(secondsAgo / 60);
+        return `${minutesAgo} min${minutesAgo !== 1 ? 's' : ''} ago`;
+    } else if (secondsAgo < 86400) {
+        const hoursAgo = Math.floor(secondsAgo / 3600);
+        return `${hoursAgo} hr${hoursAgo !== 1 ? 's' : ''} ago`;
+    } else {
+        const daysAgo = Math.floor(secondsAgo / 86400);
+        return `${daysAgo} day${daysAgo !== 1 ? 's' : ''} ago`;
+    }
+}
+
+const Table = styled.table``;
+const Tbody = styled.tbody``;
+const Thead = styled.thead``;
+const Th = styled.th`
+    text-align: left;
+`;
+const Tr = styled.tr``;
+const Td = styled.td``;
 
 const P2PoolStats = () => {
     const { t } = useTranslation('p2p', { useSuspense: false });
-    const isP2poolEnabled = useAppConfigStore((s) => s.p2pool_enabled);
-    const p2poolStats = useP2poolStatsStore((s) => s);
-    const p2poolSha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
-    const p2poolRandomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
+    const connectedSince = useP2poolStatsStore((s) => s.connected_since);
+    const connectionInfo = useP2poolStatsStore((s) => s.connection_info);
+    const sha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
+    const randomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
+    const peers = useP2poolStatsStore((s) => s?.peers);
     const fetchP2pStats = useP2poolStatsStore((s) => s?.fetchP2poolStats);
-
-    const p2poolSquad = p2poolSha3Stats?.squad?.name;
-    const p2poolSha3MinersCount = p2poolSha3Stats?.num_of_miners;
-    const p2poolRandomxMinersCount = p2poolRandomXStats?.num_of_miners;
-    const p2poolSha3ChainTip = p2poolSha3Stats?.share_chain_height;
-    const p2poolRandomxChainTip = p2poolRandomXStats?.share_chain_height;
+    const fetchP2poolConnections = useP2poolStatsStore((s) => s?.fetchP2poolConnections);
 
     useEffect(() => {
         const fetchP2pStatsInterval = setInterval(async () => {
-            try {
-                await fetchP2pStats();
-            } catch (error) {
-                console.error('Error fetching p2pool stats:', error);
-            }
+            await fetchP2pStats();
+            await fetchP2poolConnections();
         }, 5000);
 
         return () => {
             clearInterval(fetchP2pStatsInterval);
         };
-    }, [fetchP2pStats]);
+    }, [fetchP2pStats, fetchP2poolConnections]);
 
-    return isP2poolEnabled ? (
+    return (
         <SettingsGroupWrapper>
             <Stack>
                 <Typography variant="h6">{t('p2pool-stats')}</Typography>
-
                 <CardContainer>
                     <CardComponent
-                        heading={`${t('p2pool-connection-info')}`}
-                        labels={[
-                            {
-                                labelText: t('p2pool-connected'),
-                                labelValue: p2poolStats?.connected ? 'Yes' : 'No',
-                            },
-                            {
-                                labelText: 'Connected peers',
-                                labelValue: '' + (p2poolStats?.connection_info?.connected_peers ?? 0),
-                            },
-                        ]}
-                    />
-                    <CardComponent
-                        heading={`${t('tribe')}`}
-                        labels={[
-                            {
-                                labelText: 'Current',
-                                labelValue: p2poolSquad ? p2poolSquad : '',
-                            },
-                        ]}
-                    />
-
-                    <CardComponent
-                        heading={`${t('miners')}`}
-                        labels={[
-                            {
-                                labelText: 'SHA-3',
-                                labelValue: '' + (p2poolSha3MinersCount ?? 0),
-                            },
-                            {
-                                labelText: 'RandomX',
-                                labelValue: '' + (p2poolRandomxMinersCount ?? 0),
-                            },
-                        ]}
-                    />
-                    <CardComponent
-                        heading={`${t('p2pool-chain-tip')}`}
-                        labels={[
-                            {
-                                labelText: 'SHA-3',
-                                labelValue: '#' + (p2poolSha3ChainTip ?? 0),
-                            },
-                            {
-                                labelText: 'RandomX',
-                                labelValue: '#' + (p2poolRandomxChainTip ?? 0),
-                            },
-                        ]}
-                    />
-                    <CardComponent
-                        heading={`${t('p2pool-connection-info-more')}`}
-                        labels={[
-                            {
-                                labelText: 'Pending incoming',
-                                labelValue:
-                                    '' +
-                                    (p2poolStats?.connection_info?.network_info.connection_counters.pending_incoming ??
-                                        0),
-                            },
-                            {
-                                labelText: 'Pending outgoing',
-                                labelValue:
-                                    '' +
-                                    (p2poolStats?.connection_info?.network_info.connection_counters.pending_outgoing ??
-                                        0),
-                            },
-                            {
-                                labelText: 'Established incoming',
-                                labelValue:
-                                    '' +
-                                    (p2poolStats?.connection_info?.network_info.connection_counters
-                                        .established_incoming ?? 0),
-                            },
-                            {
-                                labelText: 'Established outgoing',
-                                labelValue:
-                                    '' +
-                                    (p2poolStats?.connection_info?.network_info.connection_counters
-                                        .established_outgoing ?? 0),
-                            },
-                        ]}
+                        heading={t('listener-addresses')}
+                        labels={
+                            connectionInfo?.listener_addresses?.map((addr, i) => ({
+                                labelText: `#${i + 1}`,
+                                labelValue: addr,
+                            })) || []
+                        }
                     />
                 </CardContainer>
                 <CardContainer>
                     <CardComponent
-                        heading="Listener Addresses"
+                        heading={t('p2pool-connection-info')}
                         labels={[
                             {
-                                labelText: 'Address',
-                                labelValue: p2poolStats?.connection_info?.listener_addresses.join(', ') || '',
+                                labelText: 'connected since',
+                                labelValue: connectedSince || '-',
+                            },
+                            {
+                                labelText: 'connected peers',
+                                labelValue: connectionInfo?.connected_peers || '-',
                             },
                         ]}
+                    />
+
+                    <CardComponent
+                        heading={t('network-info')}
+                        labels={[
+                            {
+                                labelText: 'peers number',
+                                labelValue: connectionInfo?.network_info?.num_peers || '-',
+                            },
+                            {
+                                labelText: 'pending incoming',
+                                labelValue: connectionInfo?.network_info?.connection_counters?.pending_incoming || '-',
+                            },
+                            {
+                                labelText: 'pending outgoing',
+                                labelValue: connectionInfo?.network_info?.connection_counters?.pending_outgoing || '-',
+                            },
+                            {
+                                labelText: 'established incoming',
+                                labelValue:
+                                    connectionInfo?.network_info?.connection_counters?.established_incoming || '-',
+                            },
+                            {
+                                labelText: 'established outgoing',
+                                labelValue:
+                                    connectionInfo?.network_info?.connection_counters?.established_outgoing || '-',
+                            },
+                        ]}
+                    />
+                    <CardComponent
+                        heading={t('sha3-stats')}
+                        labels={Object.entries(sha3Stats || {}).map(([key, value]) => ({
+                            labelText: key.replace('_', ' '),
+                            labelValue: value,
+                        }))}
+                    />
+                    <CardComponent
+                        heading={t('randomx-stats')}
+                        labels={Object.entries(randomXStats || {}).map(([key, value]) => ({
+                            labelText: key.replace('_', ' '),
+                            labelValue: value,
+                        }))}
                     />
                 </CardContainer>
             </Stack>
+            <Stack>
+                <Typography variant="h6">{t('p2pool-peers')}</Typography>
+                {Number(peers?.length) > 0 && (
+                    <Table>
+                        <Thead>
+                            <Tr>
+                                <Th>
+                                    <Typography>
+                                        <Trans>#</Trans>
+                                    </Typography>
+                                </Th>
+                                <Th>
+                                    <Typography>
+                                        <Trans>id</Trans>
+                                    </Typography>
+                                </Th>
+                                <Th>
+                                    <Typography>
+                                        <Trans>randomx height</Trans>
+                                    </Typography>
+                                </Th>
+                                <Th>
+                                    <Typography>
+                                        <Trans>sha3x height</Trans>
+                                    </Typography>
+                                </Th>
+                                <Th>
+                                    <Typography>
+                                        <Trans>last ping</Trans>
+                                    </Typography>
+                                </Th>
+                            </Tr>
+                        </Thead>
+                        <Tbody>
+                            {peers?.map((peer, index) => (
+                                <Tr key={peer.peer_id}>
+                                    <Td>
+                                        <Typography>{index + 1}</Typography>
+                                    </Td>
+                                    <Td>
+                                        <Typography>{peer.peer_id || '-'}</Typography>
+                                    </Td>
+                                    <Td>
+                                        <Typography>{peer.peer_info?.current_random_x_height || '-'}</Typography>
+                                    </Td>
+                                    <Td>
+                                        <Typography>{peer.peer_info?.current_sha3x_height || '-'}</Typography>
+                                    </Td>
+                                    <Td>
+                                        <Typography>{peer.last_ping ? timeAgo(+peer.last_ping) : '-'}</Typography>
+                                    </Td>
+                                </Tr>
+                            ))}
+                        </Tbody>
+                    </Table>
+                )}
+            </Stack>
         </SettingsGroupWrapper>
-    ) : null;
+    );
 };
 
 export default P2PoolStats;

@@ -8,7 +8,7 @@ use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::{Connections, Stats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
@@ -39,12 +39,20 @@ impl P2poolConfigBuilder {
         self
     }
 
+    pub fn with_stats_server_port(&mut self, stats_server_port: Option<u16>) -> &mut Self {
+        self.config.stats_server_port = match stats_server_port {
+            Some(port) => port,
+            None => PortAllocator::new().assign_port_with_fallback(),
+        };
+        self
+    }
+
     pub fn build(&self) -> Result<P2poolConfig, anyhow::Error> {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
-        let stats_server_port = PortAllocator::new().assign_port_with_fallback();
+
         Ok(P2poolConfig {
             grpc_port,
-            stats_server_port,
+            stats_server_port: self.config.stats_server_port,
             base_node_address: self.config.base_node_address.clone(),
         })
     }
@@ -92,6 +100,15 @@ impl P2poolManager {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             Ok(Some(status_monitor.status().await?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn get_connections(&self) -> Result<Option<Connections>, anyhow::Error> {
+        let process_watcher = self.watcher.read().await;
+        if let Some(status_monitor) = &process_watcher.status_monitor {
+            Ok(Some(status_monitor.connections().await?))
         } else {
             Ok(None)
         }
@@ -162,6 +179,16 @@ impl P2poolManager {
             .config
             .as_ref()
             .map(|c| c.grpc_port)
+            .unwrap_or_default()
+    }
+
+    pub async fn stats_server_port(&self) -> u16 {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .adapter
+            .config
+            .as_ref()
+            .map(|c| c.stats_server_port)
             .unwrap_or_default()
     }
 }

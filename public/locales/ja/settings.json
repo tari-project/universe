@@ -47,6 +47,7 @@
   },
   "importing-wallet": "ウォレットのインポート",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
@@ -102,6 +103,7 @@
     "title": "システム起動時に自動開始"
   },
   "should-use-system-language": "システム言語を使用",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "エアドロップ",
     "connections": "接続",
@@ -127,6 +129,7 @@
   },
   "use-dynamic-fail-data": "動的フェイルデータを使用",
   "use-random-control-port": "ランダムな制御ポートを使用",
+  "use-random-port": "Use random port",
   "use-tor": "Torを使用する",
   "use-tor-bridges": "Torブリッジを使用",
   "visual-mode": "ビジュアルモード",

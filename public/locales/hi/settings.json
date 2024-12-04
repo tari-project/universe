@@ -47,6 +47,7 @@
   },
   "importing-wallet": "वॉलेट आयात किया जा रहा है",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "आमंत्रण कोड",
   "is-on-orphan-chain": "आप एक फोर्क से जुड़े हुए प्रतीत होते हैं, और मुख्य चेन से नहीं। आपके द्वारा जीते गए किसी भी ब्लॉक को अमान्य किया जा सकता है।",
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
@@ -102,6 +103,7 @@
     "title": "सिस्टम बूट पर स्वचालित शुरूआत"
   },
   "should-use-system-language": "सिस्टम भाषा का उपयोग करें",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "एयरड्रॉप",
     "connections": "कनेक्शन्स",
@@ -127,6 +129,7 @@
   },
   "use-dynamic-fail-data": "डायनामिक फेल डेटा का उपयोग करें",
   "use-random-control-port": "रैंडम कंट्रोल पोर्ट का उपयोग करें",
+  "use-random-port": "Use random port",
   "use-tor": "टोर का उपयोग करें",
   "use-tor-bridges": "टोर ब्रिज का उपयोग करें",
   "visual-mode": "दृश्य मोड",

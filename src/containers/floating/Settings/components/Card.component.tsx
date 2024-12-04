@@ -1,8 +1,9 @@
+import { ReactNode } from 'react';
 import { CardItem, CardItemLabel, CardItemLabelValue, CardItemLabelWrapper, CardItemTitle } from './Settings.styles';
 
 export interface CardComponentProps {
     heading: string;
-    labels: { labelText: string; labelValue: string }[];
+    labels: { labelText: ReactNode; labelValue: ReactNode }[];
 }
 
 export const CardComponent = ({ heading, labels }: CardComponentProps) => {
