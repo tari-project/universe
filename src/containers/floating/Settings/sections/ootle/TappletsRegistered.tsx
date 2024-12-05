@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
-import { useRegisteredTappletsStore } from '@app/store/useRegisteredTappletsStore.ts';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 import { Avatar, IconButton, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
 import { MdDownload } from 'react-icons/md';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
+import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -27,8 +27,8 @@ const Count = styled.div<{ $count: number }>`
 
 export default function TappletsRegistered() {
     const { t } = useTranslation('ootle');
-    const fetchTapplets = useRegisteredTappletsStore((s) => s?.fetchRegisteredTapplets);
-    const registeredTapplets = useRegisteredTappletsStore((state) => state.registeredTapplets);
+    const fetchTapplets = useTappletsStore((s) => s.fetchRegisteredTapps);
+    const registeredTapplets = useTappletsStore((s) => s.registeredTapplets);
     const registeredTappletsCount = registeredTapplets?.length || 0;
     console.log('fethch registered tapp', registeredTapplets);
     const listMarkup = registeredTappletsCount

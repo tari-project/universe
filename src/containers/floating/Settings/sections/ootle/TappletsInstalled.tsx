@@ -6,11 +6,11 @@ import { Avatar, IconButton, List, ListItem, ListItemAvatar, ListItemText } from
 
 import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
-import { useInstalledTappletsStore } from '@app/store/useInstalledTappletsStore.ts';
-import { MdUpdate, MdDelete } from 'react-icons/md';
+import { MdUpdate, MdDelete, MdLaunch } from 'react-icons/md';
 import { useCallback } from 'react';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import tariLogo from '@app/assets/tari.svg';
+import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -29,8 +29,8 @@ const Count = styled.div<{ $count: number }>`
 
 export default function TappletsInstalled() {
     const { t } = useTranslation('ootle');
-    const fetchTapplets = useInstalledTappletsStore((s) => s?.fetchInstalledTapplets);
-    const installedTapplets = useInstalledTappletsStore((state) => state.installedTapplets);
+    const { getInstalledTapps, setActiveTapp } = useTappletsStore();
+    const installedTapplets = useTappletsStore((s) => s.installedTapplets);
     const installedTappletsCount = installedTapplets?.length || 0;
     console.log('fethch installed tapp', installedTapplets);
     const listMarkup = installedTappletsCount
@@ -66,7 +66,7 @@ export default function TappletsInstalled() {
         <>
             <TappletsGroupWrapper $category="Tapplets Installed">
                 <SquaredButton
-                    onClick={() => fetchTapplets()}
+                    onClick={() => getInstalledTapps()}
                     color="tariPurple"
                     size="medium"
                     style={{ width: '25%', alignContent: 'center' }}
@@ -90,14 +90,13 @@ export default function TappletsInstalled() {
                                     <ListItemAvatar>
                                         <Avatar src={item.logoAddr} />
                                     </ListItemAvatar>
-                                    <ListItemText primary={`${item.display_name} v${item.installed_version}`} />
-                                    <IconButton aria-label="launch" style={{ marginRight: 10 }}>
-                                        {/* <NavLink
-                                            to={`/${TabKey.ACTIVE_TAPPLET}/${item.installed_tapplet.id}`}
-                                            style={{ display: 'contents' }}
-                                        >
-                                            <MdLaunch color="primary" />
-                                        </NavLink> */}
+                                    <ListItemText primary={`${item.display_name} ver ${item.installed_version}`} />
+                                    <IconButton
+                                        aria-label="launch"
+                                        style={{ marginRight: 10 }}
+                                        onClick={() => setActiveTapp(item.installed_tapplet.id)}
+                                    >
+                                        <MdLaunch color="primary" />
                                     </IconButton>
                                     {item.installed_version !== item.latest_version && (
                                         <IconButton

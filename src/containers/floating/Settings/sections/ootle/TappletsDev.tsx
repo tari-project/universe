@@ -6,10 +6,10 @@ import { Avatar, IconButton, List, ListItem, ListItemAvatar, ListItemText } from
 
 import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
-import { useDevTappletsStore } from '@app/store/useDevTappletsStore.ts';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import { MdLaunch, MdDelete } from 'react-icons/md';
 import tariLogo from '@app/assets/tari.svg';
+import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -28,8 +28,8 @@ const Count = styled.div<{ $count: number }>`
 
 export default function TappletsDev() {
     const { t } = useTranslation('ootle');
-    const fetchTapplets = useDevTappletsStore((s) => s?.fetchDevTapplets);
-    const devTapplets = useDevTappletsStore((state) => state.devTapplets);
+    const getDevTapplets = useTappletsStore((s) => s.getDevTapps);
+    const devTapplets = useTappletsStore((s) => s.devTapplets);
     const devTappletsCount = devTapplets?.length || 0;
     console.log('fethch dev tapp', devTapplets);
     const listMarkup = devTappletsCount
@@ -54,7 +54,7 @@ export default function TappletsDev() {
     return (
         <TappletsGroupWrapper $category="Dev Tapplets">
             <SquaredButton
-                onClick={() => fetchTapplets()}
+                onClick={() => getDevTapplets()}
                 color="tariPurple"
                 size="medium"
                 style={{ width: '25%', alignContent: 'center' }}

@@ -1,0 +1,190 @@
+import { invoke } from '@tauri-apps/api';
+import { create } from './create.ts';
+import { DevTapplet, InstalledTappletWithAssets, RegisteredTappletWithAssets } from '@app/types/ootle/tapplet.ts';
+import { useAppStateStore } from './appStateStore.ts';
+
+interface State {
+    isInitialized: boolean;
+    isFetching: boolean;
+    devTapplets: DevTapplet[];
+    installedTapplets: InstalledTappletWithAssets[];
+    registeredTapplets: RegisteredTappletWithAssets[];
+    activeTapplet?: DevTapplet | InstalledTappletWithAssets;
+}
+
+interface Actions {
+    addInstalledTapp: () => Promise<void>;
+    fetchRegisteredTapps: () => Promise<void>;
+    getInstalledTapps: () => Promise<void>;
+    getDevTapps: () => Promise<void>;
+    setActiveTapp: (id?: string) => Promise<void>;
+}
+
+type TappletsStoreState = State & Actions;
+
+const initialState: State = {
+    isFetching: false,
+    isInitialized: false,
+    installedTapplets: [],
+    registeredTapplets: [],
+    devTapplets: [],
+    activeTapplet: undefined,
+};
+
+export const useTappletsStore = create<TappletsStoreState>()((set) => ({
+    ...initialState,
+    fetchRegisteredTapps: async () => {
+        console.log('store fetchregistered  tapp');
+        set({ isFetching: true });
+        try {
+            // TODO invoke to fetch tapplets
+            // await invoke('fetch_tapplets');
+            // const registeredTapplets: RegisteredTapplet[] = await invoke('read_tapp_registry_db');
+            // const assetsServerAddr = await invoke('get_assets_server_addr');
+            // const tappletsWithAssets = registeredTapplets.map((tapp) => ({
+            //     ...tapp,
+            //     logoAddr: `${assetsServerAddr}/${tapp.package_name}/logo.svg`,
+            //     backgroundAddr: `${assetsServerAddr}/${tapp.package_name}/background.svg`,
+            // }));
+            // TODO tmp solution
+            const tappletsWithAssets: RegisteredTappletWithAssets[] = [
+                {
+                    id: 'test0',
+                    registry_id: '0',
+                    package_name: '',
+                    display_name: 'Registered tapp display name',
+                    author_name: '',
+                    author_website: '',
+                    about_summary: '',
+                    about_description: '',
+                    category: '',
+                    logoAddr: '',
+                    backgroundAddr: '',
+                },
+                {
+                    id: 'test1',
+                    registry_id: '1',
+                    package_name: '',
+                    display_name: 'Registered tapp awesome name',
+                    author_name: '',
+                    author_website: '',
+                    about_summary: '',
+                    about_description: '',
+                    category: '',
+                    logoAddr: '',
+                    backgroundAddr: '',
+                },
+            ];
+            set({ isFetching: false, isInitialized: true, registeredTapplets: tappletsWithAssets });
+        } catch (error) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Error fetching registered tapplets: ', error);
+            appStateStore.setError(`'Error fetching registered tapplets: ${error}`);
+        }
+    },
+    getInstalledTapps: async () => {
+        console.log('store fetch tapp');
+        set({ isFetching: true });
+        try {
+            // TODO invoke to fetch tapplets
+            // const installedTapplets: RegisteredTapplet[] = await invoke('read_installed_tapp_db');
+            // const assetsServerAddr = await invoke('get_assets_server_addr');
+            // const tappletsWithAssets = installedTapplets.map((tapp) => ({
+            //     ...tapp,
+            //     logoAddr: `${assetsServerAddr}/${tapp.package_name}/logo.svg`,
+            //     backgroundAddr: `${assetsServerAddr}/${tapp.package_name}/background.svg`,
+            // }));
+            // TODO tmp solution
+            const installedTapps: InstalledTappletWithAssets[] = [
+                {
+                    display_name: 'installed tapp disp name',
+                    installed_tapplet: {
+                        id: '1',
+                        tapplet_id: '1',
+                        tapplet_version_id: '',
+                    },
+                    installed_version: '0.0.1',
+                    latest_version: '0.0.2',
+                    logoAddr: '',
+                    backgroundAddr: '',
+                },
+            ];
+            set({ isFetching: false, isInitialized: true, installedTapplets: installedTapps });
+        } catch (error) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Error fetching installed tapplets: ', error);
+            appStateStore.setError(`'Error fetching installed tapplets: ${error}`);
+        }
+    },
+    getDevTapps: async () => {
+        console.log('store fetch tapp');
+        set({ isFetching: true });
+        try {
+            // TODO invoke to fetch tapplets
+            // await invoke('fetch_tapplets');
+            // const devTapplets: DevTapplet[] = await invoke('read_dev_tapplets');
+            // const assetsServerAddr = await invoke('get_assets_server_addr');
+
+            // TODO tmp solution
+            const tappletsWithAssets: DevTapplet[] = [
+                {
+                    id: '',
+                    display_name: 'Dev Tapplet name',
+                    endpoint: '',
+                    about_description: '',
+                    about_summary: '',
+                    package_name: '',
+                },
+            ];
+            set({ isFetching: false, isInitialized: true, devTapplets: tappletsWithAssets });
+        } catch (error) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Error fetching dev tapplets: ', error);
+            appStateStore.setError(`'Error fetching dev tapplets: ${error}`);
+        }
+    },
+    addInstalledTapp: async () => {
+        console.log('store fetch tapp');
+        try {
+            // TODO invoke to add tapplet
+            // await invoke('download_and_extract_tapp');
+            // await invoke('insert_installed_tapp_db');
+
+            // TODO tmp solution
+            const installedTappsWithAssets: InstalledTappletWithAssets[] = [
+                {
+                    display_name: 'installed tapp disp name',
+                    installed_tapplet: {
+                        id: '1',
+                        tapplet_id: '1',
+                        tapplet_version_id: '',
+                    },
+                    installed_version: '0.0.1',
+                    latest_version: '0.0.1',
+                    logoAddr: '',
+                    backgroundAddr: '',
+                },
+            ];
+            set({ isInitialized: true, installedTapplets: installedTappsWithAssets });
+        } catch (error) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Error installing tapplet: ', error);
+            appStateStore.setError(`'Error installing tapplet: ${error}`);
+        }
+    },
+    setActiveTapp: async (id) => {
+        console.log('[STORE] set active tapp id', id);
+        const tapp = id
+            ? {
+                  id,
+                  display_name: 'Active Dev Tapplet name',
+                  endpoint: '',
+                  about_description: '',
+                  about_summary: '',
+                  package_name: '',
+              }
+            : undefined;
+
+        set({ isFetching: false, isInitialized: true, activeTapplet: tapp });
+    },
+}));
