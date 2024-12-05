@@ -2,16 +2,13 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { Stack } from '@app/components/elements/Stack.tsx';
 
-import {
-    SettingsGroup,
-    SettingsGroupContent,
-    SettingsGroupTitle,
-    SettingsGroupWrapper,
-} from '../../components/SettingsGroup.styles.ts';
+import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { useRegisteredTappletsStore } from '@app/store/useRegisteredTappletsStore.ts';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { Avatar, IconButton, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
+import { MdDownload } from 'react-icons/md';
+import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -38,6 +35,9 @@ export default function TappletsRegistered() {
         ? registeredTapplets.map((tapp, i) => <li key={`tapp-${tapp}:${i}`}>{tapp.display_name}</li>)
         : null;
 
+    const handleInstall = async (tappletId: string) => {
+        console.log('instal tapp with id', tappletId);
+    };
     // TODO can be used if fetching from db works
     // useEffect(() => {
     //     const fetchTappletsInterval = setInterval(async () => {
@@ -54,7 +54,7 @@ export default function TappletsRegistered() {
     // }, [fetchTapplets]);
 
     return (
-        <SettingsGroupWrapper>
+        <TappletsGroupWrapper $category="Tapplets Registered">
             <SquaredButton
                 onClick={() => fetchTapplets()}
                 color="tariPurple"
@@ -63,7 +63,7 @@ export default function TappletsRegistered() {
             >
                 {t('refresh-list')}
             </SquaredButton>
-            <SettingsGroup>
+            <TappletsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('registered-tapplets')}</Typography>
@@ -74,11 +74,25 @@ export default function TappletsRegistered() {
                         ) : null}
                     </SettingsGroupTitle>
 
-                    <Stack style={{ fontSize: '12px' }}>
-                        <ol>{listMarkup}</ol>
-                    </Stack>
+                    <List sx={{ width: '100%', minWidth: 500 }}>
+                        {registeredTapplets.map((item) => (
+                            <ListItem key={item.package_name} sx={{ paddingTop: 2 }}>
+                                <ListItemAvatar>
+                                    <Avatar src={item.logoAddr} />
+                                </ListItemAvatar>
+                                <ListItemText primary={item.display_name} />
+                                <IconButton
+                                    aria-label="install"
+                                    onClick={() => handleInstall(item.id)}
+                                    sx={{ marginLeft: 8 }}
+                                >
+                                    <MdDownload />
+                                </IconButton>
+                            </ListItem>
+                        ))}
+                    </List>
                 </SettingsGroupContent>
-            </SettingsGroup>
-        </SettingsGroupWrapper>
+            </TappletsGroup>
+        </TappletsGroupWrapper>
     );
 }

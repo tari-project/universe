@@ -25,11 +25,13 @@ export interface InstalledTapplet {
     tapplet_version_id: string;
 }
 
-export interface InstalledTappletWithName {
+export interface InstalledTappletWithAssets {
     installed_tapplet: InstalledTapplet;
     display_name: string;
     installed_version: string;
     latest_version: string;
+    logoAddr: string;
+    backgroundAddr: string;
 }
 
 export interface DevTapplet {

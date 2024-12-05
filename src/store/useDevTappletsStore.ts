@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create.ts';
-import { DevTapplet } from '@app/types/tapplet.ts';
+import { DevTapplet } from '@app/types/ootle/tapplet.ts';
 import { useAppStateStore } from './appStateStore.ts';
 
 interface State {
@@ -53,7 +53,6 @@ export const useDevTappletsStore = create<DevTappletsStoreState>()((set) => ({
     addInstalledTapplet: async () => {
         console.log('store fetch tapp');
         try {
-            const state = useDevTappletsStore.getState();
             // TODO invoke to add tapplet
             // const tapp = await invoke("add_dev_tapplet", { endpoint })
             const tapp: DevTapplet = {

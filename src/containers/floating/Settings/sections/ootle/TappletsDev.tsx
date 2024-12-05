@@ -2,16 +2,14 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { Stack } from '@app/components/elements/Stack.tsx';
+import { Avatar, IconButton, List, ListItem, ListItemAvatar, ListItemText } from '@mui/material';
 
-import {
-    SettingsGroup,
-    SettingsGroupContent,
-    SettingsGroupTitle,
-    SettingsGroupWrapper,
-} from '../../components/SettingsGroup.styles.ts';
+import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 import { useDevTappletsStore } from '@app/store/useDevTappletsStore.ts';
+import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
+import { MdLaunch, MdDelete } from 'react-icons/md';
+import tariLogo from '@app/assets/tari.svg';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -54,7 +52,7 @@ export default function TappletsDev() {
     // }, [fetchTapplets]);
 
     return (
-        <SettingsGroupWrapper>
+        <TappletsGroupWrapper $category="Dev Tapplets">
             <SquaredButton
                 onClick={() => fetchTapplets()}
                 color="tariPurple"
@@ -63,7 +61,7 @@ export default function TappletsDev() {
             >
                 {t('refresh-list')}
             </SquaredButton>
-            <SettingsGroup>
+            <TappletsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('dev-tapplets')}</Typography>
@@ -74,11 +72,36 @@ export default function TappletsDev() {
                         ) : null}
                     </SettingsGroupTitle>
 
-                    <Stack style={{ fontSize: '12px' }}>
-                        <ol>{listMarkup}</ol>
-                    </Stack>
+                    <List sx={{ maxWidth: 600 }}>
+                        {devTapplets.map((item, index) => (
+                            <ListItem key={index}>
+                                <ListItemAvatar>
+                                    <Avatar src={tariLogo.toString()} />
+                                </ListItemAvatar>
+                                <ListItemText primary={item.display_name} />
+                                <IconButton aria-label="launch" style={{ marginRight: 10 }}>
+                                    {/* <NavLink
+                                        to={`/${TabKey.DEV_TAPPLETS}/${item.id}`}
+                                        state={item}
+                                        style={{ display: 'contents' }}
+                                    >
+                                    </NavLink> */}
+                                    <MdLaunch color="primary" />
+                                </IconButton>
+                                <IconButton
+                                    aria-label="delete"
+                                    style={{ marginRight: 10 }}
+                                    onClick={() => {
+                                        console.log('dupa');
+                                    }}
+                                >
+                                    <MdDelete color="primary" />
+                                </IconButton>
+                            </ListItem>
+                        ))}
+                    </List>
                 </SettingsGroupContent>
-            </SettingsGroup>
-        </SettingsGroupWrapper>
+            </TappletsGroup>
+        </TappletsGroupWrapper>
     );
 }

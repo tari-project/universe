@@ -1,12 +1,12 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create.ts';
-import { InstalledTappletWithName } from '@app/types/tapplet.ts';
+import { InstalledTappletWithAssets } from '@app/types/ootle/tapplet.ts';
 import { useAppStateStore } from './appStateStore.ts';
 
 interface State {
     isInitialized: boolean;
     isFetching: boolean;
-    installedTapplets: InstalledTappletWithName[];
+    installedTapplets: InstalledTappletWithAssets[];
 }
 
 interface Actions {
@@ -36,7 +36,7 @@ export const useInstalledTappletsStore = create<InstalledTappletsStoreState>()((
             //     backgroundAddr: `${assetsServerAddr}/${tapp.package_name}/background.svg`,
             // }));
             // TODO tmp solution
-            const tappletsWithAssets: InstalledTappletWithName[] = [
+            const tappletsWithAssets: InstalledTappletWithAssets[] = [
                 {
                     display_name: 'installed tapp disp name',
                     installed_tapplet: {
@@ -46,6 +46,8 @@ export const useInstalledTappletsStore = create<InstalledTappletsStoreState>()((
                     },
                     installed_version: '',
                     latest_version: '',
+                    logoAddr: '',
+                    backgroundAddr: '',
                 },
             ];
             set({ isFetching: false, isInitialized: true, installedTapplets: tappletsWithAssets });
@@ -57,14 +59,13 @@ export const useInstalledTappletsStore = create<InstalledTappletsStoreState>()((
     },
     addInstalledTapplet: async () => {
         console.log('store fetch tapp');
-        set({ isFetching: true });
         try {
             // TODO invoke to add tapplet
             // await invoke('download_and_extract_tapp');
             // await invoke('insert_installed_tapp_db');
 
             // TODO tmp solution
-            const tappletsWithAssets: InstalledTappletWithName[] = [
+            const tappletsWithAssets: InstalledTappletWithAssets[] = [
                 {
                     display_name: 'installed tapp disp name',
                     installed_tapplet: {
@@ -74,9 +75,11 @@ export const useInstalledTappletsStore = create<InstalledTappletsStoreState>()((
                     },
                     installed_version: '',
                     latest_version: '',
+                    logoAddr: '',
+                    backgroundAddr: '',
                 },
             ];
-            set({ isFetching: false, isInitialized: true, installedTapplets: tappletsWithAssets });
+            set({ isInitialized: true, installedTapplets: tappletsWithAssets });
         } catch (error) {
             const appStateStore = useAppStateStore.getState();
             console.error('Error installing tapplet: ', error);

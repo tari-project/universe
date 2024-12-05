@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create.ts';
-import { RegisteredTappletWithAssets } from '@app/types/tapplet.ts';
+import { RegisteredTappletWithAssets } from '@app/types/ootle/tapplet.ts';
 import { useAppStateStore } from './appStateStore.ts';
 
 interface State {
