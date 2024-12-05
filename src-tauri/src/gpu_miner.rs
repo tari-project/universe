@@ -163,16 +163,20 @@ impl GpuMiner {
     pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
 
-        let output_file = config_dir
+        let config_file = config_dir.join("gpuminer").join("config.json").to_string_lossy().to_string();
+        let gpu_status_file = config_dir
             .join("gpuminer")
             .join("gpu_status.json")
             .to_string_lossy()
             .to_string();
+
         let args: Vec<String> = vec![
             "--detect".to_string(),
             "true".to_string(),
+            "--config".to_string(),
+            config_file.clone(),
             "--gpu-status-file".to_string(),
-            output_file.clone(),
+            gpu_status_file.clone(),
         ];
         let gpuminer_bin = BinaryResolver::current()
             .read()
@@ -184,7 +188,7 @@ impl GpuMiner {
         let child = process_utils::launch_child_process(&gpuminer_bin, &config_dir, None, &args)?;
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
-        let gpu_settings = std::fs::read_to_string(output_file)?;
+        let gpu_settings = std::fs::read_to_string(gpu_status_file)?;
         let gpu_settings: GpuStatusJson = serde_json::from_str(&gpu_settings)?;
         self.gpu_devices = gpu_settings.gpu_devices;
         match output.status.code() {
