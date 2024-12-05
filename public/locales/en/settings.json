@@ -112,7 +112,8 @@
     "mining": "Mining",
     "p2p": "Pool Mining",
     "very_experimental": "Very Experimental",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "releaseNotes": "Release Notes"
   },
   "tari-wallet-address": "Tari Wallet Address",
   "terms-and-conditions": "Terms & Conditions",
@@ -135,5 +136,9 @@
   "visual-mode": "Visual mode",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
-  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"
+  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
+  "release-notes": {
+    "upgrade-available": "⚠️ Upgrade Available",
+    "loading": "Loading release notes..."
+  }
 }

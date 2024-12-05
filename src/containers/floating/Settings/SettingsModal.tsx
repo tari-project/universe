@@ -20,6 +20,7 @@ import {
     MiningSettings,
     PoolMiningSettings,
     WalletSettings,
+    ReleaseNotes,
 } from './sections';
 
 import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
@@ -32,6 +33,7 @@ const markups = {
     wallet: <WalletSettings />,
     airdrop: <AirdropSettings />,
     experimental: <ExperimentalSettings />,
+    releaseNotes: <ReleaseNotes />,
 };
 
 export default function SettingsModal() {

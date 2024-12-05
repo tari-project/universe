@@ -7,6 +7,7 @@ use log::trace;
 use log::{debug, error, info, warn};
 use p2pool::models::Connections;
 use std::fs::{remove_dir_all, remove_file};
+use tokio::sync::watch::{self};
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -211,7 +212,8 @@ async fn setup_inner(
         .initialize_auto_launcher(is_auto_launcher_enabled)
         .await?;
 
-    let progress = ProgressTracker::new(window.clone());
+    let (tx, rx) = watch::channel("".to_string());
+    let progress = ProgressTracker::new(window.clone(), Some(tx));
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
@@ -235,7 +237,12 @@ async fn setup_inner(
             .update("checking-latest-version-tor".to_string(), None, 0)
             .await;
         binary_resolver
-            .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+            .initialize_binary_timeout(
+                Binaries::Tor,
+                progress.clone(),
+                should_check_for_update,
+                rx.clone(),
+            )
             .await?;
         sleep(Duration::from_secs(1));
     }
@@ -245,10 +252,11 @@ async fn setup_inner(
         .update("checking-latest-version-node".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(
+        .initialize_binary_timeout(
             Binaries::MinotariNode,
             progress.clone(),
             should_check_for_update,
+            rx.clone(),
         )
         .await?;
     sleep(Duration::from_secs(1));
@@ -258,31 +266,39 @@ async fn setup_inner(
         .update("checking-latest-version-mmproxy".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(
+        .initialize_binary_timeout(
             Binaries::MergeMiningProxy,
             progress.clone(),
             should_check_for_update,
+            rx.clone(),
         )
         .await?;
     sleep(Duration::from_secs(1));
+
     progress.set_max(20).await;
     progress
         .update("checking-latest-version-wallet".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(Binaries::Wallet, progress.clone(), should_check_for_update)
+        .initialize_binary_timeout(
+            Binaries::Wallet,
+            progress.clone(),
+            should_check_for_update,
+            rx.clone(),
+        )
         .await?;
-
     sleep(Duration::from_secs(1));
+
     progress.set_max(25).await;
     progress
         .update("checking-latest-version-gpuminer".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(
+        .initialize_binary_timeout(
             Binaries::GpuMiner,
             progress.clone(),
             should_check_for_update,
+            rx.clone(),
         )
         .await?;
     sleep(Duration::from_secs(1));
@@ -292,21 +308,29 @@ async fn setup_inner(
         .update("checking-latest-version-xmrig".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
+        .initialize_binary_timeout(
+            Binaries::Xmrig,
+            progress.clone(),
+            should_check_for_update,
+            rx.clone(),
+        )
         .await?;
     sleep(Duration::from_secs(1));
+
     progress.set_max(35).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(
+        .initialize_binary_timeout(
             Binaries::ShaP2pool,
             progress.clone(),
             should_check_for_update,
+            rx.clone(),
         )
         .await?;
     sleep(Duration::from_secs(1));
+
     if should_check_for_update {
         state
             .config
@@ -371,7 +395,6 @@ async fn setup_inner(
             }
         }
     }
-
     info!(target: LOG_TARGET, "Node has started and is ready");
 
     progress.set_max(40).await;
