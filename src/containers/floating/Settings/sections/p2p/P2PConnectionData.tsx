@@ -1,6 +1,5 @@
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore.ts';
 
-import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
