@@ -48,6 +48,7 @@
   },
   "importing-wallet": "Importowanie portfela",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Kod Zaproszenia",
   "is-on-orphan-chain": "Wygląda na to, że jesteś połączony z rozwidleniem, a nie z głównym łańcuchem. Wszelkie wygrane bloki mogą zostać unieważnione.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
@@ -104,6 +105,7 @@
     "title": "Automatyczne uruchamianie przy starcie systemu"
   },
   "should-use-system-language": "Użyj języka systemowego",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Połączenia",
@@ -129,6 +131,7 @@
   },
   "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
   "use-random-control-port": "Użyj losowego portu kontrolnego",
+  "use-random-port": "Use random port",
   "use-tor": "Używaj Tor",
   "use-tor-bridges": "Użyj mostów Tor",
   "visual-mode": "Tryb wizualny",

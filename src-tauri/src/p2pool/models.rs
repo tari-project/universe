@@ -81,3 +81,31 @@ pub struct EstimatedEarnings {
     #[serde(rename = "30d")]
     pub one_month: MicroMinotari,
 }
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub struct PeerInfo {
+    pub version: u64,
+    pub peer_id: Option<String>,
+    pub current_sha3x_height: u64,
+    pub current_random_x_height: u64,
+    pub current_sha3x_pow: u128,
+    pub current_random_x_pow: u128,
+    pub squad: String,
+    pub timestamp: u64,
+    pub user_agent: Option<String>,
+    pub user_agent_version: Option<String>,
+    public_addresses: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub(crate) struct ConnectedPeerInfo {
+    pub peer_id: String,
+    pub peer_info: PeerInfo,
+    pub last_grey_list_reason: Option<String>,
+    pub last_ping: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+pub(crate) struct Connections {
+    peers: Vec<ConnectedPeerInfo>,
+}

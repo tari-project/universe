@@ -1,4 +1,4 @@
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::{Connections, Stats};
 use anyhow::Error;
 use log::warn;
 
@@ -21,6 +21,15 @@ impl Client {
             .json::<Stats>()
             .await
             .inspect_err(|e| warn!(target: LOG_TARGET, "P2pool stats error: {:?}", e))?;
+        Ok(stats)
+    }
+
+    pub async fn connections(&self) -> Result<Connections, Error> {
+        let stats = reqwest::get(format!("{}/connections", self.stats_server_address))
+            .await?
+            .json::<Connections>()
+            .await
+            .inspect_err(|e| warn!(target: LOG_TARGET, "P2pool connections error: {:?}", e))?;
         Ok(stats)
     }
 }

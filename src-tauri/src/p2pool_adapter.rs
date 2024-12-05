@@ -8,7 +8,7 @@ use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 
 use crate::p2pool;
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::{Connections, Stats};
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
@@ -153,5 +153,9 @@ impl StatusMonitor for P2poolStatusMonitor {
 impl P2poolStatusMonitor {
     pub async fn status(&self) -> Result<Stats, Error> {
         self.stats_client.stats().await
+    }
+
+    pub async fn connections(&self) -> Result<Connections, Error> {
+        self.stats_client.connections().await
     }
 }
