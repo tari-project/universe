@@ -28,8 +28,8 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfoExtended[
                 <Cell $alignment="start" title={peer_id}>
                     {displayId}
                 </Cell>
-                <Cell>{random_x_height ? `${random_x_height} ${randomxWithinRange ? '♡' : '☹'}` : '-'}</Cell>
-                <Cell>{sha3x_height ? `${sha3x_height} ${sha3WithinRange ? '♡' : '☹'}` : '-'}</Cell>
+                <Cell>{random_x_height ? `${random_x_height} | ${randomxWithinRange ? '✓' : '☹'}` : '-'}</Cell>
+                <Cell>{sha3x_height ? `${sha3x_height} | ${sha3WithinRange ? '✓' : '☹'}` : '-'}</Cell>
                 <Cell>{last_ping ? timeAgo(+last_ping) : '-'}</Cell>
             </TableRow>
         );
