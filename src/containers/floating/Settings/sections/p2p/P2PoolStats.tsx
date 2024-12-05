@@ -23,8 +23,8 @@ export type ConnectedPeerInfoExtended = ConnectedPeerInfo & {
 
 const P2PoolStats = () => {
     const { t } = useTranslation('p2p', { useSuspense: false });
-    const connectedSince = useP2poolStatsStore((s) => s.connected_since);
-    const connectionInfo = useP2poolStatsStore((s) => s.connection_info);
+    const connectedSince = useP2poolStatsStore((s) => s?.connected_since);
+    const connectionInfo = useP2poolStatsStore((s) => s?.connection_info);
     const sha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
     const randomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
     const peers = useP2poolStatsStore((s) => s?.peers);
