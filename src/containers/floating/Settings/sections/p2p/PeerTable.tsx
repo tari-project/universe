@@ -1,4 +1,4 @@
-import { Table, Cell, TableRow } from './P2PoolStats.styles.ts';
+import { Table, Cell, TableRow, TableOverflowWrapper } from './P2PoolStats.styles.ts';
 import { ConnectedPeerInfo } from '@app/types/app-status.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { timeAgo } from '@app/utils/getTimeAgo.ts';
@@ -20,7 +20,9 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfo[] }) {
         const displayId = truncateMiddle(peer_id, 9);
         return (
             <TableRow key={peer_id} $altBg={idx % 2 === 0}>
-                <Cell $alignment="end">{`${count}.`}</Cell>
+                <Cell $alignment="end">
+                    <Typography variant="p">{`${count}.`}</Typography>
+                </Cell>
                 <Cell $alignment="start" title={peer_id}>
                     {displayId}
                 </Cell>
@@ -33,7 +35,7 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfo[] }) {
     return (
         <Table>
             <TableRow $isHeadingRow>{headingMarkup}</TableRow>
-            {peerMarkup}
+            <TableOverflowWrapper>{peerMarkup}</TableOverflowWrapper>
         </Table>
     );
 }
