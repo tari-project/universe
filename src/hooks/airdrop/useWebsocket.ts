@@ -39,7 +39,14 @@ export const useWebsocket = () => {
     const handleEmitMiningStatus = useCallback(
         async (isMining: boolean) => {
             if (!socket || !connectedSocket) return;
-            const payload = { isMining, appId, blockHeight: height, version: applicationsVersions?.tari_universe };
+            const payload = {
+                isMining,
+                appId,
+                blockHeight: height,
+                version: applicationsVersions?.tari_universe,
+                network,
+                userId,
+            };
             try {
                 const transformedPayload = btoa(JSON.stringify(payload));
                 const signatureData = (await invoke('sign_ws_data', {
@@ -50,7 +57,7 @@ export const useWebsocket = () => {
                 console.error(e);
             }
         },
-        [appId, connectedSocket, height, applicationsVersions?.tari_universe]
+        [connectedSocket, appId, height, applicationsVersions?.tari_universe, network, userId]
     );
 
     useEffect(() => {
