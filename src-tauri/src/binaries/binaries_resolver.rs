@@ -297,6 +297,17 @@ impl BinaryResolver {
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
 
+        progress_tracker
+            .send_last_action(format!(
+                "Checking if files exist before download: {} {}",
+                binary.name(),
+                highest_version
+                    .clone()
+                    .unwrap_or(Version::new(0, 0, 0))
+                    .to_string()
+            ))
+            .await;
+
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
@@ -305,6 +316,16 @@ impl BinaryResolver {
                 .await?;
         }
 
+        progress_tracker
+            .send_last_action(format!(
+                "Checking if files exist after download: {} {}",
+                binary.name(),
+                highest_version
+                    .clone()
+                    .unwrap_or(Version::new(0, 0, 0))
+                    .to_string()
+            ))
+            .await;
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {

@@ -141,9 +141,10 @@ impl BinaryManager {
         Ok(in_progress_folder)
     }
 
-    fn delete_in_progress_folder_for_selected_version(
+    async fn delete_in_progress_folder_for_selected_version(
         &self,
         selected_version: Version,
+        progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", selected_version);
 
@@ -156,6 +157,12 @@ impl BinaryManager {
             .join(selected_version.to_string())
             .join("in_progress");
 
+        progress_tracker
+            .send_last_action(format!(
+                "Removing in progress folder: {:?}",
+                in_progress_folder
+            ))
+            .await;
         if in_progress_folder.exists() {
             info!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
             if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
@@ -231,6 +238,12 @@ impl BinaryManager {
             version: version.clone(),
             assets: vec![asset.clone()],
         };
+        progress_tracker
+            .send_last_action(format!(
+                "Downloading checksum file for dest: {:?}",
+                destination_dir
+            ))
+            .await;
         let checksum_file = self
             .adapter
             .download_and_get_checksum_path(
@@ -251,6 +264,12 @@ impl BinaryManager {
         info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
         info!(target: LOG_TARGET, "Checksum file: {:?}", checksum_file);
         info!(target: LOG_TARGET, "In progress file: {:?}", in_progress_file_zip);
+        progress_tracker
+            .send_last_action(format!(
+                "Validating checksum for checksum file: {:?} and in progress file: {:?}",
+                checksum_file, in_progress_file_zip
+            ))
+            .await;
         match validate_checksum(
             in_progress_file_zip.clone(),
             checksum_file,
@@ -428,9 +447,9 @@ impl BinaryManager {
 
         progress_tracker
             .send_last_action(format!(
-                "Downloading version: {} of binary: {}",
-                version.to_string(),
-                self.binary_name
+                "Downloading binary: {} with version: {}",
+                self.binary_name,
+                version.to_string()
             ))
             .await;
         download_file_with_retries(
@@ -460,12 +479,16 @@ impl BinaryManager {
                 asset,
                 destination_dir,
                 in_progress_file_zip,
-                progress_tracker,
+                progress_tracker.clone(),
             )
             .await?;
         }
 
-        self.delete_in_progress_folder_for_selected_version(version.clone())?;
+        self.delete_in_progress_folder_for_selected_version(
+            version.clone(),
+            progress_tracker.clone(),
+        )
+        .await?;
         Ok(())
     }
 
