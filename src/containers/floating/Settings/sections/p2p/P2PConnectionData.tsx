@@ -21,7 +21,7 @@ export default function P2PConnectionData() {
     const [copiedId, setCopiedId] = useState<string>();
     const { copyToClipboard } = useCopyToClipboard();
 
-    const connectionInfo = useP2poolStatsStore((s) => s.connection_info);
+    const connectionInfo = useP2poolStatsStore((s) => s?.connection_info);
 
     useEffect(() => {
         if (copiedId) {
