@@ -9,11 +9,11 @@ pub async fn stop_all_processes(
     should_shutdown: bool,
 ) -> Result<(), String> {
     info!(target: LOG_TARGET, "Stopping all miners");
-    info!(target: LOG_TARGET, "Entering shutdown sequence");
 
     let state = app_handle.state::<UniverseAppState>().inner();
 
-    if should_shutdown {
+    if should_shutdown && !state.shutdown.is_triggered() {
+        info!(target: LOG_TARGET, "Entering shutdown sequence");
         state.shutdown.clone().trigger();
     }
 
@@ -31,8 +31,8 @@ pub async fn stop_all_processes(
 
     if cpu_miner_is_running || cpu_miner_pid_file_exists {
         cpu_miner.stop().await.map_err(|e| e.to_string())?;
-        drop(cpu_miner);
     }
+    drop(cpu_miner);
 
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_miner_pid_file_exists = gpu_miner.is_pid_file_exists(base_path.clone()).await;
@@ -42,8 +42,8 @@ pub async fn stop_all_processes(
 
     if gpu_miner_is_running || gpu_miner_pid_file_exists {
         gpu_miner.stop().await.map_err(|e| e.to_string())?;
-        drop(gpu_miner);
     }
+    drop(gpu_miner);
 
     let wallet_manager = state.wallet_manager.clone();
     let wallet_manager_is_running = wallet_manager.is_running().await;
@@ -96,7 +96,7 @@ pub async fn stop_all_processes(
         tor_manager.stop().await.map_err(|e| e.to_string())?;
     }
 
-    if should_shutdown {
+    if should_shutdown && !state.shutdown.is_triggered() {
         state.shutdown.clone().trigger();
     }
 
