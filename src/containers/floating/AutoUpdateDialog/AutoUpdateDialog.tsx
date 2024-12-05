@@ -9,22 +9,36 @@ import { Typography } from '@app/components/elements/Typography';
 
 import { UpdatedStatus } from './UpdatedStatus';
 import { ButtonsWrapper } from './AutoUpdateDialog.styles';
+import { useEffect, useRef } from 'react';
 
 export default function AutoUpdateDialog() {
+    const hasFetched = useRef(false);
+    const { handleUpdate, fetchUpdate, updateData, isLoading, contentLength, downloaded, handleClose } =
+        useHandleUpdate();
     const { t } = useTranslation('setup-view', { useSuspense: false });
-    const { latestVersion, contentLength, downloaded, handleUpdate, handleClose, isLoading } = useHandleUpdate();
+
     const open = useUIStore((s) => s.dialogToShow === 'autoUpdate');
 
-    const subtitle = isLoading ? 'installing-latest-version' : 'would-you-like-to-install';
+    useEffect(() => {
+        if (hasFetched.current) return;
+        fetchUpdate().then(() => {
+            hasFetched.current = true;
+        });
+    }, [fetchUpdate]);
 
+    const subtitle = isLoading ? 'installing-latest-version' : 'would-you-like-to-install';
     return (
         <Dialog open={open} onOpenChange={handleClose} disableClose>
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
-                <Typography variant="p">{t(subtitle, { version: latestVersion })}</Typography>
+                <Typography variant="p">{t(subtitle, { version: updateData?.version })}</Typography>
                 {isLoading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
+
+                {downloaded > 0 && downloaded === contentLength ? (
+                    <Typography variant="p">{`Update downloaded: Restarting Tari Universe`}</Typography>
+                ) : null}
                 <ButtonsWrapper>
-                    {!isLoading && (
+                    {!isLoading && updateData && (
                         <>
                             <SquaredButton onClick={() => handleClose()} color="warning">
                                 {t('no')}
