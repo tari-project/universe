@@ -1,13 +1,17 @@
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
+use log::error;
 use regex::Regex;
 use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use std::time::Duration;
 use tari_common::configuration::Network;
+use tokio::sync::watch::Receiver;
 use tokio::sync::RwLock;
+use tokio::time::timeout;
 
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
@@ -202,7 +206,31 @@ impl BinaryResolver {
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
-    pub async fn initalize_binary(
+    pub async fn initialize_binary_timeout(
+        &mut self,
+        binary: Binaries,
+        progress_tracker: ProgressTracker,
+        should_check_for_update: bool,
+        timeout_channel: Receiver<String>,
+    ) -> Result<(), Error> {
+        match timeout(
+            Duration::from_secs(60 * 5),
+            self.initialize_binary(binary, progress_tracker.clone(), should_check_for_update),
+        )
+        .await
+        {
+            Err(_) => {
+                let last_msg = timeout_channel.borrow().clone();
+                error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
+                let error_msg = format!("Setup took too long: {}", last_msg);
+                sentry::capture_message(&error_msg, sentry::Level::Error);
+                Err(anyhow!(error_msg))
+            }
+            Ok(result) => result,
+        }
+    }
+
+    pub async fn initialize_binary(
         &mut self,
         binary: Binaries,
         progress_tracker: ProgressTracker,
@@ -269,6 +297,17 @@ impl BinaryResolver {
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
 
+        progress_tracker
+            .send_last_action(format!(
+                "Checking if files exist before download: {} {}",
+                binary.name(),
+                highest_version
+                    .clone()
+                    .unwrap_or(Version::new(0, 0, 0))
+                    .to_string()
+            ))
+            .await;
+
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
@@ -277,6 +316,16 @@ impl BinaryResolver {
                 .await?;
         }
 
+        progress_tracker
+            .send_last_action(format!(
+                "Checking if files exist after download: {} {}",
+                binary.name(),
+                highest_version
+                    .clone()
+                    .unwrap_or(Version::new(0, 0, 0))
+                    .to_string()
+            ))
+            .await;
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
