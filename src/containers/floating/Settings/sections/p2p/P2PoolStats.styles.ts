@@ -4,7 +4,7 @@ import { CSSProperties } from 'react';
 export const TableOverflowWrapper = styled.div`
     overflow-y: auto;
     height: 100%;
-    padding: 0 4px 0 0;
+    padding: 0 8px 0 0;
     &::-webkit-scrollbar {
         width: 3px;
         display: unset;
@@ -31,7 +31,7 @@ export const TableRow = styled.div<{ $isHeadingRow?: boolean; $altBg?: boolean }
     display: grid;
     width: 100%;
     gap: 2px;
-    grid-template-columns: 1fr 6fr repeat(3, 5fr);
+    grid-template-columns: 0.8fr 6fr repeat(3, 5fr);
     justify-content: center;
     background-color: ${({ $altBg }) => ($altBg ? 'rgba(0, 0, 0, 0.02)' : 'none')};
     ${({ $isHeadingRow }) =>
@@ -55,4 +55,12 @@ export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems'] }>`
         font-size: 11px;
         color: ${({ theme }) => theme.palette.text.secondary};
     }
+`;
+
+export const StatWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
 `;

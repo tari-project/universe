@@ -16,6 +16,7 @@ import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
 import PeerTable from './PeerTable.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { ConnectedPeerInfo } from '@app/types/app-status.ts';
+import P2PConnectionData from './P2PConnectionData.tsx';
 
 export type ConnectedPeerInfoExtended = ConnectedPeerInfo & {
     sha3WithinRange?: boolean;
@@ -58,26 +59,15 @@ const P2PoolStats = () => {
 
     return (
         <SettingsGroupWrapper>
-            {displayPeers ? <PeerTable peers={displayPeers} /> : null}
-            <Divider />
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('p2pool-stats')}</Typography>
                     </SettingsGroupTitle>
-                    <Divider />
+
+                    <P2PConnectionData />
+
                     <Stack>
-                        <CardContainer>
-                            <CardComponent
-                                heading={t('listener-addresses')}
-                                labels={
-                                    connectionInfo?.listener_addresses?.map((addr, i) => ({
-                                        labelText: `#${i + 1}`,
-                                        labelValue: addr,
-                                    })) || []
-                                }
-                            />
-                        </CardContainer>
                         <CardContainer>
                             <CardComponent
                                 heading={t('p2pool-connection-info')}
@@ -144,11 +134,14 @@ const P2PoolStats = () => {
             </SettingsGroup>
 
             <Divider />
-            <SettingsGroupContent>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{`Connected Peers: ${displayPeers?.length}`}</Typography>
-                </SettingsGroupTitle>
-            </SettingsGroupContent>
+            {displayPeers?.length ? (
+                <SettingsGroupContent>
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">{`Connected Peers: ${displayPeers?.length}`}</Typography>
+                    </SettingsGroupTitle>
+                    {displayPeers ? <PeerTable peers={displayPeers} /> : null}
+                </SettingsGroupContent>
+            ) : null}
         </SettingsGroupWrapper>
     );
 };
