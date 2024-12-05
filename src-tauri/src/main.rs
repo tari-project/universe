@@ -852,7 +852,8 @@ fn main() {
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
             commands::get_used_p2pool_stats_server_port,
-            commands::get_network
+            commands::get_network,
+            commands::sign_ws_data,
         ])
         .build(tauri::generate_context!())
         .inspect_err(

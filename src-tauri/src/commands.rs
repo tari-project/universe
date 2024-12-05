@@ -1,5 +1,5 @@
 use crate::app_config::{AppConfig, GpuThreads};
-use crate::app_in_memory_config::AirdropInMemoryConfig;
+use crate::app_in_memory_config::{get_websocket_key, AirdropInMemoryConfig};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::credential_manager::{CredentialError, CredentialManager};
@@ -18,12 +18,14 @@ use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use base64::prelude::*;
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use sentry::integrations::anyhow::capture_anyhow;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -105,6 +107,12 @@ pub struct CpuMinerStatus {
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
     // pub error: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SignWsDataResponse {
+    signature: String,
 }
 
 #[tauri::command]
@@ -1080,6 +1088,29 @@ pub async fn set_cpu_mining_enabled<'r>(
         );
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn sign_ws_data(data_base64: String) -> Result<SignWsDataResponse, String> {
+    let key: ring::signature::Ed25519KeyPair = get_websocket_key().map_err(|e| {
+        warn!(target: LOG_TARGET,
+            "error ws key handling:{:?}",
+            e.to_string()
+        );
+        "sign_ws_data: error ws key handling"
+    })?;
+
+    let decoded_args = BASE64_STANDARD.decode(data_base64.clone()).map_err(|e| {
+        format!(
+            "sign_ws_data: input data is not valid base64. Error: {:?}",
+            e.to_string()
+        )
+    })?;
+    let signature = key.sign(&decoded_args);
+
+    return Ok(SignWsDataResponse {
+        signature: BASE64_STANDARD.encode(signature.as_ref()),
+    });
 }
 
 #[tauri::command]
