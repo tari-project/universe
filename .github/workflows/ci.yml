@@ -128,8 +128,6 @@ jobs:
           cargo tauri build --ci --bundles deb
 
   file-licenses:
-    # disable for now
-    if: ${{ false }}
     name: file-licenses
     runs-on: ubuntu-latest
     steps:
