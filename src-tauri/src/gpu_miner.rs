@@ -163,7 +163,11 @@ impl GpuMiner {
     pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
 
-        let config_file = config_dir.join("gpuminer").join("config.json").to_string_lossy().to_string();
+        let config_file = config_dir
+            .join("gpuminer")
+            .join("config.json")
+            .to_string_lossy()
+            .to_string();
         let gpu_status_file = config_dir
             .join("gpuminer")
             .join("gpu_status.json")
