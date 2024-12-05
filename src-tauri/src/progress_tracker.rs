@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use log::error;
+use tauri::{AppHandle, Emitter};
 use tokio::sync::{watch::Sender, RwLock};
 
 use crate::setup_status_event::SetupStatusEvent;
@@ -20,9 +21,9 @@ impl Clone for ProgressTracker {
 }
 
 impl ProgressTracker {
-    pub fn new(window: tauri::Window, channel: Option<Sender<String>>) -> Self {
+    pub fn new(app_handle: AppHandle, channel: Option<Sender<String>>) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(ProgressTrackerInner::new(window, channel))),
+            inner: Arc::new(RwLock::new(ProgressTrackerInner::new(app_handle, channel))),
         }
     }
 
@@ -48,16 +49,16 @@ impl ProgressTracker {
 }
 
 pub struct ProgressTrackerInner {
-    window: tauri::Window,
+    app_handle: AppHandle,
     min: u64,
     next_max: u64,
     last_action_channel: Option<Sender<String>>,
 }
 
 impl ProgressTrackerInner {
-    pub fn new(window: tauri::Window, channel: Option<Sender<String>>) -> Self {
+    pub fn new(app_handle: AppHandle, channel: Option<Sender<String>>) -> Self {
         Self {
-            window,
+            app_handle: app_handle.clone(),
             min: 0,
             next_max: 0,
             last_action_channel: channel,
@@ -98,7 +99,7 @@ impl ProgressTrackerInner {
                 .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e))
                 .ok();
         }
-        self.window
+        self.app_handle
             .emit(
                 "message",
                 SetupStatusEvent {

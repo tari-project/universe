@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '@app/store/appStateStore';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';

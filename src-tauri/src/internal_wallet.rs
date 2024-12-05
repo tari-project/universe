@@ -25,7 +25,7 @@ use tari_key_manager::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
-use crate::credential_manager::CredentialManager;
+use crate::credential_manager::{Credential, CredentialError, CredentialManager};
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -163,6 +163,14 @@ impl InternalWallet {
                     creds.tari_seed_passphrase
                 }
             },
+            Err(CredentialError::NoEntry(_)) => {
+                let credentials = Credential {
+                    tari_seed_passphrase: Some(SafePassword::from(generate_password(32))),
+                    monero_seed: None,
+                };
+                cm.set_credentials(&credentials)?;
+                credentials.tari_seed_passphrase
+            }
             Err(_) => {
                 return Err(anyhow!(
                     "Credentials didn't exist, and this shouldn't happen"

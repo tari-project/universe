@@ -12,7 +12,7 @@ import { styled } from 'styled-components';
 import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs';
 import { useWalletStore } from '@app/store/useWalletStore';
 
-import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
+import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
 
 const Dot = styled.div`

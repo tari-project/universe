@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
 use tari_common::configuration::Network;
+use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::Receiver;
 use tokio::sync::RwLock;
 use tokio::time::timeout;

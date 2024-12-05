@@ -95,7 +95,7 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
         [hasChanges]
     );
 
-    const handleConfrimed = useCallback(async () => {
+    const handleConfirmed = useCallback(async () => {
         if (hasChanges && newSeedWords) {
             setShowConfirm(false);
             await importSeedWords(newSeedWords);
@@ -174,7 +174,7 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
                         </Typography>
                         <Stack direction="row" gap={8}>
                             <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
-                            <SquaredButton color="orange" onClick={handleConfrimed}>
+                            <SquaredButton color="orange" onClick={handleConfirmed}>
                                 {t('yes')}
                             </SquaredButton>
                         </Stack>
