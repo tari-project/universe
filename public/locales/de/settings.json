@@ -47,6 +47,7 @@
   },
   "importing-wallet": "Wallet wird importiert",
   "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Einladungscode",
   "is-on-orphan-chain": "Sie scheinen mit einem Fork verbunden zu sein und nicht mit der Hauptkette. Alle gewonnenen Blöcke könnten ungültig werden.",
   "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",
@@ -102,6 +103,7 @@
     "title": "Automatischer Start beim Systemstart"
   },
   "should-use-system-language": "Systemsprache verwenden",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Verbindungen",
@@ -127,6 +129,7 @@
   },
   "use-dynamic-fail-data": "Dynamische Fehlerdaten verwenden",
   "use-random-control-port": "Zufälligen Steuerport verwenden",
+  "use-random-port": "Use random port",
   "use-tor": "Tor verwenden",
   "use-tor-bridges": "Tor-Brücken verwenden",
   "visual-mode": "Visueller Modus",

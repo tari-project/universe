@@ -5,6 +5,7 @@ use auto_launcher::AutoLauncher;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
+use p2pool::models::Connections;
 use std::fs::{remove_dir_all, remove_file};
 
 use log4rs::config::RawConfig;
@@ -388,6 +389,7 @@ async fn setup_inner(
         let base_node_grpc = state.node_manager.get_grpc_port().await?;
         let p2pool_config = P2poolConfig::builder()
             .with_base_node(base_node_grpc)
+            .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
             .build()?;
 
         state
@@ -502,6 +504,7 @@ struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
     is_getting_wallet_balance: Arc<AtomicBool>,
     is_getting_p2pool_stats: Arc<AtomicBool>,
+    is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_miner_metrics: Arc<AtomicBool>,
     is_getting_transaction_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
@@ -521,6 +524,7 @@ struct UniverseAppState {
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
     cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
+    cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     setup_counter: Arc<RwLock<AutoRollback<bool>>>,
@@ -594,6 +598,7 @@ fn main() {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
+        is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         is_getting_wallet_balance: Arc::new(AtomicBool::new(false)),
         is_setup_finished: Arc::new(RwLock::new(false)),
         is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
@@ -613,6 +618,7 @@ fn main() {
         airdrop_access_token: Arc::new(RwLock::new(None)),
         tor_manager: TorManager::new(),
         cached_p2pool_stats: Arc::new(RwLock::new(None)),
+        cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_wallet_details: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
         setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
@@ -810,6 +816,10 @@ fn main() {
             commands::start_mining,
             commands::stop_mining,
             commands::update_applications,
+            commands::get_p2pool_connections,
+            commands::set_p2pool_stats_server_port,
+            commands::get_used_p2pool_stats_server_port,
+            commands::get_network
         ])
         .build(tauri::generate_context!())
         .inspect_err(

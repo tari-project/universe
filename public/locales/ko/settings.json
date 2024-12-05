@@ -47,6 +47,7 @@
   },
   "importing-wallet": "지갑 가져오기",
   "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "초대 코드",
   "is-on-orphan-chain": "당신은 포크에 연결된 것 같으며, 메인 체인이 아닙니다. 당신이 획득한 블록은 무효화될 수 있습니다.",
   "last-block-added-time": "마지막 블록 체인 추가 시간",
@@ -102,6 +103,7 @@
     "title": "시스템 부팅 시 자동 시작"
   },
   "should-use-system-language": "시스템 언어 사용",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "에어드롭",
     "connections": "연결",
@@ -127,6 +129,7 @@
   },
   "use-dynamic-fail-data": "동적 실패 데이터 사용",
   "use-random-control-port": "랜덤 제어 포트 사용",
+  "use-random-port": "Use random port",
   "use-tor": "Tor 사용하기",
   "use-tor-bridges": "Tor 브리지 사용",
   "visual-mode": "시각 모드",

@@ -33,6 +33,7 @@ interface Actions {
     setTheme: (theme: displayMode) => Promise<void>;
     setVisualMode: (enabled: boolean) => void;
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
+    setP2poolStatsServerPort: (port: number | null) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -61,6 +62,7 @@ const initialState: State = {
     custom_max_cpu_usage: undefined,
     custom_max_gpu_usage: [],
     show_experimental_settings: false,
+    p2pool_stats_server_port: null,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
@@ -288,6 +290,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             console.error('Could not set show experimental settings', e);
             appStateStore.setError('Could not change experimental settings');
             set({ show_experimental_settings: !showExperimentalSettings });
+        });
+    },
+    setP2poolStatsServerPort: async (port) => {
+        set({ p2pool_stats_server_port: port });
+        invoke('set_p2pool_stats_server_port', { port }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set p2pool stats server port', e);
+            appStateStore.setError('Could not change p2pool stats server port');
+            set({ p2pool_stats_server_port: port });
         });
     },
 }));

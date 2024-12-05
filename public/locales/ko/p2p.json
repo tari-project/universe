@@ -1,9 +1,14 @@
 {
+  "listener-addresses": "Listener addresses",
   "miners": "채굴자",
+  "network-info": "Network info",
   "p2pool-chain-tip": "P2Pool 체인 팁",
   "p2pool-connected": "P2Pool 연결됨",
   "p2pool-connection-info": "연결",
   "p2pool-connection-info-more": "연결 세부 정보",
+  "p2pool-peers": "P2pool peers",
   "p2pool-stats": "풀 채굴 통계",
+  "randomx-stats": "RandomX Stats",
+  "sha3-stats": "SHA3 Stats",
   "tribe": "부족"
 }

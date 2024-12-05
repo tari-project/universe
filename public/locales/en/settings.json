@@ -47,6 +47,7 @@
   },
   "importing-wallet": "Importing wallet",
   "invalid-seed-words": "Enter 24 words separated by spaces",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Invite Code",
   "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Last block added to chain time",
@@ -102,6 +103,7 @@
     "title": "Auto-start on system boot"
   },
   "should-use-system-language": "Use system language",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Connections",
@@ -110,7 +112,8 @@
     "mining": "Mining",
     "p2p": "Pool Mining",
     "very_experimental": "Very Experimental",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "releaseNotes": "Release Notes"
   },
   "tari-wallet-address": "Tari Wallet Address",
   "terms-and-conditions": "Terms & Conditions",
@@ -127,10 +130,15 @@
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
   "use-random-control-port": "Use random control port",
+  "use-random-port": "Use random port",
   "use-tor": "Use Tor",
   "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Visual mode",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
-  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"
+  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
+  "release-notes": {
+    "upgrade-available": "⚠️ Upgrade Available",
+    "loading": "Loading release notes..."
+  }
 }

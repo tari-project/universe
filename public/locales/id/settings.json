@@ -47,6 +47,7 @@
   },
   "importing-wallet": "Mengimpor dompet",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Kode Undangan",
   "is-on-orphan-chain": "Anda tampaknya terhubung ke cabang, bukan rantai utama. Blok yang Anda menangkan mungkin akan dibatalkan.",
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
@@ -102,6 +103,7 @@
     "title": "Mulai otomatis saat boot sistem"
   },
   "should-use-system-language": "Gunakan bahasa sistem",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Koneksi",
@@ -127,6 +129,7 @@
   },
   "use-dynamic-fail-data": "Gunakan data gagal dinamis",
   "use-random-control-port": "Gunakan port kontrol acak",
+  "use-random-port": "Use random port",
   "use-tor": "Gunakan Tor",
   "use-tor-bridges": "Gunakan Jembatan Tor",
   "visual-mode": "Mode visual",

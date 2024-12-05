@@ -47,6 +47,7 @@
   },
   "importing-wallet": "Импорт кошелька",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Код приглашения",
   "is-on-orphan-chain": "Похоже, вы подключены к форку, а не к основной цепочке. Любые выигранные вами блоки могут быть аннулированы.",
   "last-block-added-time": "Время добавления последнего блока в цепь",
@@ -102,6 +103,7 @@
     "title": "Автозапуск при загрузке системы"
   },
   "should-use-system-language": "Использовать системный язык",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Эйрдроп",
     "connections": "Подключения",
@@ -127,6 +129,7 @@
   },
   "use-dynamic-fail-data": "Использовать динамические данные отказа",
   "use-random-control-port": "Использовать случайный управляющий порт",
+  "use-random-port": "Use random port",
   "use-tor": "Использовать Tor",
   "use-tor-bridges": "Использовать мосты Tor",
   "visual-mode": "Визуальный режим",
