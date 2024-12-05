@@ -1622,6 +1622,7 @@ pub async fn update_applications(
         app.get_window("main")
             .expect("Could not get main window")
             .clone(),
+        None,
     );
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
