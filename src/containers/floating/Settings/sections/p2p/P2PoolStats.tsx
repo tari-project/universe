@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CardComponent } from '@app/containers/floating/Settings/components/Card.component';
@@ -15,6 +15,12 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
 import PeerTable from './PeerTable.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
+import { ConnectedPeerInfo } from '@app/types/app-status.ts';
+
+export type ConnectedPeerInfoExtended = ConnectedPeerInfo & {
+    sha3WithinRange?: boolean;
+    randomxWithinRange?: boolean;
+};
 
 const P2PoolStats = () => {
     const { t } = useTranslation('p2p', { useSuspense: false });
@@ -37,13 +43,29 @@ const P2PoolStats = () => {
         };
     }, [fetchP2pStats, fetchP2poolConnections]);
 
+    const displayPeers = useMemo(() => {
+        const sha3Height = sha3Stats?.height;
+        const randomXHeight = randomXStats?.height;
+        return peers?.map((peer) => {
+            const { current_sha3x_height, current_random_x_height } = peer.peer_info || {};
+            const sha3WithinRange = sha3Height ? Math.abs(sha3Height - current_sha3x_height) <= 5 : undefined;
+            const randomxWithinRange = randomXHeight
+                ? Math.abs(randomXHeight - current_random_x_height) <= 5
+                : undefined;
+            return { ...peer, sha3WithinRange, randomxWithinRange };
+        }) as ConnectedPeerInfoExtended[];
+    }, [peers, randomXStats?.height, sha3Stats?.height]);
+
     return (
         <SettingsGroupWrapper>
+            {displayPeers ? <PeerTable peers={displayPeers} /> : null}
+            <Divider />
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('p2pool-stats')}</Typography>
                     </SettingsGroupTitle>
+                    <Divider />
                     <Stack>
                         <CardContainer>
                             <CardComponent
@@ -124,10 +146,9 @@ const P2PoolStats = () => {
             <Divider />
             <SettingsGroupContent>
                 <SettingsGroupTitle>
-                    <Typography variant="h6">{`Connected Peers: ${peers?.length}`}</Typography>
+                    <Typography variant="h6">{`Connected Peers: ${displayPeers?.length}`}</Typography>
                 </SettingsGroupTitle>
             </SettingsGroupContent>
-            {peers ? <PeerTable peers={peers} /> : null}
         </SettingsGroupWrapper>
     );
 };

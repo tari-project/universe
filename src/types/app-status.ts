@@ -143,6 +143,7 @@ export interface P2poolStats {
     squad: P2poolSquadDetails;
     num_of_miners: number;
     share_chain_height: number;
+    height?: number;
     p2pool_block_stats: P2poolBlockStats;
 }
 
