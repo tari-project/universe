@@ -16,7 +16,7 @@ import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore';
-import { checkUpdate } from '@tauri-apps/api/updater';
+import { check } from '@tauri-apps/plugin-updater';
 
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
@@ -77,7 +77,8 @@ export const ReleaseNotes = () => {
 
     useEffect(() => {
         const checkForUpdates = async () => {
-            const { shouldUpdate } = await checkUpdate();
+            const update = await check();
+            const shouldUpdate = !!update?.available;
             setNeedsUpgrade(shouldUpdate);
         };
 

@@ -16,7 +16,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 export const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
