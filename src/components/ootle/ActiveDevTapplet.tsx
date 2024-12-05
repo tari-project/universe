@@ -14,18 +14,16 @@ export default function ActiveDevTapplet() {
     const devTapplet: DevTapplet = {
         id: '1',
         package_name: 'tarifaucet-tapplet',
-        endpoint: '',
+        endpoint: 'http://localhost:5173/',
         display_name: 'tarifaucet tapplet',
         about_summary: '',
         about_description: '',
     };
     // const dispatch = useDispatch();
     const [isVerified, setIsVerified] = useState<boolean>(false);
-    // const tappProviderId = getTappProviderId({ devTappletId: devTapplet.id });
-    // const tappProvider = useSelector((state: RootState) => selectTappProviderById(state, tappProviderId));
-    // const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
-    // const setTappProvider = useTappletProviderStore((s) => s.setTappletProvider);
-    let tappProvider;
+    const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
+    const setTappProvider = useTappletProviderStore((s) => s.setTappletProvider);
+    // let tappProvider;
     console.log('[active dev tapp] tapp', tappProvider);
 
     useEffect(() => {
@@ -61,10 +59,10 @@ export default function ActiveDevTapplet() {
                     if (!tappProvider) {
                         // TODO set error
                         console.error('Dev Tapplet provider not found');
-                        // setTappProvider(config.packageName, {
-                        //     endpoint: devTapplet.endpoint,
-                        //     permissions: config.permissions,
-                        // });
+                        setTappProvider(config.packageName, {
+                            endpoint: devTapplet.endpoint,
+                            permissions: config.permissions,
+                        });
                     }
                     if (!config?.permissions) {
                         // TODO set error
@@ -89,7 +87,9 @@ export default function ActiveDevTapplet() {
                     <MdClose color="primary" />
                 </IconButton>
             </SettingsGroupTitle>
-            <Box height="100%">{<Tapplet source={devTapplet.endpoint} provider={tappProvider} />}</Box>
+            <Box height="100%" minHeight={500}>
+                {isVerified && tappProvider && <Tapplet source={devTapplet.endpoint} provider={tappProvider} />}
+            </Box>
         </>
     );
 }

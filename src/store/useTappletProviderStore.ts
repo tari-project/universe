@@ -25,7 +25,7 @@ const initialState: State = {
 export const useTappletProviderStore = create<TappletProviderStoreState>()((set) => ({
     ...initialState,
     setTappletProvider: async (id: string, launchedTappParams: LaunchedTappResult) => {
-        console.log('store fetch tapp');
+        console.log('[STORE][tapp provider] set tapp', launchedTappParams);
         try {
             // TODO tmp solution
             const requiredPermissions = new TariPermissions();

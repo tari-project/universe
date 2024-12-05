@@ -1,9 +1,9 @@
+import { TappletProvider } from '@app/types/ootle/TappletProvider';
 import { useEffect, useRef } from 'react';
 
 interface TappletProps {
     source: string;
-    // provider: TappletProvider;
-    provider: any;
+    provider: TappletProvider;
 }
 
 export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {
