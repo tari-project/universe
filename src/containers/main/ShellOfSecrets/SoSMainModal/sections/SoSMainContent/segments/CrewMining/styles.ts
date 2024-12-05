@@ -1,6 +1,10 @@
 import styled from 'styled-components';
 
-export const Wrapper = styled('div')``;
+export const Wrapper = styled('div')`
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+`;
 
 export const TopRow = styled('div')`
     width: 100%;
@@ -21,7 +25,7 @@ export const SectionTitle = styled('div')`
     font-size: 24px;
     font-style: normal;
     font-weight: 700;
-    line-height: 129.623%; /* 29.393px */
+    line-height: 129.623%;
     text-transform: uppercase;
 `;
 
@@ -56,5 +60,5 @@ export const Mining = styled('div')`
     flex-shrink: 0;
 
     border-radius: 7px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(217, 217, 217, 0.1);
 `;

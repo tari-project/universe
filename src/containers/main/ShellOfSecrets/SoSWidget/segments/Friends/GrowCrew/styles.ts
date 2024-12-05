@@ -11,7 +11,7 @@ export const Wrapper = styled('div')`
 export const CopyButtton = styled('div')`
     color: #fff;
     border-radius: 7px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(217, 217, 217, 0.1);
     backdrop-filter: blur(1px);
 
     display: flex;
@@ -55,7 +55,7 @@ export const Copied = styled(m.div)`
 
 export const GrowButton = styled('div')`
     border-radius: 7px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(217, 217, 217, 0.1);
     backdrop-filter: blur(1px);
 
     display: flex;
