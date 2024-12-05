@@ -1565,7 +1565,7 @@ pub async fn update_applications(
         )
         .map_err(|e| e.to_string())?;
 
-    let progress_tracker = ProgressTracker::new(app.clone());
+    let progress_tracker = ProgressTracker::new(app.clone(), None);
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
         .await

@@ -6,6 +6,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 export const CardContainer = styled.div`
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-auto-flow: row;
     gap: 10px;
 `;
 

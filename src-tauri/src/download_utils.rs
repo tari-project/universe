@@ -33,6 +33,14 @@ pub async fn download_file_with_retries(
                 }
                 retries += 1;
                 eprintln!("Error downloading file: {}. Try {:?}/3", err, retries);
+                progress_tracker
+                    .send_last_action(format!(
+                        "Failed at retry: {} to download binary from url: {} to destination: {}",
+                        retries,
+                        url,
+                        destination.to_str().unwrap_or("unknown")
+                    ))
+                    .await;
                 sleep(Duration::from_secs(1)).await;
             }
         }
