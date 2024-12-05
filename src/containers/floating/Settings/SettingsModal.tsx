@@ -41,7 +41,7 @@ export default function SettingsModal() {
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
 
-    const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
+    const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[4]);
 
     const sectionMarkup = markups[activeSection];
 

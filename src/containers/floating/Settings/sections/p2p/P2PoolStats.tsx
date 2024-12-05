@@ -8,7 +8,9 @@ import { SettingsGroupWrapper } from '@app/containers/floating/Settings/componen
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
-import styled from 'styled-components';
+import { Tbody, Thead, Th, Tr, Td } from './P2PoolStats.styles.ts';
+import PeerTable from './PeerTable.tsx';
+import { Divider } from '@app/components/elements/Divider.tsx';
 
 function timeAgo(timestamp = 0) {
     const now = Math.floor(Date.now() / 1000); // Current time in seconds
@@ -27,15 +29,6 @@ function timeAgo(timestamp = 0) {
         return `${daysAgo} day${daysAgo !== 1 ? 's' : ''} ago`;
     }
 }
-
-const Table = styled.table``;
-const Tbody = styled.tbody``;
-const Thead = styled.thead``;
-const Th = styled.th`
-    text-align: left;
-`;
-const Tr = styled.tr``;
-const Td = styled.td``;
 
 const P2PoolStats = () => {
     const { t } = useTranslation('p2p', { useSuspense: false });
@@ -131,10 +124,13 @@ const P2PoolStats = () => {
                     />
                 </CardContainer>
             </Stack>
+            <Divider />
+            {peers ? <PeerTable peers={peers} /> : null}
+            <Divider />
             <Stack>
                 <Typography variant="h6">{t('p2pool-peers')}</Typography>
                 {Number(peers?.length) > 0 && (
-                    <Table>
+                    <table>
                         <Thead>
                             <Tr>
                                 <Th>
@@ -185,7 +181,7 @@ const P2PoolStats = () => {
                                 </Tr>
                             ))}
                         </Tbody>
-                    </Table>
+                    </table>
                 )}
             </Stack>
         </SettingsGroupWrapper>
