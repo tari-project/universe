@@ -23,7 +23,7 @@ export const Table = styled.div`
     display: grid;
     width: 100%;
     height: auto;
-    max-height: 25vh;
+    max-height: 20vh;
     overflow: hidden;
 `;
 
@@ -60,7 +60,8 @@ export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems'] }>`
 export const StatWrapper = styled.div`
     display: flex;
     width: 100%;
+    font-size: 11px;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
+    line-height: 12px;
 `;

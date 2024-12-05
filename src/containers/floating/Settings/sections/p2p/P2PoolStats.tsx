@@ -7,10 +7,8 @@ import {
     SettingsGroupContent,
     SettingsGroupWrapper,
     SettingsGroupTitle,
-    SettingsGroup,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 
-import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
 import PeerTable from './PeerTable.tsx';
@@ -59,79 +57,51 @@ const P2PoolStats = () => {
 
     return (
         <SettingsGroupWrapper>
-            <SettingsGroup>
-                <SettingsGroupContent>
-                    <SettingsGroupTitle>
-                        <Typography variant="h6">{t('p2pool-stats')}</Typography>
-                    </SettingsGroupTitle>
+            <SettingsGroupTitle style={{ alignItems: 'baseline' }}>
+                <Typography variant="h6">{t('p2pool-stats')}</Typography>
+                {connectedSince ? <Typography variant="p">{`Connected since: ${connectedSince}`}</Typography> : null}
+            </SettingsGroupTitle>
+            <Divider />
 
-                    <P2PConnectionData />
+            <P2PConnectionData />
 
-                    <Stack>
-                        <CardContainer>
-                            <CardComponent
-                                heading={t('p2pool-connection-info')}
-                                labels={[
-                                    {
-                                        labelText: 'connected since',
-                                        labelValue: connectedSince || '-',
-                                    },
-                                    {
-                                        labelText: 'connected peers',
-                                        labelValue: connectionInfo?.connected_peers || '-',
-                                    },
-                                ]}
-                            />
-
-                            <CardComponent
-                                heading={t('network-info')}
-                                labels={[
-                                    {
-                                        labelText: 'peers number',
-                                        labelValue: connectionInfo?.network_info?.num_peers || '-',
-                                    },
-                                    {
-                                        labelText: 'pending incoming',
-                                        labelValue:
-                                            connectionInfo?.network_info?.connection_counters?.pending_incoming || '-',
-                                    },
-                                    {
-                                        labelText: 'pending outgoing',
-                                        labelValue:
-                                            connectionInfo?.network_info?.connection_counters?.pending_outgoing || '-',
-                                    },
-                                    {
-                                        labelText: 'established incoming',
-                                        labelValue:
-                                            connectionInfo?.network_info?.connection_counters?.established_incoming ||
-                                            '-',
-                                    },
-                                    {
-                                        labelText: 'established outgoing',
-                                        labelValue:
-                                            connectionInfo?.network_info?.connection_counters?.established_outgoing ||
-                                            '-',
-                                    },
-                                ]}
-                            />
-                            <CardComponent
-                                heading={t('sha3-stats')}
-                                labels={Object.entries(sha3Stats || {}).map(([key, value]) => ({
-                                    labelText: key.replace('_', ' '),
-                                    labelValue: value,
-                                }))}
-                            />
-                            <CardComponent
-                                heading={t('randomx-stats')}
-                                labels={Object.entries(randomXStats || {}).map(([key, value]) => ({
-                                    labelText: key.replace('_', ' '),
-                                    labelValue: value,
-                                }))}
-                            />
-                        </CardContainer>
-                    </Stack>
-                </SettingsGroupContent>
-            </SettingsGroup>
+            <CardContainer>
+                <CardComponent
+                    heading={t('network-info')}
+                    labels={[
+                        {
+                            labelText: 'established incoming',
+                            labelValue: connectionInfo?.network_info?.connection_counters?.established_incoming || '-',
+                        },
+                        {
+                            labelText: 'established outgoing',
+                            labelValue: connectionInfo?.network_info?.connection_counters?.established_outgoing || '-',
+                        },
+                        {
+                            labelText: 'pending incoming',
+                            labelValue: connectionInfo?.network_info?.connection_counters?.pending_incoming || '-',
+                        },
+                        {
+                            labelText: 'pending outgoing',
+                            labelValue: connectionInfo?.network_info?.connection_counters?.pending_outgoing || '-',
+                        },
+                    ]}
+                />
+                <CardComponent
+                    heading={t('sha3-stats')}
+                    labels={Object.entries(sha3Stats || {}).map(([key, value]) => ({
+                        labelText: key.replace('_', ' '),
+                        labelValue: value,
+                    }))}
+                />
+                <CardComponent
+                    heading={t('randomx-stats')}
+                    labels={Object.entries(randomXStats || {}).map(([key, value]) => ({
+                        labelText: key.replace('_', ' '),
+                        labelValue: value,
+                    }))}
+                />
+            </CardContainer>
 
             <Divider />
             {displayPeers?.length ? (
