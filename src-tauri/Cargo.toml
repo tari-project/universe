@@ -91,6 +91,7 @@ tokio-util = { version = "0.7.11", features = ["compat"] }
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 dirs = "5.0.1"
+tauri-plugin-process = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
