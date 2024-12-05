@@ -426,6 +426,13 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
+        progress_tracker
+            .send_last_action(format!(
+                "Downloading version: {} of binary: {}",
+                version.to_string(),
+                self.binary_name
+            ))
+            .await;
         download_file_with_retries(
             asset.url.as_str(),
             &in_progress_file_zip,
@@ -436,6 +443,13 @@ impl BinaryManager {
 
         info!(target: LOG_TARGET, "Downloaded version: {:?}", version);
 
+        progress_tracker
+            .send_last_action(format!(
+                "Extracting file: {} to dest: {}",
+                in_progress_file_zip.to_str().unwrap_or_default(),
+                destination_dir.to_str().unwrap_or_default()
+            ))
+            .await;
         extract(&in_progress_file_zip, &destination_dir)
             .await
             .map_err(|e| anyhow!("Error extracting version: {:?}. Error: {:?}", version, e))?;

@@ -30,6 +30,10 @@ impl ProgressTracker {
         self.inner.write().await.set_next_max(max);
     }
 
+    pub async fn send_last_action(&self, action: String) {
+        self.inner.read().await.send_last_action(action);
+    }
+
     pub async fn update(
         &self,
         title: String,
@@ -63,6 +67,15 @@ impl ProgressTrackerInner {
     pub fn set_next_max(&mut self, max: u64) {
         self.min = self.next_max;
         self.next_max = max;
+    }
+
+    pub fn send_last_action(&self, action: String) {
+        if let Some(channel) = &self.last_action_channel {
+            channel
+                .send(action)
+                .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e))
+                .ok();
+        }
     }
 
     pub fn update(
