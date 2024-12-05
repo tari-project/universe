@@ -215,7 +215,7 @@ impl BinaryResolver {
     ) -> Result<(), Error> {
         match timeout(
             Duration::from_secs(60 * 5),
-            self.initalize_binary(binary, progress_tracker.clone(), should_check_for_update),
+            self.initialize_binary(binary, progress_tracker.clone(), should_check_for_update),
         )
         .await
         {
@@ -224,13 +224,13 @@ impl BinaryResolver {
                 error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
                 let error_msg = format!("Setup took too long: {}", last_msg);
                 sentry::capture_message(&error_msg, sentry::Level::Error);
-                return Err(anyhow!(error_msg));
+                Err(anyhow!(error_msg))
             }
             Ok(result) => result,
         }
     }
 
-    pub async fn initalize_binary(
+    pub async fn initialize_binary(
         &mut self,
         binary: Binaries,
         progress_tracker: ProgressTracker,
