@@ -5,7 +5,6 @@ use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
 use tari_common::configuration::Network;
-use tauri::api::path::cache_dir;
 
 use crate::{
     download_utils::download_file_with_retries, github, progress_tracker::ProgressTracker,
@@ -52,7 +51,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error> {
         let cache_path =
-            cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
+            dirs::cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
 
         let binary_folder_path = cache_path
             .join(APPLICATION_FOLDER_ID)

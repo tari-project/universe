@@ -12,7 +12,6 @@ use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
 use crate::p2pool::models::{Connections, Stats};
 use crate::progress_tracker::ProgressTracker;
-use crate::systemtray_manager::{SystemtrayManager, SystrayData};
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
@@ -22,7 +21,6 @@ use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
-use sentry::integrations::anyhow::capture_anyhow;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -31,6 +29,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri_plugin_sentry::sentry;
+use tauri_plugin_sentry::sentry::protocol::Event;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -108,12 +108,12 @@ pub struct CpuMinerConnectionStatus {
 }
 
 #[tauri::command]
-pub async fn close_splashscreen(window: tauri::Window) {
-    let splashscreen_window = window
-        .get_window("splashscreen")
+pub async fn close_splashscreen(app: tauri::AppHandle) {
+    let splashscreen_window = app
+        .get_webview_window("splashscreen")
         .expect("no window labeled 'splashscreen' found");
-    let main_window = window
-        .get_window("main")
+    let main_window = app
+        .get_webview_window("main")
         .expect("no window labeled 'main' found");
 
     if let (Ok(window_position), Ok(window_size)) = (
@@ -163,12 +163,8 @@ pub async fn download_and_start_installer(
 }
 
 #[tauri::command]
-pub async fn exit_application(
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
-    stop_all_processes(state.inner().clone(), true).await?;
+pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
+    stop_all_processes(app.clone(), true).await?;
 
     app.exit(0);
     Ok(())
@@ -338,13 +334,12 @@ pub async fn get_network(
 #[tauri::command]
 pub async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
     if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
         let read = state.cached_miner_metrics.read().await;
         if let Some(metrics) = &*read {
-            warn!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
+            debug!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
             return Ok(metrics.clone());
         }
         warn!(target: LOG_TARGET, "Already getting miner metrics");
@@ -352,7 +347,6 @@ pub async fn get_miner_metrics(
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
-    // info!(target: LOG_TARGET, "1 elapsed {:?}", timer.elapsed());
     let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
         state
             .node_manager
@@ -364,7 +358,6 @@ pub async fn get_miner_metrics(
                 }
                 (0, 0, MicroMinotari(0), 0, 0, false)
             });
-    // info!(target: LOG_TARGET, "2 elapsed {:?}", timer.elapsed());
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
@@ -383,8 +376,6 @@ pub async fn get_miner_metrics(
     };
     drop(cpu_miner);
 
-    // info!(target: LOG_TARGET, "3 elapsed {:?}", timer.elapsed());
-
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_mining_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
         Ok(gpu) => gpu,
@@ -398,45 +389,11 @@ pub async fn get_miner_metrics(
     };
     drop(gpu_miner);
 
-    // let config_path = app
-    //     .path_resolver()
-    //     .app_config_dir()
-    //     .expect("Could not get config dir");
-    // let _unused = HardwareMonitor::current()
-    //     .write()
-    //     .await
-    //     .load_status_file(config_path);
-    // let hardware_status = HardwareMonitor::current()
-    //     .write()
-    //     .await
-    //     .read_hardware_parameters();
-
-    // info!(target: LOG_TARGET, "4 elapsed {:?}", timer.elapsed());
     let gpu_public_parameters = HardwareStatusMonitor::current()
         .get_gpu_devices_public_properties()
         .await
         .map_err(|e| e.to_string())?;
-    //     .map_err(|e| e.to_string())?;
-    // info!(target: LOG_TARGET, "5 elapsed {:?}", timer.elapsed());
-    // let cpu_public_parameters = HardwareStatusMonitor::current()
-    //     .get_cpu_public_properties()
-    //     .await
-    //     .map_err(|e| e.to_string())?;
 
-    // info!(target: LOG_TARGET, "6 elapsed {:?}", timer.elapsed());
-
-    let new_systemtray_data: SystrayData = SystemtrayManager::current().create_systemtray_data(
-        cpu_mining_status.hash_rate,
-        gpu_mining_status.hash_rate as f64,
-        // gpu_public_parameters.clone(),
-        // cpu_public_parameters.clone(),
-        (cpu_mining_status.estimated_earnings + gpu_mining_status.estimated_earnings) as f64,
-    );
-
-    // info!(target: LOG_TARGET, "7 elapsed {:?}", timer.elapsed());
-    SystemtrayManager::current().update_systray(app, new_systemtray_data);
-
-    // info!(target: LOG_TARGET, "8 elapsed {:?}", timer.elapsed());
     let connected_peers = state
         .node_manager
         .list_connected_peers()
@@ -447,7 +404,7 @@ pub async fn get_miner_metrics(
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
 
-    let ret = MinerMetrics {
+    let metrics_ret = MinerMetrics {
         sha_network_hash_rate: sha_hash_rate,
         randomx_network_hash_rate: randomx_hash_rate,
         cpu: CpuMinerMetrics {
@@ -466,13 +423,14 @@ pub async fn get_miner_metrics(
             connected_peers,
         },
     };
+
     let mut lock = state.cached_miner_metrics.write().await;
-    *lock = Some(ret.clone());
+    *lock = Some(metrics_ret.clone());
     state
         .is_getting_miner_metrics
         .store(false, Ordering::SeqCst);
 
-    Ok(ret)
+    Ok(metrics_ret)
 }
 
 #[tauri::command]
@@ -489,7 +447,7 @@ pub async fn get_monero_seed_words(
     }
 
     let config_path = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
 
@@ -610,7 +568,7 @@ pub async fn get_used_p2pool_stats_server_port(
 pub async fn get_paper_wallet_details(app: tauri::AppHandle) -> Result<PaperWalletConfig, String> {
     let timer = Instant::now();
     let config_path = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
     let internal_wallet = InternalWallet::load_or_create(config_path)
@@ -635,7 +593,7 @@ pub async fn get_seed_words(
 ) -> Result<Vec<String>, String> {
     let timer = Instant::now();
     let config_path = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
     let internal_wallet = InternalWallet::load_or_create(config_path)
@@ -773,35 +731,33 @@ pub async fn get_transaction_history(
 pub async fn import_seed_words(
     seed_words: Vec<String>,
     _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
     let config_path = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
     let data_dir = app
-        .path_resolver()
+        .path()
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_processes(state.inner().clone(), false).await?;
+    stop_all_processes(app.clone(), false).await?;
 
-    tauri::async_runtime::spawn(async move {
-        match InternalWallet::create_from_seed(config_path, seed_words).await {
-            Ok(_wallet) => {
-                InternalWallet::clear_wallet_local_data(data_dir).await?;
-                info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
-                app.restart();
-                Ok(())
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-                Err(e)
-            }
+    match InternalWallet::create_from_seed(config_path, seed_words).await {
+        Ok(_wallet) => {
+            InternalWallet::clear_wallet_local_data(data_dir)
+                .await
+                .map_err(|e| e.to_string())?;
+            info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
+            app.restart();
         }
-    });
+        Err(e) => {
+            error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            e.to_string()
+        }
+    };
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
@@ -822,10 +778,7 @@ pub fn log_web_message(level: String, message: Vec<String>) {
 
 #[tauri::command]
 pub fn open_log_dir(app: tauri::AppHandle) {
-    let log_dir = app
-        .path_resolver()
-        .app_log_dir()
-        .expect("Could not get log dir");
+    let log_dir = app.path().app_log_dir().expect("Could not get log dir");
     if let Err(e) = open::that(log_dir) {
         error!(target: LOG_TARGET, "Could not open log dir: {:?}", e);
     }
@@ -835,16 +788,15 @@ pub fn open_log_dir(app: tauri::AppHandle) {
 pub async fn reset_settings<'r>(
     reset_wallet: bool,
     _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_processes(state.inner().clone(), true).await?;
+    stop_all_processes(app.clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
-    let app_config_dir = app.path_resolver().app_config_dir();
-    let app_cache_dir = app.path_resolver().app_cache_dir();
-    let app_data_dir = app.path_resolver().app_data_dir();
-    let app_local_data_dir = app.path_resolver().app_local_data_dir();
+    let app_config_dir = app.path().app_config_dir();
+    let app_cache_dir = app.path().app_cache_dir();
+    let app_data_dir = app.path().app_data_dir();
+    let app_local_data_dir = app.path().app_local_data_dir();
 
     let dirs_to_remove = [
         app_config_dir,
@@ -855,7 +807,7 @@ pub async fn reset_settings<'r>(
     let valid_dir_paths: Vec<String> = dirs_to_remove
         .iter()
         .filter_map(|dir| {
-            if let Some(path) = dir {
+            if let Ok(path) = dir {
                 path.to_str().map(|s| s.to_string())
             } else {
                 None
@@ -930,8 +882,6 @@ pub async fn reset_settings<'r>(
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
-
-    Ok(())
 }
 
 #[tauri::command]
@@ -948,15 +898,13 @@ pub async fn resolve_application_language(
 pub async fn restart_application(
     should_stop_miners: bool,
     _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_processes(state.inner().clone(), true).await?;
+        stop_all_processes(app.clone(), true).await?;
     }
 
     app.restart();
-    Ok(())
 }
 
 #[tauri::command]
@@ -968,15 +916,13 @@ pub async fn send_feedback(
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let timer = Instant::now();
+    let app_log_dir = Some(app.path().app_log_dir().expect("Could not get log dir."));
+
     let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(
-            feedback,
-            include_logs,
-            app.path_resolver().app_log_dir().clone(),
-        )
+        .send_feedback(feedback, include_logs, app_log_dir.clone())
         .await
         .inspect_err(|e| error!("error at send_feedback {:?}", e))
         .map_err(|e| e.to_string())?;
@@ -1374,7 +1320,7 @@ pub async fn set_use_tor(
         .map_err(|e| e.to_string())?;
 
     let config_dir = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
 
@@ -1427,7 +1373,12 @@ pub async fn setup_application(
     rollback.set_value(true, Duration::from_millis(1000)).await;
     setup_inner(window, state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        capture_anyhow(&e);
+        sentry::capture_event(Event {
+            level: sentry::Level::Error,
+            message: Some(e.to_string()),
+            culprit: Some("setup-inner".to_string()),
+            ..Default::default()
+        });
         e.to_string()
     })?;
 
@@ -1479,15 +1430,13 @@ pub async fn start_mining<'r>(
                 &cpu_miner_config,
                 monero_address.to_string(),
                 mm_proxy_port,
-                app.path_resolver()
+                app.path()
                     .app_local_data_dir()
                     .expect("Could not get data dir"),
-                app.path_resolver()
+                app.path()
                     .app_config_dir()
                     .expect("Could not get config dir"),
-                app.path_resolver()
-                    .app_log_dir()
-                    .expect("Could not get log dir"),
+                app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
                 custom_cpu_usage,
             )
@@ -1542,15 +1491,13 @@ pub async fn start_mining<'r>(
                 state.shutdown.to_signal(),
                 tari_address,
                 source,
-                app.path_resolver()
+                app.path()
                     .app_local_data_dir()
                     .expect("Could not get data dir"),
-                app.path_resolver()
+                app.path()
                     .app_config_dir()
                     .expect("Could not get config dir"),
-                app.path_resolver()
-                    .app_log_dir()
-                    .expect("Could not get log dir"),
+                app.path().app_log_dir().expect("Could not get log dir"),
                 mode,
                 telemetry_id,
                 custom_gpu_usage,
@@ -1618,12 +1565,7 @@ pub async fn update_applications(
         )
         .map_err(|e| e.to_string())?;
 
-    let progress_tracker = ProgressTracker::new(
-        app.get_window("main")
-            .expect("Could not get main window")
-            .clone(),
-        None,
-    );
+    let progress_tracker = ProgressTracker::new(app.clone(), None);
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
         .await

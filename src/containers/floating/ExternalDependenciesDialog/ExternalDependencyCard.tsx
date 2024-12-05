@@ -6,7 +6,7 @@ import { ExternalDependency, ExternalDependencyStatus } from '@app/types/app-sta
 import { IoArrowDownCircleOutline } from 'react-icons/io5';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useCallback } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 

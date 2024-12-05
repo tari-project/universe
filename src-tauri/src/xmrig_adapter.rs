@@ -108,6 +108,7 @@ impl ProcessAdapter for XmrigAdapter {
         ));
         #[allow(clippy::collapsible_match)]
         // don't specify threads for ludicrous mode
+        #[allow(clippy::collapsible_match)]
         if let Some(cpu_threads) = self.cpu_threads {
             if let Some(cpu_threads) = cpu_threads {
                 args.push(format!("--threads={}", cpu_threads));

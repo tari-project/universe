@@ -1,6 +1,21 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { useTranslation } from 'react-i18next';
+import { AnimatePresence } from 'framer-motion';
+import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
+import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { Stack } from '@app/components/elements/Stack.tsx';
+
+import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+
+import useFetchTx from '@app/hooks/mining/useTransactions.ts';
+import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
+import History from './History.tsx';
+
 import {
     BalanceVisibilityButton,
     CornerButton,
@@ -13,18 +28,6 @@ import {
     WalletContainer,
     WalletCornerButtons,
 } from './Wallet.styles.ts';
-import { Typography } from '@app/components/elements/Typography.tsx';
-import { useTranslation } from 'react-i18next';
-import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
-import { Stack } from '@app/components/elements/Stack.tsx';
-import { useWalletStore } from '@app/store/useWalletStore.ts';
-import { AnimatePresence } from 'framer-motion';
-import History from './History.tsx';
-import useFetchTx from '@app/hooks/mining/useTransactions.ts';
-import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
-import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 
 export default function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });

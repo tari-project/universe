@@ -1,12 +1,15 @@
 {
   "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
+  "cpu-hashrate": "CPU Hashrate",
   "cpu-power": "CPU Krag",
   "current-block-time": "Huidige bloktyd",
   "day": "day",
   "estimated-day": "Est tXTM/dag",
   "estimated-earnings": "Geskatte verdienste",
   "floor": "Vloer",
+  "gpu-hashrate": "GPU Hashrate",
   "gpu-power": "GPU Krag",
+  "gpu-usage": "GPU Usage",
   "mining-button-text": {
     "cancel-mining": "Kanselleer myn",
     "changing-mode": "Verander modus",
