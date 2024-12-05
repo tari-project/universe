@@ -745,21 +745,19 @@ pub async fn import_seed_words(
 
     stop_all_processes(app.clone(), false).await?;
 
-    tauri::async_runtime::spawn(async move {
-        match InternalWallet::create_from_seed(config_path, seed_words).await {
-            Ok(_wallet) => {
-                InternalWallet::clear_wallet_local_data(data_dir)
-                    .await
-                    .map_err(|e| e.to_string())?;
-                info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
-                app.restart();
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-                Err::<(), std::string::String>(e.to_string())
-            }
+    match InternalWallet::create_from_seed(config_path, seed_words).await {
+        Ok(_wallet) => {
+            InternalWallet::clear_wallet_local_data(data_dir)
+                .await
+                .map_err(|e| e.to_string())?;
+            info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
+            app.restart();
         }
-    });
+        Err(e) => {
+            error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            e.to_string()
+        }
+    };
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());

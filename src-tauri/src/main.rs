@@ -458,8 +458,13 @@ async fn setup_inner(
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(1));
         loop {
-            interval.tick().await;
             let app_state = move_handle.state::<UniverseAppState>().clone();
+
+            if app_state.shutdown.is_triggered() {
+                break;
+            }
+
+            interval.tick().await;
             if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
                 drop(move_handle.clone().emit("miner_metrics", metrics_ret));
             }
@@ -472,9 +477,12 @@ async fn setup_inner(
         let mut has_send_error = false;
 
         loop {
-            interval.tick().await;
-
             let state = app_handle_clone.state::<UniverseAppState>().inner();
+            if state.shutdown.is_triggered() {
+                break;
+            }
+
+            interval.tick().await;
             let check_if_orphan = state
                 .node_manager
                 .check_if_is_orphan_chain(!has_send_error)

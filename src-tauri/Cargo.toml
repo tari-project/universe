@@ -44,7 +44,6 @@ monero-address-creator = { git = "https://github.com/tari-project/monero-address
 nix = { version = "0.29.0", features = ["signal"] }
 nvml-wrapper = "0.10.0"
 open = "5"
-openssl = { version = "0.10", features = ["vendored"] }
 phraze = "0.3.15"
 rand = "0.8.5"
 regex = "1.10.5"
@@ -64,11 +63,16 @@ tari_common_types = { git = "https://github.com/tari-project/tari.git", branch =
 tari_core = { git = "https://github.com/tari-project/tari.git", branch = "development", features = [
   "transactions",
 ] }
+
+# This crates are temporary fix to solve issue with building tari app 
 hickory-client = { version = "=0.25.0-alpha.2", features = [
   "dns-over-rustls",
   "dnssec-openssl",
 ] }
 hickory-proto = { version = "=0.25.0-alpha.2" }
+openssl = { version = "0.10", features = ["vendored"] }
+#=======================================================================
+
 tari_crypto = "0.21.0"
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
@@ -119,9 +123,9 @@ release-ci-beta = ["tauri/custom-protocol"]
 ignored = [
   "hickory-client",
   "hickory-proto",
+  "openssl",
   "libsqlite3-sys",
   "log4rs",
   "minotari_wallet_grpc_client",
-  "openssl",
   "xz2",
 ]

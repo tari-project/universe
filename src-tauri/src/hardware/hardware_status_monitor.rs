@@ -1,7 +1,8 @@
 use std::{path::PathBuf, sync::LazyLock};
 
-use crate::hardware::{
-    cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader,
+use crate::{
+    hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
+    APPLICATION_FOLDER_ID,
 };
 
 use super::{
@@ -175,7 +176,9 @@ impl HardwareStatusMonitor {
     }
 
     async fn initialize_gpu_devices(&self) -> Result<Vec<GpuDeviceProperties>, Error> {
-        let config_dir = dirs::config_dir().expect("Could not get config dir");
+        let config_dir = dirs::config_dir()
+            .expect("Could not get config dir")
+            .join(APPLICATION_FOLDER_ID);
         let gpu_status_file_content = self.load_gpu_devices_from_status_file(config_dir).await?;
         let mut platform_devices = Vec::new();
 
