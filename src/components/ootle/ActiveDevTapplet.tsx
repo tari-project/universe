@@ -87,7 +87,7 @@ export default function ActiveDevTapplet() {
                     <MdClose color="primary" />
                 </IconButton>
             </SettingsGroupTitle>
-            <Box height="100%" minHeight={500}>
+            <Box height="100%" width="100%">
                 {isVerified && tappProvider && <Tapplet source={devTapplet.endpoint} provider={tappProvider} />}
             </Box>
         </>

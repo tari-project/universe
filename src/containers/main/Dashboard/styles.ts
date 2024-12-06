@@ -1,7 +1,7 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { m } from 'framer-motion';
 
-export const DashboardContentContainer = styled(m.div)`
+export const DashboardContentContainer = styled(m.div)<{ $ootleModeOn?: boolean }>`
     display: flex;
     align-items: center;
     flex-direction: column;
@@ -9,6 +9,7 @@ export const DashboardContentContainer = styled(m.div)`
     height: 100%;
     flex-grow: 1;
     position: relative;
+    pointer-events: ${({ $ootleModeOn }) => ($ootleModeOn ? 'auto' : 'none')};
 `;
 
 export const ProgressWrapper = styled.div`

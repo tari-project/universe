@@ -33,6 +33,7 @@ interface Actions {
     setTheme: (theme: displayMode) => Promise<void>;
     setVisualMode: (enabled: boolean) => void;
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
+    setOotleMode: (enabled: boolean) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -61,6 +62,7 @@ const initialState: State = {
     custom_max_cpu_usage: undefined,
     custom_max_gpu_usage: [],
     show_experimental_settings: false,
+    ootle_enabled: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
@@ -289,5 +291,8 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             appStateStore.setError('Could not change experimental settings');
             set({ show_experimental_settings: !showExperimentalSettings });
         });
+    },
+    setOotleMode: (enabled) => {
+        set({ ootle_enabled: enabled });
     },
 }));

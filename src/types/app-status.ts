@@ -46,6 +46,7 @@ export interface AppConfig {
     show_experimental_settings: boolean;
     monero_address_is_generated?: boolean;
     created_at: string;
+    ootle_enabled: boolean;
 }
 
 export enum ExternalDependencyStatus {
