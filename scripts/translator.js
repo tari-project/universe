@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Copyright 2022 The Tari Project
+// SPDX-License-Identifier: BSD-3-Clauses
+
 import fs from 'fs';
 import path from 'path';
 import process from 'process';

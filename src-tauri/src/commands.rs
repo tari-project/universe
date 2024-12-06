@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::app_config::{AppConfig, GpuThreads};
 use crate::app_in_memory_config::AirdropInMemoryConfig;
 use crate::auto_launcher::AutoLauncher;
@@ -745,21 +767,19 @@ pub async fn import_seed_words(
 
     stop_all_processes(app.clone(), false).await?;
 
-    tauri::async_runtime::spawn(async move {
-        match InternalWallet::create_from_seed(config_path, seed_words).await {
-            Ok(_wallet) => {
-                InternalWallet::clear_wallet_local_data(data_dir)
-                    .await
-                    .map_err(|e| e.to_string())?;
-                info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
-                app.restart();
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-                Err::<(), std::string::String>(e.to_string())
-            }
+    match InternalWallet::create_from_seed(config_path, seed_words).await {
+        Ok(_wallet) => {
+            InternalWallet::clear_wallet_local_data(data_dir)
+                .await
+                .map_err(|e| e.to_string())?;
+            info!(target: LOG_TARGET, "[import_seed_words] Restarting the app");
+            app.restart();
         }
-    });
+        Err(e) => {
+            error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            e.to_string()
+        }
+    };
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
@@ -1567,7 +1587,7 @@ pub async fn update_applications(
         )
         .map_err(|e| e.to_string())?;
 
-    let progress_tracker = ProgressTracker::new(app.clone());
+    let progress_tracker = ProgressTracker::new(app.clone(), None);
     binary_resolver
         .update_binary(Binaries::Xmrig, progress_tracker.clone())
         .await

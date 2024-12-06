@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use anyhow::{anyhow, Error};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
@@ -141,9 +163,10 @@ impl BinaryManager {
         Ok(in_progress_folder)
     }
 
-    fn delete_in_progress_folder_for_selected_version(
+    async fn delete_in_progress_folder_for_selected_version(
         &self,
         selected_version: Version,
+        progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET,"Deleting in progress folder for version: {:?}", selected_version);
 
@@ -156,6 +179,12 @@ impl BinaryManager {
             .join(selected_version.to_string())
             .join("in_progress");
 
+        progress_tracker
+            .send_last_action(format!(
+                "Removing in progress folder: {:?}",
+                in_progress_folder
+            ))
+            .await;
         if in_progress_folder.exists() {
             info!(target: LOG_TARGET,"Removing in progress folder: {:?}", in_progress_folder);
             if let Err(error) = std::fs::remove_dir_all(&in_progress_folder) {
@@ -231,6 +260,12 @@ impl BinaryManager {
             version: version.clone(),
             assets: vec![asset.clone()],
         };
+        progress_tracker
+            .send_last_action(format!(
+                "Downloading checksum file for dest: {:?}",
+                destination_dir
+            ))
+            .await;
         let checksum_file = self
             .adapter
             .download_and_get_checksum_path(
@@ -251,6 +286,12 @@ impl BinaryManager {
         info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
         info!(target: LOG_TARGET, "Checksum file: {:?}", checksum_file);
         info!(target: LOG_TARGET, "In progress file: {:?}", in_progress_file_zip);
+        progress_tracker
+            .send_last_action(format!(
+                "Validating checksum for checksum file: {:?} and in progress file: {:?}",
+                checksum_file, in_progress_file_zip
+            ))
+            .await;
         match validate_checksum(
             in_progress_file_zip.clone(),
             checksum_file,
@@ -426,6 +467,13 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
+        progress_tracker
+            .send_last_action(format!(
+                "Downloading binary: {} with version: {}",
+                self.binary_name,
+                version.to_string()
+            ))
+            .await;
         download_file_with_retries(
             asset.url.as_str(),
             &in_progress_file_zip,
@@ -436,6 +484,13 @@ impl BinaryManager {
 
         info!(target: LOG_TARGET, "Downloaded version: {:?}", version);
 
+        progress_tracker
+            .send_last_action(format!(
+                "Extracting file: {} to dest: {}",
+                in_progress_file_zip.to_str().unwrap_or_default(),
+                destination_dir.to_str().unwrap_or_default()
+            ))
+            .await;
         extract(&in_progress_file_zip, &destination_dir)
             .await
             .map_err(|e| anyhow!("Error extracting version: {:?}. Error: {:?}", version, e))?;
@@ -446,12 +501,16 @@ impl BinaryManager {
                 asset,
                 destination_dir,
                 in_progress_file_zip,
-                progress_tracker,
+                progress_tracker.clone(),
             )
             .await?;
         }
 
-        self.delete_in_progress_folder_for_selected_version(version.clone())?;
+        self.delete_in_progress_folder_for_selected_version(
+            version.clone(),
+            progress_tracker.clone(),
+        )
+        .await?;
         Ok(())
     }
 

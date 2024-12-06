@@ -1,5 +1,5 @@
 import { StatWrapper, TileItem, TileTop, Unit } from '../styles';
-import truncateString from '@app/utils/truncateString.ts';
+import { truncateString } from '@app/utils/truncateString.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Chip } from '@app/components/elements/Chip.tsx';
 import { colorsAll } from '@app/theme/palettes/colors.ts';

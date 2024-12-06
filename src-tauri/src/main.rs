@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -8,6 +30,7 @@ use log::{debug, error, info, warn};
 use p2pool::models::Connections;
 use std::fs::{remove_dir_all, remove_file};
 use updates_manager::UpdatesManager;
+use tokio::sync::watch::{self};
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -201,7 +224,8 @@ async fn setup_inner(
         .initialize_auto_launcher(is_auto_launcher_enabled)
         .await?;
 
-    let progress = ProgressTracker::new(app.clone());
+    let (tx, rx) = watch::channel("".to_string());
+    let progress = ProgressTracker::new(app.clone(), Some(tx));
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
@@ -225,7 +249,12 @@ async fn setup_inner(
             .update("checking-latest-version-tor".to_string(), None, 0)
             .await;
         binary_resolver
-            .initalize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+            .initialize_binary_timeout(
+                Binaries::Tor,
+                progress.clone(),
+                should_check_for_update,
+                rx.clone(),
+            )
             .await?;
         sleep(Duration::from_secs(1));
     }
@@ -235,10 +264,11 @@ async fn setup_inner(
         .update("checking-latest-version-node".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(
+        .initialize_binary_timeout(
             Binaries::MinotariNode,
             progress.clone(),
             should_check_for_update,
+            rx.clone(),
         )
         .await?;
     sleep(Duration::from_secs(1));
@@ -248,31 +278,39 @@ async fn setup_inner(
         .update("checking-latest-version-mmproxy".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(
+        .initialize_binary_timeout(
             Binaries::MergeMiningProxy,
             progress.clone(),
             should_check_for_update,
+            rx.clone(),
         )
         .await?;
     sleep(Duration::from_secs(1));
+
     progress.set_max(20).await;
     progress
         .update("checking-latest-version-wallet".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(Binaries::Wallet, progress.clone(), should_check_for_update)
+        .initialize_binary_timeout(
+            Binaries::Wallet,
+            progress.clone(),
+            should_check_for_update,
+            rx.clone(),
+        )
         .await?;
-
     sleep(Duration::from_secs(1));
+
     progress.set_max(25).await;
     progress
         .update("checking-latest-version-gpuminer".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(
+        .initialize_binary_timeout(
             Binaries::GpuMiner,
             progress.clone(),
             should_check_for_update,
+            rx.clone(),
         )
         .await?;
     sleep(Duration::from_secs(1));
@@ -282,21 +320,29 @@ async fn setup_inner(
         .update("checking-latest-version-xmrig".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(Binaries::Xmrig, progress.clone(), should_check_for_update)
+        .initialize_binary_timeout(
+            Binaries::Xmrig,
+            progress.clone(),
+            should_check_for_update,
+            rx.clone(),
+        )
         .await?;
     sleep(Duration::from_secs(1));
+
     progress.set_max(35).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
         .await;
     binary_resolver
-        .initalize_binary(
+        .initialize_binary_timeout(
             Binaries::ShaP2pool,
             progress.clone(),
             should_check_for_update,
+            rx.clone(),
         )
         .await?;
     sleep(Duration::from_secs(1));
+
     if should_check_for_update {
         state
             .config
@@ -361,7 +407,6 @@ async fn setup_inner(
             }
         }
     }
-
     info!(target: LOG_TARGET, "Node has started and is ready");
 
     progress.set_max(40).await;
@@ -462,8 +507,13 @@ async fn setup_inner(
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(1));
         loop {
-            interval.tick().await;
             let app_state = move_handle.state::<UniverseAppState>().clone();
+
+            if app_state.shutdown.is_triggered() {
+                break;
+            }
+
+            interval.tick().await;
             if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
                 drop(move_handle.clone().emit("miner_metrics", metrics_ret));
             }
@@ -476,9 +526,12 @@ async fn setup_inner(
         let mut has_send_error = false;
 
         loop {
-            interval.tick().await;
-
             let state = app_handle_clone.state::<UniverseAppState>().inner();
+            if state.shutdown.is_triggered() {
+                break;
+            }
+
+            interval.tick().await;
             let check_if_orphan = state
                 .node_manager
                 .check_if_is_orphan_chain(!has_send_error)
