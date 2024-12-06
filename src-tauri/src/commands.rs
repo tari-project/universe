@@ -2,14 +2,22 @@ use crate::app_config::{AppConfig, GpuThreads};
 use crate::app_in_memory_config::AirdropInMemoryConfig;
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::consts::{TAPPLET_ARCHIVE, TAPPLET_DIST_DIR};
 use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::download_utils::extract;
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use crate::interface::{LaunchedTappResult, TappletPermissions};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
+use crate::ootle::error::{Error::TappletServerError, TappletServerError::*};
+use crate::ootle::tapplet_installer::{
+    check_files_and_validate_checksum, get_tapp_download_path, get_tapp_permissions,
+};
+use crate::ootle::tapplet_server::start;
 use crate::p2pool::models::Stats;
 use crate::progress_tracker::ProgressTracker;
 use crate::systemtray_manager::{SystemtrayManager, SystrayData};
@@ -1596,4 +1604,72 @@ pub async fn update_applications(
     drop(binary_resolver);
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn launch_tapplet(
+    installed_tapplet_id: i32,
+    shutdown_tokens: tauri::State<'_, ShutdownTokens>,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<LaunchedTappResult, String> {
+    let mut locked_tokens = shutdown_tokens.0.lock().await;
+    let mut store = SqliteStore::new(db_connection.0.clone());
+
+    let (_installed_tapp, registered_tapp, tapp_version) =
+        store.get_installed_tapplet_full_by_id(installed_tapplet_id)?;
+    // get download path
+    let tapplet_path = get_tapp_download_path(
+        registered_tapp.registry_id,
+        tapp_version.version.clone(),
+        app_handle.clone(),
+    )
+    .map_err(|e| e.to_string())?;
+    let file_path = tapplet_path.join(TAPPLET_ARCHIVE);
+
+    // Extract the tapplet archieve each time before launching
+    // This way make sure that local files have not been replaced and are not malicious
+    let _ = extract(&file_path, &tapplet_path.clone())
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error extracting file: {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    //TODO should compare integrity field with the one stored in db or from github manifest?
+    match check_files_and_validate_checksum(tapp_version, tapplet_path.clone()) {
+        Ok(is_valid) => {
+            info!(target: LOG_TARGET,"✅ Checksum validation successfully with test result: {:?}", is_valid);
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET,"❌ Error validating checksum: {:?}", e);
+            return Err(e.into());
+        }
+    }
+
+    let permissions: TappletPermissions = match get_tapp_permissions(tapplet_path.clone()) {
+        Ok(p) => p,
+        Err(e) => {
+            error!(target: LOG_TARGET,"Error getting permissions: {:?}", e);
+            return Err(e.into());
+        }
+    };
+
+    let dist_path = tapplet_path.join(TAPPLET_DIST_DIR);
+    let handle_start = tauri::async_runtime::spawn(async move { start(dist_path).await });
+
+    let (addr, cancel_token) = handle_start
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    match locked_tokens.insert(installed_tapplet_id.clone(), cancel_token) {
+        Some(_) => {
+            return Err(TappletServerError(AlreadyRunning)).map_err(|e| e.to_string())?;
+        }
+        None => {}
+    }
+
+    Ok(LaunchedTappResult {
+        endpoint: format!("http://{}", addr),
+        permissions,
+    })
 }

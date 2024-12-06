@@ -21,6 +21,7 @@ base64 = "0.22.1"
 blake2 = "0.10"
 chrono = "0.4.38"
 device_query = "2.1.0"
+diesel = "2.2.6"
 dunce = "1.0.5"
 dyn-clone = "1.0.17"
 fix-path-env = {git = "https://github.com/tauri-apps/fix-path-env-rs"}
