@@ -1,4 +1,4 @@
-use crate::error::{
+use crate::ootle::error::{
     Error::{self, TappletServerError},
     TappletServerError::*,
 };
@@ -69,7 +69,7 @@ pub async fn setup_log(log_dir: PathBuf) -> Result<(), anyhow::Error> {
     let _contents = setup_logging(
         &log_config_file,
         &log_dir,
-        include_str!("../log4rs/universe_sample.yml"),
+        include_str!("../../log4rs/universe_sample.yml"),
     )?;
     Ok(())
 }

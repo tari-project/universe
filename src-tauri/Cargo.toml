@@ -17,11 +17,13 @@ anyhow = "1"
 async-trait = "0.1.81"
 async_zip = {version = "0.0.17", features = ["full"] }
 auto-launch = "0.5.0"
+axum = "0.7.9"
 base64 = "0.22.1"
 blake2 = "0.10"
 chrono = "0.4.38"
 device_query = "2.1.0"
-diesel = "2.2.6"
+diesel = { version = "2.1.6", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
+diesel_migrations = { version = "2.1.0", features = ["sqlite"] }
 dunce = "1.0.5"
 dyn-clone = "1.0.17"
 fix-path-env = {git = "https://github.com/tauri-apps/fix-path-env-rs"}
@@ -96,6 +98,7 @@ tauri-plugin-single-instance = {git = "https://github.com/tauri-apps/plugins-wor
 thiserror = "1.0.26"
 tokio = {version = "1", features = ["full"] }
 tokio-util = {version = "0.7.11", features = ["compat"] }
+tower-http = { version = "0.5.2", features = ["fs", "trace"] }
 xz2 = {version = "0.1.7", features = ["static"] }# static bind lzma
 zip = "2.2.0"
 

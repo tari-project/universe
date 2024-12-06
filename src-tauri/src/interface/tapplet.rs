@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::{
     database::models::{InstalledTapplet, Tapplet, TappletVersion},
-    error::Error,
+    ootle::error::Error,
 };
 
 #[derive(Serialize)]

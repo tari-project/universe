@@ -4,6 +4,8 @@ use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::consts::{TAPPLET_ARCHIVE, TAPPLET_DIST_DIR};
 use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::database::models::{CreateTapplet, CreateTappletAsset, CreateTappletVersion};
+use crate::database::store::{SqliteStore, Store};
 use crate::download_utils::extract;
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
@@ -13,9 +15,11 @@ use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDevi
 use crate::interface::{LaunchedTappResult, TappletPermissions};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
+use crate::ootle::db_connection::{DatabaseConnection, ShutdownTokens};
 use crate::ootle::error::{Error::TappletServerError, TappletServerError::*};
 use crate::ootle::tapplet_installer::{
-    check_files_and_validate_checksum, get_tapp_download_path, get_tapp_permissions,
+    check_files_and_validate_checksum, download_asset, fetch_tapp_registry_manifest,
+    get_tapp_download_path, get_tapp_permissions,
 };
 use crate::ootle::tapplet_server::start;
 use crate::p2pool::models::Stats;
@@ -26,6 +30,7 @@ use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use futures_util::TryFutureExt;
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
@@ -39,6 +44,7 @@ use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tokio_util::sync::CancellationToken;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -1641,7 +1647,7 @@ pub async fn launch_tapplet(
         }
         Err(e) => {
             error!(target: LOG_TARGET,"❌ Error validating checksum: {:?}", e);
-            return Err(e.into());
+            return Err(e.to_string());
         }
     }
 
@@ -1649,17 +1655,20 @@ pub async fn launch_tapplet(
         Ok(p) => p,
         Err(e) => {
             error!(target: LOG_TARGET,"Error getting permissions: {:?}", e);
-            return Err(e.into());
+            return Err(e.to_string());
         }
     };
 
     let dist_path = tapplet_path.join(TAPPLET_DIST_DIR);
     let handle_start = tauri::async_runtime::spawn(async move { start(dist_path).await });
 
-    let (addr, cancel_token) = handle_start
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e))
-        .map_err(|e| e.to_string())?;
+    let (addr, cancel_token) = match handle_start.await {
+        Ok(result) => result.map_err(|e| e.to_string())?,
+        Err(e) => {
+            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
 
     match locked_tokens.insert(installed_tapplet_id.clone(), cancel_token) {
         Some(_) => {
@@ -1672,4 +1681,83 @@ pub async fn launch_tapplet(
         endpoint: format!("http://{}", addr),
         permissions,
     })
+}
+
+/**
+ *  REGISTERED TAPPLETS - FETCH DATA FROM MANIFEST JSON
+ */
+#[tauri::command]
+pub async fn fetch_tapplets(
+    app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<(), String> {
+    let progress_tracker = ProgressTracker::new(
+        app_handle
+            .get_window("main")
+            .expect("Could not get main window")
+            .clone(),
+    );
+
+    let tapplets = match fetch_tapp_registry_manifest().await {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    // let mut store = SqliteStore::new(db_connection.0.clone()); TODO this how it was
+    let mut store = SqliteStore::new(db_connection.inner().clone());
+
+    for tapplet_manifest in tapplets.registered_tapplets.values() {
+        let inserted_tapplet = store
+            .create(&CreateTapplet::from(tapplet_manifest))
+            .map_err(|e| e.to_string())?;
+
+        // TODO uncomment if audit data in manifest
+        // for audit_data in tapplet_manifest.metadata.audits.iter() {
+        //   store.create(
+        //     &(CreateTappletAudit {
+        //       tapplet_id: inserted_tapplet.id,
+        //       auditor: &audit_data.auditor,
+        //       report_url: &audit_data.report_url,
+        //     })
+        //   )?;
+        // }
+
+        for (version, version_data) in tapplet_manifest.versions.iter() {
+            store
+                .create(
+                    &(CreateTappletVersion {
+                        tapplet_id: inserted_tapplet.id,
+                        version: &version,
+                        integrity: &version_data.integrity,
+                        registry_url: &version_data.registry_url,
+                    }),
+                )
+                .map_err(|e| e.to_string());
+        }
+        match store.get_tapplet_assets_by_tapplet_id(inserted_tapplet.id.unwrap()) {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                let tapplet_assets =
+                    download_asset(app_handle.clone(), inserted_tapplet.registry_id)
+                        .await
+                        .unwrap_or(|e| e.to_string());
+
+                store
+                    .create(
+                        &(CreateTappletAsset {
+                            tapplet_id: inserted_tapplet.id,
+                            icon_url: &tapplet_assets.icon_url,
+                            background_url: &tapplet_assets.background_url,
+                        }),
+                    )
+                    .map_err(|e| e.to_string());
+            }
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        }
+    }
+    Ok(())
 }

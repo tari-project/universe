@@ -1,13 +1,15 @@
 use crate::{
     consts::{REGISTRY_URL, TAPPLETS_ASSETS_DIR, TAPPLETS_INSTALLED_DIR},
     database::models::TappletVersion,
-    error::{
-        Error::{self, IOError, JsonParsingError, RequestError},
-        IOError::*,
-        RequestError::*,
-    },
-    hash_calculator::calculate_checksum,
     interface::{RegisteredTapplets, TappletAssets, TappletConfig, TappletPermissions},
+    ootle::{
+        error::{
+            Error::{self, IOError, JsonParsingError, RequestError},
+            IOError::*,
+            RequestError::*,
+        },
+        hash_calculator::calculate_checksum,
+    },
 };
 use log::{error, warn};
 use std::{
@@ -15,8 +17,6 @@ use std::{
     io::Write,
     path::PathBuf,
 };
-use tauri::Manager;
-use tauri_plugin_http::reqwest::{self};
 pub const LOG_TARGET: &str = "tari::universe";
 
 pub fn delete_tapplet(tapplet_path: PathBuf) -> Result<(), Error> {
@@ -53,13 +53,10 @@ pub fn get_tapp_download_path(
 ) -> Result<PathBuf, Error> {
     // app_path = /home/user/.local/share/universe.tari
     let app_path = app_handle
-        .path()
+        .path_resolver()
         .app_data_dir()
-        .unwrap_or_else(|e| {
-            error!(target: LOG_TARGET, "❌ Failed to get app dir: {}", e);
-            PathBuf::from("")
-        })
-        .to_path_buf();
+        .expect("Could not get data dir");
+
     let tapplet_path = app_path
         .join(TAPPLETS_INSTALLED_DIR)
         .join(registry_id)
@@ -127,7 +124,11 @@ pub async fn download_asset(
     app_handle: tauri::AppHandle,
     tapplet_name: String,
 ) -> Result<TappletAssets, Error> {
-    let tapp_root_dir: PathBuf = app_handle.path().app_data_dir().unwrap().to_path_buf();
+    // let tapp_root_dir: PathBuf = app_handle.path().app_data_dir().unwrap().to_path_buf();
+    let tapp_root_dir: PathBuf = app_handle
+        .path_resolver()
+        .app_data_dir()
+        .expect("Could not get data dir");
     let tapp_asset_dir = get_or_create_tapp_asset_dir(tapp_root_dir, &tapplet_name)?;
     let assets = get_asset_urls(tapplet_name)?;
 

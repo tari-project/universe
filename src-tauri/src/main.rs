@@ -60,6 +60,7 @@ mod commands;
 mod consts;
 mod cpu_miner;
 mod credential_manager;
+mod database;
 mod download_utils;
 mod external_dependencies;
 mod feedback;
