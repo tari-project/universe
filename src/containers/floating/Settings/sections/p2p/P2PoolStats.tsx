@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { CardComponent } from '@app/containers/floating/Settings/components/Card.component';
 import { CardContainer } from '@app/containers/floating/Settings/components/Settings.styles';
 import {
-    SettingsGroupContent,
     SettingsGroupWrapper,
     SettingsGroupTitle,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
@@ -33,7 +32,7 @@ const P2PoolStats = () => {
 
     useEffect(() => {
         const fetchP2pStatsInterval = setInterval(async () => {
-            await fetchP2pStats();
+            await fetchP2pStats?.();
             await fetchP2poolConnections();
         }, 5000);
 
@@ -105,12 +104,12 @@ const P2PoolStats = () => {
 
             <Divider />
             {displayPeers?.length ? (
-                <SettingsGroupContent>
+                <>
                     <SettingsGroupTitle>
                         <Typography variant="h6">{`Connected Peers: ${displayPeers?.length}`}</Typography>
                     </SettingsGroupTitle>
                     {displayPeers ? <PeerTable peers={displayPeers} /> : null}
-                </SettingsGroupContent>
+                </>
             ) : null}
         </SettingsGroupWrapper>
     );

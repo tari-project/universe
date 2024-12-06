@@ -2,9 +2,12 @@ import styled, { css } from 'styled-components';
 import { CSSProperties } from 'react';
 
 export const TableOverflowWrapper = styled.div`
+    overflow: hidden;
     overflow-y: auto;
-    height: 100%;
+    height: auto;
+    max-height: clamp(min(100px, 10vh), 100%, max(20vh, 320px));
     padding: 0 8px 0 0;
+
     &::-webkit-scrollbar {
         width: 3px;
         display: unset;
@@ -17,13 +20,16 @@ export const TableOverflowWrapper = styled.div`
     &::-webkit-scrollbar-track {
         background-color: rgba(0, 0, 0, 0.1);
     }
+
+    @media (max-height: 955px) {
+        max-height: clamp(100px, 100%, max(20vh, 220px));
+    }
 `;
 
 export const Table = styled.div`
     display: grid;
     width: 100%;
     height: auto;
-    max-height: 20vh;
     overflow: hidden;
 `;
 
