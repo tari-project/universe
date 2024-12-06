@@ -70,7 +70,7 @@ export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems']; $diff
     }
 
     ${({ $diff, theme }) =>
-        $diff &&
+        $diff !== undefined &&
         css`
             &::after {
                 content: '${$diff === 0 ? '✓' : $diff < 0 ? '↑' : '↓'}';
@@ -79,7 +79,7 @@ export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems']; $diff
                 right: -5px;
                 top: 50%;
                 transform: translateY(-50%);
-                color: ${$diff === 0 ? theme.colors.green[600] : $diff > 0 ? theme.colors.red[600] : 'inherit'};
+                color: ${$diff === 0 ? theme.colors.green[600] : $diff < 0 ? theme.colors.red[600] : 'inherit'};
             }
         `}
 `;

@@ -46,7 +46,11 @@ const P2PoolStats = () => {
             const { current_sha3x_height, current_random_x_height } = peer.peer_info || {};
             const sha3Diff = sha3Height ? sha3Height - current_sha3x_height : undefined;
             const randomxDiff = randomXHeight ? randomXHeight - current_random_x_height : undefined;
-            return { ...peer, sha3Diff, randomxDiff };
+
+            const sha3DiffInRange = sha3Diff && Math.abs(sha3Diff) <= 3 ? 0 : sha3Diff;
+            const randomxDiffInRange = randomxDiff && Math.abs(randomxDiff) <= 3 ? 0 : randomxDiff;
+
+            return { ...peer, sha3Diff: sha3DiffInRange, randomxDiff: randomxDiffInRange };
         }) as ConnectedPeerInfoExtended[];
     }, [peers, randomXStats?.height, sha3Stats?.height]);
 
