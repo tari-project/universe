@@ -110,6 +110,8 @@ pub struct AppConfigFromFile {
     show_experimental_settings: bool,
     #[serde(default = "default_p2pool_stats_server_port")]
     p2pool_stats_server_port: Option<u16>,
+    #[serde(default = "default_false")]
+    pre_release: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -151,6 +153,7 @@ impl Default for AppConfigFromFile {
             window_settings: default_window_settings(),
             show_experimental_settings: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
+            pre_release: false,
         }
     }
 }
@@ -263,6 +266,7 @@ pub(crate) struct AppConfig {
     window_settings: Option<WindowSettings>,
     show_experimental_settings: bool,
     p2pool_stats_server_port: Option<u16>,
+    pre_release: bool,
 }
 
 impl AppConfig {
@@ -307,6 +311,7 @@ impl AppConfig {
             show_experimental_settings: false,
             keyring_accessed: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
+            pre_release: false,
         }
     }
 
@@ -383,6 +388,7 @@ impl AppConfig {
                 self.window_settings = config.window_settings;
                 self.show_experimental_settings = config.show_experimental_settings;
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
+                self.pre_release = config.pre_release;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -694,6 +700,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn auto_update(&self) -> bool {
+        self.auto_update
+    }
+
     pub async fn set_auto_update(&mut self, auto_update: bool) -> Result<(), anyhow::Error> {
         self.auto_update = auto_update;
         self.update_config_file().await?;
@@ -720,6 +730,16 @@ impl AppConfig {
         port: Option<u16>,
     ) -> Result<(), anyhow::Error> {
         self.p2pool_stats_server_port = port;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn pre_release(&self) -> bool {
+        self.pre_release
+    }
+
+    pub async fn set_pre_release(&mut self, pre_release: bool) -> Result<(), anyhow::Error> {
+        self.pre_release = pre_release;
         self.update_config_file().await?;
         Ok(())
     }
@@ -770,6 +790,7 @@ impl AppConfig {
             window_settings: self.window_settings.clone(),
             show_experimental_settings: self.show_experimental_settings,
             p2pool_stats_server_port: self.p2pool_stats_server_port,
+            pre_release: self.pre_release,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

@@ -1618,3 +1618,91 @@ pub async fn update_applications(
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn set_pre_release(
+    app: tauri::AppHandle,
+    pre_release: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_pre_release(pre_release)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    info!(target: LOG_TARGET, "Pre-release set to {}, try_update called", pre_release);
+
+    state
+        .updates_manager
+        .try_update(app.clone(), true)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_pre_release took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn check_for_updates(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Option<String>, String> {
+    let timer = Instant::now();
+
+    let update = state
+        .updates_manager
+        .check_for_update(app.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "check_for_updates took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(update.map(|u| u.version))
+}
+
+#[tauri::command]
+pub async fn try_update(
+    force: Option<bool>,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+
+    state
+        .updates_manager
+        .try_update(app.clone(), force.unwrap_or(false))
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "check_for_updates took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn proceed_with_update(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .updates_manager
+        .proceed_with_update(app.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}

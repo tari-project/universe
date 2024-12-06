@@ -83,6 +83,10 @@
   },
   "pool-mining": "Pool Mining",
   "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Randomx network hashrate",
   "refresh-versions": "Refresh versions",
   "release-notes": {

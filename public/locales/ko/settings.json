@@ -83,6 +83,10 @@
   },
   "pool-mining": "풀 채굴",
   "pool-mining-description": "활성화되면 풀에서 채굴하고 마이너 그룹에 참여합니다.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Randomx 네트워크 해시레이트",
   "refresh-versions": "버전 새로고침",
   "release-notes": {

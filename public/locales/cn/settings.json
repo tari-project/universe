@@ -83,6 +83,10 @@
   },
   "pool-mining": "矿池挖矿",
   "pool-mining-description": "启用后，您将在矿池中挖矿并加入一组矿工（部落）。",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Randomx 网络算力",
   "refresh-versions": "刷新版本",
   "release-notes": {

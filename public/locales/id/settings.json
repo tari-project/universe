@@ -83,6 +83,10 @@
   },
   "pool-mining": "Penambangan Pool",
   "pool-mining-description": "Ketika diaktifkan, Anda akan menambang dalam pool dan bergabung dengan kelompok penambang.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Hashrate jaringan Randomx",
   "refresh-versions": "Segarkan versi",
   "release-notes": {

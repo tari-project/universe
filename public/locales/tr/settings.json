@@ -83,6 +83,10 @@
   },
   "pool-mining": "Havuz Madenciliği",
   "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Randomx ağ hash oranı",
   "refresh-versions": "Sürümleri yenileyin",
   "release-notes": {
