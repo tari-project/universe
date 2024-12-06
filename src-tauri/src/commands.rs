@@ -138,13 +138,18 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
         .get_webview_window("main")
         .expect("no window labeled 'main' found");
 
-    if let (Ok(window_position), Ok(window_size)) = (
+    if let (Ok(window_position), Ok(window_size), Ok(is_fullscreen)) = (
         splashscreen_window.outer_position(),
-        splashscreen_window.outer_size(),
+        splashscreen_window.inner_size(),
+        splashscreen_window.is_fullscreen(),
     ) {
         splashscreen_window.close().expect("could not close");
         main_window.show().expect("could not show");
-        if let Err(e) = main_window
+        if is_fullscreen {
+            main_window
+                .set_fullscreen(true)
+                .expect("could not set fullscreen");
+        } else if let Err(e) = main_window
             .set_position(PhysicalPosition::new(window_position.x, window_position.y))
             .and_then(|_| {
                 main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
@@ -369,17 +374,14 @@ pub async fn get_miner_metrics(
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
-        state
-            .node_manager
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .unwrap_or_else(|e| {
-                if !matches!(e, NodeManagerError::NodeNotStarted) {
-                    warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
-                }
-                (0, 0, MicroMinotari(0), 0, 0, false)
-            });
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
+        .get_network_hash_rate_and_block_reward().await
+        .unwrap_or_else(|e| {
+            if !matches!(e, NodeManagerError::NodeNotStarted) {
+                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+            }
+            (0, 0, MicroMinotari(0), 0, 0, false)
+        });
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
@@ -777,9 +779,9 @@ pub async fn import_seed_words(
         }
         Err(e) => {
             error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            e.to_string()
+            e.to_string();
         }
-    };
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
@@ -1228,7 +1230,7 @@ pub async fn set_p2pool_enabled(
                         .await
                         .map_err(|error| error.to_string())?;
                     origin_config.set_to_use_base_node(base_node_grpc_port);
-                };
+                }
                 state
                     .mm_proxy_manager
                     .change_config(origin_config)
@@ -1236,7 +1238,7 @@ pub async fn set_p2pool_enabled(
                     .map_err(|error| error.to_string())?;
             }
         }
-    };
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());

@@ -213,6 +213,7 @@ pub struct WindowSettings {
     pub height: u32,
     pub x: i32,
     pub y: i32,
+    pub is_fullscreen: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

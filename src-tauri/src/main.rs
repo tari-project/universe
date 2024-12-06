@@ -763,7 +763,11 @@ fn main() {
                     if let Some(w_settings) = app_conf.window_settings() {
                         let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
                         let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
-                        if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
+                        if w_settings.is_fullscreen {
+                            if let Err(e) = splash_window.set_fullscreen(true) {
+                                error!(target: LOG_TARGET, "Could not set splashscreen window fullscreen: {:?}", e);
+                            }
+                        } else if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
                             error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
                         }
                     }
@@ -904,12 +908,13 @@ fn main() {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
             if let WindowEvent::CloseRequested { .. } = event {
                 if let Some(window) = app_handle.get_webview_window(&label) {
-                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.outer_size()) {
+                    if let (Ok(window_position), Ok(window_size), Ok(is_fullscreen)) = (window.outer_position(), window.inner_size(), window.is_fullscreen()) {
                         let window_settings = WindowSettings {
                             x: window_position.x,
                             y: window_position.y,
                             width: window_size.width,
                             height: window_size.height,
+                            is_fullscreen,
                         };
                         let mut app_config = block_on(app_state.config.write());
                         if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
