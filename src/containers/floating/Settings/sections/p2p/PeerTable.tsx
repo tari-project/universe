@@ -4,7 +4,6 @@ import { timeAgo } from '@app/utils/getTimeAgo.ts';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { ConnectedPeerInfoExtended } from '@app/containers/floating/Settings/sections/p2p/P2PoolStats.tsx';
 import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore.ts';
-import tariIcon from '/assets/img/tari.png';
 
 const headings = ['#', 'Peer ID', 'RandomX Height', 'SHA3X Height', 'Last Ping'];
 
@@ -24,7 +23,7 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfoExtended[
         );
     });
     const peerMarkup = peers.map(({ peer_id, peer_info, last_ping, randomxDiff, sha3Diff }, idx) => {
-        const count = idx + 1;
+        const count = idx + 2;
         const displayId = truncateMiddle(peer_id, 9);
         const { current_sha3x_height: sha3x_height, current_random_x_height: random_x_height } = peer_info || {};
 
@@ -46,7 +45,7 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfoExtended[
     const meMarkup = (
         <TableRow key="me" $altBg $isTopRow>
             <Cell $alignment="end">
-                <img src={tariIcon} alt={''} />
+                <Typography variant="p">{`1.`}</Typography>
             </Cell>
             <Cell $alignment="start">{`Me`}</Cell>
             <Cell>{randomXHeight}</Cell>
