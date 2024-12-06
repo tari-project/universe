@@ -33,7 +33,7 @@ const P2PoolStats = () => {
     useEffect(() => {
         const fetchP2pStatsInterval = setInterval(async () => {
             await fetchP2pStats?.();
-            await fetchP2poolConnections();
+            await fetchP2poolConnections?.();
         }, 5000);
 
         return () => {

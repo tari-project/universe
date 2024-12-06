@@ -3,10 +3,18 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { timeAgo } from '@app/utils/getTimeAgo.ts';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { ConnectedPeerInfoExtended } from '@app/containers/floating/Settings/sections/p2p/P2PoolStats.tsx';
+import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore.ts';
+import tariIcon from '/assets/img/tari.png';
 
 const headings = ['#', 'Peer ID', 'RandomX Height', 'SHA3X Height', 'Last Ping'];
 
 export default function PeerTable({ peers }: { peers: ConnectedPeerInfoExtended[] }) {
+    const sha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
+    const randomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
+
+    const sha3Height = sha3Stats?.height;
+    const randomXHeight = randomXStats?.height;
+
     const headingMarkup = headings.map((heading, idx) => {
         const alignment = idx === 1 ? 'start' : 'end';
         return (
@@ -34,9 +42,22 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfoExtended[
             </TableRow>
         );
     });
+
+    const meMarkup = (
+        <TableRow key="me">
+            <Cell $alignment="end">
+                <img src={tariIcon} alt={''} />
+            </Cell>
+            <Cell $alignment="start">{`Me`}</Cell>
+            <Cell>{randomXHeight}</Cell>
+            <Cell>{sha3Height}</Cell>
+            <Cell />
+        </TableRow>
+    );
     return (
         <Table>
             <TableRow $isHeadingRow>{headingMarkup}</TableRow>
+            {meMarkup}
             <TableOverflowWrapper>{peerMarkup}</TableOverflowWrapper>
         </Table>
     );

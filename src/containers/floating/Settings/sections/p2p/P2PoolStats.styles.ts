@@ -61,6 +61,10 @@ export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems'] }>`
         font-size: 11px;
         color: ${({ theme }) => theme.palette.text.secondary};
     }
+
+    img {
+        height: 11px;
+    }
 `;
 
 export const StatWrapper = styled.div`
