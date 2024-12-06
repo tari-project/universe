@@ -46,6 +46,10 @@ export default function StagedSecurity() {
         setShowReminderTip(true);
     };
 
+    const handleSection = useCallback((section: StagedSecuritySectionType) => {
+        setSection(section);
+    }, []);
+
     useEffect(() => {
         if (section == 'SeedPhrase' || section == 'VerifySeedPhrase') {
             setBoxWidth(710);
@@ -54,6 +58,9 @@ export default function StagedSecurity() {
         }
     }, [section]);
 
+    const seedPhraseSection =
+        section == 'SeedPhrase' ? <SeedPhrase setSection={handleSection} words={seedWords} /> : null;
+
     return (
         <>
             <AnimatePresence>
@@ -61,12 +68,12 @@ export default function StagedSecurity() {
                     <GreenModal onClose={handleClose} boxWidth={boxWidth}>
                         <LockImage src={lockImage} alt="Lock Icon" />
 
-                        {section == 'ProtectIntro' && (
+                        {section == 'ProtectIntro' ? (
                             <ProtectIntro onButtonClick={handleBackupButtonClick} isLoading={seedWordsFetching} />
-                        )}
-                        {section == 'SeedPhrase' && <SeedPhrase setSection={setSection} words={seedWords} />}
+                        ) : null}
+                        {seedPhraseSection}
                         {section == 'VerifySeedPhrase' && (
-                            <VerifySeedPhrase setSection={setSection} words={seedWords} />
+                            <VerifySeedPhrase setSection={handleSection} words={seedWords} />
                         )}
                     </GreenModal>
                 )}

@@ -8,7 +8,8 @@ import {
     CheckboxText,
     CheckboxWrapper,
     CopyButton,
-    Divider,
+    GroupCol,
+    GroupDivider,
     PhraseWrapper,
     TextWrapper,
     Word,
@@ -20,22 +21,20 @@ import CopyIcon from '../../icons/CopyIcon';
 import CheckIcon from '../../icons/CheckIcon';
 import { AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { useCopyToClipboard } from '@app/hooks';
+
 interface Props {
     setSection: (section: StagedSecuritySectionType) => void;
     words: string[];
 }
 
-export default function SeedPhrase({ setSection, words }: Props) {
-    const { t } = useTranslation(['staged-security'], { useSuspense: false });
-
-    const [copied, setCopied] = useState(false);
+const SeedPhrase = ({ setSection, words }: Props) => {
+    const { t } = useTranslation('staged-security');
+    const { isCopied, copyToClipboard } = useCopyToClipboard();
     const [checked, setChecked] = useState(false);
 
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(words.join(' ')).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        });
+    const handleCopy = () => {
+        copyToClipboard(words.join(' '));
     };
 
     const handleCheckboxClick = () => {
@@ -58,7 +57,7 @@ export default function SeedPhrase({ setSection, words }: Props) {
             <PhraseWrapper>
                 <WordList>
                     {wordGroups.map((group, groupIndex) => (
-                        <>
+                        <GroupCol key={groupIndex}>
                             <WordColumn key={groupIndex}>
                                 {group.map((word, index) => (
                                     <Word key={'SeedPhrase' + word}>
@@ -67,13 +66,13 @@ export default function SeedPhrase({ setSection, words }: Props) {
                                     </Word>
                                 ))}
                             </WordColumn>
-                            {groupIndex < 3 && <Divider />}
-                        </>
+                            {groupIndex < 3 && <GroupDivider />}
+                        </GroupCol>
                     ))}
                 </WordList>
 
-                <CopyButton onClick={copyToClipboard}>
-                    {copied ? (
+                <CopyButton onClick={handleCopy}>
+                    {isCopied ? (
                         t('seedPhrase.copied')
                     ) : (
                         <>
@@ -107,4 +106,6 @@ export default function SeedPhrase({ setSection, words }: Props) {
             </ButtonWrapper>
         </Wrapper>
     );
-}
+};
+
+export default SeedPhrase;

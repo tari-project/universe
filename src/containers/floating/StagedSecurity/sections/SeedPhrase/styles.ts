@@ -27,6 +27,13 @@ export const PhraseWrapper = styled('div')`
     width: 100%;
 `;
 
+export const GroupCol = styled('div')`
+    display: flex;
+    justify-content: space-between;
+    padding-right: 20px;
+    gap: 20px;
+    width: 100%;
+`;
 export const WordList = styled('div')`
     display: flex;
     gap: 5px;
@@ -57,7 +64,7 @@ export const Word = styled('div')`
     }
 `;
 
-export const Divider = styled('div')`
+export const GroupDivider = styled('div')`
     background: rgba(0, 0, 0, 0.15);
     width: 1px;
     height: 241px;
