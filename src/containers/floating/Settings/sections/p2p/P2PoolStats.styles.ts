@@ -4,8 +4,7 @@ import { CSSProperties } from 'react';
 export const TableOverflowWrapper = styled.div`
     overflow: hidden;
     overflow-y: auto;
-    height: auto;
-
+    height: 100%;
     padding: 0 8px 0 0;
 
     &::-webkit-scrollbar {
@@ -23,12 +22,13 @@ export const TableOverflowWrapper = styled.div`
 `;
 
 export const Table = styled.div`
-    display: grid;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    overflow: hidden;
+    max-height: max(40vh, 320px);
 `;
 
-export const TableRow = styled.div<{ $isHeadingRow?: boolean; $altBg?: boolean }>`
+export const TableRow = styled.div<{ $isHeadingRow?: boolean; $altBg?: boolean; $isTopRow?: boolean }>`
     display: grid;
     width: 100%;
     gap: 2px;
@@ -42,9 +42,14 @@ export const TableRow = styled.div<{ $isHeadingRow?: boolean; $altBg?: boolean }
             white-space: pre;
             padding: 6px 0;
         `}
+    ${({ $isTopRow }) =>
+        $isTopRow &&
+        css`
+            padding: 0 11px 0 0;
+        `}
 `;
 
-export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems'] }>`
+export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems']; $diff?: number }>`
     display: flex;
     font-variant-numeric: tabular-nums;
     padding: 4px 2px;
@@ -52,6 +57,8 @@ export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems'] }>`
     align-items: center;
     text-align: right;
     justify-content: ${({ $alignment = 'end' }) => $alignment};
+    gap: 4px;
+    position: relative;
 
     p {
         font-size: 11px;
@@ -59,8 +66,22 @@ export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems'] }>`
     }
 
     img {
-        height: 11px;
+        height: 10px;
     }
+
+    ${({ $diff, theme }) =>
+        $diff &&
+        css`
+            &::after {
+                content: '${$diff > 0 ? '↑' : '↓'}';
+                position: absolute;
+                font-size: 7px;
+                right: -5px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: ${$diff > 0 ? theme.colors.green[600] : theme.colors.red[600]};
+            }
+        `}
 `;
 
 export const StatWrapper = styled.div`

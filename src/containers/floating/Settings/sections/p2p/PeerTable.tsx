@@ -23,28 +23,28 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfoExtended[
             </Cell>
         );
     });
-    const peerMarkup = peers.map(({ peer_id, peer_info, last_ping, sha3WithinRange, randomxWithinRange }, idx) => {
+    const peerMarkup = peers.map(({ peer_id, peer_info, last_ping, randomxDiff, sha3Diff }, idx) => {
         const count = idx + 1;
         const displayId = truncateMiddle(peer_id, 9);
         const { current_sha3x_height: sha3x_height, current_random_x_height: random_x_height } = peer_info || {};
 
         return (
-            <TableRow key={peer_id} $altBg={idx % 2 === 0}>
+            <TableRow key={peer_id} $altBg={idx % 2 !== 0}>
                 <Cell $alignment="end">
                     <Typography variant="p">{`${count}.`}</Typography>
                 </Cell>
                 <Cell $alignment="start" title={peer_id}>
                     {displayId}
                 </Cell>
-                <Cell>{random_x_height ? `${random_x_height} | ${randomxWithinRange ? '✓' : '☹'}` : '-'}</Cell>
-                <Cell>{sha3x_height ? `${sha3x_height} | ${sha3WithinRange ? '✓' : '☹'}` : '-'}</Cell>
+                <Cell $diff={randomxDiff}>{random_x_height || '-'}</Cell>
+                <Cell $diff={sha3Diff}>{sha3x_height || '-'}</Cell>
                 <Cell>{last_ping ? timeAgo(+last_ping) : '-'}</Cell>
             </TableRow>
         );
     });
 
     const meMarkup = (
-        <TableRow key="me">
+        <TableRow key="me" $altBg $isTopRow>
             <Cell $alignment="end">
                 <img src={tariIcon} alt={''} />
             </Cell>

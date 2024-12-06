@@ -15,8 +15,8 @@ import P2PConnectionData from './P2PConnectionData.tsx';
 import { timeAgo } from '@app/utils/getTimeAgo.ts';
 
 export type ConnectedPeerInfoExtended = ConnectedPeerInfo & {
-    sha3WithinRange?: boolean;
-    randomxWithinRange?: boolean;
+    sha3Diff?: number;
+    randomxDiff?: number;
 };
 
 const P2PoolStats = () => {
@@ -44,11 +44,9 @@ const P2PoolStats = () => {
         const randomXHeight = randomXStats?.height;
         return peers?.map((peer) => {
             const { current_sha3x_height, current_random_x_height } = peer.peer_info || {};
-            const sha3WithinRange = sha3Height ? Math.abs(sha3Height - current_sha3x_height) <= 5 : undefined;
-            const randomxWithinRange = randomXHeight
-                ? Math.abs(randomXHeight - current_random_x_height) <= 5
-                : undefined;
-            return { ...peer, sha3WithinRange, randomxWithinRange };
+            const sha3Diff = sha3Height ? sha3Height - current_sha3x_height : undefined;
+            const randomxDiff = randomXHeight ? randomXHeight - current_random_x_height : undefined;
+            return { ...peer, sha3Diff, randomxDiff };
         }) as ConnectedPeerInfoExtended[];
     }, [peers, randomXStats?.height, sha3Stats?.height]);
 
@@ -60,9 +58,8 @@ const P2PoolStats = () => {
                     <Typography variant="p">{`Connected since: ${timeAgo(+connectedSince)}`}</Typography>
                 ) : null}
             </SettingsGroupTitle>
-
+            <Divider />
             <P2PConnectionData />
-
             <Divider />
             {displayPeers?.length ? (
                 <>

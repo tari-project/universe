@@ -4,7 +4,6 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 export const PoolMiningSettings = () => {
     const isP2poolEnabled = useAppConfigStore((s) => s.p2pool_enabled);
-
     return (
         <>
             <P2pMarkup />

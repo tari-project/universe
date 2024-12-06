@@ -38,7 +38,6 @@ export const useP2poolStatsStore = create<P2poolStatsStoreState>()((set) => ({
     fetchP2poolStats: async () => {
         try {
             const stats = await invoke('get_p2pool_stats');
-            console.debug(stats);
             set(stats);
         } catch (e) {
             console.error('Could not get p2p stats: ', e);
@@ -47,7 +46,6 @@ export const useP2poolStatsStore = create<P2poolStatsStoreState>()((set) => ({
     fetchP2poolConnections: async () => {
         try {
             const connections = await invoke('get_p2pool_connections');
-            console.debug(connections);
             set(connections);
         } catch (e) {
             console.error('Could not get p2p connections: ', e);
