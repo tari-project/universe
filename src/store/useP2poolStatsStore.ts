@@ -1,8 +1,8 @@
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { create } from './create';
 import { P2poolConnections, P2poolStats, P2poolStatsResult } from '../types/app-status.ts';
 
-type State = Partial<P2poolStatsResult & P2poolConnections>;
+type State = Partial<P2poolStatsResult> & Partial<P2poolConnections>;
 
 interface Actions {
     randomx_stats?: P2poolStats;

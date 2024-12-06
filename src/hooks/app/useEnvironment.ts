@@ -6,10 +6,8 @@ export enum Environment {
 }
 
 export const useEnvironment = () => {
-    const environment = useMemo(() => {
+    return useMemo(() => {
         if (window.location.host.startsWith('localhost:')) return Environment.Development;
         return Environment.Production;
     }, []);
-
-    return environment;
 };

@@ -19,9 +19,9 @@ export function UpdatedStatus({ contentLength, downloaded }: UpdatedStatusProps)
     const shouldShowProgress = contentLength > 0;
 
     return (
-        <Stack alignItems="center">
+        <Stack alignItems="center" style={{ height: 120 }}>
             <ProgressWrapper>
-                <LinearProgress value={(downloaded / contentLength) * 100} />
+                <LinearProgress value={(downloaded / contentLength) * 100} variant="small" />
             </ProgressWrapper>
             {shouldShowProgress && (
                 <Typography variant="p">{`${formatSize(downloaded)} / ${formatSize(contentLength)}`}</Typography>

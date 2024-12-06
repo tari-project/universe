@@ -5,7 +5,7 @@ import {
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { useCallback, useRef, useState } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { IoCheckmarkOutline, IoCopyOutline, IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
