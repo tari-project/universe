@@ -73,13 +73,13 @@ export const Cell = styled.div<{ $alignment?: CSSProperties['alignItems']; $diff
         $diff &&
         css`
             &::after {
-                content: '${$diff === 0 ? '✓' : $diff > 0 ? '↑' : '↓'}';
+                content: '${$diff === 0 ? '✓' : $diff < 0 ? '↑' : '↓'}';
                 position: absolute;
                 font-size: 7px;
                 right: -5px;
                 top: 50%;
                 transform: translateY(-50%);
-                color: ${$diff === 0 ? theme.colors.green[600] : theme.colors.red[600]};
+                color: ${$diff === 0 ? theme.colors.green[600] : $diff > 0 ? theme.colors.red[600] : 'inherit'};
             }
         `}
 `;
