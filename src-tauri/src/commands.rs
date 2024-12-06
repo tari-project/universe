@@ -138,18 +138,13 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
         .get_webview_window("main")
         .expect("no window labeled 'main' found");
 
-    if let (Ok(window_position), Ok(window_size), Ok(is_fullscreen)) = (
+    if let (Ok(window_position), Ok(window_size)) = (
         splashscreen_window.outer_position(),
         splashscreen_window.inner_size(),
-        splashscreen_window.is_fullscreen(),
     ) {
         splashscreen_window.close().expect("could not close");
         main_window.show().expect("could not show");
-        if is_fullscreen {
-            main_window
-                .set_fullscreen(true)
-                .expect("could not set fullscreen");
-        } else if let Err(e) = main_window
+        if let Err(e) = main_window
             .set_position(PhysicalPosition::new(window_position.x, window_position.y))
             .and_then(|_| {
                 main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
