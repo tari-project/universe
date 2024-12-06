@@ -16,7 +16,6 @@ export function useSetUp() {
     const adminShow = useUIStore((s) => s.adminShow);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
-    const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
     const setSettingUpFinished = useAppStateStore((s) => s.setSettingUpFinished);
 
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
@@ -65,7 +64,7 @@ export function useSetUp() {
                     break;
             }
         });
-        if (isAfterAutoUpdate && syncedAidropWithBackend && !isInitializingRef.current) {
+        if (syncedAidropWithBackend && !isInitializingRef.current) {
             isInitializingRef.current = true;
             clearStorage();
             invoke('setup_application').catch((e) => {
@@ -76,13 +75,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [
-        clearStorage,
-        handlePostSetup,
-        isAfterAutoUpdate,
-        setCriticalError,
-        setSetupDetails,
-        adminShow,
-        syncedAidropWithBackend,
-    ]);
+    }, [clearStorage, handlePostSetup, setCriticalError, setSetupDetails, adminShow, syncedAidropWithBackend]);
 }

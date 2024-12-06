@@ -84,8 +84,16 @@
   },
   "pool-mining": "Kopanie w puli",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Hashrate sieci Randomx",
   "refresh-versions": "Odśwież wersje",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Zgłoś problem",
   "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
   "reset-settings": "Resetuj ustawienia",
@@ -113,6 +121,7 @@
     "general": "Ogólne",
     "mining": "Wydobycie",
     "p2p": "Kopanie w puli",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Bardzo Eksperymentalne",
     "wallet": "Portfel"
   },

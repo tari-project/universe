@@ -82,8 +82,16 @@
   },
   "pool-mining": "Майнинг в пуле",
   "pool-mining-description": "При включении вы будете майнить в пуле и присоединитесь к группе майнеров.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Хэшрейт сети Randomx",
   "refresh-versions": "Обновить версии",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Сообщить о проблеме",
   "reset-permanently": "Вы уверены, что хотите сбросить все настройки навсегда?",
   "reset-settings": "Сбросить настройки",
@@ -111,6 +119,7 @@
     "general": "Общие",
     "mining": "Майнинг",
     "p2p": "Майнинг в пуле",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Очень экспериментальные",
     "wallet": "Кошелек"
   },
