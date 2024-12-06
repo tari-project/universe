@@ -29,8 +29,8 @@ use log::trace;
 use log::{debug, error, info, warn};
 use p2pool::models::Connections;
 use std::fs::{remove_dir_all, remove_file};
-use updates_manager::UpdatesManager;
 use tokio::sync::watch::{self};
+use updates_manager::UpdatesManager;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
