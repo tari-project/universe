@@ -1,3 +1,49 @@
+# Tari Universe - Testnet v0.8.7: "The Deep Conclave"
+
+_December 6, 2024_
+
+## 🏊 P2Pool Improvements
+
+-   **Major Optimization Updates**  
+   -   Share interval increased to 20 seconds (up from 10s).  
+   -   Enhanced share handling mechanisms.  
+   -   Improved pool coalescence performance.  
+   -   More equitable reward distribution system.
+
+## 📊 Mining Statistics Enhancement
+
+-   **New In-App Features**  
+   -   Real-time p2pool tip distance monitoring.  
+   -   Comprehensive mining history tracking:  
+       -   Copyable mining history identifier.  
+       -   Enhanced statistics visibility.
+
+## 🌐 Network Stability Improvements
+
+-   **Connection Optimization**  
+   -   Enhanced TCP connectivity with IPv4/IPv6 DNS seed addresses.  
+   -   Improved peer discovery mechanisms.  
+   -   Faster network synchronization.
+
+-   **Platform-Specific Fixes**  
+   -   **Mac**: Optimized launch performance and shutdown times.  
+   -   **Windows**: Resolved install location permissions and window management.
+
+-   **Interface Updates**  
+   -   Refined wallet and seed word styling.  
+   -   Intelligent analytics permission handling.  
+   -   Enhanced settings interface:  
+       -   Copyable anonymous ID feature.  
+       -   Persistent window position memory.  
+   -   Integrated release notes viewer.
+
+## ⚠️ Known Issues
+
+-   P2pool optimization efforts are ongoing.
+-   Initial synchronization delays may affect some users.
+
+---
+
 # Tari Universe - Testnet v0.8.5
 
 _December 5, 2024_
