@@ -47,6 +47,7 @@ export interface AppConfig {
     monero_address_is_generated?: boolean;
     created_at: string;
     p2pool_stats_server_port: number | null;
+    pre_release: boolean;
 }
 
 export enum ExternalDependencyStatus {
