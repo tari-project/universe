@@ -1,11 +1,17 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
-export const Wrapper = styled('div')`
+export const Wrapper = styled('div')<{ $noMembers?: boolean }>`
     display: grid;
-    align-items: center;
     grid-template-columns: auto 1fr;
 
     gap: 14px;
+
+    ${({ $noMembers }) =>
+        $noMembers &&
+        css`
+            display: flex;
+            align-items: center;
+        `}
 `;
 
 export const PlaceholderText = styled('div')`
@@ -25,9 +31,9 @@ export const PlaceholderText = styled('div')`
     padding: 12px 16px;
 `;
 
-export const AddNewButton = styled('button')`
-    width: 92px;
-    height: 92px;
+export const AddNewButton = styled('button')<{ $noMembers?: boolean }>`
+    width: 99px;
+    height: 99px;
     border-radius: 100%;
 
     background: rgba(217, 217, 217, 0.1);
@@ -42,6 +48,12 @@ export const AddNewButton = styled('button')`
     cursor: pointer;
 
     transition: background 0.3s ease;
+
+    ${({ $noMembers }) =>
+        !$noMembers &&
+        css`
+            transform: translateY(6px);
+        `}
 
     &:hover {
         background: rgba(255, 255, 255, 0.2);

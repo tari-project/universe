@@ -66,14 +66,16 @@ export default function CrewList() {
     });
 
     return (
-        <Wrapper>
-            <ScrollArea ref={scrollAreaRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-                {members.map((member) => (
-                    <Member key={member.id} member={member} />
-                ))}
-            </ScrollArea>
+        <Wrapper $noMembers={members.length === 0}>
+            {members.length !== 0 && (
+                <ScrollArea ref={scrollAreaRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
+                    {members.map((member) => (
+                        <Member key={member.id} member={member} />
+                    ))}
+                </ScrollArea>
+            )}
 
-            <AddNewButton>
+            <AddNewButton $noMembers={members.length === 0}>
                 <PlusIcon />
             </AddNewButton>
 
