@@ -82,8 +82,16 @@
   },
   "pool-mining": "Havuz Madenciliği",
   "pool-mining-description": "Etkinleştirildiğinde, bir havuzda madencilik yapacak ve bir grup madenciye (kabileye) katılacaksınız.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Randomx ağ hash oranı",
   "refresh-versions": "Sürümleri yenileyin",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Bir sorunu bildir",
   "reset-permanently": "Tüm ayarları kalıcı olarak sıfırlamak istediğinizden emin misiniz?",
   "reset-settings": "Ayarları sıfırla",
@@ -111,6 +119,7 @@
     "general": "Genel",
     "mining": "Madencilik",
     "p2p": "Havuz Madenciliği",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Çok Deneysel",
     "wallet": "Cüzdan"
   },

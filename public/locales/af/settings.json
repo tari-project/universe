@@ -82,8 +82,16 @@
   },
   "pool-mining": "Poel Mynbou",
   "pool-mining-description": "Wanneer geaktiveer, sal u in \"n poel myn en by \"n groep mynwerkers aansluit.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Randomx netwerk hashrate",
   "refresh-versions": "Verfris weergawes",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Rapporteer \"n probleem",
   "reset-permanently": "Is jy seker jy wil alle instellings permanent terugstel?",
   "reset-settings": "Stel Instellings Terug",
@@ -111,6 +119,7 @@
     "general": "Algemeen",
     "mining": "Mynbou",
     "p2p": "Poel Mynbou",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Baie Eksperimenteel",
     "wallet": "Beursie"
   },
