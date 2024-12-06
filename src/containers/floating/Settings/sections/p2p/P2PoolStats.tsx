@@ -1,8 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { CardComponent } from '@app/containers/floating/Settings/components/Card.component';
-import { CardContainer } from '@app/containers/floating/Settings/components/Settings.styles';
 import {
     SettingsGroupWrapper,
     SettingsGroupTitle,
@@ -14,6 +12,7 @@ import PeerTable from './PeerTable.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { ConnectedPeerInfo } from '@app/types/app-status.ts';
 import P2PConnectionData from './P2PConnectionData.tsx';
+import { timeAgo } from '@app/utils/getTimeAgo.ts';
 
 export type ConnectedPeerInfoExtended = ConnectedPeerInfo & {
     sha3WithinRange?: boolean;
@@ -23,7 +22,6 @@ export type ConnectedPeerInfoExtended = ConnectedPeerInfo & {
 const P2PoolStats = () => {
     const { t } = useTranslation('p2p', { useSuspense: false });
     const connectedSince = useP2poolStatsStore((s) => s?.connected_since);
-    const connectionInfo = useP2poolStatsStore((s) => s?.connection_info);
     const sha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
     const randomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
     const peers = useP2poolStatsStore((s) => s?.peers);
@@ -58,49 +56,12 @@ const P2PoolStats = () => {
         <SettingsGroupWrapper>
             <SettingsGroupTitle style={{ alignItems: 'baseline' }}>
                 <Typography variant="h6">{t('p2pool-stats')}</Typography>
-                {connectedSince ? <Typography variant="p">{`Connected since: ${connectedSince}`}</Typography> : null}
+                {connectedSince ? (
+                    <Typography variant="p">{`Connected since: ${timeAgo(+connectedSince)}`}</Typography>
+                ) : null}
             </SettingsGroupTitle>
-            <Divider />
 
             <P2PConnectionData />
-
-            <CardContainer>
-                <CardComponent
-                    heading={t('network-info')}
-                    labels={[
-                        {
-                            labelText: 'established incoming',
-                            labelValue: connectionInfo?.network_info?.connection_counters?.established_incoming || '-',
-                        },
-                        {
-                            labelText: 'established outgoing',
-                            labelValue: connectionInfo?.network_info?.connection_counters?.established_outgoing || '-',
-                        },
-                        {
-                            labelText: 'pending incoming',
-                            labelValue: connectionInfo?.network_info?.connection_counters?.pending_incoming || '-',
-                        },
-                        {
-                            labelText: 'pending outgoing',
-                            labelValue: connectionInfo?.network_info?.connection_counters?.pending_outgoing || '-',
-                        },
-                    ]}
-                />
-                <CardComponent
-                    heading={t('sha3-stats')}
-                    labels={Object.entries(sha3Stats || {}).map(([key, value]) => ({
-                        labelText: key.replace('_', ' '),
-                        labelValue: value,
-                    }))}
-                />
-                <CardComponent
-                    heading={t('randomx-stats')}
-                    labels={Object.entries(randomXStats || {}).map(([key, value]) => ({
-                        labelText: key.replace('_', ' '),
-                        labelValue: value,
-                    }))}
-                />
-            </CardContainer>
 
             <Divider />
             {displayPeers?.length ? (
