@@ -1,6 +1,10 @@
-/* eslint-disable i18next/no-literal-string */
-import { Wrapper } from './styles';
+import { Box, Wrapper } from './styles';
 
 export default function Drops() {
-    return <Wrapper>Drops</Wrapper>;
+    return (
+        <Wrapper>
+            <Box />
+            <Box />
+        </Wrapper>
+    );
 }

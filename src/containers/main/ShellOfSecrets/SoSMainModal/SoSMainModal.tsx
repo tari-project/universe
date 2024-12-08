@@ -2,7 +2,7 @@ import { BoxContent, BoxWrapper, CloseButton, ContentLayer, Cover, Wrapper } fro
 
 import CloseIcon from './icons/CloseIcon';
 import { useShellOfSecretsStore } from '../../../../store/useShellOfSecretsStore';
-import Scanlines from '../components/Scanlines/Scanlines';
+//import Scanlines from '../components/Scanlines/Scanlines';
 import SoSMainSidebar from './sections/SoSMainSidebar/SoSMainSidebar';
 import SoSMainContent from './sections/SoSMainContent/SoSMainContent';
 

@@ -3,13 +3,15 @@ import styled from 'styled-components';
 export const Wrapper = styled('div')`
     display: flex;
     flex-direction: column;
-    gap: 25px;
+    flex-grow: 1;
 `;
 
 export const TopRow = styled('div')`
     display: flex;
     align-items: center;
     justify-content: space-between;
+
+    margin-bottom: 20px;
 `;
 
 export const SectionTitle = styled('div')`

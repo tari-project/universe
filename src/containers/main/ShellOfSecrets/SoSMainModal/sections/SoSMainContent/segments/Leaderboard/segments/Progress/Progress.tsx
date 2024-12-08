@@ -19,6 +19,10 @@ import {
 export default function Progress() {
     const [percent, setPercent] = useState(50);
 
+    const handleClick = () => {
+        setPercent((prevPercent) => (prevPercent === 50 ? 100 : 50));
+    };
+
     return (
         <Wrapper>
             <TopLabel>
@@ -31,7 +35,7 @@ export default function Progress() {
                 <CapRight />
             </TopLabel>
 
-            <ProgressBar>
+            <ProgressBar onClick={handleClick}>
                 <Inside>
                     <Bar
                         style={{
@@ -40,9 +44,9 @@ export default function Progress() {
                     />
 
                     <PercentWrapper>
-                        <PercentText>100%</PercentText>
+                        <PercentText>{percent}%</PercentText>
                         <PercentClip $percent={percent}>
-                            <PercentTextOverlap>100%</PercentTextOverlap>
+                            <PercentTextOverlap>{percent}%</PercentTextOverlap>
                         </PercentClip>
                     </PercentWrapper>
                 </Inside>

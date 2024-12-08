@@ -4,6 +4,7 @@ export const Wrapper = styled('div')`
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-bottom: 10px;
 `;
 
 export const TopLabel = styled('div')`
@@ -96,6 +97,7 @@ export const PercentClip = styled('div')<{ $percent: number }>`
     align-items: center;
     justify-content: center;
     clip-path: ${({ $percent }) => `inset(0 ${100 - $percent}% 0 0)`};
+    transition: clip-path 0.5s ease;
 `;
 
 export const PercentText = styled('div')`
