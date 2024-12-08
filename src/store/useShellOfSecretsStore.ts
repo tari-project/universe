@@ -16,6 +16,7 @@ interface State {
     showWidget: boolean;
     totalBonusTimeMs: number;
     revealDate: Date;
+    showMainModal: boolean;
 }
 
 interface Actions {
@@ -23,6 +24,7 @@ interface Actions {
     setShowWidget: (showWidget: boolean) => void;
     setTotalBonusTimeMs: (totalTimeBonusUpdate: number) => void;
     getTimeRemaining: () => { days: number; hours: number; totalRemainingMs: number };
+    setShowMainModal: (showMainModal: boolean) => void;
 }
 
 const initialState: State = {
@@ -30,6 +32,7 @@ const initialState: State = {
     showWidget: false,
     totalBonusTimeMs: 0,
     revealDate: SOS_GAME_ENDING_DATE,
+    showMainModal: false,
 };
 
 export const useShellOfSecretsStore = create<State & Actions>()((set, get) => ({
@@ -46,4 +49,5 @@ export const useShellOfSecretsStore = create<State & Actions>()((set, get) => ({
         const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         return { days, hours, totalRemainingMs: remainingMs };
     },
+    setShowMainModal: (showMainModal) => set({ showMainModal }),
 }));
