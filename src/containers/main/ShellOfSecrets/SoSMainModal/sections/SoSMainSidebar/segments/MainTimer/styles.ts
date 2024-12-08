@@ -60,6 +60,14 @@ export const Number = styled('div')`
     font-size: 153px;
     line-height: 80%;
     text-transform: uppercase;
+
+    @media (max-height: 1024px) {
+        font-size: 120px;
+    }
+
+    @media (max-height: 900px) {
+        font-size: 100px;
+    }
 `;
 
 export const Label = styled('div')`

@@ -10,6 +10,12 @@ export const Wrapper = styled('div')`
 
     padding: 32px 26px;
     position: relative;
+
+    overflow-y: auto;
+
+    @media (max-width: 1500px) {
+        max-width: 480px;
+    }
 `;
 
 export const BGImage1 = styled('img')`
