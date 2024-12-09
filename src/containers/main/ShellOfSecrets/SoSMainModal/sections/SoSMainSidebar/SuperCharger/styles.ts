@@ -30,6 +30,10 @@ export const SectionLabel = styled('div')`
     line-height: 129.623%;
     text-transform: uppercase;
     white-space: nowrap;
+
+    @media (max-width: 1300px) {
+        font-size: 18px;
+    }
 `;
 
 export const LineRight = styled('div')`
@@ -46,14 +50,28 @@ export const FormWrapper = styled('form')`
     background-image: url(${backgroundImage});
     background-size: cover;
 
-    padding: 0 30px 0 10px;
+    padding: 0 30px 0px 10px;
+
     display: flex;
-    gap: 20px;
     justify-content: space-between;
     align-items: center;
+    gap: 20px;
 
     svg {
         flex-shrink: 0;
+    }
+
+    @media (max-width: 1300px) {
+        padding: 0 30px;
+
+        svg {
+            display: none;
+        }
+    }
+
+    @media (max-width: 1220px) {
+        padding: 20px;
+        flex-wrap: wrap;
     }
 `;
 

@@ -1,7 +1,6 @@
 import styled from 'styled-components';
 
 export const Wrapper = styled('div')`
-    max-width: 532px;
     width: 100%;
     height: 100%;
 
@@ -12,10 +11,6 @@ export const Wrapper = styled('div')`
     position: relative;
 
     overflow-y: auto;
-
-    @media (max-width: 1500px) {
-        max-width: 480px;
-    }
 `;
 
 export const BGImage1 = styled('img')`

@@ -95,7 +95,8 @@ export const ContentLayer = styled('div')`
     position: relative;
     z-index: 3;
 
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(350px, 532px) minmax(643px, 1fr);
     gap: 40px;
 
     width: 100%;
