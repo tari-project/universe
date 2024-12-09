@@ -1,6 +1,11 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create.ts';
-import { DevTapplet, InstalledTappletWithAssets, RegisteredTappletWithAssets } from '@app/types/ootle/tapplet.ts';
+import {
+    DevTapplet,
+    InstalledTappletWithAssets,
+    RegisteredTapplet,
+    RegisteredTappletWithAssets,
+} from '@app/types/ootle/tapplet.ts';
 import { useAppStateStore } from './appStateStore.ts';
 
 interface State {
@@ -34,47 +39,49 @@ const initialState: State = {
 export const useTappletsStore = create<TappletsStoreState>()((set) => ({
     ...initialState,
     fetchRegisteredTapps: async () => {
-        console.log('store fetchregistered  tapp');
+        console.log('[STORE TAPP] fetch registered tapp');
         set({ isFetching: true });
         try {
             // TODO invoke to fetch tapplets
-            // await invoke('fetch_tapplets');
-            // const registeredTapplets: RegisteredTapplet[] = await invoke('read_tapp_registry_db');
-            // const assetsServerAddr = await invoke('get_assets_server_addr');
-            // const tappletsWithAssets = registeredTapplets.map((tapp) => ({
-            //     ...tapp,
-            //     logoAddr: `${assetsServerAddr}/${tapp.package_name}/logo.svg`,
-            //     backgroundAddr: `${assetsServerAddr}/${tapp.package_name}/background.svg`,
-            // }));
+            await invoke('fetch_tapplets');
+            console.log('[STORE TAPP] fetch tapp done');
+            const registeredTapplets: RegisteredTapplet[] = await invoke('read_tapp_registry_db');
+            console.log('[STORE TAPP] read db tapp done', registeredTapplets);
+            const assetsServerAddr = await invoke('get_assets_server_addr');
+            const tappletsWithAssets = registeredTapplets.map((tapp) => ({
+                ...tapp,
+                logoAddr: `${assetsServerAddr}/${tapp.package_name}/logo.svg`,
+                backgroundAddr: `${assetsServerAddr}/${tapp.package_name}/background.svg`,
+            }));
             // TODO tmp solution
-            const tappletsWithAssets: RegisteredTappletWithAssets[] = [
-                {
-                    id: 'test0',
-                    registry_id: '0',
-                    package_name: '',
-                    display_name: 'Registered tapp display name',
-                    author_name: '',
-                    author_website: '',
-                    about_summary: '',
-                    about_description: '',
-                    category: '',
-                    logoAddr: '',
-                    backgroundAddr: '',
-                },
-                {
-                    id: 'test1',
-                    registry_id: '1',
-                    package_name: '',
-                    display_name: 'Registered tapp awesome name',
-                    author_name: '',
-                    author_website: '',
-                    about_summary: '',
-                    about_description: '',
-                    category: '',
-                    logoAddr: '',
-                    backgroundAddr: '',
-                },
-            ];
+            // const tappletsWithAssets: RegisteredTappletWithAssets[] = [
+            //     {
+            //         id: 'test0',
+            //         registry_id: '0',
+            //         package_name: '',
+            //         display_name: 'Registered tapp display name',
+            //         author_name: '',
+            //         author_website: '',
+            //         about_summary: '',
+            //         about_description: '',
+            //         category: '',
+            //         logoAddr: '',
+            //         backgroundAddr: '',
+            //     },
+            //     {
+            //         id: 'test1',
+            //         registry_id: '1',
+            //         package_name: '',
+            //         display_name: 'Registered tapp awesome name',
+            //         author_name: '',
+            //         author_website: '',
+            //         about_summary: '',
+            //         about_description: '',
+            //         category: '',
+            //         logoAddr: '',
+            //         backgroundAddr: '',
+            //     },
+            // ];
             set({ isFetching: false, isInitialized: true, registeredTapplets: tappletsWithAssets });
         } catch (error) {
             const appStateStore = useAppStateStore.getState();

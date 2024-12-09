@@ -4,7 +4,7 @@ use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::consts::{TAPPLET_ARCHIVE, TAPPLET_DIST_DIR};
 use crate::credential_manager::{CredentialError, CredentialManager};
-use crate::database::models::{CreateTapplet, CreateTappletAsset, CreateTappletVersion};
+use crate::database::models::{CreateTapplet, CreateTappletAsset, CreateTappletVersion, Tapplet};
 use crate::database::store::{SqliteStore, Store};
 use crate::download_utils::extract;
 use crate::external_dependencies::{
@@ -15,7 +15,7 @@ use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDevi
 use crate::interface::{LaunchedTappResult, TappletAssets, TappletPermissions};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
-use crate::ootle::db_connection::{DatabaseConnection, ShutdownTokens};
+use crate::ootle::db_connection::{AssetServer, DatabaseConnection, ShutdownTokens};
 use crate::ootle::error::{Error::TappletServerError, TappletServerError::*};
 use crate::ootle::tapplet_installer::{
     check_files_and_validate_checksum, download_asset, fetch_tapp_registry_manifest,
@@ -1718,7 +1718,7 @@ pub async fn fetch_tapplets(
         // }
 
         for (version, version_data) in tapplet_manifest.versions.iter() {
-            store
+            let _ = store
                 .create(
                     &(CreateTappletVersion {
                         tapplet_id: inserted_tapplet.id,
@@ -1734,7 +1734,7 @@ pub async fn fetch_tapplets(
             Ok(None) => {
                 match download_asset(app_handle.clone(), inserted_tapplet.registry_id).await {
                     Ok(tapplet_assets) => {
-                        store
+                        let _ = store
                             .create(
                                 &(CreateTappletAsset {
                                     tapplet_id: inserted_tapplet.id,
@@ -1755,4 +1755,30 @@ pub async fn fetch_tapplets(
         }
     }
     Ok(())
+}
+
+/**
+ * TAPPLETS REGISTRY - STORES ALL REGISTERED TAPPLETS IN THE TARI UNIVERSE
+ */
+
+#[tauri::command]
+pub fn insert_tapp_registry_db(
+    tapplet: CreateTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Tapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.create(&tapplet).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn read_tapp_registry_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<Tapplet>, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.get_all().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<String, String> {
+    Ok(format!("http://{}", state.addr))
 }

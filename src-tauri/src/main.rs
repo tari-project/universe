@@ -2,10 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use consts::TAPPLETS_ASSETS_DIR;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
-use ootle::db_connection::DatabaseConnection;
+use ootle::db_connection::{AssetServer, DatabaseConnection};
+use ootle::tapplet_server::start;
 use std::fs::{remove_dir_all, remove_file};
 
 use log4rs::config::RawConfig;
@@ -426,14 +428,30 @@ async fn setup_inner(
         .update("establishing-db-connection".to_string(), None, 0)
         .await;
 
-    let db_path = app
+    let app_path = app
         .path_resolver()
         .app_data_dir()
-        .expect("Could not get log dir")
-        .join(DB_FILE_NAME);
+        .expect("Could not get log dir");
+    let db_path = app_path.join(DB_FILE_NAME);
     app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
         database::establish_connection(db_path.to_str().unwrap()),
     ))));
+    let tapplet_assets_path = app_path.join(TAPPLETS_ASSETS_DIR);
+    // let _handle_setup_log = tauri::async_runtime::spawn(async move { setup_log(log_tapp_dir).await });
+    let handle_start = tauri::async_runtime::spawn(async move { start(tapplet_assets_path).await });
+    // let (addr, cancel_token) = tauri::async_runtime::block_on(handle_start)?.unwrap_or_else(
+    //     |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e),
+    // );
+    let (addr, cancel_token) = match handle_start.await {
+        Ok(result) => result
+            .inspect_err(|e| error!(target: LOG_TARGET, "Error handling tapplet start: {:?}", e))?,
+        Err(e) => {
+            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e);
+            return Err(e.into());
+        }
+    };
+    app.manage(AssetServer { addr, cancel_token });
+    info!(target: LOG_TARGET, "🚀 Tari Universe setup completed successfully");
 
     progress.set_max(100).await;
     progress
@@ -839,7 +857,12 @@ fn main() {
             commands::start_mining,
             commands::stop_mining,
             commands::update_applications,
-            commands::get_network
+            commands::get_network,
+            commands::fetch_tapplets,
+            commands::launch_tapplet,
+            commands::insert_tapp_registry_db,
+            commands::read_tapp_registry_db,
+            commands::get_assets_server_addr
         ])
         .build(tauri::generate_context!())
         .inspect_err(
