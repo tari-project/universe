@@ -1,4 +1,4 @@
-/* eslint-disable i18next/no-literal-string */
+import { useTranslation } from 'react-i18next';
 import {
     Label,
     LineBottom,
@@ -13,28 +13,30 @@ import {
 } from './styles';
 
 export default function MainTimer() {
+    const { t } = useTranslation('sos', { useSuspense: false });
+
     return (
         <Wrapper>
             <TopBar>
                 <LineLeft />
-                <SectionLabel>Your Timer</SectionLabel>
+                <SectionLabel>{t('mainTimer.title')}</SectionLabel>
                 <LineRight />
             </TopBar>
 
             <TimerColumn>
                 <NumberGroup>
                     <Number>87</Number>
-                    <Label>DAYS</Label>
+                    <Label>{t('mainTimer.days')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
                     <Number>12</Number>
-                    <Label>HOURS</Label>
+                    <Label>{t('mainTimer.hours')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
                     <Number>42</Number>
-                    <Label>MINUTES</Label>
+                    <Label>{t('mainTimer.minutes')}</Label>
                 </NumberGroup>
 
                 <NumberGroup
@@ -43,7 +45,7 @@ export default function MainTimer() {
                     }}
                 >
                     <Number>18</Number>
-                    <Label>SECONDS</Label>
+                    <Label>{t('mainTimer.seconds')}</Label>
                 </NumberGroup>
 
                 <LineBottom />

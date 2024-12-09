@@ -1,8 +1,6 @@
-/* eslint-disable i18next/no-literal-string */
+import { useTranslation } from 'react-i18next';
 import { AddNewButton, PlaceholderText, ScrollArea, Wrapper } from './styles.ts';
-
 import { useAnimationFrame } from 'framer-motion';
-
 import data from './data.ts';
 import { useEffect, useState, useRef } from 'react';
 import Member from '../Member/Member';
@@ -18,6 +16,7 @@ interface Member {
 }
 
 export default function CrewList() {
+    const { t } = useTranslation('sos', { useSuspense: false });
     const [members, setMembers] = useState<Member[]>([]);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [scrollDirection, setScrollDirection] = useState<number>(0);
@@ -79,7 +78,7 @@ export default function CrewList() {
                 <PlusIcon />
             </AddNewButton>
 
-            {members.length === 0 && <PlaceholderText>Invite your first crew member</PlaceholderText>}
+            {members.length === 0 && <PlaceholderText>{t('crewList.placeholder')}</PlaceholderText>}
         </Wrapper>
     );
 }

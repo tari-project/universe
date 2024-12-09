@@ -1,4 +1,4 @@
-/* eslint-disable i18next/no-literal-string */
+import { useTranslation } from 'react-i18next';
 import { MiningRate, NewPill, NudgeButton, Wrapper } from './styles.ts';
 
 interface MemberProps {
@@ -13,11 +13,12 @@ interface MemberProps {
 }
 
 export default function Member({ member }: MemberProps) {
+    const { t } = useTranslation('sos', { useSuspense: false });
     const { isNew, isOnline, image, miningRate } = member;
 
     return (
         <Wrapper $isOnline={isOnline}>
-            {isNew && <NewPill>New</NewPill>}
+            {isNew && <NewPill>{t('member.new')}</NewPill>}
 
             <svg
                 width="99"
@@ -60,9 +61,14 @@ export default function Member({ member }: MemberProps) {
                 </defs>
             </svg>
 
-            {!isOnline && <NudgeButton className="nudge-btn">Nudge</NudgeButton>}
+            {!isOnline && <NudgeButton className="nudge-btn">{t('member.nudge')}</NudgeButton>}
 
-            {isOnline && <MiningRate>+{miningRate}min/hr</MiningRate>}
+            {isOnline && (
+                <MiningRate>
+                    +{miningRate}
+                    {t('member.minHr')}
+                </MiningRate>
+            )}
         </Wrapper>
     );
 }

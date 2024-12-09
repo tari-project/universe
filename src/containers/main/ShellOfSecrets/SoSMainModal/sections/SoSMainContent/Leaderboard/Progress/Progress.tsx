@@ -1,5 +1,5 @@
-/* eslint-disable i18next/no-literal-string */
 import { useState } from 'react';
+import { useTranslation, Trans } from 'react-i18next';
 import {
     Wrapper,
     TopLabel,
@@ -17,6 +17,7 @@ import {
 } from './styles';
 
 export default function Progress() {
+    const { t } = useTranslation('sos', { useSuspense: false });
     const [percent, setPercent] = useState(50);
 
     const handleClick = () => {
@@ -28,7 +29,7 @@ export default function Progress() {
             <TopLabel>
                 <Line />
                 <Text>
-                    You’re <span>15 hours</span> away from the next rank. Keep mining!
+                    <Trans t={t} i18nKey="progress.message" values={{ hours: 15 }} components={{ span: <span /> }} />
                 </Text>
                 <Line />
                 <CapLeft />

@@ -1,7 +1,10 @@
-/* eslint-disable i18next/no-literal-string */
+import { useTranslation } from 'react-i18next';
 import { Wrapper, Avatar, Handle, Status, LeftSide, RightSide, Rank, Dot, Duration } from './styles';
 
 export default function LeaserboardEntry({ entry, $current }) {
+    const { t } = useTranslation('sos', { useSuspense: false });
+    const lastMined = '52m';
+
     return (
         <Wrapper $current={$current}>
             <LeftSide>
@@ -13,12 +16,12 @@ export default function LeaserboardEntry({ entry, $current }) {
             <RightSide>
                 {entry.status === 'mining' && (
                     <Status>
-                        <Dot /> Mining now
+                        <Dot /> {t('leaserboardEntry.mining')}
                     </Status>
                 )}
                 {entry.status === 'idle' && (
                     <Status $isRed={'red'}>
-                        <Dot $isRed={'red'} /> Last mined 52m ago
+                        <Dot $isRed={'red'} /> {t('leaserboardEntry.idle', { time: lastMined })}
                     </Status>
                 )}
 

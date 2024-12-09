@@ -1,9 +1,10 @@
-/* eslint-disable i18next/no-literal-string */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import KeyIcon from './icons/KeyIcon';
 import { Wrapper, TopBar, LineLeft, SectionLabel, LineRight, FormWrapper, InputField, SubmitButton } from './styles';
 
 export default function SuperCharger() {
+    const { t } = useTranslation('sos', { useSuspense: false });
     const [code, setCode] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -11,24 +12,25 @@ export default function SuperCharger() {
     };
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        console.log('Code submitted:', code);
         e.preventDefault();
+
+        // DO submit form stuff here
     };
 
     return (
         <Wrapper>
             <TopBar>
                 <LineLeft />
-                <SectionLabel>Super Charger</SectionLabel>
+                <SectionLabel>{t('superCharger.title')}</SectionLabel>
                 <LineRight />
             </TopBar>
 
             <FormWrapper onSubmit={handleSubmit}>
                 <KeyIcon />
 
-                <InputField placeholder="Enter Your Code" value={code} onChange={handleChange} />
+                <InputField placeholder={t('superCharger.placeholder')} value={code} onChange={handleChange} />
 
-                <SubmitButton>Go</SubmitButton>
+                <SubmitButton>{t('superCharger.submit')}</SubmitButton>
             </FormWrapper>
         </Wrapper>
     );
