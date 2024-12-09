@@ -4,13 +4,14 @@ export const Wrapper = styled('div')<{ $noMembers?: boolean }>`
     display: grid;
     grid-template-columns: auto 1fr;
 
-    gap: 14px;
+    gap: 4px;
 
     ${({ $noMembers }) =>
         $noMembers &&
         css`
             display: flex;
             align-items: center;
+            gap: 20px;
         `}
 `;
 
@@ -65,4 +66,8 @@ export const ScrollArea = styled('div')`
     gap: 15px;
     overflow: hidden;
     padding: 6px 0;
+    padding-left: 10px;
+    position: relative;
+    mask-image: linear-gradient(to right, transparent, black 10px, black calc(100% - 50px), transparent);
+    transform: translateX(-10px);
 `;
