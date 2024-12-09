@@ -6,7 +6,7 @@ use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
 use p2pool::models::Connections;
-use std::fs::{remove_dir_all, remove_file};
+use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use tokio::sync::watch::{self};
 
 use log4rs::config::RawConfig;
@@ -673,11 +673,26 @@ fn main() {
         }))
         .manage(app_state.clone())
         .setup(|app| {
+            let config_path = app
+                .path_resolver()
+                .app_config_dir()
+                .expect("Could not get config dir");
+
+            // Remove this after it's been rolled out for a few versions
+            let log_path = app.path_resolver().app_log_dir().expect("Could not get log dir");
+            let logs_cleared_file = log_path.join("logs_cleared");
+            if !logs_cleared_file.exists() {
+                match remove_dir_all(&log_path) {
+                    Ok(()) => {
+                        create_dir_all(&log_path).map_err(|e| e.to_string())?;
+                        File::create(&logs_cleared_file).map_err(|e| e.to_string())?;
+                    },
+                    Err(e) => warn!(target: LOG_TARGET, "Could not clear log folder: {}", e)
+                }
+            }
+
             let contents = setup_logging(
-                &app.path_resolver()
-                    .app_config_dir()
-                    .expect("Could not get config dir")
-                    .join("logs")
+                &log_path
                     .join("universe")
                     .join("configs")
                     .join("log4rs_config_universe.yml"),
@@ -694,10 +709,6 @@ fn main() {
             let splash_window = app
                 .get_window("splashscreen")
                 .expect("Main window not found");
-            let config_path = app
-                .path_resolver()
-                .app_config_dir()
-                .expect("Could not get config dir");
 
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
