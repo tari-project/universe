@@ -106,6 +106,7 @@ declare module '@tauri-apps/api/tauri' {
     //TODO add payload type
     // function invoke(param: 'get_balances', payload: {}): Promise<AccountsGetBalancesResponse>;
     function invoke(param: 'get_assets_server_addr'): Promise<string>;
+    function invoke(param: 'add_dev_tapplet', payload: { endpoint: string }): Promise<DevTapplet>;
     function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: string }): Promise<InstalledTapplet>;
     function invoke(
         param: 'download_and_extract_tapp',

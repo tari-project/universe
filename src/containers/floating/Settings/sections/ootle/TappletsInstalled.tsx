@@ -29,7 +29,7 @@ const Count = styled.div<{ $count: number }>`
 
 export default function TappletsInstalled() {
     const { t } = useTranslation('ootle');
-    const { getInstalledTapps, setActiveTapp } = useTappletsStore();
+    const { setActiveTapp } = useTappletsStore();
     const installedTapplets = useTappletsStore((s) => s.installedTapplets);
     const installedTappletsCount = installedTapplets?.length || 0;
     console.log('fethch installed tapp', installedTapplets);
@@ -65,14 +65,6 @@ export default function TappletsInstalled() {
     return (
         <>
             <TappletsGroupWrapper $category="Tapplets Installed">
-                <SquaredButton
-                    onClick={() => getInstalledTapps()}
-                    color="tariPurple"
-                    size="medium"
-                    style={{ width: '25%', alignContent: 'center' }}
-                >
-                    {t('refresh-list')}
-                </SquaredButton>
                 <TappletsGroup>
                     <SettingsGroupContent>
                         <SettingsGroupTitle>

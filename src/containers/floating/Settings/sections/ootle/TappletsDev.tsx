@@ -10,6 +10,27 @@ import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import { MdLaunch, MdDelete } from 'react-icons/md';
 import tariLogo from '@app/assets/tari.svg';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
+import { useCallback, useEffect, useState } from 'react';
+import { Stack } from '@app/components/elements/Stack.tsx';
+import { Input } from '@app/components/elements/inputs/Input.tsx';
+import { Controller, useForm } from 'react-hook-form';
+import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
+
+const endpointRegex = /^(http:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
+
+const StyledStack = styled(Stack)`
+    width: 100%;
+`;
+
+const StyledInput = styled(Input)`
+    font-size: 12px;
+`;
+
+const StyledForm = styled.form`
+    width: 100%;
+    // Reserve space for error message
+    min-height: 53px;
+`;
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -28,8 +49,10 @@ const Count = styled.div<{ $count: number }>`
 
 export default function TappletsDev() {
     const { t } = useTranslation('ootle');
-    const getDevTapplets = useTappletsStore((s) => s.getDevTapps);
+    const initialDevTappEndpoint = '';
+
     const devTapplets = useTappletsStore((s) => s.devTapplets);
+    const addDevTapplet = useTappletsStore((s) => s.addDevTapp);
     const devTappletsCount = devTapplets?.length || 0;
     console.log('fethch dev tapp', devTapplets);
     const listMarkup = devTappletsCount
@@ -50,17 +73,67 @@ export default function TappletsDev() {
     //         clearInterval(fetchTappletsInterval);
     //     };
     // }, [fetchTapplets]);
+    const {
+        control,
+        watch,
+        handleSubmit,
+        setValue,
+        reset,
+        trigger,
+        formState: { errors },
+    } = useForm({
+        defaultValues: { endpoint: '' },
+    });
+    const endpoint = watch('endpoint');
+
+    useEffect(() => {
+        setValue('endpoint', initialDevTappEndpoint);
+    }, [initialDevTappEndpoint, setValue]);
+
+    const handleApply = useCallback(
+        async (data: { endpoint: string }) => {
+            await addDevTapplet(data.endpoint);
+        },
+        [addDevTapplet]
+    );
+
+    const handleReset = useCallback(() => {
+        reset({ endpoint: initialDevTappEndpoint });
+    }, [reset]);
+
+    useEffect(() => {
+        trigger('endpoint');
+    }, [endpoint, trigger]);
 
     return (
         <TappletsGroupWrapper $category="Dev Tapplets">
-            <SquaredButton
-                onClick={() => getDevTapplets()}
-                color="tariPurple"
-                size="medium"
-                style={{ width: '25%', alignContent: 'center' }}
-            >
-                {t('refresh-list')}
-            </SquaredButton>
+            <StyledForm onSubmit={handleSubmit(handleApply)} onReset={handleReset}>
+                <StyledStack direction="row" alignItems="center" gap={10}>
+                    <Controller
+                        name="endpoint"
+                        control={control}
+                        rules={{
+                            pattern: {
+                                value: endpointRegex,
+                                message: 'Invalid endpoint format',
+                            },
+                        }}
+                        render={({ field }) => {
+                            const { ref: _ref, ...rest } = field;
+                            return <StyledInput type="text" hasError={!!errors.endpoint} {...rest} />;
+                        }}
+                    />
+                    {!errors.endpoint && (
+                        <IconButton type="submit">
+                            <IoCheckmarkOutline />
+                        </IconButton>
+                    )}
+                    <IconButton type="reset">
+                        <IoCloseOutline />
+                    </IconButton>
+                </StyledStack>
+                {errors.endpoint && <span style={{ color: 'red', fontSize: '12px' }}>{errors.endpoint.message}</span>}
+            </StyledForm>
             <TappletsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
