@@ -862,7 +862,8 @@ fn main() {
             commands::launch_tapplet,
             commands::insert_tapp_registry_db,
             commands::read_tapp_registry_db,
-            commands::get_assets_server_addr
+            commands::get_assets_server_addr,
+            commands::download_and_extract_tapp
         ])
         .build(tauri::generate_context!())
         .inspect_err(

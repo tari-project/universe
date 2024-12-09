@@ -6,22 +6,28 @@ use crate::consts::{TAPPLET_ARCHIVE, TAPPLET_DIST_DIR};
 use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::database::models::{CreateTapplet, CreateTappletAsset, CreateTappletVersion, Tapplet};
 use crate::database::store::{SqliteStore, Store};
-use crate::download_utils::extract;
+use crate::download_utils::{download_file_with_retries, extract};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
-use crate::interface::{LaunchedTappResult, TappletAssets, TappletPermissions};
+use crate::interface::{LaunchedTappResult, TappletPermissions};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
-use crate::ootle::db_connection::{AssetServer, DatabaseConnection, ShutdownTokens};
-use crate::ootle::error::{Error::TappletServerError, TappletServerError::*};
-use crate::ootle::tapplet_installer::{
-    check_files_and_validate_checksum, download_asset, fetch_tapp_registry_manifest,
-    get_tapp_download_path, get_tapp_permissions,
+use crate::ootle::{
+    db_connection::{AssetServer, DatabaseConnection, ShutdownTokens},
+    error::{
+        Error::{self, TappletServerError},
+        RequestError::*,
+        TappletServerError::*,
+    },
+    tapplet_installer::{
+        check_files_and_validate_checksum, download_asset, fetch_tapp_registry_manifest,
+        get_tapp_download_path, get_tapp_permissions,
+    },
+    tapplet_server::start,
 };
-use crate::ootle::tapplet_server::start;
 use crate::p2pool::models::Stats;
 use crate::progress_tracker::ProgressTracker;
 use crate::systemtray_manager::{SystemtrayManager, SystrayData};
@@ -1781,4 +1787,64 @@ pub fn read_tapp_registry_db(
 #[tauri::command]
 pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<String, String> {
     Ok(format!("http://{}", state.addr))
+}
+
+#[tauri::command]
+pub async fn download_and_extract_tapp(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
+    let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(tapplet_id) {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    // get download path
+    let tapplet_path = get_tapp_download_path(
+        tapp.registry_id.clone(),
+        tapp_version.version.clone(),
+        app_handle.clone(),
+    )
+    .unwrap_or_default();
+    // download tarball
+    let url = tapp_version.registry_url.clone();
+    let file_path = tapplet_path.join(TAPPLET_ARCHIVE);
+    let destination_dir = file_path.clone();
+    let progress_tracker = ProgressTracker::new(
+        app_handle
+            .get_window("main")
+            .expect("Could not get main window")
+            .clone(),
+    );
+    let handle_download = tauri::async_runtime::spawn(async move {
+        download_file_with_retries(&url, &destination_dir, progress_tracker).await
+    });
+    let _ = handle_download
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error downloading file: {:?}", e))
+        .map_err(|_| {
+            Error::RequestError(FailedToDownload {
+                url: tapp_version.registry_url.clone(),
+            })
+        });
+
+    let _ = extract(&file_path, &tapplet_path.clone())
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error extracting file: {:?}", e));
+    //TODO should compare integrity field with the one stored in db or from github manifest?
+    match check_files_and_validate_checksum(tapp_version, tapplet_path.clone()) {
+        Ok(is_valid) => {
+            info!(target: LOG_TARGET,"✅ Checksum validation successfully with test result: {:?}", is_valid);
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET,"🚨 Error validating checksum: {:?}", e);
+            return Err(e.to_string());
+        }
+    }
+    Ok(())
 }

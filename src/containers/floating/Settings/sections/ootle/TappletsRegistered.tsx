@@ -37,6 +37,7 @@ export default function TappletsRegistered() {
 
     const handleInstall = async (tappletId: string) => {
         console.log('instal tapp with id', tappletId);
+        
     };
     // TODO can be used if fetching from db works
     // useEffect(() => {

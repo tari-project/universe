@@ -86,7 +86,10 @@ declare module '@tauri-apps/api/tauri' {
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
-    // Tari Ootle
+
+    /**
+     * Tati Ootle
+     */
     function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithAssets[]>;
     function invoke(param: 'read_dev_tapplets'): Promise<DevTapplet[]>;
     function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
