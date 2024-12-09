@@ -68,7 +68,7 @@ const lightPalette: ThemePalette = {
             contrast: c.success[900],
         },
         warning: {
-            main: c.warning[400],
+            main: c.warning[300],
             dark: c.warning[950],
             light: c.warning[50],
             contrast: c.warning[300],
