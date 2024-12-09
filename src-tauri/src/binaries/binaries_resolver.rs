@@ -324,10 +324,7 @@ impl BinaryResolver {
             .send_last_action(format!(
                 "Checking if files exist before download: {} {}",
                 binary.name(),
-                highest_version
-                    .clone()
-                    .unwrap_or(Version::new(0, 0, 0))
-                    .to_string()
+                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
             ))
             .await;
 
@@ -343,10 +340,7 @@ impl BinaryResolver {
             .send_last_action(format!(
                 "Checking if files exist after download: {} {}",
                 binary.name(),
-                highest_version
-                    .clone()
-                    .unwrap_or(Version::new(0, 0, 0))
-                    .to_string()
+                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
             ))
             .await;
         let check_if_files_exist =
