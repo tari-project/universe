@@ -82,8 +82,16 @@
   },
   "pool-mining": "풀 채굴",
   "pool-mining-description": "활성화되면 풀에서 채굴하고 마이너 그룹에 참여합니다.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Randomx 네트워크 해시레이트",
   "refresh-versions": "버전 새로고침",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "문제 보고",
   "reset-permanently": "모든 설정을 영구적으로 초기화하시겠습니까?",
   "reset-settings": "설정 초기화",
@@ -111,6 +119,7 @@
     "general": "일반",
     "mining": "채굴",
     "p2p": "풀 채굴",
+    "releaseNotes": "Release Notes",
     "very_experimental": "매우 실험적",
     "wallet": "지갑"
   },

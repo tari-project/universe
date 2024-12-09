@@ -7,8 +7,6 @@ import { useMiningStore } from './useMiningStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 
 interface AppState {
-    isAfterAutoUpdate: boolean;
-    setIsAfterAutoUpdate: (value: boolean) => void;
     criticalError?: string;
     setCriticalError: (value: string | undefined) => void;
     error?: string;
@@ -38,8 +36,6 @@ interface AppState {
 }
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
-    isAfterAutoUpdate: false,
-    setIsAfterAutoUpdate: (value: boolean) => set({ isAfterAutoUpdate: value }),
     criticalError: undefined,
     setCriticalError: (criticalError) => set({ criticalError }),
     error: undefined,

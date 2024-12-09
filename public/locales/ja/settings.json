@@ -82,8 +82,16 @@
   },
   "pool-mining": "プールマイニング",
   "pool-mining-description": "有効にすると、プールでマイニングし、マイナーのグループに参加します。",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
   "randomx-network-hash-rate": "Randomxネットワークのハッシュレート",
   "refresh-versions": "バージョンを更新",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "問題を報告する",
   "reset-permanently": "すべての設定を永久にリセットしてもよろしいですか？",
   "reset-settings": "設定をリセット",
@@ -111,6 +119,7 @@
     "general": "一般",
     "mining": "マイニング",
     "p2p": "プールマイニング",
+    "releaseNotes": "Release Notes",
     "very_experimental": "非常に実験的",
     "wallet": "ウォレット"
   },
