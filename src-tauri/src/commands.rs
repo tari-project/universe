@@ -12,7 +12,7 @@ use crate::external_dependencies::{
 };
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
-use crate::interface::{LaunchedTappResult, TappletPermissions};
+use crate::interface::{LaunchedTappResult, TappletAssets, TappletPermissions};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
 use crate::ootle::db_connection::{DatabaseConnection, ShutdownTokens};
@@ -1622,8 +1622,9 @@ pub async fn launch_tapplet(
     let mut locked_tokens = shutdown_tokens.0.lock().await;
     let mut store = SqliteStore::new(db_connection.0.clone());
 
-    let (_installed_tapp, registered_tapp, tapp_version) =
-        store.get_installed_tapplet_full_by_id(installed_tapplet_id)?;
+    let (_installed_tapp, registered_tapp, tapp_version) = store
+        .get_installed_tapplet_full_by_id(installed_tapplet_id)
+        .map_err(|e| e.to_string())?;
     // get download path
     let tapplet_path = get_tapp_download_path(
         registered_tapp.registry_id,
@@ -1691,13 +1692,6 @@ pub async fn fetch_tapplets(
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<(), String> {
-    let progress_tracker = ProgressTracker::new(
-        app_handle
-            .get_window("main")
-            .expect("Could not get main window")
-            .clone(),
-    );
-
     let tapplets = match fetch_tapp_registry_manifest().await {
         Ok(tapp) => tapp,
         Err(e) => {
@@ -1705,8 +1699,7 @@ pub async fn fetch_tapplets(
         }
     };
 
-    // let mut store = SqliteStore::new(db_connection.0.clone()); TODO this how it was
-    let mut store = SqliteStore::new(db_connection.inner().clone());
+    let mut store = SqliteStore::new(db_connection.0.clone());
 
     for tapplet_manifest in tapplets.registered_tapplets.values() {
         let inserted_tapplet = store
@@ -1739,20 +1732,22 @@ pub async fn fetch_tapplets(
         match store.get_tapplet_assets_by_tapplet_id(inserted_tapplet.id.unwrap()) {
             Ok(Some(_)) => {}
             Ok(None) => {
-                let tapplet_assets =
-                    download_asset(app_handle.clone(), inserted_tapplet.registry_id)
-                        .await
-                        .unwrap_or(|e| e.to_string());
-
-                store
-                    .create(
-                        &(CreateTappletAsset {
-                            tapplet_id: inserted_tapplet.id,
-                            icon_url: &tapplet_assets.icon_url,
-                            background_url: &tapplet_assets.background_url,
-                        }),
-                    )
-                    .map_err(|e| e.to_string());
+                match download_asset(app_handle.clone(), inserted_tapplet.registry_id).await {
+                    Ok(tapplet_assets) => {
+                        store
+                            .create(
+                                &(CreateTappletAsset {
+                                    tapplet_id: inserted_tapplet.id,
+                                    icon_url: &tapplet_assets.icon_url,
+                                    background_url: &tapplet_assets.background_url,
+                                }),
+                            )
+                            .map_err(|e| e.to_string());
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Could not download tapplet assets: {}", e);
+                    }
+                }
             }
             Err(e) => {
                 return Err(e.to_string());

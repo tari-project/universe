@@ -5,6 +5,7 @@ use auto_launcher::AutoLauncher;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
+use ootle::db_connection::DatabaseConnection;
 use std::fs::{remove_dir_all, remove_file};
 
 use log4rs::config::RawConfig;
@@ -36,6 +37,7 @@ use crate::cpu_miner::CpuMiner;
 
 use crate::app_config::WindowSettings;
 use crate::commands::{CpuMinerConnection, MinerMetrics, TariWalletDetails};
+use crate::consts::DB_FILE_NAME;
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;
@@ -418,6 +420,20 @@ async fn setup_inner(
             )
             .await?;
     }
+    progress.set_max(90).await;
+    //TODO add translation for db
+    progress
+        .update("establishing-db-connection".to_string(), None, 0)
+        .await;
+
+    let db_path = app
+        .path_resolver()
+        .app_data_dir()
+        .expect("Could not get log dir")
+        .join(DB_FILE_NAME);
+    app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
+        database::establish_connection(db_path.to_str().unwrap()),
+    ))));
 
     progress.set_max(100).await;
     progress
