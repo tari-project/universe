@@ -17,6 +17,15 @@
     "stop-mining": "Остановить майнинг",
     "waiting-for-idle": "Ожидание простоя"
   },
+  "orphan-chain-tooltip": {
+    "heading": "Things to try:",
+    "step_1": "Check your Internet connection",
+    "step_2": "Check your Internet connection",
+    "step_3": "Wait 30 mins",
+    "step_4": "Restart the app",
+    "step_5": "Try using a Tor Bridge (in Settings)",
+    "step_6": "Try disabling Tor (in Settings)"
+  },
   "you-earn-rewards-separately": "Вы получаете награды за майнинг на CPU и GPU отдельно",
   "you-won-block": "Вы выиграли <span>блок #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Вы выиграли {{ blocks }}</span>, пока вас не было",

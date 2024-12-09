@@ -20,6 +20,15 @@
     "stop-mining": "Stop Mynbou",
     "waiting-for-idle": "Wag tot onaktief"
   },
+  "orphan-chain-tooltip": {
+    "heading": "Things to try:",
+    "step_1": "Check your Internet connection",
+    "step_2": "Check your Internet connection",
+    "step_3": "Wait 30 mins",
+    "step_4": "Restart the app",
+    "step_5": "Try using a Tor Bridge (in Settings)",
+    "step_6": "Try disabling Tor (in Settings)"
+  },
   "you-earn-rewards-separately": "Jy verdien belonings vir die myn van CPU en GPU afsonderlik",
   "you-won-block": "Jy was die wenner van <span>blok #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Jy het {{ blocks }} gewen</span> terwyl jy weg was",

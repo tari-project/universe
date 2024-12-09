@@ -17,6 +17,15 @@
     "stop-mining": "채굴 중지",
     "waiting-for-idle": "유휴 상태 대기 중"
   },
+  "orphan-chain-tooltip": {
+    "heading": "Things to try:",
+    "step_1": "Check your Internet connection",
+    "step_2": "Check your Internet connection",
+    "step_3": "Wait 30 mins",
+    "step_4": "Restart the app",
+    "step_5": "Try using a Tor Bridge (in Settings)",
+    "step_6": "Try disabling Tor (in Settings)"
+  },
   "you-earn-rewards-separately": "CPU와 GPU 채굴에 대해 각각 보상을 받습니다",
   "you-won-block": "당신은 <span>블록 #{{ blockHeight }}</span>의 승자였습니다",
   "you-won-while-away": "<span>자리를 비운 동안 {{ blocks }}를 획득했습니다</span>",

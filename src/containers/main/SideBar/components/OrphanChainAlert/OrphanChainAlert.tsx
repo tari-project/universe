@@ -9,19 +9,10 @@ import { List } from '@app/components/elements/List.tsx';
 
 import tinkerEmoji from '@app/assets/icons/emoji/custom.png';
 
-const steps = [
-    `Check your Internet connection`,
-    `Wait 30 mins`,
-    `Restart the app`,
-    `Try using a Tor Bridge (in Settings)`,
-    `Try disabling Tor (in Settings)`,
-    `Try an app reset (in Settings)`,
-];
-
 export const OrphanChainAlert = () => {
     const [isOrphanChain, setIsOrphanChain] = useState(false);
     const [open, setOpen] = useState(false);
-    const { t } = useTranslation('settings', { useSuspense: false });
+    const { t } = useTranslation(['settings', 'mining-view']);
     const { refs, context } = useFloating({
         open: open,
         onOpenChange: setOpen,
@@ -48,6 +39,8 @@ export const OrphanChainAlert = () => {
         };
     }, [setIsOrphanChain]);
 
+    const steps = Array.from({ length: 6 }).map((_, i) => t(`mining-view:orphan-chain-tooltip.step_${i + 1}`));
+
     const alertMarkup = (
         <AlertWrapper>
             <TooltipTrigger ref={refs.setReference} {...getReferenceProps()}>
@@ -59,7 +52,7 @@ export const OrphanChainAlert = () => {
                     <TooltipWrapper ref={refs.setFloating} {...getFloatingProps()}>
                         <TooltipTop>
                             <img src={tinkerEmoji} alt="" />
-                            <Typography variant="h6">{`Things to try:`}</Typography>
+                            <Typography variant="h6">{t('mining-view:orphan-chain-tooltip.heading')}</Typography>
                         </TooltipTop>
                         <List items={steps} />
                     </TooltipWrapper>
