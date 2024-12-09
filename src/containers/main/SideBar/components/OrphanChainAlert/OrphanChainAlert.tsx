@@ -10,9 +10,9 @@ import { List } from '@app/components/elements/List.tsx';
 import tinkerEmoji from '@app/assets/icons/emoji/custom.png';
 
 export const OrphanChainAlert = () => {
+    const { t } = useTranslation(['settings', 'mining-view'], { useSuspense: false });
     const [isOrphanChain, setIsOrphanChain] = useState(false);
     const [open, setOpen] = useState(false);
-    const { t } = useTranslation(['settings', 'mining-view']);
     const { refs, context } = useFloating({
         open: open,
         onOpenChange: setOpen,
