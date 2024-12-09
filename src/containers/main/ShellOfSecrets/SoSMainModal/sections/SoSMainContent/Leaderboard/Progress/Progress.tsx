@@ -20,10 +20,6 @@ export default function Progress() {
     const { t } = useTranslation('sos', { useSuspense: false });
     const [percent, setPercent] = useState(50);
 
-    const handleClick = () => {
-        setPercent((prevPercent) => (prevPercent === 50 ? 100 : 50));
-    };
-
     return (
         <Wrapper>
             <TopLabel>
@@ -36,7 +32,7 @@ export default function Progress() {
                 <CapRight />
             </TopLabel>
 
-            <ProgressBar onClick={handleClick}>
+            <ProgressBar>
                 <Inside>
                     <Bar
                         style={{

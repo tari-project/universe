@@ -1,5 +1,5 @@
 import CrewMining from './CrewMining/CrewMining';
-import Drops from './Drops/Drops';
+import PrizeDrops from './PrizeDrops/PrizeDrops';
 import Leaderboard from './Leaderboard/Leaderboard';
 import { Wrapper } from './styles';
 
@@ -8,7 +8,7 @@ export default function SoSMainContent() {
         <Wrapper>
             <CrewMining />
             <Leaderboard />
-            <Drops />
+            <PrizeDrops />
         </Wrapper>
     );
 }
