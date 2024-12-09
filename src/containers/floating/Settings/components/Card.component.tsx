@@ -3,7 +3,7 @@ import { CardItem, CardItemLabel, CardItemLabelValue, CardItemLabelWrapper, Card
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 
 export interface CardComponentProps {
-    heading: string;
+    heading?: string;
     labels: { labelText: ReactNode; labelValue: string | number }[];
 }
 
@@ -21,7 +21,7 @@ export const CardComponent = ({ heading, labels }: CardComponentProps) => {
     });
     return (
         <CardItem>
-            <CardItemTitle>{heading}</CardItemTitle>
+            {heading ? <CardItemTitle>{heading}</CardItemTitle> : null}
             {labelMarkup}
         </CardItem>
     );
