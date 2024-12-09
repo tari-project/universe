@@ -4,7 +4,10 @@ use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::consts::{TAPPLET_ARCHIVE, TAPPLET_DIST_DIR};
 use crate::credential_manager::{CredentialError, CredentialManager};
-use crate::database::models::{CreateTapplet, CreateTappletAsset, CreateTappletVersion, Tapplet};
+use crate::database::models::{
+    CreateDevTapplet, CreateInstalledTapplet, CreateTapplet, CreateTappletAsset,
+    CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateInstalledTapplet,
+};
 use crate::database::store::{SqliteStore, Store};
 use crate::download_utils::{download_file_with_retries, extract};
 use crate::external_dependencies::{
@@ -12,13 +15,16 @@ use crate::external_dependencies::{
 };
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
-use crate::interface::{LaunchedTappResult, TappletPermissions};
+use crate::interface::{
+    DevTappletResponse, InstalledTappletWithName, LaunchedTappResult, TappletPermissions,
+};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
+use crate::ootle::tapplet_installer::delete_tapplet;
 use crate::ootle::{
     db_connection::{AssetServer, DatabaseConnection, ShutdownTokens},
     error::{
-        Error::{self, TappletServerError},
+        Error::{self, RequestError, TappletServerError},
         RequestError::*,
         TappletServerError::*,
     },
@@ -1794,7 +1800,7 @@ pub async fn download_and_extract_tapp(
     tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
     app_handle: tauri::AppHandle,
-) -> Result<(), String> {
+) -> Result<Tapplet, String> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
     let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(tapplet_id) {
@@ -1846,5 +1852,113 @@ pub async fn download_and_extract_tapp(
             return Err(e.to_string());
         }
     }
-    Ok(())
+    Ok(tapp)
+}
+
+/**
+ * INSTALLED TAPPLETS - STORES ALL THE USER'S INSTALLED TAPPLETS
+ */
+
+#[tauri::command]
+pub fn insert_installed_tapp_db(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<InstalledTapplet, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let (tapp, version_data) = tapplet_store.get_registered_tapplet_with_version(tapplet_id)?;
+
+    let installed_tapplet = CreateInstalledTapplet {
+        tapplet_id: tapp.id,
+        tapplet_version_id: version_data.id,
+    };
+    tapplet_store.create(&installed_tapplet)
+}
+
+#[tauri::command]
+pub fn read_installed_tapp_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<InstalledTappletWithName>, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.get_installed_tapplets_with_display_name()
+}
+
+#[tauri::command]
+pub fn update_installed_tapp_db(
+    tapplet: UpdateInstalledTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let tapplets: Vec<InstalledTapplet> = tapplet_store.get_all()?;
+    let first: InstalledTapplet = tapplets.into_iter().next().unwrap();
+    tapplet_store.update(first, &tapplet)
+}
+
+#[tauri::command]
+pub fn delete_installed_tapp(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<usize, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let (_installed_tapp, registered_tapp, tapp_version) =
+        store.get_installed_tapplet_full_by_id(tapplet_id)?;
+    let tapplet_path = get_tapp_download_path(
+        registered_tapp.registry_id,
+        tapp_version.version,
+        app_handle,
+    )
+    .unwrap();
+    delete_tapplet(tapplet_path)?;
+
+    let installed_tapplet: InstalledTapplet = store.get_by_id(tapplet_id)?;
+    store.delete(installed_tapplet)
+}
+
+#[tauri::command]
+pub async fn add_dev_tapplet(
+    endpoint: String,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<DevTapplet, Error> {
+    let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
+    let manifest_res = reqwest::get(&manifest_endpoint)
+        .await
+        .map_err(|_| {
+            RequestError(FetchManifestError {
+                endpoint: endpoint.clone(),
+            })
+        })?
+        .json::<DevTappletResponse>()
+        .await
+        .map_err(|_| {
+            RequestError(ManifestResponseError {
+                endpoint: endpoint.clone(),
+            })
+        })?;
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let new_dev_tapplet = CreateDevTapplet {
+        endpoint: &endpoint,
+        package_name: &manifest_res.package_name,
+        display_name: &manifest_res.display_name,
+    };
+    let dev_tapplet = store.create(&new_dev_tapplet);
+    info!(target: LOG_TARGET,"✅ Dev tapplet added to db successfully: {:?}", new_dev_tapplet);
+    dev_tapplet
+}
+
+#[tauri::command]
+pub fn read_dev_tapplets(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<DevTapplet>, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    store.get_all()
+}
+
+#[tauri::command]
+pub fn delete_dev_tapplet(
+    dev_tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let dev_tapplet: DevTapplet = store.get_by_id(dev_tapplet_id)?;
+    store.delete(dev_tapplet)
 }

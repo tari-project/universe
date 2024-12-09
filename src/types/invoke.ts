@@ -13,7 +13,13 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
-import { DevTapplet, InstalledTappletWithAssets, RegisteredTapplet } from './ootle/tapplet';
+import {
+    DevTapplet,
+    InstalledTapplet,
+    InstalledTappletWithAssets,
+    RegisteredTapplet,
+    RegisteredTappletWithAssets,
+} from './ootle/tapplet';
 import { AccountsGetBalancesResponse } from '@tari-project/wallet_jrpc_client';
 
 declare module '@tauri-apps/api/tauri' {
@@ -100,4 +106,9 @@ declare module '@tauri-apps/api/tauri' {
     //TODO add payload type
     // function invoke(param: 'get_balances', payload: {}): Promise<AccountsGetBalancesResponse>;
     function invoke(param: 'get_assets_server_addr'): Promise<string>;
+    function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: string }): Promise<InstalledTapplet>;
+    function invoke(
+        param: 'download_and_extract_tapp',
+        payload: { tappletId: string }
+    ): Promise<RegisteredTappletWithAssets>;
 }

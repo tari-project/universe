@@ -29,6 +29,7 @@ export default function TappletsRegistered() {
     const { t } = useTranslation('ootle');
     const fetchTapplets = useTappletsStore((s) => s.fetchRegisteredTapps);
     const registeredTapplets = useTappletsStore((s) => s.registeredTapplets);
+    const installRegisteredTapp = useTappletsStore((s) => s.installRegisteredTapp);
     const registeredTappletsCount = registeredTapplets?.length || 0;
     console.log('fethch registered tapp', registeredTapplets);
     const listMarkup = registeredTappletsCount
@@ -37,7 +38,7 @@ export default function TappletsRegistered() {
 
     const handleInstall = async (tappletId: string) => {
         console.log('instal tapp with id', tappletId);
-        
+        await installRegisteredTapp(tappletId);
     };
     // TODO can be used if fetching from db works
     // useEffect(() => {

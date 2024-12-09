@@ -18,7 +18,7 @@ interface State {
 }
 
 interface Actions {
-    addInstalledTapp: () => Promise<void>;
+    installRegisteredTapp: (tappletId: string) => Promise<void>;
     fetchRegisteredTapps: () => Promise<void>;
     getInstalledTapps: () => Promise<void>;
     getDevTapps: () => Promise<void>;
@@ -122,29 +122,27 @@ export const useTappletsStore = create<TappletsStoreState>()((set) => ({
             appStateStore.setError(`'Error fetching dev tapplets: ${error}`);
         }
     },
-    addInstalledTapp: async () => {
-        console.log('store fetch tapp');
+    installRegisteredTapp: async (tappletId: string) => {
+        console.log('[STORE] fetch tapp');
         try {
             // TODO invoke to add tapplet
-            await invoke('download_and_extract_tapp');
-            await invoke('insert_installed_tapp_db');
+            const tapplet = await invoke('download_and_extract_tapp', { tappletId });
+            const installedTapplet = await invoke('insert_installed_tapp_db', { tappletId });
+            console.log('[STORE] fetch tapp success', tapplet, installedTapplet);
+            // set({ isInitialized: true, installedTapplets: [... state.items] });
+            const tst: InstalledTappletWithAssets = {
+                display_name: tapplet.display_name,
+                installed_tapplet: installedTapplet,
+                installed_version: installedTapplet.tapplet_version_id,
+                latest_version: '',
+                logoAddr: tapplet.logoAddr,
+                backgroundAddr: tapplet.backgroundAddr,
+            };
 
-            // // TODO tmp solution
-            // const installedTappsWithAssets: InstalledTappletWithAssets[] = [
-            //     {
-            //         display_name: 'installed tapp disp name',
-            //         installed_tapplet: {
-            //             id: '1',
-            //             tapplet_id: '1',
-            //             tapplet_version_id: '',
-            //         },
-            //         installed_version: '0.0.1',
-            //         latest_version: '0.0.1',
-            //         logoAddr: '',
-            //         backgroundAddr: '',
-            //     },
-            // ];
-            set({ isInitialized: true, installedTapplets: installedTappsWithAssets });
+            set((state) => ({
+                isInitialized: true,
+                installedTapplets: [...state.installedTapplets, tst],
+            }));
         } catch (error) {
             const appStateStore = useAppStateStore.getState();
             console.error('Error installing tapplet: ', error);
