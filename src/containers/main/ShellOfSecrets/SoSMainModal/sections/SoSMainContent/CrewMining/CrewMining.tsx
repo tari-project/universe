@@ -2,7 +2,7 @@
 import GrowCrew from '@app/containers/main/ShellOfSecrets/SoSWidget/segments/Friends/GrowCrew/GrowCrew';
 import { Divider, LeftSide, Mining, Rate, SectionTitle, TopRow, Wrapper } from './styles';
 import GreenArrowIcon from './icons/GreenArrowIcon';
-import CrewList from './segments/CrewList/CrewList';
+import CrewList from './CrewList/CrewList';
 
 export default function CrewMining() {
     return (

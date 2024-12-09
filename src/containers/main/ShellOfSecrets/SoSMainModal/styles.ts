@@ -19,6 +19,10 @@ export const Wrapper = styled('div')`
     overflow-y: auto;
 
     padding: 41px 64px;
+
+    @media (max-width: 1400px) {
+        padding: 30px;
+    }
 `;
 
 export const Cover = styled(m.div)`

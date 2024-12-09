@@ -6,7 +6,7 @@ import { useAnimationFrame } from 'framer-motion';
 import data from './data.ts';
 import { useEffect, useState, useRef } from 'react';
 import Member from '../Member/Member';
-import PlusIcon from '../../icons/PlusIcon.tsx';
+import PlusIcon from '../icons/PlusIcon.tsx';
 
 interface Member {
     image: string;

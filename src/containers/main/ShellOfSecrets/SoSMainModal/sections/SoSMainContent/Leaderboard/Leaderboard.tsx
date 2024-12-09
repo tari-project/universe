@@ -1,6 +1,6 @@
 /* eslint-disable i18next/no-literal-string */
-import LeaderboardList from './segments/LeaderboardList/LeaderboardList';
-import Progress from './segments/Progress/Progress';
+import LeaderboardList from './LeaderboardList/LeaderboardList';
+import Progress from './Progress/Progress';
 import { Wrapper, TopRow, SectionTitle, Button } from './styles';
 
 export default function Leaderboard() {

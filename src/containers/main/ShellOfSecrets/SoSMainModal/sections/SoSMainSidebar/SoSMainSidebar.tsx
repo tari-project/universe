@@ -1,5 +1,5 @@
-import MainTimer from './segments/MainTimer/MainTimer';
-import SuperCharger from './segments/SuperCharger/SuperCharger';
+import MainTimer from './MainTimer/MainTimer';
+import SuperCharger from './SuperCharger/SuperCharger';
 import { BGImage1, BGImage2, ContentLayer, Wrapper } from './styles';
 
 import bgImage1 from './images/sidebar_bg_1.png';
