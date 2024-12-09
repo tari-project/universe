@@ -470,8 +470,7 @@ impl BinaryManager {
         progress_tracker
             .send_last_action(format!(
                 "Downloading binary: {} with version: {}",
-                self.binary_name,
-                version.to_string()
+                self.binary_name, version
             ))
             .await;
         download_file_with_retries(
