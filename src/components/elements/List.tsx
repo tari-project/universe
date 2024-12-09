@@ -25,7 +25,7 @@ interface ListProps {
 }
 
 export const List = ({ items, ordered = false }: ListProps) => {
-    const itemMarkup = items.map((item, i) => <ListItem key={`list-item:${i}`}>{item}</ListItem>);
+    const itemMarkup = items?.map((item, i) => <ListItem key={`list-item:${i}`}>{item}</ListItem>);
 
     return <ListWrapper>{ordered ? <ol>{itemMarkup}</ol> : <ul>{itemMarkup}</ul>}</ListWrapper>;
 };
