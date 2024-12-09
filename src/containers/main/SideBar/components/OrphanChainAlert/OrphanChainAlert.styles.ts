@@ -9,18 +9,19 @@ export const AlertWrapper = styled.div`
 
 export const AlertIcon = styled(TbAlertTriangle)`
     display: flex;
+    margin-top: 3px;
     color: ${({ theme }) => theme.palette.warning.main};
     flex-shrink: 0;
 `;
 export const TooltipTrigger = styled.div`
     cursor: pointer;
     display: flex;
-    padding: 6px 0;
+    padding: 4px 8px;
     flex-direction: row;
     font-size: 12px;
-    letter-spacing: -1px;
-    align-items: center;
-    gap: 4px;
+    letter-spacing: -1.8px;
+    align-items: flex-start;
+    gap: 6px;
 `;
 
 export const TooltipWrapper = styled(m.div).attrs({
@@ -31,10 +32,10 @@ export const TooltipWrapper = styled(m.div).attrs({
     flex-direction: column;
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     background-color: ${({ theme }) => theme.palette.background.default};
-    box-shadow: 2px 8px 10px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     position: absolute;
-    padding: 8px 8px 10px;
-    gap: 4px;
+    padding: 6px 8px 10px;
+    gap: 6px;
     left: 0;
     top: 100%;
     z-index: 2;

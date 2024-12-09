@@ -1,8 +1,7 @@
 import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
-// import { useEffect, useState } from 'react';
-// import { listen } from '@tauri-apps/api/event';
+import { useEffect, useState } from 'react';
+import { listen } from '@tauri-apps/api/event';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import { TooltipTrigger, AlertWrapper, AlertIcon, TooltipWrapper, TooltipTop } from './OrphanChainAlert.styles.ts';
 import { AnimatePresence } from 'framer-motion';
@@ -20,7 +19,7 @@ const steps = [
 ];
 
 export const OrphanChainAlert = () => {
-    const [isOrphanChain, setIsOrphanChain] = useState(true);
+    const [isOrphanChain, setIsOrphanChain] = useState(false);
     const [open, setOpen] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: false });
     const { refs, context } = useFloating({
@@ -39,6 +38,15 @@ export const OrphanChainAlert = () => {
         handleClose: safePolygon(),
     });
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
+
+    useEffect(() => {
+        const unlistenPromise = listen<boolean>('is_stuck', (event) => {
+            setIsOrphanChain(event.payload);
+        });
+        return () => {
+            unlistenPromise.then((unlisten) => unlisten());
+        };
+    }, [setIsOrphanChain]);
 
     const alertMarkup = (
         <AlertWrapper>
@@ -64,12 +72,3 @@ export const OrphanChainAlert = () => {
 };
 
 export default OrphanChainAlert;
-
-// useEffect(() => {
-//     const unlistenPromise = listen<boolean>('is_stuck', (event) => {
-//         setIsOrphanChain(event.payload);
-//     });
-//     return () => {
-//         unlistenPromise.then((unlisten) => unlisten());
-//     };
-// }, [setIsOrphanChain]);
