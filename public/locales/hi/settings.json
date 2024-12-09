@@ -46,6 +46,7 @@
     "title": "समय जिसके बाद मशीन को निष्क्रिय माना जाता है"
   },
   "importing-wallet": "वॉलेट आयात किया जा रहा है",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "आमंत्रण कोड",
@@ -84,6 +85,10 @@
   "pool-mining-description": "सक्षम होने पर, आप एक पूल में माइन करेंगे और माइनर्स के समूह में शामिल होंगे।",
   "randomx-network-hash-rate": "Randomx नेटवर्क हैशरेट",
   "refresh-versions": "संस्करण ताज़ा करें",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "समस्या की रिपोर्ट करें",
   "reset-permanently": "क्या आप वाकई सभी सेटिंग्स को स्थायी रूप से रीसेट करना चाहते हैं?",
   "reset-settings": "सेटिंग्स रीसेट करें",
@@ -111,6 +116,7 @@
     "general": "सामान्य",
     "mining": "माइनिंग",
     "p2p": "पूल माइनिंग",
+    "releaseNotes": "Release Notes",
     "very_experimental": "बहुत प्रयोगात्मक",
     "wallet": "वॉलेट"
   },

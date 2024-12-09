@@ -50,4 +50,7 @@ export const Bottom = styled(m.div)`
     flex-direction: column;
     gap: 12px;
     padding-bottom: 188px; // to cater for wallet card
+    @media (max-height: 670px) {
+        padding-bottom: 150px;
+    }
 `;
