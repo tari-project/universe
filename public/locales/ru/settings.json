@@ -46,6 +46,7 @@
     "title": "Время, после которого машина считается в простое"
   },
   "importing-wallet": "Импорт кошелька",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Код приглашения",
@@ -84,6 +85,10 @@
   "pool-mining-description": "При включении вы будете майнить в пуле и присоединитесь к группе майнеров.",
   "randomx-network-hash-rate": "Хэшрейт сети Randomx",
   "refresh-versions": "Обновить версии",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Сообщить о проблеме",
   "reset-permanently": "Вы уверены, что хотите сбросить все настройки навсегда?",
   "reset-settings": "Сбросить настройки",
@@ -111,6 +116,7 @@
     "general": "Общие",
     "mining": "Майнинг",
     "p2p": "Майнинг в пуле",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Очень экспериментальные",
     "wallet": "Кошелек"
   },

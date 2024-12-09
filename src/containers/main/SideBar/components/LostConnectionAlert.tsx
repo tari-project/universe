@@ -18,13 +18,11 @@ const LostConnectionAlert = () => {
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
 
     return !isConnectedToTari && !isSettingUp ? (
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <LostConnectionIcon size={20} />
+        <Stack direction="row" justifyContent="space-between" alignItems="center" style={{ padding: '0 6px' }} gap={6}>
+            <LostConnectionIcon size={18} />
             <Typography variant="p">{t('lost-connection')}</Typography>
         </Stack>
-    ) : (
-        <></>
-    );
+    ) : null;
 };
 
 export default LostConnectionAlert;

@@ -46,6 +46,7 @@
     "title": "マシンがアイドルと見なされるまでの時間"
   },
   "importing-wallet": "ウォレットのインポート",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "招待コード",
@@ -84,6 +85,10 @@
   "pool-mining-description": "有効にすると、プールでマイニングし、マイナーのグループに参加します。",
   "randomx-network-hash-rate": "Randomxネットワークのハッシュレート",
   "refresh-versions": "バージョンを更新",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "問題を報告する",
   "reset-permanently": "すべての設定を永久にリセットしてもよろしいですか？",
   "reset-settings": "設定をリセット",
@@ -111,6 +116,7 @@
     "general": "一般",
     "mining": "マイニング",
     "p2p": "プールマイニング",
+    "releaseNotes": "Release Notes",
     "very_experimental": "非常に実験的",
     "wallet": "ウォレット"
   },

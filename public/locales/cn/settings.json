@@ -46,6 +46,7 @@
     "title": "机器被视为空闲的时间"
   },
   "importing-wallet": "正在导入钱包",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "输入24个用空格分隔的单词",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "邀请代码",
@@ -84,6 +85,10 @@
   "pool-mining-description": "启用后，您将在矿池中挖矿并加入一组矿工（部落）。",
   "randomx-network-hash-rate": "Randomx 网络算力",
   "refresh-versions": "刷新版本",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "报告问题",
   "reset-permanently": "您确定要永久重置所有设置吗？",
   "reset-settings": "重置设置",
@@ -111,6 +116,7 @@
     "general": "常规",
     "mining": "挖矿",
     "p2p": "矿池挖矿",
+    "releaseNotes": "Release Notes",
     "very_experimental": "非常实验性",
     "wallet": "钱包"
   },

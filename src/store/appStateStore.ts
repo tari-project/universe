@@ -64,7 +64,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     isSettingUp: true,
     setIsSettingUp: (value: boolean) => set({ isSettingUp: value }),
     setSettingUpFinished: async () => {
-        set({ isSettingUp: false });
         setAnimationState('showVisual');
 
         // Proceed with auto mining when enabled
@@ -73,6 +72,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             const startMining = useMiningStore.getState().startMining;
             await startMining();
         }
+        set({ isSettingUp: false });
     },
     applications_versions: undefined,
     fetchApplicationsVersions: async () => {
