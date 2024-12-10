@@ -33,7 +33,6 @@ const DotContainer = styled.div`
 const AddressContainer = styled.div`
     overflow-x: auto;
     font-size: 12px;
-    letter-spacing: 1px;
     line-height: 1.3;
     width: 100%;
     height: 40px;
@@ -121,6 +120,7 @@ const WalletAddressMarkup = () => {
                         <Typography
                             style={{
                                 color: '#b6b7c3',
+                                letterSpacing: 1,
                                 display: 'flex',
                                 lineHeight: '1.6',
                             }}

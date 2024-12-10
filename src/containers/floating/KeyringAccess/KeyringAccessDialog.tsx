@@ -3,7 +3,8 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { ButtonWrapper, Wrapper } from './KeyringAccessDialog.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
+import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 
 export const KeyringAccessDialog = () => {
     const { t } = useTranslation(['wallet', 'common']);
@@ -13,18 +14,32 @@ export const KeyringAccessDialog = () => {
     function handleClose() {
         setDialogToShow(null);
     }
+
+    function handleKeychain() {
+        addToast({
+            title: 'Add to keychain',
+            text: 'BE stuff should happen now',
+        });
+    }
     return (
         <Dialog open={dialogToShow === 'keyring'}>
             <DialogContent $unPadded>
                 <Wrapper>
                     <Typography variant="h2">{t('keychain-access')}</Typography>
-                    <Typography>{t('keychain-access-copy')}</Typography>
+                    <Typography>
+                        <Trans
+                            i18nKey="wallet:keychain-access-copy"
+                            components={{
+                                span: <span />,
+                            }}
+                        />
+                    </Typography>
 
                     <ButtonWrapper>
                         <Button color="warning" onClick={() => handleClose()}>
                             {t('common:dismiss')}
                         </Button>
-                        <Button>{t('common:yes')}</Button>
+                        <Button onClick={() => handleKeychain()}>{t('common:yes')}</Button>
                     </ButtonWrapper>
                 </Wrapper>
             </DialogContent>
