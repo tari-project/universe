@@ -4948,6 +4948,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
+name = "planif"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7502ee5af341c06aa00593d655d09e4b7126f0e886b80745c218d6dc674e8b21"
+dependencies = [
+ "windows 0.48.0",
+]
+
+[[package]]
 name = "plist"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6770,6 +6779,7 @@ dependencies = [
  "nvml-wrapper",
  "open",
  "phraze",
+ "planif",
  "rand 0.8.5",
  "regex",
  "reqwest",

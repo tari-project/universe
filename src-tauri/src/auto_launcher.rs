@@ -26,6 +26,7 @@ use anyhow::anyhow;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
 use log::{info, warn};
+use planif::{enums::TaskCreationFlags, schedule::TaskScheduler, schedule_builder::{Action, ScheduleBuilder}, settings::Settings};
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
 
@@ -121,6 +122,34 @@ impl AutoLauncher {
         }
 
         Ok(())
+    }
+
+    pub async fn create_task_scheduler_for_admin_startup(&self, is_triggered: bool) -> Result<(), anyhow::Error> {
+        let task_scheduler = TaskScheduler::new()?;
+        let com_runtime = task_scheduler.get_com()?;
+        let schedule_builder = ScheduleBuilder::new(&com_runtime)?;
+
+        let app_exe = current_exe()?;
+        let app_exe = canonicalize(&app_exe)?;
+        let app_name = app_exe
+            .file_stem()
+            .and_then(|file| file.to_str())
+            .ok_or(anyhow!("Failed to get file stem"))?;
+
+        let app_path = app_exe
+            .as_os_str()
+            .to_str()
+            .ok_or(anyhow!("Failed to convert path to string"))?
+            .to_string();
+
+
+        schedule_builder.create_boot()
+            .author("Tari Universe")?
+            .trigger("startup_trigger", is_triggered)?
+            .action(Action::new("startup_action", &app_path, "", "-Verb RunAs"))?
+            .build()?
+            .register("Tari Universe startup",TaskCreationFlags::CreateOrUpdate as i32)?;
+
     }
 
     pub async fn initialize_auto_launcher(
