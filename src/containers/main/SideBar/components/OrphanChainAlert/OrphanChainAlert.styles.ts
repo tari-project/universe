@@ -1,27 +1,31 @@
 import styled from 'styled-components';
-import { TbAlertTriangle } from 'react-icons/tb';
+
 import { m } from 'framer-motion';
+import { convertHexToRGBA } from '@app/utils';
 
 export const AlertWrapper = styled.div`
     display: flex;
     position: relative;
 `;
 
-export const AlertIcon = styled(TbAlertTriangle)`
+export const AlertIconWrapper = styled.div`
     display: flex;
-    margin-top: 3px;
-    color: ${({ theme }) => theme.palette.warning.main};
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
+    color: ${({ theme }) => theme.palette.text.secondary};
     flex-shrink: 0;
+    border-radius: 100%;
+    width: 14px;
+    height: 14px;
 `;
 export const TooltipTrigger = styled.div`
     cursor: pointer;
     display: flex;
-    padding: 4px 8px;
+    padding: 6px 8px 4px;
     flex-direction: row;
-    font-size: 12px;
-    letter-spacing: -1.8px;
+    font-size: 0.7rem;
+    gap: 4px;
     align-items: flex-start;
-    gap: 6px;
+    color: ${({ theme }) => theme.palette.warning.dark};
 `;
 
 export const TooltipWrapper = styled(m.div).attrs({
