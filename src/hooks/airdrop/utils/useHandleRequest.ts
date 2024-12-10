@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
 interface RequestProps {
@@ -10,10 +9,12 @@ interface RequestProps {
 
 export const useAirdropRequest = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
+    const airdropTokenExpiration = useAirdropStore((state) => state.airdropTokens?.expiresAt);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
 
     return async <T>({ body, method, path, onError }: RequestProps) => {
-        if (!baseUrl || !airdropToken) return;
+        const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
+        if (!baseUrl || !airdropToken || isTokenExpired) return;
 
         const fullUrl = `${baseUrl}${path}`;
 
@@ -28,8 +29,7 @@ export const useAirdropRequest = () => {
 
         try {
             if (!response.ok) {
-                console.error('Error fetching airdrop request:', response);
-                Sentry.captureMessage('Error fetching airdrop request', { extra: { fullUrl } });
+                console.error(`Error fetching airdrop request at ${fullUrl}: `, response);
                 if (onError) {
                     onError(response);
                 }
@@ -37,8 +37,7 @@ export const useAirdropRequest = () => {
             }
             return response.json() as Promise<T>;
         } catch (e) {
-            Sentry.captureException(e, { data: { fullUrl } });
-            console.error('Caught error fetching airdrop data:', e);
+            console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
 
             if (onError) {
                 onError(e);

@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
@@ -8,12 +30,15 @@ use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 
 use crate::p2pool;
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::{Connections, Stats};
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::utils::file_utils::convert_to_string;
+
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -26,6 +51,7 @@ impl P2poolAdapter {
         Self { config: None }
     }
 
+    #[allow(dead_code)]
     pub fn config(&self) -> Option<&P2poolConfig> {
         self.config.as_ref()
     }
@@ -90,6 +116,10 @@ impl ProcessAdapter for P2poolAdapter {
                 return Err(anyhow!("Unsupported network"));
             }
         };
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule("sha_p2pool.exe".to_string(), binary_version_path.clone())?;
+
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
@@ -145,5 +175,9 @@ impl StatusMonitor for P2poolStatusMonitor {
 impl P2poolStatusMonitor {
     pub async fn status(&self) -> Result<Stats, Error> {
         self.stats_client.stats().await
+    }
+
+    pub async fn connections(&self) -> Result<Connections, Error> {
+        self.stats_client.connections().await
     }
 }

@@ -1,0 +1,14 @@
+{
+  "listener-addresses": "Listener addresses",
+  "miners": "Penambang",
+  "network-info": "Network info",
+  "p2pool-chain-tip": "Tip Rantai P2Pool",
+  "p2pool-connected": "P2Pool Terhubung",
+  "p2pool-connection-info": "Koneksi",
+  "p2pool-connection-info-more": "Detail koneksi",
+  "p2pool-peers": "P2pool peers",
+  "p2pool-stats": "Statistik penambangan pool",
+  "randomx-stats": "RandomX Stats",
+  "sha3-stats": "SHA3 Stats",
+  "tribe": "Tribe"
+}

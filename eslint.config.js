@@ -29,7 +29,7 @@ export default [
             parser: tsParser,
             parserOptions: { ecmaFeatures: { jsx: true } },
         },
-        files: ['src/**/*.{js,ts,jsx,tsx}'],
+        files: ['src/**/*.{js,ts,jsx,tsx}', 'scripts/**/*.{js,ts,jsx,tsx}'],
         ignores: ['./**/*.config.{js,ts}'],
         plugins: { react, 'react-hooks': hooksPlugin, i18next },
         rules: {

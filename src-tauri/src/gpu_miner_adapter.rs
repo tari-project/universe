@@ -1,3 +1,28 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::app_config::GpuThreads;
+use crate::gpu_miner::GpuConfig;
+use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use anyhow::anyhow;
@@ -12,16 +37,15 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+
 use crate::{
     app_config::MiningMode,
-    network_utils::get_free_port,
     process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
 };
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
-
-pub const ECO_MODE_GPU_PERCENTAGE: u16 = 2;
-pub const LUDICROUS_MODE_GPU_PERCENTAGE: u16 = 800; // TODO: In future will allow user to configure this, but for now let's not burn the gpu too much
 
 pub enum GpuNodeSource {
     BaseNode { port: u16 },
@@ -31,27 +55,57 @@ pub enum GpuNodeSource {
 pub(crate) struct GpuMinerAdapter {
     pub(crate) tari_address: TariAddress,
     // Value ranges 1 - 1000
-    pub(crate) gpu_percentage: u16,
+    pub(crate) gpu_grid_size: Vec<GpuThreads>,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
     pub(crate) excluded_gpu_devices: Vec<u8>,
+    pub(crate) gpu_devices: Vec<GpuConfig>,
 }
 
 impl GpuMinerAdapter {
-    pub fn new() -> Self {
+    pub fn new(gpu_devices: Vec<GpuConfig>) -> Self {
         Self {
             tari_address: TariAddress::default(),
-            gpu_percentage: ECO_MODE_GPU_PERCENTAGE,
+            gpu_grid_size: gpu_devices
+                .iter()
+                .map(|x| GpuThreads {
+                    gpu_name: x.device_name.clone(),
+                    max_gpu_threads: x.max_grid_size,
+                })
+                .collect(),
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
             excluded_gpu_devices: vec![],
+            gpu_devices,
         }
     }
 
-    pub fn set_mode(&mut self, mode: MiningMode) {
+    pub fn set_mode(&mut self, mode: MiningMode, custom_max_gpus_grid_size: Vec<GpuThreads>) {
         match mode {
-            MiningMode::Eco => self.gpu_percentage = ECO_MODE_GPU_PERCENTAGE,
-            MiningMode::Ludicrous => self.gpu_percentage = LUDICROUS_MODE_GPU_PERCENTAGE,
+            MiningMode::Eco => {
+                self.gpu_grid_size = self
+                    .gpu_devices
+                    .iter()
+                    .map(|device| GpuThreads {
+                        gpu_name: device.device_name.clone(),
+                        max_gpu_threads: 2,
+                    })
+                    .collect()
+            }
+            MiningMode::Ludicrous => {
+                self.gpu_grid_size = self
+                    .gpu_devices
+                    .iter()
+                    .map(|device| GpuThreads {
+                        gpu_name: device.device_name.clone(),
+                        // get 90% of max grid size
+                        max_gpu_threads: 1024,
+                    })
+                    .collect()
+            }
+            MiningMode::Custom => {
+                self.gpu_grid_size = custom_max_gpus_grid_size;
+            }
         }
     }
 
@@ -74,7 +128,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
 
-        let http_api_port = get_free_port().unwrap_or(18000);
+        let http_api_port = PortAllocator::new().assign_port_with_fallback();
         let working_dir = data_dir.join("gpuminer");
         std::fs::create_dir_all(&working_dir)?;
         std::fs::create_dir_all(config_dir.join("gpuminer"))?;
@@ -91,9 +145,16 @@ impl ProcessAdapter for GpuMinerAdapter {
             }
         };
 
+        let grid_size = self
+            .gpu_grid_size
+            .iter()
+            .map(|x| x.max_gpu_threads.clone().to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+
         let mut args: Vec<String> = vec![
             "--tari-address".to_string(),
-            self.tari_address.to_string(),
+            self.tari_address.to_base58(),
             "--tari-node-url".to_string(),
             format!("http://127.0.0.1:{}", tari_node_port),
             "--config".to_string(),
@@ -104,8 +165,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                 .to_string(),
             "--http-server-port".to_string(),
             http_api_port.to_string(),
-            "--gpu-percentage".to_string(),
-            self.gpu_percentage.to_string(),
+            "--grid-size".to_string(),
+            grid_size.clone(),
             "--log-config-file".to_string(),
             config_dir
                 .join("gpuminer")
@@ -152,6 +213,9 @@ impl ProcessAdapter for GpuMinerAdapter {
                 return Err(anyhow!("Unsupported network"));
             }
         }
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule("xtrgpuminer.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {
@@ -245,6 +309,7 @@ impl GpuMinerStatusMonitor {
                 });
             }
         };
+
         Ok(GpuMinerStatus {
             is_mining: true,
             estimated_earnings: 0,

@@ -1,13 +1,15 @@
+import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
 import { create } from './create';
-import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { invoke } from '@tauri-apps/api';
-import * as Sentry from '@sentry/react';
+import { WalletBalance } from '../types/app-status.ts';
+import { invoke } from '@tauri-apps/api/core';
+import { Transaction } from '@app/types/wallet.ts';
 
 interface State extends WalletBalance {
     tari_address_base58: string;
     tari_address_emoji: string;
+    tari_address?: string;
     balance: number | null;
-    transactions: TransactionInfo[];
+    transactions: Transaction[];
     isTransactionLoading: boolean;
     is_wallet_importing: boolean;
 }
@@ -15,7 +17,7 @@ interface State extends WalletBalance {
 interface Actions {
     fetchWalletDetails: () => Promise<void>;
     setTransactionsLoading: (isTransactionLoading: boolean) => void;
-    setTransactions: (transactions?: TransactionInfo[]) => void;
+    setTransactions: (transactions?: Transaction[]) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
 }
 
@@ -46,6 +48,7 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
             } = tari_wallet_details.wallet_balance || {};
             // Q: Should we subtract pending_outgoing_balance here?
             const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
+
             set({
                 ...tari_wallet_details.wallet_balance,
                 tari_address_base58: tari_wallet_details.tari_address_base58,
@@ -53,8 +56,9 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
                 balance: tari_wallet_details?.wallet_balance ? newBalance : null,
             });
         } catch (error) {
-            Sentry.captureException(error);
-            console.error('Could not get tari wallet details: ', error);
+            if (error !== ALREADY_FETCHING.BALANCE) {
+                console.error('Could not get tari wallet details: ', error);
+            }
         }
     },
     setTransactions: (transactions) => set({ transactions }),
@@ -64,7 +68,6 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
             set({ is_wallet_importing: true });
             await invoke('import_seed_words', { seedWords });
         } catch (error) {
-            Sentry.captureException(error);
             console.error('Could not import seed words: ', error);
         }
     },

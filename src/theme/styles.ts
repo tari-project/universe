@@ -1,21 +1,19 @@
 import styled, { css } from 'styled-components';
 import { m } from 'framer-motion';
 import clouds from '@app/assets/backgrounds/clouds.png';
-import { viewType } from '@app/store/types.ts';
 
 export const sidebarWidth = '348px'; // if this is updated please update the value in init-visuals.js
 
-export const DashboardContainer = styled(m.div)<{ $view?: viewType; $visualModeOff?: boolean }>`
+export const DashboardContainer = styled(m.div)<{ $visualModeOff?: boolean }>`
     display: grid;
     grid-template-columns: ${sidebarWidth} auto;
     position: relative;
     gap: 20px;
     padding: 20px;
     height: 100%;
-    background-color: ${(props) => (props.$view !== 'setup' ? 'none' : props.theme.palette.background.splash)};
 
-    ${({ $visualModeOff, $view, theme }) =>
-        ($view === 'setup' || $visualModeOff) &&
+    ${({ $visualModeOff, theme }) =>
+        $visualModeOff &&
         css`
             &::before {
                 content: '';
@@ -24,7 +22,6 @@ export const DashboardContainer = styled(m.div)<{ $view?: viewType; $visualModeO
                 left: 0;
                 width: 100%;
                 height: 100%;
-
                 background-size: cover;
                 background-position: center;
                 background-image: ${$visualModeOff ? `${theme.gradients.radialBg}, ` : ''}url(${clouds});

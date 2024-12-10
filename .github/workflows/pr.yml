@@ -1,0 +1,83 @@
+---
+name: PR
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/development' || github.ref != 'refs/heads/nextnet' || github.ref != 'refs/heads/stagenet' }}
+
+permissions: {}
+
+jobs:
+  check-signed-commits:
+    name: Check signed commits
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: 1Password/check-signed-commits-action@v1
+  check-title:
+    name: Check title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Dependencies
+        run: |
+          npm install -g @commitlint/cli @commitlint/config-conventional
+          echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
+      - name: Lint Title
+        env:
+          PR_TITLE: ${{github.event.pull_request.title}}
+        run: |
+          echo "$PR_TITLE" | commitlint
+  check-i18n:
+    name: Check i18n
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install jsonlint
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            python3-demjson
+
+      - name: Basic jsonlint
+        run: |
+          find public -iname '*.json'  -print0 | \
+            xargs -0 -n1 jsonlint -v
+
+      - name: setup folder for logs
+        run: |
+          mkdir -p ${{ runner.temp }}/i18n_logs
+
+      - name: i18n compare
+        continue-on-error: true
+        working-directory: ./public/locales
+        run: |
+          python3 ../../scripts/i18n_checker.py \
+            compare --en-locale-path en \
+            --base-path . \
+            --search-path .. \
+            --output-dir ${{ runner.temp }}/i18n_logs
+
+      - name: i18n unused
+        continue-on-error: true
+        working-directory: ./public/locales
+        run: |
+          python3 ../../scripts/i18n_checker.py \
+            unused --en-locale-path en \
+            --base-path . \
+            --search-path .. \
+            --output-dir ${{ runner.temp }}/i18n_logs
+
+      - name: Artifact upload for i18n checks
+        uses: actions/upload-artifact@v4
+        with:
+          name: i18n-logs
+          path: ${{ runner.temp }}/i18n_logs

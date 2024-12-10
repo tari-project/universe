@@ -1,8 +1,31 @@
-use crate::network_utils::get_free_port;
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
 use crate::utils::file_utils::convert_to_string;
+use crate::utils::logging_utils::setup_logging;
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
@@ -16,6 +39,9 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
+
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -31,8 +57,8 @@ pub struct WalletAdapter {
 
 impl WalletAdapter {
     pub fn new(use_tor: bool) -> Self {
-        let tcp_listener_port = get_free_port().unwrap_or(18188);
-        let grpc_port = get_free_port().unwrap_or(18141);
+        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             use_tor,
             base_node_address: None,
@@ -64,7 +90,16 @@ impl ProcessAdapter for WalletAdapter {
         std::fs::create_dir_all(&working_dir)?;
 
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
-        let formatted_log_dir = convert_to_string(log_dir)?;
+        let config_dir = log_dir
+            .join("wallet")
+            .join("configs")
+            .join("log4rs_config_wallet.yml");
+
+        setup_logging(
+            &config_dir.clone(),
+            &log_dir,
+            include_str!("../log4rs/wallet_sample.yml"),
+        )?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
@@ -76,7 +111,11 @@ impl ProcessAdapter for WalletAdapter {
             "--spend-key".to_string(),
             self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
-            format!("--log-path={}", formatted_log_dir),
+            format!(
+                "--log-config={}",
+                config_dir.to_str().expect("Could not get config dir")
+            )
+            .to_string(),
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
@@ -119,7 +158,12 @@ impl ProcessAdapter for WalletAdapter {
                 self.tcp_listener_port
             ));
 
-            // todo!()
+            let network = Network::get_current_or_user_setting_or_default();
+            args.push("-p".to_string());
+            args.push(format!(
+                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                key = network.as_key_str(),
+            ));
         }
 
         if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
@@ -130,6 +174,12 @@ impl ProcessAdapter for WalletAdapter {
         if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
             warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
         }
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule(
+            "minotari_console_wallet.exe".to_string(),
+            binary_version_path.clone(),
+        )?;
 
         Ok((
             ProcessInstance {
@@ -274,6 +324,7 @@ impl WalletStatusMonitor {
     #[deprecated(
         note = "Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address"
     )]
+    #[allow(dead_code)]
     pub async fn get_wallet_address(&self) -> Result<TariAddress, WalletStatusMonitorError> {
         panic!("Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address");
         // let mut client = WalletClient::connect(self.wallet_grpc_address())

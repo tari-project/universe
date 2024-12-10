@@ -1,18 +1,23 @@
 {
-  "floor": "Stockwerk",
-  "current-block-time": "Aktuelle Blockzeit",
-  "your-reward-is": "Deine Belohnung ist",
   "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
+  "cpu-power": "CPU-Leistung",
+  "current-block-time": "Aktuelle Blockzeit",
+  "day": "day",
+  "estimated-day": "Geschätzte tXTM/Tag",
+  "estimated-earnings": "Geschätzte Einnahmen",
+  "floor": "Stockwerk",
+  "gpu-power": "GPU-Leistung",
   "mining-button-text": {
-    "starting-mining": "Mining wird gestartet",
-    "start-mining": "Mining starten",
-    "stop-mining": "Mining stoppen",
-    "changing-mode": "Modus wird geändert",
     "cancel-mining": "Mining abbrechen",
-    "waiting-for-idle": "Warten auf Leerlauf",
-    "started-auto-mining": "Auto Mining gestartet"
+    "changing-mode": "Modus wird geändert",
+    "start-mining": "Mining starten",
+    "started-auto-mining": "Auto Mining gestartet",
+    "starting-mining": "Mining wird gestartet",
+    "stop-mining": "Mining stoppen",
+    "waiting-for-idle": "Warten auf Leerlauf"
   },
-  "estimated-earnings": "Estimated earnings",
-  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
-  "day": "day"
+  "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
+  "you-won-block": "Sie waren der Gewinner von <span>Block #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>Sie haben {{ blocks }} gewonnen</span>, während Sie weg waren",
+  "your-reward-is": "Deine Belohnung ist"
 }

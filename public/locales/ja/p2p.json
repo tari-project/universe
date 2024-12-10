@@ -1,0 +1,14 @@
+{
+  "listener-addresses": "Listener addresses",
+  "miners": "マイナー",
+  "network-info": "Network info",
+  "p2pool-chain-tip": "P2Poolチェーンの先端",
+  "p2pool-connected": "P2Poolに接続されました",
+  "p2pool-connection-info": "接続",
+  "p2pool-connection-info-more": "接続の詳細",
+  "p2pool-peers": "P2pool peers",
+  "p2pool-stats": "プールマイニングの統計",
+  "randomx-stats": "RandomX Stats",
+  "sha3-stats": "SHA3 Stats",
+  "tribe": "トライブ"
+}

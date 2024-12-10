@@ -1,11 +1,11 @@
 {
   "field-error-message": {
+    "integers-only": "Hanya bilangan bulat yang diizinkan",
     "invalid": "Kolom tidak valid",
-    "required": "Kolom diperlukan",
-    "password-too-short": "Kata sandi harus memiliki setidaknya 8 karakter",
-    "invalid-url": "Harus berupa alamat URL yang valid",
-    "invalid-email": "Masukkan alamat email yang valid",
     "invalid-date": "Tanggal tidak valid",
-    "integers-only": "Hanya bilangan bulat yang diizinkan"
+    "invalid-email": "Masukkan alamat email yang valid",
+    "invalid-url": "Harus berupa alamat URL yang valid",
+    "password-too-short": "Kata sandi harus memiliki setidaknya 8 karakter",
+    "required": "Kolom diperlukan"
   }
 }

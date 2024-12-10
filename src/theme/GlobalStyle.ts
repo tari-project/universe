@@ -1,6 +1,11 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalReset = createGlobalStyle`
+
+    *:focus {
+        outline: none
+    }
+
     button {
         -webkit-appearance: none;
         border-radius: 0;
@@ -12,17 +17,19 @@ export const GlobalReset = createGlobalStyle`
         border: none;
         color: inherit;
         font: inherit;
-        &:focus {
-            outline: none;
+
+        &:focus-visible {
+            outline: 3px solid #c9eb00;
+            outline-offset: 2px;
         }
     }
+    
     fieldset,
     textarea,
     dialog,
-    div,
-    button,
     input {
         all: unset;
+
         /* Chrome, Safari, Edge, Opera */
         &::-webkit-outer-spin-button,
         &::-webkit-inner-spin-button {
@@ -35,10 +42,9 @@ export const GlobalReset = createGlobalStyle`
             -moz-appearance: textfield;
         }
 
-        &:focus-within,
-        &:focus-visible,
-        &:focus {
-            outline: none;
+        &:focus-visible {
+            outline: 3px solid #c9eb00;
+            outline-offset: 2px;
         }
     }
 
@@ -52,6 +58,7 @@ export const GlobalStyle = createGlobalStyle`
         margin: 0;
         padding: 0;
         font-family: Poppins, sans-serif;
+        font-size: 16px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         height: 100%;
@@ -61,6 +68,7 @@ export const GlobalStyle = createGlobalStyle`
         box-sizing: border-box;
         position: relative;
         color: ${({ theme }) => theme.palette.text.primary};
+        transition: color .2s ease, background-color .2s ease,  background .2s ease;
 
         ::-webkit-scrollbar {
             display: none;
@@ -84,7 +92,8 @@ export const GlobalStyle = createGlobalStyle`
     }
 
     html {
-        background:  ${({ theme }) => theme.palette.base};
+        background: #fff;// for now
+        //background:  ${({ theme }) => theme.palette.base};
     }
     
     #canvas {
@@ -97,5 +106,4 @@ export const GlobalStyle = createGlobalStyle`
     #root {
         pointer-events: none;
     }
-
 `;

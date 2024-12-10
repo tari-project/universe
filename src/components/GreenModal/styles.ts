@@ -23,6 +23,10 @@ export const Wrapper = styled('div')`
     @media (max-height: 955px) {
         align-items: flex-start;
     }
+
+    @media (max-height: 800px) {
+        padding: 60px 40px 60px 40px;
+    }
 `;
 
 export const Cover = styled(m.div)`
@@ -34,11 +38,13 @@ export const Cover = styled(m.div)`
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 0;
     cursor: pointer;
+
+    backdrop-filter: blur(10px);
 `;
 
-export const BoxWrapper = styled(m.div)<{ $boxWidth?: number }>`
+export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number }>`
     width: 100%;
-    max-width: 635px;
+
     flex-shrink: 0;
 
     border-radius: 35px;
@@ -48,20 +54,29 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number }>`
     position: relative;
     z-index: 1;
 
-    padding: 50px;
-
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     gap: 40px;
+    max-width: 635px;
+
     ${({ $boxWidth }) =>
         $boxWidth &&
         css`
             max-width: ${$boxWidth}px;
         `}
+
+    padding: 50px;
+
+    ${({ $padding }) =>
+        $padding &&
+        css`
+            padding: ${$padding}px;
+        `}
 `;
 
 export const CloseButton = styled('button')`
+    cursor: pointer;
     position: absolute;
     top: -20px;
     left: 100%;
@@ -71,6 +86,7 @@ export const CloseButton = styled('button')`
     transition:
         color 0.2s ease,
         transform 0.2s ease;
+
     &:hover {
         color: #fff;
         transform: scale(1.1);

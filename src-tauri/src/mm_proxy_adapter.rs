@@ -1,9 +1,32 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use std::path::PathBuf;
 
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
 use crate::utils::file_utils::convert_to_string;
+use crate::utils::logging_utils::setup_logging;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::warn;
@@ -67,20 +90,29 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         if self.config.is_none() {
             return Err(Error::msg("MergeMiningProxyAdapter config is None"));
         }
-
         let config = self
             .config
             .as_ref()
             .ok_or_else(|| anyhow!("MergeMiningProxyAdapter config is None"))?;
+
+        let config_dir = &log_dir
+            .join("proxy")
+            .join("configs")
+            .join("log4rs_config_proxy.yml");
+        setup_logging(
+            &config_dir.clone(),
+            &log_dir,
+            include_str!("../log4rs/proxy_sample.yml"),
+        )?;
+
         let working_dir_string = convert_to_string(working_dir)?;
-        let log_dir_string = convert_to_string(log_dir)?;
+        let config_dir_string = convert_to_string(config_dir.to_path_buf())?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
             working_dir_string,
             "--non-interactive-mode".to_string(),
-            "--log-path".to_string(),
-            log_dir_string,
+            format!("--log-config={}", config_dir_string),
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(

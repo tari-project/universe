@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
@@ -11,7 +11,6 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
-import * as Sentry from '@sentry/react';
 
 export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference: string) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -46,7 +45,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                 onSetReference?.(r);
             })
             .catch((error) => {
-                Sentry.captureException(error);
+                console.error('Error sending feedback: ', error);
                 setError(error.toString());
             })
             .finally(() => {
@@ -62,6 +61,8 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                     <TextArea
                         onChange={(e) => setFeedback(e.target.value)}
                         placeholder={t('your-feedback', { ns: 'settings' })}
+                        minWidth="500px"
+                        minHeight="200px"
                         value={feedback}
                     />
                     <Typography variant={'p'} color={'red'}>

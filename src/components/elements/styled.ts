@@ -19,4 +19,5 @@ export const DynamicTypography = styled(({ variant = 'span', children, ...props 
     font-weight: ${({ theme, variant }) => theme.typography[variant].fontWeight || 'inherit'};
     margin: 0;
     color: inherit;
+    text-align: inherit;
 `;

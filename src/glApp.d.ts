@@ -9,6 +9,8 @@ export type GlAppState =
     | 'stop'
     | 'complete'
     | 'success'
+    | 'success2'
+    | 'success3'
     | 'fail'
     | 'resultAnimation'
     | 'restartAnimation'
@@ -16,6 +18,7 @@ export type GlAppState =
 
 export interface GlApp {
     setState(e: GlAppState): void;
+    init(): void;
     properties: Properties;
     stateManager: StateManager;
 }

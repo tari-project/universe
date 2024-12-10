@@ -1,14 +1,19 @@
-import * as Sentry from '@sentry/react';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { create } from './create';
-import { AppConfig } from '../types/app-status.ts';
+import { AppConfig, GpuThreads } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
-import { modeType } from './types.ts';
+import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 type State = Partial<AppConfig>;
+interface SetModeProps {
+    mode: modeType;
+    customGpuLevels?: GpuThreads[];
+    customCpuLevels?: number;
+}
 
 interface Actions {
     fetchAppConfig: () => Promise<void>;
@@ -18,12 +23,17 @@ interface Actions {
     setP2poolEnabled: (p2poolEnabled: boolean) => Promise<void>;
     setMoneroAddress: (moneroAddress: string) => Promise<void>;
     setMineOnAppStart: (mineOnAppStart: boolean) => Promise<void>;
-    setMode: (mode: modeType) => Promise<void>;
+    setMode: (params: SetModeProps) => Promise<void>;
     setApplicationLanguage: (applicationLanguage: Language) => Promise<void>;
     setShouldAlwaysUseSystemLanguage: (shouldAlwaysUseSystemLanguage: boolean) => Promise<void>;
     setUseTor: (useTor: boolean) => Promise<void>;
     setShouldAutoLaunch: (shouldAutoLaunch: boolean) => Promise<void>;
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
+    setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
+    setTheme: (theme: displayMode) => Promise<void>;
+    setVisualMode: (enabled: boolean) => void;
+    setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
+    setP2poolStatsServerPort: (port: number | null) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -32,7 +42,6 @@ const initialState: State = {
     config_version: 0,
     config_file: undefined,
     mode: 'Eco',
-    auto_mining: true,
     mine_on_app_start: false,
     p2pool_enabled: false,
     last_binaries_update_timestamp: '0',
@@ -41,27 +50,43 @@ const initialState: State = {
     monero_address: '',
     gpu_mining_enabled: true,
     cpu_mining_enabled: true,
-    airdrop_ui_enabled: false,
-    paper_wallet_enabled: false,
+    sharing_enabled: true,
+    paper_wallet_enabled: true,
+    custom_power_levels_enabled: true,
     use_tor: true,
     auto_update: false,
+    monero_address_is_generated: false,
+    mmproxy_use_monero_fail: false,
+    mmproxy_monero_nodes: ['https://xmr-01.tari.com'],
+    visual_mode: true,
+    custom_max_cpu_usage: undefined,
+    custom_max_gpu_usage: [],
+    show_experimental_settings: false,
+    p2pool_stats_server_port: null,
 };
 
-export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
+export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
     ...initialState,
     fetchAppConfig: async () => {
         try {
             const appConfig = await invoke('get_app_config');
             set(appConfig);
+            const configTheme = appConfig.display_mode?.toLowerCase();
+            const canvasElement = document.getElementById('canvas');
+            if (canvasElement && !appConfig.visual_mode) {
+                canvasElement.style.display = 'none';
+            }
+
+            if (configTheme) {
+                await getState().setTheme(configTheme as displayMode);
+            }
         } catch (e) {
-            Sentry.captureException(e);
             console.error('Could not get app config: ', e);
         }
     },
     setShouldAutoLaunch: async (shouldAutoLaunch) => {
         set({ should_auto_launch: shouldAutoLaunch });
         invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
-            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set auto launch', e);
             appStateStore.setError('Could not change auto launch');
@@ -71,7 +96,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     setMineOnAppStart: async (mineOnAppStart) => {
         set({ mine_on_app_start: mineOnAppStart });
         invoke('set_mine_on_app_start', { mineOnAppStart }).catch((e) => {
-            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set mine on app start', e);
             appStateStore.setError('Could not change mine on app start');
@@ -81,7 +105,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     setShouldAlwaysUseSystemLanguage: async (shouldAlwaysUseSystemLanguage: boolean) => {
         set({ should_always_use_system_language: shouldAlwaysUseSystemLanguage });
         invoke('set_should_always_use_system_language', { shouldAlwaysUseSystemLanguage }).catch((e) => {
-            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set should always use system language', e);
             appStateStore.setError('Could not change system language');
@@ -96,7 +119,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
                 changeLanguage(applicationLanguage);
             })
             .catch((e) => {
-                Sentry.captureException(e);
                 const appStateStore = useAppStateStore.getState();
                 console.error('Could not set application language', e);
                 appStateStore.setError('Could not change application language');
@@ -106,7 +128,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     setAllowTelemetry: async (allowTelemetry) => {
         set({ allow_telemetry: allowTelemetry });
         invoke('set_allow_telemetry', { allowTelemetry }).catch((e) => {
-            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set telemetry mode to ', allowTelemetry, e);
             appStateStore.setError('Could not change telemetry mode');
@@ -121,12 +142,13 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         }
         invoke('set_cpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (enabled || miningState.gpu.mining.is_mining)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
-                Sentry.captureException(e);
                 const appStateStore = useAppStateStore.getState();
                 console.error('Could not set CPU mining enabled', e);
                 appStateStore.setError('Could not change CPU mining enabled');
@@ -147,14 +169,16 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
             await miningState.pauseMining();
         }
+
         invoke('set_gpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated) {
+                if (miningState.miningInitiated && (miningState.cpu.mining.is_mining || enabled)) {
                     await miningState.startMining();
+                } else {
+                    miningState.stopMining();
                 }
             })
             .catch((e) => {
-                Sentry.captureException(e);
                 const appStateStore = useAppStateStore.getState();
                 console.error('Could not set GPU mining enabled', e);
                 appStateStore.setError('Could not change GPU mining enabled');
@@ -172,7 +196,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     setP2poolEnabled: async (p2poolEnabled) => {
         set({ p2pool_enabled: p2poolEnabled });
         invoke('set_p2pool_enabled', { p2poolEnabled }).catch((e) => {
-            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set P2pool enabled', e);
             appStateStore.setError('Could not change P2pool enabled');
@@ -183,18 +206,22 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         const prevMoneroAddress = useAppConfigStore.getState().monero_address;
         set({ monero_address: moneroAddress });
         invoke('set_monero_address', { moneroAddress }).catch((e) => {
-            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set Monero address', e);
             appStateStore.setError('Could not change Monero address');
             set({ monero_address: prevMoneroAddress });
         });
     },
-    setMode: async (mode) => {
+    setMode: async (params) => {
+        const { mode, customGpuLevels, customCpuLevels } = params;
         const prevMode = useAppConfigStore.getState().mode;
-        set({ mode });
-        invoke('set_mode', { mode }).catch((e) => {
-            Sentry.captureException(e);
+        set({ mode, custom_max_cpu_usage: customCpuLevels, custom_max_gpu_usage: customGpuLevels });
+        console.info('Setting mode', mode, customCpuLevels, customGpuLevels);
+        invoke('set_mode', {
+            mode,
+            customCpuUsage: customCpuLevels,
+            customGpuUsage: customGpuLevels,
+        }).catch((e) => {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set mode', e);
             appStateStore.setError('Could not change mode');
@@ -204,7 +231,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     setUseTor: async (useTor) => {
         set({ use_tor: useTor });
         invoke('set_use_tor', { useTor }).catch((e) => {
-            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set use Tor', e);
             appStateStore.setError('Could not change Tor usage');
@@ -214,11 +240,65 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     setAutoUpdate: async (autoUpdate) => {
         set({ auto_update: autoUpdate });
         invoke('set_auto_update', { autoUpdate }).catch((e) => {
-            Sentry.captureException(e);
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set auto update', e);
             appStateStore.setError('Could not change auto update');
             set({ auto_update: !autoUpdate });
+        });
+    },
+    setMonerodConfig: async (useMoneroFail, moneroNodes) => {
+        const prevMoneroNodes = useAppConfigStore.getState().mmproxy_monero_nodes;
+        set({ mmproxy_use_monero_fail: useMoneroFail, mmproxy_monero_nodes: moneroNodes });
+        invoke('set_monerod_config', { useMoneroFail, moneroNodes }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set monerod config', e);
+            appStateStore.setError('Could not change monerod config');
+            set({ mmproxy_use_monero_fail: !useMoneroFail, mmproxy_monero_nodes: prevMoneroNodes });
+        });
+    },
+    setTheme: async (themeArg) => {
+        const display_mode = themeArg?.toLowerCase() as displayMode;
+        const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        const prevTheme = useAppConfigStore.getState().display_mode;
+        const setUITheme = useUIStore.getState().setTheme;
+        const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
+
+        setUITheme(uiTheme);
+
+        set({ display_mode });
+        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set theme', e);
+            appStateStore.setError('Could not change theme');
+            set({ display_mode: prevTheme });
+        });
+    },
+    setVisualMode: (enabled) => {
+        set({ visual_mode: enabled });
+        invoke('set_visual_mode', { enabled }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set visual mode', e);
+            appStateStore.setError('Could not change visual mode');
+            set({ visual_mode: !enabled });
+        });
+    },
+    setShowExperimentalSettings: async (showExperimentalSettings) => {
+        set({ show_experimental_settings: showExperimentalSettings });
+        invoke('set_show_experimental_settings', { showExperimentalSettings }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set show experimental settings', e);
+            appStateStore.setError('Could not change experimental settings');
+            set({ show_experimental_settings: !showExperimentalSettings });
+        });
+    },
+    setP2poolStatsServerPort: async (port) => {
+        set({ p2pool_stats_server_port: port });
+        invoke('set_p2pool_stats_server_port', { port }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set p2pool stats server port', e);
+            appStateStore.setError('Could not change p2pool stats server port');
+            set({ p2pool_stats_server_port: port });
         });
     },
 }));
