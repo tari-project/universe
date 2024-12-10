@@ -18,6 +18,12 @@ export function OtherUIGroup() {
                 <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
                     SoS Widget
                 </Button>
+                <Button
+                    onClick={() => setAdminShow(adminShow === 'orphanChainWarning' ? null : 'orphanChainWarning')}
+                    $isActive={adminShow === 'orphanChainWarning'}
+                >
+                    Orphan chain warning
+                </Button>
                 {/* TODO: add the other sections if we want */}
             </ButtonGroup>
         </>
