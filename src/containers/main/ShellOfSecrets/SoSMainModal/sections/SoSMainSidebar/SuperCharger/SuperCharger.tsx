@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import KeyIcon from './icons/KeyIcon';
 import { Wrapper, TopBar, LineLeft, SectionLabel, LineRight, FormWrapper, InputField, SubmitButton } from './styles';
+import { useAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest';
+import { SosCoomieClaimResponse } from '@app/types/sosTypes';
 
 export default function SuperCharger() {
     const { t } = useTranslation('sos', { useSuspense: false });
+    const fetchHandler = useAirdropRequest();
     const [code, setCode] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -13,8 +16,16 @@ export default function SuperCharger() {
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (!code) return;
 
-        // DO submit form stuff here
+        fetchHandler<SosCoomieClaimResponse>({
+            path: '/sos/cookie/claim',
+            method: 'POST',
+            body: {
+                cookieCode: code,
+            },
+        });
+        // TODO: handle loading and response states
     };
 
     return (

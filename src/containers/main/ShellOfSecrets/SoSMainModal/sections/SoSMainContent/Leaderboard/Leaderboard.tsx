@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import LeaderboardList from './LeaderboardList/LeaderboardList';
-import Progress from './Progress/Progress';
+// import Progress from './Progress/Progress';
 import { Wrapper, TopRow, SectionTitle, Button } from './styles';
 
 export default function Leaderboard() {
@@ -13,7 +13,7 @@ export default function Leaderboard() {
                 <Button>{t('leaderboard.viewFull')}</Button>
             </TopRow>
 
-            <Progress />
+            {/* <Progress /> */}
 
             <LeaderboardList />
         </Wrapper>

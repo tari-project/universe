@@ -5,6 +5,7 @@ import data from './data.ts';
 import { useEffect, useState, useRef } from 'react';
 import Member from '../Member/Member';
 import PlusIcon from '../icons/PlusIcon.tsx';
+import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore.ts';
 
 interface Member {
     image: string;
@@ -17,6 +18,7 @@ interface Member {
 
 export default function CrewList() {
     const { t } = useTranslation('sos', { useSuspense: false });
+    const crewMembers = useShellOfSecretsStore((state) => state.referrals?.activeReferrals);
     const [members, setMembers] = useState<Member[]>([]);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const [scrollDirection, setScrollDirection] = useState<number>(0);
@@ -65,11 +67,21 @@ export default function CrewList() {
     });
 
     return (
-        <Wrapper $noMembers={members.length === 0}>
-            {members.length !== 0 && (
+        <Wrapper $noMembers={crewMembers && crewMembers?.length === 0}>
+            {crewMembers && crewMembers.length !== 0 && (
                 <ScrollArea ref={scrollAreaRef} onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave}>
-                    {members.map((member) => (
-                        <Member key={member.id} member={member} />
+                    {crewMembers?.map((member) => (
+                        <Member
+                            key={member.id}
+                            member={{
+                                id: member.id,
+                                name: member.name,
+                                image: member.imageUrl || '',
+                                isOnline: !!member.active,
+                                isNew: false,
+                                miningRate: 0,
+                            }}
+                        />
                     ))}
                 </ScrollArea>
             )}

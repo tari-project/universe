@@ -11,9 +11,23 @@ import {
     TopBar,
     Wrapper,
 } from './styles';
+import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
+import { useEffect, useState } from 'react';
 
 export default function MainTimer() {
     const { t } = useTranslation('sos', { useSuspense: false });
+
+    const { getTimeRemaining } = useShellOfSecretsStore();
+    const [reminingTime, setRemainingTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            setRemainingTime(getTimeRemaining());
+        }, 1000);
+        return () => {
+            clearInterval(intervalId);
+        };
+    }, [getTimeRemaining]);
 
     return (
         <Wrapper>
@@ -25,17 +39,17 @@ export default function MainTimer() {
 
             <TimerColumn>
                 <NumberGroup>
-                    <Number>87</Number>
+                    <Number>{reminingTime.days}</Number>
                     <Label>{t('mainTimer.days')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
-                    <Number>12</Number>
+                    <Number>{reminingTime.hours}</Number>
                     <Label>{t('mainTimer.hours')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
-                    <Number>42</Number>
+                    <Number>{reminingTime.minutes}</Number>
                     <Label>{t('mainTimer.minutes')}</Label>
                 </NumberGroup>
 
@@ -44,7 +58,7 @@ export default function MainTimer() {
                         opacity: 0.5,
                     }}
                 >
-                    <Number>18</Number>
+                    <Number>{reminingTime.seconds}</Number>
                     <Label>{t('mainTimer.seconds')}</Label>
                 </NumberGroup>
 

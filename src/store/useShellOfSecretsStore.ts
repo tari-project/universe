@@ -23,7 +23,7 @@ interface Actions {
     setReferrals: (referrals: ReferralsResponse) => void;
     setShowWidget: (showWidget: boolean) => void;
     setTotalBonusTimeMs: (totalTimeBonusUpdate: number) => void;
-    getTimeRemaining: () => { days: number; hours: number; totalRemainingMs: number };
+    getTimeRemaining: () => { days: number; hours: number; totalRemainingMs: number; minutes: number; seconds: number };
     setShowMainModal: (showMainModal: boolean) => void;
 }
 
@@ -47,7 +47,9 @@ export const useShellOfSecretsStore = create<State & Actions>()((set, get) => ({
 
         const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
         const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        return { days, hours, totalRemainingMs: remainingMs };
+        const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+        return { days, hours, totalRemainingMs: remainingMs, minutes, seconds };
     },
     setShowMainModal: (showMainModal) => set({ showMainModal }),
 }));

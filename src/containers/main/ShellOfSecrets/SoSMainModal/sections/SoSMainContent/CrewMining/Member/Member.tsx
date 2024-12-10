@@ -3,10 +3,10 @@ import { MiningRate, NewPill, NudgeButton, Wrapper } from './styles.ts';
 
 interface MemberProps {
     member: {
-        image: string;
+        image?: string;
         isNew: boolean;
         isOnline: boolean;
-        miningRate: number;
+        miningRate?: number;
         id: string;
         name: string;
     };
@@ -63,7 +63,7 @@ export default function Member({ member }: MemberProps) {
 
             {!isOnline && <NudgeButton className="nudge-btn">{t('member.nudge')}</NudgeButton>}
 
-            {isOnline && (
+            {isOnline && miningRate && (
                 <MiningRate>
                     +{miningRate}
                     {t('member.minHr')}
