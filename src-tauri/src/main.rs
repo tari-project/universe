@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -8,6 +30,7 @@ use log::{debug, error, info, warn};
 use p2pool::models::Connections;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use tokio::sync::watch::{self};
+use updates_manager::UpdatesManager;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -19,7 +42,8 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Manager, PhysicalPosition, PhysicalSize, RunEvent, UpdaterEvent, WindowEvent};
+use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, RunEvent, WindowEvent};
+use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
@@ -31,7 +55,6 @@ use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use setup_status_event::SetupStatusEvent;
-use systemtray_manager::SystemtrayManager;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
@@ -86,11 +109,11 @@ mod process_utils;
 mod process_watcher;
 mod progress_tracker;
 mod setup_status_event;
-mod systemtray_manager;
 mod telemetry_manager;
 mod tests;
 mod tor_adapter;
 mod tor_manager;
+mod updates_manager;
 mod user_listener;
 mod utils;
 mod wallet_adapter;
@@ -108,7 +131,7 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 #[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
-pub struct CpuMinerConfig {
+struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
     tari_address: TariAddress,
     eco_mode_xmrig_options: Vec<String>,
@@ -118,13 +141,6 @@ pub struct CpuMinerConfig {
     ludicrous_mode_cpu_percentage: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Clone)]
-#[serde(rename_all = "camelCase")]
-struct UpdateProgressRustEvent {
-    chunk_length: usize,
-    content_length: u64,
-    downloaded: u64,
-}
 #[derive(Debug, Serialize, Clone)]
 #[allow(dead_code)]
 struct CriticalProblemEvent {
@@ -138,46 +154,46 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-    window
-        .emit(
-            "message",
-            SetupStatusEvent {
-                event_type: "setup_status".to_string(),
-                title: "starting-up".to_string(),
-                title_params: None,
-                progress: 0.0,
-            },
-        )
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+    app.emit(
+        "message",
+        SetupStatusEvent {
+            event_type: "setup_status".to_string(),
+            title: "starting-up".to_string(),
+            title_params: None,
+            progress: 0.0,
+        },
+    )
+    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
-        window
-            .emit(
-                "critical_problem",
-                CriticalProblemEvent {
-                    title: None,
-                    description: Some("not-installed-in-applications-directory".to_string()),
-                },
-            )
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not emit event 'critical_problem': {:?}", e),
-            )?;
+        app.emit(
+            "critical_problem",
+            CriticalProblemEvent {
+                title: None,
+                description: Some("not-installed-in-applications-directory".to_string()),
+            },
+        )
+        .inspect_err(
+            |e| error!(target: LOG_TARGET, "Could not emit event 'critical_problem': {:?}", e),
+        )?;
         return Ok(());
     }
 
+    state
+        .updates_manager
+        .init_periodic_updates(app.clone())
+        .await?;
+
     let data_dir = app
-        .path_resolver()
+        .path()
         .app_local_data_dir()
         .expect("Could not get data dir");
     let config_dir = app
-        .path_resolver()
+        .path()
         .app_config_dir()
         .expect("Could not get config dir");
-    let log_dir = app
-        .path_resolver()
-        .app_log_dir()
-        .expect("Could not get log dir");
+    let log_dir = app.path().app_log_dir().expect("Could not get log dir");
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") && !cfg!(dev) {
@@ -192,8 +208,7 @@ async fn setup_inner(
             .await;
 
         if is_missing {
-            window
-                .emit(
+            app.emit(
                     "missing-applications",
                     external_dependencies
                 ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
@@ -213,7 +228,7 @@ async fn setup_inner(
         .await?;
 
     let (tx, rx) = watch::channel("".to_string());
-    let progress = ProgressTracker::new(window.clone(), Some(tx));
+    let progress = ProgressTracker::new(app.clone(), Some(tx));
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
@@ -478,7 +493,7 @@ async fn setup_inner(
     mm_proxy_manager.wait_ready().await?;
     *state.is_setup_finished.write().await = true;
     drop(
-        window
+        app.clone()
             .emit(
                 "message",
                 SetupStatusEvent {
@@ -491,15 +506,35 @@ async fn setup_inner(
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
+    let move_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut interval: time::Interval = time::interval(Duration::from_secs(1));
+        loop {
+            let app_state = move_handle.state::<UniverseAppState>().clone();
+
+            if app_state.shutdown.is_triggered() {
+                break;
+            }
+
+            interval.tick().await;
+            if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
+                drop(move_handle.clone().emit("miner_metrics", metrics_ret));
+            }
+        }
+    });
+
     let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;
 
         loop {
-            interval.tick().await;
-
             let state = app_handle_clone.state::<UniverseAppState>().inner();
+            if state.shutdown.is_triggered() {
+                break;
+            }
+
+            interval.tick().await;
             let check_if_orphan = state
                 .node_manager
                 .check_if_is_orphan_chain(!has_send_error)
@@ -512,7 +547,7 @@ async fn setup_inner(
                     if is_stuck && !has_send_error {
                         has_send_error = true;
                     }
-                    drop(app_handle_clone.emit_all("is_stuck", is_stuck));
+                    drop(app_handle_clone.emit("is_stuck", is_stuck));
                 }
                 Err(ref e) => {
                     error!(target: LOG_TARGET, "{}", e);
@@ -523,6 +558,7 @@ async fn setup_inner(
 
     Ok(())
 }
+
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
@@ -547,6 +583,7 @@ struct UniverseAppState {
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
+    updates_manager: UpdatesManager,
     cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
@@ -565,16 +602,18 @@ fn main() {
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
-    let client = sentry_tauri::sentry::init((
+
+    let client = sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
-        sentry_tauri::sentry::ClientOptions {
-            release: sentry_tauri::sentry::release_name!(),
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            attach_stacktrace: true,
             ..Default::default()
         },
     ));
-    let _guard = sentry_tauri::minidump::init(&client);
+    let _guard = minidump::init(&client);
 
-    let mut shutdown = Shutdown::new();
+    let shutdown = Shutdown::new();
 
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.
@@ -613,18 +652,10 @@ fn main() {
         p2pool_manager.clone(),
     );
 
+    let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
+
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // let mm_proxy_config = if app_config_raw.p2pool_enabled {
-    //     MergeMiningProxyConfig::new_with_p2pool(mm_proxy_port, p2pool_config.grpc_port, None)
-    // } else {
-    //     MergeMiningProxyConfig::new(
-    //         mm_proxy_port,
-    //         p2pool_config.grpc_port,
-    //         base_node_grpc_port,
-    //         None,
-    //     )
-    // };
+
     let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
@@ -649,6 +680,7 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
         tor_manager: TorManager::new(),
+        updates_manager,
         cached_p2pool_stats: Arc::new(RwLock::new(None)),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_wallet_details: Arc::new(RwLock::new(None)),
@@ -656,30 +688,29 @@ fn main() {
         setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
     };
 
-    let systray = SystemtrayManager::current().get_systray().clone();
-
     let app = tauri::Builder::default()
-        .system_tray(systray)
-        .on_system_tray_event(|app, event| {
-            SystemtrayManager::current().handle_system_tray_event(app.clone(), event)
-        })
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
-            app.emit_all("single-instance", Payload { args: argv, cwd })
+            app.emit("single-instance", Payload { args: argv, cwd })
                 .unwrap_or_else(
                     |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e),
                 );
         }))
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .setup(|app| {
             let config_path = app
-                .path_resolver()
+                .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
 
             // Remove this after it's been rolled out for a few versions
-            let log_path = app.path_resolver().app_log_dir().expect("Could not get log dir");
+            let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
             let logs_cleared_file = log_path.join("logs_cleared");
             if !logs_cleared_file.exists() {
                 match remove_dir_all(&log_path) {
@@ -696,9 +727,7 @@ fn main() {
                     .join("universe")
                     .join("configs")
                     .join("log4rs_config_universe.yml"),
-                &app.path_resolver()
-                    .app_log_dir()
-                    .expect("Could not get log dir"),
+                &app.path().app_log_dir().expect("Could not get log dir"),
                 include_str!("../log4rs/universe_sample.yml"),
             )
             .expect("Could not set up logging");
@@ -707,7 +736,7 @@ fn main() {
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
             let splash_window = app
-                .get_window("splashscreen")
+                .get_webview_window("splashscreen")
                 .expect("Main window not found");
 
             // The start of needed restart operations. Break this out into a module if we need n+1
@@ -755,6 +784,7 @@ fn main() {
                     if let Some(w_settings) = app_conf.window_settings() {
                         let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
                         let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
+
                         if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
                             error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
                         }
@@ -770,7 +800,7 @@ fn main() {
             };
 
             let config_path = app
-                .path_resolver()
+                .path()
                 .app_config_dir()
                 .expect("Could not get config dir");
             let address = app.state::<UniverseAppState>().tari_address.clone();
@@ -823,6 +853,7 @@ fn main() {
             commands::get_max_consumption_levels,
             commands::get_miner_metrics,
             commands::get_monero_seed_words,
+            commands::get_network,
             commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
@@ -863,7 +894,10 @@ fn main() {
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
             commands::get_used_p2pool_stats_server_port,
-            commands::get_network
+            commands::proceed_with_update,
+            commands::set_pre_release,
+            commands::check_for_updates,
+            commands::try_update,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
@@ -876,42 +910,16 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
-    let mut downloaded: u64 = 0;
+
     app.run(move |app_handle, event| match event {
-        tauri::RunEvent::Updater(updater_event) => match updater_event {
-            UpdaterEvent::Error(e) => {
-                error!(target: LOG_TARGET, "Updater error: {:?}", e);
-            }
-            UpdaterEvent::DownloadProgress { chunk_length, content_length } => {
-                downloaded += chunk_length as u64;
-                let content_length = content_length.unwrap_or_else(|| {
-                    warn!(target: LOG_TARGET, "Unable to determine content length");
-                    downloaded
-                });
-
-                info!(target: LOG_TARGET, "Chunk Length: {} | Download progress: {} / {}", chunk_length, downloaded, content_length);
-
-                if let Some(window) = app_handle.get_window("main") {
-                    drop(window.emit("update-progress", UpdateProgressRustEvent { chunk_length, content_length, downloaded: downloaded.min(content_length) }).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'update-progress': {:?}", e))
-                    );
-                }
-            }
-            UpdaterEvent::Downloaded => {
-                shutdown.trigger();
-            }
-            _ => {
-                info!(target: LOG_TARGET, "Updater event: {:?}", updater_event);
-            }
-        },
         tauri::RunEvent::ExitRequested { api: _, .. } => {
-            // api.prevent_exit();
-            info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(app_state.clone(), true));
+            info!(target: LOG_TARGET, "App shutdown request caught");
+            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(app_state.clone(), true));
+            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
@@ -920,8 +928,8 @@ fn main() {
         RunEvent::WindowEvent { label, event, .. } => {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
             if let WindowEvent::CloseRequested { .. } = event {
-                if let Some(window) = app_handle.get_window(&label) {
-                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.outer_size()) {
+                if let Some(window) = app_handle.get_webview_window(&label) {
+                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.inner_size()) {
                         let window_settings = WindowSettings {
                             x: window_position.x,
                             y: window_position.y,

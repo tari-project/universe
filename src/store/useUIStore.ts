@@ -18,7 +18,7 @@ interface State {
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
     isWebglNotSupported: boolean;
-    adminShow?: 'setup' | 'main' | 'shutdown' | null;
+    adminShow?: 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
 }
 interface Actions {
     setTheme: (theme: Theme) => void;

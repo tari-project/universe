@@ -6,6 +6,7 @@ import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import {
+    CardContainer,
     CardItem,
     CardItemLabel,
     CardItemLabelValue,
@@ -16,12 +17,26 @@ import { StatWrapper } from '@app/containers/floating/Settings/sections/p2p/P2Po
 
 import { useEffect, useState } from 'react';
 
+import { CardComponent } from '@app/containers/floating/Settings/components/Card.component.tsx';
+
 export default function P2PConnectionData() {
     const { t } = useTranslation('p2p');
     const [copiedId, setCopiedId] = useState<string>();
     const { copyToClipboard } = useCopyToClipboard();
 
     const connectionInfo = useP2poolStatsStore((s) => s?.connection_info);
+    const { established_incoming, established_outgoing, pending_incoming, pending_outgoing } =
+        connectionInfo?.network_info?.connection_counters || {};
+
+    const pendingLabels = [
+        { labelText: 'incoming', labelValue: pending_incoming || '-' },
+        { labelText: 'outgoing', labelValue: pending_outgoing || '-' },
+    ];
+
+    const establishedLabels = [
+        { labelText: 'incoming', labelValue: established_incoming || '-' },
+        { labelText: 'outgoing', labelValue: established_outgoing || '-' },
+    ];
 
     useEffect(() => {
         if (copiedId) {
@@ -57,9 +72,19 @@ export default function P2PConnectionData() {
     });
 
     return (
-        <CardItem>
-            <CardItemTitle>{t('listener-addresses')}</CardItemTitle>
-            {listenerMarkup}
-        </CardItem>
+        <>
+            <CardItem>
+                <CardItemTitle>
+                    {t('listener-addresses')}
+                    {!connectionInfo?.listener_addresses?.length && ` -`}
+                </CardItemTitle>
+                {listenerMarkup}
+            </CardItem>
+
+            <CardContainer>
+                <CardComponent labels={establishedLabels} heading={'Established connnections'} />
+                <CardComponent labels={pendingLabels} heading={'Pending connnections'} />
+            </CardContainer>
+        </>
     );
 }

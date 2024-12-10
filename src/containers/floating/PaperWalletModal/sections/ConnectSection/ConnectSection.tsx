@@ -12,7 +12,7 @@ import qrTooltipImage from '../../images/qr-tooltip.png';
 import { useTranslation } from 'react-i18next';
 import { useCallback, useState } from 'react';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import LoadingSvg from '@app/components/svgs/LoadingSvg';
 
 interface Props {
