@@ -46,6 +46,7 @@
     "title": "Tyd waarna masjien as onaktief beskou word"
   },
   "importing-wallet": "Beursie invoer",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Uitnodigingskode",
@@ -84,6 +85,10 @@
   "pool-mining-description": "Wanneer geaktiveer, sal u in \"n poel myn en by \"n groep mynwerkers aansluit.",
   "randomx-network-hash-rate": "Randomx netwerk hashrate",
   "refresh-versions": "Verfris weergawes",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Rapporteer \"n probleem",
   "reset-permanently": "Is jy seker jy wil alle instellings permanent terugstel?",
   "reset-settings": "Stel Instellings Terug",
@@ -111,6 +116,7 @@
     "general": "Algemeen",
     "mining": "Mynbou",
     "p2p": "Poel Mynbou",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Baie Eksperimenteel",
     "wallet": "Beursie"
   },

@@ -46,6 +46,7 @@
     "title": "Temps après lequel la machine est considérée comme inactive"
   },
   "importing-wallet": "Importation du portefeuille",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Entrez 24 mots séparés par des espaces",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Code d\"invitation",
@@ -84,6 +85,10 @@
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
   "randomx-network-hash-rate": "Taux de hachage du réseau Randomx",
   "refresh-versions": "Rafraîchir les versions",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Signaler un problème",
   "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
   "reset-settings": "Réinitialiser les paramètres",
@@ -111,6 +116,7 @@
     "general": "Général",
     "mining": "Minage",
     "p2p": "Minage en pool",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Très Expérimental",
     "wallet": "Portefeuille"
   },
