@@ -32,6 +32,7 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
 use crate::app_config::AppConfig;
+use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 
 const LOG_TARGET: &str = "tari::universe::updates_manager";
@@ -72,13 +73,15 @@ impl AskForUpdatePayload {
 pub struct UpdatesManager {
     config: Arc<RwLock<AppConfig>>,
     update: Arc<RwLock<Option<Update>>>,
+    app_shutdown: ShutdownSignal,
 }
 
 impl UpdatesManager {
-    pub fn new(config: Arc<RwLock<AppConfig>>) -> Self {
+    pub fn new(config: Arc<RwLock<AppConfig>>, app_shutdown: ShutdownSignal) -> Self {
         Self {
             config,
             update: Arc::new(RwLock::new(None)),
+            app_shutdown,
         }
     }
 
@@ -88,8 +91,12 @@ impl UpdatesManager {
         tauri::async_runtime::spawn(async move {
             let mut interval = time::interval(Duration::from_secs(3600));
             loop {
+                if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
+                {
+                    break;
+                };
                 interval.tick().await;
-                if let Err(e) = self_clone.try_update(app_clone.clone(), false).await {
+                if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
                     error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
                 }
             }
@@ -102,8 +109,9 @@ impl UpdatesManager {
         &self,
         app: tauri::AppHandle,
         force: bool,
+        enable_downgrade: bool,
     ) -> Result<(), anyhow::Error> {
-        match self.check_for_update(app.clone()).await? {
+        match self.check_for_update(app.clone(), enable_downgrade).await? {
             Some(update) => {
                 let version = update.version.clone();
                 info!(target: LOG_TARGET, "try_update: Update available: {:?}", version);
@@ -130,7 +138,6 @@ impl UpdatesManager {
             }
             None => {
                 info!(target: LOG_TARGET, "No updates available");
-                println!("No updates available");
             }
         }
 
@@ -140,15 +147,20 @@ impl UpdatesManager {
     pub async fn check_for_update(
         &self,
         app: tauri::AppHandle,
+        enable_downgrade: bool,
     ) -> Result<Option<Update>, anyhow::Error> {
         let is_pre_release = self.config.read().await.pre_release();
         let updates_url = self.get_updates_url(is_pre_release);
 
         let update = app
             .updater_builder()
-            .version_comparator(|current, update| {
-                // Needed for switching off the pre-release
-                update.version != current
+            .version_comparator(move |current, update| {
+                if enable_downgrade {
+                    // Needed for switching off the pre-release
+                    update.version != current
+                } else {
+                    update.version > current
+                }
             })
             .endpoints(vec![updates_url])
             .expect("Failed to set update URL")

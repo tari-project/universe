@@ -165,8 +165,6 @@ async fn setup_inner(
     )
     .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
-    state.updates_manager.try_update(app.clone(), false).await?;
-
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
         app.emit(
@@ -181,6 +179,11 @@ async fn setup_inner(
         )?;
         return Ok(());
     }
+
+    state
+        .updates_manager
+        .init_periodic_updates(app.clone())
+        .await?;
 
     let data_dir = app
         .path()
@@ -553,11 +556,6 @@ async fn setup_inner(
         }
     });
 
-    state
-        .updates_manager
-        .init_periodic_updates(app.clone())
-        .await?;
-
     Ok(())
 }
 
@@ -654,7 +652,7 @@ fn main() {
         p2pool_manager.clone(),
     );
 
-    let updates_manager = UpdatesManager::new(app_config.clone());
+    let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 

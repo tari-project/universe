@@ -14,8 +14,8 @@ export const GeneralSettings = () => {
         <>
             <StartApplicationOnBootSettings />
             <AutoUpdate />
-            <AirdropPermissionSettings />
             <PreReleaseSettings />
+            <AirdropPermissionSettings />
             <LanguageSettings />
             <ThemeSettings />
             <LogsSettings />
