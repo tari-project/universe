@@ -1,7 +1,4 @@
-use std::{
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{sync::Arc, time::SystemTime};
 
 use log::{debug, warn};
 use serde::Serialize;
@@ -18,6 +15,12 @@ const LOG_TARGET: &str = "tari::universe::telemetry_service";
 
 #[derive(Debug, Serialize)]
 pub struct TelemetryData {
+    event_name: String,
+    event_value: Value,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FullTelemetryData {
     event_name: String,
     event_value: Value,
     created_at: SystemTime,
@@ -38,7 +41,6 @@ pub enum TelemetryServiceError {
 pub struct TelemetryService {
     app_id: String,
     version: String,
-    frequency: Duration,
     tx_channel: Option<Sender<TelemetryData>>,
     cancellation_token: CancellationToken,
     config: Arc<RwLock<AppConfig>>,
@@ -49,7 +51,6 @@ impl TelemetryService {
     pub fn new(
         app_id: String,
         version: String,
-        frequency: Duration,
         config: Arc<RwLock<AppConfig>>,
         in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     ) -> Self {
@@ -57,7 +58,6 @@ impl TelemetryService {
         TelemetryService {
             app_id,
             version,
-            frequency,
             tx_channel: None,
             cancellation_token,
             config,
@@ -73,6 +73,8 @@ impl TelemetryService {
             .await
             .telemetry_api_url
             .clone();
+        let app_id = self.app_id.clone();
+        let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);
         tokio::spawn(async move {
@@ -82,7 +84,7 @@ impl TelemetryService {
                     while let Some(telemetry_data) = rx.recv().await {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
-                            drop(send_telemetry_data(telemetry_data, telemetry_api_url.clone()).await);
+                            drop(send_telemetry_data(telemetry_data, telemetry_api_url.clone(), app_id.clone(), version.clone()).await);
                         }
                     }
                 } => {},
@@ -98,15 +100,25 @@ impl TelemetryService {
 async fn send_telemetry_data(
     data: TelemetryData,
     api_url: String,
+    app_id: String,
+    version: String,
 ) -> Result<(), TelemetryServiceError> {
     let request = reqwest::Client::new();
+    let full_data = FullTelemetryData {
+        event_name: data.event_name,
+        event_value: data.event_value,
+        created_at: SystemTime::now(),
+        user_id: None,
+        app_id,
+        version,
+    };
     let request_builder = request
         .post(api_url)
         .header(
             "User-Agent".to_string(),
-            format!("tari-universe/{}", data.version.clone()),
+            format!("tari-universe/{}", full_data.version.clone()),
         )
-        .json(&data);
+        .json(&full_data);
 
     let response = request_builder.send().await?;
 

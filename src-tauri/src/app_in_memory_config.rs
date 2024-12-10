@@ -46,7 +46,6 @@ pub struct AppInMemoryConfig {
     pub airdrop_twitter_auth_url: String,
     pub airdrop_access_token: Option<String>,
     pub telemetry_api_url: String,
-    pub telemetry_access_token: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -75,7 +74,6 @@ impl Default for AppInMemoryConfig {
             airdrop_twitter_auth_url: "https://airdrop.tari.com/auth".into(),
             airdrop_access_token: None,
             telemetry_api_url: "https://ut.tari.com".into(),
-            telemetry_access_token: None,
         }
     }
 }
@@ -89,7 +87,6 @@ impl AppInMemoryConfig {
             airdrop_twitter_auth_url: AIRDROP_TWITTER_AUTH_URL.into(),
             airdrop_access_token: None,
             telemetry_api_url: TELEMETRY_API_URL.into(),
-            telemetry_access_token: None,
         };
 
         #[cfg(feature = "airdrop-local")]
@@ -99,7 +96,6 @@ impl AppInMemoryConfig {
             airdrop_twitter_auth_url: "http://localhost:3004/auth/twitter".into(),
             airdrop_access_token: None,
             telemetry_api_url: "http://localhost:3004".into(),
-            telemetry_access_token: None,
         };
 
         #[cfg(not(any(
