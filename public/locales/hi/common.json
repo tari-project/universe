@@ -7,6 +7,7 @@
   "critical-error": "गंभीर त्रुटि",
   "day": "दिन",
   "disconnect": "डिस्कनेक्ट करें",
+  "dismiss": "Dismiss",
   "hashrate": "हैश दर",
   "installation-problem": "Installation problem",
   "max-temperature": "अधिकतम तापमान",
@@ -28,5 +29,6 @@
   "utilization": "उपयोग",
   "version": "संस्करण",
   "versions": "संस्करण",
-  "webgl-not-supported": "WebGL समर्थित नहीं है। दृश्य मोड अक्षम किया गया।"
+  "webgl-not-supported": "WebGL समर्थित नहीं है। दृश्य मोड अक्षम किया गया।",
+  "yes": "Yes"
 }

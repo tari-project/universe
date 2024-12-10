@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::credential_manager::{Credential, KEYRING_ACCESSED};
+use crate::credential_manager::{Credential, KEYRING_ACCESSED, USING_FALLBACK};
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
@@ -98,6 +98,8 @@ pub struct AppConfigFromFile {
     auto_update: bool,
     #[serde(default = "default_false")]
     keyring_accessed: bool,
+    #[serde(default = "default_false")]
+    keyring_fallback: bool,
     #[serde(default = "default_true")]
     custom_power_levels_enabled: bool,
     #[serde(default = "default_true")]
@@ -143,6 +145,7 @@ impl Default for AppConfigFromFile {
             mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
             mmproxy_use_monero_fail: false,
             keyring_accessed: false,
+            keyring_fallback: false,
             auto_update: true,
             reset_earnings: false,
             custom_power_levels_enabled: true,
@@ -257,6 +260,7 @@ pub(crate) struct AppConfig {
     custom_max_gpu_usage: Vec<GpuThreads>,
     auto_update: bool,
     keyring_accessed: bool,
+    keyring_fallback: bool,
     custom_power_levels_enabled: bool,
     sharing_enabled: bool,
     visual_mode: bool,
@@ -306,6 +310,7 @@ impl AppConfig {
             window_settings: default_window_settings(),
             show_experimental_settings: false,
             keyring_accessed: false,
+            keyring_fallback: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
         }
     }
@@ -386,6 +391,11 @@ impl AppConfig {
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+
+                USING_FALLBACK.store(
+                    config.keyring_fallback,
                     std::sync::atomic::Ordering::Relaxed,
                 );
             }
@@ -763,6 +773,7 @@ impl AppConfig {
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
             keyring_accessed: KEYRING_ACCESSED.load(std::sync::atomic::Ordering::Relaxed),
+            keyring_fallback: USING_FALLBACK.load(std::sync::atomic::Ordering::Relaxed),
             auto_update: self.auto_update,
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,

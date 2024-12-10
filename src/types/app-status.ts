@@ -46,6 +46,8 @@ export interface AppConfig {
     show_experimental_settings: boolean;
     monero_address_is_generated?: boolean;
     created_at: string;
+    keyring_fallback: boolean;
+    keyring_accessed: boolean;
     p2pool_stats_server_port: number | null;
 }
 

@@ -7,6 +7,7 @@
   "critical-error": "Критическая ошибка",
   "day": "День",
   "disconnect": "Отключить",
+  "dismiss": "Dismiss",
   "hashrate": "Хэшрейт",
   "installation-problem": "Installation problem",
   "max-temperature": "Максимальная температура",
@@ -28,5 +29,6 @@
   "utilization": "Использование",
   "version": "Версия",
   "versions": "Версии",
-  "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен."
+  "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен.",
+  "yes": "Yes"
 }

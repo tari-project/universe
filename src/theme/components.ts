@@ -16,6 +16,7 @@ export const componentSettings = {
             lineHeight: 1.1,
             letterSpacing: '-0.1px',
             fontWeight: 'inherit',
+            fontSize: '16px',
         },
         p: {
             fontSize: '12px',

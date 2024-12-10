@@ -7,6 +7,7 @@
   "critical-error": "Kritieke fout",
   "day": "Dag",
   "disconnect": "Ontkoppel",
+  "dismiss": "Dismiss",
   "hashrate": "Hashtempo",
   "installation-problem": "Installation problem",
   "max-temperature": "Maksimum temperatuur",
@@ -28,5 +29,6 @@
   "utilization": "Benutting",
   "version": "Weergawe",
   "versions": "Weergawes",
-  "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer."
+  "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer.",
+  "yes": "Yes"
 }

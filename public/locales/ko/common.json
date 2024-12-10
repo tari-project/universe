@@ -7,6 +7,7 @@
   "critical-error": "치명적 오류",
   "day": "일",
   "disconnect": "연결 해제",
+  "dismiss": "Dismiss",
   "hashrate": "해시레이트",
   "installation-problem": "Installation problem",
   "max-temperature": "최대 온도",
@@ -28,5 +29,6 @@
   "utilization": "활용도",
   "version": "버전",
   "versions": "버전",
-  "webgl-not-supported": "WebGL이 지원되지 않습니다. 시각 모드가 비활성화되었습니다."
+  "webgl-not-supported": "WebGL이 지원되지 않습니다. 시각 모드가 비활성화되었습니다.",
+  "yes": "Yes"
 }

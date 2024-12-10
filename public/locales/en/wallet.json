@@ -1,0 +1,4 @@
+{
+  "keychain-access": "Keychain Access",
+  "keychain-access-copy": "Your seed words are vulnerable because they are stored locally on disk.\nDo you want to move them to the keychain?"
+}

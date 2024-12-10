@@ -7,6 +7,7 @@
   "critical-error": "Kesalahan kritis",
   "day": "Hari",
   "disconnect": "Putuskan Koneksi",
+  "dismiss": "Dismiss",
   "hashrate": "Hashrate",
   "installation-problem": "Installation problem",
   "max-temperature": "Suhu maksimum",
@@ -28,5 +29,6 @@
   "utilization": "Pemanfaatan",
   "version": "Versi",
   "versions": "Versi",
-  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan."
+  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan.",
+  "yes": "Yes"
 }
