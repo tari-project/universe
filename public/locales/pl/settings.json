@@ -47,6 +47,7 @@
     "title": "Czas po którym urządzenie jest uważane za bezczynne"
   },
   "importing-wallet": "Importowanie portfela",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Kod Zaproszenia",
@@ -86,6 +87,10 @@
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
   "randomx-network-hash-rate": "Hashrate sieci Randomx",
   "refresh-versions": "Odśwież wersje",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Zgłoś problem",
   "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
   "reset-settings": "Resetuj ustawienia",
@@ -113,6 +118,7 @@
     "general": "Ogólne",
     "mining": "Wydobycie",
     "p2p": "Kopanie w puli",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Bardzo Eksperymentalne",
     "wallet": "Portfel"
   },

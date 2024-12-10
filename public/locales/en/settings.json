@@ -46,6 +46,7 @@
     "title": "Time after which mdchine is considered idle"
   },
   "importing-wallet": "Importing wallet",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Enter 24 words separated by spaces",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Invite Code",
@@ -84,6 +85,10 @@
   "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
   "randomx-network-hash-rate": "Randomx network hashrate",
   "refresh-versions": "Refresh versions",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Report an issue",
   "reset-permanently": "Are you sure you want to reset all settings permanently?",
   "reset-settings": "Reset Settings",
@@ -111,9 +116,9 @@
     "general": "General",
     "mining": "Mining",
     "p2p": "Pool Mining",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Very Experimental",
-    "wallet": "Wallet",
-    "releaseNotes": "Release Notes"
+    "wallet": "Wallet"
   },
   "tari-wallet-address": "Tari Wallet Address",
   "terms-and-conditions": "Terms & Conditions",
@@ -136,9 +141,5 @@
   "visual-mode": "Visual mode",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
-  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
-  "release-notes": {
-    "upgrade-available": "⚠️ Upgrade Available",
-    "loading": "Loading release notes..."
-  }
+  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"
 }
