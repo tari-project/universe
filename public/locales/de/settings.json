@@ -6,6 +6,8 @@
   "applyInviteCode": "Einladungscode anwenden",
   "cancel": "Abbrechen",
   "change-language": "Sprache",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Verbundenen Peers",
@@ -83,6 +85,11 @@
   },
   "pool-mining": "Pool-Mining",
   "pool-mining-description": "Wenn aktiviert, wirst du in einem Pool minen und einer Gruppe von Minern beitreten.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Randomx-Netzwerk-Hashrate",
   "refresh-versions": "Versionen aktualisieren",
   "release-notes": {
@@ -108,6 +115,7 @@
     "title": "Automatischer Start beim Systemstart"
   },
   "should-use-system-language": "Systemsprache verwenden",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
