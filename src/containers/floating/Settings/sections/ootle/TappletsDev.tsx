@@ -15,6 +15,7 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input.tsx';
 import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline, IoRemoveOutline } from 'react-icons/io5';
+import { invoke } from '@tauri-apps/api';
 
 const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
 
@@ -105,6 +106,16 @@ export default function TappletsDev() {
         trigger('endpoint');
     }, [endpoint, trigger]);
 
+    const handleLaunch = useCallback(async (id: number) => {
+        try {
+            // const tapplet = await invoke('launch_tapplet', { tappletId: id });
+            console.log('SET ACTIVE TAP', id);
+            setActiveTapp(id);
+        } catch (e) {
+            console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+        }
+    }, []);
+
     return (
         <TappletsGroupWrapper $category="Dev Tapplets">
             <SquaredButton
@@ -166,7 +177,7 @@ export default function TappletsDev() {
                                 <IconButton
                                     aria-label="launch"
                                     style={{ marginRight: 10 }}
-                                    onClick={() => setActiveTapp(item.id)}
+                                    onClick={() => handleLaunch(item.id)}
                                 >
                                     {/* <NavLink
                                         to={`/${TabKey.DEV_TAPPLETS}/${item.id}`}

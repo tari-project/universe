@@ -1,4 +1,4 @@
-import { DevTapplet, TappletConfig } from '@app/types/ootle/tapplet';
+import { DevTapplet, InstalledTappletWithAssets, ActiveTapplet, TappletConfig } from '@app/types/ootle/tapplet';
 import { useEffect, useState } from 'react';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { Box, IconButton, Typography } from '@mui/material';
@@ -9,22 +9,17 @@ import { SettingsGroupTitle } from '@app/containers/floating/Settings/components
 
 export default function ActiveDevTapplet() {
     const { setActiveTapp } = useTappletsStore();
-    // const { state: devTapplet }: { state: DevTapplet } = useLocation();
-    // TODO
-    const devTapplet: DevTapplet = {
-        id: '1',
-        package_name: 'tarifaucet-tapplet',
-        endpoint: 'http://localhost:5173/',
-        display_name: 'tarifaucet tapplet',
-        about_summary: '',
-        about_description: '',
-    };
-    // const dispatch = useDispatch();
-    const [isVerified, setIsVerified] = useState<boolean>(false);
+    const [tapplet, setTapplet] = useState<ActiveTapplet>();
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const setTappProvider = useTappletProviderStore((s) => s.setTappletProvider);
-    // let tappProvider;
-    console.log('[active dev tapp] tapp', tappProvider);
+    const getActiveTapp = useTappletsStore((s) => s.getActiveTapp);
+
+    useEffect(() => {
+        if (!tapplet) {
+            const tapp = getActiveTapp();
+            if (tapp) setTapplet(tapp);
+        }
+    }, [tapplet, getActiveTapp, setTapplet]);
 
     useEffect(() => {
         const fetchTappletConfig = async () => {
@@ -53,16 +48,11 @@ export default function ActiveDevTapplet() {
                         optionalPermissions: [],
                     },
                 };
-                if (config?.packageName === devTapplet?.package_name) {
-                    setIsVerified(true);
-
-                    if (!tappProvider) {
+                if (config) {
+                    if (!tappProvider && tapplet) {
                         // TODO set error
                         console.error('Dev Tapplet provider not found');
-                        setTappProvider(config.packageName, {
-                            endpoint: devTapplet.endpoint,
-                            permissions: config.permissions,
-                        });
+                        setTappProvider(config.packageName, tapplet);
                     }
                     if (!config?.permissions) {
                         // TODO set error
@@ -74,7 +64,7 @@ export default function ActiveDevTapplet() {
             }
         };
 
-        if (devTapplet?.endpoint) {
+        if (tapplet) {
             fetchTappletConfig();
         }
     }, []);
@@ -82,13 +72,13 @@ export default function ActiveDevTapplet() {
     return (
         <>
             <SettingsGroupTitle>
-                <Typography variant="h6">{devTapplet.display_name}</Typography>
-                <IconButton aria-label="launch" style={{ marginRight: 10 }} onClick={() => setActiveTapp()}>
+                <Typography variant="h6">{tapplet?.display_name ?? 'Unknown tapplet name'}</Typography>
+                <IconButton aria-label="launch" style={{ marginRight: 10 }} onClick={() => setActiveTapp(undefined)}>
                     <MdClose color="primary" />
                 </IconButton>
             </SettingsGroupTitle>
             <Box height="100%" width="100%">
-                {isVerified && tappProvider && <Tapplet source={devTapplet.endpoint} provider={tappProvider} />}
+                {tapplet && tappProvider && <Tapplet source={tapplet?.source} provider={tappProvider} />}
             </Box>
         </>
     );

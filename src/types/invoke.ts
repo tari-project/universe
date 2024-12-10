@@ -17,6 +17,7 @@ import {
     DevTapplet,
     InstalledTapplet,
     InstalledTappletWithAssets,
+    ActiveTapplet,
     RegisteredTapplet,
     RegisteredTappletWithAssets,
 } from './ootle/tapplet';
@@ -113,4 +114,5 @@ declare module '@tauri-apps/api/tauri' {
         param: 'download_and_extract_tapp',
         payload: { tappletId: string }
     ): Promise<RegisteredTappletWithAssets>;
+    function invoke(param: 'launch_tapplet', payload: { tappletId: number }): Promise<ActiveTapplet>;
 }

@@ -70,9 +70,12 @@ export interface TappletAudit {
     report_url: string;
 }
 
-export interface LaunchedTappResult {
-    endpoint: string;
-    permissions: TappletPermissions;
+export interface ActiveTapplet {
+    tapplet_id: number;
+    display_name: string;
+    source: string;
+    version: string;
+    permissions?: TappletPermissions;
 }
 
 export type SupportedChain = 'MAINNET' | 'STAGENET' | 'NEXTNET' | '';

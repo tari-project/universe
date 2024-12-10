@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api';
 import { create } from './create.ts';
 import {
+    ActiveTapplet,
     DevTapplet,
     InstalledTappletWithAssets,
     RegisteredTapplet,
@@ -20,11 +21,11 @@ interface State {
 interface Actions {
     installRegisteredTapp: (tappletId: string) => Promise<void>;
     fetchRegisteredTapps: () => Promise<void>;
-    setActiveTapp: (id: number) => Promise<void>;
+    setActiveTapp: (id?: number) => Promise<void>;
     addDevTapp: (endpoint: string) => Promise<void>;
     deleteDevTapp: (devTappletId: number) => Promise<void>;
-    getActiveTapp: () => InstalledTappletWithAssets | undefined;
     fetchDevTappDb: () => Promise<void>;
+    getActiveTapp: () => ActiveTapplet | undefined;
 }
 
 type TappletsStoreState = State & Actions;
@@ -91,14 +92,23 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             appStateStore.setError(`'Error installing tapplet: ${error}`);
         }
     },
-    setActiveTapp: async (installedTappletId) => {
-        console.log('[STORE] set active tapp id', installedTappletId);
-        set({ activeTappletId: installedTappletId });
+    setActiveTapp: async (tappletId) => {
+        console.log('[STORE] set active tapp id', tappletId);
+        set({ activeTappletId: tappletId });
     },
     getActiveTapp: () => {
         const id = get().activeTappletId;
         console.log('[STORE] get active tapp - id', id);
-        return get().installedTapplets.find((tapp) => tapp.installed_tapplet.id === id);
+        // const tapp = get().installedTapplets.find((tapp) => tapp.installed_tapplet.id === id); TODO
+        const devTapp = get().devTapplets.find((tapp) => tapp.id === id);
+        if (!devTapp) return undefined;
+        return {
+            tapplet_id: devTapp.id,
+            display_name: devTapp?.display_name,
+            source: devTapp?.endpoint,
+            version: '0.0.1',
+            permissions: undefined, //TODO
+        };
     },
     addDevTapp: async (endpoint) => {
         const devTapp = await invoke('add_dev_tapplet', { endpoint });

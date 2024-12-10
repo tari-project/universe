@@ -16,7 +16,7 @@ use crate::external_dependencies::{
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::interface::{
-    DevTappletResponse, InstalledTappletWithName, LaunchedTappResult, TappletPermissions,
+    ActiveTapplet, DevTappletResponse, InstalledTappletWithName, TappletPermissions,
 };
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
@@ -1630,7 +1630,7 @@ pub async fn launch_tapplet(
     shutdown_tokens: tauri::State<'_, ShutdownTokens>,
     db_connection: tauri::State<'_, DatabaseConnection>,
     app_handle: tauri::AppHandle,
-) -> Result<LaunchedTappResult, String> {
+) -> Result<ActiveTapplet, String> {
     let mut locked_tokens = shutdown_tokens.0.lock().await;
     let mut store = SqliteStore::new(db_connection.0.clone());
 
@@ -1638,9 +1638,10 @@ pub async fn launch_tapplet(
         .get_installed_tapplet_full_by_id(installed_tapplet_id)
         .map_err(|e| e.to_string())?;
     // get download path
+    let version = tapp_version.clone().version;
     let tapplet_path = get_tapp_download_path(
         registered_tapp.registry_id,
-        tapp_version.version.clone(),
+        version.clone(),
         app_handle.clone(),
     )
     .map_err(|e| e.to_string())?;
@@ -1690,8 +1691,11 @@ pub async fn launch_tapplet(
         None => {}
     }
 
-    Ok(LaunchedTappResult {
-        endpoint: format!("http://{}", addr),
+    Ok(ActiveTapplet {
+        tapplet_id: installed_tapplet_id,
+        display_name: registered_tapp.display_name,
+        source: format!("http://{}", addr),
+        version,
         permissions,
     })
 }
