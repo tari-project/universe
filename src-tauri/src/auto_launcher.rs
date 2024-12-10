@@ -138,15 +138,15 @@ impl AutoLauncher {
             info!(target: LOG_TARGET, "Enabling admin auto-launcher");
             self.create_task_scheduler_for_admin_startup(true)
                 .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e));
-        }
+                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+        };
 
         if !config_is_auto_launcher_enabled {
             info!(target: LOG_TARGET, "Disabling admin auto-launcher");
             self.create_task_scheduler_for_admin_startup(false)
                 .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e));
-        }
+                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+        };
 
         Ok(())
     }
