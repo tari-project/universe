@@ -20,16 +20,16 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::LazyLock, time::Duration};
+use std::sync::LazyLock;
 
 use anyhow::anyhow;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
 use log::{info, warn};
-use planif::{enums::TaskCreationFlags, schedule::TaskScheduler, schedule_builder::{Action, ScheduleBuilder}, settings::{Compatibility, LogonType, NetworkSettings, PrincipalSettings, RunLevel, Settings}};
+use planif::{enums::TaskCreationFlags, schedule::TaskScheduler, schedule_builder::{Action, ScheduleBuilder}, settings::{LogonType, PrincipalSettings, RunLevel, Settings}};
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
-use whoami::{username, username_os, realname, realname_os};
+use whoami::username;
 
 const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
