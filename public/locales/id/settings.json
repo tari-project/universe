@@ -6,6 +6,8 @@
   "applyInviteCode": "Terapkan Kode Undangan",
   "cancel": "Batal",
   "change-language": "Bahasa",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Rekan Terhubung",
@@ -87,6 +89,7 @@
     "description": "Explore the latest features before they go live and provide feedback",
     "title": "Use pre-release version"
   },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Hashrate jaringan Randomx",
   "refresh-versions": "Segarkan versi",
   "release-notes": {
