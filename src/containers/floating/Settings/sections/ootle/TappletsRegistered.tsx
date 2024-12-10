@@ -27,7 +27,7 @@ const Count = styled.div<{ $count: number }>`
 
 export default function TappletsRegistered() {
     const { t } = useTranslation('ootle');
-    const fetchTapplets = useTappletsStore((s) => s.fetchRegisteredTapps);
+    const fetchRegisteredTapplets = useTappletsStore((s) => s.fetchRegisteredTapps);
     const registeredTapplets = useTappletsStore((s) => s.registeredTapplets);
     const installRegisteredTapp = useTappletsStore((s) => s.installRegisteredTapp);
     const registeredTappletsCount = registeredTapplets?.length || 0;
@@ -58,7 +58,7 @@ export default function TappletsRegistered() {
     return (
         <TappletsGroupWrapper $category="Tapplets Registered">
             <SquaredButton
-                onClick={() => fetchTapplets()}
+                onClick={() => fetchRegisteredTapplets()}
                 color="tariPurple"
                 size="medium"
                 style={{ width: '25%', alignContent: 'center' }}

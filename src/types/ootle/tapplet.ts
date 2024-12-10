@@ -35,13 +35,18 @@ export interface InstalledTappletWithAssets {
 }
 
 export interface DevTapplet {
-    id: string; //TODO change to number
+    id: number;
     package_name: string;
     endpoint: string;
     display_name: string;
     about_summary: string;
     about_description: string;
 }
+
+export type DevTappletWithAssets = DevTapplet & {
+    about_summary: string;
+    about_description: string;
+};
 
 export interface TappletVersion {
     id: string;

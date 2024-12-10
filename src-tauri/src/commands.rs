@@ -1922,6 +1922,12 @@ pub async fn add_dev_tapplet(
     let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
     let manifest_res = reqwest::get(&manifest_endpoint)
         .await
+        .inspect_err(|e| {
+            error!(
+                "❌ Fetching tapplet manifest endpoint {:?} error: {:?}",
+                manifest_endpoint, e
+            )
+        })
         .map_err(|_| {
             RequestError(FetchManifestError {
                 endpoint: endpoint.clone(),
@@ -1940,9 +1946,16 @@ pub async fn add_dev_tapplet(
         package_name: &manifest_res.package_name,
         display_name: &manifest_res.display_name,
     };
-    let dev_tapplet = store.create(&new_dev_tapplet);
-    info!(target: LOG_TARGET,"✅ Dev tapplet added to db successfully: {:?}", new_dev_tapplet);
-    dev_tapplet
+    match store.create(&new_dev_tapplet) {
+        Ok(dev_tapplet) => {
+            info!(target: LOG_TARGET,"✅ Dev tapplet added to db successfully: {:?}", new_dev_tapplet);
+            Ok(dev_tapplet)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "❌ Error while adding dev tapplet (endpoint {:?}) to db: {:?}", endpoint, e);
+            return Err(e);
+        }
+    }
 }
 
 #[tauri::command]
@@ -1960,5 +1973,15 @@ pub fn delete_dev_tapplet(
 ) -> Result<usize, Error> {
     let mut store = SqliteStore::new(db_connection.0.clone());
     let dev_tapplet: DevTapplet = store.get_by_id(dev_tapplet_id)?;
-    store.delete(dev_tapplet)
+    // store.delete(dev_tapplet)
+    match store.delete(dev_tapplet) {
+        Ok(dev_tapplet) => {
+            info!(target: LOG_TARGET,"✅ Dev tapplet with id {:?} deleted from db successfully", dev_tapplet_id);
+            Ok(dev_tapplet)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "❌ Error while deleting dev tapplet id {:?} from db: {:?}", dev_tapplet_id, e);
+            return Err(e);
+        }
+    }
 }

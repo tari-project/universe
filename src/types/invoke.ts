@@ -97,8 +97,8 @@ declare module '@tauri-apps/api/tauri' {
      * Tati Ootle
      */
     function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithAssets[]>;
-    function invoke(param: 'read_dev_tapplets'): Promise<DevTapplet[]>;
     function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
+    function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: string }): Promise<InstalledTapplet>;
     function invoke(
         param: 'update_tapp',
         payload: { tappletId: string; installedTappletId: string }
@@ -107,7 +107,8 @@ declare module '@tauri-apps/api/tauri' {
     // function invoke(param: 'get_balances', payload: {}): Promise<AccountsGetBalancesResponse>;
     function invoke(param: 'get_assets_server_addr'): Promise<string>;
     function invoke(param: 'add_dev_tapplet', payload: { endpoint: string }): Promise<DevTapplet>;
-    function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: string }): Promise<InstalledTapplet>;
+    function invoke(param: 'read_dev_tapplets'): Promise<DevTapplet[]>;
+    function invoke(param: 'delete_dev_tapplet', payload: { devTappletId: number }): Promise<number>;
     function invoke(
         param: 'download_and_extract_tapp',
         payload: { tappletId: string }

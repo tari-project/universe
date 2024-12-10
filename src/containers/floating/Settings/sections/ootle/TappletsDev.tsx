@@ -14,9 +14,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input.tsx';
 import { Controller, useForm } from 'react-hook-form';
-import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
+import { IoCheckmarkOutline, IoCloseOutline, IoRemoveOutline } from 'react-icons/io5';
 
-const endpointRegex = /^(http:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
+const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
 
 const StyledStack = styled(Stack)`
     width: 100%;
@@ -53,11 +53,10 @@ export default function TappletsDev() {
 
     const devTapplets = useTappletsStore((s) => s.devTapplets);
     const addDevTapplet = useTappletsStore((s) => s.addDevTapp);
+    const deleteDevTapplet = useTappletsStore((s) => s.deleteDevTapp);
+    const fetchDevTappDb = useTappletsStore((s) => s.fetchDevTappDb);
     const devTappletsCount = devTapplets?.length || 0;
     console.log('fethch dev tapp', devTapplets);
-    const listMarkup = devTappletsCount
-        ? devTapplets.map((tapp, i) => <li key={`tapp-${tapp}:${i}`}>{tapp.display_name}</li>)
-        : null;
 
     // TODO can be used if fetching from db works
     // useEffect(() => {
@@ -107,6 +106,14 @@ export default function TappletsDev() {
 
     return (
         <TappletsGroupWrapper $category="Dev Tapplets">
+            <SquaredButton
+                onClick={() => fetchDevTappDb()}
+                color="tariPurple"
+                size="medium"
+                style={{ width: '25%', alignContent: 'center', marginBottom: '1%' }}
+            >
+                {t('refresh-list')}
+            </SquaredButton>
             <StyledForm onSubmit={handleSubmit(handleApply)} onReset={handleReset}>
                 <StyledStack direction="row" alignItems="center" gap={10}>
                     <Controller
@@ -151,7 +158,10 @@ export default function TappletsDev() {
                                 <ListItemAvatar>
                                     <Avatar src={tariLogo.toString()} />
                                 </ListItemAvatar>
-                                <ListItemText primary={item.display_name} />
+                                <ListItemText
+                                    primary={item.display_name}
+                                    secondary={`id: ${item.id} | endpoint: ${item.endpoint}`}
+                                />
                                 <IconButton aria-label="launch" style={{ marginRight: 10 }}>
                                     {/* <NavLink
                                         to={`/${TabKey.DEV_TAPPLETS}/${item.id}`}
@@ -165,7 +175,7 @@ export default function TappletsDev() {
                                     aria-label="delete"
                                     style={{ marginRight: 10 }}
                                     onClick={() => {
-                                        console.log('dupa');
+                                        deleteDevTapplet(item.id);
                                     }}
                                 >
                                     <MdDelete color="primary" />

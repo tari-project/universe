@@ -14,14 +14,17 @@ interface State {
     devTapplets: DevTapplet[];
     installedTapplets: InstalledTappletWithAssets[];
     registeredTapplets: RegisteredTappletWithAssets[];
-    activeTapplet?: DevTapplet | InstalledTappletWithAssets;
+    activeTappletId?: number;
 }
 
 interface Actions {
     installRegisteredTapp: (tappletId: string) => Promise<void>;
     fetchRegisteredTapps: () => Promise<void>;
-    setActiveTapp: (id?: string) => Promise<void>;
+    setActiveTapp: (id: number) => Promise<void>;
     addDevTapp: (endpoint: string) => Promise<void>;
+    deleteDevTapp: (devTappletId: number) => Promise<void>;
+    getActiveTapp: () => InstalledTappletWithAssets | undefined;
+    fetchDevTappDb: () => Promise<void>;
 }
 
 type TappletsStoreState = State & Actions;
@@ -32,10 +35,10 @@ const initialState: State = {
     installedTapplets: [],
     registeredTapplets: [],
     devTapplets: [],
-    activeTapplet: undefined,
+    activeTappletId: undefined,
 };
 
-export const useTappletsStore = create<TappletsStoreState>()((set) => ({
+export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     ...initialState,
     fetchRegisteredTapps: async () => {
         console.log('[STORE TAPP] fetch registered tapp');
@@ -88,26 +91,36 @@ export const useTappletsStore = create<TappletsStoreState>()((set) => ({
             appStateStore.setError(`'Error installing tapplet: ${error}`);
         }
     },
-    setActiveTapp: async (id) => {
-        console.log('[STORE] set active tapp id', id);
-        const tapp = id
-            ? {
-                  id,
-                  display_name: 'Active Dev Tapplet name',
-                  endpoint: '',
-                  about_description: '',
-                  about_summary: '',
-                  package_name: '',
-              }
-            : undefined;
-
-        set({ isFetching: false, isInitialized: true, activeTapplet: tapp });
+    setActiveTapp: async (installedTappletId) => {
+        console.log('[STORE] set active tapp id', installedTappletId);
+        set({ activeTappletId: installedTappletId });
+    },
+    getActiveTapp: () => {
+        const id = get().activeTappletId?.toString();
+        console.log('[STORE] get active tapp - id', id);
+        return get().installedTapplets.find((tapp) => tapp.installed_tapplet.id === id);
     },
     addDevTapp: async (endpoint) => {
         const devTapp = await invoke('add_dev_tapplet', { endpoint });
-        console.log('[STORE] dev tapp', devTapp);
-        set((state) => ({
-            devTapplets: [...state.devTapplets, devTapp],
-        }));
+        const devTapplets = await invoke('read_dev_tapplets');
+        console.log('[STORE] add dev tapp', devTapp);
+        console.log('[STORE] add dev tapplets', devTapplets);
+        // set((state) => ({
+        //     devTapplets: [...state.devTapplets, devTapp],
+        // }));
+        set({ devTapplets });
+    },
+    deleteDevTapp: async (devTappletId) => {
+        const removedTappSize = await invoke('delete_dev_tapplet', { devTappletId });
+        console.log('[STORE] delete dev tapp: id | db removedTappSize', devTappletId, removedTappSize);
+        set((state) => ({ devTapplets: state.devTapplets.filter((tapp) => tapp.id !== devTappletId) }));
+    },
+    fetchDevTappDb: async () => {
+        const devTapplets = await invoke('read_dev_tapplets');
+        console.log('[STORE] add dev tapplets', devTapplets);
+        // set((state) => ({
+        //     devTapplets: [...state.devTapplets, devTapp],
+        // }));
+        set({ devTapplets });
     },
 }));
