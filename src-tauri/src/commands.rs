@@ -44,6 +44,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::Serialize;
+use tauri_plugin_notification::NotificationExt;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -522,6 +523,26 @@ pub async fn get_p2pool_stats(
     *lock = Some(p2pool_stats.clone());
     state.is_getting_p2pool_stats.store(false, Ordering::SeqCst);
     Ok(p2pool_stats)
+}
+
+#[tauri::command]
+pub async fn trigger_notification(
+    summary: String,
+    body: String,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let notification = app.notification().builder()
+        .title(summary)
+        .body(body)
+        .icon("assets/icons/icon.png");
+
+    notification.show().map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "trigger_notification took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
 }
 
 #[tauri::command]

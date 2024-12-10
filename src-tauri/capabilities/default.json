@@ -16,6 +16,10 @@
         "shell:allow-open",
         "sentry:default",
         "process:allow-restart",
-        "process:default"
+        "process:default",
+        "notification:allow-show",
+        "notification:allow-request-permission",
+        "notification:allow-permission-state",
+        "notification:allow-notify"
     ]
 }

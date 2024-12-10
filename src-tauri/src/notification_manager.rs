@@ -3,6 +3,7 @@ use log::{info, warn};
 use notify_rust::Notification;
 use std::sync::LazyLock;
 
+
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
 
 const LOG_TARGET: &str = "tari::universe::notification_manager";
