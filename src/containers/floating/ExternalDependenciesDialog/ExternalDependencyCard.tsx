@@ -73,7 +73,6 @@ export const ExternalDependencyCard = ({
                 {status === ExternalDependencyStatus.NotInstalled && (
                     <Button
                         onClick={handleDownload}
-                        color="secondary"
                         size="small"
                         icon={isInInstallationSlot ? <SpinnerIcon /> : <IoArrowDownCircleOutline size={16} />}
                         iconPosition="start"
