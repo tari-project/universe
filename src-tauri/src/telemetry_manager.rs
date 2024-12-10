@@ -313,8 +313,8 @@ impl TelemetryManager {
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
                             let telemetry_data = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), p2pool_manager_cloned.clone(), config.clone(), network).await;
-                            let telemetry_api_url = in_memory_config_cloned.read().await.telemetry_api_url.clone();
-                            handle_telemetry_data(telemetry_data, telemetry_api_url, airdrop_access_token_validated, window.clone()).await;
+                            let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
+                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, window.clone()).await;
                         }
                         sleep(timeout);
                     }

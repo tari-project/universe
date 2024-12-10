@@ -109,6 +109,7 @@ mod process_watcher;
 mod progress_tracker;
 mod setup_status_event;
 mod telemetry_manager;
+mod telemetry_service;
 mod tests;
 mod tor_adapter;
 mod tor_manager;
