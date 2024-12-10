@@ -20,15 +20,16 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::sync::LazyLock;
+use std::{sync::LazyLock, time::Duration};
 
 use anyhow::anyhow;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
 use log::{info, warn};
-use planif::{enums::TaskCreationFlags, schedule::TaskScheduler, schedule_builder::{Action, ScheduleBuilder}, settings::Settings};
+use planif::{enums::TaskCreationFlags, schedule::TaskScheduler, schedule_builder::{Action, ScheduleBuilder}, settings::{Compatibility, LogonType, NetworkSettings, PrincipalSettings, RunLevel, Settings}};
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
+use whoami::{username, username_os, realname, realname_os};
 
 const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
@@ -128,33 +129,32 @@ impl AutoLauncher {
         &self,
         config_is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-                let is_auto_launcher_enabled = auto_launcher.is_enabled().unwrap_or(false);
 
-        if config_is_auto_launcher_enabled && !is_auto_launcher_enabled {
+        if config_is_auto_launcher_enabled {
             info!(target: LOG_TARGET, "Enabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(true).await?;
+            self.create_task_scheduler_for_admin_startup(true).await.map_err(
+                |e| anyhow!("Failed to create task scheduler for admin startup: {}", e),
+            );
 
         }
 
-        if !config_is_auto_launcher_enabled && is_auto_launcher_enabled {
+        if !config_is_auto_launcher_enabled {
             info!(target: LOG_TARGET, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false).await?;
+            self.create_task_scheduler_for_admin_startup(false).await.map_err(
+                |e| anyhow!("Failed to create task scheduler for admin startup: {}", e),
+            );
         }
 
         Ok(())
     }
 
-    pub async fn create_task_scheduler_for_admin_startup(&self, is_triggered: bool) -> Result<(), anyhow::Error> {
+    pub async fn create_task_scheduler_for_admin_startup(&self, is_triggered: bool) -> Result<(), Box<dyn std::error::Error>> {
         let task_scheduler = TaskScheduler::new()?;
-        let com_runtime = task_scheduler.get_com()?;
+        let com_runtime = task_scheduler.get_com();
         let schedule_builder = ScheduleBuilder::new(&com_runtime)?;
 
         let app_exe = current_exe()?;
         let app_exe = canonicalize(&app_exe)?;
-        let app_name = app_exe
-            .file_stem()
-            .and_then(|file| file.to_str())
-            .ok_or(anyhow!("Failed to get file stem"))?;
 
         let app_path = app_exe
             .as_os_str()
@@ -163,13 +163,32 @@ impl AutoLauncher {
             .to_string();
 
 
-        schedule_builder.create_boot()
+        schedule_builder.create_logon()
             .author("Tari Universe")?
             .trigger("startup_trigger", is_triggered)?
-            .action(Action::new("startup_action", &app_path, "", "-Verb RunAs"))?
+            .action(Action::new("startup_action", &app_path, "", ""))?
+            .principal(PrincipalSettings {
+                display_name: "Tari Universe".to_string(),
+                group_id: None,
+                user_id: Some(username()),
+                id: "Tari universe principal".to_string(),
+                logon_type: LogonType::InteractiveToken,
+                run_level: RunLevel::Highest,
+            })?
+            .settings(Settings {
+                stop_if_going_on_batteries: Some(false),
+                start_when_available: Some(true),
+                run_only_if_network_available: Some(false),
+                run_only_if_idle: Some(false),
+                enabled: Some(true),
+                disallow_start_if_on_batteries: Some(false),
+                ..Default::default()
+            })?
+            
             .build()?
             .register("Tari Universe startup",TaskCreationFlags::CreateOrUpdate as i32)?;
 
+            Ok(())
     }
 
     pub async fn initialize_auto_launcher(
@@ -220,6 +239,8 @@ impl AutoLauncher {
             match auto_launcher_ref {
                 Some(auto_launcher) => {
                     AutoLauncher::toggle_auto_launcher(auto_launcher, is_auto_launcher_enabled)?;
+                    #[cfg(target_os = "windows")]
+                    self.toggle_windows_admin_auto_launcher(is_auto_launcher_enabled).await?;
                 }
                 None => {
                     warn!(target: LOG_TARGET, "Could not get auto-launcher reference");
