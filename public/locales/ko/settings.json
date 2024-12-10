@@ -115,6 +115,7 @@
     "title": "시스템 부팅 시 자동 시작"
   },
   "should-use-system-language": "시스템 언어 사용",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "에어드롭",

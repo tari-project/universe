@@ -115,6 +115,7 @@
     "title": "系统启动时自动启动"
   },
   "should-use-system-language": "使用系统语言",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "空投",

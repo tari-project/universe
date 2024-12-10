@@ -46,7 +46,11 @@ export default function PreReleaseSettings() {
             </SettingsGroup>
 
             {isDialogOpen && (
-                <ConfirmationDialog description="pre-release-note" onConfirm={applyChange} onCancel={closeDialog} />
+                <ConfirmationDialog
+                    description={isPreRelease ? 'stable-version-note' : 'pre-release-note'}
+                    onConfirm={applyChange}
+                    onCancel={closeDialog}
+                />
             )}
         </SettingsGroupWrapper>
     );

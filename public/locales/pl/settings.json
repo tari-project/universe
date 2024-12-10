@@ -117,6 +117,7 @@
     "title": "Automatyczne uruchamianie przy starcie systemu"
   },
   "should-use-system-language": "Użyj języka systemowego",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
