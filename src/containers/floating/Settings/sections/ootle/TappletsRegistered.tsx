@@ -61,7 +61,7 @@ export default function TappletsRegistered() {
                 onClick={() => fetchRegisteredTapplets()}
                 color="tariPurple"
                 size="medium"
-                style={{ width: '25%', alignContent: 'center' }}
+                style={{ width: '25%', alignContent: 'center', marginBottom: 10 }}
             >
                 {t('refresh-list')}
             </SquaredButton>

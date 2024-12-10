@@ -20,7 +20,7 @@ export type RegisteredTappletWithAssets = RegisteredTapplet & {
 };
 
 export interface InstalledTapplet {
-    id: string;
+    id: number;
     tapplet_id: string;
     tapplet_version_id: string;
 }

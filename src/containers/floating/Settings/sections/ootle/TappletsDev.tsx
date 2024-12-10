@@ -51,10 +51,11 @@ export default function TappletsDev() {
     const { t } = useTranslation('ootle');
     const initialDevTappEndpoint = '';
 
+    const { setActiveTapp, addDevTapp, deleteDevTapp, fetchDevTappDb } = useTappletsStore();
     const devTapplets = useTappletsStore((s) => s.devTapplets);
-    const addDevTapplet = useTappletsStore((s) => s.addDevTapp);
-    const deleteDevTapplet = useTappletsStore((s) => s.deleteDevTapp);
-    const fetchDevTappDb = useTappletsStore((s) => s.fetchDevTappDb);
+    // const addDevTapplet = useTappletsStore((s) => s.addDevTapp);
+    // const deleteDevTapplet = useTappletsStore((s) => s.deleteDevTapp);
+    // const fetchDevTappDb = useTappletsStore((s) => s.fetchDevTappDb);
     const devTappletsCount = devTapplets?.length || 0;
     console.log('fethch dev tapp', devTapplets);
 
@@ -91,9 +92,9 @@ export default function TappletsDev() {
 
     const handleApply = useCallback(
         async (data: { endpoint: string }) => {
-            await addDevTapplet(data.endpoint);
+            await addDevTapp(data.endpoint);
         },
-        [addDevTapplet]
+        [addDevTapp]
     );
 
     const handleReset = useCallback(() => {
@@ -110,7 +111,7 @@ export default function TappletsDev() {
                 onClick={() => fetchDevTappDb()}
                 color="tariPurple"
                 size="medium"
-                style={{ width: '25%', alignContent: 'center', marginBottom: '1%' }}
+                style={{ width: '25%', alignContent: 'center', marginBottom: 10 }}
             >
                 {t('refresh-list')}
             </SquaredButton>
@@ -162,7 +163,11 @@ export default function TappletsDev() {
                                     primary={item.display_name}
                                     secondary={`id: ${item.id} | endpoint: ${item.endpoint}`}
                                 />
-                                <IconButton aria-label="launch" style={{ marginRight: 10 }}>
+                                <IconButton
+                                    aria-label="launch"
+                                    style={{ marginRight: 10 }}
+                                    onClick={() => setActiveTapp(item.id)}
+                                >
                                     {/* <NavLink
                                         to={`/${TabKey.DEV_TAPPLETS}/${item.id}`}
                                         state={item}
@@ -175,7 +180,7 @@ export default function TappletsDev() {
                                     aria-label="delete"
                                     style={{ marginRight: 10 }}
                                     onClick={() => {
-                                        deleteDevTapplet(item.id);
+                                        deleteDevTapp(item.id);
                                     }}
                                 >
                                     <MdDelete color="primary" />

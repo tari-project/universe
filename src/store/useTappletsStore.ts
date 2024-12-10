@@ -96,7 +96,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         set({ activeTappletId: installedTappletId });
     },
     getActiveTapp: () => {
-        const id = get().activeTappletId?.toString();
+        const id = get().activeTappletId;
         console.log('[STORE] get active tapp - id', id);
         return get().installedTapplets.find((tapp) => tapp.installed_tapplet.id === id);
     },
