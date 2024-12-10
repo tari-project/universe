@@ -128,7 +128,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
                 body,
             });
         } catch (error) {
-            Sentry.captureException(error);
             console.error('Error triggering notification', error);
         }
     },

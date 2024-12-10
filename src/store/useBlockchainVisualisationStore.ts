@@ -105,13 +105,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 
         console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
-        useAppStateStore
-            .getState()
-            .triggerNotification(
-                'Congratulations!',
-                `You won a block! We are sending you rewards of ${earnings} tXTM!`
-            );
-
         if (canAnimate) {
             useMiningStore.getState().setMiningControlsEnabled(false);
             const successTier = getSuccessTier(earnings);
