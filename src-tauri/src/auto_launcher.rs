@@ -124,6 +124,26 @@ impl AutoLauncher {
         Ok(())
     }
 
+    async fn toggle_windows_admin_auto_launcher(
+        &self,
+        config_is_auto_launcher_enabled: bool,
+    ) -> Result<(), anyhow::Error> {
+                let is_auto_launcher_enabled = auto_launcher.is_enabled().unwrap_or(false);
+
+        if config_is_auto_launcher_enabled && !is_auto_launcher_enabled {
+            info!(target: LOG_TARGET, "Enabling admin auto-launcher");
+            self.create_task_scheduler_for_admin_startup(true).await?;
+
+        }
+
+        if !config_is_auto_launcher_enabled && is_auto_launcher_enabled {
+            info!(target: LOG_TARGET, "Disabling admin auto-launcher");
+            self.create_task_scheduler_for_admin_startup(false).await?;
+        }
+
+        Ok(())
+    }
+
     pub async fn create_task_scheduler_for_admin_startup(&self, is_triggered: bool) -> Result<(), anyhow::Error> {
         let task_scheduler = TaskScheduler::new()?;
         let com_runtime = task_scheduler.get_com()?;
@@ -175,6 +195,8 @@ impl AutoLauncher {
         let auto_launcher = AutoLauncher::build_auto_launcher(app_name, &app_path)?;
 
         AutoLauncher::toggle_auto_launcher(&auto_launcher, is_auto_launcher_enabled)?;
+        #[cfg(target_os = "windows")]
+        self.toggle_windows_admin_auto_launcher(is_auto_launcher_enabled).await?;
 
         let _ = &self.auto_launcher.write().await.replace(auto_launcher);
 
