@@ -26,7 +26,12 @@ use anyhow::anyhow;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
 use log::{info, warn};
-use planif::{enums::TaskCreationFlags, schedule::TaskScheduler, schedule_builder::{Action, ScheduleBuilder}, settings::{LogonType, PrincipalSettings, RunLevel, Settings}};
+use planif::{
+    enums::TaskCreationFlags,
+    schedule::TaskScheduler,
+    schedule_builder::{Action, ScheduleBuilder},
+    settings::{LogonType, PrincipalSettings, RunLevel, Settings},
+};
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
 use whoami::username;
@@ -129,26 +134,27 @@ impl AutoLauncher {
         &self,
         config_is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-
         if config_is_auto_launcher_enabled {
             info!(target: LOG_TARGET, "Enabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(true).await.map_err(
-                |e| anyhow!("Failed to create task scheduler for admin startup: {}", e),
-            );
-
+            self.create_task_scheduler_for_admin_startup(true)
+                .await
+                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e));
         }
 
         if !config_is_auto_launcher_enabled {
             info!(target: LOG_TARGET, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false).await.map_err(
-                |e| anyhow!("Failed to create task scheduler for admin startup: {}", e),
-            );
+            self.create_task_scheduler_for_admin_startup(false)
+                .await
+                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e));
         }
 
         Ok(())
     }
 
-    pub async fn create_task_scheduler_for_admin_startup(&self, is_triggered: bool) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn create_task_scheduler_for_admin_startup(
+        &self,
+        is_triggered: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let task_scheduler = TaskScheduler::new()?;
         let com_runtime = task_scheduler.get_com();
         let schedule_builder = ScheduleBuilder::new(&com_runtime)?;
@@ -162,8 +168,8 @@ impl AutoLauncher {
             .ok_or(anyhow!("Failed to convert path to string"))?
             .to_string();
 
-
-        schedule_builder.create_logon()
+        schedule_builder
+            .create_logon()
             .author("Tari Universe")?
             .trigger("startup_trigger", is_triggered)?
             .action(Action::new("startup_action", &app_path, "", ""))?
@@ -184,11 +190,13 @@ impl AutoLauncher {
                 disallow_start_if_on_batteries: Some(false),
                 ..Default::default()
             })?
-            
             .build()?
-            .register("Tari Universe startup",TaskCreationFlags::CreateOrUpdate as i32)?;
+            .register(
+                "Tari Universe startup",
+                TaskCreationFlags::CreateOrUpdate as i32,
+            )?;
 
-            Ok(())
+        Ok(())
     }
 
     pub async fn initialize_auto_launcher(
@@ -215,7 +223,8 @@ impl AutoLauncher {
 
         AutoLauncher::toggle_auto_launcher(&auto_launcher, is_auto_launcher_enabled)?;
         #[cfg(target_os = "windows")]
-        self.toggle_windows_admin_auto_launcher(is_auto_launcher_enabled).await?;
+        self.toggle_windows_admin_auto_launcher(is_auto_launcher_enabled)
+            .await?;
 
         let _ = &self.auto_launcher.write().await.replace(auto_launcher);
 
@@ -240,7 +249,8 @@ impl AutoLauncher {
                 Some(auto_launcher) => {
                     AutoLauncher::toggle_auto_launcher(auto_launcher, is_auto_launcher_enabled)?;
                     #[cfg(target_os = "windows")]
-                    self.toggle_windows_admin_auto_launcher(is_auto_launcher_enabled).await?;
+                    self.toggle_windows_admin_auto_launcher(is_auto_launcher_enabled)
+                        .await?;
                 }
                 None => {
                     warn!(target: LOG_TARGET, "Could not get auto-launcher reference");
