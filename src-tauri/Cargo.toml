@@ -88,6 +88,9 @@ zip = "2.2.0"
 dirs = "5.0.1"
 tauri-plugin-process = "2"
 
+# temporary fix for openssl
+openssl = { version = "0.10", features = ["vendored"] }
+
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
 
