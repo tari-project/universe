@@ -1,11 +1,11 @@
-import { DevTapplet, InstalledTappletWithAssets, ActiveTapplet, TappletConfig } from '@app/types/ootle/tapplet';
+import { ActiveTapplet, TappletConfig } from '@app/types/ootle/tapplet';
 import { useEffect, useState } from 'react';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { Box, IconButton, Typography } from '@mui/material';
 import { Tapplet } from './Tapplet';
 import { MdClose } from 'react-icons/md';
 import { useTappletsStore } from '@app/store/useTappletsStore';
-import { SettingsGroupTitle } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
+import { HeaderContainer } from './styles';
 
 export default function ActiveDevTapplet() {
     const { setActiveTapp } = useTappletsStore();
@@ -71,12 +71,12 @@ export default function ActiveDevTapplet() {
 
     return (
         <>
-            <SettingsGroupTitle>
-                <Typography variant="h6">{tapplet?.display_name ?? 'Unknown tapplet name'}</Typography>
-                <IconButton aria-label="launch" style={{ marginRight: 10 }} onClick={() => setActiveTapp(undefined)}>
-                    <MdClose color="primary" />
+            <HeaderContainer>
+                <IconButton onClick={() => setActiveTapp(undefined)}>
+                    <MdClose size={18} />
                 </IconButton>
-            </SettingsGroupTitle>
+                <Typography variant="h6">{tapplet?.display_name ?? 'Unknown tapplet name'}</Typography>
+            </HeaderContainer>
             <Box height="100%" width="100%">
                 {tapplet && <Tapplet source={tapplet?.source} provider={tappProvider} />}
             </Box>

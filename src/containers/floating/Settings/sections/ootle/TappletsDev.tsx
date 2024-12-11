@@ -16,6 +16,7 @@ import { Input } from '@app/components/elements/inputs/Input.tsx';
 import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline, IoRemoveOutline } from 'react-icons/io5';
 import { invoke } from '@tauri-apps/api';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
 
@@ -52,8 +53,9 @@ export default function TappletsDev() {
     const { t } = useTranslation('ootle');
     const initialDevTappEndpoint = '';
 
-    const { setActiveTapp, addDevTapp, deleteDevTapp, fetchDevTappDb } = useTappletsStore();
-    const devTapplets = useTappletsStore((s) => s.devTapplets);
+    const { devTapplets, setActiveTapp, addDevTapp, deleteDevTapp, fetchDevTappDb } = useTappletsStore();
+    const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore();
+    // const devTapplets = useTappletsStore((s) => s.devTapplets);
     // const addDevTapplet = useTappletsStore((s) => s.addDevTapp);
     // const deleteDevTapplet = useTappletsStore((s) => s.deleteDevTapp);
     // const fetchDevTappDb = useTappletsStore((s) => s.fetchDevTappDb);
@@ -111,6 +113,7 @@ export default function TappletsDev() {
             // const tapplet = await invoke('launch_tapplet', { tappletId: id });
             console.log('SET ACTIVE TAP', id);
             setActiveTapp(id);
+            setIsSettingsOpen(!isSettingsOpen);
         } catch (e) {
             console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
         }

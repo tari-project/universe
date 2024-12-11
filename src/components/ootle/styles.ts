@@ -92,3 +92,16 @@ export const CloseButton = styled('button')`
         transform: scale(1.1);
     }
 `;
+
+export const HeaderContainer = styled.div`
+    width: 100%;
+    color: ${({ theme }) => theme.palette.text.primary};
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 5px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+`;
