@@ -6,6 +6,8 @@
   "applyInviteCode": "초대 코드 적용",
   "cancel": "취소",
   "change-language": "언어",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "연결된 피어",
@@ -46,6 +48,7 @@
     "title": "기기가 유휴 상태로 간주되는 시간"
   },
   "importing-wallet": "지갑 가져오기",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "초대 코드",
@@ -82,8 +85,17 @@
   },
   "pool-mining": "풀 채굴",
   "pool-mining-description": "활성화되면 풀에서 채굴하고 마이너 그룹에 참여합니다.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Randomx 네트워크 해시레이트",
   "refresh-versions": "버전 새로고침",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "문제 보고",
   "reset-permanently": "모든 설정을 영구적으로 초기화하시겠습니까?",
   "reset-settings": "설정 초기화",
@@ -103,6 +115,7 @@
     "title": "시스템 부팅 시 자동 시작"
   },
   "should-use-system-language": "시스템 언어 사용",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "에어드롭",
@@ -111,6 +124,7 @@
     "general": "일반",
     "mining": "채굴",
     "p2p": "풀 채굴",
+    "releaseNotes": "Release Notes",
     "very_experimental": "매우 실험적",
     "wallet": "지갑"
   },

@@ -6,6 +6,8 @@
   "applyInviteCode": "Zastosuj Kod Zaproszenia",
   "cancel": "Anuluj",
   "change-language": "Zmień język",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Połączone węzły",
@@ -47,6 +49,7 @@
     "title": "Czas po którym urządzenie jest uważane za bezczynne"
   },
   "importing-wallet": "Importowanie portfela",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Kod Zaproszenia",
@@ -84,8 +87,17 @@
   },
   "pool-mining": "Kopanie w puli",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Hashrate sieci Randomx",
   "refresh-versions": "Odśwież wersje",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Zgłoś problem",
   "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
   "reset-settings": "Resetuj ustawienia",
@@ -105,6 +117,7 @@
     "title": "Automatyczne uruchamianie przy starcie systemu"
   },
   "should-use-system-language": "Użyj języka systemowego",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
@@ -113,6 +126,7 @@
     "general": "Ogólne",
     "mining": "Wydobycie",
     "p2p": "Kopanie w puli",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Bardzo Eksperymentalne",
     "wallet": "Portfel"
   },
