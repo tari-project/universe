@@ -16,7 +16,6 @@ export function useSetUp() {
     const adminShow = useUIStore((s) => s.adminShow);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setCriticalError = useAppStateStore((s) => s.setCriticalError);
-    const isAfterAutoUpdate = useAppStateStore((s) => s.isAfterAutoUpdate);
     const setSettingUpFinished = useAppStateStore((s) => s.setSettingUpFinished);
 
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
@@ -50,14 +49,14 @@ export function useSetUp() {
 
     useEffect(() => {
         if (adminShow === 'setup') return;
-        const unlistenPromise = listen('message', ({ event: e, payload: p }: TauriEvent) => {
+        const unlistenPromise = listen('message', async ({ event: e, payload: p }: TauriEvent) => {
             switch (p.event_type) {
                 case 'setup_status':
                     if (p.progress > 0) {
                         setSetupDetails(p.title, p.title_params, p.progress);
                     }
                     if (p.progress >= 1) {
-                        handlePostSetup();
+                        await handlePostSetup();
                     }
                     break;
                 default:
@@ -65,7 +64,7 @@ export function useSetUp() {
                     break;
             }
         });
-        if (isAfterAutoUpdate && syncedAidropWithBackend && !isInitializingRef.current) {
+        if (syncedAidropWithBackend && !isInitializingRef.current) {
             isInitializingRef.current = true;
             clearStorage();
             invoke('setup_application').catch((e) => {
@@ -76,13 +75,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [
-        clearStorage,
-        handlePostSetup,
-        isAfterAutoUpdate,
-        setCriticalError,
-        setSetupDetails,
-        adminShow,
-        syncedAidropWithBackend,
-    ]);
+    }, [clearStorage, handlePostSetup, setCriticalError, setSetupDetails, adminShow, syncedAidropWithBackend]);
 }

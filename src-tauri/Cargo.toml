@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.8.9"
+version = "0.8.11"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -88,6 +88,9 @@ zip = "2.2.0"
 dirs = "5.0.1"
 tauri-plugin-process = "2"
 
+# temporary fix for openssl
+openssl = { version = "0.10", features = ["vendored"] }
+
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
 whoami = "1.5.2"
@@ -113,4 +116,10 @@ release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = ["libsqlite3-sys", "log4rs", "minotari_wallet_grpc_client", "xz2"]
+ignored = [
+  "libsqlite3-sys",
+  "log4rs",
+  "minotari_wallet_grpc_client",
+  "xz2",
+  "openssl",
+]
