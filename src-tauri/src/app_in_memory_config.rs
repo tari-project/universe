@@ -73,7 +73,7 @@ impl Default for AppInMemoryConfig {
             airdrop_api_url: "https://ut.tari.com".into(),
             airdrop_twitter_auth_url: "https://airdrop.tari.com/auth".into(),
             airdrop_access_token: None,
-            telemetry_api_url: "https://ut.tari.com".into(),
+            telemetry_api_url: "https://ut.tari.com/push".into(),
         }
     }
 }

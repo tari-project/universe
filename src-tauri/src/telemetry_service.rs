@@ -95,6 +95,31 @@ impl TelemetryService {
         });
         Ok(())
     }
+
+    pub async fn send(
+        &self,
+        event_name: String,
+        event_value: Value,
+    ) -> Result<(), TelemetryServiceError> {
+        let data = TelemetryData {
+            event_name,
+            event_value,
+        };
+        if let Some(tx) = &self.tx_channel {
+            if let Err(_) = tx.send(data).await {
+                warn!(target: LOG_TARGET,"TelemetryService::send_telemetry_data Telemetry data sending failed");
+                return Err(TelemetryServiceError::Other(anyhow::anyhow!(
+                    "Telemetry data sending failed"
+                )));
+            }
+            Ok(())
+        } else {
+            warn!(target: LOG_TARGET,"TelemetryService::send_telemetry_data Telemetry data sending failed - Service is not initialized");
+            Err(TelemetryServiceError::Other(anyhow::anyhow!(
+                "Telemetry data sending failed - Service is not initialized"
+            )))
+        }
+    }
 }
 
 async fn send_telemetry_data(
