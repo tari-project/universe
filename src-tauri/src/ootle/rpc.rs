@@ -13,12 +13,12 @@ use tari_wallet_daemon_client::types::{
 const JSON_CONNECT_ADDRESS: &str = "127.0.0.1:18010"; // TODO use db to get endpoint
 const LOG_TARGET: &str = "tari::dan::wallet_daemon";
 
-pub async fn permission_token() -> Result<(String, String), anyhow::Error> {
+pub async fn permission_token(grpc_port: Option<u16>) -> Result<(String, String), anyhow::Error> {
     let req_params = AuthLoginRequest {
         permissions: vec!["Admin".to_string()],
         duration: None,
     };
-    let req_res = make_request(None, "auth.request".to_string(), &req_params).await?;
+    let req_res = make_request(None, "auth.request".to_string(), &req_params, grpc_port).await?;
     let req_res: AuthLoginResponse = serde_json::from_value(req_res)?;
 
     let auth_token = req_res.auth_token;
@@ -27,7 +27,7 @@ pub async fn permission_token() -> Result<(String, String), anyhow::Error> {
         auth_token: auth_token.clone(),
         name: auth_token.clone(),
     };
-    let acc_res = make_request(None, "auth.accept".to_string(), &acc_params).await?;
+    let acc_res = make_request(None, "auth.accept".to_string(), &acc_params, grpc_port).await?;
     let acc_res: AuthLoginAcceptResponse = serde_json::from_value(acc_res)?;
 
     Ok((acc_res.permissions_token, auth_token))
@@ -86,13 +86,18 @@ pub async fn make_request<T: Serialize>(
     token: Option<String>,
     method: String,
     params: T,
+    grpc_port: Option<u16>,
 ) -> Result<serde_json::Value, anyhow::Error> {
-    let address = SocketAddr::from_str(JSON_CONNECT_ADDRESS).unwrap();
+    let json_connect_address = match grpc_port {
+        Some(port) => format!("127.0.0.1:{}", port),
+        None => JSON_CONNECT_ADDRESS.to_string(),
+    };
+    let address = SocketAddr::from_str(&json_connect_address).unwrap();
     let url = format!("http://{}", address);
     let method_name = method.clone();
     let client = reqwest::Client::new();
     let body = JsonRpcRequest {
-        id: 0,
+        id: axum_jrpc::Id::Num(0),
         method,
         params: serde_json::to_value(params)?,
     };

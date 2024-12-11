@@ -142,6 +142,11 @@ impl WalletManager {
         lock.is_pid_file_exists(base_path)
     }
 
+    pub async fn get_grpc_port(&self) -> u16 {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.adapter.grpc_port
+    }
+
     #[deprecated(
         note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
     )]

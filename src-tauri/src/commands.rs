@@ -42,7 +42,6 @@ use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
-use futures_util::TryFutureExt;
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;

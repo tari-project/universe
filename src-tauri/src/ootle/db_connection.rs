@@ -21,9 +21,9 @@ pub struct AssetServer {
 
 const LOG_TARGET: &str = "tari::universe::main";
 
-async fn try_get_tokens() -> (String, String) {
+pub async fn try_get_tokens(grpc_port: Option<u16>) -> (String, String) {
     loop {
-        match permission_token().await {
+        match permission_token(grpc_port).await {
             Ok(tokens) => {
                 info!(target: LOG_TARGET, "✅ Wallet Daemon permission token found");
                 return tokens;

@@ -18,8 +18,10 @@ async-trait = "0.1.81"
 async_zip = {version = "0.0.17", features = ["full"] }
 auto-launch = "0.5.0"
 axum = "0.7.9"
+axum-jrpc = "0.7.1"
 base64 = "0.22.1"
 blake2 = "0.10"
+tari_wallet_daemon_client = { git = "https://github.com/tari-project/tari-dan.git", branch = "development" }
 chrono = "0.4.38"
 device_query = "2.1.0"
 diesel = { version = "2.1.6", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }

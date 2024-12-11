@@ -7,7 +7,8 @@ use consts::TAPPLETS_ASSETS_DIR;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
-use ootle::db_connection::{AssetServer, DatabaseConnection};
+use ootle::db_connection::{try_get_tokens, AssetServer, DatabaseConnection};
+use ootle::error::Error;
 use ootle::tapplet_server::start;
 use std::fs::{remove_dir_all, remove_file};
 
@@ -444,23 +445,25 @@ async fn setup_inner(
         .update("setting-tari-ootle".to_string(), None, 0)
         .await;
     //TODO tokens
-    let tokens = app.state::<Tokens>();
-    let handle = tauri::async_runtime::spawn(try_get_tokens());
-    let (permission_token, auth_token) = tauri::async_runtime::block_on(handle)?;
-    tokens
-        .permission
-        .lock()
-        .map_err(|_| error::Error::FailedToObtainPermissionTokenLock)?
-        .replace_range(.., &permission_token);
-    tokens
-        .auth
-        .lock()
-        .map_err(|_| error::Error::FailedToObtainAuthTokenLock)?
-        .replace_range(.., &auth_token);
     app.manage(Tokens {
         permission: std::sync::Mutex::new("".to_string()),
         auth: std::sync::Mutex::new("".to_string()),
     });
+    let tokens = app.state::<Tokens>();
+    let grpc_port = state.wallet_manager.get_grpc_port().await;
+    info!(target: LOG_TARGET, "Wallet manager grpc port: {:?}", grpc_port);
+    let handle = tauri::async_runtime::spawn(try_get_tokens(Some(grpc_port)));
+    let (permission_token, auth_token) = tauri::async_runtime::block_on(handle)?;
+    tokens
+        .permission
+        .lock()
+        .map_err(|_| Error::FailedToObtainPermissionTokenLock)?
+        .replace_range(.., &permission_token);
+    tokens
+        .auth
+        .lock()
+        .map_err(|_| Error::FailedToObtainAuthTokenLock)?
+        .replace_range(.., &auth_token);
 
     let tapplet_assets_path = app_path.join(TAPPLETS_ASSETS_DIR);
     // let _handle_setup_log = tauri::async_runtime::spawn(async move { setup_log(log_tapp_dir).await });
