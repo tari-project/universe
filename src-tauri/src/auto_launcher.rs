@@ -33,10 +33,10 @@ use planif::{
     schedule_builder::{Action, ScheduleBuilder},
     settings::{LogonType, PrincipalSettings, RunLevel, Settings},
 };
-#[cfg(target_os = "windows")]
-use whoami::username;
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
+#[cfg(target_os = "windows")]
+use whoami::username;
 
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
 
