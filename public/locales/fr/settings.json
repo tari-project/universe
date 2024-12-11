@@ -6,6 +6,8 @@
   "applyInviteCode": "Appliquer le code d\"invitation",
   "cancel": "Cancel",
   "change-language": "Langue",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Pairs connectés",
@@ -46,6 +48,7 @@
     "title": "Temps après lequel la machine est considérée comme inactive"
   },
   "importing-wallet": "Importation du portefeuille",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Entrez 24 mots séparés par des espaces",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Code d\"invitation",
@@ -82,8 +85,17 @@
   },
   "pool-mining": "Minage en pool",
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Taux de hachage du réseau Randomx",
   "refresh-versions": "Rafraîchir les versions",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Signaler un problème",
   "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
   "reset-settings": "Réinitialiser les paramètres",
@@ -103,6 +115,7 @@
     "title": "Démarrage automatique au démarrage du système"
   },
   "should-use-system-language": "Utiliser la langue du système",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
@@ -111,6 +124,7 @@
     "general": "Général",
     "mining": "Minage",
     "p2p": "Minage en pool",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Très Expérimental",
     "wallet": "Portefeuille"
   },

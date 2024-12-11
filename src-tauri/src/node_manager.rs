@@ -287,7 +287,7 @@ impl NodeManager {
                 .any(|local_block| block_scan_block.1 == local_block.1)
             {
                 if report_to_sentry {
-                    let error_msg = format!("Orphan chain detected",);
+                    let error_msg = "Orphan chain detected".to_string();
                     let extra = vec![
                         (
                             "block_scan_block_height".to_string(),

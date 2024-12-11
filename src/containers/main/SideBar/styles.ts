@@ -38,7 +38,7 @@ export const SidebarTop = styled('div')`
     display: flex;
     flex-direction: column;
     padding: 0 10px 10px 10px;
-    gap: 20px;
+    gap: 10px;
 
     @media (max-height: 670px) {
         gap: 5px;
@@ -50,4 +50,7 @@ export const Bottom = styled(m.div)`
     flex-direction: column;
     gap: 12px;
     padding-bottom: 188px; // to cater for wallet card
+    @media (max-height: 670px) {
+        padding-bottom: 150px;
+    }
 `;
