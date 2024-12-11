@@ -26,15 +26,17 @@ use anyhow::anyhow;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
 use log::{info, warn};
+#[cfg(target_os = "windows")]
 use planif::{
     enums::TaskCreationFlags,
     schedule::TaskScheduler,
     schedule_builder::{Action, ScheduleBuilder},
     settings::{LogonType, PrincipalSettings, RunLevel, Settings},
 };
+#[cfg(target_os = "windows")]
+use whoami::username;
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
-use whoami::username;
 
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
 
@@ -103,6 +105,7 @@ impl AutoLauncher {
                 CurrentOperatingSystem::Windows => {
                     auto_launcher.enable()?;
                     // To startup application as admin on windows, we need to create a task scheduler
+                    #[cfg(target_os = "windows")]
                     self.toggle_windows_admin_auto_launcher(is_auto_launcher_enabled)
                         .await?;
                 }
@@ -117,6 +120,7 @@ impl AutoLauncher {
             info!(target: LOG_TARGET, "Disabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
+                    #[cfg(target_os = "windows")]
                     self.toggle_windows_admin_auto_launcher(is_auto_launcher_enabled)
                         .await?;
                     auto_launcher.disable()?;
@@ -130,6 +134,7 @@ impl AutoLauncher {
         Ok(())
     }
 
+    #[cfg(target_os = "windows")]
     async fn toggle_windows_admin_auto_launcher(
         &self,
         config_is_auto_launcher_enabled: bool,
@@ -151,6 +156,7 @@ impl AutoLauncher {
         Ok(())
     }
 
+    #[cfg(target_os = "windows")]
     pub async fn create_task_scheduler_for_admin_startup(
         &self,
         is_triggered: bool,
