@@ -20,6 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use anyhow::anyhow;
+use base64::prelude::*;
+use ring::signature::Ed25519KeyPair;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "airdrop-env")]
@@ -70,6 +73,22 @@ impl Default for AppInMemoryConfig {
             airdrop_twitter_auth_url: "https://airdrop.tari.com/auth".into(),
             airdrop_access_token: None,
         }
+    }
+}
+
+const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = match option_env!("AIRDROP_WEBSOCKET_CRYPTO_KEY") {
+    Some(value) => value,
+    None => "4d43344341514177425159444b325677424349454943443235436e576b454f5a796833346a5479566c36484f4e396d4e31594248354374536f2f6439414f3145",
+};
+
+pub fn get_websocket_key() -> anyhow::Result<Ed25519KeyPair> {
+    let decoded_str = hex::decode(AIRDROP_WEBSOCKET_CRYPTO_KEY)?;
+    let utf8_str = String::from_utf8(decoded_str)?;
+    let key_bytes = BASE64_STANDARD.decode(utf8_str)?;
+
+    match Ed25519KeyPair::from_pkcs8_maybe_unchecked(&key_bytes) {
+        Ok(key) => Ok(key),
+        Err(e) => Err(anyhow!(e.to_string())),
     }
 }
 
