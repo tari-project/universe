@@ -15,28 +15,53 @@ import { useTranslation } from 'react-i18next';
 import { TappletsOverview } from './TappletsOverview';
 
 export const OotleSettings = () => {
-    const { t } = useTranslation('settings');
+    const { t } = useTranslation(['settings', 'ootle']);
     const ootleMode = useAppConfigStore((s) => s.ootle_enabled);
+    const localIndexer = useAppConfigStore((s) => s.local_tari_indexer);
 
     const setOotleMode = useAppConfigStore((s) => s.setOotleMode);
-
-    const handleSwitch = useCallback(() => {
+    const setLocalTariIndexer = useAppConfigStore((s) => s.setLocalTariIndexer);
+    console.log('oo ind', ootleMode, localIndexer);
+    const handleOotleSwitch = useCallback(() => {
+        console.log('ELOSZKI');
         setOotleMode(!ootleMode);
     }, [setOotleMode, ootleMode]);
 
+    const handleIndexerSwitch = useCallback(() => {
+        console.log('DUUUUPA');
+        setLocalTariIndexer(!localIndexer);
+    }, [setLocalTariIndexer, localIndexer]);
+
     return (
-        <SettingsGroupWrapper>
-            <SettingsGroup>
-                <SettingsGroupContent>
-                    <SettingsGroupTitle>
-                        <Typography variant="h6">{t('tabs.ootle')}</Typography>
-                    </SettingsGroupTitle>
-                </SettingsGroupContent>
-                <SettingsGroupAction style={{ alignItems: 'center' }}>
-                    <ToggleSwitch checked={ootleMode} onChange={handleSwitch} />
-                </SettingsGroupAction>
-            </SettingsGroup>
-            <TappletsOverview />
-        </SettingsGroupWrapper>
+        <>
+            {' '}
+            <SettingsGroupWrapper>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <SettingsGroupTitle>
+                            <Typography variant="h6">{t('tabs.ootle', { ns: 'settings' })}</Typography>
+                        </SettingsGroupTitle>
+                        <Typography>{t('Enable or disable the Tari Ootle')}</Typography>
+                    </SettingsGroupContent>
+                    <SettingsGroupAction style={{ alignItems: 'center' }}>
+                        <ToggleSwitch checked={ootleMode} onChange={handleOotleSwitch} />
+                    </SettingsGroupAction>
+                </SettingsGroup>
+            </SettingsGroupWrapper>
+            <SettingsGroupWrapper>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <SettingsGroupTitle>
+                            <Typography variant="h6">{t('local-tari-indexer', { ns: 'ootle' })}</Typography>
+                        </SettingsGroupTitle>
+                        <Typography>{t('Run Tari Indexer locally')}</Typography>
+                    </SettingsGroupContent>
+                    <SettingsGroupAction style={{ alignItems: 'center' }}>
+                        <ToggleSwitch checked={localIndexer} onChange={handleIndexerSwitch} />
+                    </SettingsGroupAction>
+                </SettingsGroup>
+                <TappletsOverview />
+            </SettingsGroupWrapper>
+        </>
     );
 };

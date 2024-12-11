@@ -8,6 +8,7 @@
   "get-balances": "Get balances",
   "get-free-coins": " Get free coins",
   "installed-tapplets": "Installed Tapplets",
+  "local-tari-indexer": "Local Tari Indexer",
   "method-name": "Method name: {{ methodName }}",
   "no-balance-update": "No balance updates available.",
   "refresh-list": "Refresh list",

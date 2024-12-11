@@ -78,7 +78,7 @@ export default function ActiveDevTapplet() {
                 </IconButton>
             </SettingsGroupTitle>
             <Box height="100%" width="100%">
-                {tapplet && tappProvider && <Tapplet source={tapplet?.source} provider={tappProvider} />}
+                {tapplet && <Tapplet source={tapplet?.source} provider={tappProvider} />}
             </Box>
         </>
     );

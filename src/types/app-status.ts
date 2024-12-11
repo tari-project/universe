@@ -47,6 +47,7 @@ export interface AppConfig {
     monero_address_is_generated?: boolean;
     created_at: string;
     ootle_enabled: boolean;
+    local_tari_indexer: boolean;
 }
 
 export enum ExternalDependencyStatus {

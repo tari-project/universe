@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 
 interface TappletProps {
     source: string;
-    provider: TappletProvider;
+    provider?: TappletProvider;
 }
 
 export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {

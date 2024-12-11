@@ -8,6 +8,7 @@
   "get-balances": "",
   "get-free-coins": "",
   "installed-tapplets": "",
+  "local-tari-indexer": "Local Tari Indexer",
   "method-name": "",
   "no-balance-update": "",
   "refresh-list": "Refresh list",
