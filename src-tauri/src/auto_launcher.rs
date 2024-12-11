@@ -121,9 +121,10 @@ impl AutoLauncher {
                         .await?;
                     auto_launcher.disable()?;
                 }
-                _ => {}
+                _ => {
+                    auto_launcher.disable()?;
+                }
             }
-            auto_launcher.disable()?;
         }
 
         Ok(())
