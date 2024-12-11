@@ -58,6 +58,14 @@ sha2 = "0.10.8"
 sys-locale = "0.3.1"
 sysinfo = "0.31.2"
 tar = "0.4.26"
+
+hickory-client = { version = "=0.25.0-alpha.2", features = [
+  "dns-over-rustls",
+  "dnssec-openssl",
+] }
+hickory-proto = { version = "=0.25.0-alpha.2" }
+openssl = { version = "0.10" }
+
 tari_common = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_common_types = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_core = { git = "https://github.com/tari-project/tari.git", branch = "development", features = [
@@ -111,4 +119,12 @@ release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = ["libsqlite3-sys", "log4rs", "minotari_wallet_grpc_client", "xz2"]
+ignored = [
+  "hickory-client",
+  "hickory-proto",
+  "openssl",
+  "libsqlite3-sys",
+  "log4rs",
+  "minotari_wallet_grpc_client",
+  "xz2",
+]
