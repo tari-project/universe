@@ -51,10 +51,12 @@ use sentry::integrations::anyhow::capture_anyhow;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_utilities::message_format::MessageFormat;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tokio_util::sync::CancellationToken;
 
@@ -1986,6 +1988,49 @@ pub fn delete_dev_tapplet(
         Err(e) => {
             warn!(target: LOG_TARGET, "❌ Error while deleting dev tapplet id {:?} from db: {:?}", dev_tapplet_id, e);
             return Err(e);
+        }
+    }
+}
+
+pub struct Tokens {
+    pub auth: Mutex<String>,
+    pub permission: Mutex<String>,
+}
+#[tauri::command]
+pub async fn call_wallet(
+    method: String,
+    params: String,
+    tokens: tauri::State<'_, Tokens>,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<WalletBalance, String> {
+    // let permission_token = tokens
+    //     .permission
+    //     .lock()
+    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
+    //     .map_err(|_| FailedToObtainPermissionTokenLock)?
+    //     .clone();
+    // let req_params: serde_json::Value = serde_json::from_str(&params)
+    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
+    //     .map_err(|e| JsonParsingError(e))?;
+
+    // match make_request(Some(permission_token), method, req_params).await {
+    //     Ok(res) => Ok(res),
+    //     Err(e) => {
+    //         error!(target: LOG_TARGET,"❌ Error at call_wallet: {:?}", e);
+    //         return Err(Error::RequestFailed {
+    //             message: e.to_string(),
+    //         });
+    //     }
+    // }
+    info!(target: LOG_TARGET,"🚨🚨🚨 method {:?}", method);
+    match state.wallet_manager.get_balance().await {
+        Ok(w) => {
+            info!(target: LOG_TARGET,"🚨 balance {:?}", w.available_balance.to_json());
+            Ok(w)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
+            return Err(e.to_string());
         }
     }
 }

@@ -48,6 +48,7 @@ export default function ActiveDevTapplet() {
                         optionalPermissions: [],
                     },
                 };
+                console.log('[active dev tapp] ->', config, tappProvider, tapplet);
                 if (config) {
                     if (!tappProvider && tapplet) {
                         // TODO set error
@@ -67,7 +68,7 @@ export default function ActiveDevTapplet() {
         if (tapplet) {
             fetchTappletConfig();
         }
-    }, []);
+    }, [setTappProvider, tappProvider, tapplet]);
 
     return (
         <>

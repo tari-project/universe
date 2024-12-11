@@ -1,3 +1,4 @@
+import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { TappletProvider } from '@app/types/ootle/TappletProvider';
 import { useEffect, useRef } from 'react';
 
@@ -8,6 +9,7 @@ interface TappletProps {
 
 export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
+    const runTransaction = useTappletProviderStore((s) => s.runTransaction);
 
     function sendWindowSize() {
         if (tappletRef.current) {
@@ -31,9 +33,14 @@ export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {
                 provider?.sendWindowSizeMessage(tappletWindow, source);
             }
         } else if (event.data.type === 'provider-call') {
-            // dispatch(transactionActions.initializeRequest({ provider, event }));
+            console.log('eeeeeloszki! tapplet method', event.data);
+            fetchTappletConfig(event);
         }
     }
+
+    const fetchTappletConfig = async (event: MessageEvent) => {
+        await runTransaction(event);
+    };
 
     useEffect(() => {
         window.addEventListener('resize', sendWindowSize);

@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use commands::Tokens;
 use consts::TAPPLETS_ASSETS_DIR;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
@@ -436,12 +437,34 @@ async fn setup_inner(
     app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
         database::establish_connection(db_path.to_str().unwrap()),
     ))));
+
+    progress.set_max(95).await;
+    //TODO add translation for db
+    progress
+        .update("setting-tari-ootle".to_string(), None, 0)
+        .await;
+    //TODO tokens
+    let tokens = app.state::<Tokens>();
+    let handle = tauri::async_runtime::spawn(try_get_tokens());
+    let (permission_token, auth_token) = tauri::async_runtime::block_on(handle)?;
+    tokens
+        .permission
+        .lock()
+        .map_err(|_| error::Error::FailedToObtainPermissionTokenLock)?
+        .replace_range(.., &permission_token);
+    tokens
+        .auth
+        .lock()
+        .map_err(|_| error::Error::FailedToObtainAuthTokenLock)?
+        .replace_range(.., &auth_token);
+    app.manage(Tokens {
+        permission: std::sync::Mutex::new("".to_string()),
+        auth: std::sync::Mutex::new("".to_string()),
+    });
+
     let tapplet_assets_path = app_path.join(TAPPLETS_ASSETS_DIR);
     // let _handle_setup_log = tauri::async_runtime::spawn(async move { setup_log(log_tapp_dir).await });
     let handle_start = tauri::async_runtime::spawn(async move { start(tapplet_assets_path).await });
-    // let (addr, cancel_token) = tauri::async_runtime::block_on(handle_start)?.unwrap_or_else(
-    //     |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e),
-    // );
     let (addr, cancel_token) = match handle_start.await {
         Ok(result) => result
             .inspect_err(|e| error!(target: LOG_TARGET, "Error handling tapplet start: {:?}", e))?,
@@ -451,6 +474,7 @@ async fn setup_inner(
         }
     };
     app.manage(AssetServer { addr, cancel_token });
+
     info!(target: LOG_TARGET, "🚀 Tari Universe setup completed successfully");
 
     progress.set_max(100).await;
@@ -870,7 +894,8 @@ fn main() {
             commands::delete_installed_tapp,
             commands::add_dev_tapplet,
             commands::read_dev_tapplets,
-            commands::delete_dev_tapplet
+            commands::delete_dev_tapplet,
+            commands::call_wallet
         ])
         .build(tauri::generate_context!())
         .inspect_err(
