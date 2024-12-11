@@ -34,6 +34,7 @@
         "createUpdaterArtifacts": true
     },
     "app": {
+        "useHttpsScheme": true,
         "security": {
             "capabilities": ["desktop-capability", "default", "migrated"],
             "csp": null
