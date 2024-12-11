@@ -23,6 +23,11 @@ interface AskForUpdatePayload {
     version: string;
 }
 
+interface CouldNotUpdatePayload {
+    event_type: 'could_not_update';
+    error: string;
+}
+
 export default function AutoUpdateDialog() {
     const { t } = useTranslation('setup-view', { useSuspense: false });
     const open = useUIStore((s) => s.dialogToShow === 'autoUpdate');
@@ -30,6 +35,7 @@ export default function AutoUpdateDialog() {
     const [version, setVersion] = useState('');
     const [downloaded, setDownloaded] = useState(0);
     const [contentLength, setContentLength] = useState(0);
+    const [couldNotUpdate, setCouldNotUpdate] = useState(false);
 
     const isDownloading = downloaded > 0;
     const isDownloaded = isDownloading && downloaded === contentLength;
@@ -38,7 +44,7 @@ export default function AutoUpdateDialog() {
     useEffect(() => {
         const unlistenPromise = listen(
             'updates_event',
-            ({ payload }: { payload: AskForUpdatePayload | DownloadProgressPayload }) => {
+            ({ payload }: { payload: AskForUpdatePayload | DownloadProgressPayload | CouldNotUpdatePayload }) => {
                 switch (payload.event_type) {
                     case 'ask_for_update':
                         setDialogToShow('autoUpdate');
@@ -51,6 +57,10 @@ export default function AutoUpdateDialog() {
                         }
                         setDownloaded(payload.downloaded);
                         setContentLength(payload.total);
+                        break;
+                    case 'could_not_update':
+                        setDialogToShow('autoUpdate');
+                        setCouldNotUpdate(true);
                         break;
                     default:
                         console.warn('Unknown tauri event: ', payload);
@@ -78,10 +88,11 @@ export default function AutoUpdateDialog() {
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t(subtitle, { version })}</Typography>
+                {couldNotUpdate && <Typography variant="p">{t('could-not-auto-update')}</Typography>}
                 {isDownloading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
                 {isDownloaded && <Typography variant="p">{`Update downloaded: Restarting Tari Universe`}</Typography>}
                 <ButtonsWrapper>
-                    {!isDownloading && (
+                    {!isDownloading && !couldNotUpdate && (
                         <>
                             <SquaredButton onClick={handleClose} color="warning">
                                 {t('no')}
@@ -90,6 +101,11 @@ export default function AutoUpdateDialog() {
                                 {t('yes')}
                             </SquaredButton>
                         </>
+                    )}
+                    {isDownloaded && (
+                        <SquaredButton onClick={handleClose} color="green">
+                            {t('close')}
+                        </SquaredButton>
                     )}
                 </ButtonsWrapper>
             </DialogContent>
