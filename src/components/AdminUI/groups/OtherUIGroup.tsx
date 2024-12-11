@@ -20,6 +20,7 @@ export function OtherUIGroup() {
                 </Button>
                 <Button onClick={() => setShowMainModal(!showMainModal)} $isActive={showMainModal}>
                     SoS Main Modal
+                </Button>
                 <Button
                     onClick={() => setAdminShow(adminShow === 'orphanChainWarning' ? null : 'orphanChainWarning')}
                     $isActive={adminShow === 'orphanChainWarning'}

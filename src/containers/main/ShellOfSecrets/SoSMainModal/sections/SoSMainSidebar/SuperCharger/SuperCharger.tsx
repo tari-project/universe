@@ -4,10 +4,12 @@ import KeyIcon from './icons/KeyIcon';
 import { Wrapper, TopBar, LineLeft, SectionLabel, LineRight, FormWrapper, InputField, SubmitButton } from './styles';
 import { useAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest';
 import { SosCoomieClaimResponse } from '@app/types/sosTypes';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 
 export default function SuperCharger() {
     const { t } = useTranslation('sos', { useSuspense: false });
     const fetchHandler = useAirdropRequest();
+    const { addToast } = useToastStore();
     const [code, setCode] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,6 +26,20 @@ export default function SuperCharger() {
             body: {
                 cookieCode: code,
             },
+        }).then((response) => {
+            setCode('');
+            // TODO add some feedback
+            if (response?.success) {
+                addToast({
+                    title: t('superCharger.success'),
+                    type: 'success',
+                });
+            } else {
+                addToast({
+                    title: t('superCharger.error'),
+                    type: 'error',
+                });
+            }
         });
         // TODO: handle loading and response states
     };

@@ -17,6 +17,7 @@
   "superCharger": {
     "title": "Super Charger",
     "placeholder": "Enter Your Code",
+    "success": "Cookies claimed!",
     "submit": "Go"
   },
   "mainTimer": {
