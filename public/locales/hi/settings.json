@@ -6,6 +6,8 @@
   "applyInviteCode": "आमंत्रण कोड लागू करें",
   "cancel": "रद्द करें",
   "change-language": "भाषा",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "जुड़े हुए सहकर्मी",
@@ -83,6 +85,11 @@
   },
   "pool-mining": "पूल माइनिंग",
   "pool-mining-description": "सक्षम होने पर, आप एक पूल में माइन करेंगे और माइनर्स के समूह में शामिल होंगे।",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Randomx नेटवर्क हैशरेट",
   "refresh-versions": "संस्करण ताज़ा करें",
   "release-notes": {
@@ -108,6 +115,7 @@
     "title": "सिस्टम बूट पर स्वचालित शुरूआत"
   },
   "should-use-system-language": "सिस्टम भाषा का उपयोग करें",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "एयरड्रॉप",

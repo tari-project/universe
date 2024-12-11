@@ -49,6 +49,7 @@ export interface AppConfig {
     keyring_fallback: boolean;
     keyring_accessed: boolean;
     p2pool_stats_server_port: number | null;
+    pre_release: boolean;
 }
 
 export enum ExternalDependencyStatus {
