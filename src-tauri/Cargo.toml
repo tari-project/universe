@@ -90,9 +90,7 @@ tauri-plugin-process = "2"
 
 # temporary fix for openssl
 openssl = { version = "0.10", features = ["vendored"] }
-sys-info = "0.9.1"
 psp = { git = "https://github.com/pewsheen/psp.git", version = "0.1.0" }
-tao = "0.31.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
