@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
 export default function MainTimer() {
     const { t } = useTranslation('sos', { useSuspense: false });
 
-    const { getTimeRemaining, totalBonusTimeMs } = useShellOfSecretsStore();
+    const { getTimeRemaining } = useShellOfSecretsStore();
     const [reminingTime, setRemainingTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
     useEffect(() => {
