@@ -27,8 +27,6 @@ export const useAirdropUserPointsListener = () => {
 
     useEffect(() => {
         const ul = listen('UserPoints', ({ payload }) => {
-            console.debug(payload);
-
             if (payload) {
                 handleAirdropPoints(payload as UserPoints);
             }
