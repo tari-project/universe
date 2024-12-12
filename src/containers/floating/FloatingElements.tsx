@@ -11,6 +11,7 @@ import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
 import { ToastStack } from '@app/components/ToastStack/ToastStack.tsx';
 import { CriticalProblemDialog } from './CriticalProblemDialog/CriticalProblemDialog.tsx';
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
+import { KeyringAccessDialog } from './KeyringAccess/KeyringAccessDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -20,6 +21,7 @@ export default function FloatingElements() {
             <SettingsModal />
             <StagedSecurity />
             <AutoUpdateDialog />
+            <KeyringAccessDialog />
             <CriticalErrorDialog />
             <ExternalDependenciesDialog />
             <PaperWalletModal />

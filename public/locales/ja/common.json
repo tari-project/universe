@@ -7,6 +7,7 @@
   "critical-error": "重大なエラー",
   "day": "日",
   "disconnect": "切断",
+  "dismiss": "Dismiss",
   "hashrate": "ハッシュレート",
   "installation-problem": "Installation problem",
   "max-temperature": "最大温度",
@@ -28,5 +29,6 @@
   "utilization": "利用率",
   "version": "バージョン",
   "versions": "バージョン",
-  "webgl-not-supported": "WebGLがサポートされていません。ビジュアルモードが無効になりました。"
+  "webgl-not-supported": "WebGLがサポートされていません。ビジュアルモードが無効になりました。",
+  "yes": "Yes"
 }

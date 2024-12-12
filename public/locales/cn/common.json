@@ -7,6 +7,7 @@
   "critical-error": "严重错误",
   "day": "天",
   "disconnect": "断开连接",
+  "dismiss": "Dismiss",
   "hashrate": "哈希率",
   "installation-problem": "Installation problem",
   "max-temperature": "最高温度",
@@ -28,5 +29,6 @@
   "utilization": "利用率",
   "version": "版本",
   "versions": "版本",
-  "webgl-not-supported": "不支持 WebGL。已禁用视觉模式。"
+  "webgl-not-supported": "不支持 WebGL。已禁用视觉模式。",
+  "yes": "Yes"
 }
