@@ -56,13 +56,6 @@ impl SystemStatus {
     }
 
     async fn recive_power_event(&self) -> Result<(), Error> {
-        let capacity = self.power_monitor.event_receiver().capacity();
-        info!(target: LOG_TARGET, "Capacity: {:?}", capacity);
-        let is_empty = self.power_monitor.event_receiver().is_empty();
-        info!(target: LOG_TARGET, "Is empty: {:?}", is_empty);
-        // let event = self.power_monitor.event_receiver().try_recv().map_err(|e| anyhow!(e))?;
-        // info!(target: LOG_TARGET, "Power event: {:?}", event);
-
         if let Ok(event) = self.power_monitor.event_receiver().try_recv() {
             info!(target: LOG_TARGET, "Power event: {:?}", event);
             match event {
@@ -73,6 +66,14 @@ impl SystemStatus {
                 PowerState::Suspend => {
                     info!(target: LOG_TARGET, "Suspend");
                     *self.is_in_sleep_mode.write().await = true;
+                }
+                PowerState::Resume => {
+                    info!(target: LOG_TARGET, "Resume");
+                    *self.is_in_sleep_mode.write().await = false;
+                }
+                PowerState::ScreenUnlocked => {
+                    info!(target: LOG_TARGET, "Screen unlocked");
+                    *self.is_in_sleep_mode.write().await = false;
                 }
                 _ => {
                     info!(target: LOG_TARGET, "Other event");
@@ -95,9 +96,8 @@ impl SystemStatus {
                 },
                 _ = async {
                     loop {
-                        info!(target: LOG_TARGET, "Listener started");
                         SystemStatus::current().recive_power_event().await.expect("Error reciving power event");
-                        tokio::time::sleep(Duration::from_secs(1)).await;
+                        tokio::time::sleep(Duration::from_secs(5)).await;
                     }
                 } => {
                     info!(target: LOG_TARGET, "Listener finished");
