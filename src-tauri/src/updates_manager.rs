@@ -92,7 +92,6 @@ pub struct UpdatesManager {
 
 impl UpdatesManager {
     pub fn new(config: Arc<RwLock<AppConfig>>, app_shutdown: ShutdownSignal) -> Self {
-
         Self {
             config,
             update: Arc::new(RwLock::new(None)),
@@ -144,8 +143,7 @@ impl UpdatesManager {
                     drop(app.emit("updates_event", payload).inspect_err(|e| {
                         warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {}", e);
                     }));
-                }
-                else if force {
+                } else if force {
                     info!(target: LOG_TARGET, "try_update: Proceeding with force update");
                     self.proceed_with_update(app.clone()).await?;
                 } else if is_auto_update {
