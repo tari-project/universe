@@ -104,7 +104,7 @@ impl UpdatesManager {
         let app_clone = app.clone();
         let self_clone = self.clone();
         tauri::async_runtime::spawn(async move {
-            let mut interval = time::interval(Duration::from_secs(3600));
+            let mut interval = time::interval(Duration::from_secs(300));
             loop {
                 if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
                 {
@@ -133,11 +133,19 @@ impl UpdatesManager {
                 *self.update.write().await = Some(update);
                 let is_auto_update = self.config.read().await.auto_update();
 
-                let is_screen_locked = true;
-                // let is_screen_locked = SystemStatus::current().is_in_sleep_mode().await;
+                let is_screen_locked = SystemStatus::current().is_in_sleep_mode().await;
 
-                if is_screen_locked {
+                info!(target: LOG_TARGET, "try_update: Screen locked: {}", is_screen_locked);
+
+                if is_screen_locked && is_auto_update {
                     info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");
+                    let payload = CouldNotUpdatePayload {
+                        event_type: "could_not_update".to_string(),
+                        version,
+                    };
+                    drop(app.emit("updates_event", payload).inspect_err(|e| {
+                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {}", e);
+                    }));
                 }
                 else if force {
                     info!(target: LOG_TARGET, "try_update: Proceeding with force update");

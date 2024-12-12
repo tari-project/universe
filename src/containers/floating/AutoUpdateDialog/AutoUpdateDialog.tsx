@@ -52,11 +52,6 @@ export default function AutoUpdateDialog() {
     const isDownloaded = isDownloading && downloaded === contentLength;
     const subtitle = resolveSubtitle(isDownloading, couldNotUpdate);
 
-    // useEffect(() => {
-    //     setDialogToShow('autoUpdate');
-    //     setCouldNotUpdate(true);
-    // }, []);
-
     useEffect(() => {
         const unlistenPromise = listen(
             'updates_event',
@@ -118,9 +113,14 @@ export default function AutoUpdateDialog() {
                         </>
                     )}
                     {couldNotUpdate && (
-                        <SquaredButton onClick={handleClose} color="green">
-                            {t('close')}
-                        </SquaredButton>
+                        <>
+                            <SquaredButton onClick={handleUpdate} color="green">
+                                {t('update')}
+                            </SquaredButton>
+                            <SquaredButton onClick={handleClose} color="warning">
+                                {t('close')}
+                            </SquaredButton>
+                        </>
                     )}
                 </ButtonsWrapper>
             </DialogContent>
