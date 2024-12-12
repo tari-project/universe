@@ -1,51 +1,40 @@
 import { useAirdropStore, UserPoints } from '@app/store/useAirdropStore';
 import { listen } from '@tauri-apps/api/event';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 
 export const useAirdropUserPointsListener = () => {
-    const setUserPoints = useAirdropStore((state) => state.setUserPoints);
-    const referralCount = useAirdropStore((state) => state.referralCount);
+    const setUserPoints = useAirdropStore((state) => state?.setUserPoints);
+    const currentReferralData = useAirdropStore((state) => state?.referralCount);
     const bonusTiers = useAirdropStore((state) => state.bonusTiers);
-    const setUserPointsReferralCount = useAirdropStore((state) => state.setReferralCount);
     const setFlareAnimationType = useAirdropStore((state) => state.setFlareAnimationType);
 
-    useEffect(() => {
-        let unListen: () => void = () => {
-            //do nothing
-        };
-
-        listen('UserPoints', (event) => {
-            if (event.payload) {
-                const payload = event.payload as UserPoints;
-                setUserPoints(payload);
-                if (payload.referralCount) {
-                    if (referralCount?.count !== payload.referralCount.count) {
-                        if (referralCount?.count) {
-                            setFlareAnimationType('FriendAccepted');
-                            if (
-                                payload.referralCount.count &&
-                                bonusTiers?.find((t) => t.target === payload?.referralCount?.count)
-                            ) {
-                                setTimeout(() => {
-                                    setFlareAnimationType('GoalComplete');
-                                }, 2000);
-                            }
-                        }
-                        setUserPointsReferralCount(payload.referralCount);
-                    }
+    const handleAirdropPoints = useCallback(
+        (pointsPayload: UserPoints) => {
+            const incomingReferralData = pointsPayload?.referralCount;
+            if (incomingReferralData?.count && incomingReferralData?.count !== currentReferralData?.count) {
+                const secondAnimationDelay = setTimeout(() => setFlareAnimationType('GoalComplete'), 2000);
+                setFlareAnimationType('FriendAccepted');
+                const goalComplete = !!bonusTiers?.find((t) => t.target === incomingReferralData?.count);
+                if (goalComplete) {
+                    clearTimeout(secondAnimationDelay);
                 }
-            }
-        })
-            .then((unListenFunction) => {
-                unListen = unListenFunction;
-            })
-            .catch((e) => {
-                console.error('User points error: ', e);
-            });
 
+                setUserPoints(pointsPayload);
+            }
+        },
+        [bonusTiers, currentReferralData?.count, setFlareAnimationType, setUserPoints]
+    );
+
+    useEffect(() => {
+        const ul = listen('UserPoints', ({ payload }) => {
+            console.debug(payload);
+
+            if (payload) {
+                handleAirdropPoints(payload as UserPoints);
+            }
+        });
         return () => {
-            unListen();
+            ul.then((unlisten) => unlisten());
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bonusTiers, referralCount?.count]);
+    }, [handleAirdropPoints]);
 };

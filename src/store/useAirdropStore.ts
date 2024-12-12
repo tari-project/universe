@@ -173,10 +173,7 @@ export const useAirdropStore = create<AirdropStore>()(
         (set) => ({
             ...initialState,
             setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
-            setFlareAnimationType: (flareAnimationType) => {
-                console.debug(`flareAnimationType= ${flareAnimationType}`);
-                return set({ flareAnimationType });
-            },
+            setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
@@ -200,7 +197,7 @@ export const useAirdropStore = create<AirdropStore>()(
                 }
             },
             setReferralCount: (referralCount) => set({ referralCount }),
-            setUserPoints: (userPoints) => set({ userPoints }),
+            setUserPoints: (userPoints) => set({ userPoints, referralCount: userPoints?.referralCount }),
             setUserGems: (userGems: number) =>
                 set((state) => {
                     const userPointsFormatted = {
