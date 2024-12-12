@@ -12,7 +12,7 @@
   "doLater": "I'll do this later",
   "giftReferralCode": "Earn {{gems}} gems for each friend you invite to Tari Universe. Once they connect their account, you’ll be awarded your gems.",
   "giftReferralCodeHeader": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
-  "inviteFirends": "Invite Friends",
+  "inviteFriends": "Invite Friends",
   "inviteFriendsText": "Copy link and share it",
   "invitedAmount": "You’ve invited <span>{{count}}</span> friends",
   "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
