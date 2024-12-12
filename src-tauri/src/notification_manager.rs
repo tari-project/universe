@@ -23,12 +23,15 @@ impl NotificationManager {
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Linux => {
                 #[cfg(target_os = "linux")]
-                let handle = notification.show().inspect_err(
-                    |e| warn!(target: LOG_TARGET, "Failed to show notification: {:?}", e),
-                )?;
-                handle.on_close(|notification| {
-                    info!(target: LOG_TARGET, "Notification closed: {:?}", notification);
-                });
+                {
+                    let handle = notification.show().inspect_err(
+                        |e| warn!(target: LOG_TARGET, "Failed to show notification: {:?}", e),
+                    )?;
+                    handle.on_close(|notification| {
+                        info!(target: LOG_TARGET, "Notification closed: {:?}", notification);
+                    });
+                }
+
                 Ok(())
             }
             CurrentOperatingSystem::MacOS => {
