@@ -2,6 +2,7 @@
   "dont-worry": "चिंता न करें, अगली बार इसमें इतना समय नहीं लगेगा",
   "installing-latest-version": "तारी यूनिवर्स के {{version}} संस्करण को इंस्टॉल कर रहे हैं",
   "new-tari-version-available": "Tari Universe का एक नया संस्करण उपलब्ध है!",
+  "could-not-auto-update": "We couldn't auto update Tari Universe to {{version}} while machine was locked or in sleep mode.",
   "no": "नहीं",
   "setting-up": "Tari सत्य मशीन सेट कर रहा है...",
   "this-might-take-a-few-minutes": "इसमें कुछ मिनट लग सकते हैं",
