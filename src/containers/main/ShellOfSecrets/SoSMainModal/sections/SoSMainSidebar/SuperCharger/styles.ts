@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import backgroundImage from './images/background.png';
 
 export const Wrapper = styled('div')`
@@ -43,6 +43,7 @@ export const LineRight = styled('div')`
 `;
 
 export const FormWrapper = styled('form')`
+    postition: relative;
     width: 100%;
     min-height: 101px;
     border: 1px solid #95a663;
@@ -130,4 +131,35 @@ export const SubmitButton = styled('button')`
     &:hover {
         transform: scale(1.05);
     }
+`;
+
+export const SuccessMessage = styled('span')<{ $visible?: boolean }>`
+    opacity: 0;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    position: absolute;
+    color: #e6ff47;
+    transition: opacity 0.2s ease-in-out;
+    ${({ $visible }) =>
+        $visible &&
+        css`
+            opacity: 1;
+        `}
+`;
+
+export const ErrorMessage = styled('span')<{ $visible?: boolean }>`
+    opacity: 0;
+    position: absolute;
+    bottom: 5px;
+    height: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: red;
+    transition: opacity 0.2s ease-in-out;
+    ${({ $visible }) =>
+        $visible &&
+        css`
+            opacity: 1;
+        `}
 `;

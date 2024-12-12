@@ -4,10 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { LeaderboardResponse } from '@app/types/sosTypes';
+import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 
 export default function LeaderboardList() {
     const fetchHandler = useAirdropRequest();
     const userId = useAirdropStore((state) => state.userDetails?.user.id);
+    const setTotalTimeBonus = useShellOfSecretsStore((s) => s.setTotalTimeBonus);
     const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse>();
 
     const handleLeaderboardData = useCallback(() => {
@@ -21,7 +23,11 @@ export default function LeaderboardList() {
             .then((data) => {
                 if (!data?.top100) return;
                 setLeaderboardData(data);
+                if (data.userRank) {
+                    setTotalTimeBonus(data.userRank.total_time_bonus);
+                }
             });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchHandler]);
 
     useEffect(() => {

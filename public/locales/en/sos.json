@@ -17,7 +17,8 @@
   "superCharger": {
     "title": "Super Charger",
     "placeholder": "Enter Your Code",
-    "success": "Cookies claimed!",
+    "success": "Time bonus added {{time}}.",
+    "error": "Invalid code.",
     "submit": "Go"
   },
   "mainTimer": {
