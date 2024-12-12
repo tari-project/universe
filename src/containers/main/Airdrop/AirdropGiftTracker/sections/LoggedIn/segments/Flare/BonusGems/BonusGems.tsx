@@ -1,26 +1,17 @@
-import { useEffect } from 'react';
-import GemsAnimation from '../GemsAnimation/GemsAnimation';
-import { Background, Wrapper } from './styles';
-import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
 import { useTranslation } from 'react-i18next';
+
+import GemsAnimation from '../GemsAnimation/GemsAnimation';
+import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
+import { Background, Wrapper } from './styles';
 
 interface Props {
     gems: number;
-    onAnimationComplete: () => void;
 }
 
-export default function BonusGems({ gems, onAnimationComplete }: Props) {
+export default function BonusGems({ gems }: Props) {
     const { t } = useTranslation('airdrop', { useSuspense: false });
     const formattedNumber = formatNumber(gems, FormatPreset.DECIMAL_COMPACT);
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            onAnimationComplete();
-        }, 3500);
-
-        return () => clearTimeout(timer);
-    }, [onAnimationComplete]);
 
     return (
         <Wrapper>

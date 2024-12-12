@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export const useDisableRefresh = () => {
+export function useDisableRefresh() {
     useEffect(() => {
         if (process.env.NODE_ENV === 'development') {
             return;
@@ -24,4 +24,4 @@ export const useDisableRefresh = () => {
             document.removeEventListener('contextmenu', contextmenuListener);
         };
     }, []);
-};
+}

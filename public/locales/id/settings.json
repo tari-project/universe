@@ -6,6 +6,8 @@
   "applyInviteCode": "Terapkan Kode Undangan",
   "cancel": "Batal",
   "change-language": "Bahasa",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Rekan Terhubung",
@@ -46,6 +48,7 @@
     "title": "Waktu setelah mesin dianggap tidak aktif"
   },
   "importing-wallet": "Mengimpor dompet",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Kode Undangan",
@@ -82,8 +85,17 @@
   },
   "pool-mining": "Penambangan Pool",
   "pool-mining-description": "Ketika diaktifkan, Anda akan menambang dalam pool dan bergabung dengan kelompok penambang.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Hashrate jaringan Randomx",
   "refresh-versions": "Segarkan versi",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Laporkan masalah",
   "reset-permanently": "Apakah Anda yakin ingin mengatur ulang semua pengaturan secara permanen?",
   "reset-settings": "Atur Ulang Pengaturan",
@@ -103,6 +115,7 @@
     "title": "Mulai otomatis saat boot sistem"
   },
   "should-use-system-language": "Gunakan bahasa sistem",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
@@ -111,6 +124,7 @@
     "general": "Umum",
     "mining": "Penambangan",
     "p2p": "Penambangan Pool",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Sangat Eksperimental",
     "wallet": "Dompet"
   },

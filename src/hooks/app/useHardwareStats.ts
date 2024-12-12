@@ -1,5 +1,5 @@
 import { useMiningStore } from '@app/store/useMiningStore';
-import { HardwareParameters } from '../types/app-status';
+import { HardwareParameters } from '../../types/app-status';
 import { useMemo } from 'react';
 
 const roundTo = (num: number, precision = 2) => {
@@ -7,7 +7,7 @@ const roundTo = (num: number, precision = 2) => {
     return Math.round(num * factor) / factor;
 };
 
-export const useHardwareStats = () => {
+export function useHardwareStats() {
     const cpuHardwareStats = useMiningStore((s) => s.cpu.hardware);
     const gpuHardwareStats = useMiningStore((s) => s.gpu.hardware);
 
@@ -43,4 +43,4 @@ export const useHardwareStats = () => {
     const doesAnyGpuHasReadings = gpuHardwareStats?.some((gpu) => gpu.status.is_reader_implemented);
 
     return { cpu, gpu, doesAnyCpuHasReadings, doesAnyGpuHasReadings };
-};
+}
