@@ -26,8 +26,8 @@ export const animationDarkBg = [
     { property: 'particlesSize', value: 0.02 },
 ];
 
-export function setAnimationState(newState: GlAppState) {
-    window.glApp.setState(newState);
+export function setAnimationState(newState: GlAppState, isReplay = false) {
+    window.glApp.setState(newState, isReplay);
 }
 
 interface Property {
