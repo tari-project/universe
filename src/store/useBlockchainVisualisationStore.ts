@@ -78,14 +78,12 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         }, 2000);
     },
     handleWinReplay: (txItem) => {
-        useMiningStore.getState().setIsReplaying(true);
         const earnings = txItem.amount;
         const successTier = getSuccessTier(earnings);
         set({ replayItem: txItem });
         setAnimationState(successTier, true);
         setTimeout(() => {
             set({ replayItem: undefined });
-            useMiningStore.getState().setIsReplaying(false);
         }, 1500);
     },
     handleWin: async ({ latestTx, canAnimate }) => {
