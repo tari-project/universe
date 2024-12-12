@@ -33,6 +33,7 @@ interface AppState {
     updateApplicationsVersions: () => Promise<void>;
     issueReference?: string;
     setIssueReference: (value: string) => void;
+    triggerNotification: (summary: string, body: string) => Promise<void>;
 }
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
@@ -116,4 +117,14 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     missingExternalDependencies: [],
     loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
     setIssueReference: (issueReference) => set({ issueReference }),
+    triggerNotification: async (summary: string, body: string) => {
+        try {
+            await invoke('trigger_notification', {
+                summary,
+                body,
+            });
+        } catch (error) {
+            console.error('Error triggering notification', error);
+        }
+    },
 }));

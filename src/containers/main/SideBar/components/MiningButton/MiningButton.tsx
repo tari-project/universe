@@ -12,6 +12,7 @@ import LoadingSvg from '@app/components/svgs/LoadingSvg.tsx';
 import ButtonOrbitAnimation from '../../Miner/components/ButtonOrbitAnimation.tsx';
 import { IconWrapper, StyledButton, ButtonWrapper } from './MiningButton.styles.ts';
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
+import { useNotifcations } from '@app/hooks/useNotifications.ts';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',
@@ -19,6 +20,8 @@ enum MiningButtonStateText {
 }
 
 export default function MiningButton() {
+    const { testNotification } = useNotifcations();
+
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const startMining = useMiningStore((s) => s.startMining);
     const stopMining = useMiningStore((s) => s.stopMining);
@@ -40,6 +43,7 @@ export default function MiningButton() {
     }, [isMining, isMiningInitiated]);
 
     const handleClick = useCallback(async () => {
+        await testNotification();
         if (!isMining) {
             await startMining();
         } else {
