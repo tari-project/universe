@@ -7,6 +7,7 @@
   "critical-error": "Erreur critique",
   "day": "Jour",
   "disconnect": "Déconnecter",
+  "dismiss": "Dismiss",
   "hashrate": "Taux de hachage",
   "installation-problem": "Installation problem",
   "max-temperature": "Température maximale",
@@ -28,5 +29,6 @@
   "utilization": "Utilisation",
   "version": "Version",
   "versions": "Versions",
-  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé."
+  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé.",
+  "yes": "Yes"
 }

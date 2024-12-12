@@ -7,6 +7,7 @@
   "critical-error": "Krytyczny błąd",
   "day": "Dzień",
   "disconnect": "Odłącz",
+  "dismiss": "Dismiss",
   "hashrate": "Prędkość ( hashrate )",
   "installation-problem": "Installation problem",
   "max-temperature": "Maksymalna temperatura",
@@ -28,5 +29,6 @@
   "utilization": "Wykorzystanie",
   "version": "Wersja",
   "versions": "Wersje",
-  "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony."
+  "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony.",
+  "yes": "Yes"
 }

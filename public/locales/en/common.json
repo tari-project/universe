@@ -7,6 +7,7 @@
   "critical-error": "Critical error",
   "day": "Day",
   "disconnect": "Disconnect",
+  "dismiss": "Dismiss",
   "hashrate": "Hashrate",
   "installation-problem": "Installation problem",
   "max-temperature": "Max temperature",
@@ -28,5 +29,6 @@
   "utilization": "Utilization",
   "version": "Version",
   "versions": "Versions",
-  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
+  "yes": "Yes"
 }
