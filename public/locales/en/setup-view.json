@@ -2,7 +2,7 @@
   "dont-worry": "Don't worry, next time it won't take as long",
   "installing-latest-version": "Installing {{version}} version of Tari Universe",
   "new-tari-version-available": "A new version of Tari Universe is available!",
-  "could-not-auto-update": "We couldn't auto-update Tari Universe while machine was locked or in sleep mode. Restart app to proceed",
+  "could-not-auto-update": "We couldn't auto update Tari Universe to {{version}} while machine was locked or in sleep mode. Restart app to proceed",
   "no": "No",
   "setting-up": "Setting up the Tari truth machine...",
   "this-might-take-a-few-minutes": "This might take a few minutes",

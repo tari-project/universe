@@ -28,6 +28,17 @@ interface CouldNotUpdatePayload {
     error: string;
 }
 
+const resolveSubtitle = (isDownloading: boolean, couldNotUpdate: boolean) => {
+    switch (true) {
+        case isDownloading:
+            return 'installing-latest-version';
+        case couldNotUpdate:
+            return 'could-not-auto-update';
+        default:
+            return 'would-you-like-to-install';
+    }
+};
+
 export default function AutoUpdateDialog() {
     const { t } = useTranslation('setup-view', { useSuspense: false });
     const open = useUIStore((s) => s.dialogToShow === 'autoUpdate');
@@ -39,7 +50,12 @@ export default function AutoUpdateDialog() {
 
     const isDownloading = downloaded > 0;
     const isDownloaded = isDownloading && downloaded === contentLength;
-    const subtitle = isDownloading ? 'installing-latest-version' : 'would-you-like-to-install';
+    const subtitle = resolveSubtitle(isDownloading, couldNotUpdate);
+
+    // useEffect(() => {
+    //     setDialogToShow('autoUpdate');
+    //     setCouldNotUpdate(true);
+    // }, []);
 
     useEffect(() => {
         const unlistenPromise = listen(
@@ -88,7 +104,6 @@ export default function AutoUpdateDialog() {
             <DialogContent>
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t(subtitle, { version })}</Typography>
-                {couldNotUpdate && <Typography variant="p">{t('could-not-auto-update')}</Typography>}
                 {isDownloading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
                 {isDownloaded && <Typography variant="p">{`Update downloaded: Restarting Tari Universe`}</Typography>}
                 <ButtonsWrapper>
@@ -102,7 +117,7 @@ export default function AutoUpdateDialog() {
                             </SquaredButton>
                         </>
                     )}
-                    {isDownloaded && (
+                    {couldNotUpdate && (
                         <SquaredButton onClick={handleClose} color="green">
                             {t('close')}
                         </SquaredButton>
