@@ -56,7 +56,7 @@ const dynamicItems = [
     separator,
     {
         id: UNMINIMIZE_ITEM_ID,
-        text: 'Uninimize',
+        text: 'Unminimize',
         enabled: false,
         action: handleMinimize,
     },

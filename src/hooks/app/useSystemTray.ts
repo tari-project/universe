@@ -35,9 +35,9 @@ export function useUpdateSystemTray() {
         }
     }, []);
     const updateMenuItem = useCallback(async ({ itemId, itemText }: { itemId: string; itemText?: string }) => {
-        const item = await menu.get(itemId);
+        const item = await menu?.get(itemId);
         if (item && itemText) {
-            await item.setText(itemText);
+            await item?.setText(itemText);
         }
     }, []);
 
@@ -58,7 +58,7 @@ export function useUpdateSystemTray() {
     }, [metrics, totalEarningsFormatted]);
 
     useEffect(() => {
-        items.forEach(async (item) => {
+        items?.forEach(async (item) => {
             await updateMenuItem({ ...item });
         });
     }, [items, updateMenuItem]);
