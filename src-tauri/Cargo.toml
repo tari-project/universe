@@ -4,13 +4,13 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.8.14"
+version = "0.8.15"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
 embed-resource = "2.5.0"
-tauri-build = { version = "1.5.5", features = ["isolation"] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
 anyhow = "1"
@@ -27,7 +27,6 @@ fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 flate2 = "1.0.30"
 futures-lite = "2.3.0"
 futures-util = "0.3.30"
-human_format = "1.1.0"
 jsonwebtoken = "9.3.0"
 keyring = { version = "3.0.5", features = [
   "windows-native",
@@ -51,8 +50,6 @@ regex = "1.10.5"
 reqwest = { version = "0.12.5", features = ["stream", "json", "multipart"] }
 sanitize-filename = "0.5"
 semver = "1.0.23"
-sentry = { version = "0.34.0", features = ["anyhow"] }
-sentry-tauri = "0.3.0"
 serde = { version = "1", features = ["derive"] }
 serde_cbor = "0.11.2"
 serde_json = "1"
@@ -66,37 +63,33 @@ tari_common_types = { git = "https://github.com/tari-project/tari.git", branch =
 tari_core = { git = "https://github.com/tari-project/tari.git", branch = "development", features = [
   "transactions",
 ] }
+
 tari_crypto = "0.21.0"
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", branch = "development" }
 tari_utilities = "0.8.0"
-tauri = { version = "1.8.0", features = [
-  "window-unmaximize",
-  "window-unminimize",
-  "os-all",
-  "system-tray",
-  "updater",
-  "window-close",
-  "window-hide",
-  "window-maximize",
-  "window-minimize",
-  "window-show",
-  "window-start-dragging",
-  "window-maximize",
-  "window-close",
+tauri = { version = "2", features = [
   "macos-private-api",
-  "isolation",
-  "shell-open",
-  "icon-ico",
-  "icon-png",
-  "process-command-api",
+  "image-png",
+  "image-ico",
+  "tray-icon",
+
 ] }
-tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+tauri-plugin-os = "2"
+tauri-plugin-sentry = "0.2.0"
+tauri-plugin-shell = "2"
+tauri-plugin-single-instance = "^2"
+tauri-plugin-updater = "^2"
 thiserror = "1.0.26"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.11", features = ["compat"] }
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
+dirs = "5.0.1"
+tauri-plugin-process = "2"
+
+# temporary fix for openssl
+openssl = { version = "0.10", features = ["vendored"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
@@ -108,7 +101,6 @@ libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
 log = "0.4.22"
 nvml-wrapper = "0.10.0"
 rand = "0.8.5"
-sentry-tauri = "0.3.0"
 sys-locale = "0.3.1"
 # tonic = "0.12.0"
 
@@ -122,4 +114,10 @@ release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
-ignored = ["log4rs", "xz2", "libsqlite3-sys", "minotari_wallet_grpc_client"]
+ignored = [
+  "libsqlite3-sys",
+  "log4rs",
+  "minotari_wallet_grpc_client",
+  "xz2",
+  "openssl",
+]

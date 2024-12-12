@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
     IconImage,
@@ -15,8 +15,7 @@ import { AccordionItem } from './AccordionItem/AccordionItem';
 import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
-import { useUIStore } from '@app/store/useUIStore';
-import { checkUpdate } from '@tauri-apps/api/updater';
+import { invoke } from '@tauri-apps/api/core';
 
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
@@ -46,7 +45,6 @@ interface ReleaseSection {
 }
 
 export const ReleaseNotes = () => {
-    const { setDialogToShow } = useUIStore();
     const [sections, setSections] = useState<ReleaseSection[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
@@ -77,8 +75,10 @@ export const ReleaseNotes = () => {
 
     useEffect(() => {
         const checkForUpdates = async () => {
-            const { shouldUpdate } = await checkUpdate();
-            setNeedsUpgrade(shouldUpdate);
+            const version = await invoke('check_for_updates').catch((err) => {
+                console.error('Error checking for updates:', err);
+            });
+            setNeedsUpgrade(!!version);
         };
 
         checkForUpdates();
@@ -87,6 +87,12 @@ export const ReleaseNotes = () => {
     const toggleSection = (index: number) => {
         setOpenSectionIndex(openSectionIndex === index ? null : index);
     };
+
+    const handleUpdate = useCallback(async () => {
+        invoke('proceed_with_update', { force: true }).catch((err) => {
+            console.error('Error updating:', err);
+        });
+    }, []);
 
     return (
         <Wrapper>
@@ -100,7 +106,7 @@ export const ReleaseNotes = () => {
                 </TextWrapper>
 
                 {needsUpgrade && !isLoading && (
-                    <UpgradeButton onClick={() => setDialogToShow('autoUpdate')}>
+                    <UpgradeButton onClick={handleUpdate}>
                         {t('settings:release-notes.upgrade-available')}
                     </UpgradeButton>
                 )}

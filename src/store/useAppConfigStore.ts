@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { create } from './create';
 import { AppConfig, GpuThreads } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
@@ -34,6 +34,7 @@ interface Actions {
     setVisualMode: (enabled: boolean) => void;
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
     setP2poolStatsServerPort: (port: number | null) => Promise<void>;
+    setPreRelease: (preRelease: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -63,6 +64,7 @@ const initialState: State = {
     custom_max_gpu_usage: [],
     show_experimental_settings: false,
     p2pool_stats_server_port: null,
+    pre_release: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
@@ -299,6 +301,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             console.error('Could not set p2pool stats server port', e);
             appStateStore.setError('Could not change p2pool stats server port');
             set({ p2pool_stats_server_port: port });
+        });
+    },
+    setPreRelease: async (preRelease) => {
+        set({ pre_release: preRelease });
+        invoke('set_pre_release', { preRelease }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set pre release', e);
+            appStateStore.setError('Could not change pre release');
+            set({ pre_release: !preRelease });
         });
     },
 }));

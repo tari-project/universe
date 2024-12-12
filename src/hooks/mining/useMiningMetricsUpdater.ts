@@ -1,10 +1,11 @@
-import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
-import { useMiningStore } from '@app/store/useMiningStore';
-import { useCallback, useState } from 'react';
-import { invoke } from '@tauri-apps/api';
+import { useCallback } from 'react';
+import { MinerMetrics } from '@app/types/app-status';
+
 import { setAnimationState } from '@app/visuals.ts';
+import { useMiningStore } from '@app/store/useMiningStore';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
-import useFetchTx from '@app/hooks/mining/useTransactions.ts';
+
+import useFetchTx from './useTransactions.ts';
 
 export default function useMiningMetricsUpdater() {
     const fetchTx = useFetchTx();
@@ -14,14 +15,9 @@ export default function useMiningMetricsUpdater() {
     const handleNewBlock = useBlockchainVisualisationStore((s) => s.handleNewBlock);
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const setDisplayBlockHeight = useBlockchainVisualisationStore((s) => s.setDisplayBlockHeight);
-    const [isFetchingMetrics, setIsFetchingMetrics] = useState(false);
 
-    return useCallback(async () => {
-        if (isFetchingMetrics) return;
-        try {
-            setIsFetchingMetrics(true);
-            const metrics = await invoke('get_miner_metrics');
-
+    return useCallback(
+        async (metrics: MinerMetrics) => {
             if (metrics) {
                 const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
                 // Pause animation when lost connection to the Tari Network
@@ -33,30 +29,33 @@ export default function useMiningMetricsUpdater() {
 
                 const blockHeight = metrics.base_node.block_height;
                 if (blockHeight > 0 && currentBlockHeight > 0 && blockHeight > currentBlockHeight) {
-                    await fetchTx();
-                    await handleNewBlock(blockHeight, isMining);
+                    try {
+                        fetchTx()
+                            .then(async () => {
+                                await handleNewBlock(blockHeight, isMining);
+                            })
+                            .catch(() => {
+                                setDisplayBlockHeight(blockHeight);
+                            });
+                    } catch (_) {
+                        setDisplayBlockHeight(blockHeight);
+                    }
                 } else {
                     if (blockHeight && !displayBlockHeight) {
                         setDisplayBlockHeight(blockHeight);
                     }
                 }
                 setMiningMetrics(metrics);
-                setIsFetchingMetrics(false);
             }
-        } catch (e) {
-            setIsFetchingMetrics(false);
-            if (e !== ALREADY_FETCHING.METRICS) {
-                console.error('Fetch mining metrics error:', e);
-            }
-        }
-    }, [
-        baseNodeConnected,
-        currentBlockHeight,
-        displayBlockHeight,
-        fetchTx,
-        handleNewBlock,
-        isFetchingMetrics,
-        setDisplayBlockHeight,
-        setMiningMetrics,
-    ]);
+        },
+        [
+            baseNodeConnected,
+            currentBlockHeight,
+            displayBlockHeight,
+            fetchTx,
+            handleNewBlock,
+            setDisplayBlockHeight,
+            setMiningMetrics,
+        ]
+    );
 }

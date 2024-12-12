@@ -23,7 +23,7 @@ interface QuestDataResponse {
 
 export const useGetReferralQuestPoints = () => {
     const handleRequest = useAirdropRequest();
-    const { setReferralQuestPoints } = useAirdropStore();
+    const setReferralQuestPoints = useAirdropStore((s) => s.setReferralQuestPoints);
 
     useEffect(() => {
         const handleFetch = async () => {

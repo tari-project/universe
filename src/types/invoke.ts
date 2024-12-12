@@ -15,7 +15,7 @@ import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 
-declare module '@tauri-apps/api/tauri' {
+declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
@@ -72,6 +72,10 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
     function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
     function invoke(param: 'set_visual_mode', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'set_pre_release', payload: { preRelease: boolean }): Promise<void>;
+    function invoke(param: 'proceed_with_update'): Promise<void>;
+    function invoke(param: 'check_for_updates'): Promise<string | undefined>;
+    function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
     function invoke(
         param: 'set_show_experimental_settings',
         payload: { showExperimentalSettings: boolean }

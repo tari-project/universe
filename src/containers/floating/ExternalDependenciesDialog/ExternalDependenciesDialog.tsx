@@ -6,7 +6,7 @@ import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useUIStore } from '@app/store/useUIStore';
 import { ExternalDependencyStatus } from '@app/types/app-status';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useState } from 'react';
 import { ExternalDependencyCard } from './ExternalDependencyCard';
 import { useTranslation } from 'react-i18next';
