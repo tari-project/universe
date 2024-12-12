@@ -141,7 +141,7 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
     if let (Ok(window_position), Ok(window_size)) = (
         splashscreen_window.outer_position(),
-        splashscreen_window.outer_size(),
+        splashscreen_window.inner_size(),
     ) {
         splashscreen_window.close().expect("could not close");
         main_window.show().expect("could not show");
@@ -370,17 +370,14 @@ pub async fn get_miner_metrics(
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) =
-        state
-            .node_manager
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .unwrap_or_else(|e| {
-                if !matches!(e, NodeManagerError::NodeNotStarted) {
-                    warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
-                }
-                (0, 0, MicroMinotari(0), 0, 0, false)
-            });
+    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
+        .get_network_hash_rate_and_block_reward().await
+        .unwrap_or_else(|e| {
+            if !matches!(e, NodeManagerError::NodeNotStarted) {
+                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+            }
+            (0, 0, MicroMinotari(0), 0, 0, false)
+        });
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
@@ -778,9 +775,9 @@ pub async fn import_seed_words(
         }
         Err(e) => {
             error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            e.to_string()
+            e.to_string();
         }
-    };
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
@@ -1246,7 +1243,7 @@ pub async fn set_p2pool_enabled(
                         .await
                         .map_err(|error| error.to_string())?;
                     origin_config.set_to_use_base_node(base_node_grpc_port);
-                };
+                }
                 state
                     .mm_proxy_manager
                     .change_config(origin_config)
@@ -1254,7 +1251,7 @@ pub async fn set_p2pool_enabled(
                     .map_err(|error| error.to_string())?;
             }
         }
-    };
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
@@ -1637,5 +1634,93 @@ pub async fn update_applications(
 
     drop(binary_resolver);
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_pre_release(
+    app: tauri::AppHandle,
+    pre_release: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_pre_release(pre_release)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    info!(target: LOG_TARGET, "Pre-release set to {}, try_update called", pre_release);
+
+    state
+        .updates_manager
+        .try_update(app.clone(), true, !pre_release)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_pre_release took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn check_for_updates(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Option<String>, String> {
+    let timer = Instant::now();
+
+    let update = state
+        .updates_manager
+        .check_for_update(app.clone(), false)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "check_for_updates took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(update.map(|u| u.version))
+}
+
+#[tauri::command]
+pub async fn try_update(
+    force: Option<bool>,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+
+    state
+        .updates_manager
+        .try_update(app.clone(), force.unwrap_or(false), false)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "check_for_updates took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn proceed_with_update(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .updates_manager
+        .proceed_with_update(app.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }

@@ -29,10 +29,11 @@ use log::trace;
 use log::{debug, error, info, warn};
 use p2pool::models::Connections;
 use serde_json::json;
-use std::fs::{remove_dir_all, remove_file};
+use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::ops::Deref;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
+use updates_manager::UpdatesManager;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -116,6 +117,7 @@ mod telemetry_service;
 mod tests;
 mod tor_adapter;
 mod tor_manager;
+mod updates_manager;
 mod user_listener;
 mod utils;
 mod wallet_adapter;
@@ -181,6 +183,11 @@ async fn setup_inner(
         )?;
         return Ok(());
     }
+
+    state
+        .updates_manager
+        .init_periodic_updates(app.clone())
+        .await?;
 
     let data_dir = app
         .path()
@@ -722,6 +729,7 @@ struct UniverseAppState {
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
+    updates_manager: UpdatesManager,
     cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
@@ -789,13 +797,13 @@ fn main() {
         Some(Network::default()),
         p2pool_manager.clone(),
     );
-
     let telemetry_service = TelemetryService::new(
         app_config_raw.anon_id().to_string(),
         "0.0.0".to_string(),
         app_config.clone(),
         app_in_memory_config.clone(),
     );
+    let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
@@ -824,6 +832,7 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
         tor_manager: TorManager::new(),
+        updates_manager,
         cached_p2pool_stats: Arc::new(RwLock::new(None)),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_wallet_details: Arc::new(RwLock::new(None)),
@@ -847,11 +856,26 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(app_state.clone())
         .setup(|app| {
+            let config_path = app
+                .path()
+                .app_config_dir()
+                .expect("Could not get config dir");
+
+            // Remove this after it's been rolled out for a few versions
+            let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
+            let logs_cleared_file = log_path.join("logs_cleared");
+            if !logs_cleared_file.exists() {
+                match remove_dir_all(&log_path) {
+                    Ok(()) => {
+                        create_dir_all(&log_path).map_err(|e| e.to_string())?;
+                        File::create(&logs_cleared_file).map_err(|e| e.to_string())?;
+                    },
+                    Err(e) => warn!(target: LOG_TARGET, "Could not clear log folder: {}", e)
+                }
+            }
+
             let contents = setup_logging(
-                &app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir")
-                    .join("logs")
+                &log_path
                     .join("universe")
                     .join("configs")
                     .join("log4rs_config_universe.yml"),
@@ -866,11 +890,6 @@ fn main() {
             let splash_window = app
                 .get_webview_window("splashscreen")
                 .expect("Main window not found");
-
-            let config_path = app
-                .path()
-                .app_config_dir()
-                .expect("Could not get config dir");
 
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
@@ -917,6 +936,7 @@ fn main() {
                     if let Some(w_settings) = app_conf.window_settings() {
                         let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
                         let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
+
                         if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
                             error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
                         }
@@ -1027,7 +1047,10 @@ fn main() {
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
             commands::get_used_p2pool_stats_server_port,
-            commands::get_network
+            commands::proceed_with_update,
+            commands::set_pre_release,
+            commands::check_for_updates,
+            commands::try_update,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
@@ -1059,7 +1082,7 @@ fn main() {
             trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
             if let WindowEvent::CloseRequested { .. } = event {
                 if let Some(window) = app_handle.get_webview_window(&label) {
-                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.outer_size()) {
+                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.inner_size()) {
                         let window_settings = WindowSettings {
                             x: window_position.x,
                             y: window_position.y,

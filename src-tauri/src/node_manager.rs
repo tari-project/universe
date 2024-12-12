@@ -27,6 +27,7 @@ use std::time::SystemTime;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info};
 use minotari_node_grpc_client::grpc::Peer;
+use serde_json::json;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -286,14 +287,27 @@ impl NodeManager {
                 .any(|local_block| block_scan_block.1 == local_block.1)
             {
                 if report_to_sentry {
-                    let error_msg = format!(
-                        "Orphan chain detected: block {} at height {} not found in local chain. Block scan tip height: {} - Local tip height: {}",
-                        block_scan_block.1, block_scan_block.0, block_scan_tip, local_tip
-                    );
+                    let error_msg = "Orphan chain detected".to_string();
+                    let extra = vec![
+                        (
+                            "block_scan_block_height".to_string(),
+                            json!(block_scan_block.0.to_string()),
+                        ),
+                        (
+                            "block_scan_block_hash".to_string(),
+                            json!(block_scan_block.1.clone()),
+                        ),
+                        (
+                            "block_scan_tip_height".to_string(),
+                            json!(block_scan_tip.to_string()),
+                        ),
+                        ("local_tip_height".to_string(), json!(local_tip.to_string())),
+                    ];
                     sentry::capture_event(Event {
                         message: Some(error_msg),
                         level: sentry::Level::Error,
                         culprit: Some("orphan-chain".to_string()),
+                        extra: extra.into_iter().collect(),
                         ..Default::default()
                     });
                 }
