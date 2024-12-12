@@ -12,11 +12,10 @@ export const useAirdropUserPointsListener = () => {
         (pointsPayload: UserPoints) => {
             const incomingReferralData = pointsPayload?.referralCount;
             if (incomingReferralData?.count && incomingReferralData?.count !== currentReferralData?.count) {
-                const secondAnimationDelay = setTimeout(() => setFlareAnimationType('GoalComplete'), 2000);
                 setFlareAnimationType('FriendAccepted');
                 const goalComplete = !!bonusTiers?.find((t) => t.target === incomingReferralData?.count);
                 if (goalComplete) {
-                    clearTimeout(secondAnimationDelay);
+                    setTimeout(() => setFlareAnimationType('GoalComplete'), 3000);
                 }
 
                 setUserPoints(pointsPayload);
