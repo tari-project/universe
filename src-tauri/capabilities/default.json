@@ -20,6 +20,8 @@
         "notification:allow-show",
         "notification:allow-request-permission",
         "notification:allow-permission-state",
-        "notification:allow-notify"
+        "notification:allow-notify",
+        "notification:allow-is-permission-granted",
+        "notification:default"
     ]
 }

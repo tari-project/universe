@@ -32,6 +32,7 @@ use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
+use crate::notification_manager::NotificationManager;
 use crate::p2pool::models::{Connections, Stats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
@@ -532,6 +533,7 @@ pub async fn trigger_notification(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    // NotificationManager::current().trigger_notification(&summary, &body).map_err(|e| e.to_string())?;
     let notification = app.notification().builder()
         .title(summary)
         .body(body)
