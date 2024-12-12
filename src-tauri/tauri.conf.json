@@ -52,7 +52,8 @@
                 "height": 780,
                 "label": "splashscreen",
                 "url": "/splash.html",
-                "center": true
+                "center": true,
+                "useHttpsScheme": true
             },
             {
                 "title": "Tari Universe (Alpha) | Testnet",
@@ -65,7 +66,8 @@
                 "fullscreen": false,
                 "transparent": false,
                 "visible": false,
-                "center": true
+                "center": true,
+                "useHttpsScheme": true
             }
         ]
     },
