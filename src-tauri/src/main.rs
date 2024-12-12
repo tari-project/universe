@@ -30,6 +30,7 @@ use log::{debug, error, info, warn};
 use p2pool::models::Connections;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use tokio::sync::watch::{self};
+use updates_manager::UpdatesManager;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -113,6 +114,7 @@ mod telemetry_manager;
 mod tests;
 mod tor_adapter;
 mod tor_manager;
+mod updates_manager;
 mod user_listener;
 mod utils;
 mod wallet_adapter;
@@ -178,6 +180,11 @@ async fn setup_inner(
         )?;
         return Ok(());
     }
+
+    state
+        .updates_manager
+        .init_periodic_updates(app.clone())
+        .await?;
 
     let data_dir = app
         .path()
@@ -577,6 +584,7 @@ struct UniverseAppState {
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
+    updates_manager: UpdatesManager,
     cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
@@ -645,6 +653,8 @@ fn main() {
         p2pool_manager.clone(),
     );
 
+    let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
+
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
     let mm_proxy_manager = MmProxyManager::new();
@@ -671,6 +681,7 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
         tor_manager: TorManager::new(),
+        updates_manager,
         cached_p2pool_stats: Arc::new(RwLock::new(None)),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_wallet_details: Arc::new(RwLock::new(None)),
@@ -885,6 +896,10 @@ fn main() {
             commands::get_p2pool_connections,
             commands::set_p2pool_stats_server_port,
             commands::get_used_p2pool_stats_server_port,
+            commands::proceed_with_update,
+            commands::set_pre_release,
+            commands::check_for_updates,
+            commands::try_update,
             commands::get_network,
             commands::trigger_notification
         ])

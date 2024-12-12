@@ -7,8 +7,6 @@ import { useMiningStore } from './useMiningStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 
 interface AppState {
-    isAfterAutoUpdate: boolean;
-    setIsAfterAutoUpdate: (value: boolean) => void;
     criticalError?: string;
     setCriticalError: (value: string | undefined) => void;
     error?: string;
@@ -39,8 +37,6 @@ interface AppState {
 }
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
-    isAfterAutoUpdate: false,
-    setIsAfterAutoUpdate: (value: boolean) => set({ isAfterAutoUpdate: value }),
     criticalError: undefined,
     setCriticalError: (criticalError) => set({ criticalError }),
     error: undefined,
@@ -65,7 +61,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     isSettingUp: true,
     setIsSettingUp: (value: boolean) => set({ isSettingUp: value }),
     setSettingUpFinished: async () => {
-        set({ isSettingUp: false });
         setAnimationState('showVisual');
 
         // Proceed with auto mining when enabled
@@ -74,6 +69,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             const startMining = useMiningStore.getState().startMining;
             await startMining();
         }
+        set({ isSettingUp: false });
     },
     applications_versions: undefined,
     fetchApplicationsVersions: async () => {
