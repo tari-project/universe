@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::SystemTime};
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 use serde::Serialize;
 use serde_json::Value;
 use tokio::sync::{
@@ -9,11 +9,14 @@ use tokio::sync::{
 };
 use tokio_util::sync::CancellationToken;
 
-use crate::{app_config::AppConfig, app_in_memory_config::AppInMemoryConfig};
+use crate::{
+    app_config::AppConfig, app_in_memory_config::AppInMemoryConfig,
+    process_utils::retry_with_backoff,
+};
 
 const LOG_TARGET: &str = "tari::universe::telemetry_service";
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct TelemetryData {
     event_name: String,
     event_value: Value,
@@ -64,7 +67,8 @@ impl TelemetryService {
             in_memory_config,
         }
     }
-    pub async fn init(&mut self) -> Result<(), TelemetryServiceError> {
+    pub async fn init(&mut self, app_version: String) -> Result<(), TelemetryServiceError> {
+        self.version = app_version;
         let cancellation_token = self.cancellation_token.clone();
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
@@ -84,7 +88,20 @@ impl TelemetryService {
                     while let Some(telemetry_data) = rx.recv().await {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
-                            drop(send_telemetry_data(telemetry_data, telemetry_api_url.clone(), app_id.clone(), version.clone()).await);
+                            drop(retry_with_backoff(
+                                || {
+                                    Box::pin(send_telemetry_data(
+                                        telemetry_data.clone(),
+                                        telemetry_api_url.clone(),
+                                        app_id.clone(),
+                                        version.clone(),
+                                    ))
+                                },
+                                3,
+                                2,
+                                "send_telemetry_data",
+                            )
+                            .await);
                         }
                     }
                 } => {},

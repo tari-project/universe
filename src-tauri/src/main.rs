@@ -236,7 +236,14 @@ async fn setup_inner(
         .await
         .initialize(state.airdrop_access_token.clone(), window.clone())
         .await?;
-    state.telemetry_service.write().await.init().await?;
+
+    let app_version = app.package_info().version.clone();
+    state
+        .telemetry_service
+        .write()
+        .await
+        .init(app_version.to_string())
+        .await?;
     let telemetry_service = state.telemetry_service.clone();
     let telemetry_service = telemetry_service.read().await;
     let telemetry_service = telemetry_service.deref();
@@ -250,7 +257,7 @@ async fn setup_inner(
     if use_tor && !cfg!(target_os = "macos") {
         telemetry_service
             .send(
-                "tor_init".to_string(),
+                "checking-latest-version-tor".to_string(),
                 json!({
                     "service": "tor_manager",
                     "percentage": 0,
@@ -275,7 +282,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "minotari_node_init".to_string(),
+                "checking-latest-version-node".to_string(),
                 json!({
                     "service": "node_manager",
                     "percentage": 5,
@@ -300,7 +307,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "mmproxy_init".to_string(),
+                "checking-latest-version-mmproxy".to_string(),
                 json!({
                     "service": "mmproxy",
                     "percentage": 10,
@@ -325,7 +332,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "wallet_init".to_string(),
+                "checking-latest-version-wallet".to_string(),
                 json!({
                     "service": "wallet",
                     "percentage": 15,
@@ -350,7 +357,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "gpuminer_init".to_string(),
+                "checking-latest-version-gpuminer".to_string(),
                 json!({
                     "service": "gpuminer",
                     "percentage":20,
@@ -375,7 +382,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "xmrig_init".to_string(),
+                "checking-latest-version-xmrig".to_string(),
                 json!({
                     "service": "xmrig",
                     "percentage":25,
@@ -400,7 +407,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "sha_p2pool_init".to_string(),
+                "checking-latest-version-sha-p2pool".to_string(),
                 json!({
                     "service": "sha_p2pool",
                     "percentage":30,
@@ -491,7 +498,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "wallet_init".to_string(),
+                "waiting-for-wallet".to_string(),
                 json!({
                     "service": "wallet",
                     "percentage":35,
@@ -516,7 +523,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "initial_sync".to_string(),
+                "preparing-for-initial-sync".to_string(),
                 json!({
                     "service": "initial_sync",
                     "percentage":40,
@@ -534,7 +541,7 @@ async fn setup_inner(
         drop(
             telemetry_service
                 .send(
-                    "starting_p2pool".to_string(),
+                    "starting-p2pool".to_string(),
                     json!({
                         "service": "starting_p2pool",
                         "percentage":75,
@@ -568,7 +575,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "starting_mmproxy".to_string(),
+                "starting-mmproxy".to_string(),
                 json!({
                     "service": "starting_mmproxy",
                     "percentage":85,
@@ -615,7 +622,7 @@ async fn setup_inner(
     drop(
         telemetry_service
             .send(
-                "setup_finished".to_string(),
+                "setup-finished".to_string(),
                 json!({
                     "service": "setup_finished",
                     "percentage":100,
