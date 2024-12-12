@@ -32,11 +32,11 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-22.04'
-            args: ''
+            args: '--bundles updater'
           - platform: 'windows-latest'
-            args: ''
+            args: '--bundles msi,updater'
           - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+            args: '--target universal-apple-darwin --bundles updater'
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
