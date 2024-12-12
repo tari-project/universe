@@ -11,6 +11,7 @@
     },
     "bundle": {
         "active": true,
+        "targets": ["deb", "rpm", "appimage", "msi", "dmg"],
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
         },
