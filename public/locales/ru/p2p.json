@@ -1,14 +1,14 @@
 {
-  "listener-addresses": "Listener addresses",
+  "listener-addresses": "Адрес слушателя",
   "miners": "Майнеры",
-  "network-info": "Network info",
+  "network-info": "Информация о сети",
   "p2pool-chain-tip": "Совет цепи P2Pool",
   "p2pool-connected": "P2Pool подключен",
   "p2pool-connection-info": "Подключение",
   "p2pool-connection-info-more": "Детали подключения",
-  "p2pool-peers": "P2pool peers",
+  "p2pool-peers": "P2pool пиры",
   "p2pool-stats": "Статистика майнинга в пуле",
-  "randomx-stats": "RandomX Stats",
-  "sha3-stats": "SHA3 Stats",
-  "tribe": "Племя"
+  "randomx-stats": "RandomX Статистика",
+  "sha3-stats": "SHA3 Статистика",
+  "tribe": "Команда"
 }
