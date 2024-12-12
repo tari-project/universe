@@ -92,6 +92,7 @@ pub struct UpdatesManager {
 
 impl UpdatesManager {
     pub fn new(config: Arc<RwLock<AppConfig>>, app_shutdown: ShutdownSignal) -> Self {
+
         Self {
             config,
             update: Arc::new(RwLock::new(None)),
@@ -103,7 +104,7 @@ impl UpdatesManager {
         let app_clone = app.clone();
         let self_clone = self.clone();
         tauri::async_runtime::spawn(async move {
-            let mut interval = time::interval(Duration::from_secs(300));
+            let mut interval = time::interval(Duration::from_secs(3600));
             loop {
                 if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
                 {
@@ -134,8 +135,6 @@ impl UpdatesManager {
 
                 let is_screen_locked = SystemStatus::current().is_in_sleep_mode().await;
 
-                info!(target: LOG_TARGET, "try_update: Screen locked: {}", is_screen_locked);
-
                 if is_screen_locked && is_auto_update {
                     info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");
                     let payload = CouldNotUpdatePayload {
@@ -145,7 +144,8 @@ impl UpdatesManager {
                     drop(app.emit("updates_event", payload).inspect_err(|e| {
                         warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {}", e);
                     }));
-                } else if force {
+                }
+                else if force {
                     info!(target: LOG_TARGET, "try_update: Proceeding with force update");
                     self.proceed_with_update(app.clone()).await?;
                 } else if is_auto_update {
