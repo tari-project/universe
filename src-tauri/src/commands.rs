@@ -36,6 +36,7 @@ use crate::p2pool::models::{Connections, Stats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
+use crate::utils::system_status::SystemStatus;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -1019,6 +1020,13 @@ pub async fn set_auto_update(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
         .map_err(|e| e.to_string())?;
+
+    if auto_update {
+        SystemStatus::current().spawn_listener().await.map_err(|e| e.to_string())?;
+    }else {
+        SystemStatus::current().stop_listener().await.map_err(|e| e.to_string())?;
+    }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
     }

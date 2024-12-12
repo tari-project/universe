@@ -23,6 +23,22 @@ interface AskForUpdatePayload {
     version: string;
 }
 
+interface CouldNotUpdatePayload {
+    event_type: 'could_not_update';
+    error: string;
+}
+
+const resolveSubtitle = (isDownloading: boolean, couldNotUpdate: boolean) => {
+    switch (true) {
+        case isDownloading:
+            return 'installing-latest-version';
+        case couldNotUpdate:
+            return 'could-not-auto-update';
+        default:
+            return 'would-you-like-to-install';
+    }
+};
+
 export default function AutoUpdateDialog() {
     const { t } = useTranslation('setup-view', { useSuspense: false });
     const open = useUIStore((s) => s.dialogToShow === 'autoUpdate');
@@ -30,15 +46,21 @@ export default function AutoUpdateDialog() {
     const [version, setVersion] = useState('');
     const [downloaded, setDownloaded] = useState(0);
     const [contentLength, setContentLength] = useState(0);
+    const [couldNotUpdate, setCouldNotUpdate] = useState(false);
 
     const isDownloading = downloaded > 0;
     const isDownloaded = isDownloading && downloaded === contentLength;
-    const subtitle = isDownloading ? 'installing-latest-version' : 'would-you-like-to-install';
+    const subtitle = resolveSubtitle(isDownloading, couldNotUpdate);
+
+    // useEffect(() => {
+    //     setDialogToShow('autoUpdate');
+    //     setCouldNotUpdate(true);
+    // }, []);
 
     useEffect(() => {
         const unlistenPromise = listen(
             'updates_event',
-            ({ payload }: { payload: AskForUpdatePayload | DownloadProgressPayload }) => {
+            ({ payload }: { payload: AskForUpdatePayload | DownloadProgressPayload | CouldNotUpdatePayload }) => {
                 switch (payload.event_type) {
                     case 'ask_for_update':
                         setDialogToShow('autoUpdate');
@@ -51,6 +73,10 @@ export default function AutoUpdateDialog() {
                         }
                         setDownloaded(payload.downloaded);
                         setContentLength(payload.total);
+                        break;
+                    case 'could_not_update':
+                        setDialogToShow('autoUpdate');
+                        setCouldNotUpdate(true);
                         break;
                     default:
                         console.warn('Unknown tauri event: ', payload);
@@ -81,7 +107,7 @@ export default function AutoUpdateDialog() {
                 {isDownloading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
                 {isDownloaded && <Typography variant="p">{`Update downloaded: Restarting Tari Universe`}</Typography>}
                 <ButtonsWrapper>
-                    {!isDownloading && (
+                    {!isDownloading && !couldNotUpdate && (
                         <>
                             <SquaredButton onClick={handleClose} color="warning">
                                 {t('no')}
@@ -90,6 +116,11 @@ export default function AutoUpdateDialog() {
                                 {t('yes')}
                             </SquaredButton>
                         </>
+                    )}
+                    {couldNotUpdate && (
+                        <SquaredButton onClick={handleClose} color="green">
+                            {t('close')}
+                        </SquaredButton>
                     )}
                 </ButtonsWrapper>
             </DialogContent>

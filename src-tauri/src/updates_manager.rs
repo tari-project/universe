@@ -31,10 +31,9 @@ use tauri::{Emitter, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
-use crate::app_config::AppConfig;
+use crate::{app_config::AppConfig, utils::system_status::SystemStatus};
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
-
 const LOG_TARGET: &str = "tari::universe::updates_manager";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -50,6 +49,21 @@ impl DownloadProgressPayload {
             event_type: "download_progress".to_string(),
             downloaded,
             total,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CouldNotUpdatePayload {
+    pub event_type: String,
+    pub version: String,
+}
+
+impl CouldNotUpdatePayload {
+    pub fn new(version: String) -> Self {
+        Self {
+            event_type: "could_not_update".to_string(),
+            version,
         }
     }
 }
@@ -78,6 +92,7 @@ pub struct UpdatesManager {
 
 impl UpdatesManager {
     pub fn new(config: Arc<RwLock<AppConfig>>, app_shutdown: ShutdownSignal) -> Self {
+
         Self {
             config,
             update: Arc::new(RwLock::new(None)),
@@ -118,7 +133,13 @@ impl UpdatesManager {
                 *self.update.write().await = Some(update);
                 let is_auto_update = self.config.read().await.auto_update();
 
-                if force {
+                let is_screen_locked = true;
+                // let is_screen_locked = SystemStatus::current().is_in_sleep_mode().await;
+
+                if is_screen_locked {
+                    info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");
+                }
+                else if force {
                     info!(target: LOG_TARGET, "try_update: Proceeding with force update");
                     self.proceed_with_update(app.clone()).await?;
                 } else if is_auto_update {

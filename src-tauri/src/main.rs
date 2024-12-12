@@ -28,6 +28,7 @@ use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
 use p2pool::models::Connections;
+use utils::system_status::SystemStatus;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
@@ -154,6 +155,9 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
+
+    SystemStatus::current().spawn_listener().await?;
+
     app.emit(
         "message",
         SetupStatusEvent {
@@ -218,8 +222,17 @@ async fn setup_inner(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
+
     let use_tor = app_config.use_tor();
+    let is_auto_update_enabled = app_config.auto_update();
     drop(app_config);
+
+    if is_auto_update_enabled {
+        SystemStatus::current().spawn_listener().await?;
+    }else {
+        SystemStatus::current().stop_listener().await?;
+    }
+
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let is_auto_launcher_enabled = state.config.read().await.should_auto_launch();
