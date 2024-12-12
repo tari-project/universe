@@ -24,15 +24,13 @@ use std::{sync::LazyLock, time::Duration};
 
 use anyhow::{anyhow, Error};
 use log::info;
-use psp::monitor::{PowerMonitor,PowerState};
+use psp::monitor::{PowerMonitor, PowerState};
 use tokio::sync::RwLock;
 use tokio_util::sync::CancellationToken;
-
 
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
 
 static INSTANCE: LazyLock<SystemStatus> = LazyLock::new(SystemStatus::new);
-
 
 pub struct SystemStatus {
     power_monitor: PowerMonitor,
@@ -48,10 +46,9 @@ impl SystemStatus {
         Self {
             power_monitor,
             cancelation_token: RwLock::new(None),
-            is_in_sleep_mode: RwLock::new(false)
+            is_in_sleep_mode: RwLock::new(false),
         }
     }
-        
 
     fn start_listener(power_monitor: &PowerMonitor) -> Result<(), Error> {
         power_monitor.start_listening().map_err(|e| anyhow!(e))?;
@@ -72,11 +69,11 @@ impl SystemStatus {
                 PowerState::ScreenLocked => {
                     info!(target: LOG_TARGET, "Screen locked");
                     *self.is_in_sleep_mode.write().await = true;
-                },
+                }
                 PowerState::Suspend => {
                     info!(target: LOG_TARGET, "Suspend");
                     *self.is_in_sleep_mode.write().await = true;
-                },
+                }
                 _ => {
                     info!(target: LOG_TARGET, "Other event");
                     *self.is_in_sleep_mode.write().await = false;
@@ -119,12 +116,10 @@ impl SystemStatus {
         }
         Ok(())
     }
-                
 
     pub async fn is_in_sleep_mode(&self) -> bool {
         *self.is_in_sleep_mode.read().await
     }
-
 
     pub fn current() -> &'static SystemStatus {
         &INSTANCE

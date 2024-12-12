@@ -1022,9 +1022,15 @@ pub async fn set_auto_update(
         .map_err(|e| e.to_string())?;
 
     if auto_update {
-        SystemStatus::current().spawn_listener().await.map_err(|e| e.to_string())?;
-    }else {
-        SystemStatus::current().stop_listener().await.map_err(|e| e.to_string())?;
+        SystemStatus::current()
+            .spawn_listener()
+            .await
+            .map_err(|e| e.to_string())?;
+    } else {
+        SystemStatus::current()
+            .stop_listener()
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {

@@ -28,10 +28,10 @@ use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
 use p2pool::models::Connections;
-use utils::system_status::SystemStatus;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
+use utils::system_status::SystemStatus;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -155,7 +155,6 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-
     SystemStatus::current().spawn_listener().await?;
 
     app.emit(
@@ -229,7 +228,7 @@ async fn setup_inner(
 
     if is_auto_update_enabled {
         SystemStatus::current().spawn_listener().await?;
-    }else {
+    } else {
         SystemStatus::current().stop_listener().await?;
     }
 
