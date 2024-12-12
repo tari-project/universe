@@ -1,4 +1,3 @@
-import { MinerMetrics } from '@app/types/app-status';
 import {
     menu,
     CPU_HASH_ITEM_ID,
@@ -8,16 +7,14 @@ import {
     MINIMIZE_ITEM_ID,
 } from '@app/utils';
 import { listen } from '@tauri-apps/api/event';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils';
 import { MenuItem } from '@tauri-apps/api/menu/menuItem';
-
-const currentWindow = getCurrentWindow();
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export function useUpdateSystemTray() {
-    const [metrics, setMetrics] = useState<MinerMetrics>();
+    const metrics = useMiningStore();
 
     const totalEarningsFormatted = useMemo(() => {
         const cpu_est = metrics?.cpu?.mining?.estimated_earnings || 0;
@@ -67,15 +64,11 @@ export function useUpdateSystemTray() {
     }, [items, updateMenuItem]);
 
     useEffect(() => {
-        const ul = listen('miner_metrics', async ({ payload }) => {
-            const minimized = await currentWindow.isMinimized();
-
+        const ul = listen('tray-event', async ({ payload }: { payload?: { itemId: string } }) => {
             if (payload) {
-                setMetrics(payload as MinerMetrics);
+                await updateMenuItemEnabled(UNMINIMIZE_ITEM_ID, payload.itemId !== UNMINIMIZE_ITEM_ID);
+                await updateMenuItemEnabled(MINIMIZE_ITEM_ID, payload.itemId !== MINIMIZE_ITEM_ID);
             }
-
-            await updateMenuItemEnabled(UNMINIMIZE_ITEM_ID, minimized);
-            await updateMenuItemEnabled(MINIMIZE_ITEM_ID, !minimized);
         });
         return () => {
             ul.then((unlisten) => unlisten());

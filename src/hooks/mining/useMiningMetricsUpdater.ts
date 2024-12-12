@@ -5,10 +5,7 @@ import { setAnimationState } from '@app/visuals.ts';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
-import useFetchTx from './useTransactions.ts';
-
 export default function useMiningMetricsUpdater() {
-    const fetchTx = useFetchTx();
     const currentBlockHeight = useMiningStore((s) => s.base_node.block_height);
     const baseNodeConnected = useMiningStore((s) => s.base_node.is_connected);
     const setMiningMetrics = useMiningStore((s) => s.setMiningMetrics);
@@ -30,13 +27,7 @@ export default function useMiningMetricsUpdater() {
                 const blockHeight = metrics.base_node.block_height;
                 if (blockHeight > 0 && currentBlockHeight > 0 && blockHeight > currentBlockHeight) {
                     try {
-                        fetchTx()
-                            .then(async () => {
-                                await handleNewBlock(blockHeight, isMining);
-                            })
-                            .catch(() => {
-                                setDisplayBlockHeight(blockHeight);
-                            });
+                        await handleNewBlock(blockHeight, isMining);
                     } catch (_) {
                         setDisplayBlockHeight(blockHeight);
                     }
@@ -52,7 +43,6 @@ export default function useMiningMetricsUpdater() {
             baseNodeConnected,
             currentBlockHeight,
             displayBlockHeight,
-            fetchTx,
             handleNewBlock,
             setDisplayBlockHeight,
             setMiningMetrics,

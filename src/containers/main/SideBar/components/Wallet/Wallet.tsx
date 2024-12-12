@@ -12,7 +12,6 @@ import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
-import useFetchTx from '@app/hooks/mining/useTransactions.ts';
 import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
 import History from './History.tsx';
 
@@ -34,7 +33,6 @@ export default function Wallet() {
 
     const balance = useWalletStore((s) => s.balance);
     const transactions = useWalletStore((s) => s.transactions);
-    const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
 
@@ -46,7 +44,6 @@ export default function Wallet() {
     const [showLongBalance, setShowLongBalance] = useState(false);
     const [animateNumbers, setShowAnimateNumbers] = useState(true);
 
-    const fetchTx = useFetchTx();
     const formatted = formatNumber(balance || 0, FormatPreset.TXTM_COMPACT);
     const formattedLong = formatNumber(balance || 0, FormatPreset.TXTM_LONG);
 
@@ -63,15 +60,9 @@ export default function Wallet() {
     const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
 
     const handleShowClick = useCallback(() => {
-        if (balance && !transactions.length && !isTransactionLoading) {
-            fetchTx().then(() => setShowHistory((c) => !c));
-            return;
-        }
-
         setRecapCount(undefined);
-
         setShowHistory((c) => !c);
-    }, [balance, fetchTx, isTransactionLoading, setRecapCount, transactions?.length]);
+    }, [setRecapCount]);
 
     const handleSyncButtonClick = () => {
         setShowPaperWalletModal(true);
@@ -162,7 +153,7 @@ export default function Wallet() {
                             text={t('paper-wallet-tooltip-message')}
                         />
                     )}
-                    {balance ? (
+                    {balance && transactions?.length ? (
                         <CornerButton onClick={handleShowClick} $hasReward={showCount}>
                             {showCount && (
                                 <CornerButtonBadge>

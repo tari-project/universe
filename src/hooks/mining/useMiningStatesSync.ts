@@ -9,9 +9,11 @@ import { useBlockInfo } from './useBlockInfo.ts';
 import { useUiMiningStateMachine } from './useMiningUiStateMachine.ts';
 import useMiningMetricsUpdater from './useMiningMetricsUpdater.ts';
 import useEarningsRecap from './useEarningsRecap.ts';
+import useFetchTx from '@app/hooks/mining/useTransactions.ts';
 
 export function useMiningStatesSync() {
     const handleMiningMetrics = useMiningMetricsUpdater();
+    const fetchTx = useFetchTx();
     const fetchWalletDetails = useWalletStore((s) => s.fetchWalletDetails);
     const setupProgress = useAppStateStore((s) => s.setupProgress);
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
@@ -23,14 +25,15 @@ export function useMiningStatesSync() {
     const callIntervalItems = useCallback(async () => {
         if (setupProgress >= 0.75) {
             await fetchWalletDetails();
+            await fetchTx();
         }
-    }, [fetchWalletDetails, setupProgress]);
+    }, [fetchWalletDetails, fetchTx, setupProgress]);
 
     // intervalItems
     useEffect(() => {
         const fetchInterval = setInterval(async () => {
             await callIntervalItems();
-        }, 1000);
+        }, 10500);
 
         return () => {
             clearInterval(fetchInterval);
