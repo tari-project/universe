@@ -1,5 +1,6 @@
-import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper } from './CharSpinner.styles.ts';
-import { LayoutGroup, m } from 'framer-motion';
+import { Trans } from 'react-i18next';
+import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper, XTMWrapper } from './CharSpinner.styles.ts';
+import { LayoutGroup } from 'framer-motion';
 
 const transition = {
     type: 'spring',
@@ -14,6 +15,8 @@ interface CharSpinnerProps {
     value: string;
     fontSize: number;
     variant?: CharSpinnerVariant;
+    XTMAlignment?: 'baseline' | 'center';
+    animateNumbers?: boolean;
 }
 
 const sizing = {
@@ -27,7 +30,13 @@ const sizing = {
     },
 };
 
-export default function CharSpinner({ value, variant = 'large', fontSize }: CharSpinnerProps) {
+export default function CharSpinner({
+    value,
+    variant = 'large',
+    fontSize,
+    XTMAlignment = 'baseline',
+    animateNumbers = true,
+}: CharSpinnerProps) {
     const letterHeight = Math.ceil(fontSize * 1.01);
     const charArray = value.split('').map((c) => c);
     const letterWidth = Math.floor(fontSize / sizing[variant].widthDiv);
@@ -38,11 +47,10 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
         if (!isNum) {
             return (
                 <Characters
-                    layout
                     $decimal={isDec}
                     key={`dec-${i}`}
                     layout-id={`dec-${i}`}
-                    initial={{ y: letterHeight }}
+                    initial={animateNumbers ? { y: letterHeight } : false}
                     animate={{ y: 0 }}
                     transition={transition}
                     $letterHeight={letterHeight}
@@ -51,16 +59,16 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
                     $variant={variant}
                 >
                     {isDec ? (
-                        <Character $decimal={isDec} $letterWidth={letterWidth} $fontSize={fontSize}>
+                        <Character $decimal $letterWidth={letterWidth} $fontSize={fontSize}>
                             {char}
                         </Character>
                     ) : (
                         <Character
+                            $unit
                             key={`${i}-${char}`}
                             layout-id={`${i}-${char}`}
                             $letterWidth={letterWidth}
                             $fontSize={fontSize - 8}
-                            style={{ marginTop: '2px' }}
                         >
                             {char}
                         </Character>
@@ -73,7 +81,7 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
         return (
             <Characters
                 key={`char-${i}-${char}`}
-                initial={{ y: 0 }}
+                initial={animateNumbers ? { y: 0 } : false}
                 animate={{ y: `-${y}px` }}
                 $letterWidth={letterWidth}
                 transition={transition}
@@ -91,14 +99,19 @@ export default function CharSpinner({ value, variant = 'large', fontSize }: Char
     });
 
     return (
-        <Wrapper>
+        <Wrapper $alignment={XTMAlignment} $variant={variant}>
             <LayoutGroup id="char-spinner">
-                <SpinnerWrapper style={{ height: letterHeight }} $variant={variant} layout>
-                    <CharacterWrapper style={{ height: letterHeight * 10 }} layout>
+                <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
+                    <CharacterWrapper style={{ height: letterHeight * 10 }}>
                         <LayoutGroup id="characters">{charMarkup}</LayoutGroup>
                     </CharacterWrapper>
                 </SpinnerWrapper>
-                <m.span layout>tXTM</m.span>
+                {/* // eslint-disable-next-line i18next/no-literal-string */}
+                {value === '-' ? null : (
+                    <XTMWrapper>
+                        <Trans>tXTM</Trans>
+                    </XTMWrapper>
+                )}
             </LayoutGroup>
         </Wrapper>
     );

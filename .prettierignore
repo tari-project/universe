@@ -5,6 +5,9 @@ coverage
 # Ignore all HTML files:
 **/*.html
 
+# Ignore all JSON files in locales:
+**/locales/**/*.json
+
 # Logs
 logs
 *.log

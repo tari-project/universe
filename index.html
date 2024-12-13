@@ -4,87 +4,179 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/tari.svg" />
+
+    <!-- Preload Poppins fonts -->
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Medium.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Poppins/Poppins-ExtraBold.woff2" as="font" type="font/woff2" crossorigin>
+
+    <!-- Preload Druk fonts -->
+    <link rel="preload" href="/assets/fonts/Druk/DrukLCG-Bold.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Medium.ttf" as="font" type="font/ttf" crossorigin>
+    <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Bold.ttf" as="font" type="font/ttf" crossorigin>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+
     <script type="module" crossorigin src="/assets/glApp.js"></script>
     <title>Tari Universe | Testnet</title>
     <style>
+      /* Poppins Font Faces */
+
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 400;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-Regular.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-Regular.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 500;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-Medium.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-Medium.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-Medium.ttf") format("truetype");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 600;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-SemiBold.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-SemiBold.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-SemiBold.ttf") format("truetype");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 700;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-Bold.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-Bold.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-Bold.ttf") format("truetype");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Poppins";
+        font-weight: 800;
+        font-style: normal;
+        src:
+          url("/assets/fonts/Poppins/Poppins-ExtraBold.woff2") format("woff2"),
+          url("/assets/fonts/Poppins/Poppins-ExtraBold.woff") format("woff"),
+          url("/assets/fonts/Poppins/Poppins-ExtraBold.ttf") format("truetype");
+        font-display: swap;
+      }
+
+
+      /* Druk Font Faces */
+
+      @font-face {
+        font-family: "Druk";
+        src: url("/assets/fonts/Druk/DrukLCG-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "DrukWide";
+        src: url("/assets/fonts/Druk/DrukWideLCG-Medium.ttf") format("truetype");
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "DrukWide";
+        src: url("/assets/fonts/Druk/DrukWideLCG-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+
+
+      /* Existing styles */
+      body,
+      main,
+      #root {
+        padding: 0;
+        margin: 0;
+      }
+
       #canvas {
         position: absolute;
         pointer-events: auto;
       }
-  </style>
-</head>
-<body>
-<main>
-  <canvas id="canvas"></canvas>
-  <div id="root"></div>
-  <script type="module" src="src/main.tsx"></script>
-  <script>
-    let time;
-    function preload() {
-      glApp?.preload(
-          {
-            canvas: document.getElementById("canvas"),
-            orbitTarget: document.getElementById("canvas"),
-            ASSETS_PATH: "/assets/",
-          },
-          () => {
-            init()
-          },
-      );
-    }
+    </style>
+  </head>
+  <body>
+    <main>
+      <canvas id="canvas"></canvas>
+      <div id="root"></div>
+      <script type="module" src="src/main.tsx"></script>
+      <script>
+        let time;
 
-    function init() {
-      glApp.init();
-      time = performance.now() / 1000;
+        function preload() {
+          glApp.preload(
+              {
+                canvas: document.getElementById('canvas'),
+                orbitTarget: document.getElementById('canvas'),
+                ASSETS_PATH: '/assets/',
+              },
+              () => {
+                init();
+              },
+          );
+        }
 
-      glApp.properties.lightPositionX = -5;
-      glApp.properties.lightPositionY = 3;
-      glApp.properties.lightPositionZ = 5;
-      glApp.properties.goboIntensity = 0.5;
+        function init() {
+          glApp.init();
+          time = performance.now() / 1000;
+          window.addEventListener('resize', onResize);
 
-      glApp.properties.defaultColor = '#FFFFFF';
-      glApp.properties.startColor = '#40d1f7';
-      glApp.properties.endColor = '#5ff09a';
+          onResize();
+          animate();
+        }
 
-      glApp.properties.showVisual = true;
-      window.addEventListener("resize", onResize);
-      onResize();
-      animate();
-    }
+        function animate() {
+          requestAnimationFrame(animate);
 
-    const sidebarOffset = 348 + 20; // sidebar + padding
-    function onResize() {
-      glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
-      glApp.setSize(window.innerWidth, window.innerHeight);
-    }
+          let newTime = performance.now() / 1000;
+          let dt = newTime - time;
+          time = newTime;
 
-    function animate() {
-      requestAnimationFrame(animate);
-      let newTime = performance.now() / 1000;
-      let dt = newTime - time;
-      time = newTime;
+          update(dt);
+        }
 
-      update(dt);
-    }
+        function update(dt) {
+          glApp.render(dt);
+        }
 
-    function update(dt) {
-      glApp.render(dt);
-    }
+        function onResize() {
+          const sidebarOffset = 348 + 20; // sidebar + padding
+          glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
+          glApp.setSize(window.innerWidth, window.innerHeight);
+        }
 
-    document.addEventListener(
-        "contextmenu",
-        (e) => {
-          if (window.location.hostname !== "tauri.localhost") {
+        document.addEventListener('DOMContentLoaded', () => {
+          if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
+            console.error('WebGL not supported!');
             return;
           }
-          e.preventDefault();
-          return false;
-        },
-        { capture: true },
-    );
 
-    document.addEventListener("DOMContentLoaded", preload);
-  </script>
-</main>
+          preload();
+        });
+      </script>
+    </main>
 </body>
 </html>

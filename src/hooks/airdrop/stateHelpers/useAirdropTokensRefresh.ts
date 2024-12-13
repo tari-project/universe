@@ -1,49 +1,57 @@
-import { useAirdropStore } from '@app/store/useAirdropStore';
-// import { useInterval } from "../useInterval";
+import { AirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { useCallback, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
 
-export function useAirdropTokensRefresh() {
-    const { airdropTokens, setAirdropTokens, backendInMemoryConfig } = useAirdropStore();
+export async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: AirdropTokens) {
+    const response = await fetch(`${airdropApiUrl}/auth/local/refresh`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            refreshToken: airdropTokens.refreshToken,
+        }),
+    });
+    if (!response.ok) {
+        throw new Error('Failed to refresh token');
+    }
 
-    // Handle refreshing the access token
-    const handleRefresh = useCallback(
-        (airdropApiUrl: string) => {
+    const data: AirdropTokens = await response.json();
+    return data;
+}
+
+export function useHandleAirdropTokensRefresh() {
+    const { airdropTokens, setAirdropTokens } = useAirdropStore();
+    const syncedAidropWithBackend = useAirdropStore((s) => s.syncedWithBackend);
+
+    return useCallback(
+        async (airdropApiUrl: string) => {
+            let fetchedAirdropTokens: AirdropTokens | undefined;
             // 5 hours from now
             const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
             const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
 
             const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
-            if (airdropTokens && tokenHasExpired) {
-                fetch(`${airdropApiUrl}/auth/local/refresh`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        refreshToken: airdropTokens.refreshToken,
-                    }),
-                })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        setAirdropTokens(data);
-                    });
+            if (airdropTokens && (!syncedAidropWithBackend || tokenHasExpired)) {
+                try {
+                    fetchedAirdropTokens = await fetchAirdropTokens(airdropApiUrl, airdropTokens);
+                } catch (error) {
+                    console.error('Error refreshing airdrop tokens:', error);
+                }
             }
+            await setAirdropTokens(fetchedAirdropTokens);
         },
-        [airdropTokens, setAirdropTokens]
+        [airdropTokens, setAirdropTokens, syncedAidropWithBackend]
     );
+}
+export function useAirdropTokensRefresh() {
+    const { backendInMemoryConfig } = useAirdropStore();
+
+    // Handle refreshing the access token
+    const handleRefresh = useHandleAirdropTokensRefresh();
 
     useEffect(() => {
         if (!backendInMemoryConfig?.airdropApiUrl) return;
-        const interval = setInterval(handleRefresh, 1000 * 60 * 60, backendInMemoryConfig?.airdropApiUrl);
+        const interval = setInterval(() => handleRefresh(backendInMemoryConfig?.airdropApiUrl), 1000 * 60 * 60);
         return () => clearInterval(interval);
     }, [handleRefresh, backendInMemoryConfig?.airdropApiUrl]);
-
-    // Handle setting the access token
-    useEffect(() => {
-        if (!airdropTokens) return;
-        invoke('set_airdrop_access_token', { token: airdropTokens?.token }).catch((error) => {
-            console.error('Error getting airdrop tokens', error);
-        });
-    }, [airdropTokens]);
 }

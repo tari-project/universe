@@ -1,0 +1,11 @@
+{
+  "field-error-message": {
+    "integers-only": "केवल पूर्णांक की अनुमति है",
+    "invalid": "फ़ील्ड अमान्य",
+    "invalid-date": "तारीख अमान्य है",
+    "invalid-email": "एक मान्य ईमेल पता दर्ज करें",
+    "invalid-url": "एक मान्य URL पता होना चाहिए",
+    "password-too-short": "पासवर्ड में कम से कम 8 वर्ण होने चाहिए",
+    "required": "फ़ील्ड आवश्यक"
+  }
+}

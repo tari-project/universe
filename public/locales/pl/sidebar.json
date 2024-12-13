@@ -1,8 +1,28 @@
 {
-    "auto-miner": "Automatyczne kopanie",
-    "auto-miner-description": "Automatyczne kopanie włączy koparkę, gdy twoje urządzenie będzie bezczynne",
-    "next-milestone": "Następny kamień milowy",
-    "wallet-balance": "Saldo portfela",
-    "setup-scheduler": "Ustawienia harmonogramu",
-    "mining-schedules": "Ustaw twój harmonogram kopania"
+  "auto-miner": "Automatyczne kopanie",
+  "auto-miner-description": "Automatyczne kopanie włączy koparkę, gdy twoje urządzenie będzie bezczynne",
+  "block": "Blok",
+  "hide-history": "Ukryj historię",
+  "history-hide-button": "Ukryj historię",
+  "history-show-button": "Historia",
+  "lost-connection": "Utracono połączenie z siecią Tari. Łączenie..",
+  "mining-schedules": "Ustaw twój harmonogram kopania",
+  "mining-schedules-description": "Zaplanuj swoją aktywność wydobywczą",
+  "next-milestone": "Następny kamień milowy",
+  "paper-wallet-button": "Synchronizuj z telefonem",
+  "paper-wallet-tooltip-message": "Śledź swoje XTM wszędzie, synchronizując portfel Universe z Tari Aurora.",
+  "paper-wallet-tooltip-title": "Synchronizuj z telefonem",
+  "recent-wins": "Ostanie wygrane",
+  "rewards": "Nagrody",
+  "setup-scheduler": "Ustawienia harmonogramu",
+  "share": {
+    "button-text": "POCHWAL SIĘ I ZAPROŚ",
+    "copied": "Link skopiowany!",
+    "history-item-button": "Pochwal się i zaproś",
+    "reward": "moja nagroda",
+    "title": "Właśnie wykopałem tari",
+    "winner-pill": "Zwycięzca bloku"
+  },
+  "show-history": "Pokaż historię",
+  "wallet-balance": "Saldo portfela"
 }

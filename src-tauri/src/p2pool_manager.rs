@@ -1,19 +1,38 @@
-use std::collections::HashMap;
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
-use anyhow::anyhow;
+use futures_util::future::FusedFuture;
 use log::warn;
-use tari_core::proof_of_work::PowAlgorithm;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
-use crate::network_utils;
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::{Connections, Stats};
 use crate::p2pool_adapter::P2poolAdapter;
-use crate::process_adapter::StatusMonitor;
+use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
@@ -42,14 +61,20 @@ impl P2poolConfigBuilder {
         self
     }
 
+    pub fn with_stats_server_port(&mut self, stats_server_port: Option<u16>) -> &mut Self {
+        self.config.stats_server_port = match stats_server_port {
+            Some(port) => port,
+            None => PortAllocator::new().assign_port_with_fallback(),
+        };
+        self
+    }
+
     pub fn build(&self) -> Result<P2poolConfig, anyhow::Error> {
-        let grpc_port =
-            network_utils::get_free_port().ok_or_else(|| anyhow!("Could not assign free port"))?;
-        let stats_server_port = network_utils::get_free_port()
-            .ok_or_else(|| anyhow!("Could not assign free port for stats server"))?;
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
+
         Ok(P2poolConfig {
             grpc_port,
-            stats_server_port,
+            stats_server_port: self.config.stats_server_port,
             base_node_address: self.config.base_node_address.clone(),
         })
     }
@@ -71,6 +96,14 @@ impl Default for P2poolConfig {
     }
 }
 
+impl Clone for P2poolManager {
+    fn clone(&self) -> Self {
+        Self {
+            watcher: self.watcher.clone(),
+        }
+    }
+}
+
 pub struct P2poolManager {
     watcher: Arc<RwLock<ProcessWatcher<P2poolAdapter>>>,
 }
@@ -85,32 +118,32 @@ impl P2poolManager {
         }
     }
 
-    fn default_stats(&self) -> HashMap<String, Stats> {
-        let mut p2pool_stats = HashMap::with_capacity(2);
-        p2pool_stats.insert(
-            PowAlgorithm::Sha3x.to_string().to_lowercase(),
-            Stats::default(),
-        );
-        p2pool_stats.insert(
-            PowAlgorithm::RandomX.to_string().to_lowercase(),
-            Stats::default(),
-        );
-        p2pool_stats
-    }
-
-    pub async fn stats(&self) -> HashMap<String, Stats> {
-        match self.get_stats().await {
-            Ok(stats) => stats,
-            Err(_) => self.default_stats(),
-        }
-    }
-
-    async fn get_stats(&self) -> Result<HashMap<String, Stats>, anyhow::Error> {
+    pub async fn get_stats(&self) -> Result<Option<Stats>, anyhow::Error> {
         let process_watcher = self.watcher.read().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
-            return status_monitor.status().await;
+            Ok(Some(status_monitor.status().await?))
+        } else {
+            Ok(None)
         }
-        Err(anyhow!("Failed to get stats"))
+    }
+
+    pub async fn get_connections(&self) -> Result<Option<Connections>, anyhow::Error> {
+        let process_watcher = self.watcher.read().await;
+        if let Some(status_monitor) = &process_watcher.status_monitor {
+            Ok(Some(status_monitor.connections().await?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
     }
 
     pub async fn ensure_started(
@@ -122,19 +155,30 @@ impl P2poolManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        if process_watcher.is_running() {
-            return Ok(());
-        }
+
         process_watcher.adapter.config = Some(config);
+        process_watcher.health_timeout = Duration::from_secs(28);
+        process_watcher.poll_time = Duration::from_secs(30);
         process_watcher
-            .start(app_shutdown, base_path, config_path, log_path)
+            .start(
+                app_shutdown.clone(),
+                base_path,
+                config_path,
+                log_path,
+                crate::binaries::Binaries::ShaP2pool,
+            )
             .await?;
         process_watcher.wait_ready().await?;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {
+                if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+                    break;
+                }
                 sleep(Duration::from_secs(5)).await;
                 if let Ok(_stats) = status_monitor.status().await {
                     break;
+                } else {
+                    warn!(target: LOG_TARGET, "P2pool stats not available yet");
                 }
             } // wait until we have stats from p2pool, so its started
         }
@@ -157,6 +201,16 @@ impl P2poolManager {
             .config
             .as_ref()
             .map(|c| c.grpc_port)
+            .unwrap_or_default()
+    }
+
+    pub async fn stats_server_port(&self) -> u16 {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .adapter
+            .config
+            .as_ref()
+            .map(|c| c.stats_server_port)
             .unwrap_or_default()
     }
 }

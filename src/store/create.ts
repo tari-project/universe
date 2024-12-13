@@ -1,4 +1,4 @@
-import { create as _create } from 'zustand';
+import { createWithEqualityFn as _create } from 'zustand/traditional'; //https://zustand.docs.pmnd.rs/migrations/migrating-to-v5#requiring-stable-selector-outputs
 import type { StateCreator } from 'zustand';
 
 const storeResetFns = new Set<() => void>();

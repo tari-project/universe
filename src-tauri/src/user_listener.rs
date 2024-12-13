@@ -1,7 +1,33 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use device_query::{DeviceQuery, DeviceState};
-use log::info;
+use log::{error, info};
+use tauri::Emitter;
 use tokio::time::{sleep, Duration};
 use tokio_util::sync::CancellationToken;
+
+#[allow(dead_code)]
+const LOG_TARGET: &str = "tari::universe::user_listener";
 
 #[derive(Debug, Clone)]
 pub struct UserListener {
@@ -21,6 +47,7 @@ pub struct CurrentTimeoutDurationEventPayload {
     duration: u64,
 }
 
+#[allow(dead_code)]
 impl UserListener {
     pub fn new() -> Self {
         Self {
@@ -58,7 +85,7 @@ impl UserListener {
             tokio::select! {
                 _ = async {
                     println!("UserListener::listening for user inactivity has been started");
-                    info!("UserListener::listening for user inactivity has been started");
+                    info!(target: LOG_TARGET, "UserListener::listening for user inactivity has been started");
                     loop {
                         println!("Listening for user inactivity, is_mining_initialized: {}, timeout: {}, timeout_counter: {}", user_listener.is_mining_initialized, timeout.as_secs(), timeout_counter.as_secs());
                         let current_mouse_coords = UserListener::read_user_mouse_coords();
@@ -87,7 +114,7 @@ impl UserListener {
                     }
                 } => {},
                 _ = cancellation_token.cancelled() => {
-                    info!("UserListener::listening for user inactivity has been cancelled");
+                    info!(target: LOG_TARGET, "UserListener::listening for user inactivity has been cancelled");
                     if user_listener.is_mining_initialized {
                         UserListener::on_user_active(&window);
                         user_listener.is_mining_initialized = false;
@@ -101,13 +128,12 @@ impl UserListener {
     pub fn stop_listening_to_mouse_poisition_change(&mut self) {
         match &self.cancelation_token {
             Some(token) => {
-                println!("UserListener::triggered cancelation of listening for user inactivity");
+                info!(target: LOG_TARGET, "UserListener::triggered cancelation of listening for user inactivity");
                 token.cancel();
                 self.is_listening = false;
             }
             None => {
-                println!("UserListener::triggered cancelation of listening for user inactivity but no cancelation token was found");
-                info!(
+                info!(target: LOG_TARGET,
                     "UserListener::triggered cancelation of listening for user inactivity but no cancelation token was found"
                 );
             }
@@ -123,7 +149,9 @@ impl UserListener {
                     event_type: "user_idle".to_string(),
                 },
             )
-            .unwrap();
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET,"Error emitting user_idle event: {}", e);
+            });
     }
 
     pub fn on_user_active(window: &tauri::Window) {
@@ -135,7 +163,9 @@ impl UserListener {
                     event_type: "user_active".to_string(),
                 },
             )
-            .unwrap();
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET,"Error emitting user_active event: {}", e);
+            });
     }
 
     pub fn emit_current_timeout_duration(window: &tauri::Window, timeout: Duration) {
@@ -147,6 +177,8 @@ impl UserListener {
                     duration: timeout.as_secs(),
                 },
             )
-            .unwrap();
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET,"Error emitting current_timeout_duration event: {}", e);
+            });
     }
 }

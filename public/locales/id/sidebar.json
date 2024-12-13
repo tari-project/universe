@@ -1,0 +1,28 @@
+{
+  "auto-miner": "Penambang Otomatis",
+  "auto-miner-description": "Penambang otomatis akan menghidupkan penambang Anda saat mesin Anda tidak aktif",
+  "block": "Blok",
+  "hide-history": "Sembunyikan riwayat",
+  "history-hide-button": "Sembunyikan Riwayat",
+  "history-show-button": "Riwayat",
+  "lost-connection": "Koneksi ke Jaringan Tari terputus. Menyambung kembali..",
+  "mining-schedules": "Jadwal Penambangan",
+  "mining-schedules-description": "Jadwalkan aktivitas penambangan Anda",
+  "next-milestone": "Tonggak Berikutnya",
+  "paper-wallet-button": "Sinkronkan dengan Ponsel",
+  "paper-wallet-tooltip-message": "Lacak XTM Anda di mana saja dengan menyinkronkan dompet Universe Anda ke Tari Aurora.",
+  "paper-wallet-tooltip-title": "Sinkronkan dengan Ponsel",
+  "recent-wins": "Kemenangan terbaru",
+  "rewards": "Hadiah",
+  "setup-scheduler": "Atur Penjadwal",
+  "share": {
+    "button-text": "PAMER & UNDANG",
+    "copied": "Tautan Tersalin!",
+    "history-item-button": "Pamer & Undang",
+    "reward": "hadiah saya",
+    "title": "Saya baru saja menambang tari",
+    "winner-pill": "Pemenang blok"
+  },
+  "show-history": "Tampilkan riwayat",
+  "wallet-balance": "Saldo Dompet"
+}

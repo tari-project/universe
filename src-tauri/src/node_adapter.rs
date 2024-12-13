@@ -1,41 +1,75 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::network_utils::get_free_port;
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::node_manager::NodeIdentity;
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::{process_utils, ProgressTracker};
+use crate::port_allocator::PortAllocator;
+use crate::process_adapter::{
+    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+};
+use crate::utils::file_utils::convert_to_string;
+use crate::utils::logging_utils::setup_logging;
+use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::info;
 use minotari_node_grpc_client::grpc::{
-    Empty, HeightRequest, NewBlockTemplateRequest, PowAlgo, SyncState,
+    BlockHeader, Empty, GetBlocksRequest, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo,
+    SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
-use std::fs;
+use std::fmt::Write as _;
 use std::path::PathBuf;
+use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
-use tari_shutdown::Shutdown;
+use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::ByteArray;
-use tokio::select;
+
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 pub(crate) struct MinotariNodeAdapter {
-    use_tor: bool,
+    pub(crate) use_tor: bool,
     pub(crate) grpc_port: u16,
+    pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
+    pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
 }
 
 impl MinotariNodeAdapter {
-    pub fn new(use_tor: bool) -> Self {
-        let port = get_free_port().unwrap_or(18142);
+    pub fn new() -> Self {
+        let port = PortAllocator::new().assign_port_with_fallback();
+        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
-            use_tor,
             grpc_port: port,
+            tcp_listener_port,
             use_pruned_mode: false,
             required_initial_peers: 3,
+            use_tor: false,
+            tor_control_port: None,
         }
     }
 }
@@ -43,25 +77,40 @@ impl MinotariNodeAdapter {
 impl ProcessAdapter for MinotariNodeAdapter {
     type StatusMonitor = MinotariNodeStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
         _config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
+        let status_shutdown = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting minotari node");
-        let working_dir = data_dir.join("node");
+        let working_dir: PathBuf = data_dir.join("node");
         std::fs::create_dir_all(&working_dir)?;
+
+        let config_dir = log_dir
+            .clone()
+            .join("base_node")
+            .join("configs")
+            .join("log4rs_config_base_node.yml");
+        setup_logging(
+            &config_dir.clone(),
+            &log_dir,
+            include_str!("../log4rs/base_node_sample.yml"),
+        )?;
+        let working_dir_string = convert_to_string(working_dir)?;
+        let config_dir_string = convert_to_string(config_dir)?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
-            working_dir.to_str().unwrap().to_string(),
+            working_dir_string,
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
-            format!("--log-path={}", log_dir.to_str().unwrap()).to_string(),
+            format!("--log-config={}", config_dir_string),
             "-p".to_string(),
             "base_node.grpc_enabled=true".to_string(),
             "-p".to_string(),
@@ -72,12 +121,14 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "-p".to_string(),
             "base_node.report_grpc_error=true".to_string(),
             "-p".to_string(),
-            "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9998".to_string(),
-            "-p".to_string(),
             format!(
                 "base_node.state_machine.initial_sync_peer_count={}",
                 self.required_initial_peers
             ),
+            "-p".to_string(),
+            "base_node.grpc_server_allow_methods=\"list_connected_peers, get_blocks\"".to_string(),
+            "-p".to_string(),
+            "base_node.p2p.allow_test_addresses=true".to_string(),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
@@ -89,77 +140,78 @@ impl ProcessAdapter for MinotariNodeAdapter {
         // args.push("localnet".to_string());
         // }
         if self.use_tor {
-            args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.transport.tor.listener_address_override=/ip4/0.0.0.0/tcp/18189"
-                    .to_string(),
-            );
-        } else {
-            // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
-            // In future we should change the base node to not error if it is tcp and doesn't have a public address
-            args.push("-p".to_string());
-            args.push("base_node.p2p.transport.type=tcp".to_string());
-            // args.push("-p".to_string());
-            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
-            args.push("-p".to_string());
-            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
-            args.push("base_node.p2p.public_addresses=/ip4/172.2.3.4/tcp/18189".to_string());
-            // args.push("base_node.p2p.allow_test_addresses=true".to_string());
-            // args.push("-p".to_string());
-            // args.push("base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/18189".to_string());
             // args.push("-p".to_string());
             // args.push(
-            //     "base_node.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18189".to_string(),
+            //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
+            //         .to_string(),
             // );
+            if !cfg!(target_os = "macos") {
+                args.push("-p".to_string());
+                args.push("use_libtor=false".to_string());
+            }
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/{0}",
+                self.tcp_listener_port
+            ));
+            args.push("-p".to_string());
+            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
+            if let Some(mut tor_control_port) = self.tor_control_port {
+                // macos uses libtor, so will be 9051
+                if cfg!(target_os = "macos") {
+                    tor_control_port = 9051;
+                }
+                args.push("-p".to_string());
+                args.push(format!(
+                    "base_node.p2p.transport.tor.control_address=/ip4/127.0.0.1/tcp/{}",
+                    tor_control_port
+                ));
+            }
+        } else {
+            args.push("-p".to_string());
+            args.push("base_node.p2p.transport.type=tcp".to_string());
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/{}",
+                self.tcp_listener_port
+            ));
+            args.push("-p".to_string());
+            args.push(format!(
+                "base_node.p2p.transport.tcp.listener_address=/ip4/127.0.0.1/tcp/{}",
+                self.tcp_listener_port
+            ));
+
+            let network = Network::get_current_or_user_setting_or_default();
+            args.push("-p".to_string());
+            args.push(format!(
+                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                key = network.as_key_str(),
+            ));
         }
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule("minotari_node.exe".to_string(), binary_version_path.clone())?;
+
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::MinotariNode)
-                        .await?;
-                    crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
-
-                    if let Some(id) = child.id() {
-                        fs::write(data_dir.join("node_pid"), id.to_string())?;
-                    }
-
-                    let exit_code;
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                        res2 = child.wait() => {
-                            match res2
-                             {
-                                Ok(res) => {
-                                    exit_code = res.code().unwrap_or(0)
-                                    },
-                                Err(e) => {
-                                    warn!(target: LOG_TARGET, "Error in NodeInstance: {}", e);
-                                    return Err(e.into());
-                                }
-                            }
-
-                        },
-                    }
-
-                    match fs::remove_file(data_dir.join("node_pid")) {
-                        Ok(_) => {}
-                        Err(_e) => {
-                            debug!(target: LOG_TARGET, "Could not clear node's pid file");
-                        }
-                    }
-                    Ok(exit_code)
-                })),
+                handle: None,
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_version_path,
+                    envs: None,
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
             },
             MinotariNodeStatusMonitor {
                 grpc_port: self.grpc_port,
                 required_sync_peers: self.required_initial_peers,
+                shutdown_signal: status_shutdown,
+                last_block_height: 0,
+                last_sha3_estimated_hashrate: 0,
+                last_randomx_estimated_hashrate: 0,
             },
         ))
     }
@@ -181,23 +233,30 @@ pub enum MinotariNodeStatusMonitorError {
     NodeNotStarted,
 }
 
+#[derive(Clone)]
 pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
     required_sync_peers: u32,
+    shutdown_signal: ShutdownSignal,
+    last_block_height: u64,
+    last_sha3_estimated_hashrate: u64,
+    last_randomx_estimated_hashrate: u64,
 }
 
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> HealthStatus {
+        if self.get_identity().await.is_ok() {
+            HealthStatus::Healthy
+        } else {
+            HealthStatus::Unhealthy
+        }
     }
 }
 
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
-        &self,
+        &mut self,
     ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), MinotariNodeStatusMonitorError> {
         // TODO: use GRPC port returned from process
         let mut client =
@@ -213,19 +272,45 @@ impl MinotariNodeStatusMonitor {
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
-        let reward = res.miner_data.unwrap().reward;
+
+        let reward = res
+            .miner_data
+            .ok_or_else(|| {
+                MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
+            })?
+            .reward;
 
         let res = client
             .get_tip_info(Empty {})
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
+        let metadata = match res.metadata {
+            Some(metadata) => metadata,
+            None => {
+                return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
+                    "No metadata found"
+                )));
+            }
+        };
         let (sync_achieved, block_height, _hash, block_time) = (
             res.initial_sync_achieved,
-            res.metadata.as_ref().unwrap().best_block_height,
-            res.metadata.as_ref().unwrap().best_block_hash.clone(),
-            res.metadata.unwrap().timestamp,
+            metadata.best_block_height,
+            metadata.best_block_hash.clone(),
+            metadata.timestamp,
         );
+
+        if sync_achieved && (block_height <= self.last_block_height) {
+            return Ok((
+                self.last_sha3_estimated_hashrate,
+                self.last_randomx_estimated_hashrate,
+                MicroMinotari(reward),
+                block_height,
+                block_time,
+                sync_achieved,
+            ));
+        }
+
         // First try with 10 blocks
         let blocks = [10, 100];
         let mut result = Err(anyhow::anyhow!("No difficulty found"));
@@ -267,16 +352,50 @@ impl MinotariNodeStatusMonitor {
                 ));
             }
             if last_randomx_estimated_hashrate != 0 && last_sha3_estimated_hashrate != 0 {
+                self.last_sha3_estimated_hashrate = last_sha3_estimated_hashrate;
+                self.last_randomx_estimated_hashrate = last_randomx_estimated_hashrate;
                 break;
             }
         }
 
+        self.last_block_height = block_height;
         Ok(result?)
+    }
+
+    pub async fn get_historical_blocks(
+        &self,
+        heights: Vec<u64>,
+    ) -> Result<Vec<(u64, String)>, Error> {
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
+        let mut res = client
+            .get_blocks(GetBlocksRequest { heights })
+            .await?
+            .into_inner();
+
+        let mut blocks: Vec<(u64, String)> = Vec::new();
+        while let Some(block) = res.message().await? {
+            let BlockHeader { height, hash, .. } = block
+                .block
+                .clone()
+                .expect("Failed to get block data")
+                .header
+                .expect("Failed to get block header data");
+            let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
+                write!(acc, "{:02x}", x).expect("Unable to write");
+                acc
+            });
+
+            blocks.push((height, hash));
+        }
+        Ok(blocks)
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
 
@@ -286,19 +405,22 @@ impl MinotariNodeStatusMonitor {
         })
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
 
         loop {
+            if self.shutdown_signal.is_triggered() {
+                break Ok(());
+            }
             let tip = client.get_tip_info(Empty {}).await?;
             let sync_progress = client.get_sync_progress(Empty {}).await?;
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
             if tip_res.initial_sync_achieved {
-                break;
+                break Ok(());
             }
-            info!(target: LOG_TARGET, "Sync progress: {:?}", sync_progress);
 
             if sync_progress.state == SyncState::Startup as i32 {
                 progress_tracker
@@ -323,11 +445,24 @@ impl MinotariNodeStatusMonitor {
                 } else {
                     10 + (30 * sync_progress.local_height / sync_progress.tip_height)
                 };
-
                 progress_tracker
                     .update(
                         "waiting-for-header-sync".to_string(),
                         Some(HashMap::from([
+                            (
+                                "local_header_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_header_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            ("local_block_height".to_string(), "0".to_string()),
+                            (
+                                "tip_block_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            // Keep these fields for old translations that have not been updated
                             (
                                 "local_height".to_string(),
                                 sync_progress.local_height.to_string(),
@@ -346,11 +481,28 @@ impl MinotariNodeStatusMonitor {
                 } else {
                     40 + (60 * sync_progress.local_height / sync_progress.tip_height)
                 };
-
                 progress_tracker
                     .update(
                         "waiting-for-block-sync".to_string(),
                         Some(HashMap::from([
+                            // Assume the headers have already been synced
+                            (
+                                "local_header_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            (
+                                "tip_header_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            (
+                                "local_block_height".to_string(),
+                                sync_progress.local_height.to_string(),
+                            ),
+                            (
+                                "tip_block_height".to_string(),
+                                sync_progress.tip_height.to_string(),
+                            ),
+                            // Keep these fields for old translations that have not been updated
                             (
                                 "local_height".to_string(),
                                 sync_progress.local_height.to_string(),
@@ -364,10 +516,17 @@ impl MinotariNodeStatusMonitor {
                     )
                     .await;
             } else {
-                //do nothing
+                // do nothing
             }
-            tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
-        Ok(())
+    }
+
+    pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
+        let mut client =
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+        let connected_peers = client.list_connected_peers(Empty {}).await?;
+        Ok(connected_peers.into_inner().connected_peers)
     }
 }

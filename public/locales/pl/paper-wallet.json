@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "blackButton": "Mam aplikację",
+    "scan": "Skanuj kod QR",
+    "text": "Pobierz Tari Aurora i śledź swoje XTM wszędzie. Pobierz teraz z App Store lub Google Play Store.",
+    "textButton": "Dowiedz się więcej o Tari Aurora",
+    "title": "Połącz swój portfel Tari Universe z telefonem"
+  },
+  "qrcode": {
+    "blackButton": "Gotowe",
+    "copied": "Skopiowano!",
+    "inputLabel": "Kod identyfikacyjny",
+    "text": "Zeskanuj kod QR w aplikacji Tari Aurora, aby zaimportować swój portfel Tari Universe. Użyj poniższego jednorazowego kodu, aby potwierdzić swoją tożsamość, a następnie postępuj zgodnie z instrukcjami w aplikacji.",
+    "textButton": "Potrzebuję pomocy",
+    "title": "Importuj do Tari Aurora",
+    "warning": "Nie udostępniaj tego kodu QR"
+  }
+}

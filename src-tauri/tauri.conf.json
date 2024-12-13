@@ -1,80 +1,83 @@
 {
+    "version": "0.8.20",
+    "productName": "Tari Universe (Alpha)",
+    "mainBinaryName": "Tari Universe (Alpha)",
+    "identifier": "com.tari.universe.alpha",
     "build": {
         "beforeDevCommand": "npm run dev",
         "beforeBuildCommand": "npm run build",
-        "devPath": "http://localhost:1420",
-        "distDir": "../dist"
+        "frontendDist": "../dist",
+        "devUrl": "http://localhost:1420"
     },
-    "package": {
-        "productName": "Tari Universe",
-        "version": "0.3.8"
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "macOS": {
+            "providerShortName": "Tari Labs, LLC"
+        },
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico",
+            "icons/icon.png",
+            "icons/StoreLogo.png",
+            "icons/systray_icon.icns",
+            "icons/systray_icon.ico",
+            "icons/systray_icon.png"
+        ],
+        "copyright": "Copyright (c) 2024 Tari Labs, LLC",
+        "shortDescription": "Tari Universe is a mining app for Tari.",
+        "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
+        "publisher": "Tari Labs, LLC",
+        "createUpdaterArtifacts": "v1Compatible"
     },
-    "tauri": {
-        "systemTray": {
-            "iconPath": "icons/icon.ico"
+    "app": {
+        "security": {
+            "capabilities": ["desktop-capability", "default", "migrated"],
+            "csp": null
         },
-        "updater": {
-            "active": true,
-            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json"],
-            "dialog": false,
-            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK"
+        "trayIcon": {
+            "id": "universe-tray-id",
+            "iconPath": "icons/systray_icon.ico",
+            "iconAsTemplate": true
         },
-        "allowlist": {
-            "all": false,
-            "shell": {
-                "all": false,
-                "open": true,
-                "sidecar": false
-            },
-            "window": {
-                "all": false,
-                "close": true,
-                "hide": true,
-                "show": true,
-                "maximize": true,
-                "minimize": true,
-                "unmaximize": true,
-                "unminimize": true,
-                "startDragging": true
-            }
-        },
-        "pattern": {
-            "use": "isolation",
-            "options": {
-                "dir": "../dist-isolation"
-            }
-        },
+        "macOSPrivateApi": true,
+        "withGlobalTauri": true,
         "windows": [
             {
-                "title": "Tari Universe | Testnet",
+                "title": "Tari Universe (Alpha) | Testnet",
+                "width": 1380,
+                "height": 780,
+                "label": "splashscreen",
+                "url": "/splash.html",
+                "center": true,
+                "useHttpsScheme": true
+            },
+            {
+                "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
-                "minWidth": 997,
-                "minHeight": 620,
+                "minWidth": 1144,
+                "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
-                "decorations": true,
-                "transparent": false
+                "transparent": false,
+                "visible": false,
+                "center": true,
+                "useHttpsScheme": true
             }
-        ],
-        "security": {
-            "csp": null
-        },
-        "bundle": {
-            "active": true,
-            "targets": "all",
-            "identifier": "com.tari.universe",
-            "icon": ["icons/icon.icns", "icons/icon.ico", "icons/icon.png", "icons/StoreLogo.png", "icons/tari.png"],
-            "copyright": "Copyright (c) 2024 Tari Labs, LLC",
-            "shortDescription": "Tari Universe is a mining app for Tari.",
-            "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
-            "publisher": "Tari Labs, LLC",
-            "macOS": {
-                "providerShortName": "Tari Labs, LLC",
-                "license": "../LICENSE.md"
+        ]
+    },
+    "plugins": {
+        "updater": {
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
+            "windows": {
+                "installMode": "passive"
             }
-        },
-        "macOSPrivateApi": true
+        }
     }
 }

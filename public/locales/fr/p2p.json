@@ -1,0 +1,14 @@
+{
+  "listener-addresses": "Listener addresses",
+  "miners": "Mineurs",
+  "network-info": "Network info",
+  "p2pool-chain-tip": "Conseil de chaîne P2Pool",
+  "p2pool-connected": "P2Pool Connecté",
+  "p2pool-connection-info": "Connexion",
+  "p2pool-connection-info-more": "Détails de la connexion",
+  "p2pool-peers": "P2pool peers",
+  "p2pool-stats": "Statistiques de minage en pool",
+  "randomx-stats": "RandomX Stats",
+  "sha3-stats": "SHA3 Stats",
+  "tribe": "Tribu"
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport"
+              content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="ie=edge">
+        <title>Tari Universe | Testnet</title>
+        <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
+        <style>
+            body,
+            main {
+                margin: 0;
+            }
+            #splash {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                min-width: 100vw;
+                height: 100%;
+                width: 100%;
+                svg {
+                    display: flex;
+                    width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <div id="splash">
+                <dotlottie-player src="assets/splashscreen.json" background="transparent" speed="1" style="width: 600px; height: auto" direction="1" playMode="normal" autoplay></dotlottie-player>
+            </div>
+        </main>
+        <script>
+            document.addEventListener('DOMContentLoaded', ()=> {
+                const invoke = window.__TAURI__.core.invoke;
+
+                setTimeout(()=> {
+                    invoke('close_splashscreen');
+                }, 1000 * 3)
+            });
+        </script>
+    </body>
+</html>

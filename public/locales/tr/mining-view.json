@@ -1,15 +1,33 @@
 {
-    "floor": "Zemin",
-    "current-block-time": "Geçerli blok zamanı",
-    "your-reward-is": "Ödülünüz",
-    "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
-    "mining-button-text": {
-        "starting-mining": "Madenci Başlatılıyor",
-        "start-mining": "Madenciyi Başlat",
-        "pause-mining": "Madenciyi Durdur",
-        "changing-mode": "Mod değiştirme",
-        "cancel-mining": "Madenciyi İptal Et",
-        "waiting-for-idle": "Boşta Bekliyor",
-        "started-auto-mining": "Otomatik Madencilik Başladı"
-    }
+  "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
+  "cpu-power": "CPU Gücü",
+  "current-block-time": "Geçerli blok zamanı",
+  "day": "day",
+  "estimated-day": "Est tXTM/gün",
+  "estimated-earnings": "Tahmini kazançlar",
+  "floor": "Zemin",
+  "gpu-power": "GPU Gücü",
+  "mining-button-text": {
+    "cancel-mining": "Madenciyi İptal Et",
+    "changing-mode": "Mod değiştirme",
+    "pause-mining": "Madenciyi Durdur",
+    "start-mining": "Madenciyi Başlat",
+    "started-auto-mining": "Otomatik Madencilik Başladı",
+    "starting-mining": "Madenci Başlatılıyor",
+    "stop-mining": "Madenciliği Durdur",
+    "waiting-for-idle": "Boşta Bekliyor"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Things to try:",
+    "step_1": "Check your Internet connection",
+    "step_2": "Wait 30 mins",
+    "step_3": "Restart the app",
+    "step_4": "Try using a Tor Bridge (in Settings)",
+    "step_5": "Try disabling Tor (in Settings)",
+    "step_6": "Try an app reset (in Settings)"
+  },
+  "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
+  "you-won-block": "<span>blok #{{ blockHeight }}</span> kazananı siz oldunuz",
+  "you-won-while-away": "<span>Uzakta olduğunuzda {{ blocks }} kazandınız</span>",
+  "your-reward-is": "Ödülünüz"
 }

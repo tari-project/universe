@@ -1,0 +1,33 @@
+{
+  "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",
+  "cpu-power": "CPUパワー",
+  "current-block-time": "現在のブロック時間",
+  "day": "day",
+  "estimated-day": "推定 tXTM/日",
+  "estimated-earnings": "推定収益",
+  "floor": "フロア",
+  "gpu-power": "GPUパワー",
+  "mining-button-text": {
+    "cancel-mining": "マイニングをキャンセル",
+    "changing-mode": "モードを変更中",
+    "pause-mining": "マイニングを一時停止",
+    "start-mining": "マイニングを開始",
+    "started-auto-mining": "自動マイニング開始",
+    "starting-mining": "マイニング開始",
+    "stop-mining": "マイニングを停止",
+    "waiting-for-idle": "アイドル待機中"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Things to try:",
+    "step_1": "Check your Internet connection",
+    "step_2": "Wait 30 mins",
+    "step_3": "Restart the app",
+    "step_4": "Try using a Tor Bridge (in Settings)",
+    "step_5": "Try disabling Tor (in Settings)",
+    "step_6": "Try an app reset (in Settings)"
+  },
+  "you-earn-rewards-separately": "CPUとGPUのマイニングで別々に報酬を得ます",
+  "you-won-block": "<span>ブロック #{{ blockHeight }}</span> の勝者です",
+  "you-won-while-away": "<span>不在中に{{ blocks }}を獲得しました</span>",
+  "your-reward-is": "あなたの報酬は"
+}

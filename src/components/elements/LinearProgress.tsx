@@ -1,35 +1,67 @@
+import { convertHexToRGBA } from '@app/utils/convertHex';
 import { m } from 'framer-motion';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
-const Wrapper = styled.div`
+const Wrapper = styled.div<{ $variant?: 'primary' | 'small' | 'tiny' }>`
     width: 100%;
-    background: ${({ theme }) => theme.palette.background.paper};
-    height: 8px;
-    border-radius: 20px;
+    background: ${({ theme, $variant }) =>
+        $variant !== 'primary' ? convertHexToRGBA(theme.palette.contrast, 0.1) : theme.palette.base};
+
+    border-radius: 50px;
     overflow: hidden;
     align-items: center;
     display: flex;
+
+    ${({ $variant }) => {
+        switch ($variant) {
+            case 'tiny': {
+                return css`
+                    padding: 0;
+                    height: 4px;
+                `;
+            }
+            case 'small': {
+                return css`
+                    padding: 0;
+                    height: 5px;
+                `;
+            }
+            case 'primary':
+            default: {
+                return css`
+                    padding: 5px;
+                    height: 20px;
+                `;
+            }
+        }
+    }};
 `;
 
-const Bar = styled(m.div)<{ $isSecondary?: boolean }>`
-    border-radius: 20px;
-    background: ${({ theme, $isSecondary }) => ($isSecondary ? theme.palette.contrast : theme.palette.success.main)};
-    height: 8px;
+const Bar = styled(m.div)<{ $variant?: 'primary' | 'small' | 'tiny' }>`
+    border-radius: 50px;
+    background: ${({ theme }) => theme.palette.contrast};
+    height: ${({ $variant }) => ($variant ? '5px' : '10px')};
+    will-change: width;
 `;
 
 export function LinearProgress({
     value = 10,
     variant = 'primary',
+    duration,
+    onAnimationComplete,
 }: {
     value?: number;
-    variant?: 'primary' | 'secondary';
+    variant?: 'primary' | 'small' | 'tiny';
+    duration?: number;
+    onAnimationComplete?: () => void;
 }) {
     return (
-        <Wrapper>
+        <Wrapper $variant={variant}>
             <Bar
                 initial={{ width: 0 }}
-                animate={{ width: `${value}%` }}
-                $isSecondary={Boolean(variant == 'secondary')}
+                animate={{ width: `${value}%`, transition: { duration: duration || 0.5, ease: 'linear' } }}
+                $variant={variant}
+                onAnimationComplete={onAnimationComplete}
             />
         </Wrapper>
     );

@@ -1,20 +1,47 @@
-use crate::binary_resolver::{Binaries, BinaryResolver};
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::process_utils;
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::port_allocator::PortAllocator;
+use crate::process_adapter::{
+    HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+};
+use crate::utils::file_utils::convert_to_string;
+use crate::utils::logging_utils::setup_logging;
 use anyhow::Error;
 use async_trait::async_trait;
-use log::{debug, info, warn};
+use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::GetBalanceRequest;
+use minotari_node_grpc_client::grpc::{GetBalanceRequest, GetCompletedTransactionsRequest};
 use serde::Serialize;
-use std::fs;
 use std::path::PathBuf;
+use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::select;
+
+#[cfg(target_os = "windows")]
+use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -24,16 +51,22 @@ pub struct WalletAdapter {
     pub(crate) base_node_address: Option<String>,
     pub(crate) view_private_key: String,
     pub(crate) spend_key: String,
+    pub(crate) tcp_listener_port: u16,
+    pub(crate) grpc_port: u16,
 }
 
 impl WalletAdapter {
     pub fn new(use_tor: bool) -> Self {
+        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             use_tor,
             base_node_address: None,
             base_node_public_key: None,
             view_private_key: "".to_string(),
             spend_key: "".to_string(),
+            tcp_listener_port,
+            grpc_port,
         }
     }
 }
@@ -41,23 +74,36 @@ impl WalletAdapter {
 impl ProcessAdapter for WalletAdapter {
     type StatusMonitor = WalletStatusMonitor;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
         _config_dir: PathBuf,
         log_dir: PathBuf,
+        binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
-        let shutdown_signal = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting read only wallet");
         let working_dir = data_dir.join("wallet");
         std::fs::create_dir_all(&working_dir)?;
 
+        let formatted_working_dir = convert_to_string(working_dir.clone())?;
+        let config_dir = log_dir
+            .join("wallet")
+            .join("configs")
+            .join("log4rs_config_wallet.yml");
+
+        setup_logging(
+            &config_dir.clone(),
+            &log_dir,
+            include_str!("../log4rs/wallet_sample.yml"),
+        )?;
+
         let mut args: Vec<String> = vec![
             "-b".to_string(),
-            working_dir.to_str().unwrap().to_string(),
+            formatted_working_dir,
             "--password".to_string(),
             "asjhfahjajhdfvarehnavrahuyg28397823yauifh24@@$@84y8".to_string(), // TODO: Maybe use a random password per machine
             "--view-private-key".to_string(),
@@ -65,10 +111,14 @@ impl ProcessAdapter for WalletAdapter {
             "--spend-key".to_string(),
             self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
-            format!("--log-path={}", log_dir.to_str().unwrap()),
+            format!(
+                "--log-config={}",
+                config_dir.to_str().expect("Could not get config dir")
+            )
+            .to_string(),
             "--grpc-enabled".to_string(),
             "--grpc-address".to_string(),
-            "/ip4/127.0.0.1/tcp/18141".to_string(),
+            format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
             "-p".to_string(),
             "wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string(),
             "-p".to_string(),
@@ -82,77 +132,71 @@ impl ProcessAdapter for WalletAdapter {
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
             ),
-            "-p".to_string(),
-            "wallet.p2p.auxiliary_tcp_listener_address=/ip4/0.0.0.0/tcp/9999".to_string(),
         ];
+
+        let peer_data_folder = working_dir
+            .join(Network::get_current_or_user_setting_or_default().to_string())
+            .join("peer_db");
+
+        let wallet_data_folder =
+            working_dir.join(Network::get_current_or_user_setting_or_default().to_string());
+
         if self.use_tor {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         } else {
-            // TODO: This is a bit of a hack. You have to specify a public address for the node to bind to.
-            // In future we should change the base node to not error if it is tcp and doesn't have a public address
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
-            // args.push("-p".to_string());
-            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
             args.push("-p".to_string());
-            args.push("wallet.p2p.public_addresses=/ip4/172.2.3.4/tcp/18188".to_string());
-            // args.push("-p".to_string());
-            // args.push("wallet.p2p.allow_test_addresses=true".to_string());
-            // args.push("-p".to_string());
-            // args.push("wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/18188".to_string());
+            args.push(format!(
+                "wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/{}",
+                self.tcp_listener_port
+            ));
             args.push("-p".to_string());
-            args.push(
-                "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/18188".to_string(),
-            );
+            args.push(format!(
+                "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/{}",
+                self.tcp_listener_port
+            ));
 
-            // todo!()
+            let network = Network::get_current_or_user_setting_or_default();
+            args.push("-p".to_string());
+            args.push(format!(
+                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                key = network.as_key_str(),
+            ));
         }
+
+        if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
+            warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+        }
+
+        //  Delete any old wallets on startup
+        if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
+            warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
+        }
+
+        #[cfg(target_os = "windows")]
+        add_firewall_rule(
+            "minotari_console_wallet.exe".to_string(),
+            binary_version_path.clone(),
+        )?;
+
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
-                handle: Some(tokio::spawn(async move {
-                    let file_path = BinaryResolver::current()
-                        .resolve_path(Binaries::Wallet)
-                        .await?;
-                    crate::download_utils::set_permissions(&file_path).await?;
-                    let mut child = process_utils::launch_child_process(&file_path, None, &args)?;
-
-                    if let Some(id) = child.id() {
-                        std::fs::write(data_dir.join("wallet_pid"), id.to_string())?;
-                    }
-                    let exit_code;
-                    select! {
-                        _res = shutdown_signal =>{
-                            child.kill().await?;
-                            exit_code = 0;
-                            // res
-                        },
-                       res2 = child.wait() => {
-                        match res2
-                        {
-                           Ok(res) => {
-                               exit_code = res.code().unwrap_or(0)
-                               },
-                           Err(e) => {
-                               warn!(target: LOG_TARGET, "Error in NodeInstance: {}", e);
-                               return Err(e.into());
-                           }
-                       }
-                        },
-                    };
-                    info!(target: LOG_TARGET, "Stopping minotari wallet");
-
-                    match fs::remove_file(data_dir.join("wallet_pid")) {
-                        Ok(_) => {}
-                        Err(_e) => {
-                            debug!(target: LOG_TARGET, "Could not clear wallet's pid file");
-                        }
-                    }
-                    Ok(exit_code)
-                })),
+                handle: None,
+                startup_spec: ProcessStartupSpec {
+                    file_path: binary_version_path,
+                    envs: None,
+                    args,
+                    data_dir,
+                    pid_file_name: self.pid_file_name().to_string(),
+                    name: self.name().to_string(),
+                },
             },
-            WalletStatusMonitor {},
+            WalletStatusMonitor {
+                grpc_port: self.grpc_port,
+            },
         ))
     }
 
@@ -175,27 +219,49 @@ pub enum WalletStatusMonitorError {
     UnknownError(#[from] anyhow::Error),
 }
 
-pub struct WalletStatusMonitor {}
+#[derive(Clone)]
+pub struct WalletStatusMonitor {
+    grpc_port: u16,
+}
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
-    type Status = ();
-
-    async fn status(&self) -> Result<Self::Status, Error> {
-        todo!()
+    async fn check_health(&self) -> HealthStatus {
+        if self.get_balance().await.is_ok() {
+            HealthStatus::Healthy
+        } else {
+            HealthStatus::Unhealthy
+        }
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct WalletBalance {
     pub available_balance: MicroMinotari,
     pub timelocked_balance: MicroMinotari,
     pub pending_incoming_balance: MicroMinotari,
     pub pending_outgoing_balance: MicroMinotari,
 }
+
+#[derive(Debug, Serialize)]
+pub struct TransactionInfo {
+    pub tx_id: u64,
+    pub source_address: String,
+    pub dest_address: String,
+    pub status: i32,
+    pub direction: i32,
+    pub amount: MicroMinotari,
+    pub fee: u64,
+    pub is_cancelled: bool,
+    pub excess_sig: String,
+    pub timestamp: u64,
+    pub message: String,
+    pub payment_id: String,
+}
+
 impl WalletStatusMonitor {
     fn wallet_grpc_address(&self) -> String {
-        String::from("http://127.0.0.1:18141")
+        format!("http://127.0.0.1:{}", self.grpc_port)
     }
 
     pub async fn get_balance(&self) -> Result<WalletBalance, WalletStatusMonitorError> {
@@ -216,9 +282,49 @@ impl WalletStatusMonitor {
         })
     }
 
+    pub async fn get_transaction_history(
+        &self,
+    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_completed_transactions(GetCompletedTransactionsRequest {})
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+        let mut stream = res.into_inner();
+
+        let mut transactions: Vec<TransactionInfo> = Vec::new();
+
+        while let Some(message) = stream
+            .message()
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
+        {
+            let tx = message.transaction.expect("Transaction not found");
+
+            transactions.push(TransactionInfo {
+                tx_id: tx.tx_id,
+                source_address: tx.source_address.to_hex(),
+                dest_address: tx.dest_address.to_hex(),
+                status: tx.status,
+                direction: tx.direction,
+                amount: MicroMinotari(tx.amount),
+                fee: tx.fee,
+                is_cancelled: tx.is_cancelled,
+                excess_sig: tx.excess_sig.to_hex(),
+                timestamp: tx.timestamp,
+                message: tx.message,
+                payment_id: tx.payment_id.to_hex(),
+            });
+        }
+        Ok(transactions)
+    }
+
     #[deprecated(
         note = "Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address"
     )]
+    #[allow(dead_code)]
     pub async fn get_wallet_address(&self) -> Result<TariAddress, WalletStatusMonitorError> {
         panic!("Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address");
         // let mut client = WalletClient::connect(self.wallet_grpc_address())

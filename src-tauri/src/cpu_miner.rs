@@ -1,59 +1,70 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::app_config::MiningMode;
-use crate::process_adapter::ProcessAdapter;
-use crate::xmrig::http_api::XmrigHttpApiClient;
+use crate::binaries::Binaries;
+use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use crate::process_watcher::ProcessWatcher;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{
-    CpuMinerConfig, CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus, ProgressTracker,
-};
-use log::{debug, error, info, warn};
+use crate::CpuMinerConfig;
+use log::{debug, error, warn};
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::thread;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tari_shutdown::{Shutdown, ShutdownSignal};
-use tauri::async_runtime::JoinHandle;
-use tokio::select;
-use tokio::time::MissedTickBehavior;
+use tari_shutdown::ShutdownSignal;
+use tokio::sync::RwLock;
 
 const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
+const ECO_MODE_CPU_USAGE: u32 = 30;
 
 pub(crate) struct CpuMiner {
-    watcher_task: Option<JoinHandle<Result<(), anyhow::Error>>>,
-    miner_shutdown: Shutdown,
-    api_client: Option<XmrigHttpApiClient>,
-    is_mining: bool,
+    watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
 }
 
 impl CpuMiner {
     pub fn new() -> Self {
+        let xmrig_adapter = XmrigAdapter::new();
+        let process_watcher = ProcessWatcher::new(xmrig_adapter);
         Self {
-            watcher_task: None,
-            miner_shutdown: Shutdown::new(),
-            api_client: None,
-            is_mining: false,
+            watcher: Arc::new(RwLock::new(process_watcher)),
         }
     }
 
     #[allow(clippy::too_many_arguments)]
     pub async fn start(
         &mut self,
-        mut app_shutdown: ShutdownSignal,
+        app_shutdown: ShutdownSignal,
         cpu_miner_config: &CpuMinerConfig,
         monero_address: String,
         monero_port: u16,
         base_path: PathBuf,
-        cache_dir: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
-        progress_tracker: ProgressTracker,
         mode: MiningMode,
+        custom_cpu_threads: Option<u32>,
     ) -> Result<(), anyhow::Error> {
-        if self.watcher_task.is_some() {
-            warn!(target: LOG_TARGET, "Tried to start mining twice");
-            return Ok(());
-        }
-        self.miner_shutdown = Shutdown::new();
-        let mut inner_shutdown = self.miner_shutdown.to_signal();
+        let mut lock = self.watcher.write().await;
 
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
@@ -69,150 +80,74 @@ impl CpuMiner {
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
                 debug!(target:LOG_TARGET, "Available CPUs: {}", available_cpus);
-                isize::try_from(available_cpus.get()).unwrap_or(1)
+                u32::try_from(available_cpus.get()).unwrap_or(1)
             }
             Err(err) => {
                 error!("Available CPUs: Unknown, error: {}", err);
                 1
             }
         };
+
+        let eco_mode_threads = cpu_miner_config
+            .eco_mode_cpu_percentage
+            .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100u32);
+
         let cpu_max_percentage = match mode {
-            MiningMode::Eco => (30 * max_cpu_available) / 100isize,
-            MiningMode::Ludicrous => -1, // Use all
-        };
-        let xmrig_version =
-            XmrigAdapter::ensure_latest(cache_dir.clone(), false, progress_tracker.clone()).await?;
-        let xmrig = XmrigAdapter::new(
-            xmrig_node_connection,
-            monero_address.clone(),
-            cache_dir,
-            cpu_max_percentage,
-            xmrig_version,
-        );
-        let (mut xmrig_child, _xmrig_status_monitor) =
-            xmrig.spawn_inner(base_path.clone(), config_path.clone(), log_dir.clone())?;
-        self.api_client = Some(xmrig.client);
-
-        self.watcher_task = Some(tauri::async_runtime::spawn(async move {
-            let mut watch_timer = tokio::time::interval(tokio::time::Duration::from_secs(1));
-            watch_timer.set_missed_tick_behavior(MissedTickBehavior::Skip);
-            // read events such as stdout
-            loop {
-                select! {
-                      _ = watch_timer.tick() => {
-                            if !xmrig_child.ping()
-                            {
-                               warn!(target: LOG_TARGET, "Wmrig is not running");
-                               match xmrig_child.stop().await {
-                                   Ok(_) => {
-                                      info!(target: LOG_TARGET, "Xmrig exited successfully");
-                                   }
-                                   Err(e) => {
-                                      error!(target: LOG_TARGET, "Xmrig exited with error: {}", e);
-                                      return Err(e)
-                                   }
-                               }
-                               break;
-                            }
-                      },
-                        //   event = rx.recv() => {
-
-                    _ = inner_shutdown.wait() => {
-                        xmrig_child.stop().await?;
-                        break;
-                    },
-                    _ = app_shutdown.wait() => {
-                        xmrig_child.stop().await?;
-                        break;
-                    }
+            MiningMode::Eco => Some(eco_mode_threads),
+            MiningMode::Custom => {
+                if custom_cpu_threads.unwrap_or(0) == max_cpu_available {
+                    None
+                } else {
+                    custom_cpu_threads
                 }
             }
-            Ok(())
-        }));
+            MiningMode::Ludicrous => None,
+        };
+
+        lock.adapter.node_connection = Some(xmrig_node_connection);
+        lock.adapter.monero_address = Some(monero_address.clone());
+        lock.adapter.cpu_threads = Some(cpu_max_percentage);
+        lock.adapter.extra_options = match mode {
+            MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
+            MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
+            MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
+        };
+
+        lock.start(
+            app_shutdown.clone(),
+            base_path.clone(),
+            config_path.clone(),
+            log_dir.clone(),
+            Binaries::Xmrig,
+        )
+        .await?;
         Ok(())
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Triggering shutdown");
-        self.miner_shutdown.trigger();
-        self.api_client = None;
-        if let Some(task) = self.watcher_task.take() {
-            task.await??;
-            info!(target: LOG_TARGET, "CPU miner shut down successfully");
-        }
-        // TODO: This doesn't seem to be called
-        self.is_mining = false;
-
+        let mut lock = self.watcher.write().await;
+        lock.stop().await?;
         Ok(())
     }
 
+    pub async fn is_running(&self) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
+    }
+
     pub async fn status(
-        &mut self,
+        &self,
         network_hash_rate: u64,
         block_reward: MicroMinotari,
     ) -> Result<CpuMinerStatus, anyhow::Error> {
-        match &self.api_client {
-            Some(client) => {
-                let (hash_rate, _hashrate_sum, estimated_earnings, is_connected) =
-                    match client.summary().await {
-                        Ok(xmrig_status) => {
-                            let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                            let estimated_earnings = if network_hash_rate == 0 {
-                                0
-                            } else {
-                                #[allow(clippy::cast_possible_truncation)]
-                                {
-                                    ((block_reward.as_u64() as f64)
-                                        * ((hash_rate / (network_hash_rate as f64))
-                                            * (RANDOMX_BLOCKS_PER_DAY as f64)))
-                                        .floor() as u64
-                                }
-                            };
-                            // Can't be more than the max reward for a day
-                            let estimated_earnings = std::cmp::min(
-                                estimated_earnings,
-                                block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
-                            );
-
-                            // mining should be true if the hashrate is greater than 0
-
-                            let hasrate_sum = xmrig_status
-                                .hashrate
-                                .total
-                                .iter()
-                                .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
-                            (
-                                hash_rate,
-                                hasrate_sum,
-                                estimated_earnings,
-                                xmrig_status.connection.uptime > 0,
-                            )
-                        }
-                        Err(e) => {
-                            warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
-                            (0.0, 0.0, 0, false)
-                        }
-                    };
-
-                if !self.is_mining && is_connected {
-                    self.is_mining = true;
-                }
-
-                Ok(CpuMinerStatus {
-                    is_mining: self.is_mining,
-                    hash_rate,
-                    estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
-                    connection: CpuMinerConnectionStatus {
-                        is_connected,
-                        // error: if xmrig_status.connection.error_log.is_empty() {
-                        //     None
-                        // } else {
-                        //     Some(xmrig_status.connection.error_log.join(";"))
-                        // },
-                    },
-                })
-            }
-            None => Ok(CpuMinerStatus {
+        let lock = self.watcher.read().await;
+        if !lock.is_running() {
+            return Ok(CpuMinerStatus {
                 is_mining: false,
                 hash_rate: 0.0,
                 estimated_earnings: 0,
@@ -220,7 +155,68 @@ impl CpuMiner {
                     is_connected: false,
                     // error: None,
                 },
-            }),
+            });
+        }
+
+        let client = &lock.status_monitor;
+
+        if let Some(client) = client.as_ref() {
+            let (hash_rate, _hashrate_sum, estimated_earnings, is_connected) =
+                match client.summary().await {
+                    Ok(xmrig_status) => {
+                        let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
+                        let estimated_earnings = if network_hash_rate == 0 {
+                            0
+                        } else {
+                            #[allow(clippy::cast_possible_truncation)]
+                            {
+                                ((block_reward.as_u64() as f64)
+                                    * ((hash_rate / (network_hash_rate as f64))
+                                        * (RANDOMX_BLOCKS_PER_DAY as f64)))
+                                    .floor() as u64
+                            }
+                        };
+                        // Can't be more than the max reward for a day
+                        let estimated_earnings = std::cmp::min(
+                            estimated_earnings,
+                            block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
+                        );
+
+                        // mining should be true if the hashrate is greater than 0
+
+                        let hasrate_sum = xmrig_status
+                            .hashrate
+                            .total
+                            .iter()
+                            .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
+                        (
+                            hash_rate,
+                            hasrate_sum,
+                            estimated_earnings,
+                            xmrig_status.connection.uptime > 0,
+                        )
+                    }
+                    Err(e) => {
+                        warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
+                        (0.0, 0.0, 0, false)
+                    }
+                };
+            Ok(CpuMinerStatus {
+                is_mining: true,
+                hash_rate,
+                estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
+                connection: CpuMinerConnectionStatus { is_connected },
+            })
+        } else {
+            Ok(CpuMinerStatus {
+                is_mining: false,
+                hash_rate: 0.0,
+                estimated_earnings: 0,
+                connection: CpuMinerConnectionStatus {
+                    is_connected: false,
+                    // error: None,
+                },
+            })
         }
     }
 }

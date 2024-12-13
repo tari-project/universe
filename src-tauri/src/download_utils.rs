@@ -1,3 +1,43 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::ProgressTracker;
+use anyhow::{anyhow, Error};
+use async_zip::base::read::seek::ZipFileReader;
+use flate2::read::GzDecoder;
+use futures_util::StreamExt;
+use log::info;
+use regex::Regex;
+use sha2::{Digest, Sha256};
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+use tar::Archive;
+use tokio::fs;
+use tokio::fs::{File, OpenOptions};
+use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncWriteExt, BufReader};
+use tokio::time::sleep;
+use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
+
 const LOG_TARGET: &str = "tari::universe::download_utils";
 
 pub async fn download_file_with_retries(
@@ -15,6 +55,14 @@ pub async fn download_file_with_retries(
                 }
                 retries += 1;
                 eprintln!("Error downloading file: {}. Try {:?}/3", err, retries);
+                progress_tracker
+                    .send_last_action(format!(
+                        "Failed at retry: {} to download binary from url: {} to destination: {}",
+                        retries,
+                        url,
+                        destination.to_str().unwrap_or("unknown")
+                    ))
+                    .await;
                 sleep(Duration::from_secs(1)).await;
             }
         }
@@ -83,24 +131,6 @@ pub async fn extract_gz(gz_path: &Path, dest_dir: &Path) -> std::io::Result<()> 
     Ok(())
 }
 
-use crate::ProgressTracker;
-use anyhow::{anyhow, Error};
-use async_zip::base::read::seek::ZipFileReader;
-use flate2::read::GzDecoder;
-use futures_util::StreamExt;
-use log::info;
-use regex::Regex;
-use sha2::{Digest, Sha256};
-use std::path::{Path, PathBuf};
-use std::time::Duration;
-use tar::Archive;
-use tokio::fs;
-use tokio::fs::{File, OpenOptions};
-use tokio::io::AsyncReadExt;
-use tokio::io::{AsyncWriteExt, BufReader};
-use tokio::time::sleep;
-use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
-
 // Taken from async_zip example
 
 fn sanitize_file_path(path: &str) -> PathBuf {
@@ -115,13 +145,36 @@ pub async fn extract_zip(archive: &Path, out_dir: &Path) -> Result<(), anyhow::E
     let archive = BufReader::new(fs::File::open(archive).await?).compat();
     let mut reader = ZipFileReader::new(archive).await?;
     for index in 0..reader.file().entries().len() {
-        let entry = reader.file().entries().get(index).unwrap();
-        let path = out_dir.join(sanitize_file_path(entry.filename().as_str().unwrap()));
+        let entry = reader.file().entries().get(index).ok_or_else(|| {
+            anyhow!(
+                "The entry at index {} does not exist. The archive may be corrupted.",
+                index
+            )
+        })?;
+
+        let path = entry
+            .filename()
+            .as_str()
+            .map(|entry| out_dir.join(sanitize_file_path(entry)))
+            .map_err(|error| {
+                anyhow!(
+                    "The entry at index {} has an invalid filename: {}",
+                    index,
+                    error
+                )
+            })?;
+
         // If the filename of the entry ends with '/', it is treated as a directory.
         // This is implemented by previous versions of this crate and the Python Standard Library.
         // https://docs.rs/async_zip/0.0.8/src/async_zip/read/mod.rs.html#63-65
         // https://github.com/python/cpython/blob/820ef62833bd2d84a141adedd9a05998595d6b6d/Lib/zipfile.py#L528
-        let entry_is_dir = entry.dir().unwrap();
+        let entry_is_dir = entry.dir().map_err(|error| {
+            anyhow!(
+                "The entry at index {} has an invalid directory flag: {}",
+                index,
+                error
+            )
+        })?;
 
         let mut entry_reader = reader.reader_without_entry(index).await?;
 
@@ -177,10 +230,15 @@ pub async fn validate_checksum(
 
     // Extract the expected hash for the corresponding asset name
     let mut expected_hash = "";
-    let re = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name)).unwrap();
+    let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name))
+        .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
+
     for line in contents.lines() {
-        if let Some(caps) = re.captures(line) {
-            expected_hash = caps.get(1).unwrap().as_str();
+        if let Some(caps) = regex.captures(line) {
+            expected_hash = caps
+                .get(1)
+                .map(|hash| hash.as_str())
+                .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
         }
     }
 

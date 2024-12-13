@@ -1,15 +1,33 @@
 {
-  "floor": "地板",
-  "current-block-time": "当前区块时间",
-  "your-reward-is": "你的奖励是",
   "connection-to-node-lost": "与矿工的连接丢失。请等待矿机重新连接或重启矿机.",
+  "cpu-power": "CPU 功率",
+  "current-block-time": "当前区块时间",
+  "day": "day",
+  "estimated-day": "预估 tXTM/天",
+  "estimated-earnings": "预计收益",
+  "floor": "地板",
+  "gpu-power": "GPU 功率",
   "mining-button-text": {
-    "starting-mining": "开始挖矿",
-    "start-mining": "开始挖矿",
-    "pause-mining": "暂停挖矿",
-    "changing-mode": "更改模式",
     "cancel-mining": "取消挖矿",
-    "waiting-for-idle": "等待空闲",
-    "started-auto-mining": "自动挖矿开始"
-  }
+    "changing-mode": "更改模式",
+    "pause-mining": "暂停挖矿",
+    "start-mining": "开始挖矿",
+    "started-auto-mining": "自动挖矿开始",
+    "starting-mining": "开始挖矿",
+    "stop-mining": "停止挖矿",
+    "waiting-for-idle": "等待空闲"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Things to try:",
+    "step_1": "Check your Internet connection",
+    "step_2": "Wait 30 mins",
+    "step_3": "Restart the app",
+    "step_4": "Try using a Tor Bridge (in Settings)",
+    "step_5": "Try disabling Tor (in Settings)",
+    "step_6": "Try an app reset (in Settings)"
+  },
+  "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
+  "you-won-block": "您赢得了<span>区块 #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>您在离开时赢得了 {{ blocks }}</span>",
+  "your-reward-is": "你的奖励是"
 }

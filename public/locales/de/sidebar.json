@@ -1,0 +1,28 @@
+{
+  "auto-miner": "Auto Miner",
+  "auto-miner-description": "Der Auto Miner aktiviert deinen Miner, wenn deine Maschine im Leerlauf ist",
+  "block": "Block",
+  "hide-history": "Verlauf ausblenden",
+  "history-hide-button": "Verlauf ausblenden",
+  "history-show-button": "Verlauf",
+  "lost-connection": "Verbindung zum Tari-Netzwerk verloren. Versuche, wieder zu verbinden...",
+  "mining-schedules": "Mining-Zeitpläne",
+  "mining-schedules-description": "Plane deine Mining-Aktivitäten",
+  "next-milestone": "Nächster Meilenstein",
+  "paper-wallet-button": "Mit Telefon synchronisieren",
+  "paper-wallet-tooltip-message": "Verfolgen Sie Ihr XTM überall, indem Sie Ihr Universum-Wallet mit Tari Aurora synchronisieren.",
+  "paper-wallet-tooltip-title": "Mit Telefon synchronisieren",
+  "recent-wins": "Kürzliche Gewinne",
+  "rewards": "Belohnungen",
+  "setup-scheduler": "Scheduler einrichten",
+  "share": {
+    "button-text": "FLEX & EINLADEN",
+    "copied": "Link kopiert!",
+    "history-item-button": "Flex & Einladen",
+    "reward": "meine Belohnung",
+    "title": "Ich habe gerade Tari gemined",
+    "winner-pill": "Gewinner des Blocks"
+  },
+  "show-history": "Verlauf anzeigen",
+  "wallet-balance": "Wallet-Balance"
+}

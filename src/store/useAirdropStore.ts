@@ -1,5 +1,11 @@
-import { create } from 'zustand';
+import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
+import { invoke } from '@tauri-apps/api/core';
+import { useMiningStore } from './useMiningStore';
+
+export const GIFT_GEMS = 5000;
+export const REFERRAL_GEMS = 5000;
+export const MAX_GEMS = 10000;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
@@ -19,6 +25,13 @@ function parseJwt(token: string): TokenResponse {
 }
 
 //////////////////////////////////////////
+//
+
+export interface BonusTier {
+    id: string;
+    target: number;
+    bonusGems: number;
+}
 
 interface TokenResponse {
     exp: number;
@@ -29,10 +42,19 @@ interface TokenResponse {
     scope: string;
 }
 
-export interface UserPoints {
+export interface ReferralCount {
     gems: number;
-    shells: number;
-    hammers: number;
+    count: number;
+}
+
+export interface UserPoints {
+    base: {
+        gems: number;
+        shells: number;
+        hammers: number;
+        rank?: string;
+    };
+    referralCount?: ReferralCount;
 }
 
 export interface User {
@@ -76,7 +98,7 @@ export interface UserDetails {
     user: User;
 }
 
-interface AirdropTokens {
+export interface AirdropTokens {
     token: string;
     refreshToken: string;
     expiresAt?: number;
@@ -88,30 +110,60 @@ export interface BackendInMemoryConfig {
     airdropTwitterAuthUrl: string;
 }
 
+type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
+
+export interface ReferralQuestPoints {
+    pointsPerReferral: number;
+    pointsForClaimingReferral: number;
+}
+
 //////////////////////////////////////////
+
+interface MiningPoint {
+    blockHeight: string;
+    reward: number;
+}
 
 interface AirdropState {
     authUuid: string;
-    wipUI?: boolean;
+    syncedWithBackend: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
+    referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
+    flareAnimationType?: AnimationType;
+    bonusTiers?: BonusTier[];
+    referralQuestPoints?: ReferralQuestPoints;
+    miningRewardPoints?: MiningPoint;
+    seenPermissions: boolean;
 }
 
 interface AirdropStore extends AirdropState {
+    setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
+    setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
-    setAirdropTokens: (airdropToken: AirdropTokens) => void;
+    setAirdropTokens: (airdropToken?: AirdropTokens) => Promise<void>;
     setUserDetails: (userDetails?: UserDetails) => void;
-    setUserPoints: (userPoints?: UserPoints) => void;
-    setWipUI: (wipUI: boolean) => void;
-    setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
-    logout: () => void;
+    setUserPoints: (userPoints: UserPoints) => void;
+    fetchBackendInMemoryConfig: (config?: BackendInMemoryConfig) => Promise<BackendInMemoryConfig | undefined>;
+    setReferralCount: (referralCount: ReferralCount) => void;
+    setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
+    setBonusTiers: (bonusTiers: BonusTier[]) => void;
+    setUserGems: (userGems: number) => void;
+    logout: () => Promise<void>;
 }
 
-const clearState: AirdropState = {
+const initialState: AirdropState = {
+    authUuid: '',
+    seenPermissions: false,
+    syncedWithBackend: false,
+};
+
+const clearState: Partial<AirdropState> = {
     authUuid: '',
     airdropTokens: undefined,
+    miningRewardPoints: undefined,
     userDetails: undefined,
     userPoints: undefined,
 };
@@ -119,27 +171,68 @@ const clearState: AirdropState = {
 export const useAirdropStore = create<AirdropStore>()(
     persist(
         (set) => ({
-            authUuid: '',
-            setWipUI: (wipUI) => set({ wipUI }),
-            logout: () => set(clearState),
+            ...initialState,
+            setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
+            setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
+            setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
-            setAirdropTokens: (airdropTokens) =>
-                set({
-                    airdropTokens: {
-                        ...airdropTokens,
-                        expiresAt: parseJwt(airdropTokens.token).exp,
-                    },
+            setAirdropTokens: async (airdropTokens) => {
+                if (airdropTokens) {
+                    try {
+                        await invoke('set_airdrop_access_token', { token: airdropTokens.token });
+                    } catch (error) {
+                        console.error('Error getting airdrop tokens:', error);
+                    }
+                    set({
+                        syncedWithBackend: true,
+                        airdropTokens: {
+                            ...airdropTokens,
+                            expiresAt: parseJwt(airdropTokens.token).exp,
+                        },
+                    });
+                } else {
+                    // User not connected
+                    set({ syncedWithBackend: true });
+                }
+            },
+            setReferralCount: (referralCount) => set({ referralCount }),
+            setUserPoints: (userPoints) => set({ userPoints, referralCount: userPoints?.referralCount }),
+            setUserGems: (userGems: number) =>
+                set((state) => {
+                    const userPointsFormatted = {
+                        ...state.userPoints,
+                        base: { ...state.userPoints?.base, gems: userGems },
+                    } as UserPoints;
+
+                    return {
+                        userPoints: userPointsFormatted,
+                    };
                 }),
-            setUserPoints: (userPoints) => set({ userPoints }),
-            setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
+            fetchBackendInMemoryConfig: async () => {
+                let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
+                try {
+                    backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
+                    set({ backendInMemoryConfig });
+                } catch (e) {
+                    console.error('get_app_in_memory_config error:', e);
+                }
+                return backendInMemoryConfig;
+            },
+            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
+
+            logout: async () => {
+                set(clearState);
+                await useMiningStore.getState().restartMining();
+            },
         }),
         {
             name: 'airdrop-store',
-            partialize: (state) =>
-                Object.fromEntries(
-                    Object.entries(state).filter(([key]) => !['userPoints', 'backendInMemoryConfig'].includes(key))
-                ),
+            partialize: (s) => ({
+                airdropTokens: s.airdropTokens,
+                miningRewardPoints: s.miningRewardPoints,
+                referralQuestPoints: s.referralQuestPoints,
+            }),
         }
     )
 );
