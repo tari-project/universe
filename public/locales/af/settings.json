@@ -6,6 +6,8 @@
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "cancel": "Cancel",
   "change-language": "Verander taal",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Gekoppelde Eweknieë",
@@ -46,6 +48,7 @@
     "title": "Tyd waarna masjien as onaktief beskou word"
   },
   "importing-wallet": "Beursie invoer",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
   "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Uitnodigingskode",
@@ -82,8 +85,17 @@
   },
   "pool-mining": "Poel Mynbou",
   "pool-mining-description": "Wanneer geaktiveer, sal u in \"n poel myn en by \"n groep mynwerkers aansluit.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Randomx netwerk hashrate",
   "refresh-versions": "Verfris weergawes",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Rapporteer \"n probleem",
   "reset-permanently": "Is jy seker jy wil alle instellings permanent terugstel?",
   "reset-settings": "Stel Instellings Terug",
@@ -103,6 +115,7 @@
     "title": "Outomatiese begin by stelsel opstart"
   },
   "should-use-system-language": "Gebruik stelsel taal",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
@@ -111,6 +124,7 @@
     "general": "Algemeen",
     "mining": "Mynbou",
     "p2p": "Poel Mynbou",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Baie Eksperimenteel",
     "wallet": "Beursie"
   },

@@ -2,20 +2,18 @@ name: Lint
 on: pull_request
 
 jobs:
-    run-linters:
-        name: Run linters
-        runs-on: ubuntu-latest
-
-        steps:
-            - name: Check out Git repository
-              uses: actions/checkout@v4
-            - name: Set up Node.js
-              uses: actions/setup-node@v4
-              with:
-                  node-version: lts/*
-            - name: Install Node.js dependencies
-              run: npm ci
-            - name: check lint/prettier errors
-              run: npm run lint
-            - name: check taplo
-              run: npm run lint:taplo
+  run-linters:
+    name: Run linters
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          cache: 'npm'
+          node-version: lts/*
+      - name: Install Node.js dependencies
+        run: npm ci
+      - name: check lint/prettier errors
+        run: npm run lint
+      - name: check taplo
+        run: npm run lint:taplo

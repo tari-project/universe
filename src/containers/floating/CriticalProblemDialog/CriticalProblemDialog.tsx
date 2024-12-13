@@ -4,7 +4,8 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
+
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
