@@ -100,7 +100,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         }
     },
     handleWin: async ({ latestTx, canAnimate }) => {
-        const blockHeight = Number(latestTx?.message?.split(': ')[1]);
+        const blockHeight = latestTx.mined_in_block_height;
         const earnings = latestTx.amount;
 
         console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
@@ -136,8 +136,8 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         if (isMining) {
             const canAnimate = await checkCanAnimate();
             const latestTransaction = useWalletStore.getState().transactions?.[0];
-            const latestTxBlock = latestTransaction?.message?.split(': ')?.[1];
-            if (latestTxBlock === newBlockHeight.toString()) {
+            const latestTxBlock = latestTransaction?.mined_in_block_height;
+            if (latestTxBlock === newBlockHeight) {
                 await getState().handleWin({ latestTx: latestTransaction, canAnimate });
             } else {
                 await getState().handleFail(newBlockHeight, canAnimate);
