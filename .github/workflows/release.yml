@@ -40,10 +40,12 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+
       - name: BETA Builds - Install dependencies (windows) [yq]
         if: ${{ startsWith(runner.os,'Windows') }}
         run: |
           choco upgrade yq -y
+
       - name: BETA Builds - Install dependencies (linux) [yq]
         if: ${{ startsWith(runner.os,'Linux') }}
         shell: bash
@@ -80,6 +82,7 @@ jobs:
             -i tauri.conf.json
           cat tauri.conf.json
           sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json
+
       - name: RELEASE Builds - Set environment variables
         if: ${{ startsWith(github.ref, 'refs/heads/release') }}
         shell: bash
@@ -220,7 +223,7 @@ jobs:
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
         shell: bash
         run: |
-          echo "Artifact paths:\n ${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+          echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
 
       - name: BETA Builds - Upload assets
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
