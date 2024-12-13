@@ -1,6 +1,6 @@
 import { MinerMetrics } from '@app/types/app-status';
 import { listen } from '@tauri-apps/api/event';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore';
@@ -20,22 +20,18 @@ export function useMiningStatesSync() {
     useUiMiningStateMachine();
     useEarningsRecap();
 
-    const callIntervalItems = useCallback(async () => {
-        if (setupProgress >= 0.75) {
-            await fetchWalletDetails();
-        }
-    }, [fetchWalletDetails, setupProgress]);
-
     // intervalItems
     useEffect(() => {
         const fetchInterval = setInterval(async () => {
-            await callIntervalItems();
-        }, 10500);
+            if (setupProgress >= 0.75) {
+                await fetchWalletDetails();
+            }
+        }, 1500);
 
         return () => {
             clearInterval(fetchInterval);
         };
-    }, [callIntervalItems]);
+    }, [fetchWalletDetails, setupProgress]);
 
     useEffect(() => {
         if (isSettingUp) return;
