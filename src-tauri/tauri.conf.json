@@ -1,5 +1,5 @@
 {
-    "version": "0.8.11",
+    "version": "0.8.22",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -11,7 +11,7 @@
     },
     "bundle": {
         "active": true,
-        "targets": ["deb", "rpm", "appimage", "msi", "dmg"],
+        "targets": "all",
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
         },
@@ -31,7 +31,7 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": true
+        "createUpdaterArtifacts": "v1Compatible"
     },
     "app": {
         "security": {
@@ -52,7 +52,8 @@
                 "height": 780,
                 "label": "splashscreen",
                 "url": "/splash.html",
-                "center": true
+                "center": true,
+                "useHttpsScheme": true
             },
             {
                 "title": "Tari Universe (Alpha) | Testnet",
@@ -65,7 +66,8 @@
                 "fullscreen": false,
                 "transparent": false,
                 "visible": false,
-                "center": true
+                "center": true,
+                "useHttpsScheme": true
             }
         ]
     },
