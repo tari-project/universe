@@ -32,7 +32,8 @@ use tokio_util::sync::CancellationToken;
 
 use crate::{
     app_config::AppConfig, app_in_memory_config::AppInMemoryConfig,
-    process_utils::retry_with_backoff,
+    hardware::hardware_status_monitor::HardwareStatusMonitor, process_utils::retry_with_backoff,
+    utils::platform_utils::PlatformUtils,
 };
 
 const LOG_TARGET: &str = "tari::universe::telemetry_service";
@@ -51,6 +52,9 @@ pub struct FullTelemetryData {
     user_id: Option<String>,
     app_id: String,
     version: String,
+    os: String,
+    cpu_name: String,
+    gpu_name: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -167,6 +171,27 @@ async fn send_telemetry_data(
     version: String,
 ) -> Result<(), TelemetryServiceError> {
     let request = reqwest::Client::new();
+    let hardware = HardwareStatusMonitor::current();
+    let cpu_name = hardware
+        .get_cpu_devices()
+        .await
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .public_properties
+        .name
+        .clone();
+    let gpu_name = hardware
+        .get_gpu_devices()
+        .await
+        .unwrap()
+        .get(0)
+        .unwrap()
+        .public_properties
+        .name
+        .clone();
+    let os = PlatformUtils::detect_current_os();
+
     let full_data = FullTelemetryData {
         event_name: data.event_name,
         event_value: data.event_value,
@@ -174,6 +199,9 @@ async fn send_telemetry_data(
         user_id: None,
         app_id,
         version,
+        os: os.to_string(),
+        cpu_name,
+        gpu_name,
     };
     let request_builder = request
         .post(api_url)
