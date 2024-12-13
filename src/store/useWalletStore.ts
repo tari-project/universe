@@ -1,7 +1,7 @@
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
 import { create } from './create';
 import { WalletBalance } from '../types/app-status.ts';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { Transaction } from '@app/types/wallet.ts';
 
 interface State extends WalletBalance {

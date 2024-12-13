@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use std::{path::PathBuf, sync::LazyLock};
 
 use crate::{
@@ -15,11 +37,10 @@ use super::{
         intel_gpu_reader::IntelGpuReader, nvidia_gpu_reader::NvidiaGpuReader, GpuParametersReader,
     },
 };
-use anyhow::{Context, Error};
+use anyhow::Error;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
-use tauri::api::path::config_dir;
 use tokio::sync::RwLock;
 
 const LOG_TARGET: &str = "tari::universe::auto_launcher";
@@ -144,12 +165,11 @@ impl HardwareStatusMonitor {
         }
     }
 
-    async fn load_gpu_devices_from_status_file(&self) -> Result<GpuStatusFileContent, Error> {
-        let config_dir = config_dir().context("Failed to get config directory")?;
-        let file: PathBuf = config_dir
-            .join(APPLICATION_FOLDER_ID)
-            .join("gpuminer")
-            .join("gpu_status.json");
+    async fn load_gpu_devices_from_status_file(
+        &self,
+        config_dir: PathBuf,
+    ) -> Result<GpuStatusFileContent, Error> {
+        let file: PathBuf = config_dir.join("gpuminer").join("gpu_status.json");
         if file.exists() {
             info!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
             let content = tokio::fs::read_to_string(file).await?;
@@ -178,7 +198,10 @@ impl HardwareStatusMonitor {
     }
 
     async fn initialize_gpu_devices(&self) -> Result<Vec<GpuDeviceProperties>, Error> {
-        let gpu_status_file_content = self.load_gpu_devices_from_status_file().await?;
+        let config_dir = dirs::config_dir()
+            .expect("Could not get config dir")
+            .join(APPLICATION_FOLDER_ID);
+        let gpu_status_file_content = self.load_gpu_devices_from_status_file(config_dir).await?;
         let mut platform_devices = Vec::new();
 
         for gpu_device in &gpu_status_file_content.gpu_devices {

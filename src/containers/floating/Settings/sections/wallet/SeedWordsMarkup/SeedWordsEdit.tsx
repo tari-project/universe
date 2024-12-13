@@ -53,8 +53,15 @@ export const GreyTypography = styled(Typography)(({ theme }) => ({
 
 const seedWordsRegex = /^(([a-zA-Z]+)\s){23}([a-zA-Z]+)$/;
 
+const dialogStyles = {
+    width: '380px',
+    padding: '16px 30px',
+    gap: 16,
+};
+
 export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: SeedWordsEditProps) => {
     const [showConfirm, setShowConfirm] = useState(false);
+
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const importSeedWords = useWalletStore((s) => s.importSeedWords);
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
@@ -95,7 +102,7 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
         [hasChanges]
     );
 
-    const handleConfrimed = useCallback(async () => {
+    const handleConfirmed = useCallback(async () => {
         if (hasChanges && newSeedWords) {
             setShowConfirm(false);
             await importSeedWords(newSeedWords);
@@ -158,23 +165,29 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
             <ErrorTypography variant="p">{errors.seedWords && errors.seedWords.message}</ErrorTypography>
 
             <Dialog open={isWalletImporting} onOpenChange={undefined} disableClose={true}>
-                <DialogContent>
-                    <Stack direction="column" alignItems="center" justifyContent="space-between">
-                        <Typography variant="h2">{t('importing-wallet')}</Typography>
-                        <CircularProgress />
+                <DialogContent $unPadded>
+                    <Stack direction="column" alignItems="center" justifyContent="space-between" style={dialogStyles}>
+                        <Typography variant="h3">{t('importing-wallet')}</Typography>
+
+                        <Typography variant="p" style={{ textAlign: 'center' }}>
+                            {t('importing-wallet-copy')}
+                        </Typography>
+                        <div style={{ height: 32, width: 32 }}>
+                            <CircularProgress />
+                        </div>
                     </Stack>
                 </DialogContent>
             </Dialog>
             <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-                <DialogContent>
-                    <Stack direction="column" alignItems="center" justifyContent="space-between" gap={16}>
+                <DialogContent $unPadded>
+                    <Stack direction="column" alignItems="center" justifyContent="space-between" style={dialogStyles}>
                         <Typography variant="h3">{t('confirm-import-wallet')}</Typography>
                         <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
                             {t('confirm-import-wallet-copy')}
                         </Typography>
                         <Stack direction="row" gap={8}>
                             <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
-                            <SquaredButton color="orange" onClick={handleConfrimed}>
+                            <SquaredButton color="orange" onClick={handleConfirmed}>
                                 {t('yes')}
                             </SquaredButton>
                         </Stack>

@@ -1,10 +1,11 @@
+import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/tauri';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+
 import { Typography } from '@app/components/elements/Typography';
 import { TorConfig } from '@app/types/app-status';
 import { Input } from '@app/components/elements/inputs/Input';
@@ -22,7 +23,7 @@ import {
 import { TorDebug } from './TorDebug';
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 
-import { type } from '@tauri-apps/api/os';
+import { type } from '@tauri-apps/plugin-os';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
@@ -54,9 +55,9 @@ export const TorMarkup = () => {
     const hasCheckedOs = useRef(false);
 
     const checkPlatform = useCallback(async () => {
-        const osType = await type();
+        const osType = type();
         if (osType) {
-            setIsMac(osType === 'Darwin');
+            setIsMac(osType === 'macos');
 
             hasCheckedOs.current = true;
         }
