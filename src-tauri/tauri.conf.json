@@ -1,5 +1,5 @@
 {
-    "version": "0.8.13",
+    "version": "0.8.24",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -11,7 +11,7 @@
     },
     "bundle": {
         "active": true,
-        "targets": ["deb", "rpm", "appimage", "msi", "dmg"],
+        "targets": "all",
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
         },
@@ -52,7 +52,8 @@
                 "height": 780,
                 "label": "splashscreen",
                 "url": "/splash.html",
-                "center": true
+                "center": true,
+                "useHttpsScheme": true
             },
             {
                 "title": "Tari Universe (Alpha) | Testnet",
@@ -65,7 +66,8 @@
                 "fullscreen": false,
                 "transparent": false,
                 "visible": false,
-                "center": true
+                "center": true,
+                "useHttpsScheme": true
             }
         ]
     },

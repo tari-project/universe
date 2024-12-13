@@ -450,8 +450,8 @@ dependencies = [
  "pin-project-lite",
  "rustversion",
  "serde",
- "sync_wrapper 1.0.2",
- "tower 0.5.1",
+ "sync_wrapper",
+ "tower 0.5.2",
  "tower-layer",
  "tower-service",
 ]
@@ -471,7 +471,7 @@ dependencies = [
  "mime",
  "pin-project-lite",
  "rustversion",
- "sync_wrapper 1.0.2",
+ "sync_wrapper",
  "tower-layer",
  "tower-service",
 ]
@@ -3839,7 +3839,7 @@ dependencies = [
 [[package]]
 name = "minotari_app_grpc"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "argon2",
  "base64 0.13.1",
@@ -3869,7 +3869,7 @@ dependencies = [
 [[package]]
 name = "minotari_ledger_wallet_common"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "bs58 0.5.1",
 ]
@@ -3877,7 +3877,7 @@ dependencies = [
 [[package]]
 name = "minotari_node_grpc_client"
 version = "0.1.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "minotari_app_grpc",
 ]
@@ -3885,7 +3885,7 @@ dependencies = [
 [[package]]
 name = "minotari_wallet_grpc_client"
 version = "0.1.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "minotari_app_grpc",
  "tari_common_types",
@@ -5519,9 +5519,9 @@ checksum = "be105c72a1e6a5a1198acee3d5b506a15676b74a02ecd78060042a447f408d94"
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.7"
+version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b6dfecf2c74bce2466cabf93f6664d6998a69eb21e39f4207930065b27b771f"
+checksum = "03a862b389f93e68874fbf580b9de08dd02facb9a788ebadaf4a3fd33cf58834"
 dependencies = [
  "bitflags 2.6.0",
 ]
@@ -5602,7 +5602,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_urlencoded",
- "sync_wrapper 1.0.2",
+ "sync_wrapper",
  "system-configuration",
  "tokio",
  "tokio-native-tls",
@@ -5691,9 +5691,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.19"
+version = "0.23.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "934b404430bb06b3fae2cba809eb45a1ab1aecd64491213d7c3301b88393f8d1"
+checksum = "5065c3f250cbd332cd894be57c40fa52387247659b14a2d6041d121547903b1b"
 dependencies = [
  "log",
  "once_cell",
@@ -5905,9 +5905,9 @@ dependencies = [
 
 [[package]]
 name = "semver"
-version = "1.0.23"
+version = "1.0.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61697e0a1c7e512e84a621326239844a24d8207b4669b41bc18b32ea5cbf988b"
+checksum = "3cb6eb87a131f756572d7fb904f6e7b68633f09cca868c5df1c4b8d1a694bbba"
 dependencies = [
  "serde",
 ]
@@ -6572,12 +6572,6 @@ dependencies = [
 
 [[package]]
 name = "sync_wrapper"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
-
-[[package]]
-name = "sync_wrapper"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bf256ce5efdfa370213c1dabab5935a12e49f2c58d15e9eac2870d3b4f27263"
@@ -6750,7 +6744,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.8.13"
+version = "0.8.24"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6841,7 +6835,7 @@ dependencies = [
 [[package]]
 name = "tari_common"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "anyhow",
  "config",
@@ -6865,7 +6859,7 @@ dependencies = [
 [[package]]
 name = "tari_common_sqlite"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "diesel",
  "diesel_migrations",
@@ -6879,7 +6873,7 @@ dependencies = [
 [[package]]
 name = "tari_common_types"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "base64 0.21.7",
  "bitflags 2.6.0",
@@ -6905,7 +6899,7 @@ dependencies = [
 [[package]]
 name = "tari_comms"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6949,7 +6943,7 @@ dependencies = [
 [[package]]
 name = "tari_comms_dht"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "anyhow",
  "bitflags 2.6.0",
@@ -6984,7 +6978,7 @@ dependencies = [
 [[package]]
 name = "tari_comms_rpc_macros"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6994,7 +6988,7 @@ dependencies = [
 [[package]]
 name = "tari_core"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7088,12 +7082,12 @@ dependencies = [
 [[package]]
 name = "tari_features"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 
 [[package]]
 name = "tari_hashing"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "borsh",
  "digest",
@@ -7103,7 +7097,7 @@ dependencies = [
 [[package]]
 name = "tari_key_manager"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "argon2",
  "async-trait",
@@ -7136,7 +7130,7 @@ dependencies = [
 [[package]]
 name = "tari_max_size"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "borsh",
  "serde",
@@ -7147,7 +7141,7 @@ dependencies = [
 [[package]]
 name = "tari_mmr"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "borsh",
  "digest",
@@ -7161,7 +7155,7 @@ dependencies = [
 [[package]]
 name = "tari_p2p"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "anyhow",
  "fs2",
@@ -7193,7 +7187,7 @@ dependencies = [
 [[package]]
 name = "tari_script"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "blake2",
  "borsh",
@@ -7211,7 +7205,7 @@ dependencies = [
 [[package]]
 name = "tari_service_framework"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7226,7 +7220,7 @@ dependencies = [
 [[package]]
 name = "tari_shutdown"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "futures 0.3.31",
 ]
@@ -7234,7 +7228,7 @@ dependencies = [
 [[package]]
 name = "tari_storage"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "bincode",
  "lmdb-zero",
@@ -7246,7 +7240,7 @@ dependencies = [
 [[package]]
 name = "tari_test_utils"
 version = "1.9.1-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#b127883b8df10f7404caa184d083099f9d273eac"
+source = "git+https://github.com/tari-project/tari.git?rev=37c30be#37c30be6bd6df026dc16eec5f4d8cfaf2225f9c6"
 dependencies = [
  "futures 0.3.31",
  "rand 0.8.5",
@@ -8020,14 +8014,14 @@ dependencies = [
 
 [[package]]
 name = "tower"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2873938d487c3cfb9aed7546dc9f2711d867c9f90c46b889989a2cb84eba6b4f"
+checksum = "d039ad9159c98b70ecfd540b2573b97f7f52c3e8d9f8ad57a24b916a536975f9"
 dependencies = [
  "futures-core",
  "futures-util",
  "pin-project-lite",
- "sync_wrapper 0.1.2",
+ "sync_wrapper",
  "tower-layer",
  "tower-service",
 ]

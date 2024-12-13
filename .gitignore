@@ -26,3 +26,6 @@ src-tauri/gpu_status.json
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Ignore hosted auto updater json files
+.updater/*.json
