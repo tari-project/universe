@@ -172,24 +172,16 @@ async fn send_telemetry_data(
 ) -> Result<(), TelemetryServiceError> {
     let request = reqwest::Client::new();
     let hardware = HardwareStatusMonitor::current();
-    let cpu_name = hardware
-        .get_cpu_devices()
-        .await
-        .unwrap()
-        .get(0)
-        .unwrap()
-        .public_properties
-        .name
-        .clone();
-    let gpu_name = hardware
-        .get_gpu_devices()
-        .await
-        .unwrap()
-        .get(0)
-        .unwrap()
-        .public_properties
-        .name
-        .clone();
+    let cpu_name = hardware.get_cpu_devices().await?;
+    let cpu_name = match cpu_name.first() {
+        Some(cpu) => cpu.public_properties.name.clone(),
+        None => "Unknown".to_string(),
+    };
+    let gpu_name = hardware.get_gpu_devices().await?;
+    let gpu_name = match gpu_name.first() {
+        Some(gpu) => gpu.public_properties.name.clone(),
+        None => "Unknown".to_string(),
+    };
     let os = PlatformUtils::detect_current_os();
 
     let full_data = FullTelemetryData {
