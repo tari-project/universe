@@ -111,7 +111,7 @@ export interface TransactionInfo {
     is_cancelled: boolean;
     excess_sig: string;
     timestamp: number;
-    message: string;
+    mined_in_block_height: number;
     payment_id: string;
 }
 

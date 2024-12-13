@@ -255,8 +255,8 @@ pub struct TransactionInfo {
     pub is_cancelled: bool,
     pub excess_sig: String,
     pub timestamp: u64,
-    pub message: String,
     pub payment_id: String,
+    pub mined_in_block_height: u64,
 }
 
 impl WalletStatusMonitor {
@@ -314,7 +314,7 @@ impl WalletStatusMonitor {
                 is_cancelled: tx.is_cancelled,
                 excess_sig: tx.excess_sig.to_hex(),
                 timestamp: tx.timestamp,
-                message: tx.message,
+                mined_in_block_height: tx.mined_in_block_height,
                 payment_id: tx.payment_id.to_hex(),
             });
         }
