@@ -1285,7 +1285,7 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-utils"
-version = "0.8.20"
+version = "0.8.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22ec99545bb0ed0ea7bb9b8e1e9122ea386ff8a48c0922e43f36d45ab09e0e80"
 
@@ -6744,7 +6744,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.8.20"
+version = "0.8.21"
 dependencies = [
  "anyhow",
  "async-trait",
