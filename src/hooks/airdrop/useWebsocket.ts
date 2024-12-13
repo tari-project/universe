@@ -15,6 +15,7 @@ const MINING_EVENT_NAME = 'mining-status';
 
 interface SignData {
     signature: string;
+    pubKey: string;
 }
 
 export const useWebsocket = () => {
@@ -48,11 +49,15 @@ export const useWebsocket = () => {
                 userId,
             };
             try {
-                const transformedPayload = btoa(JSON.stringify(payload));
+                const transformedPayload = `${payload.version},${payload.network},${payload.appId},${payload.userId},${payload.isMining},${payload.blockHeight}`;
                 const signatureData = (await invoke('sign_ws_data', {
-                    dataBase64: transformedPayload,
+                    data: transformedPayload,
                 })) as SignData;
-                socket.emit(MINING_EVENT_NAME, { data: payload, signature: signatureData.signature });
+                await socket.emit(MINING_EVENT_NAME, {
+                    data: payload,
+                    signature: signatureData.signature,
+                    pubKey: signatureData.pubKey,
+                });
             } catch (e) {
                 console.error(e);
             }
