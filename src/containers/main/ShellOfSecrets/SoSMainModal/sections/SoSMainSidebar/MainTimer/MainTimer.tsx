@@ -14,6 +14,8 @@ import {
 import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { useEffect, useState } from 'react';
 
+const padTime = (time: number) => String(time).padStart(2, '0');
+
 export default function MainTimer() {
     const { t } = useTranslation('sos', { useSuspense: false });
 
@@ -39,17 +41,17 @@ export default function MainTimer() {
 
             <TimerColumn>
                 <NumberGroup>
-                    <Number>{reminingTime.days}</Number>
+                    <Number>{padTime(reminingTime.days)}</Number>
                     <Label>{t('mainTimer.days')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
-                    <Number>{reminingTime.hours}</Number>
+                    <Number>{padTime(reminingTime.hours)}</Number>
                     <Label>{t('mainTimer.hours')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
-                    <Number>{reminingTime.minutes}</Number>
+                    <Number>{padTime(reminingTime.minutes)}</Number>
                     <Label>{t('mainTimer.minutes')}</Label>
                 </NumberGroup>
 
@@ -58,7 +60,7 @@ export default function MainTimer() {
                         opacity: 0.5,
                     }}
                 >
-                    <Number>{reminingTime.seconds}</Number>
+                    <Number>{padTime(reminingTime.seconds)}</Number>
                     <Label>{t('mainTimer.seconds')}</Label>
                 </NumberGroup>
 

@@ -2,7 +2,6 @@ import styled from 'styled-components';
 
 export const Wrapper = styled('div')`
     width: 100%;
-    height: 100%;
 
     background: rgba(230, 255, 71, 0.1);
     backdrop-filter: blur(1px);
@@ -10,6 +9,7 @@ export const Wrapper = styled('div')`
     padding: 32px 26px;
     position: relative;
 
+    overflow: hidden;
     overflow-y: auto;
 `;
 

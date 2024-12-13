@@ -7,22 +7,6 @@ export const SectionLabel = styled('div')`
     font-weight: 700;
     line-height: 129.623%;
     text-transform: uppercase;
-
-    @media (max-height: 1024px) {
-        font-size: 18px;
-    }
-
-    @media (max-height: 900px) {
-        font-size: 15px;
-    }
-
-    @media (max-width: 1350px) {
-        font-size: 18px;
-    }
-
-    @media (max-width: 1200px) {
-        font-size: 15px;
-    }
 `;
 
 export const TopBar = styled('div')`
@@ -91,6 +75,10 @@ export const Number = styled('div')`
 
     @media (max-width: 1200px) {
         font-size: 100px;
+    }
+
+    @media (max-height: 800px) {
+        font-size: 80px;
     }
 `;
 
