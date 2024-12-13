@@ -49,7 +49,7 @@ pub struct FullTelemetryData {
     event_name: String,
     event_value: Value,
     created_at: SystemTime,
-    user_id: Option<String>,
+    user_id: String,
     app_id: String,
     version: String,
     os: String,
@@ -92,7 +92,11 @@ impl TelemetryService {
             in_memory_config,
         }
     }
-    pub async fn init(&mut self, app_version: String) -> Result<(), TelemetryServiceError> {
+    pub async fn init(
+        &mut self,
+        app_version: String,
+        user: String,
+    ) -> Result<(), TelemetryServiceError> {
         self.version = app_version;
         let cancellation_token = self.cancellation_token.clone();
         let config_cloned = self.config.clone();
@@ -120,6 +124,7 @@ impl TelemetryService {
                                         telemetry_api_url.clone(),
                                         app_id.clone(),
                                         version.clone(),
+                                        user.clone(),
                                     ))
                                 },
                                 3,
@@ -169,6 +174,7 @@ async fn send_telemetry_data(
     api_url: String,
     app_id: String,
     version: String,
+    user_id: String,
 ) -> Result<(), TelemetryServiceError> {
     let request = reqwest::Client::new();
     let hardware = HardwareStatusMonitor::current();
@@ -188,7 +194,7 @@ async fn send_telemetry_data(
         event_name: data.event_name,
         event_value: data.event_value,
         created_at: SystemTime::now(),
-        user_id: None,
+        user_id,
         app_id,
         version,
         os: os.to_string(),

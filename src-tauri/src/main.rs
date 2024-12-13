@@ -254,12 +254,22 @@ async fn setup_inner(
         .initialize(state.airdrop_access_token.clone(), window.clone())
         .await?;
 
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
+    if telemetry_id.is_empty() {
+        telemetry_id = "unknown_miner_tari_universe".to_string();
+    }
+
     let app_version = app.package_info().version.clone();
     state
         .telemetry_service
         .write()
         .await
-        .init(app_version.to_string())
+        .init(app_version.to_string(), telemetry_id.clone())
         .await?;
     let telemetry_service = state.telemetry_service.clone();
     let telemetry_service = telemetry_service.read().await;
@@ -596,16 +606,6 @@ async fn setup_inner(
         .await;
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
-
-    let mut telemetry_id = state
-        .telemetry_manager
-        .read()
-        .await
-        .get_unique_string()
-        .await;
-    if telemetry_id.is_empty() {
-        telemetry_id = "unknown_miner_tari_universe".to_string();
-    }
 
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
