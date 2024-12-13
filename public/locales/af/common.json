@@ -28,5 +28,7 @@
   "utilization": "Benutting",
   "version": "Weergawe",
   "versions": "Weergawes",
-  "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer."
+  "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer.",
+  "close": "Close",
+  "update": "Update"
 }

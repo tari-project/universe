@@ -2,6 +2,7 @@
   "dont-worry": "Jangan khawatir, lain kali tidak akan memakan waktu lama",
   "installing-latest-version": "Menginstal versi {{version}} dari Tari Universe",
   "new-tari-version-available": "Versi baru dari Tari Universe tersedia!",
+  "could-not-auto-update": "We couldn't auto update Tari Universe to {{version}} while machine was locked or in sleep mode.",
   "no": "Tidak",
   "setting-up": "Menyiapkan mesin kebenaran Tari...",
   "this-might-take-a-few-minutes": "Ini mungkin memakan waktu beberapa menit",
