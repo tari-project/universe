@@ -42,6 +42,7 @@ export const BoxWrapper = styled(m.div)`
     width: 100%;
     height: 100%;
     flex-shrink: 0;
+    max-width: 1700px;
 
     border-radius: 30px;
     box-shadow: 0px 4px 50px 0px rgba(0, 0, 0, 0.5);

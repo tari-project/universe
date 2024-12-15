@@ -19,7 +19,7 @@ export default function UpcomingDrop() {
 
             <RuneImage src={runeImage} alt="" />
 
-            <Progress />
+            <Progress count={5} total={10} />
         </DropWrapper>
     );
 }

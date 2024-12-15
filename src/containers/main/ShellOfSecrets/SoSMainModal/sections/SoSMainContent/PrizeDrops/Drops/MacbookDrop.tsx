@@ -19,7 +19,7 @@ export default function MacbookDrop() {
 
             <MacbookImage src={mackbookImage} alt="" />
 
-            <Progress />
+            <Progress percent={50} />
         </DropWrapper>
     );
 }
