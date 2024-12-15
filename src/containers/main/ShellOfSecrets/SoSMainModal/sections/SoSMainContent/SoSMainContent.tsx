@@ -2,6 +2,7 @@ import CrewMining from './CrewMining/CrewMining';
 import PrizeDrops from './PrizeDrops/PrizeDrops';
 import Leaderboard from './Leaderboard/Leaderboard';
 import { Wrapper } from './styles';
+import BottomElement from './BottomElement/BottomElement';
 
 export default function SoSMainContent() {
     return (
@@ -9,6 +10,7 @@ export default function SoSMainContent() {
             <CrewMining />
             <Leaderboard />
             <PrizeDrops />
+            <BottomElement />
         </Wrapper>
     );
 }
