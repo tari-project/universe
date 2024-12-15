@@ -15,12 +15,20 @@ export const TopBar = styled('div')`
     align-items: center;
     justify-content: center;
     gap: 30px;
-`;
 
-export const LineLeft = styled('div')`
-    width: 100%;
-    height: 2px;
-    background-color: #e6ff47;
+    &::before {
+        content: '';
+        width: 100%;
+        height: 2px;
+        background-color: #e6ff47;
+    }
+
+    &::after {
+        content: '';
+        width: 100%;
+        height: 2px;
+        background-color: #e6ff47;
+    }
 `;
 
 export const SectionLabel = styled('div')`
@@ -36,14 +44,8 @@ export const SectionLabel = styled('div')`
     }
 `;
 
-export const LineRight = styled('div')`
-    width: 100%;
-    height: 2px;
-    background-color: #e6ff47;
-`;
-
 export const FormWrapper = styled('form')`
-    postition: relative;
+    position: relative;
     width: 100%;
     min-height: 101px;
     border: 1px solid #95a663;
@@ -62,7 +64,7 @@ export const FormWrapper = styled('form')`
         flex-shrink: 0;
     }
 
-    @media (max-width: 1300px) {
+    @media (max-width: 1580px) {
         padding: 0 30px;
 
         svg {

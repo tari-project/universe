@@ -4,9 +4,7 @@ import KeyIcon from './icons/KeyIcon';
 import {
     Wrapper,
     TopBar,
-    LineLeft,
     SectionLabel,
-    LineRight,
     FormWrapper,
     InputField,
     SubmitButton,
@@ -63,9 +61,7 @@ export default function SuperCharger() {
     return (
         <Wrapper>
             <TopBar>
-                <LineLeft />
                 <SectionLabel>{t('superCharger.title')}</SectionLabel>
-                <LineRight />
             </TopBar>
 
             <FormWrapper onSubmit={handleSubmit}>

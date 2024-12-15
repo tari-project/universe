@@ -53,6 +53,7 @@ export const TextGroup = styled('div')`
     flex-direction: column;
     gap: 10px;
     padding-right: 100px;
+    flex-grow: 1;
 `;
 
 export const Title = styled('div')`

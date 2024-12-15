@@ -1,16 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import {
-    Label,
-    LineBottom,
-    LineLeft,
-    LineRight,
-    Number,
-    NumberGroup,
-    SectionLabel,
-    TimerColumn,
-    TopBar,
-    Wrapper,
-} from './styles';
+import { Label, Number, NumberGroup, SectionLabel, TimerColumn, TopBar, Wrapper } from './styles';
 import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { useEffect, useState } from 'react';
 
@@ -19,7 +8,7 @@ const padTime = (time: number) => String(time).padStart(2, '0');
 export default function MainTimer() {
     const { t } = useTranslation('sos', { useSuspense: false });
 
-    const { getTimeRemaining, totalBonusTimeMs } = useShellOfSecretsStore();
+    const { getTimeRemaining } = useShellOfSecretsStore();
     const [reminingTime, setRemainingTime] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
     useEffect(() => {
@@ -34,9 +23,7 @@ export default function MainTimer() {
     return (
         <Wrapper>
             <TopBar>
-                <LineLeft />
                 <SectionLabel>{t('mainTimer.title')}</SectionLabel>
-                <LineRight />
             </TopBar>
 
             <TimerColumn>
@@ -63,8 +50,6 @@ export default function MainTimer() {
                     <Number>{padTime(reminingTime.seconds)}</Number>
                     <Label>{t('mainTimer.seconds')}</Label>
                 </NumberGroup>
-
-                <LineBottom />
             </TimerColumn>
         </Wrapper>
     );

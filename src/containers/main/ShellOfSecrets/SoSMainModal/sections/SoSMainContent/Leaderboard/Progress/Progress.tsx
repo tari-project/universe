@@ -5,8 +5,6 @@ import {
     TopLabel,
     Line,
     Text,
-    CapLeft,
-    CapRight,
     ProgressBar,
     PercentWrapper,
     PercentClip,
@@ -28,8 +26,6 @@ export default function Progress() {
                     <Trans t={t} i18nKey="progress.message" values={{ hours: 15 }} components={{ span: <span /> }} />
                 </Text>
                 <Line />
-                <CapLeft />
-                <CapRight />
             </TopLabel>
 
             <ProgressBar>

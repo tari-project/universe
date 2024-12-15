@@ -13,28 +13,20 @@ export const TopBar = styled('div')`
     display: flex;
     align-items: center;
     gap: 16px;
-`;
 
-export const LineLeft = styled('div')`
-    height: 2px;
-    width: 21px;
-    background-color: #e6ff47;
-`;
+    &::before {
+        content: '';
+        height: 2px;
+        width: 21px;
+        background-color: #e6ff47;
+    }
 
-export const LineRight = styled('div')`
-    height: 2px;
-    width: 71px;
-    background-color: #e6ff47;
-`;
-
-export const LineBottom = styled('div')`
-    height: 2px;
-    width: 21px;
-    background-color: #e6ff47;
-
-    position: absolute;
-    bottom: 0;
-    left: 0;
+    &::after {
+        content: '';
+        height: 2px;
+        width: 71px;
+        background-color: #e6ff47;
+    }
 `;
 
 export const TimerColumn = styled('div')`
@@ -48,6 +40,17 @@ export const TimerColumn = styled('div')`
 
     padding: 24px 26px 18px 26px;
     margin-top: -13px;
+
+    &::after {
+        content: '';
+        height: 2px;
+        width: 21px;
+        background-color: #e6ff47;
+
+        position: absolute;
+        bottom: 0;
+        left: 0;
+    }
 `;
 
 export const NumberGroup = styled('div')`
@@ -69,7 +72,7 @@ export const Number = styled('div')`
         font-size: 100px;
     }
 
-    @media (max-width: 1350px) {
+    @media (max-width: 1580px) {
         font-size: 120px;
     }
 
@@ -95,7 +98,7 @@ export const Label = styled('div')`
         font-size: 25px;
     }
 
-    @media (max-width: 1350px) {
+    @media (max-width: 1580px) {
         font-size: 30px;
     }
 

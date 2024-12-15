@@ -14,6 +14,28 @@ export const TopLabel = styled('div')`
     width: calc(100% + 10px);
     position: relative;
     transform: translateX(-5px);
+
+    &::before {
+        content: '';
+        width: 2px;
+        height: 8px;
+        background-color: #e6ff47;
+
+        position: absolute;
+        top: 7px;
+        right: 100%;
+    }
+
+    &::after {
+        content: '';
+        width: 2px;
+        height: 8px;
+        background-color: #e6ff47;
+
+        position: absolute;
+        top: 7px;
+        left: 100%;
+    }
 `;
 
 export const Line = styled('div')`
@@ -34,26 +56,6 @@ export const Text = styled('div')`
     span {
         color: #e6ff47;
     }
-`;
-
-export const CapLeft = styled('div')`
-    width: 2px;
-    height: 8px;
-    background-color: #e6ff47;
-
-    position: absolute;
-    top: 7px;
-    right: 100%;
-`;
-
-export const CapRight = styled('div')`
-    width: 2px;
-    height: 8px;
-    background-color: #e6ff47;
-
-    position: absolute;
-    top: 7px;
-    left: 100%;
 `;
 
 export const ProgressBar = styled('div')`
