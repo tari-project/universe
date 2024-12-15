@@ -1,4 +1,6 @@
 import styled from 'styled-components';
+import bgImage1 from './images/sidebar_bg_1.png';
+import bgImage2 from './images/sidebar_bg_2.png';
 
 export const Wrapper = styled('div')`
     width: 100%;
@@ -11,20 +13,32 @@ export const Wrapper = styled('div')`
 
     overflow: hidden;
     overflow-y: auto;
-`;
 
-export const BGImage1 = styled('img')`
-    position: absolute;
-    top: 0;
-    right: 0;
-    z-index: 0;
-`;
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 0;
+        background-image: url(${bgImage1});
+        background-repeat: no-repeat;
+        background-position: top right;
+        width: 100%;
+        height: 100%;
+    }
 
-export const BGImage2 = styled('img')`
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    z-index: 0;
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        z-index: 0;
+        background-image: url(${bgImage2});
+        background-repeat: no-repeat;
+        background-position: bottom center;
+        width: 100%;
+        height: 100%;
+    }
 `;
 
 export const ContentLayer = styled('div')`
