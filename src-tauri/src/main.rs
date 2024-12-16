@@ -2,14 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
-use commands::Tokens;
-use consts::TAPPLETS_ASSETS_DIR;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
-use ootle::db_connection::{try_get_tokens, AssetServer, DatabaseConnection};
-use ootle::error::Error;
-use ootle::tapplet_server::start;
+use ootle::setup_tari_universe;
 use std::fs::{remove_dir_all, remove_file};
 
 use log4rs::config::RawConfig;
@@ -430,55 +426,19 @@ async fn setup_inner(
         .update("establishing-db-connection".to_string(), None, 0)
         .await;
 
-    let app_path = app
-        .path_resolver()
-        .app_data_dir()
-        .expect("Could not get log dir");
-    let db_path = app_path.join(DB_FILE_NAME);
-    app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
-        database::establish_connection(db_path.to_str().unwrap()),
-    ))));
-
-    progress.set_max(95).await;
-    //TODO add translation for db
-    progress
-        .update("setting-tari-ootle".to_string(), None, 0)
-        .await;
-    //TODO tokens
-    app.manage(Tokens {
-        permission: std::sync::Mutex::new("".to_string()),
-        auth: std::sync::Mutex::new("".to_string()),
-    });
-    let tokens = app.state::<Tokens>();
-    let grpc_port = state.wallet_manager.get_grpc_port().await;
-    info!(target: LOG_TARGET, "Wallet manager grpc port: {:?}", grpc_port);
-    let handle = tauri::async_runtime::spawn(try_get_tokens(Some(grpc_port)));
-    let (permission_token, auth_token) = tauri::async_runtime::block_on(handle)?;
-    tokens
-        .permission
-        .lock()
-        .map_err(|_| Error::FailedToObtainPermissionTokenLock)?
-        .replace_range(.., &permission_token);
-    tokens
-        .auth
-        .lock()
-        .map_err(|_| Error::FailedToObtainAuthTokenLock)?
-        .replace_range(.., &auth_token);
-
-    let tapplet_assets_path = app_path.join(TAPPLETS_ASSETS_DIR);
-    // let _handle_setup_log = tauri::async_runtime::spawn(async move { setup_log(log_tapp_dir).await });
-    let handle_start = tauri::async_runtime::spawn(async move { start(tapplet_assets_path).await });
-    let (addr, cancel_token) = match handle_start.await {
-        Ok(result) => result
-            .inspect_err(|e| error!(target: LOG_TARGET, "Error handling tapplet start: {:?}", e))?,
+    // TODO RUN TARI UNI
+    let app_handle_clone: tauri::AppHandle = app.clone();
+    match setup_tari_universe(
+        app_handle_clone,
+        data_dir.clone(),
+        log_dir.clone(),
+        config_dir.clone(),
+    ) {
+        Ok(_) => {}
         Err(e) => {
-            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e);
-            return Err(e.into());
+            error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e);
         }
-    };
-    app.manage(AssetServer { addr, cancel_token });
-
-    info!(target: LOG_TARGET, "🚀 Tari Universe setup completed successfully");
+    }
 
     progress.set_max(100).await;
     progress

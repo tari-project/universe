@@ -292,7 +292,7 @@ impl WalletStatusMonitor {
                 is_cancelled: tx.is_cancelled,
                 excess_sig: tx.excess_sig.to_hex(),
                 timestamp: tx.timestamp,
-                message: tx.message,
+                message: "Tx message not found".to_string(), //TODO tx message
                 payment_id: tx.payment_id.to_hex(),
             });
         }

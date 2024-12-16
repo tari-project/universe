@@ -1,5 +1,3 @@
-import ActiveDevTapplet from '@app/components/ootle/ActiveDevTapplet';
-import { useTappletsStore } from '@app/store/useTappletsStore';
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -21,14 +19,12 @@ export const OotleSettings = () => {
 
     const setOotleMode = useAppConfigStore((s) => s.setOotleMode);
     const setLocalTariIndexer = useAppConfigStore((s) => s.setLocalTariIndexer);
-    console.log('oo ind', ootleMode, localIndexer);
+
     const handleOotleSwitch = useCallback(() => {
-        console.log('ELOSZKI');
         setOotleMode(!ootleMode);
     }, [setOotleMode, ootleMode]);
 
     const handleIndexerSwitch = useCallback(() => {
-        console.log('DUUUUPA');
         setLocalTariIndexer(!localIndexer);
     }, [setLocalTariIndexer, localIndexer]);
 

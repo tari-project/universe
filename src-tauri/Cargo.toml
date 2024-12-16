@@ -21,6 +21,8 @@ axum = "0.7.9"
 axum-jrpc = "0.7.1"
 base64 = "0.22.1"
 blake2 = "0.10"
+tari_dan_wallet_daemon = { git = "https://github.com/tari-project/tari-dan.git", branch = "development" }
+tari_dan_app_utilities = { git = "https://github.com/tari-project/tari-dan.git", branch = "development" }
 tari_wallet_daemon_client = { git = "https://github.com/tari-project/tari-dan.git", branch = "development" }
 chrono = "0.4.38"
 device_query = "2.1.0"

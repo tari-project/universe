@@ -1,0 +1,186 @@
+########################################################################################################################
+#                                                                                                                      #
+#                      Common Configuration Options (CommonConfig, AutoUpdateConfig, MetricsConfig)                    #
+#                                                                                                                      #
+########################################################################################################################
+
+[stagenet.auto_update]
+# Customize the hosts that are used to check for updates. These hosts must contain update information in DNS TXT records.
+update_uris = ["updates.stagenet.taripulse.com"]
+
+[auto_update]
+# Name server for auto update (default = "1.1.1.1:53/cloudflare.net")
+#name_server = "1.1.1.1:53/cloudflare.net"
+
+# Customize the hosts that are used to check for updates. These hosts must contain update information in DNS TXT
+# records. (default = [])
+#update_uris = []
+
+#use_dnssec = false
+
+#download_base_url = ""
+
+# Customize the location of the update SHA hashes and maintainer-signed signature.
+#hashes_url = "https://<address>/hashes.txt"
+#hashes_sig_url = "https://<address>/hashes.txt.sig"
+
+# This interval in seconds to check for software updates. Setting this to 0 disables checking.
+check_interval = 300
+
+[metrics]
+# server_bind_address = "127.0.0.1:5577"
+# push_endpoint = http://localhost:9091/metrics/job/base-node
+
+########################################################################################################################
+#                                                                                                                      #
+#                      Peer Seeds Configuration Options (PeerSeedsConfig)                                              #
+#                                                                                                                      #
+########################################################################################################################
+
+[peer_seeds]
+# DNS seeds hosts - DNS TXT records are queried from these hosts and the resulting peers added to the comms peer list.
+#dns_seeds = []
+# Custom specified peer seed nodes
+#peer_seeds = []
+# DNS name server to use for DNS seeds
+#dns_seeds_name_server = "1.1.1.1:853/cloudflare-dns.com"
+# All DNS seed records must pass DNSSEC validation
+#dns_seeds_use_dnssec = false
+
+[nextnet.p2p.seeds]
+# DNS seeds hosts - DNS TXT records are queried from these hosts and the resulting peers added to the comms peer list.
+dns_seeds = ["seeds.nextnet.tari.com"]
+# Custom specified peer seed nodes
+peer_seeds = [
+    #"a062ae2345b0db0df9fb1504b99511e23d98f8513f9b5503efcc6dad8eca7e47::/onion3/rhoqxfbzz3uidp23erxu4mkwwexc2gg4q45rcxfpbhb35ycdv4ex2fid:18141",
+    #"a062ae2345b0db0df9fb1504b99511e23d98f8513f9b5503efcc6dad8eca7e47::/ip4/54.77.66.39/tcp/18189",
+]
+
+[stagenet.p2p.seeds]
+# DNS seeds hosts - DNS TXT records are queried from these hosts and the resulting peers added to the comms peer list.
+dns_seeds = ["seeds.stagenet.tari.com"]
+# Custom specified peer seed nodes
+peer_seeds = [
+    #"a062ae2345b0db0df9fb1504b99511e23d98f8513f9b5503efcc6dad8eca7e47::/onion3/rhoqxfbzz3uidp23erxu4mkwwexc2gg4q45rcxfpbhb35ycdv4ex2fid:18141",
+    #"a062ae2345b0db0df9fb1504b99511e23d98f8513f9b5503efcc6dad8eca7e47::/ip4/54.77.66.39/tcp/18189",
+]
+
+[esmeralda.p2p.seeds]
+# DNS seeds hosts - DNS TXT records are queried from these hosts and the resulting peers added to the comms peer list.
+dns_seeds = ["seeds.esmeralda.tari.com"]
+# Custom specified peer seed nodes
+peer_seeds = [
+    #"a062ae2345b0db0df9fb1504b99511e23d98f8513f9b5503efcc6dad8eca7e47::/onion3/rhoqxfbzz3uidp23erxu4mkwwexc2gg4q45rcxfpbhb35ycdv4ex2fid:18141",
+    #"a062ae2345b0db0df9fb1504b99511e23d98f8513f9b5503efcc6dad8eca7e47::/ip4/54.77.66.39/tcp/18189",
+]
+
+
+[igor.p2p.seeds]
+# Custom specified peer seed nodes
+peer_seeds = [
+    # 2222bb888618d65d7b16e355f9
+    "8e7eb81e512f3d6347bf9b1ca9cd67d2c8e29f2836fc5bd608206505cc72af34::/ip6/fd56:2026:93c0:0:9e:96fb:e119:d8ec/tcp/18189",
+    # aaaaf562a6ef070706fb9a7244
+    "40a9d8573745072534bce7d0ecafe882b1c79570375a69841c08a98dee9ecb5f::/ip6/fd56:2026:93c0:0:9e:96fb:e119:d8ec/tcp/18189",
+    # dddd69c587a10c41ef2bf51397
+    "126c7ee64f71aca36398b977dd31fbbe9f9dad615df96473fb655bef5709c540::/ip6/fd56:2026:93c0:0:9e:96fb:e119:d8ec/tcp/18189",
+
+
+    # Local DAN Seeds, Stringhandler
+    # da100065d065f839dab6b6fb4f
+    "f24a6ed54362cee25c8e08e92bcd33e4d8ab2b733862948f863c982040d0d447::/onion3/s7sto2fd6cqf3wak2ec23gygb3d77p2ro7pcl2vesk6notgedjhy4nyd:18141",
+    # da4000fb6a031eced4ce65fe31
+    "9c127e9451d6721bfbe2b75434fcc19f6c7ab23523d4dacf7f5f5d601d2c8840::/onion3/kfh6trtkccp6mdbob42sb3sd464lzorn2ufys4zglnqhoxzsa4souaqd:18141",
+]
+
+########################################################################################################################
+#                                                                                                                      #
+#                      Validator Node Configuration Options (ValidatorNodeConfig)                                      #
+#                                                                                                                      #
+########################################################################################################################
+
+[validator_node]
+
+# A path to the file that stores your node identity and secret key (default = "validator_node_id.json")
+#identity_file = "validator_node_id.json"
+
+# A path to the file that stores the tor hidden service private key, if using the tor transport
+# (default = "validator_node_tor_id.json")
+#tor_identity_file = "validator_node_tor_id.json"
+
+# The node's publicly-accessible hostname. This is the host name that is advertised on the network so that
+# peers can find you.
+# _NOTE_: If using the `tor` transport type, public_address will be ignored and an onion address will be
+# automatically configured (default = )
+#public_address =
+
+# The Minotari base node's GRPC address. (default = "127.0.0.1/<port>" the <port> value is based on network)
+#base_node_grpc_address = "127.0.0.1/tcp/18142"
+
+# The Minotari console wallet's GRPC address. (default = "127.0.0.1/<port>" the <port> value is based on network)
+#wallet_grpc_address = "127.0.0.1/tcp/18143"
+
+# How often do we want to scan the base layer for changes. (default = 10)
+#base_layer_scanning_interval = 10
+
+# The relative path to store persistent data (default = "data/validator_node")
+#data_dir = "data/validator_node"
+
+# JSON-RPC listener address (default = "127.0.0.1:18200")
+#json_rpc_address = "127.0.0.1:18200"
+
+# HTTP UI listener address (default = "127.0.0.1:5000")
+#http_ui_address = "127.0.0.1:5000"
+
+# Set to true to enable auto registration for each epoch (default = true)
+#auto_register = true
+
+[validator_node.p2p]
+#enable_mdns = true
+#listener_port = 0
+#reachability_mode = "auto"
+
+########################################################################################################################
+#                                                                                                                      #
+#                                     Indexer Configuration Options (IndexerConfig)                                    #
+#                                                                                                                      #
+########################################################################################################################
+
+[indexer]
+
+# A path to the file that stores your node identity and secret key (default = "indexer_id.json")
+#identity_file = "indexer_id.json"
+
+# A path to the file that stores the tor hidden service private key, if using the tor transport
+# (default = "indexer_tor_id.json")
+#tor_identity_file = "indexer_tor_id.json"
+
+# The node's publicly-accessible hostname. This is the host name that is advertised on the network so that
+# peers can find you.
+# _NOTE_: If using the `tor` transport type, public_address will be ignored and an onion address will be
+# automatically configured (default = )
+#public_address =
+
+# The Minotari base node's GRPC address. (default = "127.0.0.1/<port>" the <port> value is based on network)
+#base_node_grpc_address = "127.0.0.1/tcp/18142"
+
+# How often do we want to scan the base layer for changes. (default = 10)
+#base_layer_scanning_interval = 10
+
+# The relative path to store persistent data (default = "data/indexer")
+#data_dir = "data/indexer"
+
+# JSON-RPC listener address (default = "127.0.0.1:18300")
+#json_rpc_address = "127.0.0.1:18300"
+
+# HTTP UI listener address (default = "127.0.0.1:15000")
+#http_ui_address = "127.0.0.1:15000"
+
+# Substate ids to keep watching
+#address_watchlist=[]
+
+# How often do we want to scan the dan layer for change. (default = 10)
+#dan_layer_scanning_internal=10
+
+[indexer.p2p]
+#transport = "tor"
