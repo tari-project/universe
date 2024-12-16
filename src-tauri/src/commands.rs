@@ -102,7 +102,6 @@ pub struct MinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct TariWalletDetails {
-    wallet_balance: Option<WalletBalance>,
     tari_address_base58: String,
     tari_address_emoji: String,
 }
@@ -641,45 +640,15 @@ pub async fn get_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
-    if state.is_getting_wallet_balance.load(Ordering::SeqCst) {
-        let read = state.cached_wallet_details.read().await;
-        if let Some(details) = &*read {
-            warn!(target: LOG_TARGET, "Already getting wallet balance, returning cached value");
-            return Ok(details.clone());
-        }
-        warn!(target: LOG_TARGET, "Already getting wallet balance");
-        return Err("Already getting wallet balance".to_string());
-    }
-    state
-        .is_getting_wallet_balance
-        .store(true, Ordering::SeqCst);
-    let wallet_balance = match state.wallet_manager.get_balance().await {
-        Ok(w) => Some(w),
-        Err(e) => {
-            if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
-            }
-
-            None
-        }
-    };
     let tari_address = state.tari_address.read().await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
     }
-    let result = TariWalletDetails {
-        wallet_balance,
+    Ok(TariWalletDetails {
         tari_address_base58: tari_address.to_base58(),
         tari_address_emoji: tari_address.to_emoji_string(),
-    };
-    let mut lock = state.cached_wallet_details.write().await;
-    *lock = Some(result.clone());
-    state
-        .is_getting_wallet_balance
-        .store(false, Ordering::SeqCst);
-
-    Ok(result)
+    })
 }
 
 #[tauri::command]

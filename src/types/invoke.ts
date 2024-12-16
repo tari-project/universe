@@ -55,7 +55,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
     function invoke(param: 'get_used_p2pool_stats_server_port'): Promise<number>;
     function invoke(param: 'get_tari_wallet_details'): Promise<TariWalletDetails>;
-    function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(
         param: 'set_excluded_gpu_devices',
@@ -65,7 +64,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'exit_application'): Promise<string>;
     function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
-    function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
     function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;

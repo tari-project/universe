@@ -95,7 +95,6 @@ export interface MinerMetrics {
 }
 
 export interface TariWalletDetails {
-    wallet_balance: WalletBalance;
     tari_address_base58: string;
     tari_address_emoji: string;
 }

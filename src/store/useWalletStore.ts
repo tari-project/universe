@@ -10,14 +10,13 @@ interface State extends WalletBalance {
     tari_address?: string;
     balance: number | null;
     transactions: Transaction[];
-    isTransactionLoading: boolean;
     is_wallet_importing: boolean;
 }
 
 interface Actions {
     fetchWalletDetails: () => Promise<void>;
-    setTransactionsLoading: (isTransactionLoading: boolean) => void;
     setTransactions: (transactions?: Transaction[]) => void;
+    setWalletBalance: (walletBalance: WalletBalance) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
 }
 
@@ -32,7 +31,6 @@ const initialState: State = {
     pending_incoming_balance: 0,
     pending_outgoing_balance: 0,
     transactions: [],
-    isTransactionLoading: false,
     is_wallet_importing: false,
 };
 
@@ -40,20 +38,10 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
     ...initialState,
     fetchWalletDetails: async () => {
         try {
-            const tari_wallet_details = await invoke('get_tari_wallet_details');
-            const {
-                available_balance = 0,
-                timelocked_balance = 0,
-                pending_incoming_balance = 0,
-            } = tari_wallet_details.wallet_balance || {};
-            // Q: Should we subtract pending_outgoing_balance here?
-            const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
-
+            const { tari_address_base58, tari_address_emoji } = await invoke('get_tari_wallet_details');
             set({
-                ...tari_wallet_details.wallet_balance,
-                tari_address_base58: tari_wallet_details.tari_address_base58,
-                tari_address_emoji: tari_wallet_details.tari_address_emoji,
-                balance: tari_wallet_details?.wallet_balance ? newBalance : null,
+                tari_address_base58,
+                tari_address_emoji,
             });
         } catch (error) {
             if (error !== ALREADY_FETCHING.BALANCE) {
@@ -61,8 +49,16 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
             }
         }
     },
+    setWalletBalance: (walletBalance) => {
+        const { available_balance = 0, timelocked_balance = 0, pending_incoming_balance = 0 } = walletBalance || {};
+        const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
+
+        set({
+            ...walletBalance,
+            balance: walletBalance ? newBalance : null,
+        });
+    },
     setTransactions: (transactions) => set({ transactions }),
-    setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),
     importSeedWords: async (seedWords: string[]) => {
         try {
             set({ is_wallet_importing: true });

@@ -212,6 +212,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 last_block_height: 0,
                 last_sha3_estimated_hashrate: 0,
                 last_randomx_estimated_hashrate: 0,
+                last_block_reward: 0,
             },
         ))
     }
@@ -241,6 +242,7 @@ pub struct MinotariNodeStatusMonitor {
     last_block_height: u64,
     last_sha3_estimated_hashrate: u64,
     last_randomx_estimated_hashrate: u64,
+    last_block_reward: u64,
 }
 
 #[async_trait]
@@ -265,22 +267,6 @@ impl MinotariNodeStatusMonitor {
                 .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
         let res = client
-            .get_new_block_template(NewBlockTemplateRequest {
-                algo: Some(PowAlgo { pow_algo: 1 }),
-                max_weight: 0,
-            })
-            .await
-            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
-        let res = res.into_inner();
-
-        let reward = res
-            .miner_data
-            .ok_or_else(|| {
-                MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
-            })?
-            .reward;
-
-        let res = client
             .get_tip_info(Empty {})
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
@@ -300,16 +286,37 @@ impl MinotariNodeStatusMonitor {
             metadata.timestamp,
         );
 
-        if sync_achieved && (block_height <= self.last_block_height) {
+        if sync_achieved
+            && (block_height <= self.last_block_height)
+            && self.last_sha3_estimated_hashrate > 0
+            && self.last_randomx_estimated_hashrate > 0
+            && self.last_block_reward > 0
+        {
             return Ok((
                 self.last_sha3_estimated_hashrate,
                 self.last_randomx_estimated_hashrate,
-                MicroMinotari(reward),
+                MicroMinotari(self.last_block_reward),
                 block_height,
                 block_time,
                 sync_achieved,
             ));
         }
+
+        let res = client
+            .get_new_block_template(NewBlockTemplateRequest {
+                algo: Some(PowAlgo { pow_algo: 1 }),
+                max_weight: 0,
+            })
+            .await
+            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
+        let res = res.into_inner();
+
+        let reward = res
+            .miner_data
+            .ok_or_else(|| {
+                MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
+            })?
+            .reward;
 
         // First try with 10 blocks
         let blocks = [10, 100];
@@ -359,6 +366,7 @@ impl MinotariNodeStatusMonitor {
         }
 
         self.last_block_height = block_height;
+        self.last_block_reward = reward;
         Ok(result?)
     }
 
