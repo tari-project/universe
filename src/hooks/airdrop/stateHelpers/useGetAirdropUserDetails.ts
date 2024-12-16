@@ -93,7 +93,7 @@ export const useGetAirdropUserDetails = () => {
             await Promise.all(requests);
         };
 
-        if (!userDetails?.user?.id && airdropToken) {
+        if (airdropToken) {
             fetchData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
