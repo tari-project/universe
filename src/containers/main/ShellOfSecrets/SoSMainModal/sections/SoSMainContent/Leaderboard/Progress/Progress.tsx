@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import {
     Wrapper,
@@ -16,7 +15,8 @@ import {
 
 export default function Progress() {
     const { t } = useTranslation('sos', { useSuspense: false });
-    const [percent, setPercent] = useState(50);
+
+    const percent = 50;
 
     return (
         <Wrapper>
