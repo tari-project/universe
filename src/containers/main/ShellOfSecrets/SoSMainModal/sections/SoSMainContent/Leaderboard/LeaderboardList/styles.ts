@@ -32,3 +32,14 @@ export const Wrapper = styled('div')`
         rgba(0, 0, 0, 0) 100%
     );
 `;
+
+export const LeaderboardPlaceholder = styled('div')`
+    border-radius: 9px;
+    border: 2px solid rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: 0px 3.625px 12.686px 0px rgba(0, 0, 0, 0.1);
+
+    width: 100%;
+    height: 54px;
+    flex-shrink: 0;
+`;

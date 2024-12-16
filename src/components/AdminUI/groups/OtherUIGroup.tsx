@@ -2,11 +2,13 @@
 import { useUIStore } from '@app/store/useUIStore';
 import { useShellOfSecretsStore } from '../../../store/useShellOfSecretsStore';
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
+import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 
 export function OtherUIGroup() {
     const setAdminShow = useUIStore((s) => s.setAdminShow); // prevent messing up the actual setup progress value
     const adminShow = useUIStore((s) => s.adminShow);
     const { showWidget, setShowWidget, showMainModal, setShowMainModal } = useShellOfSecretsStore();
+    const setFlare = useAirdropStore((s) => s.setFlareAnimationType);
 
     return (
         <>
@@ -27,7 +29,13 @@ export function OtherUIGroup() {
                 >
                     Orphan chain warning
                 </Button>
-                {/* TODO: add the other sections if we want */}
+            </ButtonGroup>
+            <CategoryLabel>Gem animations</CategoryLabel>
+            {/* TODO: add the other sections if we want */}
+            <ButtonGroup>
+                <Button onClick={() => setFlare('FriendAccepted')}>FriendAccepted</Button>
+                <Button onClick={() => setFlare('GoalComplete')}>GoalComplete</Button>
+                <Button onClick={() => setFlare('BonusGems')}>BonusGems</Button>
             </ButtonGroup>
         </>
     );

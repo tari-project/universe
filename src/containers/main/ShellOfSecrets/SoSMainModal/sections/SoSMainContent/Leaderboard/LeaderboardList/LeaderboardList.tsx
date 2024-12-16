@@ -1,4 +1,4 @@
-import { Wrapper } from './styles';
+import { LeaderboardPlaceholder, Wrapper } from './styles';
 import LeaserboardEntry from './LeaserboardEntry/LeaserboardEntry';
 import { useCallback, useEffect, useState } from 'react';
 import { useAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest';
@@ -38,9 +38,11 @@ export default function LeaderboardList() {
 
     return (
         <Wrapper>
-            {leaderboardData?.top100.map((entry) => (
-                <LeaserboardEntry key={entry.id} entry={entry} isCurrentUser={entry.id === userId} />
-            ))}
+            {leaderboardData?.top100
+                ? leaderboardData.top100.map((entry) => (
+                      <LeaserboardEntry key={entry.id} entry={entry} isCurrentUser={entry.id === userId} />
+                  ))
+                : Array.from({ length: 100 }).map((_, index) => <LeaderboardPlaceholder key={index} />)}
         </Wrapper>
     );
 }

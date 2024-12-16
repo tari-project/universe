@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { useTranslation, Trans } from 'react-i18next';
 import {
     Wrapper,
     TopLabel,
     Line,
     Text,
-    CapLeft,
-    CapRight,
     ProgressBar,
     PercentWrapper,
     PercentClip,
@@ -18,7 +15,8 @@ import {
 
 export default function Progress() {
     const { t } = useTranslation('sos', { useSuspense: false });
-    const [percent, setPercent] = useState(50);
+
+    const percent = 50;
 
     return (
         <Wrapper>
@@ -28,8 +26,6 @@ export default function Progress() {
                     <Trans t={t} i18nKey="progress.message" values={{ hours: 15 }} components={{ span: <span /> }} />
                 </Text>
                 <Line />
-                <CapLeft />
-                <CapRight />
             </TopLabel>
 
             <ProgressBar>

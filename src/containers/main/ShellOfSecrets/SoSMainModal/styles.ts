@@ -42,6 +42,7 @@ export const BoxWrapper = styled(m.div)`
     width: 100%;
     height: 100%;
     flex-shrink: 0;
+    max-width: 1700px;
 
     border-radius: 30px;
     box-shadow: 0px 4px 50px 0px rgba(0, 0, 0, 0.5);
@@ -65,6 +66,9 @@ export const BoxContent = styled('div')`
     overflow: hidden;
     border-radius: 30px;
     position: relative;
+
+    overflow: hidden;
+    overflow-y: auto;
 `;
 
 export const CloseButton = styled('button')`
@@ -96,7 +100,7 @@ export const ContentLayer = styled('div')`
     z-index: 3;
 
     display: grid;
-    grid-template-columns: minmax(350px, 532px) minmax(643px, 1fr);
+    grid-template-columns: 532px 1fr;
     gap: 40px;
 
     width: 100%;
@@ -105,4 +109,14 @@ export const ContentLayer = styled('div')`
     color: #e6ff47;
     font-family: 'IBM Plex Mono', sans-serif;
     font-weight: 700;
+
+    transition: grid-template-columns 0.3s ease;
+
+    @media (max-width: 1580px) {
+        grid-template-columns: 400px 1fr;
+    }
+
+    @media (max-width: 1200px) {
+        grid-template-columns: 350px 1fr;
+    }
 `;
