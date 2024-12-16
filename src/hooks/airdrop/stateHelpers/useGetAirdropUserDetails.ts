@@ -97,5 +97,5 @@ export const useGetAirdropUserDetails = () => {
             fetchData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [airdropToken, userDetails, baseUrl]);
+    }, [airdropToken, baseUrl]);
 };
