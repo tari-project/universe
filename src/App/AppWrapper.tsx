@@ -34,7 +34,7 @@ const sentryOptions = {
 setupLogger();
 
 export default function AppWrapper() {
-    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
+    // const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
     const setMiningNetwork = useMiningStore((s) => s.setMiningNetwork);
 
@@ -54,13 +54,15 @@ export default function AppWrapper() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        if (allowTelemetry && environment !== 'development') {
-            Sentry.init(sentryOptions);
-        } else {
-            Sentry.close();
-        }
-    }, [allowTelemetry]);
+    // We think Sentry/Vite is causing the crashing issues. Disable on the front end for now.
+    //
+    // useEffect(() => {
+    //     if (allowTelemetry && environment !== 'development') {
+    //         Sentry.init(sentryOptions);
+    //     } else {
+    //         Sentry.close();
+    //     }
+    // }, [allowTelemetry]);
 
     return <App />;
 }
