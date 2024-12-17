@@ -72,6 +72,7 @@ export class TappletProvider implements TariProvider {
     }
     /* eslint-disable @typescript-eslint/no-explicit-any */
     async runOne(method: TappletProviderMethod, args: any[]): Promise<any> {
+        console.log('[tapp provider] RUN ONE', method);
         const res = (this[method] as (...args: any) => Promise<any>)(...args);
         return res;
     }
@@ -84,7 +85,9 @@ export class TappletProvider implements TariProvider {
         return this.client;
     }
 
-    public async createFreeTestCoins(accountName?: string, amount = 1_000_000, fee?: number): Promise<Account> {
+    // TODO account name should be included in TU Provider method definition to pass the arg
+    public async createFreeTestCoins(accountName = 'test', amount = 1_000_000, fee?: number): Promise<Account> {
+        console.log('[tapp provider] create test coins', accountName);
         const res = await this.client.createFreeTestCoins({
             account: (accountName && { Name: accountName }) || null,
             amount,

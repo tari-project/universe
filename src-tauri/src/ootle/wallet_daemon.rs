@@ -56,17 +56,18 @@ pub async fn start_wallet_daemon(
     info!(target: LOG_TARGET, "🚀 Wallet daemon configuration completed successfully");
 
     // run_tari_dan_wallet_daemon(config, shutdown_signal).await
-    // tokio::spawn(async move {
-    // TODO RIGHT HERE RUN
-    match run_tari_dan_wallet_daemon(config, shutdown_signal).await {
-        Ok(_) => {
-            info!(target: LOG_TARGET, "🚀 Running wallet daemon");
-            return Ok(());
+    tokio::spawn(async move {
+        // TODO RIGHT HERE RUN
+        match run_tari_dan_wallet_daemon(config, shutdown_signal).await {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "🚀 Running wallet daemon");
+                return Ok(());
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Error running wallet daemon: {}", e);
+                return Err(e);
+            }
         }
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error running wallet daemon: {}", e);
-            return Err(e);
-        }
-    }
-    // });
+    });
+    Ok(())
 }

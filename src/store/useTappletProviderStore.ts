@@ -57,8 +57,11 @@ export const useTappletProviderStore = create<TappletProviderStoreState>()((set,
         const { methodName, args, id } = event.data;
         console.log('YEEEEY', methodName);
         const provider = get().tappletProvider;
-        const resp = await provider?.runOne(methodName, args);
+        const result = await provider?.runOne(methodName, args);
         console.log('YEEEEY PROVIDER', provider);
-        console.log('YEEEEY RESPONSE', resp);
+        console.log('YEEEEY RESPONSE', result);
+        if (event.source) {
+            event.source.postMessage({ id, result, type: 'provider-call' }, { targetOrigin: event.origin });
+        }
     },
 }));
