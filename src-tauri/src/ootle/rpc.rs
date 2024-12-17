@@ -18,10 +18,10 @@ pub async fn permission_token(grpc_port: Option<u16>) -> Result<(String, String)
     info!(target: LOG_TARGET, "🚀 Auth tokens request");
     let req_res = make_request(None, "auth.request".to_string(), &req_params, grpc_port).await?;
     let req_res: AuthLoginResponse = serde_json::from_value(req_res)?;
-    
+
     info!(target: LOG_TARGET, "🚀 Auth tokens got response");
     let auth_token = req_res.auth_token;
-    
+
     let acc_params = AuthLoginAcceptRequest {
         auth_token: auth_token.clone(),
         name: auth_token.clone(),
@@ -29,7 +29,7 @@ pub async fn permission_token(grpc_port: Option<u16>) -> Result<(String, String)
     info!(target: LOG_TARGET, "🚀 Auth tokens accept request");
     let acc_res = make_request(None, "auth.accept".to_string(), &acc_params, grpc_port).await?;
     let acc_res: AuthLoginAcceptResponse = serde_json::from_value(acc_res)?;
-    
+
     info!(target: LOG_TARGET, "🚀 Auth tokens accept response");
     Ok((acc_res.permissions_token, auth_token))
 }
@@ -89,6 +89,7 @@ pub async fn make_request<T: Serialize>(
     params: T,
     grpc_port: Option<u16>,
 ) -> Result<serde_json::Value, anyhow::Error> {
+    info!(target: LOG_TARGET, "Make request");
     let json_connect_address = match grpc_port {
         Some(port) => format!("127.0.0.1:{}", port),
         None => JSON_CONNECT_ADDRESS.to_string(),

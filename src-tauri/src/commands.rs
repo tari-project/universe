@@ -20,6 +20,8 @@ use crate::interface::{
 };
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
+use crate::ootle::error;
+use crate::ootle::rpc::make_request;
 use crate::ootle::{
     error::{
         Error::{self, RequestError, TappletServerError},
@@ -1993,36 +1995,36 @@ pub async fn call_wallet(
     method: String,
     params: String,
     tokens: tauri::State<'_, Tokens>,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<WalletBalance, String> {
-    // let permission_token = tokens
-    //     .permission
-    //     .lock()
-    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
-    //     .map_err(|_| FailedToObtainPermissionTokenLock)?
-    //     .clone();
-    // let req_params: serde_json::Value = serde_json::from_str(&params)
-    //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
-    //     .map_err(|e| JsonParsingError(e))?;
+) -> Result<serde_json::Value, Error> {
+    let permission_token = tokens
+        .permission
+        .lock()
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
+        .map_err(|_| error::Error::FailedToObtainPermissionTokenLock)?
+        .clone();
+    let req_params: serde_json::Value = serde_json::from_str(&params)
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
+        .map_err(|e| error::Error::JsonParsingError(e))
+        .unwrap();
 
-    // match make_request(Some(permission_token), method, req_params).await {
-    //     Ok(res) => Ok(res),
-    //     Err(e) => {
-    //         error!(target: LOG_TARGET,"❌ Error at call_wallet: {:?}", e);
-    //         return Err(Error::RequestFailed {
-    //             message: e.to_string(),
-    //         });
-    //     }
-    // }
     info!(target: LOG_TARGET,"🚨🚨🚨 CALL WALLET method {:?}", method);
-    match state.wallet_manager.get_balance().await {
-        Ok(w) => {
-            info!(target: LOG_TARGET,"🚨 balance {:?}", w.available_balance.to_json());
-            Ok(w)
-        }
+    match make_request(Some(permission_token), method, req_params, None).await {
+        Ok(res) => Ok(res),
         Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
-            return Err(e.to_string());
+            error!(target: LOG_TARGET,"❌ Error at call_wallet: {:?}", e);
+            return Err(Error::RequestFailed {
+                message: e.to_string(),
+            });
         }
     }
+    // match state.wallet_manager.get_balance().await {
+    //     Ok(w) => {
+    //         info!(target: LOG_TARGET,"🚨 balance {:?}", w.available_balance.to_json());
+    //         Ok(w)
+    //     }
+    //     Err(e) => {
+    //         warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
+    //         return Err(e.to_string());
+    //     }
+    // }
 }

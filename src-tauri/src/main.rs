@@ -2,10 +2,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use consts::{DB_FILE_NAME, TAPPLETS_ASSETS_DIR};
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
-use ootle::setup_tari_universe;
+use ootle::tapplet_server::start;
+use ootle::{
+    setup_tari_universe, setup_tokens, AssetServer, DatabaseConnection, ShutdownTokens, Tokens,
+};
 use std::fs::{remove_dir_all, remove_file};
 
 use log4rs::config::RawConfig;
@@ -37,7 +41,6 @@ use crate::cpu_miner::CpuMiner;
 
 use crate::app_config::WindowSettings;
 use crate::commands::{CpuMinerConnection, MinerMetrics, TariWalletDetails};
-use crate::consts::DB_FILE_NAME;
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;
@@ -181,6 +184,10 @@ async fn setup_inner(
         .path_resolver()
         .app_log_dir()
         .expect("Could not get log dir");
+    let app_data_dir = app
+        .path_resolver()
+        .app_data_dir()
+        .expect("Could not get app data dir");
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") && !cfg!(dev) {
@@ -427,24 +434,67 @@ async fn setup_inner(
         .await;
 
     // TODO RUN TARI UNI
+    let app_handle_clone_tokens = app.clone();
     let app_handle_clone: tauri::AppHandle = app.clone();
     let data_dir_clone = data_dir.clone();
     let log_dir_clone = log_dir.clone();
     let config_dir_clone = config_dir.clone();
-    tauri::async_runtime::spawn(async move {
-        match setup_tari_universe(
+    let db_path = app_data_dir.join(DB_FILE_NAME);
+
+    app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
+        database::establish_connection(db_path.to_str().unwrap()),
+    ))));
+    info!(target: LOG_TARGET, "🚀 DB connection established successfully");
+
+    app.manage(Tokens {
+        auth: std::sync::Mutex::new("".to_string()),
+        permission: std::sync::Mutex::new("".to_string()),
+    });
+    app.manage(ShutdownTokens::default());
+    let thread_tokens = tauri::async_runtime::spawn(async move {
+        setup_tokens(app_handle_clone_tokens)
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not set tokens: {:?}", e))
+            .map_err(|e| e.to_string())
+    });
+    let _ = thread_tokens
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error getting tokens: {:?}", e))
+        .map_err(|e| e.to_string());
+    // match tauri::async_runtime::block_on(thread_tokens).expect("Could not set tokens") {
+    //     Ok(_) => {
+    //         info!(target: LOG_TARGET, "🚀 Tokens initialized successfully");
+    //     }
+    //     Err(e) => {
+    //         error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e)
+    //     }
+    // };
+    let thread_ootle = tauri::async_runtime::spawn(async move {
+        setup_tari_universe(
             app_handle_clone,
             data_dir_clone,
             log_dir_clone,
             config_dir_clone,
-        ) {
-            Ok(_) => {}
-            Err(e) => {
-                error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e);
-            }
-        }
+        )
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e))
+        .map_err(|e| e.to_string())
     });
-
+    let _ = thread_ootle
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error launching The Tari Ootle: {:?}", e))
+        .map_err(|e| e.to_string());
+    // match tauri::async_runtime::block_on(thread_ootle).expect("Could not set tokens") {
+    //     Ok(_) => {
+    //         info!(target: LOG_TARGET, "🚀 Tari Universe setup completed successfully");
+    //     }
+    //     Err(e) => {
+    //         error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e)
+    //     }
+    // };
+    // let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
+    // let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
+    // app.manage(AssetServer { addr, cancel_token });
     progress.set_max(100).await;
     progress
         .update("starting-mmproxy".to_string(), None, 0)
@@ -554,6 +604,7 @@ struct UniverseAppState {
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     setup_counter: Arc<RwLock<AutoRollback<bool>>>,
+    tokens: Arc<RwLock<Tokens>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -654,6 +705,10 @@ fn main() {
         cached_wallet_details: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
         setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
+        tokens: Arc::new(RwLock::new(Tokens {
+            auth: std::sync::Mutex::new("".to_string()),
+            permission: std::sync::Mutex::new("".to_string()),
+        })),
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();

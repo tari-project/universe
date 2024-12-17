@@ -10,5 +10,6 @@ pub const TAPPLETS_ASSETS_DIR: &'static str = "assets";
 pub const TAPPLET_ARCHIVE: &'static str = "tapplet.tar.gz";
 pub const TAPPLET_DIST_DIR: &'static str = "package/dist";
 pub const DB_FILE_NAME: &'static str = "tari_universe.sqlite3";
+pub const WALLET_DAEMON_CONFIG_FILE: &'static str = "wallet_daemon.config.toml";
 pub const REGISTRY_URL: &'static str =
     "https://raw.githubusercontent.com/karczuRF/tapp-registry/main";

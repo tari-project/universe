@@ -57,8 +57,12 @@ pub async fn start_wallet_daemon(
 
     // run_tari_dan_wallet_daemon(config, shutdown_signal).await
     // tokio::spawn(async move {
+    // TODO RIGHT HERE RUN
     match run_tari_dan_wallet_daemon(config, shutdown_signal).await {
-        Ok(_) => Ok(()),
+        Ok(_) => {
+            info!(target: LOG_TARGET, "🚀 Running wallet daemon");
+            return Ok(());
+        }
         Err(e) => {
             warn!(target: LOG_TARGET, "Error running wallet daemon: {}", e);
             return Err(e);
