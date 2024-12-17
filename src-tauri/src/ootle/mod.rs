@@ -1,20 +1,20 @@
 use std::{
+    collections::HashMap,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
 
-use db_connection::{try_get_tokens, AssetServer, DatabaseConnection};
-use log::info;
-use log4rs::config::RawConfig;
+use db_connection::try_get_tokens;
+use diesel::SqliteConnection;
+use log::{error, info};
 use tapplet_server::{setup_log, start};
 use tauri::Manager;
+use tokio_util::sync::CancellationToken;
 use wallet_daemon::start_wallet_daemon;
 
 use crate::{
-    commands::Tokens,
     consts::{DB_FILE_NAME, TAPPLETS_ASSETS_DIR},
     database,
-    utils::logging_utils::setup_logging,
 };
 
 pub mod db_connection;
@@ -26,6 +26,18 @@ pub mod tapplet_server;
 pub mod wallet_daemon;
 
 const LOG_TARGET: &str = "tari::universe::main";
+
+pub struct Tokens {
+    pub auth: Mutex<String>,
+    pub permission: Mutex<String>,
+}
+#[derive(Default)]
+pub struct ShutdownTokens(pub Arc<tokio::sync::Mutex<HashMap<i32, CancellationToken>>>);
+pub struct DatabaseConnection(pub Arc<Mutex<SqliteConnection>>);
+pub struct AssetServer {
+    pub addr: String,
+    pub cancel_token: CancellationToken,
+}
 
 pub fn setup_tari_universe(
     app: tauri::AppHandle,
@@ -40,35 +52,31 @@ pub fn setup_tari_universe(
         .expect("Could not get app data dir");
     let wallet_daemon_config_file = config_dir.join("wallet_daemon.config.toml");
 
-    // setup universe logging
-    let log_config_file = &log_dir
-        .join("universe")
-        .join("configs")
-        .join("log4rs_config_universe.yml");
-    let contents = setup_logging(
-        &log_config_file,
-        &log_dir,
-        include_str!("../../log4rs/universe_sample.yml"),
-    )?;
-    let config: RawConfig = serde_yaml::from_str(&contents)
-        .expect("Could not parse the contents of the log file as yaml");
-    // global logger init
-    log4rs::init_raw_config(config).expect("Could not initialize logging");
-
     tauri::async_runtime::spawn(async move {
         start_wallet_daemon(log_dir, data_dir, wallet_daemon_config_file)
             .await
-            .unwrap();
+            .unwrap_or_else(
+                |e| error!(target: LOG_TARGET, "Could not start wallet daemon: {:?}", e),
+            );
     });
-    let db_path = app_data_dir.join(DB_FILE_NAME);
 
+    info!(target: LOG_TARGET, "🚀 Wallet daemon started successfully");
+
+    let db_path = app_data_dir.join(DB_FILE_NAME);
     app.manage(DatabaseConnection(Arc::new(Mutex::new(
         database::establish_connection(db_path.to_str().unwrap()),
     ))));
-
+    app.manage(Tokens {
+        permission: Mutex::new("".to_string()),
+        auth: Mutex::new("".to_string()),
+    });
+    app.manage(ShutdownTokens::default());
+    info!(target: LOG_TARGET, "🚀 DB connecttion established successfully");
     let tokens = app.state::<Tokens>();
+    info!(target: LOG_TARGET, "🚀 Tokens initialized successfully");
     let handle = tauri::async_runtime::spawn(try_get_tokens(None));
     let (permission_token, auth_token) = tauri::async_runtime::block_on(handle)?;
+    info!(target: LOG_TARGET, "🚀 Tokens setup successfully");
     tokens
         .permission
         .lock()

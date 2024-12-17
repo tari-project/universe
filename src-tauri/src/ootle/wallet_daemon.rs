@@ -1,11 +1,11 @@
 use std::{fs, net::SocketAddr, panic, path::PathBuf, process, str::FromStr};
 
 use crate::{port_allocator::PortAllocator, utils::logging_utils::setup_logging};
-use log::info;
-use tari_common::configuration::Network;
+use log::{info, warn};
+use tari_common_dan2::configuration::Network;
 use tari_dan_app_utilities::configuration::load_configuration;
 use tari_dan_wallet_daemon::{cli::Cli, config::ApplicationConfig, run_tari_dan_wallet_daemon};
-use tari_shutdown::Shutdown;
+use tari_shutdown_dan2::Shutdown;
 
 const LOG_TARGET: &str = "tari::dan::wallet_daemon";
 
@@ -31,7 +31,8 @@ pub async fn start_wallet_daemon(
     )?;
 
     let mut cli = Cli::init();
-    cli.common.network = Some(Network::LocalNet);
+    let network = Network::get_current_or_user_setting_or_default();
+    cli.common.network = Some(network);
     cli.common.base_path = data_dir_path.to_str().unwrap().to_owned();
     cli.common.config = wallet_daemon_config_file.clone();
     cli.common.log_config = Some(log_config_file.clone());
@@ -54,5 +55,14 @@ pub async fn start_wallet_daemon(
 
     info!(target: LOG_TARGET, "🚀 Wallet daemon configuration completed successfully");
 
-    run_tari_dan_wallet_daemon(config, shutdown_signal).await
+    // run_tari_dan_wallet_daemon(config, shutdown_signal).await
+    // tokio::spawn(async move {
+    match run_tari_dan_wallet_daemon(config, shutdown_signal).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error running wallet daemon: {}", e);
+            return Err(e);
+        }
+    }
+    // });
 }

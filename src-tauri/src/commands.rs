@@ -20,19 +20,18 @@ use crate::interface::{
 };
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
-use crate::ootle::tapplet_installer::delete_tapplet;
 use crate::ootle::{
-    db_connection::{AssetServer, DatabaseConnection, ShutdownTokens},
     error::{
         Error::{self, RequestError, TappletServerError},
         RequestError::*,
         TappletServerError::*,
     },
     tapplet_installer::{
-        check_files_and_validate_checksum, download_asset, fetch_tapp_registry_manifest,
-        get_tapp_download_path, get_tapp_permissions,
+        check_files_and_validate_checksum, delete_tapplet, download_asset,
+        fetch_tapp_registry_manifest, get_tapp_download_path, get_tapp_permissions,
     },
     tapplet_server::start,
+    AssetServer, DatabaseConnection, ShutdownTokens, Tokens,
 };
 use crate::p2pool::models::Stats;
 use crate::progress_tracker::ProgressTracker;
@@ -50,14 +49,12 @@ use sentry::integrations::anyhow::capture_anyhow;
 use serde::Serialize;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
-use std::sync::Mutex;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_utilities::message_format::MessageFormat;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
-use tokio_util::sync::CancellationToken;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -1991,10 +1988,6 @@ pub fn delete_dev_tapplet(
     }
 }
 
-pub struct Tokens {
-    pub auth: Mutex<String>,
-    pub permission: Mutex<String>,
-}
 #[tauri::command]
 pub async fn call_wallet(
     method: String,
@@ -2021,7 +2014,7 @@ pub async fn call_wallet(
     //         });
     //     }
     // }
-    info!(target: LOG_TARGET,"🚨🚨🚨 method {:?}", method);
+    info!(target: LOG_TARGET,"🚨🚨🚨 CALL WALLET method {:?}", method);
     match state.wallet_manager.get_balance().await {
         Ok(w) => {
             info!(target: LOG_TARGET,"🚨 balance {:?}", w.available_balance.to_json());

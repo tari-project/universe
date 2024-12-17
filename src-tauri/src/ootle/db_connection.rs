@@ -1,23 +1,7 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-    thread::sleep,
-    time::Duration,
-};
-
-use diesel::SqliteConnection;
 use log::{info, warn};
-use tokio_util::sync::CancellationToken;
+use std::{thread::sleep, time::Duration};
 
 use super::rpc::permission_token;
-
-#[derive(Default)]
-pub struct ShutdownTokens(pub Arc<tokio::sync::Mutex<HashMap<i32, CancellationToken>>>);
-pub struct DatabaseConnection(pub Arc<Mutex<SqliteConnection>>);
-pub struct AssetServer {
-    pub addr: String,
-    pub cancel_token: CancellationToken,
-}
 
 const LOG_TARGET: &str = "tari::universe::main";
 

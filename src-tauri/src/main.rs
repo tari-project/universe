@@ -428,17 +428,22 @@ async fn setup_inner(
 
     // TODO RUN TARI UNI
     let app_handle_clone: tauri::AppHandle = app.clone();
-    match setup_tari_universe(
-        app_handle_clone,
-        data_dir.clone(),
-        log_dir.clone(),
-        config_dir.clone(),
-    ) {
-        Ok(_) => {}
-        Err(e) => {
-            error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e);
+    let data_dir_clone = data_dir.clone();
+    let log_dir_clone = log_dir.clone();
+    let config_dir_clone = config_dir.clone();
+    tauri::async_runtime::spawn(async move {
+        match setup_tari_universe(
+            app_handle_clone,
+            data_dir_clone,
+            log_dir_clone,
+            config_dir_clone,
+        ) {
+            Ok(_) => {}
+            Err(e) => {
+                error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e);
+            }
         }
-    }
+    });
 
     progress.set_max(100).await;
     progress
