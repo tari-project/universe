@@ -261,7 +261,8 @@ impl TelemetryManager {
         let mut sha256_hasher = sha2::Sha256::new();
         sha2::Digest::update(&mut sha256_hasher, id_as_bytes);
         let id_sha256 = sha256_hasher.finalize();
-        let id_base64_sha256 = BASE64_STANDARD.encode(id_sha256);
+        let id_base64_sha256 = BASE64_STANDARD_NO_PAD.encode(id_sha256);
+
         let unique_string = format!(
             "v3,{},{},{}",
             buf.to_monero_base58(),
