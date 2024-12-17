@@ -12,7 +12,7 @@
   "doLater": "Bunu daha sonra yapacağım",
   "giftReferralCode": "Tari Universe\"e davet ettiğiniz her arkadaş için {{gems}} taş kazanın. Onlar hesaplarını bağladığında taşlarınız verilecektir.",
   "giftReferralCodeHeader": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
-  "inviteFirends": "Arkadaşları Davet Et",
+  "inviteFriends": "Arkadaşları Davet Et",
   "inviteFriendsText": "Bağlantıyı kopyalayın ve paylaşın",
   "invitedAmount": "<span>{{count}}</span> arkadaş davet ettiniz",
   "keep-mining-to-earn-rewards": "Daha fazla ödül kazanmak için madenciliğe devam edin!",

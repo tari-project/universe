@@ -12,7 +12,7 @@
   "doLater": "Ek sal dit later doen",
   "giftReferralCode": "Verdien {{gems}} edelstene vir elke vriend wat u na Tari Heelal nooi. Sodra hulle hul rekening koppel, sal u u edelstene ontvang.",
   "giftReferralCodeHeader": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
-  "inviteFirends": "Nooi Vriende",
+  "inviteFriends": "Nooi Vriende",
   "inviteFriendsText": "Kopieer skakel en deel dit",
   "invitedAmount": "U het <span>{{count}}</span> vriende genooi",
   "keep-mining-to-earn-rewards": "Hou aan myn om meer belonings te verdien!",
