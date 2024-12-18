@@ -76,14 +76,15 @@ export interface ActiveTapplet {
     source: string;
     version: string;
     permissions?: TappletPermissions;
+    supportedChain: SupportedChain[];
 }
 
 export type SupportedChain = 'MAINNET' | 'STAGENET' | 'NEXTNET' | '';
 export interface TappletConfig {
     packageName: string;
     version: string;
-    supportedChain: SupportedChain[];
     permissions: TappletPermissions;
+    supportedChain: SupportedChain[];
 }
 
 export interface TappletPermissions {

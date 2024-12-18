@@ -492,9 +492,9 @@ async fn setup_inner(
     //         error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e)
     //     }
     // };
-    // let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
-    // let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
-    // app.manage(AssetServer { addr, cancel_token });
+    let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
+    let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
+    app.manage(AssetServer { addr, cancel_token });
     progress.set_max(100).await;
     progress
         .update("starting-mmproxy".to_string(), None, 0)

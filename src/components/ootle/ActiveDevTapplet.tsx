@@ -1,5 +1,5 @@
 import { ActiveTapplet, TappletConfig } from '@app/types/ootle/tapplet';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { Box, IconButton, Typography } from '@mui/material';
 import { Tapplet } from './Tapplet';
@@ -8,67 +8,54 @@ import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
 
 export default function ActiveDevTapplet() {
-    const { setActiveTapp } = useTappletsStore();
     const [tapplet, setTapplet] = useState<ActiveTapplet>();
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
-    const setTappProvider = useTappletProviderStore((s) => s.setTappletProvider);
+    const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
+    const activeTappletId = useTappletsStore((s) => s.activeTappletId);
     const getActiveTapp = useTappletsStore((s) => s.getActiveTapp);
+    const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
 
-    useEffect(() => {
-        if (!tapplet) {
-            const tapp = getActiveTapp();
-            if (tapp) setTapplet(tapp);
-        }
-    }, [tapplet, getActiveTapp, setTapplet]);
+    const fetchTappConfig = useCallback(async () => {
+        console.log('[active dev tapp] fetch tapp config from tapp provider', tappProvider);
+        console.log('[active dev tapp] fetch tapp config from tapp', tapplet);
+        try {
+            if (!tapplet) return;
 
-    useEffect(() => {
-        const fetchTappletConfig = async () => {
-            console.log('[active dev tapp] fetch tapp config');
-            try {
-                //TODO
-                // const config: TappletConfig = await (await fetch(`${devTapplet?.endpoint}/tapplet.config.json`)).json(); //TODO add const as path to config
-                const config: TappletConfig = {
-                    packageName: 'tarifaucet-tapplet',
-                    version: '1.0.4',
-                    supportedChain: ['MAINNET', 'STAGENET', 'NEXTNET'],
-                    permissions: {
-                        requiredPermissions: [
-                            'TariPermissionNftGetOwnershipProof',
-                            'TariPermissionAccountBalance',
-                            'TariPermissionAccountInfo',
-                            'TariPermissionAccountList',
-                            'TariPermissionKeyList',
-                            'TariPermissionTransactionGet',
-                            'TariPermissionTransactionSend',
-                            'TariPermissionGetNft',
-                            'TariPermissionTransactionsGet',
-                            'TariPermissionSubstatesRead',
-                            'TariPermissionTemplatesRead',
-                        ],
-                        optionalPermissions: [],
-                    },
-                };
-                console.log('[active dev tapp] ->', config, tappProvider, tapplet);
-                if (config) {
-                    if (!tappProvider && tapplet) {
-                        // TODO set error
-                        console.error('Dev Tapplet provider not found');
-                        setTappProvider(config.packageName, tapplet);
-                    }
-                    if (!config?.permissions) {
-                        // TODO set error
-                        console.error('Dev Tapplet config file not found');
-                    }
-                }
-            } catch (e) {
-                console.error(e);
+            //TODO
+            const config: TappletConfig = await (await fetch(`${tapplet?.source}/tapplet.config.json`)).json(); //TODO add const as path to config
+
+            console.log('[active dev tapp] config ->', config);
+            if (!config) return;
+            if (!tappProvider && tapplet) {
+                // assign permissions
+                tapplet.permissions = config.permissions;
+                tapplet.supportedChain = config.supportedChain;
+                console.error('Dev Tapplet provider not found');
+                setTappletProvider(config.packageName, tapplet);
             }
-        };
-
-        if (tapplet) {
-            fetchTappletConfig();
+            if (!config?.permissions) {
+                // TODO set error
+                console.error('Dev Tapplet config file not found');
+            }
+        } catch (e) {
+            console.error(e);
         }
-    }, [setTappProvider, tappProvider, tapplet]);
+    }, [setTappletProvider, tappProvider, tapplet]);
+
+    const getActiveTapplet = useCallback(async () => {
+        try {
+            if (activeTappletId === tapplet?.tapplet_id) return;
+            const tapp = getActiveTapp();
+            setTapplet(tapp);
+        } catch (e) {
+            console.error(e);
+        }
+    }, [activeTappletId, tapplet?.tapplet_id, getActiveTapp]);
+
+    useEffect(() => {
+        getActiveTapplet();
+        fetchTappConfig();
+    }, [activeTappletId, fetchTappConfig, getActiveTapplet]);
 
     return (
         <>

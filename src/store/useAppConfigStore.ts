@@ -64,7 +64,7 @@ const initialState: State = {
     custom_max_gpu_usage: [],
     show_experimental_settings: false,
     ootle_enabled: false,
-    local_tari_indexer: false,
+    local_tari_indexer: true,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({

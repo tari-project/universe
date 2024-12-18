@@ -12,6 +12,7 @@ interface State {
     tappletProvider?: TappletProvider;
 }
 
+//TODO do we need tapp provider id at all?
 interface Actions {
     setTappletProvider: (id: string, launchedTapplet: ActiveTapplet) => Promise<void>;
     runTransaction: (event: MessageEvent<TransactionEvent>) => Promise<void>;

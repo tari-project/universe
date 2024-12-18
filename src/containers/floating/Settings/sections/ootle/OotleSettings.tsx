@@ -30,7 +30,6 @@ export const OotleSettings = () => {
 
     return (
         <>
-            {' '}
             <SettingsGroupWrapper>
                 <SettingsGroup>
                     <SettingsGroupContent>
@@ -44,20 +43,24 @@ export const OotleSettings = () => {
                     </SettingsGroupAction>
                 </SettingsGroup>
             </SettingsGroupWrapper>
-            <SettingsGroupWrapper>
-                <SettingsGroup>
-                    <SettingsGroupContent>
-                        <SettingsGroupTitle>
-                            <Typography variant="h6">{t('local-tari-indexer', { ns: 'ootle' })}</Typography>
-                        </SettingsGroupTitle>
-                        <Typography>{t('Run Tari Indexer locally')}</Typography>
-                    </SettingsGroupContent>
-                    <SettingsGroupAction style={{ alignItems: 'center' }}>
-                        <ToggleSwitch checked={localIndexer} onChange={handleIndexerSwitch} />
-                    </SettingsGroupAction>
-                </SettingsGroup>
-                <TappletsOverview />
-            </SettingsGroupWrapper>
+            {ootleMode && (
+                <>
+                    <SettingsGroupWrapper>
+                        <SettingsGroup>
+                            <SettingsGroupContent>
+                                <SettingsGroupTitle>
+                                    <Typography variant="h6">{t('local-tari-indexer', { ns: 'ootle' })}</Typography>
+                                </SettingsGroupTitle>
+                                <Typography>{t('Run Tari Indexer locally')}</Typography>
+                            </SettingsGroupContent>
+                            <SettingsGroupAction style={{ alignItems: 'center' }}>
+                                <ToggleSwitch checked={localIndexer} onChange={handleIndexerSwitch} />
+                            </SettingsGroupAction>
+                        </SettingsGroup>
+                        <TappletsOverview />
+                    </SettingsGroupWrapper>
+                </>
+            )}
         </>
     );
 };
