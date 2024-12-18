@@ -78,26 +78,13 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         }, 2000);
     },
     handleWinReplay: (txItem) => {
-        useMiningStore.getState().setIsReplaying(true);
-        const isAnimating = window.glApp.stateManager.status == 'free';
         const earnings = txItem.amount;
         const successTier = getSuccessTier(earnings);
-        const handleReplay = () => {
-            set({ replayItem: txItem });
-            setAnimationState(successTier);
-            setTimeout(() => {
-                set({ replayItem: undefined });
-                useMiningStore.getState().setIsReplaying(false);
-            }, 1500);
-        };
-        if (!isAnimating) {
-            setAnimationState('start');
-            setTimeout(() => {
-                handleReplay();
-            }, 1500);
-        } else {
-            handleReplay();
-        }
+        set({ replayItem: txItem });
+        setAnimationState(successTier, true);
+        setTimeout(() => {
+            set({ replayItem: undefined });
+        }, 1500);
     },
     handleWin: async ({ latestTx, canAnimate }) => {
         const blockHeight = Number(latestTx?.message?.split(': ')[1]);

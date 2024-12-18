@@ -13,7 +13,6 @@ interface State extends MinerMetrics {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
-    isReplaying: boolean;
     excludedGpuDevices: number[];
     counter: number;
     customLevelsDialogOpen: boolean;
@@ -37,7 +36,6 @@ interface Actions {
     setIsChangingMode: (isChangingMode: boolean) => void;
     setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
     setCustomLevelsDialogOpen: (customLevelsDialogOpen: boolean) => void;
-    setIsReplaying: (isReplaying: boolean) => void;
     getMaxAvailableThreads: () => void;
 }
 type MiningStoreState = State & Actions;
@@ -52,7 +50,7 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
-    isReplaying: false,
+
     network: 'unknown',
     excludedGpuDevices: [],
     cpu: {
@@ -197,7 +195,6 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-    setIsReplaying: (isReplaying) => set({ isReplaying }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
         set({ excludedGpuDevices });
         try {
