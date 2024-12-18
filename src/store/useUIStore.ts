@@ -19,6 +19,7 @@ interface State {
     dialogToShow?: DialogType | null;
     isWebglNotSupported: boolean;
     adminShow?: 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
+    disabledP2poolStats?: boolean;
 }
 interface Actions {
     setTheme: (theme: Theme) => void;
@@ -31,6 +32,7 @@ interface Actions {
     setLatestVersion: (latestVersion: string) => void;
     setIsWebglNotSupported: (isWebglNotSupported: boolean) => void;
     setAdminShow: (adminShow: State['adminShow']) => void;
+    setDisabledP2poolStats: (disabledP2poolStats: boolean) => void;
 }
 
 type UIStoreState = State & Actions;
@@ -44,6 +46,7 @@ const initialState: State = {
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
+    disabledP2poolStats: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -64,4 +67,5 @@ export const useUIStore = create<UIStoreState>()((set) => ({
         set({ isWebglNotSupported });
     },
     setAdminShow: (adminShow) => set({ adminShow }),
+    setDisabledP2poolStats: (disabledP2poolStats) => set({ disabledP2poolStats }),
 }));
