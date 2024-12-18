@@ -506,6 +506,11 @@ async fn setup_inner(
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
+    state
+        .wallet_manager
+        .initialize_wallet_relay(app.clone())
+        .await;
+
     let move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(1));

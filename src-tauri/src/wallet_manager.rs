@@ -103,7 +103,19 @@ impl WalletManager {
             )
             .await?;
         process_watcher.wait_ready().await?;
+
         Ok(())
+    }
+
+    pub async fn initialize_wallet_relay(&self, app_handle: tauri::AppHandle) {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .status_monitor
+            .as_ref()
+            .ok_or_else(|| WalletManagerError::WalletNotStarted)
+            .unwrap()
+            .initialize_wallet_relay(app_handle)
+            .await;
     }
 
     pub async fn set_view_private_key_and_spend_key(
@@ -118,32 +130,32 @@ impl WalletManager {
 
     pub async fn get_balance(&self) -> Result<WalletBalance, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
-        process_watcher
+        let wallet_balance = process_watcher
             .status_monitor
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-            .get_balance()
+            .wallet_balance
+            .read()
             .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
+            .clone();
+
+        Ok(wallet_balance)
     }
 
     pub async fn get_transaction_history(
         &self,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
-        process_watcher
+        let tx_history = process_watcher
             .status_monitor
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-            .get_transaction_history()
+            .confirmed_transactions
+            .read()
             .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
+            .clone();
+
+        Ok(tx_history)
     }
 
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {

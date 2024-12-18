@@ -30,15 +30,20 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{GetBalanceRequest, GetCompletedTransactionsRequest};
+use minotari_node_grpc_client::grpc::{
+    GetBalanceRequest, GetCompletedTransactionsRequest, TransactionEventRequest,
+};
 use serde::Serialize;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
+use tauri::Emitter;
+use tokio::sync::RwLock;
 
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
@@ -196,6 +201,8 @@ impl ProcessAdapter for WalletAdapter {
             },
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
+                confirmed_transactions: Arc::new(RwLock::new(Vec::new())),
+                wallet_balance: Arc::new(RwLock::new(WalletBalance::default())),
             },
         ))
     }
@@ -222,6 +229,8 @@ pub enum WalletStatusMonitorError {
 #[derive(Clone)]
 pub struct WalletStatusMonitor {
     grpc_port: u16,
+    pub confirmed_transactions: Arc<RwLock<Vec<TransactionInfo>>>,
+    pub wallet_balance: Arc<RwLock<WalletBalance>>,
 }
 
 #[async_trait]
@@ -243,7 +252,18 @@ pub struct WalletBalance {
     pub pending_outgoing_balance: MicroMinotari,
 }
 
-#[derive(Debug, Serialize)]
+impl Default for WalletBalance {
+    fn default() -> Self {
+        WalletBalance {
+            available_balance: MicroMinotari(0),
+            timelocked_balance: MicroMinotari(0),
+            pending_incoming_balance: MicroMinotari(0),
+            pending_outgoing_balance: MicroMinotari(0),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
 pub struct TransactionInfo {
     pub tx_id: u64,
     pub source_address: String,
@@ -264,7 +284,62 @@ impl WalletStatusMonitor {
         format!("http://127.0.0.1:{}", self.grpc_port)
     }
 
-    pub async fn get_balance(&self) -> Result<WalletBalance, WalletStatusMonitorError> {
+    pub async fn initialize_wallet_relay(&self, app_handle: tauri::AppHandle) {
+        let app_handle_clone = app_handle.clone();
+        self.clone().update_wallet_data(app_handle_clone).await;
+        let monitor = self.clone();
+        let app_handle_clone = app_handle.clone();
+
+        tokio::spawn(async move {
+            let mut client = WalletClient::connect(monitor.wallet_grpc_address())
+                .await
+                .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+            let res = client
+                .stream_transaction_events(TransactionEventRequest {})
+                .await
+                .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+
+            let mut stream = res.into_inner();
+            while let Some(message) = stream
+                .message()
+                .await
+                .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
+            {
+                let tx = message.transaction.expect("Transaction not found");
+
+                monitor
+                    .clone()
+                    .update_wallet_data(app_handle_clone.clone())
+                    .await;
+            }
+
+            Ok::<(), WalletStatusMonitorError>(())
+        });
+    }
+
+    async fn update_wallet_data(self, app_handle: tauri::AppHandle) {
+        match self.fetch_transaction_history().await {
+            Ok(transactions) => {
+                *self.confirmed_transactions.write().await = transactions.clone();
+                let _ = app_handle.emit("transaction_history_updated", transactions);
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to fetch transaction history: {:?}", e);
+            }
+        }
+
+        match self.get_balance().await {
+            Ok(balance) => {
+                *self.wallet_balance.write().await = balance.clone();
+                let _ = app_handle.emit("wallet_balance_updated", balance);
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to fetch balance: {:?}", e);
+            }
+        }
+    }
+
+    async fn get_balance(&self) -> Result<WalletBalance, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
@@ -282,7 +357,7 @@ impl WalletStatusMonitor {
         })
     }
 
-    pub async fn get_transaction_history(
+    async fn fetch_transaction_history(
         &self,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
