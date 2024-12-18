@@ -40,7 +40,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{node_adapter, setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -381,18 +381,27 @@ pub async fn get_miner_metrics(
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
-        .get_network_hash_rate_and_block_reward().await
-        .unwrap_or_else(|e| {
-            if !matches!(e, NodeManagerError::NodeNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
-            }
-            (0, 0, MicroMinotari(0), 0, 0, false)
-        });
+    let node_status = state.base_node_latest_status.borrow().clone();
+    let node_adapter::BaseNodeStatus {
+        sha_network_hashrate,
+        randomx_network_hashrate,
+        block_height,
+        block_time,
+        is_synced,
+        block_reward,
+    } = node_status;
+    // let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
+    //     .get_network_hash_rate_and_block_reward().await
+    //     .unwrap_or_else(|e| {
+    //         if !matches!(e, NodeManagerError::NodeNotStarted) {
+    //             warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+    //         }
+    //         (0, 0, MicroMinotari(0), 0, 0, false)
+    //     });
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
-        .status(randomx_hash_rate, block_reward)
+        .status(randomx_network_hashrate, block_reward)
         .await
         .map_err(|e| e.to_string())
     {
@@ -407,18 +416,7 @@ pub async fn get_miner_metrics(
     };
     drop(cpu_miner);
 
-    let gpu_miner = state.gpu_miner.read().await;
-    let gpu_mining_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
-        Ok(gpu) => gpu,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
-            state
-                .is_getting_miner_metrics
-                .store(false, Ordering::SeqCst);
-            return Err(e.to_string());
-        }
-    };
-    drop(gpu_miner);
+    let gpu_mining_status = state.gpu_latest_status.borrow().clone();
 
     let gpu_public_parameters = HardwareStatusMonitor::current()
         .get_gpu_devices_public_properties()
@@ -436,8 +434,8 @@ pub async fn get_miner_metrics(
     }
 
     let metrics_ret = MinerMetrics {
-        sha_network_hash_rate: sha_hash_rate,
-        randomx_network_hash_rate: randomx_hash_rate,
+        sha_network_hash_rate: sha_network_hashrate,
+        randomx_network_hash_rate: randomx_network_hashrate,
         cpu: CpuMinerMetrics {
             // hardware: cpu_public_parameters.clone(),
             mining: cpu_mining_status,
@@ -653,43 +651,16 @@ pub async fn get_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
-    if state.is_getting_wallet_balance.load(Ordering::SeqCst) {
-        let read = state.cached_wallet_details.read().await;
-        if let Some(details) = &*read {
-            warn!(target: LOG_TARGET, "Already getting wallet balance, returning cached value");
-            return Ok(details.clone());
-        }
-        warn!(target: LOG_TARGET, "Already getting wallet balance");
-        return Err("Already getting wallet balance".to_string());
-    }
-    state
-        .is_getting_wallet_balance
-        .store(true, Ordering::SeqCst);
-    let wallet_balance = match state.wallet_manager.get_balance().await {
-        Ok(w) => Some(w),
-        Err(e) => {
-            if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
-            }
-
-            None
-        }
-    };
     let tari_address = state.tari_address.read().await;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
-    }
+    let wallet_balance = state.wallet_latest_balance.borrow().clone();
     let result = TariWalletDetails {
         wallet_balance,
         tari_address_base58: tari_address.to_base58(),
         tari_address_emoji: tari_address.to_emoji_string(),
     };
-    let mut lock = state.cached_wallet_details.write().await;
-    *lock = Some(result.clone());
-    state
-        .is_getting_wallet_balance
-        .store(false, Ordering::SeqCst);
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
+    }
 
     Ok(result)
 }
