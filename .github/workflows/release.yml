@@ -95,7 +95,7 @@ jobs:
           echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
-          TU_VERSION=$(jq -r .version src-tauri/tauri.conf.json)
+          TU_VERSION=$(jq -r .version tauri.conf.json)
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".productName = \"Tari Universe\"" -i tauri.conf.json
           yq eval ".mainBinaryName = \"Tari Universe\"" -i tauri.conf.json
