@@ -7,7 +7,7 @@ import { MdClose } from 'react-icons/md';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
 
-export default function ActiveDevTapplet() {
+export default function ActiveTappletView() {
     const [tapplet, setTapplet] = useState<ActiveTapplet>();
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
