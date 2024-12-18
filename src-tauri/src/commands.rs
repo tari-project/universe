@@ -21,7 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::app_config::{AppConfig, GpuThreads};
-use crate::app_in_memory_config::AirdropInMemoryConfig;
+use crate::app_in_memory_config::{
+    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
+};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::credential_manager::{CredentialError, CredentialManager};
@@ -39,11 +41,14 @@ use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+
+use base64::prelude::*;
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -127,6 +132,13 @@ pub struct CpuMinerStatus {
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
     // pub error: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SignWsDataResponse {
+    signature: String,
+    pub_key: String,
 }
 
 #[tauri::command]
@@ -1045,6 +1057,31 @@ pub async fn set_cpu_mining_enabled<'r>(
         );
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
+    let key: ring::signature::Ed25519KeyPair = get_websocket_key().map_err(|e| {
+        warn!(target: LOG_TARGET,
+            "error ws key handling:{:?}",
+            e.to_string()
+        );
+        "sign_ws_data: error ws key handling"
+    })?;
+    let pub_key = get_der_encode_pub_key(&key).map_err(|e| {
+        warn!(target: LOG_TARGET,
+            "error ws pub key handling:{:?}",
+            e.to_string()
+        );
+        "sign_ws_data: error ws pub key handling"
+    })?;
+
+    let signature = key.sign(data.as_bytes());
+
+    return Ok(SignWsDataResponse {
+        signature: BASE64_STANDARD.encode(signature.as_ref()),
+        pub_key,
+    });
 }
 
 #[tauri::command]
