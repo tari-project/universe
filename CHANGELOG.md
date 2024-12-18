@@ -1,4 +1,13 @@
+# Tari Universe - Testnet v0.8.27
+
+_December 18, 2024_
+
+## 🔥 Hotfix
+-   Crash fixes
+
 # Tari Universe - Testnet v0.8.25
+
+---
 
 _December 17, 2024_
 
