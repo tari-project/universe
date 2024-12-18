@@ -16,6 +16,7 @@ export const AccentWrapper = styled(m.div)`
 export const AccentText = styled(m.div)`
     display: flex;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
     white-space: pre;
     line-height: 1;
     opacity: 0.55;

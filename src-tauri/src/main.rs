@@ -898,6 +898,8 @@ fn main() {
             commands::set_pre_release,
             commands::check_for_updates,
             commands::try_update,
+            commands::get_network,
+            commands::sign_ws_data,
         ])
         .build(tauri::generate_context!())
         .inspect_err(

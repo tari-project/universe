@@ -15,10 +15,10 @@ export const Title = styled('div')`
     text-align: center;
     font-size: 32px;
     font-style: normal;
-    font-weight: 800;
     line-height: 99.7%;
     text-transform: uppercase;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
 
     span {
         color: #ff4a55;
@@ -142,6 +142,7 @@ export const ClaimButton = styled('button')`
     font-size: 21px;
     text-align: center;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
     width: 100%;
     border-radius: 49px;
     background: #000;
@@ -149,7 +150,6 @@ export const ClaimButton = styled('button')`
     min-height: 70px;
 
     position: relative;
-    font-weight: bold;
     cursor: pointer;
 
     &:hover {
