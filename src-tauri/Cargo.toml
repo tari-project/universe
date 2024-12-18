@@ -63,9 +63,6 @@ tari_common_types = { git = "https://github.com/tari-project/tari.git", rev = "3
 tari_core = { git = "https://github.com/tari-project/tari.git", rev = "37c30be", features = [
   "transactions",
 ] }
-
-tauri-plugin-process = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
-
 tauri-plugin-single-instance = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
 tari_crypto = "0.21.0"
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", rev = "37c30be" }
@@ -89,7 +86,6 @@ xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 dirs = "5.0.1"
 tauri-plugin-process = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
-
 ring = "0.17.8"
 hex = "0.4.3"
 
