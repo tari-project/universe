@@ -3,6 +3,7 @@ import { create } from './create.ts';
 import { AwardedTimeBonus } from '@app/types/sosTypes.ts';
 
 const SOS_GAME_ENDING_DATE = new Date('2025-01-30');
+export const MINING_EVENT_INTERVAL_MS = 15000;
 
 // Type for the response structure
 export interface ReferralsResponse {
@@ -12,12 +13,29 @@ export interface ReferralsResponse {
     toleranceMs: number;
 }
 
+type WsConnectionStateString = 'up' | 'off' | 'error';
+
+export interface WsConnectionEvent {
+    state: WsConnectionStateString;
+    error?: string;
+}
+
+interface WsConnectionState {
+    state: WsConnectionStateString;
+    error?: {
+        since: Date;
+        timeDownMs: number;
+        lastMessage: string;
+    };
+}
+
 interface State {
     referrals?: ReferralsResponse;
     showWidget: boolean;
     totalBonusTimeMs: number;
     revealDate: Date;
     showMainModal: boolean;
+    wsConnectionState: WsConnectionState;
 }
 
 interface Actions {
@@ -27,6 +45,7 @@ interface Actions {
     setTotalTimeBonus: (totalTimeBonusUpdate: AwardedTimeBonus) => void;
     getTimeRemaining: () => { days: number; hours: number; totalRemainingMs: number; minutes: number; seconds: number };
     setShowMainModal: (showMainModal: boolean) => void;
+    registerWsConnectionEvent: (event: WsConnectionEvent) => void;
 }
 
 const initialState: State = {
@@ -35,6 +54,9 @@ const initialState: State = {
     totalBonusTimeMs: 0,
     revealDate: SOS_GAME_ENDING_DATE,
     showMainModal: false,
+    wsConnectionState: {
+        state: 'off',
+    },
 };
 
 export const useShellOfSecretsStore = create<State & Actions>()((set, get) => ({
@@ -60,6 +82,31 @@ export const useShellOfSecretsStore = create<State & Actions>()((set, get) => ({
             set({ totalBonusTimeMs: newTotalTimeBonus });
         }
     },
+    registerWsConnectionEvent: (event: WsConnectionEvent) =>
+        set(({ wsConnectionState }) => {
+            if (event.state === 'off' || event.state === 'up') {
+                return { wsConnectionState: { state: event.state }, error: undefined };
+            }
+
+            const currentTime = new Date();
+
+            //in case an error happened
+            if (event.state === 'error') {
+                return {
+                    wsConnectionState: {
+                        state: event.state,
+                        error: {
+                            since: wsConnectionState.error?.since ?? new Date(),
+                            timeDownMs:
+                                currentTime.getTime() -
+                                (wsConnectionState.error?.since.getTime() || currentTime.getTime()),
+                            lastMessage: event?.error || '',
+                        },
+                    },
+                };
+            }
+            return { wsConnectionState };
+        }),
     getTimeRemaining: () => {
         const now = new Date();
         const targetDateBroughtForwardByTimeBonus = get().revealDate.getTime() - get().totalBonusTimeMs;
