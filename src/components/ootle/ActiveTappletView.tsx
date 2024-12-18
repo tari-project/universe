@@ -8,11 +8,11 @@ import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
 
 export default function ActiveTappletView() {
-    const [tapplet, setTapplet] = useState<ActiveTapplet>();
+    // const [tapplet, setTapplet] = useState<ActiveTapplet>();
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
     const activeTappletId = useTappletsStore((s) => s.activeTappletId);
-    const getActiveTapp = useTappletsStore((s) => s.getActiveTapp);
+    const tapplet = useTappletsStore((s) => s.activeTapplet);
     const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
 
     const fetchTappConfig = useCallback(async () => {
@@ -30,8 +30,10 @@ export default function ActiveTappletView() {
                 // assign permissions
                 tapplet.permissions = config.permissions;
                 tapplet.supportedChain = config.supportedChain;
-                console.error('Dev Tapplet provider not found');
+                tapplet.version = config.version;
+                console.info('Dev Tapplet provider not found - setting new one: ', tapplet);
                 setTappletProvider(config.packageName, tapplet);
+                setActiveTapp(tapplet);
             }
             if (!config?.permissions) {
                 // TODO set error
@@ -40,22 +42,22 @@ export default function ActiveTappletView() {
         } catch (e) {
             console.error(e);
         }
-    }, [setTappletProvider, tappProvider, tapplet]);
+    }, [setActiveTapp, setTappletProvider, tappProvider, tapplet]);
 
-    const getActiveTapplet = useCallback(async () => {
-        try {
-            if (activeTappletId === tapplet?.tapplet_id) return;
-            const tapp = getActiveTapp();
-            setTapplet(tapp);
-        } catch (e) {
-            console.error(e);
-        }
-    }, [activeTappletId, tapplet?.tapplet_id, getActiveTapp]);
+    // const getActiveTapplet = useCallback(async () => {
+    //     try {
+    //         if (activeTappletId === tapplet?.tapplet_id) return;
+    //         const tapp = getActiveTapp();
+    //         setTapplet(tapp);
+    //     } catch (e) {
+    //         console.error(e);
+    //     }
+    // }, [activeTappletId, tapplet?.tapplet_id, getActiveTapp]);
 
     useEffect(() => {
-        getActiveTapplet();
+        // getActiveTapplet();
         fetchTappConfig();
-    }, [activeTappletId, fetchTappConfig, getActiveTapplet]);
+    }, [activeTappletId, fetchTappConfig]);
 
     return (
         <>
@@ -63,7 +65,9 @@ export default function ActiveTappletView() {
                 <IconButton onClick={() => setActiveTapp(undefined)}>
                     <MdClose size={18} />
                 </IconButton>
-                <Typography variant="h6">{tapplet?.display_name ?? 'Unknown tapplet name'}</Typography>
+                <Typography variant="h6">
+                    {tapplet ? `${tapplet.display_name} v${tapplet.version} ` : 'Unknown tapplet'}
+                </Typography>
             </HeaderContainer>
             <Box height="100%" width="100%">
                 {tapplet && <Tapplet source={tapplet?.source} provider={tappProvider} />}

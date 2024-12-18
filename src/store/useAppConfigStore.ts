@@ -63,7 +63,7 @@ const initialState: State = {
     custom_max_cpu_usage: undefined,
     custom_max_gpu_usage: [],
     show_experimental_settings: false,
-    ootle_enabled: false,
+    ootle_enabled: true,
     local_tari_indexer: true,
 };
 

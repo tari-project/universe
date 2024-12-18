@@ -1,7 +1,9 @@
+use super::TappletPermissions;
+
 #[derive(Debug, serde::Deserialize)]
 pub struct DevTappletResponse {
-  #[serde(rename = "packageName")]
-  pub package_name: String,
-  #[serde(rename = "displayName")]
-  pub display_name: String,
+    #[serde(rename = "packageName")]
+    pub package_name: String,
+    #[serde(rename = "displayName")]
+    pub display_name: String,
 }

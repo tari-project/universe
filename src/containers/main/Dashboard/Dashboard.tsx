@@ -6,7 +6,7 @@ import ActiveTappletView from '@app/components/ootle/ActiveTappletView';
 
 export default function Dashboard() {
     const ootleMode = useAppConfigStore((s) => s.ootle_enabled);
-    const activeTapplet = useTappletsStore((s) => s.activeTappletId);
+    const activeTapplet = useTappletsStore((s) => s.activeTapplet);
 
     return (
         <DashboardContentContainer layout $ootleModeOn={ootleMode}>

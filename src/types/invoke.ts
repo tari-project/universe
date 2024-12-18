@@ -110,9 +110,14 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'add_dev_tapplet', payload: { endpoint: string }): Promise<DevTapplet>;
     function invoke(param: 'read_dev_tapplets'): Promise<DevTapplet[]>;
     function invoke(param: 'delete_dev_tapplet', payload: { devTappletId: number }): Promise<number>;
+    function invoke(param: 'delete_installed_tapplet', payload: { tappletId: number }): Promise<number>;
+    function invoke(
+        param: 'update_installed_tapplet',
+        payload: { tappletId: number; installedTappletId: string }
+    ): Promise<InstalledTappletWithAssets[]>;
     function invoke(
         param: 'download_and_extract_tapp',
         payload: { tappletId: string }
     ): Promise<RegisteredTappletWithAssets>;
-    function invoke(param: 'launch_tapplet', payload: { tappletId: number }): Promise<ActiveTapplet>;
+    function invoke(param: 'launch_tapplet', payload: { installedTappletId: number }): Promise<ActiveTapplet>;
 }

@@ -17,6 +17,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline, IoRemoveOutline } from 'react-icons/io5';
 import { invoke } from '@tauri-apps/api';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { ActiveTapplet, DevTapplet } from '@app/types/ootle/tapplet.ts';
 
 const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
 
@@ -108,11 +109,19 @@ export default function TappletsDev() {
         trigger('endpoint');
     }, [endpoint, trigger]);
 
-    const handleLaunch = useCallback(async (id: number) => {
+    const handleLaunch = useCallback(async (tapplet: DevTapplet) => {
         try {
             // const tapplet = await invoke('launch_tapplet', { tappletId: id });
-            console.log('SET ACTIVE TAP', id);
-            setActiveTapp(id);
+            console.log('SET ACTIVE TAP', tapplet);
+            const activeTapplet: ActiveTapplet = {
+                tapplet_id: tapplet.id,
+                version: '0.0.1', //TODO
+                display_name: tapplet.display_name,
+                source: tapplet.endpoint,
+                permissions: undefined,
+                supportedChain: [],
+            };
+            setActiveTapp(activeTapplet);
             setIsSettingsOpen(!isSettingsOpen);
         } catch (e) {
             console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
@@ -180,7 +189,7 @@ export default function TappletsDev() {
                                 <IconButton
                                     aria-label="launch"
                                     style={{ marginRight: 10 }}
-                                    onClick={() => handleLaunch(item.id)}
+                                    onClick={() => handleLaunch(item)}
                                 >
                                     {/* <NavLink
                                         to={`/${TabKey.DEV_TAPPLETS}/${item.id}`}

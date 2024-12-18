@@ -604,7 +604,7 @@ struct UniverseAppState {
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     setup_counter: Arc<RwLock<AutoRollback<bool>>>,
-    tokens: Arc<RwLock<Tokens>>,
+    tokens: Arc<RwLock<Tokens>>, //TODO
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -914,11 +914,12 @@ fn main() {
             commands::insert_installed_tapp_db,
             commands::read_installed_tapp_db,
             commands::update_installed_tapp_db,
-            commands::delete_installed_tapp,
+            commands::delete_installed_tapplet,
             commands::add_dev_tapplet,
             commands::read_dev_tapplets,
             commands::delete_dev_tapplet,
-            commands::call_wallet
+            commands::call_wallet,
+            commands::update_installed_tapplet
         ])
         .build(tauri::generate_context!())
         .inspect_err(

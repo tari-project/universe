@@ -20,14 +20,15 @@ use crate::interface::{
 };
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::node_manager::NodeManagerError;
-use crate::ootle::error;
-use crate::ootle::rpc::make_request;
+
 use crate::ootle::{
+    error,
     error::{
         Error::{self, RequestError, TappletServerError},
         RequestError::*,
         TappletServerError::*,
     },
+    rpc::make_request,
     tapplet_installer::{
         check_files_and_validate_checksum, delete_tapplet, download_asset,
         fetch_tapp_registry_manifest, get_tapp_download_path, get_tapp_permissions,
@@ -1898,7 +1899,7 @@ pub fn update_installed_tapp_db(
 }
 
 #[tauri::command]
-pub fn delete_installed_tapp(
+pub fn delete_installed_tapplet(
     tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
     app_handle: tauri::AppHandle,
@@ -1919,12 +1920,43 @@ pub fn delete_installed_tapp(
 }
 
 #[tauri::command]
+pub async fn update_installed_tapplet(
+    tapplet_id: i32,
+    installed_tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<Vec<InstalledTappletWithName>, String> {
+    let _ = delete_installed_tapplet(
+        installed_tapplet_id,
+        db_connection.clone(),
+        app_handle.clone(),
+    )
+    .inspect_err(|e| error!("❌ Delete installed tappled from db error: {:?}", e))
+    .unwrap();
+
+    let _ = download_and_extract_tapp(tapplet_id, db_connection.clone(), app_handle.clone())
+        .await
+        .inspect_err(|e| error!("❌ Download and extract tapp process error: {:?}", e))
+        .unwrap();
+
+    let _ = insert_installed_tapp_db(tapplet_id, db_connection.clone())
+        .inspect_err(|e| error!("❌ Insert installed tappled to db error: {:?}", e))
+        .unwrap();
+
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let installed_tapplets = store.get_installed_tapplets_with_display_name().unwrap();
+
+    return Ok(installed_tapplets);
+}
+
+#[tauri::command]
 pub async fn add_dev_tapplet(
     endpoint: String,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<DevTapplet, Error> {
     let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
-    let manifest_res = reqwest::get(&manifest_endpoint)
+    // let config_endpoint = format!("{}/tapplet.config.json", endpoint); TODO
+    let tapp_manifest = reqwest::get(&manifest_endpoint)
         .await
         .inspect_err(|e| {
             error!(
@@ -1947,8 +1979,8 @@ pub async fn add_dev_tapplet(
     let mut store = SqliteStore::new(db_connection.0.clone());
     let new_dev_tapplet = CreateDevTapplet {
         endpoint: &endpoint,
-        package_name: &manifest_res.package_name,
-        display_name: &manifest_res.display_name,
+        package_name: &tapp_manifest.package_name,
+        display_name: &tapp_manifest.display_name,
     };
     match store.create(&new_dev_tapplet) {
         Ok(dev_tapplet) => {

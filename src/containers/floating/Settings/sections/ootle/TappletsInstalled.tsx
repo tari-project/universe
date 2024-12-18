@@ -11,6 +11,9 @@ import { useCallback } from 'react';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import tariLogo from '@app/assets/tari.svg';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
+import { ActiveTapplet, InstalledTapplet, InstalledTappletWithAssets } from '@app/types/ootle/tapplet.ts';
+import { invoke } from '@tauri-apps/api';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -29,7 +32,10 @@ const Count = styled.div<{ $count: number }>`
 
 export default function TappletsInstalled() {
     const { t } = useTranslation('ootle');
-    const { setActiveTapp } = useTappletsStore();
+    const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore();
+    const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
+    const deleteInstalledTapp = useTappletsStore((s) => s.deleteInstalledTapp);
+    const updateInstalledTapp = useTappletsStore((s) => s.updateInstalledTapp);
     const installedTapplets = useTappletsStore((s) => s.installedTapplets);
     const installedTappletsCount = installedTapplets?.length || 0;
     console.log('fethch installed tapp', installedTapplets);
@@ -51,15 +57,51 @@ export default function TappletsInstalled() {
     //         clearInterval(fetchTappletsInterval);
     //     };
     // }, [fetchTapplets]);
+    // const setActiveTappletHandler = useCallback(
+    //     (tapplet: InstalledTappletWithAssets) => {
+    //         const activeTapplet: ActiveTapplet = {
+    //             tapplet_id: tapplet.installed_tapplet.id,
+    //             version: tapplet.installed_tapplet.tapplet_version_id,
+    //             display_name: tapplet.display_name,
+    //             source: '', //TODO
+    //             permissions: undefined,
+    //             supportedChain: [],
+    //         };
+    //         setActiveTapp(activeTapplet);
+    //     },
+    //     [setActiveTapp]
+    // );
+    const updateInstalledTappletHandler = useCallback(
+        async (id: number, installedTappletId: string) => {
+            try {
+                updateInstalledTapp(id, installedTappletId);
+            } catch (e) {
+                console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+            }
+        },
+        [updateInstalledTapp]
+    );
 
-    const updateInstalledTappletHandler = useCallback(() => {
-        console.log('dupa');
-    }, []);
-    const deleteInstalledTappletHandler = useCallback(() => {
-        console.log('dupa');
-    }, []);
-    const deleteDevTappletHandler = useCallback(() => {
-        console.log('dupa');
+    const deleteInstalledTappletHandler = useCallback(
+        async (id: number) => {
+            try {
+                deleteInstalledTapp(id);
+            } catch (e) {
+                console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+            }
+        },
+        [deleteInstalledTapp]
+    );
+
+    const handleLaunch = useCallback(async (id: number) => {
+        try {
+            const tapplet = await invoke('launch_tapplet', { installedTappletId: id });
+            console.log('SET ACTIVE TAP', tapplet);
+            setActiveTapp(tapplet);
+            setIsSettingsOpen(!isSettingsOpen);
+        } catch (e) {
+            console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+        }
     }, []);
 
     return (
@@ -86,7 +128,7 @@ export default function TappletsInstalled() {
                                     <IconButton
                                         aria-label="launch"
                                         style={{ marginRight: 10 }}
-                                        onClick={() => setActiveTapp(item.installed_tapplet.id)}
+                                        onClick={() => handleLaunch(item.installed_tapplet.id)}
                                     >
                                         <MdLaunch color="primary" />
                                     </IconButton>
@@ -94,7 +136,12 @@ export default function TappletsInstalled() {
                                         <IconButton
                                             aria-label="update"
                                             style={{ marginRight: 10 }}
-                                            onClick={() => updateInstalledTappletHandler()}
+                                            onClick={() =>
+                                                updateInstalledTappletHandler(
+                                                    item.installed_tapplet.id,
+                                                    item.installed_tapplet.tapplet_id
+                                                )
+                                            }
                                         >
                                             <MdUpdate color="primary" />
                                         </IconButton>
@@ -102,7 +149,7 @@ export default function TappletsInstalled() {
                                     <IconButton
                                         aria-label="delete"
                                         style={{ marginRight: 10 }}
-                                        onClick={() => deleteInstalledTappletHandler()}
+                                        onClick={() => deleteInstalledTappletHandler(item.installed_tapplet.id)}
                                     >
                                         <MdDelete color="primary" />
                                     </IconButton>
