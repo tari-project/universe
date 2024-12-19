@@ -15,7 +15,6 @@ interface State {
     devTapplets: DevTapplet[];
     installedTapplets: InstalledTappletWithAssets[];
     registeredTapplets: RegisteredTappletWithAssets[];
-    activeTappletId?: number;
     activeTapplet: ActiveTapplet | undefined;
 }
 
@@ -23,7 +22,6 @@ interface Actions {
     installRegisteredTapp: (tappletId: string) => Promise<void>;
     fetchRegisteredTapps: () => Promise<void>;
     setActiveTapp: (tapplet?: ActiveTapplet) => Promise<void>;
-    setActiveTappId: (id?: number) => Promise<void>;
     addDevTapp: (endpoint: string) => Promise<void>;
     deleteDevTapp: (devTappletId: number) => Promise<void>;
     deleteInstalledTapp: (tappletId: number) => Promise<void>;
@@ -40,7 +38,6 @@ const initialState: State = {
     installedTapplets: [],
     registeredTapplets: [],
     devTapplets: [],
-    activeTappletId: undefined,
     activeTapplet: undefined,
 };
 
@@ -96,10 +93,6 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             console.error('Error installing tapplet: ', error);
             appStateStore.setError(`'Error installing tapplet: ${error}`);
         }
-    },
-    setActiveTappId: async (tappletId) => {
-        console.log('[STORE] set active tapp id', tappletId);
-        set({ activeTappletId: tappletId });
     },
     setActiveTapp: async (tapplet) => {
         set({ activeTapplet: tapplet });
