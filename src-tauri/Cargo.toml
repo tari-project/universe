@@ -73,8 +73,8 @@ tauri = { git = "https://github.com/tari-project/tauri.git", rev = "67a06c8a9bae
   "image-png",
   "image-ico",
   "tray-icon",
-  "devtools", # TODO: Remove this before mainnet
-  "tracing", # TODO: Remove this before mainnet
+  "devtools",          # TODO: Remove this before mainnet
+  "tracing",           # TODO: Remove this before mainnet
 ] }
 tauri-plugin-os = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
 tauri-plugin-sentry = { git = "https://github.com/tari-project/sentry-tauri", rev = "7554b9a8738d6442d175aa2add55ecc11c52842d" }
