@@ -44,9 +44,6 @@ export const useHandleWsUserIdEvent = () => {
             case WebsocketEventNames.MINING_STATUS_USER_UPDATE:
                 setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
                 break;
-            case WebsocketEventNames.COOKIE_CLAIMED:
-                setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
-                break;
             default:
                 // eslint-disable-next-line no-console
                 console.log('Unknown event', eventParsed);
