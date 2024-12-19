@@ -29,11 +29,12 @@ const P2PoolStats = () => {
     const fetchP2poolConnections = useP2poolStatsStore((s) => s?.fetchP2poolConnections);
 
     useEffect(() => {
-        const fetchP2pStatsInterval = setInterval(async () => {
+        const handleFetchP2pStats = async () => {
             await fetchP2pStats?.();
             await fetchP2poolConnections?.();
-        }, 5000);
-
+        };
+        handleFetchP2pStats();
+        const fetchP2pStatsInterval = setInterval(handleFetchP2pStats, 5000);
         return () => {
             clearInterval(fetchP2pStatsInterval);
         };
@@ -43,7 +44,7 @@ const P2PoolStats = () => {
         const sha3Height = sha3Stats?.height;
         const randomXHeight = randomXStats?.height;
         return peers?.map((peer) => {
-            const { current_sha3x_height, current_random_x_height } = peer.peer_info || {};
+            const { current_sha3x_height, current_random_x_height } = peer?.peer_info || {};
             const sha3Diff = sha3Height ? sha3Height - current_sha3x_height : undefined;
             const randomxDiff = randomXHeight ? randomXHeight - current_random_x_height : undefined;
 

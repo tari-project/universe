@@ -197,6 +197,7 @@ pub struct TelemetryData {
     pub gpu_tribe_name: Option<String>,
     pub gpu_tribe_id: Option<String>,
     pub extra_data: HashMap<String, String>,
+    pub current_os: String,
 }
 
 pub struct TelemetryManager {
@@ -573,6 +574,7 @@ async fn get_telemetry_data(
         gpu_tribe_name: None,
         gpu_tribe_id: None,
         extra_data,
+        current_os: std::env::consts::OS.to_string(),
     })
 }
 
