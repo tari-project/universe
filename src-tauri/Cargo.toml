@@ -127,3 +127,7 @@ ignored = [
 
 [profile.release]
 debug = true
+
+[profile.release.package.wry]
+debug = true
+debug-assertions = true
